@@ -3,11 +3,11 @@
 // Check out https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup
 import HelloWorld from './components/HelloWorld.vue'
 import LoginExample from './components/LoginExample.vue'
+import Simulator from './components/Simulator.vue'
 </script>
 
 <template>
-  <img alt="Vue logo" src="./assets/logo.png" />
-  <LoginExample />
+  <Simulator />
 </template>
 
 <style>
