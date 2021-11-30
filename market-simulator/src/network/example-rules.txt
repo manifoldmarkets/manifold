@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      // Hardcode admins, e.g.:
+      return request.auth.uid == 'mvLxCEDq7YSMmatuLZQSxRtsBeh2' || // akrolsmir@gmail.com
+        request.auth.uid == 'rYFCLWCzSnSjGuSjpLOtWJ1Ewof1' // abc.sinclair@gmail.com
+    }
+
+    // Make sure the uid of the requesting user matches name of the user
+    // document. The wildcard expression {userId} makes the userId variable
+    // available in rules.
+    match /users/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId || isAdmin();
+      allow create: if request.auth != null || isAdmin();
+    }
+
+    match /rooms/{document=**} {
+      allow read, create, update: if true;
+    }
+  }
+}
