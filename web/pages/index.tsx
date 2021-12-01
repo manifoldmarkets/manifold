@@ -1,5 +1,7 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
+import React from 'react'
+import { LandingPage } from './landing-page'
 
 const Home: NextPage = () => {
   return (
@@ -10,7 +12,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-    Welcome to Mantic Markets
+      <LandingPage />
     </div>
   )
 }
