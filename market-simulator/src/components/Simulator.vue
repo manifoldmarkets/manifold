@@ -18,29 +18,33 @@
           <thead>
             <tr>
               <th>Order #</th>
-              <th>Yes bid</th>
-              <th>No Bid</th>
-              <th>Yes Weight</th>
-              <th>No Weight</th>
+              <th>Type</th>
+              <th>Bid</th>
+              <th>Weight</th>
               <th>Implied Probability</th>
-              <th>Yes Payout</th>
-              <th>No Payout</th>
-              <th>Yes Return</th>
-              <th>No Return</th>
+              <th>Payout</th>
+              <th>Return on win</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(entry, i) in truncatedEntries">
               <th>{{ i + 1 }}</th>
-              <td>{{ entry.yesBid || '' }}</td>
-              <td>{{ entry.noBid || '' }}</td>
-              <td>{{ entry.yesWeight.toFixed(2) || '' }}</td>
-              <td>{{ entry.noWeight.toFixed(2) || '' }}</td>
-              <td>{{ entry.prob.toFixed(2) || '' }}</td>
-              <td>{{ entry.yesPayout.value.toFixed(2) || '' }}</td>
-              <td>{{ entry.noPayout.value.toFixed(2) || '' }}</td>
-              <td>{{ (entry.yesReturn.value * 100).toFixed(2) || '' }}%</td>
-              <td>{{ (entry.noReturn.value * 100).toFixed(2) || '' }}%</td>
+              <template v-if="entry.yesBid">
+                <td><div class="badge badge-success">YES</div></td>
+                <td>{{ entry.yesBid }}</td>
+                <td>{{ entry.yesWeight.toFixed(2) || '' }}</td>
+                <td>{{ entry.prob.toFixed(2) || '' }}</td>
+                <td>{{ entry.yesPayout.value.toFixed(2) || '' }}</td>
+                <td>{{ (entry.yesReturn.value * 100).toFixed(2) || '' }}%</td>
+              </template>
+              <template v-else>
+                <td><div class="badge badge-error">NO</div></td>
+                <td>{{ entry.noBid }}</td>
+                <td>{{ entry.noWeight.toFixed(2) || '' }}</td>
+                <td>{{ entry.prob.toFixed(2) || '' }}</td>
+                <td>{{ entry.noPayout.value.toFixed(2) || '' }}</td>
+                <td>{{ (entry.noReturn.value * 100).toFixed(2) || '' }}%</td>
+              </template>
             </tr>
           </tbody>
         </table>
@@ -56,7 +60,7 @@ import { ref, computed } from '@vue/reactivity'
 import { onMounted, watch } from '@vue/runtime-core'
 
 const entries = [] as any
-// Constants
+// Constants. TODO: Pull these from the orders instead of hardcoding.
 const YES_SEED = 1
 const NO_SEED = 9
 // Regular variables
