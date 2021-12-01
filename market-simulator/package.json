@@ -7,6 +7,7 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "chart.js": "^3.6.1",
     "daisyui": "^1.16.0",
     "firebase": "^9.4.1",
     "vue": "^3.2.16"
