@@ -29,7 +29,15 @@
           <tbody>
             <tr v-for="(entry, i) in entries">
               <th>{{ i + 1 }}</th>
-              <template v-if="entry.yesBid">
+              <template v-if="entry.yesBid && entry.noBid">
+                <td><div class="badge">SEED</div></td>
+                <td>{{ entry.yesBid }} / {{ entry.noBid }}</td>
+                <td>N/A</td>
+                <td>{{ entry.prob.toFixed(2) }}</td>
+                <td>N/A</td>
+                <td>N/A</td>
+              </template>
+              <template v-else-if="entry.yesBid">
                 <td><div class="badge badge-success">YES</div></td>
                 <td>{{ entry.yesBid }}</td>
                 <td>{{ entry.yesWeight.toFixed(2) }}</td>
