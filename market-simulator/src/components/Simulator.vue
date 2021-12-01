@@ -20,6 +20,8 @@
           <th>Implied Probability</th>
           <th>Yes Payout</th>
           <th>No Payout</th>
+          <th>Yes Return</th>
+          <th>No Return</th>
         </tr>
       </thead>
       <tbody>
@@ -29,9 +31,11 @@
           <td>{{ entry.noBid || '' }}</td>
           <td>{{ entry.yesWeight.toFixed(2) || '' }}</td>
           <td>{{ entry.noWeight.toFixed(2) || '' }}</td>
-          <td>{{ entry.prob.toFixed(2) }}</td>
-          <td>{{ entry.yesPayout.value.toFixed(2) }}</td>
-          <td>{{ entry.noPayout.value.toFixed(2) }}</td>
+          <td>{{ entry.prob.toFixed(2) || '' }}</td>
+          <td>{{ entry.yesPayout.value.toFixed(2) || '' }}</td>
+          <td>{{ entry.noPayout.value.toFixed(2) || '' }}</td>
+          <td>{{ (entry.yesReturn.value * 100).toFixed(2) || '' }}%</td>
+          <td>{{ (entry.noReturn.value * 100).toFixed(2) || '' }}%</td>
         </tr>
       </tbody>
     </table>
@@ -87,6 +91,9 @@ for (const bid of bids) {
     () => noBid + (noWeight / noWeightsC.value) * (yesPotC.value - YES_SEED)
   )
 
+  const yesReturn = computed(() => (yesPayout.value - yesBid) / yesBid)
+  const noReturn = computed(() => (noPayout.value - noBid) / noBid)
+
   entries.push({
     yesBid,
     noBid,
@@ -94,9 +101,10 @@ for (const bid of bids) {
     yesWeight: yesWeight,
     noWeight: noWeight,
     prob: prob,
-    // These are reactive, so fix decimal places in HTML template
     yesPayout,
     noPayout,
+    yesReturn,
+    noReturn,
   })
 }
 </script>
