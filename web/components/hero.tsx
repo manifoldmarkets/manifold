@@ -11,7 +11,9 @@ const navigation = [
 
 export const Hero = () => {
   return (
-    <div className="relative overflow-hidden h-screen bg-gray-900">
+    <div className="relative overflow-hidden h-screen bg-world-trading bg-cover ">
+	  {/* <div className="absolute w-full h-full overflow-hidden bg-world-trading bg-cover bg-gray-900 z--1" /> */}
+
       <Popover as="header" className="relative">
         <div className="pt-6">
           <nav
@@ -21,19 +23,19 @@ export const Hero = () => {
             <div className="flex items-center flex-1">
               <div className="flex items-center justify-between w-full md:w-auto">
                 <a href="#">
-                  <span className="sr-only">Workflow</span>
+                  <span className="sr-only">Mantic Markets</span>
                   <img
                     className="h-8 w-auto sm:h-10"
                     src="/logo.png"
                     alt=""
                   />
                 </a>
-                <div className="-mr-2 flex items-center md:hidden">
+                {/* <div className="-mr-2 flex items-center md:hidden">
                   <Popover.Button className="bg-gray-900 rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:bg-gray-800 focus:outline-none focus:ring-2 focus-ring-inset focus:ring-white">
                     <span className="sr-only">Open main menu</span>
                     <MenuIcon className="h-6 w-6" aria-hidden="true" />
                   </Popover.Button>
-                </div>
+                </div> */}
               </div>
               {/* <div className="hidden space-x-8 md:flex md:ml-10">
                 {navigation.map((item) => (
@@ -77,7 +79,7 @@ export const Hero = () => {
                   />
                 </div>
                 <div className="-mr-2">
-                  <Popover.Button className="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-600">
+                  <Popover.Button className="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-green-600">
                     <span className="sr-only">Close menu</span>
                     <XIcon className="h-6 w-6" aria-hidden="true" />
                   </Popover.Button>
@@ -98,7 +100,7 @@ export const Hero = () => {
                 <div className="mt-6 px-5">
                   <a
                     href="#"
-                    className="block text-center w-full py-3 px-4 rounded-md shadow bg-indigo-600 text-white font-medium hover:bg-indigo-700"
+                    className="block text-center w-full py-3 px-4 rounded-md shadow bg-green-600 text-white font-medium hover:bg-green-700"
                   >
                     Start free trial
                   </a>
@@ -135,7 +137,7 @@ export const Hero = () => {
                   </a> */}
                   <h1 className="mt-4 text-4xl tracking-tight font-extrabold text-white sm:mt-5 sm:text-6xl lg:mt-6 xl:text-6xl">
                     <span className="block">Create your own</span>
-                    <span className="block text-indigo-400">prediction markets</span>
+                    <span className="block text-green-400">prediction markets</span>
                   </h1>
                   <p className="mt-3 text-base text-gray-300 sm:mt-5 sm:text-xl lg:text-lg xl:text-xl">
 					  Create and resolve your own prediction markets to earn a percent of the bet volume. Powered by Solana smart contracts.
@@ -151,13 +153,13 @@ export const Hero = () => {
                             id="email"
                             type="email"
                             placeholder="Enter your email"
-                            className="block w-full px-4 py-3 rounded-md border-0 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300 focus:ring-offset-gray-900"
+                            className="block w-full px-4 py-3 rounded-md border-0 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-300 focus:ring-offset-gray-900"
                           />
                         </div>
                         <div className="mt-3 sm:mt-0 sm:ml-3">
                           <button
                             type="submit"
-                            className="block w-full py-3 px-4 rounded-md shadow bg-indigo-500 text-white font-medium hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300 focus:ring-offset-gray-900"
+                            className="block w-full py-3 px-4 rounded-md shadow bg-green-500 text-white font-medium hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-300 focus:ring-offset-gray-900"
                           >
                             Keep me updated
                           </button>
@@ -175,16 +177,15 @@ export const Hero = () => {
                   </div>
                 </div>
               </div>
-              <div className="mt-12 -mb-16 sm:-mb-48 lg:m-0 lg:relative">
+              {/* <div className="mt-12 -mb-16 sm:-mb-48 lg:m-0 lg:relative">
                 <div className="mx-auto max-w-md px-4 sm:max-w-2xl sm:px-6 lg:max-w-none lg:px-0">
-                  {/* Illustration taken from Lucid Illustrations: https://lucid.pixsellz.io/ */}
                   <img
                     className="w-full lg:absolute lg:inset-y-0 lg:left-0 lg:h-full lg:w-auto lg:max-w-none"
-                    src="https://tailwindui.com/img/component-images/cloud-illustration-indigo-400.svg"
+                    src="/world-trading-background.jpg"
                     alt=""
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
