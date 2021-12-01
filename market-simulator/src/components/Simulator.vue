@@ -1,5 +1,14 @@
 <template>
   <div class="overflow-x-auto px-12">
+    <label>Simulation step: {{ steps }} </label>
+    <input
+      class="range"
+      type="range"
+      v-model="steps"
+      min="1"
+      :max="entries.length"
+    />
+
     <table class="table">
       <thead>
         <tr>
@@ -14,13 +23,13 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(entry, i) in entries">
+        <tr v-for="(entry, i) in truncatedEntries">
           <th>{{ i + 1 }}</th>
           <td>{{ entry.yesBid || '' }}</td>
           <td>{{ entry.noBid || '' }}</td>
-          <td>{{ entry.yesWeight || '' }}</td>
-          <td>{{ entry.noWeight || '' }}</td>
-          <td>{{ entry.prob }}</td>
+          <td>{{ entry.yesWeight.toFixed(2) || '' }}</td>
+          <td>{{ entry.noWeight.toFixed(2) || '' }}</td>
+          <td>{{ entry.prob.toFixed(2) }}</td>
           <td>{{ entry.yesPayout.value.toFixed(2) }}</td>
           <td>{{ entry.noPayout.value.toFixed(2) }}</td>
         </tr>
@@ -40,11 +49,23 @@ const NO_SEED = 9
 // Regular variables
 let yesPot = 0
 let noPot = 0
-// Reactive variables
-const yesPotRef = ref(0)
-const noPotRef = ref(0)
-const yesWeightsRef = ref(0)
-const noWeightsRef = ref(0)
+// UI parameters
+const steps = ref(10)
+
+// Computed variables: stop the simulation at the appropriate number of steps
+const truncatedEntries = computed(() => entries.slice(0, steps.value))
+const yesPotC = computed(() =>
+  truncatedEntries.value.reduce((acc, entry) => acc + entry.yesBid, 0)
+)
+const noPotC = computed(() =>
+  truncatedEntries.value.reduce((acc, entry) => acc + entry.noBid, 0)
+)
+const yesWeightsC = computed(() =>
+  truncatedEntries.value.reduce((acc, entry) => acc + entry.yesWeight, 0)
+)
+const noWeightsC = computed(() =>
+  truncatedEntries.value.reduce((acc, entry) => acc + entry.noWeight, 0)
+)
 
 // Calculations:
 for (const bid of bids) {
@@ -59,29 +80,23 @@ for (const bid of bids) {
 
   // Payout: You get your initial bid back, as well as your share of the
   // (noPot - seed) according to your yesWeight
-  yesWeightsRef.value += yesWeight
-  noWeightsRef.value += noWeight
   const yesPayout = computed(
-    () =>
-      yesBid + (yesWeight / yesWeightsRef.value) * (noPotRef.value - NO_SEED)
+    () => yesBid + (yesWeight / yesWeightsC.value) * (noPotC.value - NO_SEED)
   )
   const noPayout = computed(
-    () => noBid + (noWeight / noWeightsRef.value) * (yesPotRef.value - YES_SEED)
+    () => noBid + (noWeight / noWeightsC.value) * (yesPotC.value - YES_SEED)
   )
 
   entries.push({
     yesBid,
     noBid,
     // Show two decimal places
-    yesWeight: yesWeight.toFixed(2),
-    noWeight: noWeight.toFixed(2),
-    prob: prob.toFixed(2),
+    yesWeight: yesWeight,
+    noWeight: noWeight,
+    prob: prob,
     // These are reactive, so fix decimal places in HTML template
     yesPayout,
     noPayout,
   })
 }
-
-yesPotRef.value = yesPot
-noPotRef.value = noPot
 </script>
