@@ -6,7 +6,7 @@
       type="range"
       v-model.number="steps"
       min="1"
-      :max="entries.length"
+      :max="allEntries.length"
     />
     <!-- Two-column layout (on large screen sizes) -->
     <div class="grid grid-cols-1 lg:grid-cols-2">
@@ -27,23 +27,23 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(entry, i) in truncatedEntries">
+            <tr v-for="(entry, i) in entries">
               <th>{{ i + 1 }}</th>
               <template v-if="entry.yesBid">
                 <td><div class="badge badge-success">YES</div></td>
                 <td>{{ entry.yesBid }}</td>
-                <td>{{ entry.yesWeight.toFixed(2) || '' }}</td>
-                <td>{{ entry.prob.toFixed(2) || '' }}</td>
-                <td>{{ entry.yesPayout.value.toFixed(2) || '' }}</td>
-                <td>{{ (entry.yesReturn.value * 100).toFixed(2) || '' }}%</td>
+                <td>{{ entry.yesWeight.toFixed(2) }}</td>
+                <td>{{ entry.prob.toFixed(2) }}</td>
+                <td>{{ entry.yesPayout.value.toFixed(2) }}</td>
+                <td>{{ (entry.yesReturn.value * 100).toFixed(2) }}%</td>
               </template>
               <template v-else>
                 <td><div class="badge badge-error">NO</div></td>
                 <td>{{ entry.noBid }}</td>
-                <td>{{ entry.noWeight.toFixed(2) || '' }}</td>
-                <td>{{ entry.prob.toFixed(2) || '' }}</td>
-                <td>{{ entry.noPayout.value.toFixed(2) || '' }}</td>
-                <td>{{ (entry.noReturn.value * 100).toFixed(2) || '' }}%</td>
+                <td>{{ entry.noWeight.toFixed(2) }}</td>
+                <td>{{ entry.prob.toFixed(2) }}</td>
+                <td>{{ entry.noPayout.value.toFixed(2) }}</td>
+                <td>{{ (entry.noReturn.value * 100).toFixed(2) }}%</td>
               </template>
             </tr>
           </tbody>
@@ -59,7 +59,7 @@ import { bids } from './orders'
 import { ref, computed } from '@vue/reactivity'
 import { onMounted, watch } from '@vue/runtime-core'
 
-const entries = [] as any
+const allEntries = [] as any
 // Constants. TODO: Pull these from the orders instead of hardcoding.
 const YES_SEED = 1
 const NO_SEED = 9
@@ -70,18 +70,18 @@ let noPot = 0
 const steps = ref(10)
 
 // Computed variables: stop the simulation at the appropriate number of steps
-const truncatedEntries = computed(() => entries.slice(0, steps.value))
+const entries = computed(() => allEntries.slice(0, steps.value))
 const yesPotC = computed(() =>
-  truncatedEntries.value.reduce((acc, entry) => acc + entry.yesBid, 0)
+  entries.value.reduce((acc, entry) => acc + entry.yesBid, 0)
 )
 const noPotC = computed(() =>
-  truncatedEntries.value.reduce((acc, entry) => acc + entry.noBid, 0)
+  entries.value.reduce((acc, entry) => acc + entry.noBid, 0)
 )
 const yesWeightsC = computed(() =>
-  truncatedEntries.value.reduce((acc, entry) => acc + entry.yesWeight, 0)
+  entries.value.reduce((acc, entry) => acc + entry.yesWeight, 0)
 )
 const noWeightsC = computed(() =>
-  truncatedEntries.value.reduce((acc, entry) => acc + entry.noWeight, 0)
+  entries.value.reduce((acc, entry) => acc + entry.noWeight, 0)
 )
 
 // Calculations:
@@ -107,13 +107,13 @@ for (const bid of bids) {
   const yesReturn = computed(() => (yesPayout.value - yesBid) / yesBid)
   const noReturn = computed(() => (noPayout.value - noBid) / noBid)
 
-  entries.push({
+  allEntries.push({
     yesBid,
     noBid,
     // Show two decimal places
-    yesWeight: yesWeight,
-    noWeight: noWeight,
-    prob: prob,
+    yesWeight,
+    noWeight,
+    prob,
     yesPayout,
     noPayout,
     yesReturn,
@@ -122,7 +122,7 @@ for (const bid of bids) {
 }
 
 // Graph the probabilities over time
-const probs = computed(() => truncatedEntries.value.map((entry) => entry.prob))
+const probs = computed(() => entries.value.map((entry) => entry.prob))
 
 onMounted(initChart)
 watch(steps, renderChart)
