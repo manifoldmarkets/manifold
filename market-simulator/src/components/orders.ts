@@ -43,7 +43,8 @@ const data = `1,9
 10,
 ,10
 10,
-,10`
+,10
+10,`
 
 // Parse data into Yes/No orders
 // E.g. `8,\n,1\n1,` =>

@@ -21,8 +21,8 @@
           <td>{{ entry.yesWeight || '' }}</td>
           <td>{{ entry.noWeight || '' }}</td>
           <td>{{ entry.prob }}</td>
-          <td>{{ entry.yesPayout }}</td>
-          <td>{{ entry.noPayout }}</td>
+          <td>{{ entry.yesPayout.value.toFixed(2) }}</td>
+          <td>{{ entry.noPayout.value.toFixed(2) }}</td>
         </tr>
       </tbody>
     </table>
@@ -31,14 +31,22 @@
 
 <script setup lang="ts">
 import { bids } from './orders'
+import { ref, computed } from '@vue/reactivity'
 
 const entries = [] as any
+// Constants
 const YES_SEED = 1
 const NO_SEED = 9
+// Regular variables
 let yesPot = 0
 let noPot = 0
-let yesWeightSum = 0
-let noWeightSum = 0
+// Reactive variables
+const yesPotRef = ref(0)
+const noPotRef = ref(0)
+const yesWeightsRef = ref(0)
+const noWeightsRef = ref(0)
+
+// Calculations:
 for (const bid of bids) {
   const { yesBid, noBid } = bid
   const yesWeight = noPot * (Math.log(yesBid + yesPot) - Math.log(yesPot)) || 0
@@ -51,12 +59,15 @@ for (const bid of bids) {
 
   // Payout: You get your initial bid back, as well as your share of the
   // (noPot - seed) according to your yesWeight
-  yesWeightSum += yesWeight
-  noWeightSum += noWeight
-  // This only represents the payout if the market were to close immediately.
-  // TODO: use refs to reactively update the payout
-  const yesPayout = yesBid + (yesWeight / yesWeightSum) * (noPot - NO_SEED)
-  const noPayout = noBid + (noWeight / noWeightSum) * (yesPot - YES_SEED)
+  yesWeightsRef.value += yesWeight
+  noWeightsRef.value += noWeight
+  const yesPayout = computed(
+    () =>
+      yesBid + (yesWeight / yesWeightsRef.value) * (noPotRef.value - NO_SEED)
+  )
+  const noPayout = computed(
+    () => noBid + (noWeight / noWeightsRef.value) * (yesPotRef.value - YES_SEED)
+  )
 
   entries.push({
     yesBid,
@@ -65,8 +76,12 @@ for (const bid of bids) {
     yesWeight: yesWeight.toFixed(2),
     noWeight: noWeight.toFixed(2),
     prob: prob.toFixed(2),
-    yesPayout: yesPayout.toFixed(2),
-    noPayout: noPayout.toFixed(2),
+    // These are reactive, so fix decimal places in HTML template
+    yesPayout,
+    noPayout,
   })
 }
+
+yesPotRef.value = yesPot
+noPotRef.value = noPot
 </script>
