@@ -4,47 +4,56 @@
     <input
       class="range"
       type="range"
-      v-model="steps"
+      v-model.number="steps"
       min="1"
       :max="entries.length"
     />
-
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Order #</th>
-          <th>Yes bid</th>
-          <th>No Bid</th>
-          <th>Yes Weight</th>
-          <th>No Weight</th>
-          <th>Implied Probability</th>
-          <th>Yes Payout</th>
-          <th>No Payout</th>
-          <th>Yes Return</th>
-          <th>No Return</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(entry, i) in truncatedEntries">
-          <th>{{ i + 1 }}</th>
-          <td>{{ entry.yesBid || '' }}</td>
-          <td>{{ entry.noBid || '' }}</td>
-          <td>{{ entry.yesWeight.toFixed(2) || '' }}</td>
-          <td>{{ entry.noWeight.toFixed(2) || '' }}</td>
-          <td>{{ entry.prob.toFixed(2) || '' }}</td>
-          <td>{{ entry.yesPayout.value.toFixed(2) || '' }}</td>
-          <td>{{ entry.noPayout.value.toFixed(2) || '' }}</td>
-          <td>{{ (entry.yesReturn.value * 100).toFixed(2) || '' }}%</td>
-          <td>{{ (entry.noReturn.value * 100).toFixed(2) || '' }}%</td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- Two-column layout (on large screen sizes) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2">
+      <div>
+        <canvas id="simChart" width="400" height="400"></canvas>
+      </div>
+      <div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Yes bid</th>
+              <th>No Bid</th>
+              <th>Yes Weight</th>
+              <th>No Weight</th>
+              <th>Implied Probability</th>
+              <th>Yes Payout</th>
+              <th>No Payout</th>
+              <th>Yes Return</th>
+              <th>No Return</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(entry, i) in truncatedEntries">
+              <th>{{ i + 1 }}</th>
+              <td>{{ entry.yesBid || '' }}</td>
+              <td>{{ entry.noBid || '' }}</td>
+              <td>{{ entry.yesWeight.toFixed(2) || '' }}</td>
+              <td>{{ entry.noWeight.toFixed(2) || '' }}</td>
+              <td>{{ entry.prob.toFixed(2) || '' }}</td>
+              <td>{{ entry.yesPayout.value.toFixed(2) || '' }}</td>
+              <td>{{ entry.noPayout.value.toFixed(2) || '' }}</td>
+              <td>{{ (entry.yesReturn.value * 100).toFixed(2) || '' }}%</td>
+              <td>{{ (entry.noReturn.value * 100).toFixed(2) || '' }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Chart from 'chart.js/auto'
 import { bids } from './orders'
 import { ref, computed } from '@vue/reactivity'
+import { onMounted, watch } from '@vue/runtime-core'
 
 const entries = [] as any
 // Constants
@@ -106,5 +115,35 @@ for (const bid of bids) {
     yesReturn,
     noReturn,
   })
+}
+
+// Graph the probabilities over time
+const probs = computed(() => truncatedEntries.value.map((entry) => entry.prob))
+
+onMounted(initChart)
+watch(steps, renderChart)
+
+let chart: Chart
+function initChart() {
+  const ctx = document.getElementById('simChart')
+  chart = new Chart(ctx as any, {
+    type: 'line',
+    data: {
+      labels: [...Array(steps.value).keys()],
+      datasets: [
+        {
+          label: 'Implied probability',
+          data: probs.value,
+          borderColor: 'rgb(75, 192, 192)',
+        },
+      ],
+    },
+  })
+}
+
+function renderChart() {
+  chart.data.labels = [...Array(steps.value).keys()]
+  chart.data.datasets[0].data = probs.value
+  chart.update()
 }
 </script>
