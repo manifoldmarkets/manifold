@@ -202,7 +202,7 @@ const NetilfyForm = (props: {
 	const { children, ...other } = props
 
 	return (
-		<form {...{ netlify: '' }} {...other as any}>
+		<form {...{ netlify: 'true' }} {...other as any}>
 			{children}
 		</form>
 	)
