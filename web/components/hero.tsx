@@ -1,15 +1,18 @@
-import { Popover } from '@headlessui/react'
-import { ConvertKitEmailForm } from './convert-kit-email-form'
+import { Popover } from "@headlessui/react";
+import { ConvertKitEmailForm } from "./convert-kit-email-form";
 
 const navigation = [
-	{ name: 'About', href: 'https://mantic.notion.site/About-Mantic-Markets-09bdde9044614e62a27477b4b1bf77ea' },
-	{ name: 'Simulator', href: 'https://simulator.mantic.markets' },
-  ]
+  {
+    name: "About",
+    href: "https://mantic.notion.site/About-Mantic-Markets-09bdde9044614e62a27477b4b1bf77ea",
+  },
+  { name: "Simulator", href: "https://simulator.mantic.markets" },
+];
 
 export const Hero = () => {
   return (
     <div className="relative overflow-hidden h-screen bg-world-trading bg-cover bg-gray-900">
-	  {/* <div className="absolute w-full h-full overflow-hidden bg-world-trading bg-cover bg-gray-900 z--1" /> */}
+      {/* <div className="absolute w-full h-full overflow-hidden bg-world-trading bg-cover bg-gray-900 z--1" /> */}
 
       <Popover as="header" className="relative">
         <div className="pt-6">
@@ -19,15 +22,27 @@ export const Hero = () => {
           >
             <div className="flex items-center flex-1">
               <div className="flex items-center justify-between w-full md:w-auto">
-                <a href="#" className="inline-grid grid-flow-col align-items-center h-6 sm:h-10">
-				          <img className="w-auto h-6 sm:h-10 inline-block mr-3" src="/logo-icon.svg" />
-                  <span className="text-white font-major-mono lowercase sm:text-2xl my-auto">Mantic Markets</span>
+                <a
+                  href="#"
+                  className="inline-grid grid-flow-col align-items-center h-6 sm:h-10"
+                >
+                  <img
+                    className="w-auto h-6 sm:h-10 inline-block mr-3"
+                    src="/logo-icon.svg"
+                  />
+                  <span className="text-white font-major-mono lowercase sm:text-2xl my-auto">
+                    Mantic Markets
+                  </span>
                 </a>
               </div>
-			  
+
               <div className="space-x-8 md:flex md:ml-16">
                 {navigation.map((item) => (
-                  <a key={item.name} href={item.href} className="text-base font-medium text-white hover:text-gray-300">
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="text-base font-medium text-white hover:text-gray-300"
+                  >
                     {item.name}
                   </a>
                 ))}
@@ -45,13 +60,16 @@ export const Hero = () => {
                 <div className="lg:py-24">
                   <h1 className="mt-4 text-4xl tracking-tight font-extrabold text-white sm:mt-5 sm:text-6xl lg:mt-6 xl:text-6xl">
                     <span className="block">Create your own</span>
-                    <span className="block text-green-400">prediction markets</span>
+                    <span className="block text-green-400">
+                      prediction markets
+                    </span>
                   </h1>
                   <p className="mt-3 text-base text-gray-300 sm:mt-5 sm:text-xl lg:text-lg xl:text-xl">
-					  Create and resolve your own prediction markets to earn a percent of the bet volume. Powered by Solana.
+                    Create and resolve your own prediction markets to earn a
+                    percent of the bet volume. Powered by Solana.
                   </p>
                   <div className="mt-10 sm:mt-12">
-					<ConvertKitEmailForm /> 
+                    <ConvertKitEmailForm />
                   </div>
                 </div>
               </div>
@@ -59,7 +77,6 @@ export const Hero = () => {
           </div>
         </div>
       </main>
-
     </div>
-  )
-}
+  );
+};
