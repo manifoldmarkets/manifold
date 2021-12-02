@@ -20,15 +20,10 @@ export const Hero = () => {
             <div className="flex items-center flex-1">
               <div className="flex items-center justify-between w-full md:w-auto">
                 <a href="#">
-                  <span className="sr-only">Mantic Markets</span>
-                  <img
-                    className="h-8 w-auto sm:h-10"
-                    src="/logo.png"
-                    alt=""
-                  />
+                  <span className="text-white font-mono">Mantic Markets</span>
                 </a>
               </div>
-              <div className="hidden space-x-8 md:flex md:ml-10">
+              <div className="space-x-8 md:flex md:ml-10">
                 {navigation.map((item) => (
                   <a key={item.name} href={item.href} className="text-base font-medium text-white hover:text-gray-300">
                     {item.name}
