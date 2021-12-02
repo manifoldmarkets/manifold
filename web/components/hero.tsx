@@ -143,7 +143,7 @@ export const Hero = () => {
 					  Create and resolve your own prediction markets to earn a percent of the bet volume. Powered by Solana.
                   </p>
                   <div className="mt-10 sm:mt-12">
-                    <NetilfyForm name="contact" className="sm:max-w-xl sm:mx-auto lg:mx-0">
+                    <NetilfyForm method="POST" name="contact" className="sm:max-w-xl sm:mx-auto lg:mx-0">
                       <div className="sm:flex">
                         <div className="min-w-0 flex-1">
                           <label htmlFor="email" className="sr-only">
