@@ -8,6 +8,6 @@
 
 ## Formatting
 
-Before committing, run `npx prettier --write . `
+Before committing, run `npm run format` to format your code.
 
 Recommended: Use a [Prettier editor integration](https://prettier.io/docs/en/editors.html) to automatically format on save
