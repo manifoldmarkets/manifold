@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-x-auto px-12">
+  <div class="overflow-x-auto px-12 mt-8">
     <!-- Two-column layout (on large screen sizes) -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <!-- Left column -->
@@ -124,6 +124,13 @@
 <style scoped>
 .clickable {
   cursor: pointer;
+}
+
+div {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
 }
 </style>
 
