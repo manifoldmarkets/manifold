@@ -1,7 +1,7 @@
 type Bid = { yesBid: number; noBid: number }
 
 // An entry has a yes/no for bid, weight, payout, return. Also a current probability
-type Entry = {
+export type Entry = {
   yesBid: number
   noBid: number
   yesWeight: number
