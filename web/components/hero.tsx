@@ -1,11 +1,14 @@
-import { Fragment } from 'react'
-import { Popover, Transition } from '@headlessui/react'
-import { XIcon } from '@heroicons/react/outline'
+import { Popover } from '@headlessui/react'
 import { ConvertKitEmailForm } from './convert-kit-email-form'
+
+const navigation = [
+	{ name: 'About', href: '#' },
+	{ name: 'Simulator', href: 'https://simulator.mantic.markets' },
+  ]
 
 export const Hero = () => {
   return (
-    <div className="relative overflow-hidden h-screen bg-world-trading bg-cover ">
+    <div className="relative overflow-hidden h-screen bg-world-trading bg-cover">
 	  {/* <div className="absolute w-full h-full overflow-hidden bg-world-trading bg-cover bg-gray-900 z--1" /> */}
 
       <Popover as="header" className="relative">
@@ -25,39 +28,16 @@ export const Hero = () => {
                   />
                 </a>
               </div>
+              <div className="hidden space-x-8 md:flex md:ml-10">
+                {navigation.map((item) => (
+                  <a key={item.name} href={item.href} className="text-base font-medium text-white hover:text-gray-300">
+                    {item.name}
+                  </a>
+                ))}
+              </div>
             </div>
           </nav>
         </div>
-
-        <Transition
-          as={Fragment}
-          enter="duration-150 ease-out"
-          enterFrom="opacity-0 scale-95"
-          enterTo="opacity-100 scale-100"
-          leave="duration-100 ease-in"
-          leaveFrom="opacity-100 scale-100"
-          leaveTo="opacity-0 scale-95"
-        >
-          <Popover.Panel focus className="absolute z-10 top-0 inset-x-0 p-2 transition transform origin-top md:hidden">
-            <div className="rounded-lg shadow-md bg-white ring-1 ring-black ring-opacity-5 overflow-hidden">
-              <div className="px-5 pt-4 flex items-center justify-between">
-                <div>
-                  <img
-                    className="h-8 w-auto"
-                    src="https://tailwindui.com/img/logos/workflow-mark-indigo-600.svg"
-                    alt=""
-                  />
-                </div>
-                <div className="-mr-2">
-                  <Popover.Button className="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-green-600">
-                    <span className="sr-only">Close menu</span>
-                    <XIcon className="h-6 w-6" aria-hidden="true" />
-                  </Popover.Button>
-                </div>
-              </div>
-            </div>
-          </Popover.Panel>
-        </Transition>
       </Popover>
 
       <main>
@@ -81,8 +61,8 @@ export const Hero = () => {
             </div>
           </div>
         </div>
-
       </main>
+
     </div>
   )
 }
