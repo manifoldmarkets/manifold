@@ -14,8 +14,15 @@
   >
     <div class="flex items-center flex-1">
       <div class="flex items-center justify-between w-full md:w-auto">
-        <a href="#">
-          <span class="text-white font-mono">Mantic Markets</span>
+        <a
+          href="https://mantic.markets"
+          class="inline-grid grid-flow-col align-items-center h-6 sm:h-10"
+        >
+          <img
+            class="w-auto h-6 sm:h-10 inline-block mr-3"
+            src="/logo-icon.svg"
+          />
+          <span class="text-white font-logo">Mantic Markets</span>
         </a>
       </div>
       <div class="space-x-8 md:flex md:ml-10">
@@ -37,3 +44,13 @@
     </div>
   </nav>
 </template>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap');
+
+.font-logo {
+  font-family: 'Major Mono Display', monospace;
+  text-transform: lowercase;
+  font-size: 1.5rem;
+}
+</style>
