@@ -140,10 +140,10 @@ export const Hero = () => {
                     <span className="block text-green-400">prediction markets</span>
                   </h1>
                   <p className="mt-3 text-base text-gray-300 sm:mt-5 sm:text-xl lg:text-lg xl:text-xl">
-					  Create and resolve your own prediction markets to earn a percent of the bet volume. Powered by Solana smart contracts.
+					  Create and resolve your own prediction markets to earn a percent of the bet volume. Powered by Solana.
                   </p>
                   <div className="mt-10 sm:mt-12">
-                    <form action="#" className="sm:max-w-xl sm:mx-auto lg:mx-0">
+                    <NetilfyForm name="contact" className="sm:max-w-xl sm:mx-auto lg:mx-0">
                       <div className="sm:flex">
                         <div className="min-w-0 flex-1">
                           <label htmlFor="email" className="sr-only">
@@ -152,6 +152,7 @@ export const Hero = () => {
                           <input
                             id="email"
                             type="email"
+							name="email"
                             placeholder="Enter your email"
                             className="block w-full px-4 py-3 rounded-md border-0 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-300 focus:ring-offset-gray-900"
                           />
@@ -173,7 +174,7 @@ export const Hero = () => {
                         </a>
                         .
                       </p> */}
-                    </form>
+                    </NetilfyForm>
                   </div>
                 </div>
               </div>
@@ -193,4 +194,16 @@ export const Hero = () => {
       </main>
     </div>
   )
+}
+
+const NetilfyForm = (props: {
+	children: any
+} & Partial<Omit<HTMLFormElement, 'children'>>) => {
+	const { children, ...other } = props
+
+	return (
+		<form {...{ netlify: '' }} {...other as any}>
+			{children}
+		</form>
+	)
 }
