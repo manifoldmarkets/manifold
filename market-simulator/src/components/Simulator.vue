@@ -58,14 +58,16 @@
                   placeholder="0"
                   class="input input-bordered"
                   @focus="$event.target.select()"
+                  @keyup.enter="submitBid"
                 />
               </td>
-              <td>X</td>
-              <td>X</td>
-              <td>X</td>
-              <td>X</td>
+              <EntryRow :entry="nextEntry" />
               <td>
-                <button class="btn btn-primary" @click="submitBid">
+                <button
+                  class="btn btn-primary"
+                  :disabled="newBid <= 0"
+                  @click="submitBid"
+                >
                   Submit
                 </button>
               </td>
@@ -92,27 +94,16 @@
               <template v-if="entry.yesBid && entry.noBid">
                 <td><div class="badge">SEED</div></td>
                 <td>{{ entry.yesBid }} / {{ entry.noBid }}</td>
-                <td>N/A</td>
-                <td>{{ entry.prob.toFixed(2) }}</td>
-                <td>N/A</td>
-                <td>N/A</td>
               </template>
               <template v-else-if="entry.yesBid">
                 <td><div class="badge badge-success">YES</div></td>
                 <td>{{ entry.yesBid }}</td>
-                <td>{{ entry.yesWeight.toFixed(2) }}</td>
-                <td>{{ entry.prob.toFixed(2) }}</td>
-                <td>{{ entry.yesPayout.toFixed(2) }}</td>
-                <td>{{ (entry.yesReturn * 100).toFixed(2) }}%</td>
               </template>
               <template v-else>
                 <td><div class="badge badge-error">NO</div></td>
                 <td>{{ entry.noBid }}</td>
-                <td>{{ entry.noWeight.toFixed(2) }}</td>
-                <td>{{ entry.prob.toFixed(2) }}</td>
-                <td>{{ entry.noPayout.toFixed(2) }}</td>
-                <td>{{ (entry.noReturn * 100).toFixed(2) }}%</td>
               </template>
+              <EntryRow :entry="entry" />
             </tr>
           </tbody>
         </table>
@@ -142,6 +133,7 @@ import { bids as sampleBids } from './sample-bids'
 import { makeEntries } from './entries'
 import { ref, computed } from '@vue/reactivity'
 import { onMounted, watch } from '@vue/runtime-core'
+import EntryRow from './EntryRow.vue'
 
 // Copy over the sample bids to seed the simulation
 const bids = sampleBids.slice()
@@ -197,12 +189,29 @@ function toggleBidType() {
   newBidType.value = newBidType.value === 'YES' ? 'NO' : 'YES'
 }
 
-function submitBid() {
-  const bid = {
+function makeBid(type: string, bid: number) {
+  return {
     yesBid: newBidType.value == 'YES' ? newBid.value : 0,
     noBid: newBidType.value == 'YES' ? 0 : newBid.value,
   }
+}
+
+function submitBid() {
+  if (newBid.value <= 0) return
+  const bid = makeBid(newBidType.value, newBid.value)
   bids.splice(steps.value, 0, bid)
   steps.value++
+  newBid.value = 0
 }
+
+// Preview the next bid before it's added
+const nextEntry = computed(() => {
+  if (newBid.value) {
+    const nextBid = makeBid(newBidType.value, newBid.value)
+    const fakeBids = [...bids.slice(0, steps.value), nextBid]
+    const entries = makeEntries(fakeBids)
+    return entries[entries.length - 1]
+  }
+  return null
+})
 </script>
