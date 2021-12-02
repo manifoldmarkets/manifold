@@ -1,21 +1,24 @@
 <template>
   <div class="overflow-x-auto px-12">
-    <label>Simulation step: {{ steps }} </label>
-    <input
-      class="range"
-      type="range"
-      v-model.number="steps"
-      min="1"
-      :max="bids.length"
-    />
     <!-- Two-column layout (on large screen sizes) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <!-- Left column -->
       <div>
-        <canvas id="simChart" width="400" height="400"></canvas>
-      </div>
-      <div>
+        <h1 class="text-2xl font-bold text-gray-600 mb-8">
+          Dynamic Parimutuel Market Simulator
+        </h1>
+
+        <label>Simulation step: {{ steps }} </label>
+        <input
+          class="range"
+          type="range"
+          v-model.number="steps"
+          min="1"
+          :max="bids.length"
+        />
+
         <!-- Table to enter a new bid -->
-        <table class="table table-compact my-8">
+        <table class="table table-compact my-8 w-full">
           <thead>
             <tr>
               <th>Order #</th>
@@ -71,7 +74,7 @@
         </table>
 
         <!-- List of historical bids -->
-        <table class="table table-compact">
+        <table class="table table-compact w-full">
           <thead>
             <tr>
               <th>Order #</th>
@@ -113,6 +116,15 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Right column -->
+      <div>
+        <h1 class="text-2xl font-bold text-gray-600 mb-8">
+          Probability of
+          <div class="badge badge-success text-2xl h-8 w-18">YES</div>
+        </h1>
+        <canvas id="simChart" width="400" height="400"></canvas>
       </div>
     </div>
   </div>
@@ -160,6 +172,13 @@ function initChart() {
           borderColor: 'rgb(75, 192, 192)',
         },
       ],
+    },
+    options: {
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
     },
   })
 }
