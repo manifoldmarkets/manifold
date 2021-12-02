@@ -2,7 +2,7 @@ import { Popover } from '@headlessui/react'
 import { ConvertKitEmailForm } from './convert-kit-email-form'
 
 const navigation = [
-	{ name: 'About', href: '#' },
+	{ name: 'About', href: 'https://mantic.notion.site/About-Mantic-Markets-09bdde9044614e62a27477b4b1bf77ea' },
 	{ name: 'Simulator', href: 'https://simulator.mantic.markets' },
   ]
 
