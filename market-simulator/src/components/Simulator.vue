@@ -9,12 +9,69 @@
       :max="bids.length"
     />
     <!-- Two-column layout (on large screen sizes) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div>
         <canvas id="simChart" width="400" height="400"></canvas>
       </div>
       <div>
-        <table class="table">
+        <!-- Table to enter a new bid -->
+        <table class="table table-compact my-8">
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Type</th>
+              <th>Bid</th>
+              <th>Weight</th>
+              <th>Probability</th>
+              <th>Payout</th>
+              <th>Return</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>{{ steps + 1 }}</th>
+              <td>
+                <div
+                  @click="toggleBidType"
+                  class="badge clickable"
+                  :class="newBidType == 'YES' ? 'badge-success' : 'badge-ghost'"
+                >
+                  YES
+                </div>
+                <br />
+                <div
+                  @click="toggleBidType"
+                  class="badge clickable"
+                  :class="newBidType == 'NO' ? 'badge-error' : 'badge-ghost'"
+                >
+                  NO
+                </div>
+              </td>
+              <td>
+                <input
+                  type="number"
+                  v-model.number="newBid"
+                  placeholder="0"
+                  class="input input-bordered"
+                  @focus="$event.target.select()"
+                />
+              </td>
+              <td>X</td>
+              <td>X</td>
+              <td>X</td>
+              <td>X</td>
+              <td>
+                <button class="btn btn-primary" @click="submitBid">
+                  Submit
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- List of historical bids -->
+        <table class="table table-compact">
           <thead>
             <tr>
               <th>Order #</th>
@@ -61,15 +118,21 @@
   </div>
 </template>
 
+<style scoped>
+.clickable {
+  cursor: pointer;
+}
+</style>
+
 <script setup lang="ts">
 import Chart from 'chart.js/auto'
-import { bids } from './sample-bids'
+import { bids as sampleBids } from './sample-bids'
 import { makeEntries } from './entries'
 import { ref, computed } from '@vue/reactivity'
 import { onMounted, watch } from '@vue/runtime-core'
 
-// Need this import so script setup will export 'bids' lol
-const BIDS_LENGTH = bids.length
+// Copy over the sample bids to seed the simulation
+const bids = sampleBids.slice()
 
 // UI parameters
 const steps = ref(10)
@@ -105,5 +168,22 @@ function renderChart() {
   chart.data.labels = [...Array(steps.value).keys()]
   chart.data.datasets[0].data = probs.value
   chart.update()
+}
+
+// Add new data to the simulation, at the current step
+const newBid = ref(0)
+const newBidType = ref('YES')
+
+function toggleBidType() {
+  newBidType.value = newBidType.value === 'YES' ? 'NO' : 'YES'
+}
+
+function submitBid() {
+  const bid = {
+    yesBid: newBidType.value == 'YES' ? newBid.value : 0,
+    noBid: newBidType.value == 'YES' ? 0 : newBid.value,
+  }
+  bids.splice(steps.value, 0, bid)
+  steps.value++
 }
 </script>
