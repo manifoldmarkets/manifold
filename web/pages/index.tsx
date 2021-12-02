@@ -1,7 +1,7 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import React from 'react'
-import { LandingPage } from './landing-page'
+import LandingPage from './landing-page'
 
 const Home: NextPage = () => {
   return (
