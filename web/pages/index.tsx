@@ -1,7 +1,7 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import React from "react";
-import LandingPage from "./landing-page";
+import { Hero } from "../components/hero";
 
 const Home: NextPage = () => {
   return (
@@ -19,7 +19,7 @@ const Home: NextPage = () => {
         />
       </Head>
 
-      <LandingPage />
+      <Hero />
     </div>
   );
 };
