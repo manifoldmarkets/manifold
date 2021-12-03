@@ -9,11 +9,11 @@ const Home: NextPage = () => {
       <Head>
         <title>Mantic Markets</title>
 
-        <meta name="description" content="Decentralized user-created prediction markets on Solana" />
-        <meta name="twitter:description" content="Decentralized user-created prediction markets on Solana" />
         <meta property="og:title" name="twitter:title" content="Mantic Markets" />
+        <meta name="description" content="Decentralized user-created prediction markets on Solana" />
+        <meta property="og:description" name="twitter:description" content="Decentralized user-created prediction markets on Solana" />
         <meta property="og:url" content="https://mantic.markets" />
-        <meta property="og:image" name="twitter:image" content="/logo.png" />
+        <meta property="og:image" name="twitter:image" content="https://mantic.markets/logo-cover.png" />
 
         <link rel="icon" href="/favicon.ico" />
 
