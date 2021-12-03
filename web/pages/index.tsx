@@ -8,7 +8,13 @@ const Home: NextPage = () => {
     <div>
       <Head>
         <title>Mantic Markets</title>
-        <meta name="description" content="Create and bet" />
+
+        <meta name="description" content="Decentralized user-created prediction markets on Solana" />
+        <meta name="twitter:description" content="Decentralized user-created prediction markets on Solana" />
+        <meta property="og:title" name="twitter:title" content="Mantic Markets" />
+        <meta property="og:url" content="https://mantic.markets" />
+        <meta property="og:image" name="twitter:image" content="/logo.png" />
+
         <link rel="icon" href="/favicon.ico" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
