@@ -1,6 +1,8 @@
+import React from 'react'
+
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import React from 'react'
+
 import { Hero } from '../components/hero'
 
 const Home: NextPage = () => {
@@ -27,12 +29,20 @@ const Home: NextPage = () => {
           href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap"
           rel="stylesheet"
         />
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D"></script>
-        <script>
-          window.dataLayer = window.dataLayer || [];
-          window.dataLayer.push(['js', new Date()]);
-          window.dataLayer.push(['config', 'G-SSFK1Q138D']);
-        </script>
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-SSFK1Q138D');
+          `,
+          }}
+        />
       </Head>
 
       <Hero />
