@@ -27,6 +27,12 @@ const Home: NextPage = () => {
           href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap"
           rel="stylesheet"
         />
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push('js', new Date());
+          window.dataLayer.push('config', 'G-SSFK1Q138D');
+        </script>
       </Head>
 
       <Hero />
