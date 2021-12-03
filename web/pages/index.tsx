@@ -30,8 +30,8 @@ const Home: NextPage = () => {
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D"></script>
         <script>
           window.dataLayer = window.dataLayer || [];
-          window.dataLayer.push('js', new Date());
-          window.dataLayer.push('config', 'G-SSFK1Q138D');
+          window.dataLayer.push(['js', new Date()]);
+          window.dataLayer.push(['config', 'G-SSFK1Q138D']);
         </script>
       </Head>
 
