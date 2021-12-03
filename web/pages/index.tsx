@@ -15,6 +15,8 @@ const Home: NextPage = () => {
         <meta name="description" content="Decentralized user-created prediction markets on Solana" />
         <meta property="og:description" name="twitter:description" content="Decentralized user-created prediction markets on Solana" />
         <meta property="og:url" content="https://mantic.markets" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@manticmarkets" />
         <meta property="og:image" name="twitter:image" content="https://mantic.markets/logo-cover.png" />
 
         <link rel="icon" href="/favicon.ico" />
