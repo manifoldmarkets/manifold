@@ -1,12 +1,34 @@
-import React, { Fragment, useState } from 'react'
-
+import React, { Fragment, useEffect, useMemo, useState } from 'react'
+import {
+  CategoryScale,
+  Chart,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { ChartData } from 'chart.js'
+import { Line } from 'react-chartjs-2'
 import { bids } from './sample-bids'
 import { Entry, makeEntries } from './entries'
+
+// Auto import doesn't work for some reason...
+Chart.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 function toTable(entries: Entry[]) {
   return entries.map((entry, i) => {
     return (
-      <tr>
+      <tr key={i}>
         <th>{i + 1}</th>
         {toRowStart(entry)}
         {toRowEnd(entry)}
@@ -94,9 +116,27 @@ export default function Simulator() {
 
   const entries = makeEntries(bids.slice(0, steps))
 
+  const probs = useMemo(() => entries.map((entry) => entry.prob), [entries])
+
+  const [chartData, setChartData] = useState({ datasets: [] } as ChartData)
+
+  useEffect(() => {
+    setChartData({
+      labels: Array.from({ length: steps }, (_, i) => i + 1),
+      datasets: [
+        {
+          label: 'Implied probability',
+          data: probs,
+          borderColor: 'rgb(75, 192, 192)',
+        },
+      ],
+    })
+  }, [steps])
+
   return (
     <div className="overflow-x-auto px-12 mt-8 text-center">
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        {/* Left column */}
         <div>
           <h1 className="text-2xl font-bold text-gray-600 mb-8">
             Dynamic Parimutuel Market Simulator
@@ -113,14 +153,14 @@ export default function Simulator() {
           />
 
           <div className="overflow-x-auto">
-            <table className="table">
+            <table className="table w-full">
               <thead>
                 <tr>
                   <th>Order #</th>
                   <th>Type</th>
                   <th>Bid</th>
                   <th>Weight</th>
-                  <th>Prod</th>
+                  <th>Prob</th>
                   <th>Max Payout</th>
                   <th>Return</th>
                 </tr>
@@ -128,6 +168,15 @@ export default function Simulator() {
               <tbody>{toTable(entries)}</tbody>
             </table>
           </div>
+        </div>
+
+        {/* Right column */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-600 mb-8">
+            Probability of
+            <div className="badge badge-success text-2xl h-8 w-18">YES</div>
+          </h1>
+          <Line data={chartData} height={200} />
         </div>
       </div>
     </div>
