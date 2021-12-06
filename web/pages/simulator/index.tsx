@@ -11,10 +11,11 @@ import {
 } from 'chart.js'
 import { ChartData } from 'chart.js'
 import { Line } from 'react-chartjs-2'
-import { bids } from './sample-bids'
+import { bids as sampleBids } from './sample-bids'
 import { Entry, makeEntries } from './entries'
 
 // Auto import doesn't work for some reason...
+// So we manually register ChartJS components instead:
 Chart.register(
   CategoryScale,
   LinearScale,
@@ -110,14 +111,90 @@ function toRowEnd(entry: Entry) {
   }
 }
 
+function newBidTable(
+  steps: number,
+  newBid: number,
+  setNewBid: (newBid: number) => void,
+  submitBid: () => void
+) {
+  return (
+    <table className="table table-compact my-8 w-full">
+      <thead>
+        <tr>
+          <th>Order #</th>
+          <th>Type</th>
+          <th>Bid</th>
+          <th>Weight</th>
+          <th>Probability</th>
+          <th>Payout</th>
+          <th>Return</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>{steps + 1}</th>
+          <td>
+            <div
+              className={
+                `badge clickable ` + ('YES' ? 'badge-success' : 'badge-ghost')
+              }
+            >
+              YES
+            </div>
+            <br />
+            <div
+              className={
+                `badge clickable ` + ('NO' ? 'badge-error' : 'badge-ghost')
+              }
+            >
+              NO
+            </div>
+          </td>
+          <td>
+            <input
+              type="number"
+              placeholder="0"
+              className="input input-bordered"
+              value={newBid}
+              onChange={(e) => setNewBid(parseInt(e.target.value) || 0)}
+              onKeyUp={(e) => {
+                if (e.key === 'Enter') {
+                  submitBid()
+                }
+              }}
+              onFocus={(e) => e.target.select()}
+            />
+          </td>
+          {/* <EntryRow :entry="nextEntry" /> */}
+          <td>
+            <button
+              className="btn btn-primary"
+              onClick={() => submitBid()}
+              disabled={newBid <= 0}
+            >
+              Submit
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  )
+}
+
 // Show a hello world React page
 export default function Simulator() {
   const [steps, setSteps] = useState(10)
+  const [bids, setBids] = useState(sampleBids)
 
-  const entries = makeEntries(bids.slice(0, steps))
+  const entries = useMemo(
+    () => makeEntries(bids.slice(0, steps)),
+    [bids, steps]
+  )
 
   const probs = useMemo(() => entries.map((entry) => entry.prob), [entries])
 
+  // Set up chart
   const [chartData, setChartData] = useState({ datasets: [] } as ChartData)
 
   useEffect(() => {
@@ -132,6 +209,26 @@ export default function Simulator() {
       ],
     })
   }, [steps])
+
+  // Prepare for new bids
+  const [newBid, setNewBid] = useState(0)
+  const [newBidType, setNewBidType] = useState('YES')
+
+  function makeBid(type: string, bid: number) {
+    return {
+      yesBid: type == 'YES' ? bid : 0,
+      noBid: type == 'YES' ? 0 : bid,
+    }
+  }
+
+  function submitBid() {
+    if (newBid <= 0) return
+    const bid = makeBid(newBidType, newBid)
+    bids.splice(steps, 0, bid)
+    setBids(bids)
+    setSteps(steps + 1)
+    setNewBid(0)
+  }
 
   return (
     <div className="overflow-x-auto px-12 mt-8 text-center">
@@ -152,6 +249,10 @@ export default function Simulator() {
             onChange={(e) => setSteps(parseInt(e.target.value))}
           />
 
+          {/* New bid table */}
+          {newBidTable(steps, newBid, setNewBid, submitBid)}
+
+          {/* History of bids */}
           <div className="overflow-x-auto">
             <table className="table w-full">
               <thead>
