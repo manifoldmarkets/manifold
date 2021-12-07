@@ -299,7 +299,7 @@ export default function Simulator() {
             Probability of
             <div className="badge badge-success text-2xl h-8 w-18">YES</div>
           </h1>
-          <Line data={chartData} height={200} />
+          <Line data={chartData as any} height={200} />
         </div>
       </div>
     </div>
