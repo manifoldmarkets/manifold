@@ -11,8 +11,8 @@ import {
 } from 'chart.js'
 import { ChartData } from 'chart.js'
 import { Line } from 'react-chartjs-2'
-import { bids as sampleBids } from './sample-bids'
-import { Entry, makeEntries } from './entries'
+import { bids as sampleBids } from '../../lib/simulator/sample-bids'
+import { Entry, makeEntries } from '../../lib/simulator/entries'
 
 // Auto import doesn't work for some reason...
 // So we manually register ChartJS components instead:
