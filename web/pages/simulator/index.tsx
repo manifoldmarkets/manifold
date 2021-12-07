@@ -234,8 +234,7 @@ export default function Simulator() {
     () => makeEntries(bids.slice(0, steps)),
     [bids, steps]
   )
-
-  const probs = useMemo(() => entries.map((entry) => entry.prob), [entries])
+  const probs = entries.map((entry) => entry.prob)
 
   // Set up chart
   const [chartData, setChartData] = useState({ datasets: [] } as ChartData)
