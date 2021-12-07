@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   CategoryScale,
   Chart,
@@ -26,97 +26,102 @@ Chart.register(
   Legend
 )
 
-function toTable(entries: Entry[]) {
-  return entries.map((entry, i) => {
-    return (
-      <tr key={i}>
-        <th>{i + 1}</th>
-        {toRowStart(entry)}
-        {toRowEnd(entry)}
-      </tr>
-    )
-  })
+function TableBody(props: { entries: Entry[] }) {
+  return (
+    <tbody>
+      {props.entries.map((entry, i) => (
+        <tr key={i}>
+          <th>{i + 1}</th>
+          <TableRowStart entry={entry} />
+          <TableRowEnd entry={entry} />
+        </tr>
+      ))}
+    </tbody>
+  )
 }
 
-function toRowStart(entry: Entry) {
+function TableRowStart(props: { entry: Entry }) {
+  const { entry } = props
   if (entry.yesBid && entry.noBid) {
     return (
-      <Fragment>
+      <>
         <td>
           <div className="badge">SEED</div>
         </td>
         <td>
           {entry.yesBid} / {entry.noBid}
         </td>
-      </Fragment>
+      </>
     )
   } else if (entry.yesBid) {
     return (
-      <Fragment>
+      <>
         <td>
           <div className="badge badge-success">YES</div>
         </td>
         <td>{entry.yesBid}</td>
-      </Fragment>
+      </>
     )
-  } else if (entry.noBid) {
+  } else {
     return (
-      <Fragment>
+      <>
         <td>
           <div className="badge badge-error">NO</div>
         </td>
         <td>{entry.noBid}</td>
-      </Fragment>
+      </>
     )
   }
 }
 
-function toRowEnd(entry: Entry | null) {
+function TableRowEnd(props: { entry: Entry | null }) {
+  const { entry } = props
   if (!entry) {
     return (
-      <Fragment>
+      <>
         <td>N/A</td>
         <td>N/A</td>
         <td>N/A</td>
         <td>N/A</td>
-      </Fragment>
+      </>
     )
   } else if (entry.yesBid && entry.noBid) {
     return (
-      <Fragment>
+      <>
         <td>N/A</td>
         <td>{entry.prob.toFixed(2)}</td>
         <td>N/A</td>
         <td>N/A</td>
-      </Fragment>
+      </>
     )
   } else if (entry.yesBid) {
     return (
-      <Fragment>
+      <>
         <td>{entry.yesWeight.toFixed(2)}</td>
         <td>{entry.prob.toFixed(2)}</td>
         <td>{entry.yesPayout.toFixed(2)}</td>
         <td>{(entry.yesReturn * 100).toFixed(2)}%</td>
-      </Fragment>
+      </>
     )
   } else {
     return (
-      <Fragment>
+      <>
         <td>{entry.noWeight.toFixed(2)}</td>
         <td>{entry.prob.toFixed(2)}</td>
         <td>{entry.noPayout.toFixed(2)}</td>
         <td>{(entry.noReturn * 100).toFixed(2)}%</td>
-      </Fragment>
+      </>
     )
   }
 }
 
-function newBidTable(
-  steps: number,
-  bids: any[],
-  setSteps: (steps: number) => void,
+function NewBidTable(props: {
+  steps: number
+  bids: any[]
+  setSteps: (steps: number) => void
   setBids: (bids: any[]) => void
-) {
+}) {
+  const { steps, bids, setSteps, setBids } = props
   // Prepare for new bids
   const [newBid, setNewBid] = useState(0)
   const [newBidType, setNewBidType] = useState('YES')
@@ -204,7 +209,7 @@ function newBidTable(
               onFocus={(e) => e.target.select()}
             />
           </td>
-          {toRowEnd(nextEntry)}
+          <TableRowEnd entry={nextEntry} />
           <td>
             <button
               className="btn btn-primary"
@@ -267,8 +272,7 @@ export default function Simulator() {
             onChange={(e) => setSteps(parseInt(e.target.value))}
           />
 
-          {/* New bid table */}
-          {newBidTable(steps, bids, setSteps, setBids)}
+          <NewBidTable {...{ steps, bids, setSteps, setBids }} />
 
           {/* History of bids */}
           <div className="overflow-x-auto">
@@ -284,7 +288,8 @@ export default function Simulator() {
                   <th>Return</th>
                 </tr>
               </thead>
-              <tbody>{toTable(entries)}</tbody>
+
+              <TableBody entries={entries} />
             </table>
           </div>
         </div>
