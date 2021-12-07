@@ -113,13 +113,44 @@ function toRowEnd(entry: Entry | null) {
 
 function newBidTable(
   steps: number,
-  newBid: number,
-  nextEntryElement: JSX.Element,
-  newBidType: String,
-  toggleBidType: () => void,
-  setNewBid: (newBid: number) => void,
-  submitBid: () => void
+  bids: any[],
+  setSteps: (steps: number) => void,
+  setBids: (bids: any[]) => void
 ) {
+  // Prepare for new bids
+  const [newBid, setNewBid] = useState(0)
+  const [newBidType, setNewBidType] = useState('YES')
+
+  function makeBid(type: string, bid: number) {
+    return {
+      yesBid: type == 'YES' ? bid : 0,
+      noBid: type == 'YES' ? 0 : bid,
+    }
+  }
+
+  function submitBid() {
+    if (newBid <= 0) return
+    const bid = makeBid(newBidType, newBid)
+    bids.splice(steps, 0, bid)
+    setBids(bids)
+    setSteps(steps + 1)
+    setNewBid(0)
+  }
+
+  function toggleBidType() {
+    setNewBidType(newBidType === 'YES' ? 'NO' : 'YES')
+  }
+
+  const nextEntry = useMemo(() => {
+    if (newBid) {
+      const nextBid = makeBid(newBidType, newBid)
+      const fakeBids = [...bids.slice(0, steps), nextBid]
+      const entries = makeEntries(fakeBids)
+      return entries[entries.length - 1]
+    }
+    return null
+  }, [newBid, newBidType, steps])
+
   return (
     <table className="table table-compact my-8 w-full">
       <thead>
@@ -173,7 +204,7 @@ function newBidTable(
               onFocus={(e) => e.target.select()}
             />
           </td>
-          {nextEntryElement}
+          {toRowEnd(nextEntry)}
           <td>
             <button
               className="btn btn-primary"
@@ -217,40 +248,6 @@ export default function Simulator() {
     })
   }, [steps])
 
-  // Prepare for new bids
-  const [newBid, setNewBid] = useState(0)
-  const [newBidType, setNewBidType] = useState('YES')
-
-  function makeBid(type: string, bid: number) {
-    return {
-      yesBid: type == 'YES' ? bid : 0,
-      noBid: type == 'YES' ? 0 : bid,
-    }
-  }
-
-  function submitBid() {
-    if (newBid <= 0) return
-    const bid = makeBid(newBidType, newBid)
-    bids.splice(steps, 0, bid)
-    setBids(bids)
-    setSteps(steps + 1)
-    setNewBid(0)
-  }
-
-  function toggleBidType() {
-    setNewBidType(newBidType === 'YES' ? 'NO' : 'YES')
-  }
-
-  const nextEntry = useMemo(() => {
-    if (newBid) {
-      const nextBid = makeBid(newBidType, newBid)
-      const fakeBids = [...bids.slice(0, steps), nextBid]
-      const entries = makeEntries(fakeBids)
-      return entries[entries.length - 1]
-    }
-    return null
-  }, [newBid, newBidType, entries, steps])
-
   return (
     <div className="overflow-x-auto px-12 mt-8 text-center">
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -271,15 +268,7 @@ export default function Simulator() {
           />
 
           {/* New bid table */}
-          {newBidTable(
-            steps,
-            newBid,
-            toRowEnd(nextEntry),
-            newBidType,
-            toggleBidType,
-            setNewBid,
-            submitBid
-          )}
+          {newBidTable(steps, bids, setSteps, setBids)}
 
           {/* History of bids */}
           <div className="overflow-x-auto">
