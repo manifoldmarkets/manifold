@@ -71,8 +71,8 @@ function toRowStart(entry: Entry) {
   }
 }
 
-function toRowEnd(entry: Entry) {
-  if (!entry.yesBid && !entry.noBid) {
+function toRowEnd(entry: Entry | null) {
+  if (!entry) {
     return (
       <Fragment>
         <td>N/A</td>
@@ -114,6 +114,9 @@ function toRowEnd(entry: Entry) {
 function newBidTable(
   steps: number,
   newBid: number,
+  nextEntryElement: JSX.Element,
+  newBidType: String,
+  toggleBidType: () => void,
   setNewBid: (newBid: number) => void,
   submitBid: () => void
 ) {
@@ -137,16 +140,20 @@ function newBidTable(
           <td>
             <div
               className={
-                `badge clickable ` + ('YES' ? 'badge-success' : 'badge-ghost')
+                `badge hover:cursor-pointer ` +
+                (newBidType == 'YES' ? 'badge-success' : 'badge-ghost')
               }
+              onClick={toggleBidType}
             >
               YES
             </div>
             <br />
             <div
               className={
-                `badge clickable ` + ('NO' ? 'badge-error' : 'badge-ghost')
+                `badge hover:cursor-pointer ` +
+                (newBidType == 'NO' ? 'badge-error' : 'badge-ghost')
               }
+              onClick={toggleBidType}
             >
               NO
             </div>
@@ -166,7 +173,7 @@ function newBidTable(
               onFocus={(e) => e.target.select()}
             />
           </td>
-          {/* <EntryRow :entry="nextEntry" /> */}
+          {nextEntryElement}
           <td>
             <button
               className="btn btn-primary"
@@ -230,6 +237,20 @@ export default function Simulator() {
     setNewBid(0)
   }
 
+  function toggleBidType() {
+    setNewBidType(newBidType === 'YES' ? 'NO' : 'YES')
+  }
+
+  const nextEntry = useMemo(() => {
+    if (newBid) {
+      const nextBid = makeBid(newBidType, newBid)
+      const fakeBids = [...bids.slice(0, steps), nextBid]
+      const entries = makeEntries(fakeBids)
+      return entries[entries.length - 1]
+    }
+    return null
+  }, [newBid, newBidType, entries, steps])
+
   return (
     <div className="overflow-x-auto px-12 mt-8 text-center">
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -250,7 +271,15 @@ export default function Simulator() {
           />
 
           {/* New bid table */}
-          {newBidTable(steps, newBid, setNewBid, submitBid)}
+          {newBidTable(
+            steps,
+            newBid,
+            toRowEnd(nextEntry),
+            newBidType,
+            toggleBidType,
+            setNewBid,
+            submitBid
+          )}
 
           {/* History of bids */}
           <div className="overflow-x-auto">
