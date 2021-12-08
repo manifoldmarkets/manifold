@@ -13,8 +13,8 @@ export type Entry = {
   prob: number
 }
 
-export function makeEntries(bids: Bid[]): Entry[] {
-  const entries: Entry[] = []
+function makeWeights(bids: Bid[]) {
+  const weights = []
   let yesPot = 0
   let noPot = 0
   // First pass: calculate all the weights
@@ -28,33 +28,36 @@ export function makeEntries(bids: Bid[]): Entry[] {
     noPot += noBid
     const prob = yesPot / (yesPot + noPot)
 
-    entries.push({
+    weights.push({
       yesBid,
       noBid,
       yesWeight,
       noWeight,
       prob,
-      // To be filled in below
-      yesPayout: 0,
-      noPayout: 0,
-      yesReturn: 0,
-      noReturn: 0,
     })
   }
+  return weights
+}
 
+export function makeEntries(bids: Bid[]): Entry[] {
   const YES_SEED = bids[0].yesBid
   const NO_SEED = bids[0].noBid
-  const yesWeightsSum = entries.reduce((sum, entry) => sum + entry.yesWeight, 0)
-  const noWeightsSum = entries.reduce((sum, entry) => sum + entry.noWeight, 0)
+  const weights = makeWeights(bids)
+  const yesPot = weights.reduce((sum, { yesBid }) => sum + yesBid, 0)
+  const noPot = weights.reduce((sum, { noBid }) => sum + noBid, 0)
+  const yesWeightsSum = weights.reduce((sum, entry) => sum + entry.yesWeight, 0)
+  const noWeightsSum = weights.reduce((sum, entry) => sum + entry.noWeight, 0)
   // Second pass: calculate all the payouts
-  for (const entry of entries) {
-    const { yesBid, noBid, yesWeight, noWeight } = entry
+  const entries: Entry[] = []
+  for (const weight of weights) {
+    const { yesBid, noBid, yesWeight, noWeight } = weight
     // Payout: You get your initial bid back, as well as your share of the
     // (noPot - seed) according to your yesWeight
-    entry.yesPayout = yesBid + (yesWeight / yesWeightsSum) * (noPot - NO_SEED)
-    entry.noPayout = noBid + (noWeight / noWeightsSum) * (yesPot - YES_SEED)
-    entry.yesReturn = (entry.yesPayout - yesBid) / yesBid
-    entry.noReturn = (entry.noPayout - noBid) / noBid
+    const yesPayout = yesBid + (yesWeight / yesWeightsSum) * (noPot - NO_SEED)
+    const noPayout = noBid + (noWeight / noWeightsSum) * (yesPot - YES_SEED)
+    const yesReturn = (yesPayout - yesBid) / yesBid
+    const noReturn = (noPayout - noBid) / noBid
+    entries.push({ ...weight, yesPayout, noPayout, yesReturn, noReturn })
   }
   return entries
 }
