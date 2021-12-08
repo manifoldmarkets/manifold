@@ -1,5 +1,6 @@
 import { Popover } from '@headlessui/react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 const navigation = [
   {
@@ -21,7 +22,7 @@ export function Header() {
             <div className="flex items-center justify-between w-full md:w-auto">
               <Link href="/">
                 <a className="inline-grid grid-flow-col align-items-center h-6 sm:h-10">
-                  <img
+                  <Image
                     className="w-auto h-6 sm:h-10 inline-block mr-3"
                     src="/logo-icon.svg"
                   />
@@ -34,9 +35,11 @@ export function Header() {
 
             <div className="space-x-8 md:flex md:ml-16">
               {navigation.map((item) => (
-                <Link href={item.href}>
+                <Link
+                  key={item.name}
+                  href={item.href}
+                >
                   <a
-                    key={item.name}
                     className="text-base font-medium text-white hover:text-gray-300"
                   >
                     {item.name}
