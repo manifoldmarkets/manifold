@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   CategoryScale,
   Chart,
@@ -11,8 +11,8 @@ import {
 } from 'chart.js'
 import { ChartData } from 'chart.js'
 import { Line } from 'react-chartjs-2'
-import { bids as sampleBids } from './sample-bids'
-import { Entry, makeEntries } from './entries'
+import { bids as sampleBids } from '../../lib/simulator/sample-bids'
+import { Entry, makeEntries } from '../../lib/simulator/entries'
 
 // Auto import doesn't work for some reason...
 // So we manually register ChartJS components instead:
@@ -26,97 +26,136 @@ Chart.register(
   Legend
 )
 
-function toTable(entries: Entry[]) {
-  return entries.map((entry, i) => {
-    return (
-      <tr key={i}>
-        <th>{i + 1}</th>
-        {toRowStart(entry)}
-        {toRowEnd(entry)}
-      </tr>
-    )
-  })
+function TableBody(props: { entries: Entry[] }) {
+  return (
+    <tbody>
+      {props.entries.map((entry, i) => (
+        <tr key={i}>
+          <th>{i + 1}</th>
+          <TableRowStart entry={entry} />
+          <TableRowEnd entry={entry} />
+        </tr>
+      ))}
+    </tbody>
+  )
 }
 
-function toRowStart(entry: Entry) {
+function TableRowStart(props: { entry: Entry }) {
+  const { entry } = props
   if (entry.yesBid && entry.noBid) {
     return (
-      <Fragment>
+      <>
         <td>
           <div className="badge">SEED</div>
         </td>
         <td>
           {entry.yesBid} / {entry.noBid}
         </td>
-      </Fragment>
+      </>
     )
   } else if (entry.yesBid) {
     return (
-      <Fragment>
+      <>
         <td>
           <div className="badge badge-success">YES</div>
         </td>
         <td>{entry.yesBid}</td>
-      </Fragment>
+      </>
     )
-  } else if (entry.noBid) {
+  } else {
     return (
-      <Fragment>
+      <>
         <td>
           <div className="badge badge-error">NO</div>
         </td>
         <td>{entry.noBid}</td>
-      </Fragment>
+      </>
     )
   }
 }
 
-function toRowEnd(entry: Entry) {
-  if (!entry.yesBid && !entry.noBid) {
+function TableRowEnd(props: { entry: Entry | null }) {
+  const { entry } = props
+  if (!entry) {
     return (
-      <Fragment>
+      <>
         <td>N/A</td>
         <td>N/A</td>
         <td>N/A</td>
         <td>N/A</td>
-      </Fragment>
+      </>
     )
   } else if (entry.yesBid && entry.noBid) {
     return (
-      <Fragment>
+      <>
         <td>N/A</td>
         <td>{entry.prob.toFixed(2)}</td>
         <td>N/A</td>
         <td>N/A</td>
-      </Fragment>
+      </>
     )
   } else if (entry.yesBid) {
     return (
-      <Fragment>
+      <>
         <td>{entry.yesWeight.toFixed(2)}</td>
         <td>{entry.prob.toFixed(2)}</td>
         <td>{entry.yesPayout.toFixed(2)}</td>
         <td>{(entry.yesReturn * 100).toFixed(2)}%</td>
-      </Fragment>
+      </>
     )
   } else {
     return (
-      <Fragment>
+      <>
         <td>{entry.noWeight.toFixed(2)}</td>
         <td>{entry.prob.toFixed(2)}</td>
         <td>{entry.noPayout.toFixed(2)}</td>
         <td>{(entry.noReturn * 100).toFixed(2)}%</td>
-      </Fragment>
+      </>
     )
   }
 }
 
-function newBidTable(
-  steps: number,
-  newBid: number,
-  setNewBid: (newBid: number) => void,
-  submitBid: () => void
-) {
+function NewBidTable(props: {
+  steps: number
+  bids: any[]
+  setSteps: (steps: number) => void
+  setBids: (bids: any[]) => void
+}) {
+  const { steps, bids, setSteps, setBids } = props
+  // Prepare for new bids
+  const [newBid, setNewBid] = useState(0)
+  const [newBidType, setNewBidType] = useState('YES')
+
+  function makeBid(type: string, bid: number) {
+    return {
+      yesBid: type == 'YES' ? bid : 0,
+      noBid: type == 'YES' ? 0 : bid,
+    }
+  }
+
+  function submitBid() {
+    if (newBid <= 0) return
+    const bid = makeBid(newBidType, newBid)
+    bids.splice(steps, 0, bid)
+    setBids(bids)
+    setSteps(steps + 1)
+    setNewBid(0)
+  }
+
+  function toggleBidType() {
+    setNewBidType(newBidType === 'YES' ? 'NO' : 'YES')
+  }
+
+  const nextEntry = useMemo(() => {
+    if (newBid) {
+      const nextBid = makeBid(newBidType, newBid)
+      const fakeBids = [...bids.slice(0, steps), nextBid]
+      const entries = makeEntries(fakeBids)
+      return entries[entries.length - 1]
+    }
+    return null
+  }, [newBid, newBidType, steps])
+
   return (
     <table className="table table-compact my-8 w-full">
       <thead>
@@ -137,16 +176,20 @@ function newBidTable(
           <td>
             <div
               className={
-                `badge clickable ` + ('YES' ? 'badge-success' : 'badge-ghost')
+                `badge hover:cursor-pointer ` +
+                (newBidType == 'YES' ? 'badge-success' : 'badge-ghost')
               }
+              onClick={toggleBidType}
             >
               YES
             </div>
             <br />
             <div
               className={
-                `badge clickable ` + ('NO' ? 'badge-error' : 'badge-ghost')
+                `badge hover:cursor-pointer ` +
+                (newBidType == 'NO' ? 'badge-error' : 'badge-ghost')
               }
+              onClick={toggleBidType}
             >
               NO
             </div>
@@ -166,7 +209,7 @@ function newBidTable(
               onFocus={(e) => e.target.select()}
             />
           </td>
-          {/* <EntryRow :entry="nextEntry" /> */}
+          <TableRowEnd entry={nextEntry} />
           <td>
             <button
               className="btn btn-primary"
@@ -191,8 +234,7 @@ export default function Simulator() {
     () => makeEntries(bids.slice(0, steps)),
     [bids, steps]
   )
-
-  const probs = useMemo(() => entries.map((entry) => entry.prob), [entries])
+  const probs = entries.map((entry) => entry.prob)
 
   // Set up chart
   const [chartData, setChartData] = useState({ datasets: [] } as ChartData)
@@ -209,26 +251,6 @@ export default function Simulator() {
       ],
     })
   }, [steps])
-
-  // Prepare for new bids
-  const [newBid, setNewBid] = useState(0)
-  const [newBidType, setNewBidType] = useState('YES')
-
-  function makeBid(type: string, bid: number) {
-    return {
-      yesBid: type == 'YES' ? bid : 0,
-      noBid: type == 'YES' ? 0 : bid,
-    }
-  }
-
-  function submitBid() {
-    if (newBid <= 0) return
-    const bid = makeBid(newBidType, newBid)
-    bids.splice(steps, 0, bid)
-    setBids(bids)
-    setSteps(steps + 1)
-    setNewBid(0)
-  }
 
   return (
     <div className="overflow-x-auto px-12 mt-8 text-center">
@@ -249,8 +271,7 @@ export default function Simulator() {
             onChange={(e) => setSteps(parseInt(e.target.value))}
           />
 
-          {/* New bid table */}
-          {newBidTable(steps, newBid, setNewBid, submitBid)}
+          <NewBidTable {...{ steps, bids, setSteps, setBids }} />
 
           {/* History of bids */}
           <div className="overflow-x-auto">
@@ -266,7 +287,8 @@ export default function Simulator() {
                   <th>Return</th>
                 </tr>
               </thead>
-              <tbody>{toTable(entries)}</tbody>
+
+              <TableBody entries={entries} />
             </table>
           </div>
         </div>
@@ -277,7 +299,7 @@ export default function Simulator() {
             Probability of
             <div className="badge badge-success text-2xl h-8 w-18">YES</div>
           </h1>
-          <Line data={chartData} height={200} />
+          <Line data={chartData as any} height={200} />
         </div>
       </div>
     </div>
