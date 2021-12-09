@@ -1,5 +1,7 @@
 import { Popover } from '@headlessui/react'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { firebaseLogin, listenForLogin, User } from '../lib/firebase/users'
 
 const navigation = [
   {
@@ -8,6 +10,30 @@ const navigation = [
   },
   { name: 'Simulator', href: '/simulator' },
 ]
+
+function SignInLink() {
+  const [user, setUser] = useState<User | null>(null)
+  useEffect(() => listenForLogin(setUser), [])
+
+  return (
+    <>
+      {user && user.id ? (
+        <Link href="/account">
+          <a className="text-base font-medium text-green-400 hover:text-gray-300">
+            {user.name}
+          </a>
+        </Link>
+      ) : (
+        <button
+          className="text-base font-medium text-green-400  hover:text-gray-300"
+          onClick={() => firebaseLogin()}
+        >
+          Sign In
+        </button>
+      )}
+    </>
+  )
+}
 
 export function Header() {
   return (
@@ -40,6 +66,7 @@ export function Header() {
                   </a>
                 </Link>
               ))}
+              <SignInLink />
             </div>
           </div>
         </nav>
