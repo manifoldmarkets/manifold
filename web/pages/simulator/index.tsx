@@ -196,6 +196,7 @@ function NewBidTable(props: {
             </div>
           </td>
           <td>
+            {/* Note: Would love to make this input smaller... */}
             <input
               type="number"
               placeholder="0"
