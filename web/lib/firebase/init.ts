@@ -1,3 +1,4 @@
+import { getFirestore } from '@firebase/firestore'
 import { initializeApp } from 'firebase/app'
 const firebaseConfig = {
   apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
@@ -11,6 +12,8 @@ const firebaseConfig = {
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig)
+export const db = getFirestore(app)
+
 try {
   // Note: this is still throwing a console error atm...
   import('firebase/analytics').then((analytics) => {
