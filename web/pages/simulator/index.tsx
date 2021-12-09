@@ -13,6 +13,7 @@ import { ChartData } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 import { bids as sampleBids } from '../../lib/simulator/sample-bids'
 import { Entry, makeEntries } from '../../lib/simulator/entries'
+import { Header } from '../../components/header'
 
 // Auto import doesn't work for some reason...
 // So we manually register ChartJS components instead:
@@ -157,14 +158,14 @@ function NewBidTable(props: {
   }, [newBid, newBidType, steps])
 
   return (
-    <table className="table table-compact my-8 w-full">
+    <table className="table table-compact my-8 w-full text-center">
       <thead>
         <tr>
           <th>Order #</th>
           <th>Type</th>
           <th>Bid</th>
           <th>Weight</th>
-          <th>Probability</th>
+          <th>Prob</th>
           <th>Payout</th>
           <th>Return</th>
           <th></th>
@@ -195,6 +196,7 @@ function NewBidTable(props: {
             </div>
           </td>
           <td>
+            {/* Note: Would love to make this input smaller... */}
             <input
               type="number"
               placeholder="0"
@@ -253,11 +255,12 @@ export default function Simulator() {
   }, [steps])
 
   return (
-    <div className="overflow-x-auto px-12 mt-8 text-center">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <div className="relative overflow-hidden h-screen bg-gray-900">
+      <Header />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-8 max-w-7xl mx-auto text-center">
         {/* Left column */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-600 mb-8">
+          <h1 className="text-2xl font-bold mb-8">
             Dynamic Parimutuel Market Simulator
           </h1>
           {/* Range slider that sets the current step */}
@@ -275,7 +278,7 @@ export default function Simulator() {
 
           {/* History of bids */}
           <div className="overflow-x-auto">
-            <table className="table w-full">
+            <table className="table w-full text-center">
               <thead>
                 <tr>
                   <th>Order #</th>
@@ -295,7 +298,7 @@ export default function Simulator() {
 
         {/* Right column */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-600 mb-8">
+          <h1 className="text-2xl font-bold mb-8">
             Probability of
             <div className="badge badge-success text-2xl h-8 w-18">YES</div>
           </h1>
