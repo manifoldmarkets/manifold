@@ -32,7 +32,7 @@ export async function setUser(userId: string, user: User) {
 }
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
-export function listenForLogin(onUser: (_user: User) => void) {
+export function listenForLogin(onUser: (_user: User | null) => void) {
   // Immediately load any persisted user object from browser cache.
   const cachedUser = localStorage.getItem(CACHED_USER_KEY)
   if (cachedUser) {
@@ -63,9 +63,8 @@ export function listenForLogin(onUser: (_user: User) => void) {
       // Note: Cap on localStorage size is ~5mb
       localStorage.setItem(CACHED_USER_KEY, JSON.stringify(fetchedUser))
     } else {
-      // User logged out; reset to the empty object
-      onUser({} as User)
-      localStorage.removeItem(CACHED_USER_KEY)
+      // User logged out; reset to null
+      onUser(null)
     }
   })
 }
