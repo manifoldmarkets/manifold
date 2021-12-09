@@ -9,7 +9,6 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js'
-import { ChartData } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 import { bids as sampleBids } from '../../lib/simulator/sample-bids'
 import { Entry, makeEntries } from '../../lib/simulator/entries'
@@ -146,15 +145,14 @@ function NewBidTable(props: {
     setNewBidType(newBidType === 'YES' ? 'NO' : 'YES')
   }
 
-  const nextEntry = useMemo(() => {
-    if (newBid) {
-      const nextBid = makeBid(newBidType, newBid)
-      const fakeBids = [...bids.slice(0, steps), nextBid]
-      const entries = makeEntries(fakeBids)
-      return entries[entries.length - 1]
-    }
-    return null
-  }, [newBid, newBidType, steps])
+  let nextEntry: Entry | null = null
+
+  if (newBid) {
+    const nextBid = makeBid(newBidType, newBid)
+    const fakeBids = [...bids.slice(0, steps), nextBid]
+    const entries = makeEntries(fakeBids)
+    nextEntry = entries[entries.length - 1]
+  }
 
   return (
     <table className="table table-compact my-8 w-full">
@@ -236,21 +234,16 @@ export default function Simulator() {
   )
   const probs = entries.map((entry) => entry.prob)
 
-  // Set up chart
-  const [chartData, setChartData] = useState({ datasets: [] } as ChartData)
-
-  useEffect(() => {
-    setChartData({
-      labels: Array.from({ length: steps }, (_, i) => i + 1),
-      datasets: [
-        {
-          label: 'Implied probability',
-          data: probs,
-          borderColor: 'rgb(75, 192, 192)',
-        },
-      ],
-    })
-  }, [steps])
+  const chartData = {
+    labels: Array.from({ length: steps }, (_, i) => i + 1),
+    datasets: [
+      {
+        label: 'Implied probability',
+        data: probs,
+        borderColor: 'rgb(75, 192, 192)',
+      },
+    ],
+  }
 
   return (
     <div className="overflow-x-auto px-12 mt-8 text-center">
@@ -299,7 +292,7 @@ export default function Simulator() {
             Probability of
             <div className="badge badge-success text-2xl h-8 w-18">YES</div>
           </h1>
-          <Line data={chartData as any} height={200} />
+          <Line data={chartData} height={200} />
         </div>
       </div>
     </div>
