@@ -89,7 +89,11 @@ export default function NewContract() {
   const [contracts, setContracts] = useState<Contract[]>([])
   useEffect(() => {
     if (creator?.id) {
-      setContract({ ...contract, creatorId: creator.id })
+      setContract((contract) => ({
+        ...contract,
+        creatorId: creator.id,
+        creatorName: creator.name,
+      }))
       listContracts(creator?.id).then(setContracts)
     }
   }, [creator?.id])
@@ -97,7 +101,7 @@ export default function NewContract() {
   async function saveContract() {
     await pushContract(contract)
     // Update local contract list
-    setContracts([...contracts, { ...contract }])
+    setContracts([{ ...contract }, ...contracts])
   }
 
   function saveField(field: keyof Contract) {
