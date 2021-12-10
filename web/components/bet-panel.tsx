@@ -11,6 +11,11 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   const [betChoice, setBetChoice] = useState<'YES' | 'NO'>('YES')
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
 
+  function onBetChange(str: string) {
+    const amount = parseInt(str)
+    setBetAmount(isNaN(amount) ? undefined : amount)
+  }
+
   return (
     <Col className={'bg-gray-600 p-6 rounded ' + className}>
       <div className="p-2 font-medium">Pick outcome</div>
@@ -31,9 +36,8 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           style={{ maxWidth: 80 }}
           type="text"
           placeholder="0"
-          value={betAmount}
-          onChange={(e) => setBetAmount(parseInt(e.target.value) || 0)}
-          onFocus={(e) => e.target.select()}
+          value={betAmount ?? ''}
+          onChange={(e) => onBetChange(e.target.value)}
         />
         <div className="ml-3">points</div>
       </Row>
