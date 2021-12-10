@@ -71,9 +71,16 @@ export function ContractList(props: { contracts: Contract[] }) {
 }
 
 // Allow user to create a new contract
+// TODO: Extract to a reusable UI, for listing contracts too?
 export default function NewContract() {
   const creator = useUser()
   const [contract, setContract] = useState<Contract>({
+    id: '',
+    creatorId: '',
+    question: '',
+    description: '',
+    seedAmounts: { YES: 100, NO: 100 },
+
     // TODO: Set create time to Firestore timestamp
     createdTime: Date.now(),
     lastUpdatedTime: Date.now(),
@@ -101,9 +108,9 @@ export default function NewContract() {
   const descriptionPlaceholder = `e.g. This market will resolve to “Yes” if, by June 2, 2021, 11:59:59 PM ET, Paxlovid (also known under PF-07321332)...`
 
   return (
-    <div className="relative overflow-hidden h-screen bg-cover bg-gray-900">
+    <div>
       <Header />
-      <div className="max-w-4xl my-20 mx-auto">
+      <div className="max-w-4xl my-20 lg:mx-auto mx-4">
         <h1 className="text-2xl text-indigo-300 font-bold mt-6 mb-4">
           Create a new prediction market
         </h1>
@@ -149,14 +156,27 @@ export default function NewContract() {
               ></textarea>
             </div>
 
-            {/* TODO: Save seeds */}
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-3">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Yes Seed</span>
                   </label>
-                  <input type="number" placeholder="100" className="input" />
+                  <input
+                    type="number"
+                    placeholder="100"
+                    className="input"
+                    value={contract.seedAmounts.YES}
+                    onChange={(e) => {
+                      setContract({
+                        ...contract,
+                        seedAmounts: {
+                          ...contract.seedAmounts,
+                          YES: parseInt(e.target.value),
+                        },
+                      })
+                    }}
+                  />
                 </div>
               </div>
 
@@ -165,14 +185,28 @@ export default function NewContract() {
                   <label className="label">
                     <span className="label-text">No Seed</span>
                   </label>
-                  <input type="number" placeholder="100" className="input" />
+                  <input
+                    type="number"
+                    placeholder="100"
+                    className="input"
+                    value={contract.seedAmounts.NO}
+                    onChange={(e) => {
+                      setContract({
+                        ...contract,
+                        seedAmounts: {
+                          ...contract.seedAmounts,
+                          NO: parseInt(e.target.value),
+                        },
+                      })
+                    }}
+                  />
                 </div>
               </div>
             </div>
 
             {/* TODO: Show a preview of the created market here? */}
 
-            <div className="flex justify-end pt-3">
+            <div className="flex justify-end mt-6">
               <button
                 type="submit"
                 className="btn btn-primary"
@@ -181,7 +215,7 @@ export default function NewContract() {
                   saveContract()
                 }}
               >
-                Save
+                Create market
               </button>
             </div>
           </form>
