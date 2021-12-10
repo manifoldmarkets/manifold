@@ -4,7 +4,7 @@ import { Header } from './header'
 export const Hero = () => {
   return (
     <div className="relative overflow-hidden h-screen bg-world-trading bg-cover bg-gray-900">
-      <Header />
+      <Header darkBackground />
       <main>
         <div className="pt-40 sm:pt-16 lg:pt-8 lg:pb-14 lg:overflow-hidden">
           <div className="mx-auto max-w-7xl lg:px-8">

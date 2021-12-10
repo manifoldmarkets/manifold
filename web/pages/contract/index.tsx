@@ -53,10 +53,10 @@ export default function NewContract() {
     <div>
       <Header />
       <div className="max-w-4xl my-20 lg:mx-auto mx-4">
-        <h1 className="text-2xl font-major-mono text-indigo-300 font-bold mt-6 mb-4">
+        <h1 className="text-2xl font-major-mono text-indigo-500 font-bold mt-6 mb-4">
           Create a new prediction market
         </h1>
-        <div className="w-full bg-gray-500 rounded-lg shadow-xl p-6">
+        <div className="w-full bg-gray-100 rounded-lg shadow-xl p-6">
           {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
           {/* When the form is submitted, create a new contract in the database */}
           <form>
@@ -164,7 +164,7 @@ export default function NewContract() {
         </div>
 
         {/* Show a separate card for each contract */}
-        <h1 className="text-2xl  font-major-mono text-indigo-300 font-bold mt-6 mb-4">
+        <h1 className="text-2xl font-major-mono text-indigo-500 font-bold mt-6 mb-4">
           Your markets
         </h1>
 

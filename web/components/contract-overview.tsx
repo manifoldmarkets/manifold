@@ -44,7 +44,7 @@ export const ContractOverview = (props: { contract: Contract }) => {
     <Col className="max-w-3xl w-full">
       <div className="text-3xl font-medium p-2">{contract.question}</div>
 
-      <Row className="flex-wrap text-sm">
+      <Row className="flex-wrap text-sm text-gray-600">
         <div className="p-2 whitespace-nowrap">By {contract.creatorName}</div>
         <div className="py-2">•</div>
         <div className="p-2 whitespace-nowrap">Dec 9</div>
@@ -58,7 +58,7 @@ export const ContractOverview = (props: { contract: Contract }) => {
 
       <Spacer h={12} />
 
-      <div className="text-gray-200">{contract.description}</div>
+      <div className="text-gray-600">{contract.description}</div>
     </Col>
   )
 }

@@ -51,7 +51,7 @@ function Button(props: {
           'bg-green-500 hover:bg-green-600 focus:ring-green-500',
         color === 'red' && 'bg-red-500 hover:bg-red-600 focus:ring-red-500',
         color === 'deemphasized' &&
-          'bg-transparent hover:bg-gray-500 focus:ring-gray-400',
+          'text-gray-700 bg-gray-200 hover:bg-gray-300 focus:ring-gray-300',
         className
       )}
       onClick={onClick}
