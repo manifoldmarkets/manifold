@@ -196,11 +196,11 @@ function NewBidTable(props: {
             </div>
           </td>
           <td>
-            {/* Note: Would love to make this input smaller... */}
             <input
               type="number"
               placeholder="0"
               className="input input-bordered"
+              style={{ maxWidth: 100 }}
               value={newBid}
               onChange={(e) => setNewBid(parseInt(e.target.value) || 0)}
               onKeyUp={(e) => {
