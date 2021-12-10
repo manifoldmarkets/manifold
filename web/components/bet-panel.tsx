@@ -5,16 +5,14 @@ import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { YesNoSelector } from './yes-no-selector'
 
-export function BetPanel(props: { contract: Contract }) {
-  const { contract } = props
+export function BetPanel(props: { contract: Contract; className?: string }) {
+  const { contract, className } = props
 
   const [betChoice, setBetChoice] = useState<'yes' | 'no'>('yes')
   const [shares, setShares] = useState(0)
 
   return (
-    <Col>
-      <Spacer h={12} />
-
+    <Col className={'bg-gray-600 p-6 rounded ' + className}>
       <div className="p-2 font-medium">Pick outcome</div>
       <YesNoSelector
         className="p-2"
