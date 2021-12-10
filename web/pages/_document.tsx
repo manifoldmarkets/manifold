@@ -2,7 +2,7 @@ import { Html, Head, Main, NextScript } from 'next/document'
 
 export default function Document() {
   return (
-    <Html data-theme="dark">
+    <Html data-theme="dark" className="h-full bg-gray-900">
       <Head>
         <title>Mantic Markets</title>
 
@@ -62,7 +62,7 @@ export default function Document() {
           }}
         />
       </Head>
-      <body>
+      <body className="h-full">
         <Main />
         <NextScript />
       </body>
