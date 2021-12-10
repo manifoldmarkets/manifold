@@ -1,11 +1,10 @@
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
-import { firebaseLogout, listenForLogin, User } from '../lib/firebase/users'
+import { firebaseLogout } from '../lib/firebase/users'
 import { Header } from '../components/header'
+import { useUser } from '../hooks/use-user'
 
 export default function Account() {
-  const [user, setUser] = useState<User | null>(null)
-  useEffect(() => listenForLogin(setUser), [])
+  const user = useUser()
   const router = useRouter()
 
   return (
