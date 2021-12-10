@@ -26,7 +26,7 @@ export default function Account() {
               <img src={user?.avatarUrl} className="rounded-lg shadow-lg" />
             </figure>
             <div className="max-w-md card-body">
-              <h2 className="card-title">{user?.name}</h2>
+              <h2 className="card-title font-major-mono">{user?.name}</h2>
               <p>{user?.email}</p>
               <p>${user?.balanceUsd} USD</p>
               <div className="card-actions">
@@ -44,7 +44,7 @@ export default function Account() {
           </div>
         </div>
 
-        <h1 className="text-2xl text-indigo-300 font-bold mt-6 mb-4">
+        <h1 className="text-2xl font-major-mono text-indigo-300 font-bold mt-6 mb-4">
           Your markets
         </h1>
         <ContractList contracts={contracts} />
