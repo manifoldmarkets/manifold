@@ -9,8 +9,8 @@ const convertkitHTML = {
    <div data-style="clean">
       <ul class="formkit-alert formkit-alert-error" data-element="errors" data-group="alert"></ul>
       <div data-element="fields" data-stacked="false" class="seva-fields formkit-fields">
-         <div class="formkit-field" style="max-width:400px;margin-right:12px;"><input class="formkit-input" name="email_address" aria-label="Email Address" placeholder="Email Address" required="" type="email" style="color: rgb(0, 0, 0); border-color: rgb(227, 227, 227); border-radius: 4px; font-weight: 400;"></div>
-         <button data-element="submit" class="formkit-submit formkit-submit" style="color: rgb(255, 255, 255); background-color: rgb(17, 185, 129); border-radius: 4px; font-weight: 400; max-width: 175px">
+         <div class="formkit-field" style="max-width:350px;margin-right:12px;"><input class="formkit-input" name="email_address" aria-label="Email Address" placeholder="Email Address" required="" type="email" style="color: rgb(0, 0, 0); border-color: rgb(227, 227, 227); border-radius: 4px; font-weight: 400;"></div>
+         <button data-element="submit" class="formkit-submit formkit-submit" style="color: rgb(255, 255, 255); background-color: rgb(17, 185, 129); border-radius: 4px; font-weight: 400; max-width: 200px">
             <div class="formkit-spinner">
                <div></div>
                <div></div>
