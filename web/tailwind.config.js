@@ -5,6 +5,7 @@ module.exports = {
   theme: {
     fontFamily: {
       'major-mono': ['Major Mono Display', 'monospace'],
+      'readex-pro': ['Readex Pro', 'sans-serif'],
     },
     extend: {
       backgroundImage: {

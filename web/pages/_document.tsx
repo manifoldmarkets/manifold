@@ -2,7 +2,7 @@ import { Html, Head, Main, NextScript } from 'next/document'
 
 export default function Document() {
   return (
-    <Html data-theme="dark">
+    <Html data-theme="dark" className="h-full bg-gray-900">
       <Head>
         <title>Mantic Markets</title>
 
@@ -38,12 +38,7 @@ export default function Document() {
           crossOrigin="true"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap"
-          rel="stylesheet"
-        />
-
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter&display=optional"
+          href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Readex+Pro:wght@400;700&display=swap"
           rel="stylesheet"
         />
 
@@ -62,7 +57,7 @@ export default function Document() {
           }}
         />
       </Head>
-      <body>
+      <body className="h-full font-readex-pro">
         <Main />
         <NextScript />
       </body>
