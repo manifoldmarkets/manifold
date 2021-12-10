@@ -15,6 +15,7 @@ import {
 export type Contract = {
   id: string // Chosen by creator; must be unique
   creatorId: string
+  creatorName: string
 
   question: string
   description: string // More info about what the contract is about
