@@ -1,4 +1,7 @@
+import clsx from 'clsx'
 import React, { useState } from 'react'
+import { useUser } from '../hooks/use-user'
+import { Bet, saveBet } from '../lib/firebase/bets'
 import { Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
@@ -8,13 +11,50 @@ import { YesNoSelector } from './yes-no-selector'
 export function BetPanel(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
 
+  const user = useUser()
+
   const [betChoice, setBetChoice] = useState<'YES' | 'NO'>('YES')
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wasSubmitted, setWasSubmitted] = useState(false)
 
   function onBetChange(str: string) {
     const amount = parseInt(str)
     setBetAmount(isNaN(amount) ? undefined : amount)
   }
+
+  async function submitBet() {
+    if (!user || !betAmount) return
+
+    const now = Date.now()
+
+    const bet: Bet = {
+      id: `${now}-${user.id}`,
+      userId: user.id,
+      contractId: contract.id,
+      createdTime: now,
+      outcome: betChoice,
+      amount: betAmount,
+
+      // Placeholder.
+      dpmWeight: betAmount,
+    }
+
+    setIsSubmitting(true)
+
+    await saveBet(bet)
+
+    setIsSubmitting(false)
+    setWasSubmitted(true)
+  }
+
+  function newBet() {
+    setBetAmount(undefined)
+    setWasSubmitted(false)
+  }
+
+  const betDisabled = isSubmitting || wasSubmitted
 
   return (
     <Col className={'bg-gray-600 p-6 rounded ' + className}>
@@ -47,9 +87,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           <Spacer h={4} />
 
           <div className="p-2 font-medium">Average price</div>
-          <div className="px-2">
-            {betChoice === 'YES' ? 0.57 : 0.43} points
-          </div>
+          <div className="px-2">{betChoice === 'YES' ? 0.57 : 0.43} points</div>
 
           <Spacer h={2} />
 
@@ -60,7 +98,29 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
           <Spacer h={6} />
 
-          <button className="btn btn-primary">Place bet</button>
+          <button
+            className={clsx(
+              'btn',
+              betDisabled ? 'btn-disabled' : 'btn-primary'
+            )}
+            onClick={betDisabled ? undefined : submitBet}
+          >
+            Place bet
+          </button>
+
+          {wasSubmitted && (
+            <Col>
+              <Spacer h={4} />
+
+              <div>Bet submitted!</div>
+
+              <Spacer h={4} />
+
+              <button className="btn btn-primary btn-xs" onClick={newBet}>
+                New bet
+              </button>
+            </Col>
+          )}
         </>
       )}
     </Col>

@@ -32,18 +32,6 @@ export type Contract = {
   resolution?: 'YES' | 'NO' | 'CANCEL' // Chosen by creator; must be one of outcomes
 }
 
-export type Bet = {
-  id: string
-  userId: string
-  contractId: string
-
-  size: number // Amount of USD bid
-  outcome: 'YES' | 'NO' // Chosen outcome
-  createdTime: number
-
-  dpmWeight: number // Dynamic Parimutuel weight
-}
-
 const db = getFirestore(app)
 const contractCollection = collection(db, 'contracts')
 
@@ -78,11 +66,4 @@ export function listenForContract(
   return onSnapshot(contractRef, (contractSnap) => {
     setContract(contractSnap.data() as Contract)
   })
-}
-
-// Push bet to Firestore
-// TODO: Should bets be subcollections under its contract?
-export async function setBet(bet: Bet) {
-  const docRef = doc(db, 'bets', bet.id)
-  await setDoc(docRef, bet)
 }
