@@ -2,9 +2,9 @@ import React from 'react'
 import { useRouter } from 'next/router'
 import { useContract } from '../../hooks/use-contract'
 import { Header } from '../../components/header'
-import { Row } from '../../components/layout/row'
 import { ContractOverview } from '../../components/contract-overview'
 import { BetPanel } from '../../components/bet-panel'
+import { Col } from '../../components/layout/col'
 
 export default function ContractPage() {
   const router = useRouter()
@@ -25,11 +25,13 @@ export default function ContractPage() {
       <Header />
 
       <div className="w-full flex flex-col p-4 mt-4">
-        <Row className="justify-between">
+        <Col className="md:justify-between md:flex-row">
           <ContractOverview contract={contract} />
 
+          <div className="mt-12 md:mt-0" />
+
           <BetPanel className="self-start" contract={contract} />
-        </Row>
+        </Col>
       </div>
     </div>
   )
