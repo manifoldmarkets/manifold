@@ -12,7 +12,7 @@ import {
 function ContractCard(props: { contract: Contract }) {
   const { contract } = props
   return (
-    <li key={contract.id}>
+    <li>
       <Link href={`/contract/${contract.id}`}>
         <a className="block hover:bg-gray-600">
           <div className="px-4 py-4 sm:px-6">
@@ -63,7 +63,7 @@ export function ContractList(props: { contracts: Contract[] }) {
     <div className="bg-gray-500 shadow overflow-hidden sm:rounded-md max-w-4xl w-full">
       <ul role="list" className="divide-y divide-gray-200">
         {contracts.map((contract) => (
-          <ContractCard contract={contract} />
+          <ContractCard contract={contract} key={contract.id} />
         ))}
       </ul>
     </div>

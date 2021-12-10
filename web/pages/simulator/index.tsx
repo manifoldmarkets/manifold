@@ -249,7 +249,7 @@ export default function Simulator() {
   }
 
   return (
-    <div className="relative overflow-hidden h-screen bg-gray-900">
+    <div>
       <Header />
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-8 max-w-7xl mx-auto text-center">
         {/* Left column */}
