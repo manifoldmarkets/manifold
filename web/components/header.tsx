@@ -6,7 +6,7 @@ import { firebaseLogin } from '../lib/firebase/users'
 const navigation = [
   {
     name: 'About',
-    href: 'https://mantic.notion.site/About-Mantic-Markets-09bdde9044614e62a27477b4b1bf77ea',
+    href: 'https://mantic.notion.site/About-Mantic-Markets-46a1a0fb6e294011a8b6b582e276359f',
   },
   { name: 'Simulator', href: '/simulator' },
 ]
