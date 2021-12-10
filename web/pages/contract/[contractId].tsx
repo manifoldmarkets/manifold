@@ -1,27 +1,36 @@
+import React from 'react'
 import { useRouter } from 'next/router'
 import { useContract } from '../../hooks/use-contract'
-import { useUser } from '../../hooks/use-user'
+import { Header } from '../../components/header'
+import { Row } from '../../components/layout/row'
+import { ContractOverview } from '../../components/contract-overview'
+import { BetPanel } from '../../components/bet-panel'
 
 export default function ContractPage() {
-  const user = useUser()
-
   const router = useRouter()
   const { contractId } = router.query as { contractId: string }
 
   const contract = useContract(contractId)
 
   if (contract === 'loading') {
-    return <div>Loading...</div>
+    return <div />
   }
 
-  if (contract === null) {
+  if (!contract) {
     return <div>Contract not found...</div>
   }
 
   return (
-    <div>
-      <div>{contract.id}</div>
-      <div>{contract.question}</div>
+    <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+      <Header />
+
+      <div className="w-full flex flex-col p-4 mt-4">
+        <Row className="justify-between">
+          <ContractOverview contract={contract} />
+
+          <BetPanel className="self-start" contract={contract} />
+        </Row>
+      </div>
     </div>
   )
 }
