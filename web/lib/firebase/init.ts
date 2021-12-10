@@ -7,7 +7,7 @@ const firebaseConfig = {
   storageBucket: 'mantic-markets.appspot.com',
   messagingSenderId: '128925704902',
   appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
-  measurementId: '${config.measurementId}',
+  measurementId: 'G-SSFK1Q138D',
 }
 
 // Initialize Firebase
