@@ -3,7 +3,10 @@ import { db } from './init'
 
 export type Contract = {
   id: string
+  creatorId: string
+  creatorName: string
   question: string
+  description: string
 }
 
 const contractCollection = collection(db, 'contracts')
