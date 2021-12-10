@@ -28,7 +28,7 @@ export default function ContractPage() {
         <Row className="justify-between">
           <ContractOverview contract={contract} />
 
-          <BetPanel contract={contract} />
+          <BetPanel className="self-start" contract={contract} />
         </Row>
       </div>
     </div>
