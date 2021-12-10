@@ -9,7 +9,7 @@ function ContractCard(props: { contract: Contract }) {
         <a className="block hover:bg-gray-200">
           <div className="px-4 py-4 sm:px-6">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-indigo-500 truncate">
+              <p className="text-sm font-medium text-green-600 truncate">
                 {contract.question}
               </p>
               <div className="ml-2 flex-shrink-0 flex">

@@ -32,9 +32,9 @@ export default function NewContract() {
         creatorId: creator.id,
         creatorName: creator.name,
       }))
-      listContracts(creator?.id).then(setContracts)
+      listContracts(creator.id).then(setContracts)
     }
-  }, [creator?.id])
+  }, [creator])
 
   async function saveContract() {
     await pushContract(contract)
@@ -52,8 +52,8 @@ export default function NewContract() {
   return (
     <div>
       <Header />
-      <div className="max-w-4xl my-20 lg:mx-auto mx-4">
-        <h1 className="text-2xl font-major-mono text-indigo-500 font-bold mt-6 mb-4">
+      <div className="max-w-4xl py-20 lg:mx-auto px-4">
+        <h1 className="text-2xl font-major-mono text-green-600 font-bold mt-6 mb-4">
           Create a new prediction market
         </h1>
         <div className="w-full bg-gray-100 rounded-lg shadow-xl p-6">
@@ -164,7 +164,7 @@ export default function NewContract() {
         </div>
 
         {/* Show a separate card for each contract */}
-        <h1 className="text-2xl font-major-mono text-indigo-500 font-bold mt-6 mb-4">
+        <h1 className="text-2xl font-major-mono text-green-600 font-bold mt-6 mb-4">
           Your markets
         </h1>
 

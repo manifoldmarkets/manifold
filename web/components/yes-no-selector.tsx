@@ -49,7 +49,7 @@ function Button(props: {
         !hideFocusRing && 'focus:outline-none focus:ring-2 focus:ring-offset-2',
         color === 'green' &&
           'bg-green-500 hover:bg-green-600 focus:ring-green-500',
-        color === 'red' && 'bg-red-500 hover:bg-red-600 focus:ring-red-500',
+        color === 'red' && 'bg-red-400 hover:bg-red-500 focus:ring-red-400',
         color === 'deemphasized' &&
           'text-gray-700 bg-gray-200 hover:bg-gray-300 focus:ring-gray-300',
         className
