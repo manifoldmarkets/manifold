@@ -9,6 +9,7 @@ import {
   query,
   getDocs,
   onSnapshot,
+  orderBy,
 } from 'firebase/firestore'
 
 export type Contract = {
@@ -57,7 +58,11 @@ export async function deleteContract(contractId: string) {
 }
 
 export async function listContracts(creatorId: string): Promise<Contract[]> {
-  const q = query(contractCollection, where('creatorId', '==', creatorId))
+  const q = query(
+    contractCollection,
+    where('creatorId', '==', creatorId),
+    orderBy('createdTime', 'desc')
+  )
   const snapshot = await getDocs(q)
   const contracts: Contract[] = []
   snapshot.forEach((doc) => contracts.push(doc.data() as Contract))
