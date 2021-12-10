@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { Contract } from '../lib/firebase/contracts'
-import { Button } from './button'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { YesNoSelector } from './yes-no-selector'
@@ -8,7 +7,7 @@ import { YesNoSelector } from './yes-no-selector'
 export function BetPanel(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
 
-  const [betChoice, setBetChoice] = useState<'yes' | 'no'>('yes')
+  const [betChoice, setBetChoice] = useState<'YES' | 'NO'>('YES')
   const [shares, setShares] = useState(0)
 
   return (
@@ -40,13 +39,13 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
       <div className="p-2 font-medium">Price</div>
       <div className="px-2">
-        {shares * (betChoice === 'yes' ? 57 : 43)} points
+        {shares * (betChoice === 'YES' ? 57 : 43)} points
       </div>
 
       <Spacer h={6} />
 
       {shares !== 0 && (
-        <Button color={shares ? 'green' : 'deemphasized'}>Place bet</Button>
+        <button className="btn btn-primary">Place bet</button>
       )}
     </Col>
   )
