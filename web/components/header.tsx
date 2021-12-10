@@ -17,11 +17,19 @@ function SignInLink() {
   return (
     <>
       {user ? (
-        <Link href="/account">
-          <a className="text-base font-medium text-green-400 hover:text-gray-300">
-            {user.name}
-          </a>
-        </Link>
+        <>
+          <Link href="/contract">
+            <a className="text-base font-medium text-white hover:text-gray-300">
+              Create a market
+            </a>
+          </Link>
+
+          <Link href="/account">
+            <a className="text-base font-medium text-green-400 hover:text-gray-300">
+              {user.name}
+            </a>
+          </Link>
+        </>
       ) : (
         <button
           className="text-base font-medium text-green-400  hover:text-gray-300"
