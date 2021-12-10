@@ -4,7 +4,7 @@ import { Header } from '../components/header'
 import { useUser } from '../hooks/use-user'
 import { useState, useEffect } from 'react'
 import { Contract, listContracts } from '../lib/firebase/contracts'
-import { ContractList } from './contract'
+import { ContractsList } from '../components/contracts-list'
 
 export default function Account() {
   const user = useUser()
@@ -47,7 +47,7 @@ export default function Account() {
         <h1 className="text-2xl font-major-mono text-indigo-300 font-bold mt-6 mb-4">
           Your markets
         </h1>
-        <ContractList contracts={contracts} />
+        <ContractsList contracts={contracts} />
       </div>
     </div>
   )
