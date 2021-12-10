@@ -19,7 +19,6 @@ export default function Account() {
   return (
     <div className="relative overflow-hidden h-screen bg-cover bg-gray-900">
       <Header />
-      {/* <div className="flex items-center w-full h-max px-4 py-10 bg-cover card"> */}
       <div className="max-w-4xl my-20 mx-auto">
         <div>
           <div className="card glass lg:card-side text-neutral-content bg-gray-800 transition-all max-w-sm mx-auto my-20">
