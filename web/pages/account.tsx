@@ -17,7 +17,7 @@ export default function Account() {
   }, [user?.id])
 
   return (
-    <div className="relative overflow-hidden h-screen bg-cover bg-gray-900">
+    <div>
       <Header />
       <div className="max-w-4xl my-20 mx-auto">
         <div>
