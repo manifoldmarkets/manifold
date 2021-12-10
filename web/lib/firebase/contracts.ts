@@ -8,6 +8,7 @@ import {
   collection,
   query,
   getDocs,
+  onSnapshot,
 } from 'firebase/firestore'
 
 export type Contract = {
@@ -42,6 +43,7 @@ export type Bet = {
 }
 
 const db = getFirestore(app)
+const contractCollection = collection(db, 'contracts')
 
 // Push contract to Firestore
 export async function setContract(contract: Contract) {
@@ -55,12 +57,21 @@ export async function deleteContract(contractId: string) {
 }
 
 export async function listContracts(creatorId: string): Promise<Contract[]> {
-  const contractsRef = collection(db, 'contracts')
-  const q = query(contractsRef, where('creatorId', '==', creatorId))
+  const q = query(contractCollection, where('creatorId', '==', creatorId))
   const snapshot = await getDocs(q)
   const contracts: Contract[] = []
   snapshot.forEach((doc) => contracts.push(doc.data() as Contract))
   return contracts
+}
+
+export function listenForContract(
+  contractId: string,
+  setContract: (contract: Contract) => void
+) {
+  const contractRef = doc(contractCollection, contractId)
+  return onSnapshot(contractRef, (contractSnap) => {
+    setContract(contractSnap.data() as Contract)
+  })
 }
 
 // Push bet to Firestore
