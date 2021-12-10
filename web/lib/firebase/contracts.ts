@@ -1,20 +1,71 @@
-import { collection, onSnapshot, doc } from '@firebase/firestore'
-import { db } from './init'
+import { app } from './init'
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  deleteDoc,
+  where,
+  collection,
+  query,
+  getDocs,
+} from 'firebase/firestore'
 
 export type Contract = {
-  id: string
+  id: string // Chosen by creator; must be unique
+  creatorId: string
+
   question: string
+  description: string // More info about what the contract is about
+  outcomeType: 'BINARY' // | 'MULTI' | 'interval' | 'date'
+  // outcomes: ['YES', 'NO']
+  seedAmounts: { YES: number; NO: number } // seedBets: [number, number]
+
+  createdTime: number // Milliseconds since epoch
+  lastUpdatedTime: number // If the question or description was changed
+  closeTime?: number // When no more trading is allowed
+
+  // isResolved: boolean
+  resolutionTime?: 10293849 // When the contract creator resolved the market; 0 if unresolved
+  resolution?: 'YES' | 'NO' | 'CANCEL' // Chosen by creator; must be one of outcomes
 }
 
-const contractCollection = collection(db, 'contracts')
+export type Bet = {
+  id: string
+  userId: string
+  contractId: string
 
-export function listenForContract(
-  contractId: string,
-  setContract: (contract: Contract) => void
-) {
-  const contractRef = doc(contractCollection, contractId)
+  size: number // Amount of USD bid
+  outcome: 'YES' | 'NO' // Chosen outcome
+  createdTime: number
 
-  return onSnapshot(contractRef, (contractSnap) => {
-    setContract(contractSnap.data() as Contract)
-  })
+  dpmWeight: number // Dynamic Parimutuel weight
+}
+
+const db = getFirestore(app)
+
+// Push contract to Firestore
+export async function setContract(contract: Contract) {
+  const docRef = doc(db, 'contracts', contract.id)
+  await setDoc(docRef, contract)
+}
+
+export async function deleteContract(contractId: string) {
+  const docRef = doc(db, 'contracts', contractId)
+  await deleteDoc(docRef)
+}
+
+export async function listContracts(creatorId: string): Promise<Contract[]> {
+  const contractsRef = collection(db, 'contracts')
+  const q = query(contractsRef, where('creatorId', '==', creatorId))
+  const snapshot = await getDocs(q)
+  const contracts: Contract[] = []
+  snapshot.forEach((doc) => contracts.push(doc.data() as Contract))
+  return contracts
+}
+
+// Push bet to Firestore
+// TODO: Should bets be subcollections under its contract?
+export async function setBet(bet: Bet) {
+  const docRef = doc(db, 'bets', bet.id)
+  await setDoc(docRef, bet)
 }
