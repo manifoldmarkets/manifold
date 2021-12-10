@@ -57,7 +57,9 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   const betDisabled = isSubmitting || wasSubmitted
 
   return (
-    <Col className={clsx('bg-gray-100 p-6 rounded w-full md:w-auto', className)}>
+    <Col
+      className={clsx('bg-gray-100 p-6 rounded w-full md:w-auto', className)}
+    >
       <div className="p-2 font-medium">Pick outcome</div>
       <YesNoSelector
         className="p-2"
@@ -101,7 +103,11 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           <button
             className={clsx(
               'btn',
-              betDisabled ? 'btn-disabled' : 'btn-primary'
+              betDisabled
+                ? 'btn-disabled'
+                : betChoice === 'YES'
+                ? 'bg-green-500 hover:bg-green-600 focus:ring-green-500'
+                : 'bg-red-400 hover:bg-red-500 focus:ring-red-400'
             )}
             onClick={betDisabled ? undefined : submitBet}
           >
@@ -116,7 +122,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
               <Spacer h={4} />
 
-              <button className="btn btn-primary btn-xs" onClick={newBet}>
+              <button className="btn btn-accent btn-xs" onClick={newBet}>
                 New bet
               </button>
             </Col>

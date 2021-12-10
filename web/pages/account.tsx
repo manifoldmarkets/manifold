@@ -5,6 +5,7 @@ import { useUser } from '../hooks/use-user'
 import { useState, useEffect } from 'react'
 import { Contract, listContracts } from '../lib/firebase/contracts'
 import { ContractsList } from '../components/contracts-list'
+import Image from 'next/image'
 
 export default function Account() {
   const user = useUser()
@@ -19,11 +20,18 @@ export default function Account() {
   return (
     <div>
       <Header />
-      <div className="max-w-4xl my-20 mx-auto">
+      <div className="max-w-4xl py-20 mx-auto">
         <div>
-          <div className="card glass lg:card-side text-neutral-content bg-gray-800 transition-all max-w-sm mx-auto my-20">
+          <div className="card glass lg:card-side text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-20">
             <figure className="p-6">
-              <img src={user?.avatarUrl} className="rounded-lg shadow-lg" />
+              {user?.avatarUrl && (
+                <Image
+                  src={user.avatarUrl}
+                  className="rounded-lg shadow-lg"
+                  width={96}
+                  height={96}
+                />
+              )}
             </figure>
             <div className="max-w-md card-body">
               <h2 className="card-title font-major-mono">{user?.name}</h2>
@@ -31,7 +39,7 @@ export default function Account() {
               <p>${user?.balanceUsd} USD</p>
               <div className="card-actions">
                 <button
-                  className="btn glass rounded-full"
+                  className="btn glass rounded-full hover:bg-green-500"
                   onClick={() => {
                     firebaseLogout()
                     router.push('/')
@@ -44,7 +52,7 @@ export default function Account() {
           </div>
         </div>
 
-        <h1 className="text-2xl font-major-mono text-indigo-300 font-bold mt-6 mb-4">
+        <h1 className="text-2xl font-major-mono text-green-600 font-bold mt-6 mb-4">
           Your markets
         </h1>
         <ContractsList contracts={contracts} />
