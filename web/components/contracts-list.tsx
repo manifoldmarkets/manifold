@@ -33,7 +33,7 @@ function ContractCard(props: { contract: Contract }) {
                   </time>
                 </p>
                 <button
-                  className="btn btn-sm btn-error ml-2"
+                  className="btn btn-sm btn-error btn-outline ml-2"
                   onClick={() => {
                     deleteContract(contract.id)
                   }}
