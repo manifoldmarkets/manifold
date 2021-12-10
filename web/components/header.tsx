@@ -1,7 +1,9 @@
+import clsx from 'clsx'
 import { Popover } from '@headlessui/react'
 import Link from 'next/link'
 import { useUser } from '../hooks/use-user'
 import { firebaseLogin } from '../lib/firebase/users'
+import Image from 'next/image'
 
 const navigation = [
   {
@@ -11,28 +13,34 @@ const navigation = [
   { name: 'Simulator', href: '/simulator' },
 ]
 
-function SignInLink() {
+function SignInLink(props: { darkBackground?: boolean }) {
+  const { darkBackground } = props
+
   const user = useUser()
+
+  const themeClasses = darkBackground
+    ? 'text-white hover:text-gray-300'
+    : 'hover:text-gray-500'
 
   return (
     <>
       {user ? (
         <>
           <Link href="/contract">
-            <a className="text-base font-medium text-white hover:text-gray-300">
+            <a className={clsx('text-base font-medium', themeClasses)}>
               Create a market
             </a>
           </Link>
 
           <Link href="/account">
-            <a className="text-base font-medium text-green-400 hover:text-gray-300">
+            <a className={clsx('text-base font-medium', themeClasses)}>
               {user.name}
             </a>
           </Link>
         </>
       ) : (
         <button
-          className="text-base font-medium text-green-400  hover:text-gray-300"
+          className={clsx('text-base font-medium', themeClasses)}
           onClick={() => firebaseLogin()}
         >
           Sign In
@@ -42,7 +50,9 @@ function SignInLink() {
   )
 }
 
-export function Header() {
+export function Header(props: { darkBackground?: boolean }) {
+  const { darkBackground } = props
+
   return (
     <Popover as="header" className="relative">
       <div className="pt-6">
@@ -53,12 +63,21 @@ export function Header() {
           <div className="flex items-center flex-1">
             <div className="flex items-center justify-between w-full md:w-auto">
               <Link href="/">
-                <a className="inline-grid grid-flow-col align-items-center h-6 sm:h-10">
-                  <img
-                    className="w-auto h-6 sm:h-10 inline-block mr-3"
-                    src="/logo-icon.svg"
-                  />
-                  <span className="text-white font-major-mono lowercase sm:text-2xl my-auto">
+                <a className="flex flex-row items-center align-items-center h-6 sm:h-10">
+                  <div className="inline-block mr-3 mt-2">
+                    <Image
+                      className="h-6 sm:h-10"
+                      src="/logo-icon.svg"
+                      width={40}
+                      height={40}
+                    />
+                  </div>
+                  <span
+                    className={clsx(
+                      'font-major-mono lowercase sm:text-2xl my-auto',
+                      darkBackground && 'text-white'
+                    )}
+                  >
                     Mantic Markets
                   </span>
                 </a>
@@ -68,12 +87,19 @@ export function Header() {
             <div className="space-x-8 md:flex md:ml-16">
               {navigation.map((item) => (
                 <Link key={item.name} href={item.href}>
-                  <a className="text-base font-medium text-white hover:text-gray-300">
+                  <a
+                    className={clsx(
+                      'text-base font-medium',
+                      darkBackground
+                        ? 'text-white hover:text-gray-300'
+                        : 'hover:text-gray-500'
+                    )}
+                  >
                     {item.name}
                   </a>
                 </Link>
               ))}
-              <SignInLink />
+              <SignInLink darkBackground={darkBackground} />
             </div>
           </div>
         </nav>

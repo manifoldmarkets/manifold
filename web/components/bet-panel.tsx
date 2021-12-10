@@ -57,7 +57,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   const betDisabled = isSubmitting || wasSubmitted
 
   return (
-    <Col className={clsx('bg-gray-600 p-6 rounded w-full md:w-auto', className)}>
+    <Col className={clsx('bg-gray-100 p-6 rounded w-full md:w-auto', className)}>
       <div className="p-2 font-medium">Pick outcome</div>
       <YesNoSelector
         className="p-2"
