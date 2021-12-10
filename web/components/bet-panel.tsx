@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
+import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import { YesNoSelector } from './yes-no-selector'
 
@@ -8,7 +9,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO'>('YES')
-  const [shares, setShares] = useState(0)
+  const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
 
   return (
     <Col className={'bg-gray-600 p-6 rounded ' + className}>
@@ -23,29 +24,40 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
       <Spacer h={4} />
 
-      <div className="p-2 font-medium">Shares</div>
-      <div className="p-2">
+      <div className="p-2 font-medium">Bet amount</div>
+      <Row className="p-2 items-center">
         <input
           className="input input-bordered input-md"
           style={{ maxWidth: 80 }}
           type="text"
-          value={shares}
-          onChange={(e) => setShares(parseInt(e.target.value) || 0)}
+          placeholder="0"
+          value={betAmount}
+          onChange={(e) => setBetAmount(parseInt(e.target.value) || 0)}
           onFocus={(e) => e.target.select()}
         />
-      </div>
+        <div className="ml-3">points</div>
+      </Row>
 
-      <Spacer h={4} />
+      {!!betAmount && (
+        <>
+          <Spacer h={4} />
 
-      <div className="p-2 font-medium">Price</div>
-      <div className="px-2">
-        {shares * (betChoice === 'YES' ? 57 : 43)} points
-      </div>
+          <div className="p-2 font-medium">Average price</div>
+          <div className="px-2">
+            {betChoice === 'YES' ? 0.57 : 0.43} points
+          </div>
 
-      <Spacer h={6} />
+          <Spacer h={2} />
 
-      {shares !== 0 && (
-        <button className="btn btn-primary">Place bet</button>
+          <div className="p-2 font-medium">Estimated winnings</div>
+          <div className="px-2">
+            {Math.floor(betAmount / (betChoice === 'YES' ? 0.57 : 0.43))} points
+          </div>
+
+          <Spacer h={6} />
+
+          <button className="btn btn-primary">Place bet</button>
+        </>
       )}
     </Col>
   )
