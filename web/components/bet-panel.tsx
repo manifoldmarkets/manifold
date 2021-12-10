@@ -47,9 +47,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           <Spacer h={4} />
 
           <div className="p-2 font-medium">Average price</div>
-          <div className="px-2">
-            {betChoice === 'YES' ? 0.57 : 0.43} points
-          </div>
+          <div className="px-2">{betChoice === 'YES' ? 0.57 : 0.43} points</div>
 
           <Spacer h={2} />
 
