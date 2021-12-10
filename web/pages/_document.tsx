@@ -38,12 +38,7 @@ export default function Document() {
           crossOrigin="true"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap"
-          rel="stylesheet"
-        />
-
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter&display=optional"
+          href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Readex+Pro:wght@400;700&display=swap"
           rel="stylesheet"
         />
 
@@ -62,7 +57,7 @@ export default function Document() {
           }}
         />
       </Head>
-      <body className="h-full">
+      <body className="h-full font-readex-pro">
         <Main />
         <NextScript />
       </body>
