@@ -1,4 +1,4 @@
-import { FieldValue, serverTimestamp } from '@firebase/firestore'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Header } from '../../components/header'
 import { useUser } from '../../hooks/use-user'
@@ -13,59 +13,60 @@ function ContractCard(props: { contract: Contract }) {
   const { contract } = props
   return (
     <li key={contract.id}>
-      <a href="#" className="block hover:bg-gray-600">
-        <div className="px-4 py-4 sm:px-6">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-indigo-300 truncate">
-              {contract.question}
-            </p>
-            <div className="ml-2 flex-shrink-0 flex">
-              <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                {contract.outcomeType}
+      <Link href={`/contract/${contract.id}`}>
+        <a className="block hover:bg-gray-600">
+          <div className="px-4 py-4 sm:px-6">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-indigo-300 truncate">
+                {contract.question}
               </p>
+              <div className="ml-2 flex-shrink-0 flex">
+                <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                  {contract.outcomeType}
+                </p>
+              </div>
+            </div>
+            <div className="mt-2 sm:flex sm:justify-between">
+              <div className="sm:flex">
+                <p className="flex items-center text-sm">{contract.id}</p>
+                <p className="mt-2 flex items-center text-sm sm:mt-0 sm:ml-6">
+                  {contract.description}
+                </p>
+              </div>
+              <div className="mt-2 flex items-center text-sm sm:mt-0">
+                <p>
+                  Created on{' '}
+                  <time dateTime={`${contract.createdTime}`}>
+                    {new Date(contract.createdTime).toLocaleString()}
+                  </time>
+                </p>
+                <button
+                  className="btn btn-sm btn-error ml-2"
+                  onClick={() => {
+                    deleteContract(contract.id)
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
-          <div className="mt-2 sm:flex sm:justify-between">
-            <div className="sm:flex">
-              <p className="flex items-center text-sm">
-                {/* <UsersIcon
-                  className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                /> */}
-                {contract.id}
-              </p>
-              <p className="mt-2 flex items-center text-sm sm:mt-0 sm:ml-6">
-                {/* <LocationMarkerIcon
-                  className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                /> */}
-                {contract.description}
-              </p>
-            </div>
-            <div className="mt-2 flex items-center text-sm sm:mt-0">
-              {/* <CalendarIcon
-                className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400"
-                aria-hidden="true"
-              /> */}
-              <p>
-                Created on{' '}
-                <time dateTime={`${contract.createdTime}`}>
-                  {new Date(contract.createdTime).toLocaleString()}
-                </time>
-              </p>
-              <button
-                className="btn btn-sm btn-error ml-2"
-                onClick={() => {
-                  deleteContract(contract.id)
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      </a>
+        </a>
+      </Link>
     </li>
+  )
+}
+
+export function ContractList(props: { contracts: Contract[] }) {
+  const { contracts } = props
+  return (
+    <div className="bg-gray-500 shadow overflow-hidden sm:rounded-md max-w-4xl w-full">
+      <ul role="list" className="divide-y divide-gray-200">
+        {contracts.map((contract) => (
+          <ContractCard contract={contract} />
+        ))}
+      </ul>
+    </div>
   )
 }
 
@@ -73,7 +74,6 @@ function ContractCard(props: { contract: Contract }) {
 export default function NewContract() {
   const creator = useUser()
   const [contract, setContract] = useState<Contract>({
-    // creatorId: creator?.id || '',
     // TODO: Set create time to Firestore timestamp
     createdTime: Date.now(),
     lastUpdatedTime: Date.now(),
@@ -103,14 +103,11 @@ export default function NewContract() {
   return (
     <div className="relative overflow-hidden h-screen bg-cover bg-gray-900">
       <Header />
-      <div className="grid place-items-center py-20">
-        <div className="max-w-4xl w-full bg-gray-500 rounded-lg shadow-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl text-indigo-300 font-bold">
-              Create a new contract
-            </h1>
-          </div>
-
+      <div className="max-w-4xl my-20 mx-auto">
+        <h1 className="text-2xl text-indigo-300 font-bold mt-6 mb-4">
+          Create a new prediction market
+        </h1>
+        <div className="w-full bg-gray-500 rounded-lg shadow-xl p-6">
           {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
           {/* When the form is submitted, create a new contract in the database */}
           <form>
@@ -152,6 +149,7 @@ export default function NewContract() {
               ></textarea>
             </div>
 
+            {/* TODO: Save seeds */}
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-3">
                 <div className="form-control">
@@ -190,13 +188,11 @@ export default function NewContract() {
         </div>
 
         {/* Show a separate card for each contract */}
-        <div className="bg-gray-500 shadow overflow-hidden sm:rounded-md mt-8 max-w-4xl w-full">
-          <ul role="list" className="divide-y divide-gray-200">
-            {contracts.map((contract) => (
-              <ContractCard contract={contract} />
-            ))}
-          </ul>
-        </div>
+        <h1 className="text-2xl text-indigo-300 font-bold mt-6 mb-4">
+          Your markets
+        </h1>
+
+        <ContractList contracts={contracts} />
       </div>
     </div>
   )
