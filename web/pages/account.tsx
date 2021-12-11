@@ -5,7 +5,6 @@ import { useUser } from '../hooks/use-user'
 import { useState, useEffect } from 'react'
 import { Contract, listContracts } from '../lib/firebase/contracts'
 import { ContractsList } from '../components/contracts-list'
-import Image from 'next/image'
 
 export default function Account() {
   const user = useUser()
@@ -25,11 +24,9 @@ export default function Account() {
           <div className="card glass lg:card-side text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
             <figure className="p-6">
               {user?.avatarUrl && (
-                <Image
+                <img
                   src={user.avatarUrl}
                   className="rounded-lg shadow-lg"
-                  width={96}
-                  height={96}
                 />
               )}
             </figure>

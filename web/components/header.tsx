@@ -3,7 +3,6 @@ import { Popover } from '@headlessui/react'
 import Link from 'next/link'
 import { useUser } from '../hooks/use-user'
 import { firebaseLogin } from '../lib/firebase/users'
-import Image from 'next/image'
 
 const navigation = [
   {
@@ -64,12 +63,10 @@ export function Header(props: { darkBackground?: boolean }) {
             <div className="flex items-center justify-between w-full md:w-auto">
               <Link href="/">
                 <a className="flex flex-row items-center align-items-center h-6 sm:h-10">
-                  <div className="inline-block mr-3 mt-2">
-                    <Image
+                  <div className="inline-block mr-3">
+                    <img
                       className="h-6 sm:h-10"
                       src="/logo-icon.svg"
-                      width={40}
-                      height={40}
                     />
                   </div>
                   <span
