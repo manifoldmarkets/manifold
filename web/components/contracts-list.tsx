@@ -52,7 +52,7 @@ function ContractCard(props: { contract: Contract }) {
 export function ContractsList(props: { contracts: Contract[] }) {
   const { contracts } = props
   return (
-    <div className="bg-gray-200 shadow overflow-hidden sm:rounded-md max-w-4xl w-full">
+    <div className="bg-gray-200 shadow-xl overflow-hidden sm:rounded-md max-w-4xl w-full">
       <ul role="list" className="divide-y divide-gray-300">
         {contracts.map((contract) => (
           <ContractCard contract={contract} key={contract.id} />
