@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ContractsList } from '../../components/contracts-list'
 import { Header } from '../../components/header'
 import { Spacer } from '../../components/layout/spacer'
+import { Title } from '../../components/title'
 import { useUser } from '../../hooks/use-user'
 import {
   Contract,
@@ -55,10 +56,8 @@ export default function NewContract() {
     <div>
       <Header />
       <div className="max-w-4xl py-12 lg:mx-auto px-4">
-        <h1 className="text-2xl font-major-mono text-green-600 font-bold my-6">
-          Create a new prediction market
-        </h1>
-        <div className="w-full bg-gray-100 rounded-lg shadow-xl p-6">
+        <Title text="Create a new prediction market" />
+        <div className="w-full bg-gray-200 rounded-lg shadow-xl p-6">
           {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
           {/* When the form is submitted, create a new contract in the database */}
           <form>
@@ -175,11 +174,7 @@ export default function NewContract() {
 
         <Spacer h={10} />
 
-        {/* Show a separate card for each contract */}
-        <h1 className="text-2xl font-major-mono text-green-600 font-bold my-6">
-          Your markets
-        </h1>
-
+        <Title text="Your markets" />
         <ContractsList contracts={contracts} />
       </div>
     </div>

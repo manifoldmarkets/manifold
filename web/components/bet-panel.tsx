@@ -50,7 +50,10 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
   return (
     <Col
-      className={clsx('bg-gray-100 p-6 rounded w-full md:w-auto', className)}
+      className={clsx(
+        'bg-gray-200 shadow-xl p-6 rounded w-full md:w-auto',
+        className
+      )}
     >
       <div className="p-2 font-medium">Pick outcome</div>
       <YesNoSelector

@@ -6,10 +6,10 @@ function ContractCard(props: { contract: Contract }) {
   return (
     <li>
       <Link href={`/contract/${contract.id}`}>
-        <a className="block hover:bg-gray-200">
+        <a className="block hover:bg-gray-300">
           <div className="px-4 py-4 sm:px-6">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-green-600 truncate">
+              <p className="text-sm font-medium text-indigo-700 truncate">
                 {contract.question}
               </p>
               <div className="ml-2 flex-shrink-0 flex">
@@ -52,8 +52,8 @@ function ContractCard(props: { contract: Contract }) {
 export function ContractsList(props: { contracts: Contract[] }) {
   const { contracts } = props
   return (
-    <div className="bg-gray-100 shadow overflow-hidden sm:rounded-md max-w-4xl w-full">
-      <ul role="list" className="divide-y divide-gray-200">
+    <div className="bg-gray-200 shadow-xl overflow-hidden sm:rounded-md max-w-4xl w-full">
+      <ul role="list" className="divide-y divide-gray-300">
         {contracts.map((contract) => (
           <ContractCard contract={contract} key={contract.id} />
         ))}
