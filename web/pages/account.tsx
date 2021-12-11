@@ -5,6 +5,7 @@ import { useUser } from '../hooks/use-user'
 import { useState, useEffect } from 'react'
 import { Contract, listContracts } from '../lib/firebase/contracts'
 import { ContractsList } from '../components/contracts-list'
+import { Title } from '../components/title'
 
 export default function Account() {
   const user = useUser()
@@ -46,9 +47,7 @@ export default function Account() {
           </div>
         </div>
 
-        <h1 className="text-2xl font-major-mono text-green-600 font-bold mt-6 mb-4">
-          Your markets
-        </h1>
+        <Title text="Your markets" />
         <ContractsList contracts={contracts} />
       </div>
     </div>
