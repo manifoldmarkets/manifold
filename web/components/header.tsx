@@ -27,20 +27,20 @@ function SignInLink(props: { darkBackground?: boolean }) {
       {user ? (
         <>
           <Link href="/contract">
-            <a className={clsx('text-base font-medium', themeClasses)}>
+            <a className={clsx('text-base', themeClasses)}>
               Create a market
             </a>
           </Link>
 
           <Link href="/account">
-            <a className={clsx('text-base font-medium', themeClasses)}>
+            <a className={clsx('text-base', themeClasses)}>
               {user.name}
             </a>
           </Link>
         </>
       ) : (
         <button
-          className={clsx('text-base font-medium', themeClasses)}
+          className={clsx('text-base', themeClasses)}
           onClick={() => firebaseLogin()}
         >
           Sign In
