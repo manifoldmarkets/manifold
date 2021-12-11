@@ -1,4 +1,4 @@
-import { getFunctions, httpsCallable } from "firebase/functions"
+import { getFunctions, httpsCallable } from 'firebase/functions'
 import clsx from 'clsx'
 import React, { useState } from 'react'
 
@@ -33,7 +33,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     const result = await placeBet({
       amount: betAmount,
       outcome: betChoice,
-      contractId: contract.id
+      contractId: contract.id,
     })
     console.log('placed bet. Result:', result)
 
@@ -124,7 +124,6 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     </Col>
   )
 }
-
 
 const functions = getFunctions()
 export const placeBet = httpsCallable(functions, 'placeBet')
