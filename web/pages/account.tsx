@@ -46,7 +46,7 @@ export default function Account() {
           </div>
         </div>
 
-        <h1 className="text-2xl font-major-mono text-green-600 font-bold mt-6 mb-4">
+        <h1 className="text-2xl font-major-mono text-green-700 font-bold mt-6 mb-4">
           Your markets
         </h1>
         <ContractsList contracts={contracts} />
