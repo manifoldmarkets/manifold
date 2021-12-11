@@ -45,7 +45,7 @@ function Button(props: {
     <button
       type="button"
       className={classNames(
-        'inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white',
+        'inline-flex items-center px-8 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white',
         !hideFocusRing && 'focus:outline-none focus:ring-2 focus:ring-offset-2',
         color === 'green' &&
           'bg-green-500 hover:bg-green-600 focus:ring-green-500',
