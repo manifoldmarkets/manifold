@@ -19,6 +19,7 @@ export default function NewContract() {
     question: '',
     description: '',
     seedAmounts: { YES: 100, NO: 100 },
+    pot: { YES: 100, NO: 100 },
 
     // TODO: Set create time to Firestore timestamp
     createdTime: Date.now(),
@@ -117,6 +118,10 @@ export default function NewContract() {
                           ...contract.seedAmounts,
                           YES: parseInt(e.target.value),
                         },
+                        pot: {
+                          ...contract.pot,
+                          YES: parseInt(e.target.value),
+                        },
                       })
                     }}
                   />
@@ -138,6 +143,10 @@ export default function NewContract() {
                         ...contract,
                         seedAmounts: {
                           ...contract.seedAmounts,
+                          NO: parseInt(e.target.value),
+                        },
+                        pot: {
+                          ...contract.pot,
                           NO: parseInt(e.target.value),
                         },
                       })
