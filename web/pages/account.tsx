@@ -24,10 +24,7 @@ export default function Account() {
           <div className="card glass lg:card-side text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
             <figure className="p-6">
               {user?.avatarUrl && (
-                <img
-                  src={user.avatarUrl}
-                  className="rounded-lg shadow-lg"
-                />
+                <img src={user.avatarUrl} className="rounded-lg shadow-lg" />
               )}
             </figure>
             <div className="max-w-md card-body">

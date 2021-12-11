@@ -22,7 +22,7 @@ module.exports = {
     themes: [
       {
         mantic: {
-          'primary': '#11b981',
+          primary: '#11b981',
           'primary-focus': '#069668',
           // Foreground content color to use on primary color
           'primary-content': '#ffffff',

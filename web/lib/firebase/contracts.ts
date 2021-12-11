@@ -22,7 +22,7 @@ export type Contract = {
   outcomeType: 'BINARY' // | 'MULTI' | 'interval' | 'date'
   // outcomes: ['YES', 'NO']
   seedAmounts: { YES: number; NO: number } // seedBets: [number, number]
-  pot: { YES: number; NO: number } 
+  pot: { YES: number; NO: number }
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime: number // If the question or description was changed
