@@ -5,46 +5,48 @@ import { Contract } from './types/contract'
 import { User } from './types/user'
 import { Bet } from './types/bet'
 
-export const placeBet = functions.https.onCall(async (data: {
-  amount: number
-  outcome: string
-  contractId: string
-}, context) => {
-  const userId = context?.auth?.uid
-  if (!userId)
-    return { status: 'error', message: 'Not authorized' }
+export const placeBet = functions
+  .runWith({ minInstances: 1 })
+  .https.onCall(async (data: {
+    amount: number
+    outcome: string
+    contractId: string
+  }, context) => {
+    const userId = context?.auth?.uid
+    if (!userId)
+      return { status: 'error', message: 'Not authorized' }
 
-  const { amount, outcome, contractId } = data
+    const { amount, outcome, contractId } = data
 
-  if (outcome !== 'YES' && outcome !== 'NO')
-    return { status: 'error', message: 'Invalid outcome' }
+    if (outcome !== 'YES' && outcome !== 'NO')
+      return { status: 'error', message: 'Invalid outcome' }
 
-  // run as transaction to prevent race conditions
-  return await firestore.runTransaction(async transaction => {
-    const userDoc = firestore.doc(`users/${userId}`)
-    const userSnap = await transaction.get(userDoc)
-    if (!userSnap.exists) return { status: 'error', message: 'User not found' }
-    const user = userSnap.data() as User
+    // run as transaction to prevent race conditions
+    return await firestore.runTransaction(async transaction => {
+      const userDoc = firestore.doc(`users/${userId}`)
+      const userSnap = await transaction.get(userDoc)
+      if (!userSnap.exists) return { status: 'error', message: 'User not found' }
+      const user = userSnap.data() as User
 
-    if (user.balanceUsd < amount)
-      return { status: 'error', message: 'Insufficient balance' }
+      if (user.balanceUsd < amount)
+        return { status: 'error', message: 'Insufficient balance' }
 
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await transaction.get(contractDoc)
-    if (!contractSnap.exists) return { status: 'error', message: 'Invalid contract' }
-    const contract = contractSnap.data() as Contract
+      const contractDoc = firestore.doc(`contracts/${contractId}`)
+      const contractSnap = await transaction.get(contractDoc)
+      if (!contractSnap.exists) return { status: 'error', message: 'Invalid contract' }
+      const contract = contractSnap.data() as Contract
 
-    const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
+      const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
 
-    const { newBet, newPot, newBalance } = getNewBetInfo(user, outcome, amount, contract, newBetDoc.id)
+      const { newBet, newPot, newBalance } = getNewBetInfo(user, outcome, amount, contract, newBetDoc.id)
 
-    transaction.create(newBetDoc, newBet)
-    transaction.update(contractDoc, { pot: newPot })
-    transaction.update(userDoc, { balanceUsd: newBalance })
+      transaction.create(newBetDoc, newBet)
+      transaction.update(contractDoc, { pot: newPot })
+      transaction.update(userDoc, { balanceUsd: newBalance })
 
-    return { status: 'success' }
+      return { status: 'success' }
+    })
   })
-})
 
 const firestore = admin.firestore()
 
