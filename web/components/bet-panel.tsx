@@ -1,7 +1,8 @@
+import { getFunctions, httpsCallable } from "firebase/functions"
 import clsx from 'clsx'
 import React, { useState } from 'react'
+
 import { useUser } from '../hooks/use-user'
-import { Bet, saveBet } from '../lib/firebase/bets'
 import { Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
@@ -27,23 +28,14 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   async function submitBet() {
     if (!user || !betAmount) return
 
-    const now = Date.now()
-
-    const bet: Bet = {
-      id: `${now}-${user.id}`,
-      userId: user.id,
-      contractId: contract.id,
-      createdTime: now,
-      outcome: betChoice,
-      amount: betAmount,
-
-      // Placeholder.
-      dpmWeight: betAmount,
-    }
-
     setIsSubmitting(true)
 
-    await saveBet(bet)
+    const result = await placeBet({
+      amount: betAmount,
+      outcome: betChoice,
+      contractId: contract.id
+    })
+    console.log('placed bet. Result:', result)
 
     setIsSubmitting(false)
     setWasSubmitted(true)
@@ -132,3 +124,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     </Col>
   )
 }
+
+
+const functions = getFunctions()
+export const placeBet = httpsCallable(functions, 'placeBet')
