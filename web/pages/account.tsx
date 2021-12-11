@@ -47,7 +47,7 @@ export default function Account() {
           </div>
         </div>
 
-        <Title text="Contracts" />
+        <Title text="Your markets" />
         <ContractsList contracts={contracts} />
       </div>
     </div>
