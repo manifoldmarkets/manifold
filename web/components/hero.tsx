@@ -18,7 +18,8 @@ export const Hero = () => {
                     </span>
                   </h1>
                   <p className="mt-3 text-base text-gray-300 sm:mt-5 sm:text-xl lg:text-lg xl:text-xl">
-                    Forecast the future with play-money prediction markets for you and your community
+                    Forecast the future with play-money prediction markets for
+                    you and your community
                   </p>
                   <div className="mt-10 sm:mt-12">
                     <ConvertKitEmailForm />

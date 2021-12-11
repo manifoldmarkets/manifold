@@ -24,8 +24,6 @@ function SignInLink(props: { darkBackground?: boolean }) {
     ? 'text-white hover:text-gray-300'
     : 'hover:text-gray-500'
 
-
-
   const [showLogin, setShowLogin] = useState(false)
   useEffect(() => {
     setShowLogin(location.search.includes('demo'))
@@ -33,33 +31,26 @@ function SignInLink(props: { darkBackground?: boolean }) {
 
   return (
     <>
-      {user
-        ? (
-          <>
-            <Link href="/contract">
-              <a className={clsx('text-base', themeClasses)}>
-                Create a market
-              </a>
-            </Link>
+      {user ? (
+        <>
+          <Link href="/contract">
+            <a className={clsx('text-base', themeClasses)}>Create a market</a>
+          </Link>
 
-            <Link href="/account">
-              <a className={clsx('text-base', themeClasses)}>
-                {user.name}
-              </a>
-            </Link>
-          </>
-        )
-
-        : showLogin
-          ? <button
-            className={clsx('text-base', themeClasses)}
-            onClick={() => firebaseLogin()}
-          >
-            Sign In
-          </button>
-
-          : <></>
-      }
+          <Link href="/account">
+            <a className={clsx('text-base', themeClasses)}>{user.name}</a>
+          </Link>
+        </>
+      ) : showLogin ? (
+        <button
+          className={clsx('text-base', themeClasses)}
+          onClick={() => firebaseLogin()}
+        >
+          Sign In
+        </button>
+      ) : (
+        <></>
+      )}
     </>
   )
 }
@@ -79,10 +70,7 @@ export function Header(props: { darkBackground?: boolean }) {
               <Link href="/">
                 <a className="flex flex-row items-center align-items-center h-6 sm:h-10">
                   <div className="inline-block mr-3">
-                    <img
-                      className="h-6 sm:h-10"
-                      src="/logo-icon.svg"
-                    />
+                    <img className="h-6 sm:h-10" src="/logo-icon.svg" />
                   </div>
                   <span
                     className={clsx(
