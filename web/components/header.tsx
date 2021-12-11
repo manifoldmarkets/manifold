@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react'
 import clsx from 'clsx'
-import { Popover } from '@headlessui/react'
+import Image from 'next/image'
 import Link from 'next/link'
+import { Popover } from '@headlessui/react'
+
 import { useUser } from '../hooks/use-user'
 import { firebaseLogin } from '../lib/firebase/users'
 
@@ -9,7 +12,7 @@ const navigation = [
     name: 'About',
     href: 'https://mantic.notion.site/About-Mantic-Markets-46a1a0fb6e294011a8b6b582e276359f',
   },
-  { name: 'Simulator', href: '/simulator' },
+  // { name: 'Simulator', href: '/simulator' },
 ]
 
 function SignInLink(props: { darkBackground?: boolean }) {
@@ -21,30 +24,42 @@ function SignInLink(props: { darkBackground?: boolean }) {
     ? 'text-white hover:text-gray-300'
     : 'hover:text-gray-500'
 
+
+
+  const [showLogin, setShowLogin] = useState(false)
+  useEffect(() => {
+    setShowLogin(location.search.includes('demo'))
+  }, [])
+
   return (
     <>
-      {user ? (
-        <>
-          <Link href="/contract">
-            <a className={clsx('text-base', themeClasses)}>
-              Create a market
-            </a>
-          </Link>
+      {user
+        ? (
+          <>
+            <Link href="/contract">
+              <a className={clsx('text-base', themeClasses)}>
+                Create a market
+              </a>
+            </Link>
 
-          <Link href="/account">
-            <a className={clsx('text-base', themeClasses)}>
-              {user.name}
-            </a>
-          </Link>
-        </>
-      ) : (
-        <button
-          className={clsx('text-base', themeClasses)}
-          onClick={() => firebaseLogin()}
-        >
-          Sign In
-        </button>
-      )}
+            <Link href="/account">
+              <a className={clsx('text-base', themeClasses)}>
+                {user.name}
+              </a>
+            </Link>
+          </>
+        )
+
+        : showLogin
+          ? <button
+            className={clsx('text-base', themeClasses)}
+            onClick={() => firebaseLogin()}
+          >
+            Sign In
+          </button>
+
+          : <></>
+      }
     </>
   )
 }
@@ -96,6 +111,7 @@ export function Header(props: { darkBackground?: boolean }) {
                   </a>
                 </Link>
               ))}
+
               <SignInLink darkBackground={darkBackground} />
             </div>
           </div>
