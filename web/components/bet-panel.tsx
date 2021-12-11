@@ -21,6 +21,11 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
+  function onBetChoice(choice: 'YES' | 'NO') {
+    setBetChoice(choice)
+    setWasSubmitted(false)
+  }
+
   function onBetChange(str: string) {
     const amount = parseInt(str)
     setBetAmount(isNaN(amount) ? undefined : amount)
@@ -42,11 +47,6 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
     setIsSubmitting(false)
     setWasSubmitted(true)
-  }
-
-  function newBet() {
-    setBetAmount(undefined)
-    setWasSubmitted(false)
   }
 
   const betDisabled = isSubmitting || wasSubmitted
@@ -72,7 +72,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
       <YesNoSelector
         className="p-2"
         selected={betChoice}
-        onSelect={setBetChoice}
+        onSelect={choice => onBetChoice(choice)}
       />
 
       <Spacer h={4} />
@@ -128,19 +128,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         Place bet
       </button>
 
-      {wasSubmitted && (
-        <Col>
-          <Spacer h={4} />
-
-          <div>Bet submitted!</div>
-
-          <Spacer h={4} />
-
-          <button className="btn btn-accent btn-xs" onClick={newBet}>
-            New bet
-          </button>
-        </Col>
-      )}
+      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
     </Col>
   )
 }

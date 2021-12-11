@@ -14,6 +14,7 @@ import { Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
+import { formatWithCommas } from '../lib/util/format'
 
 // Auto import doesn't work for some reason...
 // So we manually register ChartJS components instead:
@@ -39,6 +40,9 @@ const chartData = {
 
 export const ContractOverview = (props: { contract: Contract }) => {
   const { contract } = props
+  const { pot, seedAmounts } = contract
+
+  const volume = pot.YES + pot.NO - seedAmounts.YES - seedAmounts.NO
 
   return (
     <Col className="max-w-3xl w-full">
@@ -49,7 +53,7 @@ export const ContractOverview = (props: { contract: Contract }) => {
         <div className="py-2">•</div>
         <div className="p-2 whitespace-nowrap">Dec 9</div>
         <div className="py-2">•</div>
-        <div className="p-2 whitespace-nowrap">200,000 volume</div>
+        <div className="p-2 whitespace-nowrap">{formatWithCommas(volume)} volume</div>
       </Row>
 
       <Spacer h={4} />

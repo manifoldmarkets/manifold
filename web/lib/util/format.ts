@@ -4,6 +4,10 @@ const formatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 })
 
-export const formatMoney = (amount: number) => {
+export function formatMoney(amount: number) {
   return 'M$ ' + formatter.format(amount).substr(1)
+}
+
+export function formatWithCommas(amount: number) {
+  return formatter.format(amount).substr(1)
 }
