@@ -5,16 +5,17 @@ import { Contract } from './types/contract'
 import { User } from './types/user'
 import { Bet } from './types/bet'
 
-export const placeBet = functions
-  .runWith({ minInstances: 1 })
-  .https.onCall(async (data: {
-    amount: number
-    outcome: string
-    contractId: string
-  }, context) => {
+export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
+  async (
+    data: {
+      amount: number
+      outcome: string
+      contractId: string
+    },
+    context
+  ) => {
     const userId = context?.auth?.uid
-    if (!userId)
-      return { status: 'error', message: 'Not authorized' }
+    if (!userId) return { status: 'error', message: 'Not authorized' }
 
     const { amount, outcome, contractId } = data
 
@@ -22,10 +23,11 @@ export const placeBet = functions
       return { status: 'error', message: 'Invalid outcome' }
 
     // run as transaction to prevent race conditions
-    return await firestore.runTransaction(async transaction => {
+    return await firestore.runTransaction(async (transaction) => {
       const userDoc = firestore.doc(`users/${userId}`)
       const userSnap = await transaction.get(userDoc)
-      if (!userSnap.exists) return { status: 'error', message: 'User not found' }
+      if (!userSnap.exists)
+        return { status: 'error', message: 'User not found' }
       const user = userSnap.data() as User
 
       if (user.balanceUsd < amount)
@@ -33,12 +35,21 @@ export const placeBet = functions
 
       const contractDoc = firestore.doc(`contracts/${contractId}`)
       const contractSnap = await transaction.get(contractDoc)
-      if (!contractSnap.exists) return { status: 'error', message: 'Invalid contract' }
+      if (!contractSnap.exists)
+        return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
 
-      const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
+      const newBetDoc = firestore
+        .collection(`contracts/${contractId}/bets`)
+        .doc()
 
-      const { newBet, newPot, newBalance } = getNewBetInfo(user, outcome, amount, contract, newBetDoc.id)
+      const { newBet, newPot, newBalance } = getNewBetInfo(
+        user,
+        outcome,
+        amount,
+        contract,
+        newBetDoc.id
+      )
 
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, { pot: newPot })
@@ -46,16 +57,39 @@ export const placeBet = functions
 
       return { status: 'success' }
     })
-  })
+  }
+)
 
 const firestore = admin.firestore()
 
-const getNewBetInfo = (user: User, outcome: 'YES' | 'NO', amount: number, contract: Contract, newBetId: string) => {
+const getNewBetInfo = (
+  user: User,
+  outcome: 'YES' | 'NO',
+  amount: number,
+  contract: Contract,
+  newBetId: string
+) => {
   const { YES: yesPot, NO: noPot } = contract.pot
 
-  const dpmWeight = outcome === 'YES'
-    ? amount * Math.pow(noPot, 2) / (Math.pow(yesPot, 2) + amount * yesPot)
-    : amount * Math.pow(yesPot, 2) / (Math.pow(noPot, 2) + amount * noPot)
+  const probBefore = yesPot ** 2 / (yesPot ** 2 + noPot ** 2)
+
+  const probAverage =
+    (amount +
+      noPot * Math.atan(yesPot / noPot) -
+      noPot * Math.atan((amount + yesPot) / noPot)) /
+    amount
+
+  const dpmWeight =
+    outcome === 'YES'
+      ? (amount * noPot ** 2) / (yesPot ** 2 + amount * yesPot)
+      : (amount * yesPot ** 2) / (noPot ** 2 + amount * noPot)
+
+  const newPot =
+    outcome === 'YES'
+      ? { YES: yesPot + amount, NO: noPot }
+      : { YES: yesPot, NO: noPot + amount }
+
+  const probAfter = newPot.YES ** 2 / (newPot.YES ** 2 + newPot.NO ** 2)
 
   const newBet: Bet = {
     id: newBetId,
@@ -64,12 +98,11 @@ const getNewBetInfo = (user: User, outcome: 'YES' | 'NO', amount: number, contra
     amount,
     dpmWeight,
     outcome,
-    createdTime: Date.now()
+    probBefore,
+    probAverage,
+    probAfter,
+    createdTime: Date.now(),
   }
-
-  const newPot = outcome === 'YES'
-    ? { YES: yesPot + amount, NO: noPot }
-    : { YES: yesPot, NO: noPot + amount }
 
   const newBalance = user.balanceUsd - amount
 
