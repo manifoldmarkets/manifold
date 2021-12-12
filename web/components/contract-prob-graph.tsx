@@ -43,7 +43,7 @@ export function ContractProbGraph(props: { contract: Contract }) {
       {
         label: 'Implied probability',
         data: probs,
-        borderColor: 'rgb(75, 192, 192)',
+        borderColor: '#11b981',
       },
     ],
   }
