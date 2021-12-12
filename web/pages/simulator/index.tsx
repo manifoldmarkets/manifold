@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { Line } from 'react-chartjs-2'
 import {
   CategoryScale,
   Chart,
@@ -9,8 +10,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js'
-import { Line } from 'react-chartjs-2'
-import { bids as sampleBids } from '../../lib/simulator/sample-bids'
+
 import { Entry, makeEntries } from '../../lib/simulator/entries'
 import { Header } from '../../components/header'
 
@@ -31,7 +31,7 @@ function TableBody(props: { entries: Entry[] }) {
     <tbody>
       {props.entries.map((entry, i) => (
         <tr key={i}>
-          <th>{i + 1}</th>
+          <th>{props.entries.length - i}</th>
           <TableRowStart entry={entry} />
           <TableRowEnd entry={entry} />
         </tr>
@@ -46,10 +46,10 @@ function TableRowStart(props: { entry: Entry }) {
     return (
       <>
         <td>
-          <div className="badge">SEED</div>
+          <div className="badge">ANTE</div>
         </td>
         <td>
-          {entry.yesBid} / {entry.noBid}
+          ${entry.yesBid} / ${entry.noBid}
         </td>
       </>
     )
@@ -59,7 +59,7 @@ function TableRowStart(props: { entry: Entry }) {
         <td>
           <div className="badge badge-success">YES</div>
         </td>
-        <td>{entry.yesBid}</td>
+        <td>${entry.yesBid}</td>
       </>
     )
   } else {
@@ -68,48 +68,56 @@ function TableRowStart(props: { entry: Entry }) {
         <td>
           <div className="badge badge-error">NO</div>
         </td>
-        <td>{entry.noBid}</td>
+        <td>${entry.noBid}</td>
       </>
     )
   }
 }
 
-function TableRowEnd(props: { entry: Entry | null }) {
+function TableRowEnd(props: { entry: Entry | null, isNew?: boolean }) {
   const { entry } = props
   if (!entry) {
     return (
       <>
-        <td>N/A</td>
-        <td>N/A</td>
-        <td>N/A</td>
-        <td>N/A</td>
+        <td>0</td>
+        <td>0</td>
+        {!props.isNew && <>
+          <td>N/A</td>
+          <td>N/A</td>
+        </>}
       </>
     )
   } else if (entry.yesBid && entry.noBid) {
     return (
       <>
+        <td>{(entry.prob * 100).toFixed(1)}%</td>
         <td>N/A</td>
-        <td>{entry.prob.toFixed(2)}</td>
-        <td>N/A</td>
-        <td>N/A</td>
+        {!props.isNew && <>
+          <td>N/A</td>
+          <td>N/A</td>
+        </>}
       </>
     )
   } else if (entry.yesBid) {
     return (
       <>
-        <td>{entry.yesWeight.toFixed(2)}</td>
-        <td>{entry.prob.toFixed(2)}</td>
-        <td>{entry.yesPayout.toFixed(2)}</td>
-        <td>{(entry.yesReturn * 100).toFixed(2)}%</td>
+        <td>{(entry.prob * 100).toFixed(1)}%</td>
+        <td>${(entry.yesBid + entry.yesWeight).toFixed(0)}</td>
+        {!props.isNew && <>
+          <td>${entry.yesPayout.toFixed(0)}</td>
+          <td>{(entry.yesReturn * 100).toFixed(0)}%</td>
+        </>}
       </>
     )
   } else {
     return (
       <>
-        <td>{entry.noWeight.toFixed(2)}</td>
-        <td>{entry.prob.toFixed(2)}</td>
-        <td>{entry.noPayout.toFixed(2)}</td>
-        <td>{(entry.noReturn * 100).toFixed(2)}%</td>
+        <td>{(entry.prob * 100).toFixed(1)}%</td>
+        <td>${(entry.noBid + entry.noWeight).toFixed(0)}</td>
+        {!props.isNew && <>
+          <td>${entry.noPayout.toFixed(0)}</td>
+          <td>{(entry.noReturn * 100).toFixed(0)}%</td>
+        </>}
       </>
     )
   }
@@ -142,30 +150,39 @@ function NewBidTable(props: {
     setNewBid(0)
   }
 
+
+
   function toggleBidType() {
     setNewBidType(newBidType === 'YES' ? 'NO' : 'YES')
   }
 
-  let nextEntry: Entry | null = null
+  const nextBid = makeBid(newBidType, newBid)
+  const fakeBids = [...bids.slice(0, steps), nextBid]
+  const entries = makeEntries(fakeBids)
+  const nextEntry = entries[entries.length - 1]
 
-  if (newBid) {
-    const nextBid = makeBid(newBidType, newBid)
-    const fakeBids = [...bids.slice(0, steps), nextBid]
-    const entries = makeEntries(fakeBids)
-    nextEntry = entries[entries.length - 1]
+  function randomBid() {
+    const bidType = Math.random() < 0.5
+      ? 'YES'
+      : 'NO'
+    const amount = Math.round(Math.random() * 500)
+    const bid = makeBid(bidType, amount)
+
+    bids.splice(steps, 0, bid)
+    setBids(bids)
+    setSteps(steps + 1)
+    setNewBid(0)
   }
 
-  return (
+  return <>
     <table className="table table-compact my-8 w-full text-center">
       <thead>
         <tr>
           <th>Order #</th>
           <th>Type</th>
-          <th>Bid</th>
-          <th>Weight</th>
+          <th>Bet</th>
           <th>Prob</th>
-          <th>Payout</th>
-          <th>Return</th>
+          <th>Est Payout</th>
           <th></th>
         </tr>
       </thead>
@@ -200,7 +217,7 @@ function NewBidTable(props: {
               placeholder="0"
               className="input input-bordered"
               style={{ maxWidth: 100 }}
-              value={newBid}
+              value={newBid.toString()}
               onChange={(e) => setNewBid(parseInt(e.target.value) || 0)}
               onKeyUp={(e) => {
                 if (e.key === 'Enter') {
@@ -210,7 +227,12 @@ function NewBidTable(props: {
               onFocus={(e) => e.target.select()}
             />
           </td>
-          <TableRowEnd entry={nextEntry} />
+
+          <TableRowEnd
+            entry={nextEntry}
+            isNew
+          />
+
           <td>
             <button
               className="btn btn-primary"
@@ -219,26 +241,37 @@ function NewBidTable(props: {
             >
               Submit
             </button>
+
           </td>
         </tr>
       </tbody>
     </table>
-  )
+
+    <button
+      className="btn btn-secondary mb-4"
+      onClick={randomBid}
+    >
+      Random bet!
+    </button>
+  </>
 }
 
 // Show a hello world React page
 export default function Simulator() {
-  const [steps, setSteps] = useState(10)
-  const [bids, setBids] = useState(sampleBids)
+  const [steps, setSteps] = useState(1)
+  const [bids, setBids] = useState([{ yesBid: 600, noBid: 400 }])
 
   const entries = useMemo(
     () => makeEntries(bids.slice(0, steps)),
     [bids, steps]
   )
+
+  const reversedEntries = [...entries].reverse()
+
   const probs = entries.map((entry) => entry.prob)
 
   const chartData = {
-    labels: Array.from({ length: steps }, (_, i) => i + 1),
+    labels: Array.from({ length: steps }, (_, i) => 1 + i),
     datasets: [
       {
         label: 'Implied probability',
@@ -257,16 +290,7 @@ export default function Simulator() {
           <h1 className="text-2xl font-bold mb-8">
             Dynamic Parimutuel Market Simulator
           </h1>
-          {/* Range slider that sets the current step */}
-          <label>Simulation step: {steps}</label>
-          <input
-            type="range"
-            className="range"
-            min="1"
-            max={bids.length}
-            value={steps}
-            onChange={(e) => setSteps(parseInt(e.target.value))}
-          />
+
 
           <NewBidTable {...{ steps, bids, setSteps, setBids }} />
 
@@ -277,15 +301,15 @@ export default function Simulator() {
                 <tr>
                   <th>Order #</th>
                   <th>Type</th>
-                  <th>Bid</th>
-                  <th>Weight</th>
+                  <th>Bet</th>
                   <th>Prob</th>
-                  <th>Max Payout</th>
+                  <th>Est Payout</th>
+                  <th>Payout</th>
                   <th>Return</th>
                 </tr>
               </thead>
 
-              <TableBody entries={entries} />
+              <TableBody entries={reversedEntries} />
             </table>
           </div>
         </div>
@@ -297,6 +321,16 @@ export default function Simulator() {
             <div className="badge badge-success text-2xl h-8 w-18">YES</div>
           </h1>
           <Line data={chartData} height={200} />
+          {/* Range slider that sets the current step */}
+          <label>Orders # 1 - {steps}</label>
+          <input
+            type="range"
+            className="range"
+            min="1"
+            max={bids.length}
+            value={steps}
+            onChange={(e) => setSteps(parseInt(e.target.value))}
+          />
         </div>
       </div>
     </div>
