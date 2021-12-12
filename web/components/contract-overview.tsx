@@ -14,19 +14,32 @@ export const ContractOverview = (props: {
   const { pot, seedAmounts } = contract
 
   const volume = pot.YES + pot.NO - seedAmounts.YES - seedAmounts.NO
+  const prob = pot.YES ** 2 / (pot.YES ** 2 + pot.NO ** 2)
+  const probPercent = Math.round(prob * 100) + '%'
 
   return (
     <Col className={className}>
-      <div className="text-3xl font-medium p-2">{contract.question}</div>
+      <Row className="justify-between">
+        <Col>
+          <div className="text-3xl font-medium p-2">{contract.question}</div>
 
-      <Row className="flex-wrap text-sm text-gray-600">
-        <div className="p-2 whitespace-nowrap">By {contract.creatorName}</div>
-        <div className="py-2">•</div>
-        <div className="p-2 whitespace-nowrap">Dec 9</div>
-        <div className="py-2">•</div>
-        <div className="p-2 whitespace-nowrap">
-          {formatWithCommas(volume)} volume
-        </div>
+          <Row className="flex-wrap text-sm text-gray-600">
+            <div className="p-2 whitespace-nowrap">
+              By {contract.creatorName}
+            </div>
+            <div className="py-2">•</div>
+            <div className="p-2 whitespace-nowrap">Dec 9</div>
+            <div className="py-2">•</div>
+            <div className="p-2 whitespace-nowrap">
+              {formatWithCommas(volume)} volume
+            </div>
+          </Row>
+        </Col>
+
+        <Col className="text-4xl p-2 ml-2 text-primary items-end">
+          {probPercent}
+          <div className="text-xl">chance</div>
+        </Col>
       </Row>
 
       <Spacer h={4} />

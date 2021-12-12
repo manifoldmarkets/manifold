@@ -97,11 +97,11 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
       <div className="p-2 font-medium">Implied probability</div>
       <Row>
         <div className="px-2 font-sans">
-          {Math.floor(initialProb * 1000) / 10 + '%'}
+          {Math.round(initialProb * 100) + '%'}
         </div>
         <div>→</div>
         <div className="px-2 font-sans">
-          {Math.floor(resultProb * 1000) / 10 + '%'}
+          {Math.round(resultProb * 100) + '%'}
         </div>
       </Row>
 
@@ -120,7 +120,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           betDisabled
             ? 'btn-disabled'
             : betChoice === 'YES'
-            ? 'bg-green-500 hover:bg-green-600 focus:ring-green-500'
+            ? 'btn-primary'
             : 'bg-red-400 hover:bg-red-500 focus:ring-red-400'
         )}
         onClick={betDisabled ? undefined : submitBet}
