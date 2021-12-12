@@ -17,16 +17,16 @@ function makeWeights(bids: Bid[]) {
   const weights = []
   let yesPot = 0
   let noPot = 0
+
   // First pass: calculate all the weights
   for (const { yesBid, noBid } of bids) {
-    const yesWeight =
-      noPot * (Math.log(yesBid + yesPot) - Math.log(yesPot)) || 0
-    const noWeight = yesPot * (Math.log(noBid + noPot) - Math.log(noPot)) || 0
+    const yesWeight = yesBid * Math.pow(noPot, 2) / (Math.pow(yesPot, 2) + yesBid * yesPot) || 0
+    const noWeight = noBid * Math.pow(yesPot, 2) / (Math.pow(noPot, 2) + noBid * noPot) || 0
 
     // Note: Need to calculate weights BEFORE updating pot
     yesPot += yesBid
     noPot += noBid
-    const prob = yesPot / (yesPot + noPot)
+    const prob = Math.pow(yesPot, 2) / (Math.pow(yesPot, 2) + Math.pow(noPot, 2))
 
     weights.push({
       yesBid,
@@ -42,13 +42,16 @@ function makeWeights(bids: Bid[]) {
 export function makeEntries(bids: Bid[]): Entry[] {
   const YES_SEED = bids[0].yesBid
   const NO_SEED = bids[0].noBid
+
   const weights = makeWeights(bids)
   const yesPot = weights.reduce((sum, { yesBid }) => sum + yesBid, 0)
   const noPot = weights.reduce((sum, { noBid }) => sum + noBid, 0)
   const yesWeightsSum = weights.reduce((sum, entry) => sum + entry.yesWeight, 0)
   const noWeightsSum = weights.reduce((sum, entry) => sum + entry.noWeight, 0)
+
   // Second pass: calculate all the payouts
   const entries: Entry[] = []
+
   for (const weight of weights) {
     const { yesBid, noBid, yesWeight, noWeight } = weight
     // Payout: You get your initial bid back, as well as your share of the
