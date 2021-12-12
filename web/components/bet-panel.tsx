@@ -96,11 +96,11 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
       <div className="p-2 font-medium">Implied probability</div>
       <Row>
-        <div className="px-2" style={{ fontFamily: 'sans-serif' }}>
+        <div className="px-2 font-sans">
           {Math.floor(initialProb * 1000) / 10 + '%'}
         </div>
         <div>→</div>
-        <div className="px-2" style={{ fontFamily: 'sans-serif' }}>
+        <div className="px-2 font-sans">
           {Math.floor(resultProb * 1000) / 10 + '%'}
         </div>
       </Row>
@@ -108,7 +108,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
       <Spacer h={2} />
 
       <div className="p-2 font-medium">Estimated winnings</div>
-      <div className="px-2" style={{ fontFamily: 'sans-serif' }}>
+      <div className="px-2 font-sans">
         {formatMoney(estimatedWinnings)} (+{estimatedReturnPercent})
       </div>
 
