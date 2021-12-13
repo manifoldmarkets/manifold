@@ -14,7 +14,7 @@ module.exports = {
     ),
     extend: {
       backgroundImage: {
-        'world-trading': "url('/world-trading-background.jpg')",
+        'world-trading': "url('/world-trading-background.webp')",
       },
     },
   },
