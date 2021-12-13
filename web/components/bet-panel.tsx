@@ -48,9 +48,10 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
     setIsSubmitting(false)
     setWasSubmitted(true)
+    setBetAmount(undefined)
   }
 
-  const betDisabled = isSubmitting || wasSubmitted
+  const betDisabled = isSubmitting || !betAmount
 
   const initialProb = getProbability(contract.pot, betChoice)
   const resultProb = getProbability(contract.pot, betChoice, betAmount)
@@ -123,7 +124,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
             ? 'btn-disabled'
             : betChoice === 'YES'
             ? 'btn-primary'
-            : 'bg-red-400 hover:bg-red-500 focus:ring-red-400 border-none'
+            : 'bg-red-400 hover:bg-red-500 border-none'
         )}
         onClick={betDisabled ? undefined : submitBet}
       >
