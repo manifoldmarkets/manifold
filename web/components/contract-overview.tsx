@@ -51,7 +51,7 @@ export const ContractOverview = (props: {
 
       <Spacer h={12} />
 
-      <div className="text-gray-600">{contract.description}</div>
+      <div className="text-gray-600 whitespace-pre-line">{contract.description}</div>
     </Col>
   )
 }
