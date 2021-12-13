@@ -65,6 +65,7 @@ export function listenForLogin(onUser: (_user: User | null) => void) {
     } else {
       // User logged out; reset to null
       onUser(null)
+      localStorage.removeItem(CACHED_USER_KEY)
     }
   })
 }
