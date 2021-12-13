@@ -9,6 +9,7 @@ import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import { YesNoSelector } from './yes-no-selector'
 import { formatMoney } from '../lib/util/format'
+import { Title } from './title'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -68,16 +69,17 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         className
       )}
     >
-      <div className="p-2 font-medium">Pick outcome</div>
+      <Title className="mt-0" text="Place a bet" />
+      <div className="pt-2 pb-1 text-sm text-gray-500">Outcome</div>
       <YesNoSelector
         className="p-2"
         selected={betChoice}
-        onSelect={choice => onBetChoice(choice)}
+        onSelect={(choice) => onBetChoice(choice)}
       />
 
       <Spacer h={4} />
 
-      <div className="p-2 font-medium">Bet amount</div>
+      <div className="pt-2 pb-1 text-sm text-gray-500">Bet amount</div>
       <Row className="p-2 items-center relative">
         <div className="absolute inset-y-0 left-2 pl-3 flex items-center pointer-events-none">
           <span className="text-gray-500 sm:text-sm">M$</span>
@@ -94,7 +96,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
       <Spacer h={4} />
 
-      <div className="p-2 font-medium">Implied probability</div>
+      <div className="pt-2 pb-1 text-sm text-gray-500">Implied probability</div>
       <Row>
         <div className="px-2 font-sans">
           {Math.round(initialProb * 100) + '%'}
@@ -107,7 +109,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
       <Spacer h={2} />
 
-      <div className="p-2 font-medium">Estimated winnings</div>
+      <div className="pt-2 pb-1 text-sm text-gray-500">Estimated winnings</div>
       <div className="px-2 font-sans">
         {formatMoney(estimatedWinnings)} (+{estimatedReturnPercent})
       </div>
@@ -121,7 +123,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
             ? 'btn-disabled'
             : betChoice === 'YES'
             ? 'btn-primary'
-            : 'bg-red-400 hover:bg-red-500 focus:ring-red-400'
+            : 'bg-red-400 hover:bg-red-500 focus:ring-red-400 border-none'
         )}
         onClick={betDisabled ? undefined : submitBet}
       >
