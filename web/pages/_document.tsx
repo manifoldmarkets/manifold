@@ -13,12 +13,12 @@ export default function Document() {
         />
         <meta
           name="description"
-          content="Decentralized user-created prediction markets on Solana"
+          content="Mantic Markets is creating better forecasting through user-created prediction markets."
         />
         <meta
           property="og:description"
           name="twitter:description"
-          content="Decentralized user-created prediction markets on Solana"
+          content="Mantic Markets is creating better forecasting through user-created prediction markets."
         />
         <meta property="og:url" content="https://mantic.markets" />
         <meta name="twitter:card" content="summary_large_image" />
