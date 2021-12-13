@@ -14,7 +14,7 @@ export type User = {
   name: string
   username: string
   avatarUrl: string
-  balanceUsd: number
+  balance: number
   createdTime: number
   lastUpdatedTime: number
 }
@@ -50,7 +50,7 @@ export function listenForLogin(onUser: (_user: User | null) => void) {
           username: user.displayName?.replace(/\s+/g, '') || 'DefaultUsername',
           avatarUrl: user.photoURL || '',
           email: user.email || 'default@blah.com',
-          balanceUsd: 10000,
+          balance: 10000,
           // TODO: use Firestore timestamp?
           createdTime: Date.now(),
           lastUpdatedTime: Date.now(),
