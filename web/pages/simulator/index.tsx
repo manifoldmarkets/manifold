@@ -4,6 +4,7 @@ import { ResponsiveLine } from '@nivo/line'
 
 import { Entry, makeEntries } from '../../lib/simulator/entries'
 import { Header } from '../../components/header'
+import { Col } from '../../components/layout/col'
 
 function TableBody(props: { entries: Entry[] }) {
   return (
@@ -214,15 +215,13 @@ function NewBidTable(props: {
 
             <TableRowEnd entry={nextEntry} isNew />
 
-            <td>
-              <button
-                className="btn btn-primary"
-                onClick={() => submitBid()}
-                disabled={newBid <= 0}
-              >
-                Submit
-              </button>
-            </td>
+            <button
+              className="btn btn-primary mt-2"
+              onClick={() => submitBid()}
+              disabled={newBid <= 0}
+            >
+              Submit
+            </button>
           </tr>
         </tbody>
       </table>
@@ -252,9 +251,9 @@ export default function Simulator() {
   const tickValues = [0, 25, 50, 75, 100]
 
   return (
-    <div>
+    <Col>
       <Header />
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-8 max-w-7xl mx-auto text-center">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full mt-8 p-2 mx-auto text-center">
         {/* Left column */}
         <div>
           <h1 className="text-2xl font-bold mb-8">
@@ -284,12 +283,14 @@ export default function Simulator() {
         </div>
 
         {/* Right column */}
-        <div>
+        <Col>
           <h1 className="text-2xl font-bold mb-8">
             Probability of
-            <div className="badge badge-success text-2xl h-8 w-18">YES</div>
+            <div className="badge badge-success text-2xl h-8 w-18 ml-3">
+              YES
+            </div>
           </h1>
-          <div className="w-full" style={{ height: 400 }}>
+          <div className="w-full mb-10" style={{ height: 500 }}>
             <ResponsiveLine
               data={data}
               yScale={{ min: 0, max: 100, type: 'linear' }}
@@ -299,13 +300,10 @@ export default function Simulator() {
                 tickValues,
                 format: formatPercent,
               }}
-              axisBottom={{
-                tickValues: [],
-              }}
               enableGridX={false}
               colors={{ datum: 'color' }}
-              pointSize={12}
-              pointBorderWidth={2}
+              pointSize={8}
+              pointBorderWidth={1}
               pointBorderColor="#fff"
               enableSlices="x"
               enableArea
@@ -322,9 +320,9 @@ export default function Simulator() {
             value={steps}
             onChange={(e) => setSteps(parseInt(e.target.value))}
           />
-        </div>
+        </Col>
       </div>
-    </div>
+    </Col>
   )
 }
 
