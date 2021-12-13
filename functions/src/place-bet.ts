@@ -30,7 +30,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         return { status: 'error', message: 'User not found' }
       const user = userSnap.data() as User
 
-      if (user.balanceUsd < amount)
+      if (user.balance < amount)
         return { status: 'error', message: 'Insufficient balance' }
 
       const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -53,7 +53,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
 
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, { pot: newPot })
-      transaction.update(userDoc, { balanceUsd: newBalance })
+      transaction.update(userDoc, { balance: newBalance })
 
       return { status: 'success' }
     })
@@ -104,7 +104,7 @@ const getNewBetInfo = (
     createdTime: Date.now(),
   }
 
-  const newBalance = user.balanceUsd - amount
+  const newBalance = user.balance - amount
 
   return { newBet, newPot, newBalance }
 }

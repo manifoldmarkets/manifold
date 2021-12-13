@@ -31,7 +31,7 @@ export default function Account() {
             <div className="max-w-md card-body">
               <h2 className="card-title font-major-mono">{user?.name}</h2>
               <p>{user?.email}</p>
-              <p>${user?.balanceUsd} USD</p>
+              <p>M${user?.balance}</p>
               <div className="card-actions">
                 <button
                   className="btn glass rounded-full hover:bg-green-500"

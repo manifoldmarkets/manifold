@@ -4,7 +4,7 @@ export type User = {
   name: string
   username: string
   avatarUrl: string
-  balanceUsd: number
+  balance: number
   createdTime: number
   lastUpdatedTime: number
 }
