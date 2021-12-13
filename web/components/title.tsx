@@ -1,7 +1,14 @@
-export function Title(props: { text: string }) {
-  const { text } = props
+import clsx from 'clsx'
+
+export function Title(props: { text: string; className?: string }) {
+  const { text, className } = props
   return (
-    <h1 className="text-2xl font-major-mono text-indigo-700 font-bold mt-6 mb-4">
+    <h1
+      className={clsx(
+        'text-2xl font-major-mono text-indigo-700 font-bold mt-6 mb-4',
+        className
+      )}
+    >
       {text}
     </h1>
   )
