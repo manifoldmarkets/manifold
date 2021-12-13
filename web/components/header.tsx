@@ -70,7 +70,7 @@ export function Header(props: { darkBackground?: boolean }) {
               <Link href="/">
                 <a className="flex flex-row items-center align-items-center h-6 sm:h-10">
                   <div className="inline-block mr-3">
-                    <img className="h-6 sm:h-10" src="/logo-icon.svg" />
+                    <img className="h-6 sm:h-10" src="/logo-icon.svg" width={96} height={96} />
                   </div>
                   <span
                     className={clsx(
