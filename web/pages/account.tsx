@@ -22,7 +22,7 @@ export default function Account() {
       <Header />
       <div className="max-w-4xl py-8 mx-auto">
         <div>
-          <div className="card glass lg:card-side text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
+          <div className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
             <figure className="p-6">
               {user?.avatarUrl && (
                 <img src={user.avatarUrl} className="rounded-lg shadow-lg" />
