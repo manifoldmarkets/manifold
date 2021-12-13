@@ -1,29 +1,7 @@
-import { Line } from 'react-chartjs-2'
-import {
-  CategoryScale,
-  Chart,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js'
-
+import { DatumValue } from '@nivo/core'
+import { ResponsiveLine } from '@nivo/line'
 import { useBets } from '../hooks/use-bets'
 import { Contract } from '../lib/firebase/contracts'
-
-// Auto import doesn't work for some reason...
-// So we manually register ChartJS components instead:
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-)
 
 export function ContractProbGraph(props: { contract: Contract }) {
   const { contract } = props
@@ -36,17 +14,38 @@ export function ContractProbGraph(props: { contract: Contract }) {
     seedAmounts.YES ** 2 / (seedAmounts.YES ** 2 + seedAmounts.NO ** 2)
 
   const probs = [seedProb, ...bets.map((bet) => bet.probAfter)]
+  const points = probs.map((prob, i) => ({ x: i + 1, y: prob * 100 }))
+  const data = [{ id: 'Yes', data: points, color: '#11b981' }]
 
-  const chartData = {
-    labels: Array.from({ length: probs.length }, (_, i) => i + 1),
-    datasets: [
-      {
-        label: 'Implied probability',
-        data: probs,
-        borderColor: '#11b981',
-      },
-    ],
-  }
+  const tickValues = [0, 25, 50, 75, 100]
 
-  return <Line data={chartData} height={150} />
+  return (
+    <div className="w-full" style={{ height: 400 }}>
+      <ResponsiveLine
+        data={data}
+        yScale={{ min: 0, max: 100, type: 'linear' }}
+        yFormat={formatPercent}
+        gridYValues={tickValues}
+        axisLeft={{
+          tickValues,
+          format: formatPercent,
+        }}
+        axisBottom={{
+          tickValues: [],
+        }}
+        enableGridX={false}
+        colors={{ datum: 'color' }}
+        pointSize={12}
+        pointBorderWidth={2}
+        pointBorderColor="#fff"
+        enableSlices="x"
+        enableArea
+        margin={{ top: 20, right: 10, bottom: 20, left: 40 }}
+      />
+    </div>
+  )
+}
+
+function formatPercent(y: DatumValue) {
+  return `${Math.round(+y.toString())}%`
 }
