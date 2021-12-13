@@ -1,30 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { Line } from 'react-chartjs-2'
-import {
-  CategoryScale,
-  Chart,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js'
+import React, { useMemo, useState } from 'react'
+import { DatumValue } from '@nivo/core'
+import { ResponsiveLine } from '@nivo/line'
 
 import { Entry, makeEntries } from '../../lib/simulator/entries'
 import { Header } from '../../components/header'
-
-// Auto import doesn't work for some reason...
-// So we manually register ChartJS components instead:
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-)
 
 function TableBody(props: { entries: Entry[] }) {
   return (
@@ -74,17 +53,19 @@ function TableRowStart(props: { entry: Entry }) {
   }
 }
 
-function TableRowEnd(props: { entry: Entry | null, isNew?: boolean }) {
+function TableRowEnd(props: { entry: Entry | null; isNew?: boolean }) {
   const { entry } = props
   if (!entry) {
     return (
       <>
         <td>0</td>
         <td>0</td>
-        {!props.isNew && <>
-          <td>N/A</td>
-          <td>N/A</td>
-        </>}
+        {!props.isNew && (
+          <>
+            <td>N/A</td>
+            <td>N/A</td>
+          </>
+        )}
       </>
     )
   } else if (entry.yesBid && entry.noBid) {
@@ -92,10 +73,12 @@ function TableRowEnd(props: { entry: Entry | null, isNew?: boolean }) {
       <>
         <td>{(entry.prob * 100).toFixed(1)}%</td>
         <td>N/A</td>
-        {!props.isNew && <>
-          <td>N/A</td>
-          <td>N/A</td>
-        </>}
+        {!props.isNew && (
+          <>
+            <td>N/A</td>
+            <td>N/A</td>
+          </>
+        )}
       </>
     )
   } else if (entry.yesBid) {
@@ -103,10 +86,12 @@ function TableRowEnd(props: { entry: Entry | null, isNew?: boolean }) {
       <>
         <td>{(entry.prob * 100).toFixed(1)}%</td>
         <td>${(entry.yesBid + entry.yesWeight).toFixed(0)}</td>
-        {!props.isNew && <>
-          <td>${entry.yesPayout.toFixed(0)}</td>
-          <td>{(entry.yesReturn * 100).toFixed(0)}%</td>
-        </>}
+        {!props.isNew && (
+          <>
+            <td>${entry.yesPayout.toFixed(0)}</td>
+            <td>{(entry.yesReturn * 100).toFixed(0)}%</td>
+          </>
+        )}
       </>
     )
   } else {
@@ -114,10 +99,12 @@ function TableRowEnd(props: { entry: Entry | null, isNew?: boolean }) {
       <>
         <td>{(entry.prob * 100).toFixed(1)}%</td>
         <td>${(entry.noBid + entry.noWeight).toFixed(0)}</td>
-        {!props.isNew && <>
-          <td>${entry.noPayout.toFixed(0)}</td>
-          <td>{(entry.noReturn * 100).toFixed(0)}%</td>
-        </>}
+        {!props.isNew && (
+          <>
+            <td>${entry.noPayout.toFixed(0)}</td>
+            <td>{(entry.noReturn * 100).toFixed(0)}%</td>
+          </>
+        )}
       </>
     )
   }
@@ -150,8 +137,6 @@ function NewBidTable(props: {
     setNewBid(0)
   }
 
-
-
   function toggleBidType() {
     setNewBidType(newBidType === 'YES' ? 'NO' : 'YES')
   }
@@ -162,9 +147,7 @@ function NewBidTable(props: {
   const nextEntry = entries[entries.length - 1]
 
   function randomBid() {
-    const bidType = Math.random() < 0.5
-      ? 'YES'
-      : 'NO'
+    const bidType = Math.random() < 0.5 ? 'YES' : 'NO'
     const amount = Math.round(Math.random() * 500)
     const bid = makeBid(bidType, amount)
 
@@ -174,86 +157,81 @@ function NewBidTable(props: {
     setNewBid(0)
   }
 
-  return <>
-    <table className="table table-compact my-8 w-full text-center">
-      <thead>
-        <tr>
-          <th>Order #</th>
-          <th>Type</th>
-          <th>Bet</th>
-          <th>Prob</th>
-          <th>Est Payout</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th>{steps + 1}</th>
-          <td>
-            <div
-              className={
-                `badge hover:cursor-pointer ` +
-                (newBidType == 'YES' ? 'badge-success' : 'badge-ghost')
-              }
-              onClick={toggleBidType}
-            >
-              YES
-            </div>
-            <br />
-            <div
-              className={
-                `badge hover:cursor-pointer ` +
-                (newBidType == 'NO' ? 'badge-error' : 'badge-ghost')
-              }
-              onClick={toggleBidType}
-            >
-              NO
-            </div>
-          </td>
-          <td>
-            {/* Note: Would love to make this input smaller... */}
-            <input
-              type="number"
-              placeholder="0"
-              className="input input-bordered"
-              style={{ maxWidth: 100 }}
-              value={newBid.toString()}
-              onChange={(e) => setNewBid(parseInt(e.target.value) || 0)}
-              onKeyUp={(e) => {
-                if (e.key === 'Enter') {
-                  submitBid()
+  return (
+    <>
+      <table className="table table-compact my-8 w-full text-center">
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Type</th>
+            <th>Bet</th>
+            <th>Prob</th>
+            <th>Est Payout</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>{steps + 1}</th>
+            <td>
+              <div
+                className={
+                  `badge hover:cursor-pointer ` +
+                  (newBidType == 'YES' ? 'badge-success' : 'badge-ghost')
                 }
-              }}
-              onFocus={(e) => e.target.select()}
-            />
-          </td>
+                onClick={toggleBidType}
+              >
+                YES
+              </div>
+              <br />
+              <div
+                className={
+                  `badge hover:cursor-pointer ` +
+                  (newBidType == 'NO' ? 'badge-error' : 'badge-ghost')
+                }
+                onClick={toggleBidType}
+              >
+                NO
+              </div>
+            </td>
+            <td>
+              {/* Note: Would love to make this input smaller... */}
+              <input
+                type="number"
+                placeholder="0"
+                className="input input-bordered"
+                style={{ maxWidth: 100 }}
+                value={newBid.toString()}
+                onChange={(e) => setNewBid(parseInt(e.target.value) || 0)}
+                onKeyUp={(e) => {
+                  if (e.key === 'Enter') {
+                    submitBid()
+                  }
+                }}
+                onFocus={(e) => e.target.select()}
+              />
+            </td>
 
-          <TableRowEnd
-            entry={nextEntry}
-            isNew
-          />
+            <TableRowEnd entry={nextEntry} isNew />
 
-          <td>
-            <button
-              className="btn btn-primary"
-              onClick={() => submitBid()}
-              disabled={newBid <= 0}
-            >
-              Submit
-            </button>
+            <td>
+              <button
+                className="btn btn-primary"
+                onClick={() => submitBid()}
+                disabled={newBid <= 0}
+              >
+                Submit
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <button
-      className="btn btn-secondary mb-4"
-      onClick={randomBid}
-    >
-      Random bet!
-    </button>
-  </>
+      <button className="btn btn-secondary mb-4" onClick={randomBid}>
+        Random bet!
+      </button>
+    </>
+  )
 }
 
 // Show a hello world React page
@@ -269,17 +247,9 @@ export default function Simulator() {
   const reversedEntries = [...entries].reverse()
 
   const probs = entries.map((entry) => entry.prob)
-
-  const chartData = {
-    labels: Array.from({ length: steps }, (_, i) => 1 + i),
-    datasets: [
-      {
-        label: 'Implied probability',
-        data: probs,
-        borderColor: 'rgb(75, 192, 192)',
-      },
-    ],
-  }
+  const points = probs.map((prob, i) => ({ x: i + 1, y: prob * 100 }))
+  const data = [{ id: 'Yes', data: points, color: '#11b981' }]
+  const tickValues = [0, 25, 50, 75, 100]
 
   return (
     <div>
@@ -290,7 +260,6 @@ export default function Simulator() {
           <h1 className="text-2xl font-bold mb-8">
             Dynamic Parimutuel Market Simulator
           </h1>
-
 
           <NewBidTable {...{ steps, bids, setSteps, setBids }} />
 
@@ -320,7 +289,29 @@ export default function Simulator() {
             Probability of
             <div className="badge badge-success text-2xl h-8 w-18">YES</div>
           </h1>
-          <Line data={chartData} height={200} />
+          <div className="w-full" style={{ height: 400 }}>
+            <ResponsiveLine
+              data={data}
+              yScale={{ min: 0, max: 100, type: 'linear' }}
+              yFormat={formatPercent}
+              gridYValues={tickValues}
+              axisLeft={{
+                tickValues,
+                format: formatPercent,
+              }}
+              axisBottom={{
+                tickValues: [],
+              }}
+              enableGridX={false}
+              colors={{ datum: 'color' }}
+              pointSize={12}
+              pointBorderWidth={2}
+              pointBorderColor="#fff"
+              enableSlices="x"
+              enableArea
+              margin={{ top: 20, right: 10, bottom: 20, left: 40 }}
+            />
+          </div>
           {/* Range slider that sets the current step */}
           <label>Orders # 1 - {steps}</label>
           <input
@@ -335,4 +326,8 @@ export default function Simulator() {
       </div>
     </div>
   )
+}
+
+function formatPercent(y: DatumValue) {
+  return `${Math.round(+y.toString())}%`
 }
