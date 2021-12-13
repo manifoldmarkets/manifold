@@ -1,4 +1,5 @@
 import React from 'react'
+import dayjs from 'dayjs'
 import { Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
@@ -11,7 +12,7 @@ export const ContractOverview = (props: {
   className?: string
 }) => {
   const { contract, className } = props
-  const { pot, seedAmounts } = contract
+  const { pot, seedAmounts, createdTime } = contract
 
   const volume = pot.YES + pot.NO - seedAmounts.YES - seedAmounts.NO
   const prob = pot.YES ** 2 / (pot.YES ** 2 + pot.NO ** 2)
@@ -28,7 +29,9 @@ export const ContractOverview = (props: {
               By {contract.creatorName}
             </div>
             <div className="py-2">•</div>
-            <div className="p-2 whitespace-nowrap">Dec 9</div>
+            <div className="p-2 whitespace-nowrap">
+              {dayjs(createdTime).format('MMM D')}
+            </div>
             <div className="py-2">•</div>
             <div className="p-2 whitespace-nowrap">
               {formatWithCommas(volume)} volume
@@ -36,7 +39,7 @@ export const ContractOverview = (props: {
           </Row>
         </Col>
 
-        <Col className="text-4xl p-2 ml-2 text-primary items-end">
+        <Col className="text-4xl p-2 mx-2 text-primary items-end">
           {probPercent}
           <div className="text-xl">chance</div>
         </Col>
