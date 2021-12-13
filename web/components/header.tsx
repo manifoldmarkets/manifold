@@ -84,7 +84,7 @@ export function Header(props: { darkBackground?: boolean }) {
               </Link>
             </div>
 
-            <div className="space-x-8 md:flex md:ml-16">
+            <div className="space-x-8 md:flex md:ml-16 mr-8">
               {navigation.map((item) => (
                 <Link key={item.name} href={item.href}>
                   <a
