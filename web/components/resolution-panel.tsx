@@ -7,6 +7,7 @@ import { Title } from './title'
 import { User } from '../lib/firebase/users'
 import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
+import { ConfirmationModal } from './confirmation-modal'
 
 export function ResolutionPanel(props: {
   creator: User
@@ -16,8 +17,6 @@ export function ResolutionPanel(props: {
   const { creator, contract, className } = props
 
   const [outcome, setOutcome] = useState<'YES' | 'NO' | 'CANCEL' | undefined>()
-
-  const resolveDisabled = false
 
   function resolve() {
     console.log('resolved', outcome)
@@ -70,34 +69,23 @@ export function ResolutionPanel(props: {
 
       <Spacer h={3} />
 
-      <label
-        htmlFor="resolution-modal"
-        className={clsx(
-          'btn modal-button border-none self-start m-2',
-          resolveDisabled ? 'btn-disabled' : submitButtonClass
-        )}
+      <ConfirmationModal
+        id="resolution-modal"
+        openModelBtn={{
+          className: clsx('border-none self-start m-2', submitButtonClass),
+          label: 'Resolve',
+        }}
+        cancelBtn={{
+          label: 'Back',
+        }}
+        submitBtn={{
+          label: 'Resolve',
+          className: submitButtonClass,
+        }}
+        onSubmit={resolve}
       >
-        Resolve
-      </label>
-      <input type="checkbox" id="resolution-modal" className="modal-toggle" />
-
-      <div className="modal">
-        <div className="modal-box">
-          <p>Are you sure you want to resolve this market?</p>
-          <div className="modal-action">
-            <label htmlFor="resolution-modal" className="btn">
-              Back
-            </label>
-            <label
-              htmlFor="resolution-modal"
-              className={clsx('btn', submitButtonClass)}
-              onClick={resolve}
-            >
-              Resolve
-            </label>
-          </div>
-        </div>
-      </div>
+        <p>Are you sure you want to resolve this market?</p>
+      </ConfirmationModal>
     </Col>
   )
 }
