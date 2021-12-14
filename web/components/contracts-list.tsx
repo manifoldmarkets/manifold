@@ -24,6 +24,17 @@ export function ContractDetails(props: { contract: Contract }) {
 function ContractCard(props: { contract: Contract }) {
   const { contract } = props
   const { probPercent } = compute(contract)
+  const { resolution } = contract
+
+  const resolutionColor = (
+    resolution === 'YES'
+      ? 'text-primary'
+      : resolution === 'NO'
+        ? 'text-red-400'
+        : resolution === 'CANCEL'
+          ? 'text-yellow-400'
+          : ''
+  )
 
   return (
     <Link href={`/contract/${contract.id}`}>
@@ -42,7 +53,7 @@ function ContractCard(props: { contract: Contract }) {
 
                 {/* Right side of card */}
                 <Col>
-                  <Col className="text-4xl mx-auto items-end">
+                  <Col className={'text-4xl mx-auto items-end ' + resolutionColor}>
                     {contract.resolution || (
                       <div className="text-primary">
                         {probPercent}
