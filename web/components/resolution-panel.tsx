@@ -19,7 +19,18 @@ export function ResolutionPanel(props: {
 
   const resolveDisabled = false
 
-  function resolve() {}
+  function resolve() {
+    console.log('resolved', outcome)
+  }
+
+  const submitButtonClass =
+    outcome === 'YES'
+      ? 'btn-primary'
+      : outcome === 'NO'
+      ? 'bg-red-400 hover:bg-red-500'
+      : outcome === 'CANCEL'
+      ? 'bg-yellow-400 hover:bg-yellow-500'
+      : 'btn-disabled'
 
   return (
     <Col
@@ -59,23 +70,34 @@ export function ResolutionPanel(props: {
 
       <Spacer h={3} />
 
-      <button
+      <label
+        htmlFor="resolution-modal"
         className={clsx(
-          'btn border-none self-start m-2',
-          resolveDisabled
-            ? 'btn-disabled'
-            : outcome === 'YES'
-            ? 'btn-primary'
-            : outcome === 'NO'
-            ? 'bg-red-400 hover:bg-red-500'
-            : outcome === 'CANCEL'
-            ? 'bg-yellow-400 hover:bg-yellow-500'
-            : 'btn-disabled'
+          'btn modal-button border-none self-start m-2',
+          resolveDisabled ? 'btn-disabled' : submitButtonClass
         )}
-        onClick={resolveDisabled ? undefined : resolve}
       >
         Resolve
-      </button>
+      </label>
+      <input type="checkbox" id="resolution-modal" className="modal-toggle" />
+
+      <div className="modal">
+        <div className="modal-box">
+          <p>Are you sure you want to resolve this market?</p>
+          <div className="modal-action">
+            <label htmlFor="resolution-modal" className="btn">
+              Back
+            </label>
+            <label
+              htmlFor="resolution-modal"
+              className={clsx('btn', submitButtonClass)}
+              onClick={resolve}
+            >
+              Resolve
+            </label>
+          </div>
+        </div>
+      </div>
     </Col>
   )
 }
