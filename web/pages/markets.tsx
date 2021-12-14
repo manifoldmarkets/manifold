@@ -88,15 +88,60 @@ export default function Markets() {
     listAllContracts().then(setContracts)
   }, [])
 
+  const [query, setQuery] = useState('')
+  type Sort = 'createdTime' | 'volume'
+  const [sort, setSort] = useState('createdTime')
+
+  function check(corpus: String) {
+    return corpus.toLowerCase().includes(query.toLowerCase())
+  }
+  const matches = contracts.filter(
+    (c) => check(c.question) || check(c.description) || check(c.creatorName)
+  )
+
+  function volume(contract: Contract) {
+    return (
+      contract.pot.YES +
+      contract.pot.NO -
+      contract.seedAmounts.YES -
+      contract.seedAmounts.NO
+    )
+  }
+
+  if (sort === 'createdTime') {
+    matches.sort((a, b) => b.createdTime - a.createdTime)
+  } else if (sort === 'volume') {
+    matches.sort((a, b) => volume(b) - volume(a))
+  }
+
   return (
     <div>
       <Header />
       <div className="max-w-4xl py-8 mx-auto">
-        <Title text="Open markets" />
-        <ContractsGrid contracts={contracts.filter((c) => !c.resolution)} />
+        {/* Show a search input next to a sort dropdown */}
+        <div className="flex justify-between gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search markets"
+            className="input input-bordered w-full"
+          />
+          <select
+            className="select select-bordered"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as Sort)}
+          >
+            <option value="createdTime">Newest first</option>
+            <option value="volume">Most traded</option>
+          </select>
+        </div>
 
-        <Title text="Resolved markets" className="mt-20" />
-        <ContractsGrid contracts={contracts.filter((c) => c.resolution)} />
+        <Title text="Open markets" className="mt-16" />
+        <ContractsGrid contracts={matches.filter((c) => !c.resolution)} />
+
+        <Title text="Resolved markets" className="mt-16" />
+        <ContractsGrid contracts={matches.filter((c) => c.resolution)} />
       </div>
     </div>
   )
