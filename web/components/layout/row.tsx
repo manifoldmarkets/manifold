@@ -1,5 +1,7 @@
+import clsx from 'clsx'
+
 export function Row(props: { children?: any; className?: string }) {
   const { children, className } = props
 
-  return <div className={`${className} flex flex-row`}>{children}</div>
+  return <div className={clsx(className, 'flex flex-row')}>{children}</div>
 }
