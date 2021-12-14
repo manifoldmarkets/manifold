@@ -8,7 +8,6 @@ import { Title } from '../../components/title'
 import { useUser } from '../../hooks/use-user'
 import { createContract } from '../../lib/service/create-contract'
 
-
 // Allow user to create a new contract
 export default function NewContract() {
   const creator = useUser()
@@ -24,7 +23,12 @@ export default function NewContract() {
 
     setIsSubmitting(true)
 
-    const contract = await createContract(question, description, initialProb, creator)
+    const contract = await createContract(
+      question,
+      description,
+      initialProb,
+      creator
+    )
     await router.push(`contract/${contract.id}`)
   }
 
@@ -51,7 +55,7 @@ export default function NewContract() {
                 placeholder="e.g. Will the FDA approve Paxlovid before Jun 2nd, 2022?"
                 className="input"
                 value={question}
-                onChange={e => setQuestion(e.target.value || '')}
+                onChange={(e) => setQuestion(e.target.value || '')}
               />
             </div>
 
@@ -66,7 +70,7 @@ export default function NewContract() {
                 className="textarea h-24 textarea-bordered"
                 placeholder={descriptionPlaceholder}
                 value={description}
-                onChange={e => setDescription(e.target.value || '')}
+                onChange={(e) => setDescription(e.target.value || '')}
               ></textarea>
             </div>
 
@@ -74,7 +78,9 @@ export default function NewContract() {
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Initial probability: {initialProb}%</span>
+                <span className="label-text">
+                  Initial probability: {initialProb}%
+                </span>
               </label>
 
               <input
@@ -82,7 +88,7 @@ export default function NewContract() {
                 min="1"
                 max={99}
                 value={initialProb}
-                onChange={e => setInitialProb(parseInt(e.target.value))}
+                onChange={(e) => setInitialProb(parseInt(e.target.value))}
               />
             </div>
 

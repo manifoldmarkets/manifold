@@ -20,13 +20,17 @@ function makeWeights(bids: Bid[]) {
 
   // First pass: calculate all the weights
   for (const { yesBid, noBid } of bids) {
-    const yesWeight = yesBid * Math.pow(noPot, 2) / (Math.pow(yesPot, 2) + yesBid * yesPot) || 0
-    const noWeight = noBid * Math.pow(yesPot, 2) / (Math.pow(noPot, 2) + noBid * noPot) || 0
+    const yesWeight =
+      (yesBid * Math.pow(noPot, 2)) / (Math.pow(yesPot, 2) + yesBid * yesPot) ||
+      0
+    const noWeight =
+      (noBid * Math.pow(yesPot, 2)) / (Math.pow(noPot, 2) + noBid * noPot) || 0
 
     // Note: Need to calculate weights BEFORE updating pot
     yesPot += yesBid
     noPot += noBid
-    const prob = Math.pow(yesPot, 2) / (Math.pow(yesPot, 2) + Math.pow(noPot, 2))
+    const prob =
+      Math.pow(yesPot, 2) / (Math.pow(yesPot, 2) + Math.pow(noPot, 2))
 
     weights.push({
       yesBid,
