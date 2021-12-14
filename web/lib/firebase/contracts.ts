@@ -30,7 +30,7 @@ export type Contract = {
   lastUpdatedTime: number // If the question or description was changed
   closeTime?: number // When no more trading is allowed
 
-  // isResolved: boolean
+  isResolved: boolean
   resolutionTime?: 10293849 // When the contract creator resolved the market; 0 if unresolved
   resolution?: 'YES' | 'NO' | 'CANCEL' // Chosen by creator; must be one of outcomes
 }
