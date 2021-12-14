@@ -1,32 +1,64 @@
+import clsx from 'clsx'
 import React from 'react'
 import { Row } from './layout/row'
 
 export function YesNoSelector(props: {
   selected: 'YES' | 'NO'
   onSelect: (selected: 'YES' | 'NO') => void
-  yesLabel?: string
-  noLabel?: string
   className?: string
 }) {
-  const { selected, onSelect, yesLabel, noLabel, className } = props
+  const { selected, onSelect, className } = props
 
   return (
-    <Row className={className}>
+    <Row className={clsx('space-x-3', className)}>
       <Button
-        color={selected === 'YES' ? 'green' : 'deemphasized'}
-        hideFocusRing
+        color={selected === 'YES' ? 'green' : 'gray'}
         onClick={() => onSelect('YES')}
       >
-        {yesLabel ?? 'Yes'}
+        Yes
       </Button>
 
       <Button
-        color={selected === 'NO' ? 'red' : 'deemphasized'}
-        hideFocusRing
+        color={selected === 'NO' ? 'red' : 'gray'}
         onClick={() => onSelect('NO')}
-        className="ml-3"
       >
-        {noLabel ?? 'No'}
+        No
+      </Button>
+    </Row>
+  )
+}
+
+export function YesNoCancelSelector(props: {
+  selected: 'YES' | 'NO' | 'CANCEL' | undefined
+  onSelect: (selected: 'YES' | 'NO' | 'CANCEL') => void
+  className?: string
+}) {
+  const { selected, onSelect, className } = props
+
+  return (
+    <Row className={clsx('space-x-3', className)}>
+      <Button
+        color={selected === 'YES' ? 'green' : 'gray'}
+        onClick={() => onSelect('YES')}
+        className="px-6"
+      >
+        Yes
+      </Button>
+
+      <Button
+        color={selected === 'NO' ? 'red' : 'gray'}
+        onClick={() => onSelect('NO')}
+        className="px-6"
+      >
+        No
+      </Button>
+
+      <Button
+        color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+        onClick={() => onSelect('CANCEL')}
+        className="px-6"
+      >
+        Cancel
       </Button>
     </Row>
   )
@@ -35,22 +67,20 @@ export function YesNoSelector(props: {
 function Button(props: {
   className?: string
   onClick?: () => void
-  color: 'green' | 'red' | 'deemphasized'
-  hideFocusRing?: boolean
+  color: 'green' | 'red' | 'yellow' | 'gray'
   children?: any
 }) {
-  const { className, onClick, children, color, hideFocusRing } = props
+  const { className, onClick, children, color } = props
 
   return (
     <button
       type="button"
-      className={classNames(
+      className={clsx(
         'inline-flex items-center px-8 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white',
-        !hideFocusRing && 'focus:outline-none focus:ring-2 focus:ring-offset-2',
         color === 'green' && 'btn-primary',
-        color === 'red' && 'bg-red-400 hover:bg-red-500 focus:ring-red-400',
-        color === 'deemphasized' &&
-          'text-gray-700 bg-gray-300 hover:bg-gray-400 focus:ring-gray-400',
+        color === 'red' && 'bg-red-400 hover:bg-red-500',
+        color === 'yellow' && 'bg-yellow-400 hover:bg-yellow-500',
+        color === 'gray' && 'text-gray-700 bg-gray-300 hover:bg-gray-400',
         className
       )}
       onClick={onClick}
@@ -58,8 +88,4 @@ function Button(props: {
       {children}
     </button>
   )
-}
-
-function classNames(...classes: any[]) {
-  return classes.filter(Boolean).join(' ')
 }
