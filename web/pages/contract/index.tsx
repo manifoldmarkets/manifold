@@ -85,6 +85,7 @@ export default function NewContract() {
 
               <input
                 type="range"
+                className="range range-lg range-primary"
                 min="1"
                 max={99}
                 value={initialProb}
