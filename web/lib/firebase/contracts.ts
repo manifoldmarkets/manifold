@@ -11,6 +11,7 @@ import {
   onSnapshot,
   orderBy,
   getDoc,
+  limit,
 } from 'firebase/firestore'
 
 export type Contract = {
@@ -47,9 +48,7 @@ export async function getContract(contractId: string) {
   const docRef = doc(db, 'contracts', contractId)
   const result = await getDoc(docRef)
 
-  return result.exists()
-    ? result.data() as Contract
-    : undefined
+  return result.exists() ? (result.data() as Contract) : undefined
 }
 
 export async function deleteContract(contractId: string) {
@@ -64,9 +63,13 @@ export async function listContracts(creatorId: string): Promise<Contract[]> {
     orderBy('createdTime', 'desc')
   )
   const snapshot = await getDocs(q)
-  const contracts: Contract[] = []
-  snapshot.forEach((doc) => contracts.push(doc.data() as Contract))
-  return contracts
+  return snapshot.docs.map((doc) => doc.data() as Contract)
+}
+
+export async function listAllContracts(): Promise<Contract[]> {
+  const q = query(contractCollection, orderBy('createdTime', 'desc'), limit(25))
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((doc) => doc.data() as Contract)
 }
 
 export function listenForContract(
