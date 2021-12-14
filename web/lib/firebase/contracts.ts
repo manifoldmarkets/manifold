@@ -37,12 +37,13 @@ export type Contract = {
 }
 
 export function compute(contract: Contract) {
-  const { pot, seedAmounts, createdTime } = contract
+  const { pot, seedAmounts, createdTime, resolutionTime, isResolved } = contract
   const volume = pot.YES + pot.NO - seedAmounts.YES - seedAmounts.NO
   const prob = pot.YES ** 2 / (pot.YES ** 2 + pot.NO ** 2)
   const probPercent = Math.round(prob * 100) + '%'
   const createdDate = dayjs(createdTime).format('MMM D')
-  return { volume, probPercent, createdDate }
+  const resolvedDate = isResolved ? dayjs(resolutionTime).format('MMM D') : undefined
+  return { volume, probPercent, createdDate, resolvedDate }
 }
 
 const db = getFirestore(app)
