@@ -2,6 +2,7 @@ import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
 import { useBets } from '../hooks/use-bets'
+import { useWindowSize } from '../hooks/use-window-size'
 import { Contract } from '../lib/firebase/contracts'
 
 export function ContractProbGraph(props: { contract: Contract }) {
@@ -28,6 +29,8 @@ export function ContractProbGraph(props: { contract: Contract }) {
 
   const tickValues = [0, 25, 50, 75, 100]
 
+  const { width } = useWindowSize()
+
   return (
     <div className="w-full" style={{ height: 400 }}>
       <ResponsiveLine
@@ -42,6 +45,7 @@ export function ContractProbGraph(props: { contract: Contract }) {
         xScale={{ type: 'time' }}
         xFormat={(d) => formatTime(+d.valueOf(), lessThanAWeek)}
         axisBottom={{
+          tickValues: !width || width < 800 ? 4 : 8,
           format: (time) => formatTime(+time, lessThanAWeek),
         }}
         colors={{ datum: 'color' }}
@@ -49,8 +53,9 @@ export function ContractProbGraph(props: { contract: Contract }) {
         pointBorderWidth={1}
         pointBorderColor="#fff"
         enableSlices="x"
+        enableGridX={!!width && width >= 800}
         enableArea
-        margin={{ top: 20, right: 22, bottom: 22, left: 40 }}
+        margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
       />
     </div>
   )

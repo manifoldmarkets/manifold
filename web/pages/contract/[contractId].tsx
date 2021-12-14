@@ -32,7 +32,7 @@ export default function ContractPage() {
     <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
       <Header />
 
-      <Col className="w-full md:justify-between md:flex-row mt-4">
+      <Col className="w-full items-start md:justify-between md:flex-row mt-4">
         <ContractOverview
           contract={contract}
           className="max-w-4xl w-full p-4"
@@ -41,15 +41,11 @@ export default function ContractPage() {
         <div className="mt-12 md:mt-0 md:ml-8" />
 
         {isResolved ? (
-          <ResolvedPanel className="self-start" contract={contract} />
+          <ResolvedPanel contract={contract} />
         ) : isCreator ? (
-          <ResolutionPanel
-            className="self-start"
-            creator={user}
-            contract={contract}
-          />
+          <ResolutionPanel creator={user} contract={contract} />
         ) : (
-          <BetPanel className="self-start" contract={contract} />
+          <BetPanel contract={contract} />
         )}
       </Col>
     </div>
