@@ -124,11 +124,12 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
             ? 'btn-disabled'
             : betChoice === 'YES'
             ? 'btn-primary'
-            : 'bg-red-400 hover:bg-red-500 border-none'
+            : 'bg-red-400 hover:bg-red-500 border-none',
+          isSubmitting ? 'loading' : ''
         )}
         onClick={betDisabled ? undefined : submitBet}
       >
-        Place bet
+        {isSubmitting ? 'Submitting...' : 'Place bet'}
       </button>
 
       {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
