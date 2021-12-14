@@ -75,8 +75,8 @@ const getPayouts = (outcome: string, contract: Contract, bets: Bet[]) => {
   const [yesBets, noBets] = _.partition(bets, bet => bet.outcome === 'YES')
 
   const [pot, winningBets] = outcome === 'YES'
-    ? [contract.pot.NO, yesBets]
-    : [contract.pot.YES, noBets]
+    ? [contract.pot.NO - contract.seedAmounts.NO, yesBets]
+    : [contract.pot.YES - contract.seedAmounts.YES, noBets]
 
   const finalPot = (1 - PLATFORM_FEE - CREATOR_FEE) * pot
   const creatorPayout = CREATOR_FEE * pot
