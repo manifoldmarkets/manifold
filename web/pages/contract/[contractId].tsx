@@ -7,6 +7,7 @@ import { BetPanel } from '../../components/bet-panel'
 import { Col } from '../../components/layout/col'
 import { useUser } from '../../hooks/use-user'
 import { ResolutionPanel } from '../../components/resolution-panel'
+import { ResolvedPanel } from '../../components/resolved-panel'
 
 export default function ContractPage() {
   const user = useUser()
@@ -24,19 +25,29 @@ export default function ContractPage() {
     return <div>Contract not found...</div>
   }
 
-  const isCreator = user?.id === contract.creatorId
+  const { creatorId, isResolved } = contract
+  const isCreator = user?.id === creatorId
 
   return (
     <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
       <Header />
 
       <Col className="w-full md:justify-between md:flex-row mt-4">
-        <ContractOverview contract={contract} className="max-w-4xl w-full p-4" />
+        <ContractOverview
+          contract={contract}
+          className="max-w-4xl w-full p-4"
+        />
 
         <div className="mt-12 md:mt-0 md:ml-8" />
 
-        {isCreator ? (
-          <ResolutionPanel className="self-start" creator={user} contract={contract} />
+        {isResolved ? (
+          <ResolvedPanel className="self-start" contract={contract} />
+        ) : isCreator ? (
+          <ResolutionPanel
+            className="self-start"
+            creator={user}
+            contract={contract}
+          />
         ) : (
           <BetPanel className="self-start" contract={contract} />
         )}
