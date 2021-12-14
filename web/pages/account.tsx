@@ -4,6 +4,7 @@ import { useUser } from '../hooks/use-user'
 import { ContractsList } from '../components/contracts-list'
 import { Title } from '../components/title'
 import { Row } from '../components/layout/row'
+import { formatMoney } from '../lib/util/format'
 
 function UserCard(props: { user: User }) {
   const { user } = props
@@ -22,7 +23,7 @@ function UserCard(props: { user: User }) {
       <div className="max-w-md card-body">
         <h2 className="card-title font-major-mono">{user?.name}</h2>
         <p>{user?.email}</p>
-        <p>M$ {user?.balance}</p>
+        <p>{formatMoney(user?.balance)}</p>
         <div className="card-actions">
           <button
             className="btn glass rounded-full hover:bg-green-500"
