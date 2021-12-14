@@ -39,7 +39,7 @@ export const ContractOverview = (props: {
           </Row>
         </Col>
 
-        <Col className="text-4xl mt-4 md:mt-2 md:mx-4 text-primary items-end self-center md:self-start">
+        <Col className="text-4xl mt-4 md:mt-2 md:ml-4 md:mr-6 text-primary items-end self-center md:self-start">
           {probPercent}
           <div className="text-xl">chance</div>
         </Col>
