@@ -23,10 +23,12 @@ export const ContractOverview = (props: {
           <ContractDetails contract={contract} />
         </Col>
 
-        <Col className="text-4xl mt-4 md:mt-2 md:ml-4 md:mr-6 text-primary items-end self-center md:self-start">
-          {probPercent}
-          <div className="text-xl">chance</div>
-        </Col>
+        {!contract.resolution &&
+          <Col className="text-4xl mt-4 md:mt-2 md:ml-4 md:mr-6 text-primary items-end self-center md:self-start">
+            {probPercent}
+            <div className="text-xl">chance</div>
+          </Col>
+        }
       </Col>
 
       <Spacer h={4} />
