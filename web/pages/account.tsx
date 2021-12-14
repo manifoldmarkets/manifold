@@ -5,16 +5,17 @@ import { useState, useEffect } from 'react'
 import { Contract, listContracts } from '../lib/firebase/contracts'
 import { ContractsList } from '../components/contracts-list'
 import { Title } from '../components/title'
+import { Row } from '../components/layout/row'
 
 function UserCard(props: { user: User }) {
   const { user } = props
   return (
-    <div className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
-      <figure className="p-6">
+    <Row className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
+      <div className="p-4">
         {user?.avatarUrl && (
-          <img src={user.avatarUrl} className="rounded-lg shadow-lg" />
+          <img src={user.avatarUrl} className="rounded-lg shadow-lg" width={96} height={96} />
         )}
-      </figure>
+      </div>
       <div className="max-w-md card-body">
         <h2 className="card-title font-major-mono">{user?.name}</h2>
         <p>{user?.email}</p>
@@ -28,19 +29,19 @@ function UserCard(props: { user: User }) {
           </button>
         </div>
       </div>
-    </div>
+    </Row>
   )
 }
 
 function SignInCard() {
   return (
     <div className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
-      <figure className="p-6">
+      <div className="p-4">
         <img
           src="/logo-icon-white-bg.png"
           className="rounded-lg shadow-lg w-20 h-20"
         />
-      </figure>
+      </div>
       <div className="max-w-md card-body">
         <h2 className="card-title font-major-mono">Welcome!</h2>
         <p>Sign in to get started</p>
@@ -70,11 +71,11 @@ export default function Account() {
   return (
     <div>
       <Header />
-      <div className="max-w-4xl py-8 mx-auto">
+      <div className="max-w-4xl pt-8 pb-0 sm:pb-8 mx-auto">
         {user ? (
           <div>
             <UserCard user={user} />
-            <Title text="Your markets" />
+            <Title className="px-2" text="Your markets" />
             <ContractsList contracts={contracts} />
           </div>
         ) : (
