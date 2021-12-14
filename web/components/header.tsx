@@ -33,6 +33,12 @@ function SignInLink(props: { darkBackground?: boolean }) {
     <>
       {user ? (
         <>
+          <Link href="/markets">
+            <a className={clsx('text-base font-medium', themeClasses)}>
+              All markets
+            </a>
+          </Link>
+
           <Link href="/contract">
             <a className={clsx('text-base font-medium', themeClasses)}>
               Create a market
