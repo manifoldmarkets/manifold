@@ -7,7 +7,7 @@ import { BetPanel } from '../../components/bet-panel'
 import { Col } from '../../components/layout/col'
 import { useUser } from '../../hooks/use-user'
 import { ResolutionPanel } from '../../components/resolution-panel'
-import { ResolvedPanel } from '../../components/resolved-panel'
+import clsx from 'clsx'
 
 export default function ContractPage() {
   const user = useUser()
@@ -29,25 +29,32 @@ export default function ContractPage() {
   const isCreator = user?.id === creatorId
 
   return (
-    <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <Col className="max-w-7xl mx-auto sm:px-6 lg:px-8">
       <Header />
 
-      <Col className="w-full items-start md:justify-between md:flex-row mt-4">
+      <Col
+        className={clsx(
+          'w-full items-start md:flex-row mt-4',
+          isResolved ? 'md:justify-center' : 'md:justify-between'
+        )}
+      >
         <ContractOverview
           contract={contract}
           className="max-w-4xl w-full p-4"
         />
 
-        <div className="mt-12 md:mt-0 md:ml-8" />
+        {!isResolved && (
+          <>
+            <div className="mt-12 md:mt-0 md:ml-8" />
 
-        {isResolved ? (
-          <ResolvedPanel contract={contract} />
-        ) : isCreator ? (
-          <ResolutionPanel creator={user} contract={contract} />
-        ) : (
-          <BetPanel contract={contract} />
+            {isCreator ? (
+              <ResolutionPanel creator={user} contract={contract} />
+            ) : (
+              <BetPanel contract={contract} />
+            )}
+          </>
         )}
       </Col>
-    </div>
+    </Col>
   )
 }

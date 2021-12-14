@@ -4,19 +4,21 @@ import { Row } from '../components/layout/row'
 import { useEffect, useState } from 'react'
 import { useUser } from '../hooks/use-user'
 import { compute, Contract, listContracts } from '../lib/firebase/contracts'
-import { formatWithCommas } from '../lib/util/format'
+import { formatMoney } from '../lib/util/format'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
-  const { volume, createdDate } = compute(contract)
+  const { volume, createdDate, resolvedDate } = compute(contract)
 
   return (
     <Row className="flex-wrap text-sm text-gray-500">
       <div className="whitespace-nowrap">By {contract.creatorName}</div>
       <div className="mx-2">•</div>
-      <div className="whitespace-nowrap">{createdDate}</div>
+      <div className="whitespace-nowrap">
+        {resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}
+      </div>
       <div className="mx-2">•</div>
-      <div className="whitespace-nowrap">{formatWithCommas(volume)} vol</div>
+      <div className="whitespace-nowrap">{formatMoney(volume)} pot</div>
     </Row>
   )
 }
@@ -26,15 +28,14 @@ function ContractCard(props: { contract: Contract }) {
   const { probPercent } = compute(contract)
   const { resolution } = contract
 
-  const resolutionColor = (
+  const resolutionColor =
     resolution === 'YES'
       ? 'text-primary'
       : resolution === 'NO'
-        ? 'text-red-400'
-        : resolution === 'CANCEL'
-          ? 'text-yellow-400'
-          : ''
-  )
+      ? 'text-red-400'
+      : resolution === 'CANCEL'
+      ? 'text-yellow-400'
+      : ''
 
   return (
     <Link href={`/contract/${contract.id}`}>
@@ -53,7 +54,9 @@ function ContractCard(props: { contract: Contract }) {
 
                 {/* Right side of card */}
                 <Col>
-                  <Col className={'text-4xl mx-auto items-end ' + resolutionColor}>
+                  <Col
+                    className={'text-4xl mx-auto items-end ' + resolutionColor}
+                  >
                     {contract.resolution || (
                       <div className="text-primary">
                         {probPercent}
