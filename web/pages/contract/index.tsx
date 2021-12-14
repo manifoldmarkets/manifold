@@ -37,7 +37,7 @@ export default function NewContract() {
       <div className="max-w-4xl py-12 lg:mx-auto px-4">
         <Title text="Create a new prediction market" />
 
-        <div className="w-full bg-gray-200 rounded-lg shadow-xl p-6">
+        <div className="w-full bg-gray-100 rounded-lg shadow-xl px-6 py-4">
           {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
           {/* When the form is submitted, create a new contract in the database */}
           <form>
@@ -55,6 +55,8 @@ export default function NewContract() {
               />
             </div>
 
+            <Spacer h={4} />
+
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Description</span>
@@ -68,6 +70,8 @@ export default function NewContract() {
               ></textarea>
             </div>
 
+            <Spacer h={4} />
+
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Initial probability: {initialProb}%</span>
@@ -75,7 +79,6 @@ export default function NewContract() {
 
               <input
                 type="range"
-                className="range-primary"
                 min="1"
                 max={99}
                 value={initialProb}
@@ -83,7 +86,9 @@ export default function NewContract() {
               />
             </div>
 
-            <div className="flex justify-end mt-6">
+            <Spacer h={4} />
+
+            <div className="flex justify-end my-4">
               <button
                 type="submit"
                 className="btn btn-primary"
