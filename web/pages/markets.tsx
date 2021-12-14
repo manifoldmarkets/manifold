@@ -22,7 +22,7 @@ function ContractCard(props: { contract: Contract }) {
   return (
     <Link href={`/contract/${contract.id}`}>
       <a>
-        <li className="col-span-1 bg-white hover:bg-gray-100 rounded-lg shadow divide-y divide-gray-200">
+        <li className="col-span-1 bg-white hover:bg-gray-100 shadow-xl rounded-lg divide-y divide-gray-200">
           <div className="card">
             <div className="card-body p-6">
               <div className="flex justify-between gap-2">
@@ -67,6 +67,21 @@ function ContractCard(props: { contract: Contract }) {
   )
 }
 
+export function ContractsGrid(props: { contracts: Contract[] }) {
+  const { contracts } = props
+  return (
+    <ul
+      role="list"
+      className="grid grid-cols-1 gap-6 sm:grid-cols-1 lg:grid-cols-2"
+    >
+      {contracts.map((contract) => (
+        <ContractCard contract={contract} key={contract.id} />
+      ))}
+      {/* TODO: Show placeholder if empty */}
+    </ul>
+  )
+}
+
 export default function Markets() {
   const [contracts, setContracts] = useState<Contract[]>([])
   useEffect(() => {
@@ -78,28 +93,10 @@ export default function Markets() {
       <Header />
       <div className="max-w-4xl py-8 mx-auto">
         <Title text="Open markets" />
-        <ul
-          role="list"
-          className="grid grid-cols-1 gap-6 sm:grid-cols-1 lg:grid-cols-2"
-        >
-          {contracts
-            .filter((c) => !c.resolution)
-            .map((contract) => (
-              <ContractCard contract={contract} key={contract.id} />
-            ))}
-        </ul>
+        <ContractsGrid contracts={contracts.filter((c) => !c.resolution)} />
 
         <Title text="Resolved markets" className="mt-20" />
-        <ul
-          role="list"
-          className="grid grid-cols-1 gap-6 sm:grid-cols-1 lg:grid-cols-2"
-        >
-          {contracts
-            .filter((c) => c.resolution)
-            .map((contract) => (
-              <ContractCard contract={contract} key={contract.id} />
-            ))}
-        </ul>
+        <ContractsGrid contracts={contracts.filter((c) => c.resolution)} />
       </div>
     </div>
   )
