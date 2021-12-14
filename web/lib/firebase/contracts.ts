@@ -13,6 +13,7 @@ import {
   getDoc,
   limit,
 } from 'firebase/firestore'
+import dayjs from 'dayjs'
 
 export type Contract = {
   id: string // Chosen by creator; must be unique
@@ -33,6 +34,15 @@ export type Contract = {
   isResolved: boolean
   resolutionTime?: 10293849 // When the contract creator resolved the market; 0 if unresolved
   resolution?: 'YES' | 'NO' | 'CANCEL' // Chosen by creator; must be one of outcomes
+}
+
+export function compute(contract: Contract) {
+  const { pot, seedAmounts, createdTime } = contract
+  const volume = pot.YES + pot.NO - seedAmounts.YES - seedAmounts.NO
+  const prob = pot.YES ** 2 / (pot.YES ** 2 + pot.NO ** 2)
+  const probPercent = Math.round(prob * 100) + '%'
+  const createdDate = dayjs(createdTime).format('MMM D')
+  return { volume, probPercent, createdDate }
 }
 
 const db = getFirestore(app)

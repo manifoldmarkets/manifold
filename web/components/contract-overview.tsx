@@ -1,42 +1,26 @@
 import React from 'react'
-import dayjs from 'dayjs'
-import { Contract } from '../lib/firebase/contracts'
+import { compute, Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
-import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
-import { formatWithCommas } from '../lib/util/format'
 import { ContractProbGraph } from './contract-prob-graph'
+import { ContractDetails } from '../pages/markets'
 
 export const ContractOverview = (props: {
   contract: Contract
   className?: string
 }) => {
   const { contract, className } = props
-  const { pot, seedAmounts, createdTime } = contract
-
-  const volume = pot.YES + pot.NO - seedAmounts.YES - seedAmounts.NO
-  const prob = pot.YES ** 2 / (pot.YES ** 2 + pot.NO ** 2)
-  const probPercent = Math.round(prob * 100) + '%'
+  const { probPercent } = compute(contract)
 
   return (
     <Col className={className}>
       <Col className="justify-between md:flex-row">
         <Col>
-          <div className="text-3xl font-medium p-2">{contract.question}</div>
+          <div className="text-3xl text-indigo-700 mt-2 mb-4">
+            {contract.question}
+          </div>
 
-          <Row className="flex-wrap text-sm text-gray-600">
-            <div className="p-2 whitespace-nowrap">
-              By {contract.creatorName}
-            </div>
-            <div className="py-2">•</div>
-            <div className="p-2 whitespace-nowrap">
-              {dayjs(createdTime).format('MMM D')}
-            </div>
-            <div className="py-2">•</div>
-            <div className="p-2 whitespace-nowrap">
-              {formatWithCommas(volume)} volume
-            </div>
-          </Row>
+          <ContractDetails contract={contract} />
         </Col>
 
         <Col className="text-4xl mt-4 md:mt-2 md:ml-4 md:mr-6 text-primary items-end self-center md:self-start">
