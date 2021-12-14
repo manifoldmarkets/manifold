@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import React, { useState } from 'react'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 
 import { Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
@@ -8,6 +9,9 @@ import { User } from '../lib/firebase/users'
 import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ConfirmationModal } from './confirmation-modal'
+
+const functions = getFunctions()
+export const resolveMarket = httpsCallable(functions, 'resolveMarket')
 
 export function ResolutionPanel(props: {
   creator: User
@@ -18,18 +22,19 @@ export function ResolutionPanel(props: {
 
   const [outcome, setOutcome] = useState<'YES' | 'NO' | 'CANCEL' | undefined>()
 
-  function resolve() {
-    console.log('resolved', outcome)
+  const resolve = async () => {
+    const result = await resolveMarket({ outcome, contractId: contract.id })
+    console.log('resolved', outcome, 'result:', result.data)
   }
 
   const submitButtonClass =
     outcome === 'YES'
       ? 'btn-primary'
       : outcome === 'NO'
-      ? 'bg-red-400 hover:bg-red-500'
-      : outcome === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
-      : 'btn-disabled'
+        ? 'bg-red-400 hover:bg-red-500'
+        : outcome === 'CANCEL'
+          ? 'bg-yellow-400 hover:bg-yellow-500'
+          : 'btn-disabled'
 
   return (
     <Col
