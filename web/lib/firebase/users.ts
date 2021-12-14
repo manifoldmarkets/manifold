@@ -8,6 +8,8 @@ import {
   signInWithPopup,
 } from 'firebase/auth'
 
+export const STARTING_BALANCE = 1000
+
 export type User = {
   id: string
   email: string
@@ -50,7 +52,7 @@ export function listenForLogin(onUser: (_user: User | null) => void) {
           username: user.displayName?.replace(/\s+/g, '') || 'DefaultUsername',
           avatarUrl: user.photoURL || '',
           email: user.email || 'default@blah.com',
-          balance: 10000,
+          balance: STARTING_BALANCE,
           // TODO: use Firestore timestamp?
           createdTime: Date.now(),
           lastUpdatedTime: Date.now(),
