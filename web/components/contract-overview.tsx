@@ -20,7 +20,7 @@ export const ContractOverview = (props: {
 
   return (
     <Col className={className}>
-      <Row className="justify-between">
+      <Col className="justify-between md:flex-row">
         <Col>
           <div className="text-3xl font-medium p-2">{contract.question}</div>
 
@@ -39,11 +39,11 @@ export const ContractOverview = (props: {
           </Row>
         </Col>
 
-        <Col className="text-4xl p-2 mx-2 text-primary items-end">
+        <Col className="text-4xl mt-4 md:mt-2 md:mx-4 text-primary items-end self-center md:self-start">
           {probPercent}
           <div className="text-xl">chance</div>
         </Col>
-      </Row>
+      </Col>
 
       <Spacer h={4} />
 

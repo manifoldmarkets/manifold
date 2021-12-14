@@ -30,10 +30,10 @@ export default function ContractPage() {
     <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
       <Header />
 
-      <Col className="w-full md:justify-between md:flex-row p-4 mt-4">
-        <ContractOverview contract={contract} className="max-w-4xl w-full" />
+      <Col className="w-full md:justify-between md:flex-row mt-4">
+        <ContractOverview contract={contract} className="max-w-4xl w-full p-4" />
 
-        <div className="mt-12 md:mt-0" />
+        <div className="mt-12 md:mt-0 md:ml-8" />
 
         {isCreator ? (
           <ResolutionPanel className="self-start" creator={user} contract={contract} />

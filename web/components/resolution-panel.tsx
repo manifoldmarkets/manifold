@@ -34,7 +34,7 @@ export function ResolutionPanel(props: {
   return (
     <Col
       className={clsx(
-        'bg-gray-200 shadow-xl px-8 py-6 rounded-md w-full md:w-auto',
+        'bg-gray-100 shadow-xl px-8 py-6 rounded-md w-full md:w-auto',
         className
       )}
     >
