@@ -7,6 +7,7 @@ import {
   deleteContract,
   listContracts,
 } from '../lib/firebase/contracts'
+import { ContractsGrid } from '../pages/markets'
 
 function ContractCard(props: { contract: Contract }) {
   const { contract } = props
@@ -77,13 +78,5 @@ export function ContractsList(props: {}) {
     }
   }, [creator])
 
-  return (
-    <div className="bg-gray-100 shadow-xl overflow-hidden sm:rounded-md max-w-4xl w-full">
-      <ul role="list" className="divide-y divide-gray-200">
-        {contracts.map((contract) => (
-          <ContractCard contract={contract} key={contract.id} />
-        ))}
-      </ul>
-    </div>
-  )
+  return <ContractsGrid contracts={contracts} />
 }
