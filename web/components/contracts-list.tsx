@@ -5,43 +5,54 @@ import { Contract, deleteContract, listContracts } from '../lib/firebase/contrac
 
 function ContractCard(props: { contract: Contract }) {
   const { contract } = props
+
+  // only show delete button if there's not bets
+  const showDelete = contract.pot.YES === contract.seedAmounts.YES
+    && contract.pot.NO === contract.seedAmounts.NO
+
+  const [isDeleted, setIsDeleted] = useState(false) // temporary fix until we stream changes
+ 
+  if (isDeleted)
+    return <></>
+
   return (
     <li>
       <Link href={`/contract/${contract.id}`}>
         <a className="block hover:bg-gray-300">
           <div className="px-4 py-4 sm:px-6">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-indigo-700 truncate">
+              <p className="text-base font-medium text-indigo-700 truncate">
                 {contract.question}
               </p>
-              <div className="ml-2 flex-shrink-0 flex">
-                <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                  {contract.outcomeType}
-                </p>
-              </div>
             </div>
+
             <div className="mt-2 sm:flex sm:justify-between">
-              <div className="sm:flex">
-                <p className="flex items-center text-sm">{contract.id}</p>
+              {/* <div className="sm:flex">
                 <p className="mt-2 flex items-center text-sm sm:mt-0 sm:ml-6">
                   {contract.description}
                 </p>
-              </div>
+              </div> */}
+
               <div className="mt-2 flex items-center text-sm sm:mt-0">
                 <p>
                   Created on{' '}
                   <time dateTime={`${contract.createdTime}`}>
-                    {new Date(contract.createdTime).toLocaleString()}
+                    {new Date(contract.createdTime).toLocaleDateString()}
                   </time>
                 </p>
-                <button
-                  className="btn btn-sm btn-error btn-outline ml-2"
-                  onClick={() => {
-                    deleteContract(contract.id)
-                  }}
-                >
-                  Delete
-                </button>
+
+                {showDelete &&
+                  <button
+                    className="btn btn-xs btn-error btn-outline ml-2"
+                    onClick={async e => {
+                      e.preventDefault()
+                      await deleteContract(contract.id)
+                      setIsDeleted(true)
+                    }}
+                  >
+                    Delete
+                  </button>
+                }
               </div>
             </div>
           </div>
@@ -58,6 +69,7 @@ export function ContractsList(props: {}) {
 
   useEffect(() => {
     if (creator?.id) {
+      // TODO: stream changes from firestore
       listContracts(creator.id).then(setContracts)
     }
   }, [creator])
