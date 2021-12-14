@@ -3,7 +3,7 @@ import { compute, Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
-import { ContractDetails } from '../pages/markets'
+import { ContractDetails } from './contracts-list'
 
 export const ContractOverview = (props: {
   contract: Contract
