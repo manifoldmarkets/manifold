@@ -1,5 +1,7 @@
 import Link from 'next/link'
-import { Contract, deleteContract } from '../lib/firebase/contracts'
+import { useEffect, useState } from 'react'
+import { useUser } from '../hooks/use-user'
+import { Contract, deleteContract, listContracts } from '../lib/firebase/contracts'
 
 function ContractCard(props: { contract: Contract }) {
   const { contract } = props
@@ -49,8 +51,17 @@ function ContractCard(props: { contract: Contract }) {
   )
 }
 
-export function ContractsList(props: { contracts: Contract[] }) {
-  const { contracts } = props
+export function ContractsList(props: {}) {
+  const creator = useUser()
+
+  const [contracts, setContracts] = useState<Contract[]>([])
+
+  useEffect(() => {
+    if (creator?.id) {
+      listContracts(creator.id).then(setContracts)
+    }
+  }, [creator])
+
   return (
     <div className="bg-gray-200 shadow-xl overflow-hidden sm:rounded-md max-w-4xl w-full">
       <ul role="list" className="divide-y divide-gray-300">

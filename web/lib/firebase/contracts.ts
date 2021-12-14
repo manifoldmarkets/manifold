@@ -10,6 +10,7 @@ import {
   getDocs,
   onSnapshot,
   orderBy,
+  getDoc,
 } from 'firebase/firestore'
 
 export type Contract = {
@@ -40,6 +41,15 @@ const contractCollection = collection(db, 'contracts')
 export async function setContract(contract: Contract) {
   const docRef = doc(db, 'contracts', contract.id)
   await setDoc(docRef, contract)
+}
+
+export async function getContract(contractId: string) {
+  const docRef = doc(db, 'contracts', contractId)
+  const result = await getDoc(docRef)
+
+  return result.exists()
+    ? result.data() as Contract
+    : undefined
 }
 
 export async function deleteContract(contractId: string) {
