@@ -31,10 +31,10 @@ export function ResolutionPanel(props: {
     outcome === 'YES'
       ? 'btn-primary'
       : outcome === 'NO'
-        ? 'bg-red-400 hover:bg-red-500'
-        : outcome === 'CANCEL'
-          ? 'bg-yellow-400 hover:bg-yellow-500'
-          : 'btn-disabled'
+      ? 'bg-red-400 hover:bg-red-500'
+      : outcome === 'CANCEL'
+      ? 'bg-yellow-400 hover:bg-yellow-500'
+      : 'btn-disabled'
 
   return (
     <Col

@@ -11,7 +11,12 @@ function UserCard(props: { user: User }) {
     <Row className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
       <div className="p-4">
         {user?.avatarUrl && (
-          <img src={user.avatarUrl} className="rounded-lg shadow-lg" width={96} height={96} />
+          <img
+            src={user.avatarUrl}
+            className="rounded-lg shadow-lg"
+            width={96}
+            height={96}
+          />
         )}
       </div>
       <div className="max-w-md card-body">

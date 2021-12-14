@@ -34,11 +34,15 @@ function SignInLink(props: { darkBackground?: boolean }) {
       {user ? (
         <>
           <Link href="/contract">
-            <a className={clsx('text-base font-medium', themeClasses)}>Create a market</a>
+            <a className={clsx('text-base font-medium', themeClasses)}>
+              Create a market
+            </a>
           </Link>
 
           <Link href="/account">
-            <a className={clsx('text-base font-medium', themeClasses)}>{user.name}</a>
+            <a className={clsx('text-base font-medium', themeClasses)}>
+              {user.name}
+            </a>
           </Link>
         </>
       ) : showLogin ? (
@@ -70,7 +74,10 @@ export function Header(props: { darkBackground?: boolean }) {
               <Link href="/">
                 <a className="flex flex-row items-center align-items-center h-6 sm:h-10">
                   <div className="inline-block mr-3">
-                    <img className="h-6 sm:h-10 w-6 sm:w-10" src="/logo-icon.svg" />
+                    <img
+                      className="h-6 sm:h-10 w-6 sm:w-10"
+                      src="/logo-icon.svg"
+                    />
                   </div>
                   <span
                     className={clsx(

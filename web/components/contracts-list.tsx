@@ -2,19 +2,23 @@ import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useUser } from '../hooks/use-user'
-import { Contract, deleteContract, listContracts } from '../lib/firebase/contracts'
+import {
+  Contract,
+  deleteContract,
+  listContracts,
+} from '../lib/firebase/contracts'
 
 function ContractCard(props: { contract: Contract }) {
   const { contract } = props
 
   // only show delete button if there's not bets
-  const showDelete = contract.pot.YES === contract.seedAmounts.YES
-    && contract.pot.NO === contract.seedAmounts.NO
+  const showDelete =
+    contract.pot.YES === contract.seedAmounts.YES &&
+    contract.pot.NO === contract.seedAmounts.NO
 
   const [isDeleted, setIsDeleted] = useState(false) // temporary fix until we stream changes
- 
-  if (isDeleted)
-    return <></>
+
+  if (isDeleted) return <></>
 
   return (
     <li>
@@ -40,10 +44,10 @@ function ContractCard(props: { contract: Contract }) {
                   </time>
                 </p>
 
-                {showDelete &&
+                {showDelete && (
                   <button
                     className="btn btn-xs btn-error btn-outline ml-2"
-                    onClick={async e => {
+                    onClick={async (e) => {
                       e.preventDefault()
                       await deleteContract(contract.id)
                       setIsDeleted(true)
@@ -51,7 +55,7 @@ function ContractCard(props: { contract: Contract }) {
                   >
                     Delete
                   </button>
-                }
+                )}
               </div>
             </div>
           </div>
