@@ -1,8 +1,6 @@
 import { firebaseLogin, firebaseLogout, User } from '../lib/firebase/users'
 import { Header } from '../components/header'
 import { useUser } from '../hooks/use-user'
-import { useState, useEffect } from 'react'
-import { Contract, listContracts } from '../lib/firebase/contracts'
 import { ContractsList } from '../components/contracts-list'
 import { Title } from '../components/title'
 import { Row } from '../components/layout/row'
@@ -60,13 +58,6 @@ function SignInCard() {
 
 export default function Account() {
   const user = useUser()
-  const [contracts, setContracts] = useState<Contract[]>([])
-  useEffect(() => {
-    console.log('Fetching contracts', user?.id)
-    if (user?.id) {
-      listContracts(user?.id).then(setContracts)
-    }
-  }, [user?.id])
 
   return (
     <div>
@@ -76,7 +67,7 @@ export default function Account() {
           <div>
             <UserCard user={user} />
             <Title className="px-2" text="Your markets" />
-            <ContractsList contracts={contracts} />
+            <ContractsList />
           </div>
         ) : (
           <SignInCard />

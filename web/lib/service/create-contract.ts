@@ -27,6 +27,7 @@ export async function createContract(question: string, description: string, init
 
         seedAmounts: { YES: seedYes, NO: seedNo },
         pot: { YES: seedYes, NO: seedNo },
+        isResolved: false,
 
         // TODO: Set create time to Firestore timestamp
         createdTime: Date.now(),
