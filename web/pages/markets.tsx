@@ -90,7 +90,7 @@ export default function Markets() {
 
   const [query, setQuery] = useState('')
   type Sort = 'createdTime' | 'volume'
-  const [sort, setSort] = useState('createdTime')
+  const [sort, setSort] = useState('volume')
 
   function check(corpus: String) {
     return corpus.toLowerCase().includes(query.toLowerCase())
@@ -132,8 +132,8 @@ export default function Markets() {
             value={sort}
             onChange={(e) => setSort(e.target.value as Sort)}
           >
-            <option value="createdTime">Newest first</option>
             <option value="volume">Most traded</option>
+            <option value="createdTime">Newest first</option>
           </select>
         </div>
 
