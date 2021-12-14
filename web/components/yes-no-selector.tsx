@@ -80,7 +80,7 @@ function Button(props: {
         color === 'green' && 'btn-primary',
         color === 'red' && 'bg-red-400 hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 hover:bg-yellow-500',
-        color === 'gray' && 'text-gray-700 bg-gray-300 hover:bg-gray-400',
+        color === 'gray' && 'text-gray-700 bg-gray-200 hover:bg-gray-300',
         className
       )}
       onClick={onClick}
