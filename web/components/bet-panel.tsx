@@ -98,6 +98,8 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     : 0
   const estimatedReturnPercent = (estimatedReturn * 100).toFixed() + '%'
 
+  const remainingBalance = (user?.balance || 0) - (betAmount || 0)
+
   return (
     <Col
       className={clsx(
@@ -125,19 +127,20 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
             )}
             type="text"
             placeholder="0"
+            maxLength={9}
             value={betAmount ?? ''}
             onChange={(e) => onBetChange(e.target.value)}
           />
         </label>
         {error && (
-          <div className="font-medium tracking-wide text-red-500 text-xs mt-1">
+          <div className="font-medium tracking-wide text-red-500 text-xs mt-3">
             {error}
           </div>
         )}
       </Col>
 
       <div className="mt-3 mb-1 text-sm text-gray-400">Remaining balance</div>
-      <div>{formatMoney((user?.balance || 0) - (betAmount || 0))}</div>
+      <div>{formatMoney(remainingBalance > 0 ? remainingBalance : 0)}</div>
 
       <div className="mt-2 mb-1 text-sm text-gray-400">Implied chance</div>
       <Row>
