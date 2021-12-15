@@ -93,6 +93,7 @@ export function Header(props: { darkBackground?: boolean }) {
               {navigation.map((item) => (
                 <Link key={item.name} href={item.href}>
                   <a
+                    target="_blank"
                     className={clsx(
                       'text-base font-medium',
                       darkBackground
