@@ -24,21 +24,10 @@ function SignInLink(props: { darkBackground?: boolean }) {
     ? 'text-white hover:text-gray-300'
     : 'hover:text-gray-500'
 
-  const [showLogin, setShowLogin] = useState(false)
-  useEffect(() => {
-    setShowLogin(location.search.includes('demo'))
-  }, [])
-
   return (
     <>
       {user ? (
         <>
-          <Link href="/markets">
-            <a className={clsx('text-base font-medium', themeClasses)}>
-              All markets
-            </a>
-          </Link>
-
           <Link href="/contract">
             <a className={clsx('text-base font-medium', themeClasses)}>
               Create a market
@@ -51,15 +40,21 @@ function SignInLink(props: { darkBackground?: boolean }) {
             </a>
           </Link>
         </>
-      ) : showLogin ? (
-        <button
-          className={clsx('text-base font-medium', themeClasses)}
-          onClick={() => firebaseLogin()}
-        >
-          Sign In
-        </button>
       ) : (
-        <></>
+        <>
+          <Link href="/markets">
+            <a className={clsx('text-base font-medium', themeClasses)}>
+              All markets
+            </a>
+          </Link>
+
+          <button
+            className={clsx('text-base font-medium', themeClasses)}
+            onClick={() => firebaseLogin()}
+          >
+            Sign in
+          </button>
+        </>
       )}
     </>
   )
