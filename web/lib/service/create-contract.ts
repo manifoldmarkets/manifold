@@ -42,7 +42,7 @@ export async function createContract(
   return contract
 }
 
-export function calcSeedBets(initialProb: number, initialCapital = 1000) {
+export function calcSeedBets(initialProb: number, initialCapital = 100) {
   const p = initialProb / 100.0
 
   const seedYes =

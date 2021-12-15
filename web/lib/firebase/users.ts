@@ -14,7 +14,7 @@ import {
   signInWithPopup,
 } from 'firebase/auth'
 
-export const STARTING_BALANCE = 1000
+export const STARTING_BALANCE = 100
 
 export type User = {
   id: string
