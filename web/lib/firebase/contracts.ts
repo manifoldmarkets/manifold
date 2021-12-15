@@ -42,7 +42,9 @@ export function compute(contract: Contract) {
   const prob = pot.YES ** 2 / (pot.YES ** 2 + pot.NO ** 2)
   const probPercent = Math.round(prob * 100) + '%'
   const createdDate = dayjs(createdTime).format('MMM D')
-  const resolvedDate = isResolved ? dayjs(resolutionTime).format('MMM D') : undefined
+  const resolvedDate = isResolved
+    ? dayjs(resolutionTime).format('MMM D')
+    : undefined
   return { volume, probPercent, createdDate, resolvedDate }
 }
 
@@ -85,10 +87,10 @@ export async function listAllContracts(): Promise<Contract[]> {
 
 export function listenForContract(
   contractId: string,
-  setContract: (contract: Contract) => void
+  setContract: (contract: Contract | null) => void
 ) {
   const contractRef = doc(contractCollection, contractId)
   return onSnapshot(contractRef, (contractSnap) => {
-    setContract(contractSnap.data() as Contract)
+    setContract((contractSnap.data() ?? null) as Contract | null)
   })
 }

@@ -5,6 +5,8 @@ import { ContractsList } from '../components/contracts-list'
 import { Title } from '../components/title'
 import { Row } from '../components/layout/row'
 import { formatMoney } from '../lib/util/format'
+import { BetsList } from '../components/bets-list'
+import { Spacer } from '../components/layout/spacer'
 
 function UserCard(props: { user: User }) {
   const { user } = props
@@ -72,8 +74,14 @@ export default function Account() {
         {user ? (
           <div>
             <UserCard user={user} />
+
             <Title className="px-2" text="Your markets" />
             <ContractsList />
+
+            <Spacer h={4} />
+
+            <Title className="px-2" text="Your bets" />
+            <BetsList user={user} />
           </div>
         ) : (
           <SignInCard />
