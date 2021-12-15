@@ -32,15 +32,18 @@ export function YesNoCancelSelector(props: {
   selected: 'YES' | 'NO' | 'CANCEL' | undefined
   onSelect: (selected: 'YES' | 'NO' | 'CANCEL') => void
   className?: string
+  btnClassName?: string
 }) {
   const { selected, onSelect, className } = props
+
+  const btnClassName = clsx('px-6', props.btnClassName)
 
   return (
     <Row className={clsx('space-x-3', className)}>
       <Button
         color={selected === 'YES' ? 'green' : 'gray'}
         onClick={() => onSelect('YES')}
-        className="px-6"
+        className={btnClassName}
       >
         YES
       </Button>
@@ -48,7 +51,7 @@ export function YesNoCancelSelector(props: {
       <Button
         color={selected === 'NO' ? 'red' : 'gray'}
         onClick={() => onSelect('NO')}
-        className="px-6"
+        className={btnClassName}
       >
         NO
       </Button>
@@ -56,7 +59,7 @@ export function YesNoCancelSelector(props: {
       <Button
         color={selected === 'CANCEL' ? 'yellow' : 'gray'}
         onClick={() => onSelect('CANCEL')}
-        className="px-6"
+        className={btnClassName}
       >
         CANCEL
       </Button>

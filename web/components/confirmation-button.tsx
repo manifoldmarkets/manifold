@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 
-export function ConfirmationModal(props: {
+export function ConfirmationButton(props: {
   id: string
   openModelBtn: {
     label: string
