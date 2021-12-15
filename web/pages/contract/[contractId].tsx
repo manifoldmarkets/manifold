@@ -47,11 +47,13 @@ export default function ContractPage() {
           <>
             <div className="mt-12 md:mt-0 md:ml-8" />
 
-            {isCreator ? (
-              <ResolutionPanel creator={user} contract={contract} />
-            ) : (
+            <Col className="w-full">
               <BetPanel contract={contract} />
-            )}
+
+              {isCreator && (
+                <ResolutionPanel creator={user} contract={contract} />
+              )}
+            </Col>
           </>
         )}
       </Col>
