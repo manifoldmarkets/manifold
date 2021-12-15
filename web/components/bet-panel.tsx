@@ -19,6 +19,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   const [betChoice, setBetChoice] = useState<'YES' | 'NO'>('YES')
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
 
+  const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
@@ -28,15 +29,34 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   }
 
   function onBetChange(str: string) {
-    const amount = parseInt(str)
-    setBetAmount(isNaN(amount) ? undefined : amount)
-
     setWasSubmitted(false)
+
+    const amount = parseInt(str)
+
+    if (
+      (str && isNaN(amount)) ||
+      // Don't update to amount that is rendered in exponential notation.
+      // e.g. '1e21'
+      amount.toString().includes('e')
+    ) {
+      return
+    }
+
+    setBetAmount(str ? amount : undefined)
+
+    if (user && user.balance < amount) setError('Balance insufficent')
+    else setError(undefined)
   }
 
   async function submitBet() {
     if (!user || !betAmount) return
 
+    if (user.balance < betAmount) {
+      setError('Balance insufficent')
+      return
+    }
+
+    setError(undefined)
     setIsSubmitting(true)
 
     const result = await placeBet({
@@ -51,7 +71,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     setBetAmount(undefined)
   }
 
-  const betDisabled = isSubmitting || !betAmount
+  const betDisabled = isSubmitting || !betAmount || error
 
   const initialProb = getProbability(contract.pot, betChoice)
   const resultProb = getProbability(contract.pot, betChoice, betAmount)
@@ -81,21 +101,29 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
       <Spacer h={4} />
 
       <div className="pt-2 pb-1 text-sm text-gray-500">Bet amount</div>
-      <Row className="p-2 items-center relative">
-        <div className="absolute inset-y-0 left-2 pl-3 flex items-center pointer-events-none">
-          <span className="text-gray-500 sm:text-sm">M$</span>
+      <Col>
+        <Row className="p-2 items-center relative">
+          <div className="absolute inset-y-0 left-2 pl-3 flex items-center pointer-events-none">
+            <span className="text-gray-500 sm:text-sm">M$</span>
+          </div>
+          <input
+            className={clsx(
+              'input input-bordered input-md pl-10 block',
+              error && 'input-error'
+            )}
+            style={{ maxWidth: 100 }}
+            type="text"
+            placeholder="0"
+            value={betAmount ?? ''}
+            onChange={(e) => onBetChange(e.target.value)}
+          />
+        </Row>
+        <div className="font-medium tracking-wide text-red-500 text-xs mt-1 ml-3">
+          {error}
         </div>
-        <input
-          className="input input-bordered input-md pl-10 block"
-          style={{ maxWidth: 100 }}
-          type="text"
-          placeholder="0"
-          value={betAmount ?? ''}
-          onChange={(e) => onBetChange(e.target.value)}
-        />
-      </Row>
+      </Col>
 
-      <Spacer h={4} />
+      <Spacer h={3} />
 
       <div className="pt-2 pb-1 text-sm text-gray-500">Implied probability</div>
       <Row>
