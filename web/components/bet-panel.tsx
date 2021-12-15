@@ -10,6 +10,11 @@ import { Spacer } from './layout/spacer'
 import { YesNoSelector } from './yes-no-selector'
 import { formatMoney, formatPercent } from '../lib/util/format'
 import { Title } from './title'
+import {
+  getProbability,
+  getDpmWeight,
+  getProbabilityAfterBet,
+} from '../lib/calculation/contract'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -79,8 +84,12 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getProbability(contract.pot, betChoice)
-  const resultProb = getProbability(contract.pot, betChoice, betAmount)
+  const initialProb = getProbability(contract.pot)
+  const resultProb = getProbabilityAfterBet(
+    contract.pot,
+    betChoice,
+    betAmount ?? 0
+  )
   const dpmWeight = getDpmWeight(contract.pot, betAmount ?? 0, betChoice)
 
   const estimatedWinnings = Math.floor((betAmount ?? 0) + dpmWeight)
@@ -166,29 +175,3 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
 const functions = getFunctions()
 export const placeBet = httpsCallable(functions, 'placeBet')
-
-const getProbability = (
-  pot: { YES: number; NO: number },
-  outcome: 'YES' | 'NO',
-  bet = 0
-) => {
-  const [yesPot, noPot] = [
-    pot.YES + (outcome === 'YES' ? bet : 0),
-    pot.NO + (outcome === 'NO' ? bet : 0),
-  ]
-  const numerator = Math.pow(yesPot, 2)
-  const denominator = Math.pow(yesPot, 2) + Math.pow(noPot, 2)
-  return numerator / denominator
-}
-
-const getDpmWeight = (
-  pot: { YES: number; NO: number },
-  bet: number,
-  betChoice: 'YES' | 'NO'
-) => {
-  const [yesPot, noPot] = [pot.YES, pot.NO]
-
-  return betChoice === 'YES'
-    ? (bet * Math.pow(noPot, 2)) / (Math.pow(yesPot, 2) + bet * yesPot)
-    : (bet * Math.pow(yesPot, 2)) / (Math.pow(noPot, 2) + bet * noPot)
-}
