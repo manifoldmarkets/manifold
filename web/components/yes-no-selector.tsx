@@ -15,14 +15,14 @@ export function YesNoSelector(props: {
         color={selected === 'YES' ? 'green' : 'gray'}
         onClick={() => onSelect('YES')}
       >
-        Yes
+        YES
       </Button>
 
       <Button
         color={selected === 'NO' ? 'red' : 'gray'}
         onClick={() => onSelect('NO')}
       >
-        No
+        NO
       </Button>
     </Row>
   )
@@ -42,7 +42,7 @@ export function YesNoCancelSelector(props: {
         onClick={() => onSelect('YES')}
         className="px-6"
       >
-        Yes
+        YES
       </Button>
 
       <Button
@@ -50,7 +50,7 @@ export function YesNoCancelSelector(props: {
         onClick={() => onSelect('NO')}
         className="px-6"
       >
-        No
+        NO
       </Button>
 
       <Button
@@ -58,7 +58,7 @@ export function YesNoCancelSelector(props: {
         onClick={() => onSelect('CANCEL')}
         className="px-6"
       >
-        Cancel
+        CANCEL
       </Button>
     </Row>
   )
@@ -76,7 +76,7 @@ function Button(props: {
     <button
       type="button"
       className={clsx(
-        'inline-flex items-center px-8 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white',
+        'inline-flex items-center px-8 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white',
         color === 'green' && 'btn-primary',
         color === 'red' && 'bg-red-400 hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 hover:bg-yellow-500',
