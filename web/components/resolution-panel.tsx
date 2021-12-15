@@ -8,7 +8,7 @@ import { Title } from './title'
 import { User } from '../lib/firebase/users'
 import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
-import { ConfirmationModal } from './confirmation-modal'
+import { ConfirmationButton as ConfirmationButton } from './confirmation-button'
 
 const functions = getFunctions()
 export const resolveMarket = httpsCallable(functions, 'resolveMarket')
@@ -18,23 +18,35 @@ export function ResolutionPanel(props: {
   contract: Contract
   className?: string
 }) {
-  const { creator, contract, className } = props
+  const { contract, className } = props
 
   const [outcome, setOutcome] = useState<'YES' | 'NO' | 'CANCEL' | undefined>()
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | undefined>(undefined)
+
   const resolve = async () => {
+    setIsSubmitting(true)
+
     const result = await resolveMarket({ outcome, contractId: contract.id })
-    console.log('resolved', outcome, 'result:', result.data)
+      .then(r => r.data as any)
+
+    console.log('resolved', outcome, 'result:', result)
+
+    if (result?.status !== 'success') {
+      setError(result?.error || 'Error resolving market')
+    }
+    setIsSubmitting(false)
   }
 
   const submitButtonClass =
     outcome === 'YES'
       ? 'btn-primary'
       : outcome === 'NO'
-      ? 'bg-red-400 hover:bg-red-500'
-      : outcome === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
-      : 'btn-disabled'
+        ? 'bg-red-400 hover:bg-red-500'
+        : outcome === 'CANCEL'
+          ? 'bg-yellow-400 hover:bg-yellow-500'
+          : 'btn-disabled'
 
   return (
     <Col
@@ -46,13 +58,16 @@ export function ResolutionPanel(props: {
       <Title className="mt-0" text="Your market" />
 
       <div className="pt-2 pb-1 text-sm text-gray-400">Resolve outcome</div>
+
       <YesNoCancelSelector
         className="mx-auto my-2"
         selected={outcome}
         onSelect={setOutcome}
+        btnClassName={isSubmitting ? 'btn-disabled' : ''}
       />
 
       <Spacer h={3} />
+
 
       <div>
         {outcome === 'YES' ? (
@@ -72,14 +87,20 @@ export function ResolutionPanel(props: {
         )}
       </div>
 
+
       <Spacer h={3} />
 
-      <ConfirmationModal
+      {!!error &&
+        <div className='text-red-500'>{error}</div>
+      }
+
+      <ConfirmationButton
         id="resolution-modal"
         openModelBtn={{
           className: clsx(
             'border-none self-start mt-2 w-full',
-            submitButtonClass
+            submitButtonClass,
+            isSubmitting && 'btn-disabled loading'
           ),
           label: 'Resolve',
         }}
@@ -93,7 +114,7 @@ export function ResolutionPanel(props: {
         onSubmit={resolve}
       >
         <p>Are you sure you want to resolve this market?</p>
-      </ConfirmationModal>
+      </ConfirmationButton>
     </Col>
   )
 }
