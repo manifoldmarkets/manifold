@@ -18,7 +18,7 @@ export function ContractDetails(props: { contract: Contract }) {
         {resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}
       </div>
       <div className="mx-2">•</div>
-      <div className="whitespace-nowrap">{formatMoney(volume)} pot</div>
+      <div className="whitespace-nowrap">{formatMoney(volume)} bet</div>
     </Row>
   )
 }
