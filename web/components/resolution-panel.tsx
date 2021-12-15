@@ -45,16 +45,16 @@ export function ResolutionPanel(props: {
     >
       <Title className="mt-0" text="Your market" />
 
-      <div className="pt-2 pb-1 text-sm text-gray-500">Resolve outcome</div>
+      <div className="pt-2 pb-1 text-sm text-gray-400">Resolve outcome</div>
       <YesNoCancelSelector
-        className="p-2"
+        className="mx-auto my-2"
         selected={outcome}
         onSelect={setOutcome}
       />
 
       <Spacer h={3} />
 
-      <div className="text-gray-500 text-sm">
+      <div>
         {outcome === 'YES' ? (
           <>
             Winnings will be paid out to Yes bettors. You earn 1% of the No
@@ -77,7 +77,10 @@ export function ResolutionPanel(props: {
       <ConfirmationModal
         id="resolution-modal"
         openModelBtn={{
-          className: clsx('border-none self-start m-2', submitButtonClass),
+          className: clsx(
+            'border-none self-start mt-2 w-full',
+            submitButtonClass
+          ),
           label: 'Resolve',
         }}
         cancelBtn={{
