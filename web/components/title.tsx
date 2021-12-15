@@ -5,7 +5,7 @@ export function Title(props: { text: string; className?: string }) {
   return (
     <h1
       className={clsx(
-        'text-3xl font-major-mono tracking-tight text-indigo-700 font-bold mt-6 mb-4',
+        'text-3xl font-major-mono tracking-tight lowercase text-indigo-700 font-bold mt-6 mb-4',
         className
       )}
     >
