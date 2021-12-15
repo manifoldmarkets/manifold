@@ -1,5 +1,11 @@
 import { app } from './init'
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore'
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  onSnapshot,
+} from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
 import {
@@ -31,6 +37,13 @@ export async function getUser(userId: string) {
 
 export async function setUser(userId: string, user: User) {
   await setDoc(doc(db, 'users', userId), user)
+}
+
+export function listenForUser(userId: string, setUser: (user: User) => void) {
+  const userRef = doc(db, 'users', userId)
+  return onSnapshot(userRef, (userSnap) => {
+    setUser(userSnap.data() as User)
+  })
 }
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
