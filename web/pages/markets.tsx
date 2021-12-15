@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { ContractsGrid } from '../components/contracts-list'
 import { Header } from '../components/header'
-import { Title } from '../components/title'
 import { compute, listAllContracts } from '../lib/firebase/contracts'
 import { Contract } from '../lib/firebase/contracts'
 
@@ -12,20 +11,27 @@ export default function Markets() {
   }, [])
 
   const [query, setQuery] = useState('')
-  type Sort = 'createdTime' | 'volume'
+  type Sort = 'createdTime' | 'volume' | 'resolved' | 'all'
   const [sort, setSort] = useState('volume')
 
   function check(corpus: String) {
     return corpus.toLowerCase().includes(query.toLowerCase())
   }
-  const matches = contracts.filter(
+  let matches = contracts.filter(
     (c) => check(c.question) || check(c.description) || check(c.creatorName)
   )
 
-  if (sort === 'createdTime') {
+  if (sort === 'createdTime' || sort === 'resolved' || sort === 'all') {
     matches.sort((a, b) => b.createdTime - a.createdTime)
   } else if (sort === 'volume') {
     matches.sort((a, b) => compute(b).volume - compute(a).volume)
+  }
+
+  if (sort !== 'all') {
+    // Filter for (or filter out) resolved contracts
+    matches = matches.filter((c) =>
+      sort === 'resolved' ? c.resolution : !c.resolution
+    )
   }
 
   return (
@@ -33,7 +39,7 @@ export default function Markets() {
       <Header />
       <div className="max-w-4xl py-8 mx-auto">
         {/* Show a search input next to a sort dropdown */}
-        <div className="flex justify-between gap-2">
+        <div className="flex justify-between gap-2 my-8">
           <input
             type="text"
             value={query}
@@ -48,14 +54,12 @@ export default function Markets() {
           >
             <option value="volume">Most traded</option>
             <option value="createdTime">Newest first</option>
+            <option value="resolved">Resolved</option>
+            <option value="all">All markets</option>
           </select>
         </div>
 
-        <Title text="Open markets" className="mt-16" />
-        <ContractsGrid contracts={matches.filter((c) => !c.resolution)} />
-
-        <Title text="Resolved markets" className="mt-16" />
-        <ContractsGrid contracts={matches.filter((c) => c.resolution)} />
+        <ContractsGrid contracts={matches} />
       </div>
     </div>
   )
