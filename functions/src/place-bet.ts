@@ -43,7 +43,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
-      const { newBet, newPot, newBalance } = getNewBetInfo(
+      const { newBet, newPot, newDpmWeights, newBalance } = getNewBetInfo(
         user,
         outcome,
         amount,
@@ -52,7 +52,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       )
 
       transaction.create(newBetDoc, newBet)
-      transaction.update(contractDoc, { pot: newPot })
+      transaction.update(contractDoc, { pot: newPot, dpmWeights: newDpmWeights })
       transaction.update(userDoc, { balance: newBalance })
 
       return { status: 'success' }
@@ -71,6 +71,23 @@ const getNewBetInfo = (
 ) => {
   const { YES: yesPot, NO: noPot } = contract.pot
 
+  const newPot =
+    outcome === 'YES'
+      ? { YES: yesPot + amount, NO: noPot }
+      : { YES: yesPot, NO: noPot + amount }
+
+  const dpmWeight =
+    outcome === 'YES'
+      ? (amount * noPot ** 2) / (yesPot ** 2 + amount * yesPot)
+      : (amount * yesPot ** 2) / (noPot ** 2 + amount * noPot)
+
+  const { YES: yesWeight, NO: noWeight } = contract.dpmWeights
+
+  const newDpmWeights =
+    outcome === 'YES'
+      ? { YES: yesWeight + dpmWeight, NO: noWeight }
+      : { YES: yesWeight, NO: noWeight + dpmWeight }
+
   const probBefore = yesPot ** 2 / (yesPot ** 2 + noPot ** 2)
 
   const probAverage =
@@ -78,16 +95,6 @@ const getNewBetInfo = (
       noPot * Math.atan(yesPot / noPot) -
       noPot * Math.atan((amount + yesPot) / noPot)) /
     amount
-
-  const dpmWeight =
-    outcome === 'YES'
-      ? (amount * noPot ** 2) / (yesPot ** 2 + amount * yesPot)
-      : (amount * yesPot ** 2) / (noPot ** 2 + amount * noPot)
-
-  const newPot =
-    outcome === 'YES'
-      ? { YES: yesPot + amount, NO: noPot }
-      : { YES: yesPot, NO: noPot + amount }
 
   const probAfter = newPot.YES ** 2 / (newPot.YES ** 2 + newPot.NO ** 2)
 
@@ -106,5 +113,5 @@ const getNewBetInfo = (
 
   const newBalance = user.balance - amount
 
-  return { newBet, newPot, newBalance }
+  return { newBet, newPot, newDpmWeights, newBalance }
 }
