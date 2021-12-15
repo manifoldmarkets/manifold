@@ -63,12 +63,18 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
       amount: betAmount,
       outcome: betChoice,
       contractId: contract.id,
-    })
+    }).then(r => r.data as any)
+
     console.log('placed bet. Result:', result)
 
-    setIsSubmitting(false)
-    setWasSubmitted(true)
-    setBetAmount(undefined)
+    if (result?.status === 'success') {
+      setIsSubmitting(false)
+      setWasSubmitted(true)
+      setBetAmount(undefined)
+    } else {
+      setError(result?.error || 'Error placing bet')
+      setIsSubmitting(false)
+    }
   }
 
   const betDisabled = isSubmitting || !betAmount || error
@@ -144,8 +150,8 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           betDisabled
             ? 'btn-disabled'
             : betChoice === 'YES'
-            ? 'btn-primary'
-            : 'bg-red-400 hover:bg-red-500 border-none',
+              ? 'btn-primary'
+              : 'bg-red-400 hover:bg-red-500 border-none',
           isSubmitting ? 'loading' : ''
         )}
         onClick={betDisabled ? undefined : submitBet}
