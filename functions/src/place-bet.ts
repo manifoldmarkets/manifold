@@ -82,6 +82,7 @@ const getNewBetInfo = (
       : (amount * yesPot ** 2) / (noPot ** 2 + amount * noPot)
 
   const { YES: yesWeight, NO: noWeight } = contract.dpmWeights
+    || { YES: 0, NO: 0 } // only nesc for old contracts
 
   const newDpmWeights =
     outcome === 'YES'
