@@ -8,6 +8,7 @@ import { User } from '../lib/firebase/users'
 import { formatMoney, formatPercent } from '../lib/util/format'
 import { Col } from './layout/col'
 import { ContractDetails } from './contracts-list'
+import { Spacer } from './layout/spacer'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -22,9 +23,9 @@ export function BetsList(props: { user: User }) {
   const contractBets = _.groupBy(bets, 'contractId')
 
   return (
-    <Col className='mt-6 gap-10'>
+    <Col className="mt-6 gap-10">
       {Object.keys(contractBets).map((contractId) => (
-        <ContractBets
+        <ContractBetsTable
           key={contractId}
           contractId={contractId}
           bets={contractBets[contractId]}
@@ -34,51 +35,58 @@ export function BetsList(props: { user: User }) {
   )
 }
 
-function ContractBets(props: { contractId: string; bets: Bet[] }) {
+function ContractBetsTable(props: { contractId: string; bets: Bet[] }) {
   const { contractId, bets } = props
 
   const contract = useContract(contractId)
   if (contract === 'loading' || contract === null) return <></>
 
   return (
-    <div>
-      <p className="font-medium text-indigo-700 mb-2">{contract.question}</p>
-      <ContractDetails contract={contract} />
-      <ul role="list" className="grid grid-cols-2 gap-6 lg:grid-cols-4 mt-6">
-        {bets.map((bet) => (
-          <BetCard key={bet.id} bet={bet} />
-        ))}
-      </ul>
+    <div className="px-4">
+      <Link href={`/contract/${contractId}`}>
+        <a>
+          <p className="font-medium text-indigo-700 mb-2">
+            {contract.question}
+          </p>
+          <ContractDetails contract={contract} />
+        </a>
+      </Link>
+      <Spacer h={4} />
+      <div className="overflow-x-auto">
+        <table className="table table-zebra table-compact text-gray-500 w-full">
+          <thead>
+            <tr className="p-2">
+              <th>Outcome</th>
+              <th>Amount</th>
+              <th>Probability</th>
+              <th>Estimated payoff</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bets.map((bet) => (
+              <BetRow key={bet.id} bet={bet} />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
 
-function BetCard(props: { bet: Bet }) {
+function BetRow(props: { bet: Bet }) {
   const { bet } = props
-  const { contractId, amount, outcome, createdTime, probBefore, probAfter } =
-    bet
+  const { amount, outcome, createdTime, probBefore, probAfter, dpmWeight } = bet
 
   return (
-    <Link href={`/contract/${contractId}`}>
-      <a>
-        <li className="col-span-1 bg-white hover:bg-gray-100 shadow-xl rounded-lg divide-y divide-gray-200">
-          <div className="card">
-            <div className="card-body p-6">
-              <Col className="gap-2">
-                <p className="font-medium text-gray-700">
-                  {formatMoney(amount)} on {outcome}
-                </p>
-                <p className="font-medium text-gray-500">
-                  {formatPercent(probBefore)} → {formatPercent(probAfter)}
-                </p>
-                <p className="font-medium text-gray-500">
-                  {dayjs(createdTime).format('MMM D, H:mma')}
-                </p>
-              </Col>
-            </div>
-          </div>
-        </li>
-      </a>
-    </Link>
+    <tr>
+      <td>{outcome}</td>
+      <td>{formatMoney(amount)}</td>
+      <td>
+        {formatPercent(probBefore)} → {formatPercent(probAfter)}
+      </td>
+      <td>{formatMoney(amount + dpmWeight)}</td>
+      <td>{dayjs(createdTime).format('MMM D, H:mma')}</td>
+    </tr>
   )
 }
