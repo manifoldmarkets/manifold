@@ -44,7 +44,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
     setBetAmount(str ? amount : undefined)
 
-    if (user && user.balance < amount) setError('Balance insufficent')
+    if (user && user.balance < amount) setError('Insufficient balance')
     else setError(undefined)
   }
 
@@ -52,7 +52,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     if (!user || !betAmount) return
 
     if (user.balance < betAmount) {
-      setError('Balance insufficent')
+      setError('Insufficient balance')
       return
     }
 
@@ -90,61 +90,50 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         className
       )}
     >
-      <Title className="mt-0" text="Place a bet" />
-      <div className="pt-2 pb-1 text-sm text-gray-500">Outcome</div>
+      <Title className="mt-0 whitespace-nowrap" text="Place a bet" />
+
+      <div className="mt-2 mb-1 text-sm text-gray-400">Outcome</div>
       <YesNoSelector
-        className="p-2"
+        className="mx-auto my-2"
         selected={betChoice}
         onSelect={(choice) => onBetChoice(choice)}
       />
 
-      {user && (
-        <>
-          <Spacer h={4} />
-          <div className="pt-2 pb-1 text-sm text-gray-500">Your balance</div>
-          <div className="text-gray-500 p-2">{formatMoney(user.balance)}</div>
-        </>
-      )}
-
-      <Spacer h={4} />
-
-      <div className="pt-2 pb-1 text-sm text-gray-500">Bet amount</div>
-      <Col>
-        <Row className="p-2 items-center relative">
-          <div className="absolute inset-y-0 left-2 pl-3 flex items-center pointer-events-none">
-            <span className="text-gray-500 sm:text-sm">M$</span>
-          </div>
+      <div className="mt-3 mb-1 text-sm text-gray-400">Bet amount</div>
+      <Col className="my-2">
+        <label className="input-group">
+          <span className="text-sm bg-gray-200">M$</span>
           <input
             className={clsx(
-              'input input-bordered input-md pl-10 block text-right',
+              'input input-bordered w-full',
               error && 'input-error'
             )}
-            style={{ maxWidth: 100 }}
             type="text"
             placeholder="0"
             value={betAmount ?? ''}
             onChange={(e) => onBetChange(e.target.value)}
           />
-        </Row>
-        <div className="font-medium tracking-wide text-red-500 text-xs mt-1 ml-3">
-          {error}
-        </div>
+        </label>
+        {error && (
+          <div className="font-medium tracking-wide text-red-500 text-xs mt-1">
+            {error}
+          </div>
+        )}
       </Col>
 
-      <Spacer h={3} />
+      <div className="mt-3 mb-1 text-sm text-gray-400">Remaining balance</div>
+      <div>{formatMoney((user?.balance || 0) - (betAmount || 0))}</div>
 
-      <div className="pt-2 pb-1 text-sm text-gray-500">Implied probability</div>
+      <div className="mt-2 mb-1 text-sm text-gray-400">Implied chance</div>
       <Row>
-        <div className="px-2 font-sans">{formatPercent(initialProb)}</div>
-        <div>→</div>
-        <div className="px-2 font-sans">{formatPercent(resultProb)}</div>
+        <div>{formatPercent(initialProb)}</div>
+        <div className="mx-2">→</div>
+        <div>{formatPercent(resultProb)}</div>
       </Row>
 
-      <Spacer h={2} />
-
-      <div className="pt-2 pb-1 text-sm text-gray-500">Estimated winnings</div>
-      <div className="px-2 font-sans">
-        {formatMoney(estimatedWinnings)} (+{estimatedReturnPercent})
+      <div className="mt-2 mb-1 text-sm text-gray-400">Estimated winnings</div>
+      <div>
+        {formatMoney(estimatedWinnings)} &nbsp; (+{estimatedReturnPercent})
       </div>
 
       <Spacer h={6} />
