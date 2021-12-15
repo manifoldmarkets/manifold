@@ -116,7 +116,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           </div>
           <input
             className={clsx(
-              'input input-bordered input-md pl-10 block',
+              'input input-bordered input-md pl-10 block text-right',
               error && 'input-error'
             )}
             style={{ maxWidth: 100 }}

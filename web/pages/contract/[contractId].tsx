@@ -47,7 +47,7 @@ export default function ContractPage() {
           <>
             <div className="mt-12 md:mt-0 md:ml-8" />
 
-            <Col className="w-full">
+            <Col className="w-full sm:w-auto sm:self-center">
               <BetPanel contract={contract} />
 
               {isCreator && (
