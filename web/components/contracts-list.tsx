@@ -79,7 +79,7 @@ export function ContractsGrid(props: { contracts: Contract[] }) {
   return (
     <ul
       role="list"
-      className="grid grid-cols-1 gap-6 sm:grid-cols-1 lg:grid-cols-2"
+      className="grid grid-cols-1 gap-6 lg:grid-cols-2"
     >
       {contracts.map((contract) => (
         <ContractCard contract={contract} key={contract.id} />

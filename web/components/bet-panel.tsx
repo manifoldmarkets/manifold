@@ -8,7 +8,7 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import { YesNoSelector } from './yes-no-selector'
-import { formatMoney } from '../lib/util/format'
+import { formatMoney, formatPercent } from '../lib/util/format'
 import { Title } from './title'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {
@@ -135,13 +135,9 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
       <div className="pt-2 pb-1 text-sm text-gray-500">Implied probability</div>
       <Row>
-        <div className="px-2 font-sans">
-          {Math.round(initialProb * 100) + '%'}
-        </div>
+        <div className="px-2 font-sans">{formatPercent(initialProb)}</div>
         <div>→</div>
-        <div className="px-2 font-sans">
-          {Math.round(resultProb * 100) + '%'}
-        </div>
+        <div className="px-2 font-sans">{formatPercent(resultProb)}</div>
       </Row>
 
       <Spacer h={2} />
