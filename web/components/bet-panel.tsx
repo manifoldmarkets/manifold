@@ -98,6 +98,14 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         onSelect={(choice) => onBetChoice(choice)}
       />
 
+      {user && (
+        <>
+          <Spacer h={4} />
+          <div className="pt-2 pb-1 text-sm text-gray-500">Your balance</div>
+          <div className="text-gray-500 p-2">{formatMoney(user.balance)}</div>
+        </>
+      )}
+
       <Spacer h={4} />
 
       <div className="pt-2 pb-1 text-sm text-gray-500">Bet amount</div>
