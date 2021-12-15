@@ -96,10 +96,10 @@ function MyContractBets(props: { contractId: string; bets: Bet[] }) {
           </>
         ) : (
           <>
-            <Col>
+            {/* <Col>
               <div className="text-sm text-gray-500">Current value</div>
               <div className="">{formatMoney(betsValue)}</div>
-            </Col>
+            </Col> */}
             <Col>
               <div className="text-sm text-primary">If YES</div>
               <div className="">{formatMoney(yesWinnings)}</div>
@@ -127,12 +127,12 @@ function ContractBetsTable(props: { contract: Contract; bets: Bet[] }) {
       <table className="table table-zebra table-compact text-gray-500 w-full">
         <thead>
           <tr className="p-2">
+            <th>Date</th>
             <th>Outcome</th>
             <th>Bet</th>
             <th>Probability</th>
-            <th>Date</th>
             <th>Est. max payout</th>
-            <th>Profit/loss</th>
+            <th>Current value</th>
           </tr>
         </thead>
         <tbody>
@@ -151,14 +151,14 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
 
   return (
     <tr>
+      <td>{dayjs(createdTime).format('MMM D, H:mma')}</td>
       <td>{outcome}</td>
       <td>{formatMoney(amount)}</td>
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
-      <td>{dayjs(createdTime).format('MMM D, H:mma')}</td>
       <td>{formatMoney(amount + dpmWeight)}</td>
-      <td>{formatMoney(currentValue(contract, bet) - amount)}</td>
+      <td>{formatMoney(currentValue(contract, bet))}</td>
     </tr>
   )
 }

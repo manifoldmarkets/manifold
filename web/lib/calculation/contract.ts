@@ -1,6 +1,8 @@
 import { Bet } from '../firebase/bets'
 import { Contract } from '../firebase/contracts'
 
+const fees = 0.02
+
 export function getProbability(pot: { YES: number; NO: number }) {
   const [yesPot, noPot] = [pot.YES, pot.NO]
   const numerator = Math.pow(yesPot, 2)
@@ -37,24 +39,23 @@ export function calculateWinnings(
   bet: Bet,
   outcome: 'YES' | 'NO' | 'CANCEL'
 ) {
-  let { dpmWeights, pot } = contract
   const { amount, outcome: betOutcome, dpmWeight } = bet
 
   if (outcome === 'CANCEL') return amount
+  if (betOutcome !== outcome) return 0
 
-  if (!dpmWeights) {
-    // Fake data if not set.
-    dpmWeights = { YES: 100, NO: 100 }
-  }
+  let { dpmWeights, pot, seedAmounts } = contract
+
+  // Fake data if not set.
+  if (!dpmWeights) dpmWeights = { YES: 100, NO: 100 }
+
   // Fake data if not set.
   if (!pot) pot = { YES: 100, NO: 100 }
 
-  return betOutcome === outcome
-    ? 0.98 *
-        (dpmWeight / dpmWeights[outcome]) *
-        pot[outcome === 'YES' ? 'NO' : 'YES'] +
-        amount
-    : 0
+  const otherOutcome = outcome === 'YES' ? 'NO' : 'YES'
+  const potSize = pot[otherOutcome] - seedAmounts[otherOutcome]
+
+  return (1 - fees) * (dpmWeight / dpmWeights[outcome]) * potSize + amount
 }
 
 export function currentValue(contract: Contract, bet: Bet) {
