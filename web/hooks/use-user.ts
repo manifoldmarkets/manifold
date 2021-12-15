@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
-import { listenForLogin, User } from '../lib/firebase/users'
+import { listenForLogin, listenForUser, User } from '../lib/firebase/users'
 
 export const useUser = () => {
   const [user, setUser] = useState<User | null>(null)
   useEffect(() => listenForLogin(setUser), [])
+
+  const userId = user?.id
+
+  useEffect(() => {
+    if (userId) return listenForUser(userId, setUser)
+  }, [userId])
+
   return user
 }
