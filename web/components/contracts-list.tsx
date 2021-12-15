@@ -26,16 +26,20 @@ export function ContractDetails(props: { contract: Contract }) {
 function ContractCard(props: { contract: Contract }) {
   const { contract } = props
   const { probPercent } = compute(contract)
-  const { resolution } = contract
 
-  const resolutionColor =
-    resolution === 'YES'
-      ? 'text-primary'
-      : resolution === 'NO'
-      ? 'text-red-400'
-      : resolution === 'CANCEL'
-      ? 'text-yellow-400'
-      : ''
+  const resolutionColor = {
+    YES: 'text-primary',
+    NO: 'text-red-400',
+    CANCEL: 'text-yellow-400',
+    '': '', // Empty if unresolved
+  }[contract.resolution || '']
+
+  const resolutionText = {
+    YES: 'YES',
+    NO: 'NO',
+    CANCEL: 'N/A',
+    '': '',
+  }[contract.resolution || '']
 
   return (
     <Link href={`/contract/${contract.id}`}>
@@ -57,7 +61,7 @@ function ContractCard(props: { contract: Contract }) {
                   <Col
                     className={'text-4xl mx-auto items-end ' + resolutionColor}
                   >
-                    {contract.resolution || (
+                    {resolutionText || (
                       <div className="text-primary">
                         {probPercent}
                         <div className="text-lg">chance</div>
