@@ -1,18 +1,15 @@
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Popover } from '@headlessui/react'
 
 import { useUser } from '../hooks/use-user'
-import { firebaseLogin } from '../lib/firebase/users'
 
 const navigation = [
   {
     name: 'About',
     href: 'https://mantic.notion.site/About-Mantic-Markets-7c44bc161356474cad54cba2d2973fe2',
   },
-  // { name: 'Simulator', href: '/simulator' },
 ]
 
 function SignInLink(props: { darkBackground?: boolean }) {
@@ -40,7 +37,7 @@ function SignInLink(props: { darkBackground?: boolean }) {
             </a>
           </Link>
         </>
-      ) : (
+      ) : <></> /*(
         <>
           <Link href="/markets">
             <a className={clsx('text-base font-medium', themeClasses)}>
@@ -54,8 +51,8 @@ function SignInLink(props: { darkBackground?: boolean }) {
           >
             Sign in
           </button>
-        </>
-      )}
+        </>*/
+      }
     </>
   )
 }
