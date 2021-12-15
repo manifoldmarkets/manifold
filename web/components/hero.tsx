@@ -1,4 +1,4 @@
-import { ConvertKitEmailForm } from './convert-kit-email-form'
+import { firebaseLogin } from '../lib/firebase/users'
 import { Header } from './header'
 
 export const Hero = () => {
@@ -22,7 +22,12 @@ export const Hero = () => {
                     you and your community
                   </p>
                   <div className="mt-10 sm:mt-12">
-                    <ConvertKitEmailForm />
+                    <button
+                      className="btn btn-primary normal-case font-medium px-10"
+                      onClick={firebaseLogin}
+                    >
+                      Sign in to get started!
+                    </button>
                   </div>
                 </div>
               </div>
