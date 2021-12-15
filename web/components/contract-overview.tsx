@@ -61,7 +61,7 @@ export const ContractOverview = (props: {
       </div>
 
       {/* Show a delete button for contracts without any trading */}
-      {isCreator && (volume === 0 || isResolved) && (
+      {isCreator && volume === 0 && (
         <>
           <Spacer h={8} />
           <button
