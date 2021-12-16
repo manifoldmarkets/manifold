@@ -7,7 +7,7 @@ import { Contract } from '../lib/firebase/contracts'
 
 export function ContractProbGraph(props: { contract: Contract }) {
   const { contract } = props
-  const { id, seedAmounts } = contract
+  const { id, seedAmounts, resolutionTime } = contract
 
   let bets = useBets(id)
   if (bets === 'loading') bets = []
@@ -21,28 +21,29 @@ export function ContractProbGraph(props: { contract: Contract }) {
   ].map((time) => new Date(time))
   const probs = [seedProb, ...bets.map((bet) => bet.probAfter)]
 
-  // Add a fake datapoint in future so the line continues horizontally
-  // to the right.
-  times.push(dayjs().add(1, 'day').toDate())
-  probs.push(probs[probs.length - 1])
+  const latestTime = dayjs(resolutionTime ? resolutionTime : Date.now())
+
+  if (!resolutionTime) {
+    // Add a fake datapoint in future so the line continues horizontally
+    // to the right.
+    times.push(latestTime.add(1, 'day').toDate())
+    probs.push(probs[probs.length - 1])
+  }
 
   const points = probs.map((prob, i) => ({ x: times[i], y: prob * 100 }))
   const data = [{ id: 'Yes', data: points, color: '#11b981' }]
-
-  const lessThanAWeek =
-    times[times.length - 1].getTime() - times[0].getTime() <
-    1000 * 60 * 60 * 24 * 7
 
   const yTickValues = [0, 25, 50, 75, 100]
 
   const { width } = useWindowSize()
 
-  const numXTickValues = !width || width < 800 ? 4 : 8
-  const now = dayjs()
-  const hoursAgo = now.subtract(8, 'hours')
+  const numXTickValues = !width || width < 800 ? 2 : 5
+  const hoursAgo = latestTime.subtract(5, 'hours')
   const startDate = dayjs(times[0]).isBefore(hoursAgo)
     ? times[0]
     : hoursAgo.toDate()
+
+  const lessThanAWeek = dayjs(startDate).add(1, 'week').isAfter(latestTime)
 
   return (
     <div className="w-full" style={{ height: 400 }}>
@@ -58,7 +59,7 @@ export function ContractProbGraph(props: { contract: Contract }) {
         xScale={{
           type: 'time',
           min: startDate,
-          max: now.toDate(),
+          max: latestTime.toDate(),
         }}
         xFormat={(d) => formatTime(+d.valueOf(), lessThanAWeek)}
         axisBottom={{
