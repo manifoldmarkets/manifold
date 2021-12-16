@@ -63,7 +63,7 @@ export function BetsList(props: { user: User }) {
 
   return (
     <Col className="mt-6 gap-10">
-      <Row className="px-4 gap-8">
+      <Row className="gap-8">
         <Col>
           <div className="text-sm text-gray-500">Active bets</div>
           <div>{formatMoney(currentBets)}</div>
