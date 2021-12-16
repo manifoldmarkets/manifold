@@ -11,6 +11,7 @@ import { Spacer } from './layout/spacer'
 import { Contract, path } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { calculateWinnings, currentValue } from '../lib/calculation/contract'
+import { UserLink } from '../pages/account'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -65,7 +66,9 @@ function MyContractBets(props: { contractId: string; bets: Bet[] }) {
           </div>
 
           <Row className="gap-2 text-gray-500 text-sm">
-            <div>By {contract.creatorName}</div>
+            <div>
+              <UserLink displayName={contract.creatorName} />
+            </div>
             {resolution && <div>•</div>}
             {resolution === 'YES' && (
               <div className="text-primary">Resolved YES</div>

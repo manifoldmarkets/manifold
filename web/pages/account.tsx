@@ -7,6 +7,26 @@ import { Row } from '../components/layout/row'
 import { formatMoney } from '../lib/util/format'
 import { BetsList } from '../components/bets-list'
 import { Spacer } from '../components/layout/spacer'
+import Link from 'next/link'
+import clsx from 'clsx'
+
+export function UserLink(props: { displayName: string; className?: string }) {
+  const { displayName, className } = props
+  const username = displayName.replace(/\s+/g, '')
+
+  return (
+    <Link href={`/${username}`}>
+      <a
+        className={clsx(
+          'hover:underline hover:decoration-indigo-400 hover:decoration-2',
+          className
+        )}
+      >
+        @{username}
+      </a>
+    </Link>
+  )
+}
 
 function UserCard(props: { user: User }) {
   const { user } = props
@@ -23,7 +43,10 @@ function UserCard(props: { user: User }) {
         )}
       </div>
       <div className="max-w-md card-body">
-        <h2 className="card-title font-major-mono">{user?.name}</h2>
+        <UserLink
+          displayName={user?.name}
+          className="card-title font-major-mono"
+        />
         <p>{user?.email}</p>
         <p>{formatMoney(user?.balance)}</p>
         <div className="card-actions">
