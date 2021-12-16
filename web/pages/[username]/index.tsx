@@ -6,7 +6,7 @@ import Error from 'next/error'
 
 export default function UserProfile() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null | 'loading'>('loading')
   const atUsername = router.query.username as string | undefined
   const username = atUsername?.substring(1) || '' // Remove the initial @
   useEffect(() => {
@@ -16,6 +16,9 @@ export default function UserProfile() {
   }, [username])
 
   const errorMessage = `Who is this "${username}" you speak of..`
+
+  if (user === 'loading') return <></>
+
   return user ? (
     <UserPage user={user} />
   ) : (
