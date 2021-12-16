@@ -41,7 +41,7 @@ export function path(contract: Contract) {
   // For now, derive username from creatorName
   // Fix this when users can change their own names
   const username = contract.creatorName.replace(/\s+/g, '')
-  return `/${username}/${contract.id}`
+  return `/@${username}/${contract.id}`
 }
 
 export function compute(contract: Contract) {
