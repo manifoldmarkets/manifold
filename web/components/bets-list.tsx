@@ -75,12 +75,16 @@ function MyContractBets(props: { contractId: string; bets: Bet[] }) {
             <div>
               <UserLink displayName={contract.creatorName} />
             </div>
-            {resolution && <div>•</div>}
-            <div>
-              Resolved {resolution === 'YES' && <YesLabel />}
-              {resolution === 'NO' && <NoLabel />}
-              {resolution === 'CANCEL' && <CancelLabel />}
-            </div>
+            {resolution && (
+              <>
+                <div>•</div>
+                <div>
+                  Resolved {resolution === 'YES' && <YesLabel />}
+                  {resolution === 'NO' && <NoLabel />}
+                  {resolution === 'CANCEL' && <CancelLabel />}
+                </div>
+              </>
+            )}
           </Row>
         </a>
       </Link>
