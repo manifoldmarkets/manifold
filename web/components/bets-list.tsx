@@ -89,17 +89,26 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
   const { bets, contract } = props
   const { resolution } = contract
 
+  const [collapsed, setCollapsed] = useState(true)
+
   return (
-    <div className="p-6 bg-white card card-body shadow-xl">
+    <div
+      tabIndex={0}
+      className={clsx(
+        'p-6 bg-white card card-body shadow-xl collapse collapse-arrow cursor-pointer',
+        collapsed ? 'collapse-close' : 'collapse-open'
+      )}
+      onClick={() => setCollapsed((collapsed) => !collapsed)}
+    >
       <Row>
-        <Col className="w-2/3">
-          <Link href={path(contract)}>
-            <a>
-              <div className="font-medium text-indigo-700 mb-1 hover:underline hover:decoration-indigo-400 hover:decoration-2">
+        <Col className="flex-[2] gap-1">
+          <div>
+            <Link href={path(contract)}>
+              <a className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2">
                 {contract.question}
-              </div>
-            </a>
-          </Link>
+              </a>
+            </Link>
+          </div>
 
           <Row className="gap-2 text-gray-500 text-sm">
             <div>
@@ -109,22 +118,31 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
               <>
                 <div>•</div>
                 <div>
-                  Resolved {resolution === 'YES' && <YesLabel />}
-                  {resolution === 'NO' && <NoLabel />}
-                  {resolution === 'CANCEL' && <CancelLabel />}
+                  Resolved <OutcomeLabel outcome={resolution} />
                 </div>
               </>
             )}
           </Row>
         </Col>
 
-        {/* Show this at the end of the flex */}
-        <MyBetsSummary contract={contract} bets={bets} className="ml-auto" />
+        <MyBetsSummary
+          className="flex-1 justify-end"
+          contract={contract}
+          bets={bets}
+        />
+
+        {/* Show carrot for collapsing. Hack the positioning. */}
+        <div
+          className="collapse-title p-0 pr-8 relative w-0 h-0 min-h-0"
+          style={{ top: -10, right: -20 }}
+        />
       </Row>
 
-      <Spacer h={8} />
+      <div className="collapse-content" style={{ backgroundColor: 'white' }}>
+        <Spacer h={8} />
 
-      <ContractBetsTable contract={contract} bets={bets} />
+        <ContractBetsTable contract={contract} bets={bets} />
+      </div>
     </div>
   )
 }
@@ -183,13 +201,17 @@ export function MyBetsSummary(props: {
   )
 }
 
-export function ContractBetsTable(props: { contract: Contract; bets: Bet[] }) {
-  const { contract, bets } = props
+export function ContractBetsTable(props: {
+  contract: Contract
+  bets: Bet[]
+  className?: string
+}) {
+  const { contract, bets, className } = props
 
   const { isResolved } = contract
 
   return (
-    <div className="overflow-x-auto">
+    <div className={clsx('overflow-x-auto', className)}>
       <table className="table table-zebra table-compact text-gray-500 w-full">
         <thead>
           <tr className="p-2">
@@ -219,7 +241,9 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
   return (
     <tr>
       <td>{dayjs(createdTime).format('MMM D, H:mma')}</td>
-      <td>{outcome}</td>
+      <td>
+        <OutcomeLabel outcome={outcome} />
+      </td>
       <td>{formatMoney(amount)}</td>
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
@@ -234,6 +258,14 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
       </td>
     </tr>
   )
+}
+
+function OutcomeLabel(props: { outcome: 'YES' | 'NO' | 'CANCEL' }) {
+  const { outcome } = props
+
+  if (outcome === 'YES') return <YesLabel />
+  if (outcome === 'NO') return <NoLabel />
+  return <CancelLabel />
 }
 
 function YesLabel() {

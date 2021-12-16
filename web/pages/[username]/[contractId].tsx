@@ -101,17 +101,15 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
 
   const userBets = user && bets.filter((bet) => bet.userId === user.id)
 
+  if (!userBets || userBets.length === 0) return <></>
+
   return (
     <div className="p-4">
-      {userBets && userBets.length > 0 && (
-        <>
-          <Title text="Your bets" />
-          <MyBetsSummary contract={contract} bets={userBets} />
-          <Spacer h={6} />
-          <ContractBetsTable contract={contract} bets={userBets} />
-          <Spacer h={6} />
-        </>
-      )}
+      <Title text="Your bets" />
+      <MyBetsSummary contract={contract} bets={userBets} />
+      <Spacer h={6} />
+      <ContractBetsTable contract={contract} bets={userBets} />
+      <Spacer h={6} />
     </div>
   )
 }
