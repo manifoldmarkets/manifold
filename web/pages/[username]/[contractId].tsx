@@ -12,7 +12,7 @@ import { useUser } from '../../hooks/use-user'
 import { ResolutionPanel } from '../../components/resolution-panel'
 import { Contract, getContract } from '../../lib/firebase/contracts'
 
-export async function getStaticProps({ params }: { params: any }) {
+export async function getServerSideProps({ params }: { params: any }) {
   console.log('params', params)
   const contract = await getContract(params.contractId)
 
@@ -23,12 +23,12 @@ export async function getStaticProps({ params }: { params: any }) {
   }
 }
 
-export async function getStaticPaths() {
-  return {
-    paths: [],
-    fallback: 'blocking',
-  }
-}
+// export async function getStaticPaths() {
+//   return {
+//     paths: [],
+//     fallback: 'blocking',
+//   }
+// }
 
 export default function ContractPage({ contract }: { contract: Contract }) {
   const user = useUser()
