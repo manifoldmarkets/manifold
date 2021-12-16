@@ -112,9 +112,6 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
           <Spacer h={6} />
         </>
       )}
-
-      <Title text="All bets" />
-      <ContractBetsTable contract={contract} bets={bets} />
     </div>
   )
 }
