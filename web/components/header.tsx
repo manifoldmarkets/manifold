@@ -12,14 +12,15 @@ const navigation = [
   },
 ]
 
+const hoverClasses =
+  'hover:underline hover:decoration-indigo-400 hover:decoration-2'
+
 function SignInLink(props: { darkBackground?: boolean }) {
   const { darkBackground } = props
 
   const user = useUser()
 
-  const themeClasses = darkBackground
-    ? 'text-white hover:text-gray-300'
-    : 'hover:text-gray-500'
+  const themeClasses = (darkBackground ? 'text-white ' : '') + hoverClasses
 
   return (
     <>
@@ -33,7 +34,7 @@ function SignInLink(props: { darkBackground?: boolean }) {
 
           <Link href="/account">
             <a className={clsx('text-base font-medium', themeClasses)}>
-              {user.name}
+              Your account
             </a>
           </Link>
         </>
@@ -60,7 +61,7 @@ export function Header(props: { darkBackground?: boolean }) {
                 <a className="flex flex-row items-center align-items-center h-6 sm:h-10">
                   <div className="inline-block mr-3">
                     <img
-                      className="h-6 sm:h-10 w-6 sm:w-10"
+                      className="h-6 sm:h-10 w-6 sm:w-10 hover:rotate-12 transition-all"
                       src="/logo-icon.svg"
                     />
                   </div>
@@ -82,10 +83,8 @@ export function Header(props: { darkBackground?: boolean }) {
                   <a
                     target="_blank"
                     className={clsx(
-                      'text-base font-medium',
-                      darkBackground
-                        ? 'text-white hover:text-gray-300'
-                        : 'hover:text-gray-500'
+                      'text-base font-medium ' + hoverClasses,
+                      darkBackground ? 'text-white' : ''
                     )}
                   >
                     {item.name}
