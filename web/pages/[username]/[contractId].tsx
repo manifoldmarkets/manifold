@@ -1,9 +1,8 @@
 import React from 'react'
-import { useRouter } from 'next/router'
 import Head from 'next/head'
 import clsx from 'clsx'
 
-import { useContract } from '../../hooks/use-contract'
+import { useContract, useContractWithPreload } from '../../hooks/use-contract'
 import { Header } from '../../components/header'
 import { ContractOverview } from '../../components/contract-overview'
 import { BetPanel } from '../../components/bet-panel'
@@ -12,41 +11,35 @@ import { useUser } from '../../hooks/use-user'
 import { ResolutionPanel } from '../../components/resolution-panel'
 import { Contract, getContract } from '../../lib/firebase/contracts'
 
-export async function getServerSideProps({ params }: { params: any }) {
-  const contract = await getContract(params.contractId)
-  console.log('params', params, 'contract', contract)
+export async function getStaticProps(props: { params: any }) {
+  const { contractId } = props.params
+  const contract = (await getContract(contractId)) || null
 
   return {
     props: {
-      contract: contract || null,
+      contractId,
+      contract,
     },
+
+    revalidate: 60, // regenerate after a minute
   }
 }
 
-// export async function getStaticPaths() {
-//   return {
-//     paths: [],
-//     fallback: 'blocking',
-//   }
-// }
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
 
-export default function ContractPage({ contract }: { contract: Contract }) {
+export default function ContractPage(props: {
+  contract: Contract
+  contractId: string
+}) {
   const user = useUser()
 
-  // const router = useRouter()
-  // const { contractId } = router.query as { contractId: string }
-  // const contract = useContract(contractId)
-  // if (contract === 'loading') {
-  //   return <div />
-  // }
-  // if (!contract) {
-  //   return <div>Contract not found...</div>
-  // }
+  const contract = useContractWithPreload(props.contractId, props.contract)
 
-  if (contract === null) {
+  if (!contract) {
     return <div>Contract not found...</div>
   }
-  if (!contract) return <div />
 
   const { creatorId, isResolved } = contract
   const isCreator = user?.id === creatorId
