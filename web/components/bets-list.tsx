@@ -10,8 +10,12 @@ import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { Contract, path } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
-import { calculateWinnings, currentValue } from '../lib/calculation/contract'
 import { UserLink } from './user-page'
+import {
+  calculatePayout,
+  currentValue,
+  resolvedPayout,
+} from '../lib/calculation/contract'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -48,13 +52,15 @@ function MyContractBets(props: { contractId: string; bets: Bet[] }) {
 
   const betsTotal = _.sumBy(bets, (bet) => bet.amount)
 
-  const betsValue = _.sumBy(bets, (bet) => currentValue(contract, bet))
+  const betsPayout = resolution
+    ? _.sumBy(bets, (bet) => resolvedPayout(contract, bet))
+    : 0
 
   const yesWinnings = _.sumBy(bets, (bet) =>
-    calculateWinnings(contract, bet, 'YES')
+    calculatePayout(contract, bet, 'YES')
   )
   const noWinnings = _.sumBy(bets, (bet) =>
-    calculateWinnings(contract, bet, 'NO')
+    calculatePayout(contract, bet, 'NO')
   )
 
   return (
@@ -70,46 +76,42 @@ function MyContractBets(props: { contractId: string; bets: Bet[] }) {
               <UserLink displayName={contract.creatorName} />
             </div>
             {resolution && <div>•</div>}
-            {resolution === 'YES' && (
-              <div className="text-primary">Resolved YES</div>
-            )}
-            {resolution === 'NO' && (
-              <div className="text-red-400">Resolved NO</div>
-            )}
-            {resolution === 'CANCEL' && (
-              <div className="text-yellow-400">Resolved CANCEL</div>
-            )}
+            <div>
+              Resolved {resolution === 'YES' && <YesLabel />}
+              {resolution === 'NO' && <NoLabel />}
+              {resolution === 'CANCEL' && <CancelLabel />}
+            </div>
           </Row>
         </a>
       </Link>
 
       <Spacer h={6} />
 
-      <Row className="gap-8 ">
+      <Row className="gap-8">
         <Col>
           <div className="text-sm text-gray-500">Total bets</div>
-          <div className="">{formatMoney(betsTotal)}</div>
+          <div>{formatMoney(betsTotal)}</div>
         </Col>
         {resolution ? (
           <>
             <Col>
               <div className="text-sm text-gray-500">Winnings</div>
-              <div className="">{formatMoney(yesWinnings)}</div>
+              <div>{formatMoney(betsPayout)}</div>
             </Col>
           </>
         ) : (
           <>
-            {/* <Col>
-              <div className="text-sm text-gray-500">Current value</div>
-              <div className="">{formatMoney(betsValue)}</div>
-            </Col> */}
             <Col>
-              <div className="text-sm text-primary">If YES</div>
-              <div className="">{formatMoney(yesWinnings)}</div>
+              <div className="text-sm text-gray-500">
+                If <YesLabel />
+              </div>
+              <div>{formatMoney(yesWinnings)}</div>
             </Col>
             <Col>
-              <div className="text-sm text-red-400">If NO</div>
-              <div className="">{formatMoney(noWinnings)}</div>
+              <div className="text-sm text-gray-500">
+                If <NoLabel />
+              </div>
+              <div>{formatMoney(noWinnings)}</div>
             </Col>
           </>
         )}
@@ -125,6 +127,8 @@ function MyContractBets(props: { contractId: string; bets: Bet[] }) {
 function ContractBetsTable(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
 
+  const { isResolved } = contract
+
   return (
     <div className="overflow-x-auto">
       <table className="table table-zebra table-compact text-gray-500 w-full">
@@ -134,8 +138,8 @@ function ContractBetsTable(props: { contract: Contract; bets: Bet[] }) {
             <th>Outcome</th>
             <th>Bet</th>
             <th>Probability</th>
-            <th>Est. max payout</th>
-            <th>Current value</th>
+            {!isResolved && <th>Est. max payout</th>}
+            <th>{isResolved ? <>Payout</> : <>Current value</>}</th>
           </tr>
         </thead>
         <tbody>
@@ -151,6 +155,7 @@ function ContractBetsTable(props: { contract: Contract; bets: Bet[] }) {
 function BetRow(props: { bet: Bet; contract: Contract }) {
   const { bet, contract } = props
   const { amount, outcome, createdTime, probBefore, probAfter, dpmWeight } = bet
+  const { isResolved } = contract
 
   return (
     <tr>
@@ -160,8 +165,26 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
-      <td>{formatMoney(amount + dpmWeight)}</td>
-      <td>{formatMoney(currentValue(contract, bet))}</td>
+      {!isResolved && <td>{formatMoney(amount + dpmWeight)}</td>}
+      <td>
+        {formatMoney(
+          isResolved
+            ? resolvedPayout(contract, bet)
+            : currentValue(contract, bet)
+        )}
+      </td>
     </tr>
   )
+}
+
+function YesLabel() {
+  return <span className="text-primary">YES</span>
+}
+
+function NoLabel() {
+  return <span className="text-red-400">NO</span>
+}
+
+function CancelLabel() {
+  return <span className="text-yellow-400">CANCEL</span>
 }
