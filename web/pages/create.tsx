@@ -22,8 +22,8 @@ export default function NewContract() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function submit() {
-    // TODO: add more rigorous error handling for question, description
-    if (!creator || !question || !description) return
+    // TODO: add more rigorous error handling for question
+    if (!creator || !question) return
 
     setIsSubmitting(true)
 
@@ -69,7 +69,7 @@ export default function NewContract() {
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Description</span>
+                <span className="label-text">Description (optional)</span>
               </label>
 
               <textarea
@@ -105,7 +105,7 @@ export default function NewContract() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !question}
                 onClick={(e) => {
                   e.preventDefault()
                   submit()
