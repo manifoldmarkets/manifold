@@ -1,12 +1,12 @@
 import router from 'next/router'
 import { useState } from 'react'
 
-import { ContractsList } from '../../components/contracts-list'
-import { Header } from '../../components/header'
-import { Spacer } from '../../components/layout/spacer'
-import { Title } from '../../components/title'
-import { useUser } from '../../hooks/use-user'
-import { createContract } from '../../lib/service/create-contract'
+import { ContractsList } from '../components/contracts-list'
+import { Header } from '../components/header'
+import { Spacer } from '../components/layout/spacer'
+import { Title } from '../components/title'
+import { useUser } from '../hooks/use-user'
+import { createContract } from '../lib/service/create-contract'
 
 // Allow user to create a new contract
 export default function NewContract() {
