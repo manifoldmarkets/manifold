@@ -13,8 +13,8 @@ import { ResolutionPanel } from '../../components/resolution-panel'
 import { Contract, getContract } from '../../lib/firebase/contracts'
 
 export async function getServerSideProps({ params }: { params: any }) {
-  console.log('params', params)
   const contract = await getContract(params.contractId)
+  // console.log('params', params, 'contract', contract)
 
   return {
     props: {
@@ -54,10 +54,9 @@ export default function ContractPage({ contract }: { contract: Contract }) {
   const isCreator = false
 
   return (
-    <>
+    <Col className="max-w-7xl mx-auto sm:px-6 lg:px-8">
       <Head>
-        <title>{contract.question}</title>
-
+        <title>{contract.question} | Mantic Markets</title>
         <meta
           property="og:title"
           name="twitter:title"
@@ -72,35 +71,33 @@ export default function ContractPage({ contract }: { contract: Contract }) {
         />
       </Head>
 
-      <Col className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <Header />
+      <Header />
 
-        <Col
-          className={clsx(
-            'w-full items-start md:flex-row mt-4',
-            isResolved ? 'md:justify-center' : 'md:justify-between'
-          )}
-        >
-          <ContractOverview
-            contract={contract}
-            className="max-w-4xl w-full p-4"
-          />
+      <Col
+        className={clsx(
+          'w-full items-start md:flex-row mt-4',
+          isResolved ? 'md:justify-center' : 'md:justify-between'
+        )}
+      >
+        <ContractOverview
+          contract={contract}
+          className="max-w-4xl w-full p-4"
+        />
 
-          {!isResolved && (
-            <>
-              <div className="mt-12 md:mt-0 md:ml-8" />
+        {!isResolved && (
+          <>
+            <div className="mt-12 md:mt-0 md:ml-8" />
 
-              <Col className="w-full sm:w-auto sm:self-center">
-                <BetPanel contract={contract} />
+            <Col className="w-full sm:w-auto sm:self-center">
+              <BetPanel contract={contract} />
 
-                {isCreator && user && (
-                  <ResolutionPanel creator={user} contract={contract} />
-                )}
-              </Col>
-            </>
-          )}
-        </Col>
+              {isCreator && user && (
+                <ResolutionPanel creator={user} contract={contract} />
+              )}
+            </Col>
+          </>
+        )}
       </Col>
-    </>
+    </Col>
   )
 }
