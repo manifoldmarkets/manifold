@@ -10,44 +10,43 @@ import { BetPanel } from '../../components/bet-panel'
 import { Col } from '../../components/layout/col'
 import { useUser } from '../../hooks/use-user'
 import { ResolutionPanel } from '../../components/resolution-panel'
-// import { Contract, getContract } from '../../lib/firebase/contracts'
-// export async function getStaticProps({ params }: { params: any }) {
-//   console.log('params', params)
-//   const contract = await getContract(params.contractId)
+import { Contract, getContract } from '../../lib/firebase/contracts'
+export async function getStaticProps({ params }: { params: any }) {
+  console.log('params', params)
+  const contract = await getContract(params.contractId)
 
-//   return {
-//     props: {
-//       contract: contract || null
-//     }
-//   }
-// }
+  return {
+    props: {
+      contract: contract || null,
+    },
+  }
+}
 
-// export async function getStaticPaths() {
-//   return {
-//     paths: [],
-//     fallback: true,
-//   }
-// }
+export async function getStaticPaths() {
+  return {
+    paths: [],
+    fallback: true,
+  }
+}
 
-export default function ContractPage() {//{ contract }: { contract: Contract }) {
+export default function ContractPage({ contract }: { contract: Contract }) {
   const user = useUser()
 
   const router = useRouter()
   const { contractId } = router.query as { contractId: string }
 
-  const contract = useContract(contractId)
-  if (contract === 'loading') {
-    return <div />
-  }
-  if (!contract) {
-    return <div>Contract not found...</div>
-  }
-
-  // if (contract === null) {
+  // const contract = useContract(contractId)
+  // if (contract === 'loading') {
+  //   return <div />
+  // }
+  // if (!contract) {
   //   return <div>Contract not found...</div>
   // }
-  // if (!contract)
-  //   return <div />
+
+  if (contract === null) {
+    return <div>Contract not found...</div>
+  }
+  if (!contract) return <div />
 
   const { creatorId, isResolved } = contract
   const isCreator = user?.id === creatorId
@@ -63,10 +62,7 @@ export default function ContractPage() {//{ contract }: { contract: Contract }) 
           content={contract.question}
           key="title"
         />
-        <meta
-          name="description"
-          content={contract.description}
-        />
+        <meta name="description" content={contract.description} />
         <meta
           property="og:description"
           name="twitter:description"
@@ -75,7 +71,6 @@ export default function ContractPage() {//{ contract }: { contract: Contract }) 
       </Head>
 
       <Header />
-
 
       <Col
         className={clsx(
