@@ -3,7 +3,8 @@ import { Html, Head, Main, NextScript } from 'next/document'
 export default function Document() {
   return (
     <Html data-theme="mantic" className="min-h-screen">
-      <Head>
+      <Head />
+      {/* <Head>
         <title>Mantic Markets</title>
 
         <meta
@@ -57,7 +58,7 @@ export default function Document() {
           `,
           }}
         />
-      </Head>
+      </Head> */}
       <body className="min-h-screen font-readex-pro bg-base-200">
         <Main />
         <NextScript />
