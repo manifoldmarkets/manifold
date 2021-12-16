@@ -1,31 +1,96 @@
-import React from 'react'
-import { compute, Contract, deleteContract } from '../lib/firebase/contracts'
+import React, { useState } from 'react'
+import {
+  compute,
+  Contract,
+  deleteContract,
+  setContract,
+} from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
 import { ContractDetails } from './contracts-list'
 import router from 'next/router'
 import { useUser } from '../hooks/use-user'
+import { Row } from './layout/row'
+import dayjs from 'dayjs'
+import { Title } from './title'
+
+function ContractDescription(props: {
+  contract: Contract
+  isCreator: boolean
+}) {
+  const { contract, isCreator } = props
+  const [editing, setEditing] = useState(false)
+  const editStatement = () => `EDIT (${dayjs().format('MMM D, H:mma')}): `
+  const [description, setDescription] = useState(editStatement())
+
+  // Append the new description (after a newline)
+  async function saveDescription(e: any) {
+    e.preventDefault()
+    setEditing(false)
+    contract.description = `${contract.description}\n${description}`.trim()
+    await setContract(contract)
+    setDescription(editStatement())
+  }
+
+  return (
+    <div className="whitespace-pre-line">
+      {contract.description}
+      <br />
+      {isCreator &&
+        !contract.resolution &&
+        (editing ? (
+          <form>
+            <textarea
+              className="textarea h-24 textarea-bordered w-full"
+              value={description}
+              onChange={(e) => setDescription(e.target.value || '')}
+            ></textarea>
+            <Row className="gap-2">
+              <button
+                className="btn btn-neutral btn-outline btn-sm mt-2"
+                onClick={saveDescription}
+              >
+                Save
+              </button>
+              <button
+                className="btn btn-error btn-outline btn-sm mt-2"
+                onClick={() => setEditing(false)}
+              >
+                Cancel
+              </button>
+            </Row>
+          </form>
+        ) : (
+          <button
+            className="btn btn-neutral btn-outline btn-sm mt-4"
+            onClick={() => setEditing(true)}
+          >
+            Edit
+          </button>
+        ))}
+    </div>
+  )
+}
 
 export const ContractOverview = (props: {
   contract: Contract
   className?: string
 }) => {
   const { contract, className } = props
-  const { resolution, creatorId, isResolved } = contract
+  const { resolution, creatorId } = contract
   const { probPercent, volume } = compute(contract)
 
   const user = useUser()
   const isCreator = user?.id === creatorId
 
-  const resolutionColor =
-    resolution === 'YES'
-      ? 'text-primary'
-      : resolution === 'NO'
-      ? 'text-red-400'
-      : resolution === 'CANCEL'
-      ? 'text-yellow-400'
-      : ''
+  const resolutionColor = {
+    YES: 'text-primary',
+    NO: 'text-red-400',
+    CANCEL: 'text-yellow-400',
+    '': '', // Empty if unresolved
+  }[contract.resolution || '']
+
   return (
     <Col className={className}>
       <Col className="justify-between md:flex-row">
@@ -39,7 +104,7 @@ export const ContractOverview = (props: {
 
         {resolution ? (
           <Col className="text-4xl mt-4 md:mt-2 md:ml-4 md:mr-6 items-end self-center md:self-start">
-            <div className="text-xl text-gray-500">Resolved:</div>
+            <div className="text-xl text-gray-500">Resolved</div>
             <div className={resolutionColor}>{resolution}</div>
           </Col>
         ) : (
@@ -56,9 +121,10 @@ export const ContractOverview = (props: {
 
       <Spacer h={12} />
 
-      <div className="text-gray-600 whitespace-pre-line">
-        {contract.description}
-      </div>
+      {((isCreator && !contract.resolution) || contract.description) && (
+        <label className="text-gray-500 mb-2 text-sm">Description</label>
+      )}
+      <ContractDescription contract={contract} isCreator={isCreator} />
 
       {/* Show a delete button for contracts without any trading */}
       {isCreator && volume === 0 && (
