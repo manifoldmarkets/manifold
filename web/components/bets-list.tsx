@@ -90,30 +90,30 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
   const { resolution } = contract
 
   return (
-    <div className="px-4">
+    <div className="p-6 bg-white card card-body shadow-xl ">
       <Link href={path(contract)}>
         <a>
-          <div className="font-medium text-indigo-700 mb-1">
+          <div className="font-medium text-indigo-700 mb-1 hover:underline hover:decoration-indigo-400 hover:decoration-2">
             {contract.question}
           </div>
-
-          <Row className="gap-2 text-gray-500 text-sm">
-            <div>
-              <UserLink displayName={contract.creatorName} />
-            </div>
-            {resolution && (
-              <>
-                <div>•</div>
-                <div>
-                  Resolved {resolution === 'YES' && <YesLabel />}
-                  {resolution === 'NO' && <NoLabel />}
-                  {resolution === 'CANCEL' && <CancelLabel />}
-                </div>
-              </>
-            )}
-          </Row>
         </a>
       </Link>
+
+      <Row className="gap-2 text-gray-500 text-sm">
+        <div>
+          <UserLink displayName={contract.creatorName} />
+        </div>
+        {resolution && (
+          <>
+            <div>•</div>
+            <div>
+              Resolved {resolution === 'YES' && <YesLabel />}
+              {resolution === 'NO' && <NoLabel />}
+              {resolution === 'CANCEL' && <CancelLabel />}
+            </div>
+          </>
+        )}
+      </Row>
 
       <Spacer h={6} />
 
