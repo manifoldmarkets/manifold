@@ -1,31 +1,46 @@
 import React from 'react'
-import { useRouter } from 'next/router'
-import { useContract } from '../../hooks/use-contract'
+import Head from 'next/head'
+import clsx from 'clsx'
+
+import { useContractWithPreload } from '../../hooks/use-contract'
 import { Header } from '../../components/header'
 import { ContractOverview } from '../../components/contract-overview'
 import { BetPanel } from '../../components/bet-panel'
 import { Col } from '../../components/layout/col'
 import { useUser } from '../../hooks/use-user'
 import { ResolutionPanel } from '../../components/resolution-panel'
-import clsx from 'clsx'
 import { ContractBetsTable, MyBetsSummary } from '../../components/bets-list'
 import { useBets } from '../../hooks/use-bets'
 import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
-import { Contract } from '../../lib/firebase/contracts'
 import { User } from '../../lib/firebase/users'
+import { Contract, getContract } from '../../lib/firebase/contracts'
 
-export default function ContractPage() {
+export async function getStaticProps(props: { params: any }) {
+  const { contractId } = props.params
+  const contract = (await getContract(contractId)) || null
+
+  return {
+    props: {
+      contractId,
+      contract,
+    },
+
+    revalidate: 60, // regenerate after a minute
+  }
+}
+
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+export default function ContractPage(props: {
+  contract: Contract | null
+  contractId: string
+}) {
   const user = useUser()
 
-  const router = useRouter()
-  const { contractId } = router.query as { contractId: string }
-
-  const contract = useContract(contractId)
-
-  if (contract === 'loading') {
-    return <div />
-  }
+  const contract = useContractWithPreload(props.contractId, props.contract)
 
   if (!contract) {
     return <div>Contract not found...</div>
@@ -36,6 +51,27 @@ export default function ContractPage() {
 
   return (
     <Col className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+      <Head>
+        <title>{contract.question} | Mantic Markets</title>
+        <meta
+          property="og:title"
+          name="twitter:title"
+          content={contract.question}
+          key="title"
+        />
+        <meta
+          name="description"
+          content={contract.description}
+          key="description1"
+        />
+        <meta
+          property="og:description"
+          name="twitter:description"
+          content={contract.description}
+          key="description2"
+        />
+      </Head>
+
       <Header />
 
       <Col
@@ -56,7 +92,7 @@ export default function ContractPage() {
             <Col className="w-full sm:w-auto">
               <BetPanel contract={contract} />
 
-              {isCreator && (
+              {isCreator && user && (
                 <ResolutionPanel creator={user} contract={contract} />
               )}
             </Col>

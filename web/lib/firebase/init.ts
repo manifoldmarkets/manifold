@@ -14,11 +14,11 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig)
 export const db = getFirestore(app)
 
-try {
-  // Note: this is still throwing a console error atm...
-  import('firebase/analytics').then((analytics) => {
-    analytics.getAnalytics(app)
-  })
-} catch (e) {
-  console.warn('Analytics were blocked')
-}
+// try {
+//   // Note: this is still throwing a console error atm...
+//   import('firebase/analytics').then((analytics) => {
+//     analytics.getAnalytics(app)
+//   })
+// } catch (e) {
+//   console.warn('Analytics were blocked')
+// }

@@ -121,7 +121,7 @@ export default function NewContract() {
 
         <Title text="Your markets" />
 
-        <ContractsList creator={creator} />
+        {creator && <ContractsList creator={creator} />}
       </div>
     </div>
   )
