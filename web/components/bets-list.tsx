@@ -11,7 +11,7 @@ import { Spacer } from './layout/spacer'
 import { Contract, path } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { calculateWinnings, currentValue } from '../lib/calculation/contract'
-import { UserLink } from '../pages/account'
+import { UserLink } from './user-page'
 
 export function BetsList(props: { user: User }) {
   const { user } = props

@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 import { getUserByUsername, User } from '../../lib/firebase/users'
-import { UserPage } from '../account'
+import { UserPage } from '../../components/user-page'
 import Error from 'next/error'
 
 export default function UserProfile() {
