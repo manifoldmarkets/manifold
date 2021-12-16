@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import _ from 'lodash'
 import dayjs from 'dayjs'
-import { useContract } from '../hooks/use-contract'
+import { useEffect, useState } from 'react'
 import { useUserBets } from '../hooks/use-user-bets'
 import { Bet } from '../lib/firebase/bets'
 import { User } from '../lib/firebase/users'
 import { formatMoney, formatPercent } from '../lib/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
-import { Contract, path } from '../lib/firebase/contracts'
+import { Contract, getContract, path } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import {
@@ -21,6 +21,22 @@ export function BetsList(props: { user: User }) {
   const { user } = props
   const bets = useUserBets(user?.id ?? '')
 
+  const [contracts, setContracts] = useState<Contract[]>([])
+
+  useEffect(() => {
+    const loadedBets = bets === 'loading' ? [] : bets
+    const contractIds = _.uniq(loadedBets.map((bet) => bet.contractId))
+
+    let disposed = false
+    Promise.all(contractIds.map((id) => getContract(id))).then((contracts) => {
+      if (!disposed) setContracts(contracts.filter(Boolean) as Contract[])
+    })
+
+    return () => {
+      disposed = true
+    }
+  }, [bets])
+
   if (bets === 'loading') {
     return <></>
   }
@@ -29,25 +45,44 @@ export function BetsList(props: { user: User }) {
 
   const contractBets = _.groupBy(bets, 'contractId')
 
+  const [resolved, unresolved] = _.partition(
+    contracts,
+    (contract) => contract.isResolved
+  )
+  const currentBets = _.sumBy(unresolved, (contract) =>
+    _.sumBy(contractBets[contract.id], (bet) => bet.amount)
+  )
+
+  const currentBetsValue = _.sumBy(unresolved, (contract) =>
+    _.sumBy(contractBets[contract.id], (bet) => currentValue(contract, bet))
+  )
+
   return (
     <Col className="mt-6 gap-10">
-      {Object.keys(contractBets).map((contractId) => (
+      <Row className="px-4 gap-8">
+        <Col>
+          <div className="text-sm text-gray-500">Active bets</div>
+          <div>{formatMoney(currentBets)}</div>
+        </Col>
+        <Col>
+          <div className="text-sm text-gray-500">Current value</div>
+          <div>{formatMoney(currentBetsValue)}</div>
+        </Col>
+      </Row>
+
+      {[...unresolved, ...resolved].map((contract) => (
         <MyContractBets
-          key={contractId}
-          contractId={contractId}
-          bets={contractBets[contractId]}
+          key={contract.id}
+          contract={contract}
+          bets={contractBets[contract.id]}
         />
       ))}
     </Col>
   )
 }
 
-function MyContractBets(props: { contractId: string; bets: Bet[] }) {
-  const { contractId, bets } = props
-
-  const contract = useContract(contractId)
-  if (contract === 'loading' || contract === null) return <></>
-
+function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
+  const { bets, contract } = props
   const { resolution } = contract
 
   const betsTotal = _.sumBy(bets, (bet) => bet.amount)
@@ -93,7 +128,7 @@ function MyContractBets(props: { contractId: string; bets: Bet[] }) {
 
       <Row className="gap-8">
         <Col>
-          <div className="text-sm text-gray-500">Total bets</div>
+          <div className="text-sm text-gray-500">Total bet</div>
           <div>{formatMoney(betsTotal)}</div>
         </Col>
         {resolution ? (
