@@ -1,7 +1,9 @@
+import _ from 'lodash'
 import Link from 'next/link'
 import clsx from 'clsx'
-import { Row } from '../components/layout/row'
 import { useEffect, useState } from 'react'
+
+import { Row } from '../components/layout/row'
 import {
   compute,
   Contract,
@@ -78,7 +80,12 @@ function ContractCard(props: { contract: Contract }) {
 }
 
 function ContractsGrid(props: { contracts: Contract[] }) {
-  const { contracts } = props
+  const [resolvedContracts, activeContracts] = _.partition(
+    props.contracts,
+    (c) => c.isResolved
+  )
+  const contracts = [...activeContracts, ...resolvedContracts]
+
   return (
     <ul role="list" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {contracts.map((contract) => (
