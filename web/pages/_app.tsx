@@ -17,13 +17,15 @@ function MyApp({ Component, pageProps }: AppProps) {
         <meta
           name="description"
           content="Mantic Markets is creating better forecasting through user-created prediction markets."
+          key="description1"
         />
         <meta
           property="og:description"
           name="twitter:description"
           content="Mantic Markets is creating better forecasting through user-created prediction markets."
+          key="description2"
         />
-        <meta property="og:url" content="https://mantic.markets" />
+        <meta property="og:url" content="https://mantic.markets" key="url" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@manticmarkets" />
         <meta

@@ -1,5 +1,4 @@
 import React from 'react'
-import Head from 'next/head'
 import clsx from 'clsx'
 
 import { useContractWithPreload } from '../../hooks/use-contract'
@@ -15,13 +14,15 @@ import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
 import { User } from '../../lib/firebase/users'
 import { Contract, getContract } from '../../lib/firebase/contracts'
+import { SEO } from '../../components/SEO'
 
 export async function getStaticProps(props: { params: any }) {
-  const { contractId } = props.params
+  const { username, contractId } = props.params
   const contract = (await getContract(contractId)) || null
 
   return {
     props: {
+      username,
       contractId,
       contract,
     },
@@ -37,6 +38,7 @@ export async function getStaticPaths() {
 export default function ContractPage(props: {
   contract: Contract | null
   contractId: string
+  username: string
 }) {
   const user = useUser()
 
@@ -51,26 +53,11 @@ export default function ContractPage(props: {
 
   return (
     <Col className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-      <Head>
-        <title>{contract.question} | Mantic Markets</title>
-        <meta
-          property="og:title"
-          name="twitter:title"
-          content={contract.question}
-          key="title"
-        />
-        <meta
-          name="description"
-          content={contract.description}
-          key="description1"
-        />
-        <meta
-          property="og:description"
-          name="twitter:description"
-          content={contract.description}
-          key="description2"
-        />
-      </Head>
+      <SEO
+        title={contract.question}
+        description={contract.description}
+        url={`/${props.username}/${props.contractId}`}
+      />
 
       <Header />
 
