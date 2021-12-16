@@ -14,7 +14,7 @@ import { Contract, getContract } from '../../lib/firebase/contracts'
 
 export async function getServerSideProps({ params }: { params: any }) {
   const contract = await getContract(params.contractId)
-  // console.log('params', params, 'contract', contract)
+  console.log('params', params, 'contract', contract)
 
   return {
     props: {
@@ -31,7 +31,7 @@ export async function getServerSideProps({ params }: { params: any }) {
 // }
 
 export default function ContractPage({ contract }: { contract: Contract }) {
-  const user = null // useUser()
+  const user = useUser()
 
   // const router = useRouter()
   // const { contractId } = router.query as { contractId: string }
@@ -49,9 +49,7 @@ export default function ContractPage({ contract }: { contract: Contract }) {
   if (!contract) return <div />
 
   const { creatorId, isResolved } = contract
-  // const isCreator = user?.id === creatorId
-
-  const isCreator = false
+  const isCreator = user?.id === creatorId
 
   return (
     <Col className="max-w-7xl mx-auto sm:px-6 lg:px-8">
