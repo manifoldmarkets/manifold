@@ -10,7 +10,7 @@ import {
 } from '../lib/firebase/contracts'
 import { formatMoney } from '../lib/util/format'
 import { User } from '../lib/firebase/users'
-import { UserLink } from '../pages/account'
+import { UserLink } from './user-page'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
