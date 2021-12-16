@@ -71,12 +71,12 @@ export function UserPage(props: { user: User }) {
         <div>
           <UserCard user={user} />
 
-          <Title className="px-2" text="Your markets" />
+          <Title text="Your markets" />
           <ContractsList creator={user} />
 
           <Spacer h={4} />
 
-          <Title className="px-2" text="Your bets" />
+          <Title text="Your bets" />
           <BetsList user={user} />
         </div>
       </div>
