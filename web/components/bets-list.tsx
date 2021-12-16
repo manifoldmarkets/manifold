@@ -8,7 +8,7 @@ import { User } from '../lib/firebase/users'
 import { formatMoney, formatPercent } from '../lib/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
-import { Contract } from '../lib/firebase/contracts'
+import { Contract, path } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { calculateWinnings, currentValue } from '../lib/calculation/contract'
 
@@ -58,7 +58,7 @@ function MyContractBets(props: { contractId: string; bets: Bet[] }) {
 
   return (
     <div className="px-4">
-      <Link href={`/contract/${contractId}`}>
+      <Link href={path(contract)}>
         <a>
           <div className="font-medium text-indigo-700 mb-1">
             {contract.question}
