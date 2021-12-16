@@ -79,7 +79,7 @@ function Button(props: {
     <button
       type="button"
       className={clsx(
-        'inline-flex items-center px-8 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white',
+        'flex-1 inline-flex justify-center items-center px-8 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white',
         color === 'green' && 'btn-primary',
         color === 'red' && 'bg-red-400 hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 hover:bg-yellow-500',

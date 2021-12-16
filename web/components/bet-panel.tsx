@@ -38,14 +38,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
     const amount = parseInt(str)
 
-    if (
-      (str && isNaN(amount)) ||
-      // Don't update to amount that is rendered in exponential notation.
-      // e.g. '1e21'
-      amount.toString().includes('e')
-    ) {
-      return
-    }
+    if (str && isNaN(amount)) return
 
     setBetAmount(str ? amount : undefined)
 
@@ -68,7 +61,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
       amount: betAmount,
       outcome: betChoice,
       contractId: contract.id,
-    }).then(r => r.data as any)
+    }).then((r) => r.data as any)
 
     console.log('placed bet. Result:', result)
 
@@ -111,7 +104,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
       <div className="mt-2 mb-1 text-sm text-gray-400">Outcome</div>
       <YesNoSelector
-        className="mx-auto my-2"
+        className="my-2"
         selected={betChoice}
         onSelect={(choice) => onBetChoice(choice)}
       />
@@ -149,7 +142,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         <div>{formatPercent(resultProb)}</div>
       </Row>
 
-      <div className="mt-2 mb-1 text-sm text-gray-400">Estimated winnings</div>
+      <div className="mt-2 mb-1 text-sm text-gray-400">Max payout (estimated)</div>
       <div>
         {formatMoney(estimatedWinnings)} &nbsp; (+{estimatedReturnPercent})
       </div>
@@ -162,8 +155,8 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           betDisabled
             ? 'btn-disabled'
             : betChoice === 'YES'
-              ? 'btn-primary'
-              : 'bg-red-400 hover:bg-red-500 border-none',
+            ? 'btn-primary'
+            : 'bg-red-400 hover:bg-red-500 border-none',
           isSubmitting ? 'loading' : ''
         )}
         onClick={betDisabled ? undefined : submitBet}
