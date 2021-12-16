@@ -10,6 +10,7 @@ export default function Document() {
           property="og:title"
           name="twitter:title"
           content="Mantic Markets"
+          key="title"
         />
         <meta
           name="description"
