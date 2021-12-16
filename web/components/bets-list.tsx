@@ -78,7 +78,7 @@ export function BetsList(props: { user: User }) {
         <MyContractBets
           key={contract.id}
           contract={contract}
-          bets={contractBets[contract.id]}
+          bets={contractBets[contract.id] ?? []}
         />
       ))}
     </Col>
@@ -104,7 +104,10 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
         <Col className="flex-[2] gap-1">
           <div>
             <Link href={path(contract)}>
-              <a className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2">
+              <a
+                className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {contract.question}
               </a>
             </Link>

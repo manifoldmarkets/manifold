@@ -22,6 +22,7 @@ export function UserLink(props: { displayName: string; className?: string }) {
           'hover:underline hover:decoration-indigo-400 hover:decoration-2',
           className
         )}
+        onClick={(e) => e.stopPropagation()}
       >
         @{username}
       </a>
