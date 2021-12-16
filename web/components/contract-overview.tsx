@@ -21,7 +21,7 @@ function ContractDescription(props: {
 }) {
   const { contract, isCreator } = props
   const [editing, setEditing] = useState(false)
-  const editStatement = () => `EDIT (${dayjs().format('MMM D, H:mma')}): `
+  const editStatement = () => `${dayjs().format('MMM D, H:mma')}: `
   const [description, setDescription] = useState(editStatement())
 
   // Append the new description (after a newline)
@@ -40,11 +40,19 @@ function ContractDescription(props: {
       {isCreator &&
         !contract.resolution &&
         (editing ? (
-          <form>
+          <form className="mt-4">
             <textarea
               className="textarea h-24 textarea-bordered w-full"
               value={description}
               onChange={(e) => setDescription(e.target.value || '')}
+              autoFocus
+              onFocus={(e) =>
+                // Focus starts at end of description.
+                e.target.setSelectionRange(
+                  description.length,
+                  description.length
+                )
+              }
             ></textarea>
             <Row className="gap-2">
               <button
@@ -66,7 +74,7 @@ function ContractDescription(props: {
             className="btn btn-neutral btn-outline btn-sm mt-4"
             onClick={() => setEditing(true)}
           >
-            Edit
+            Add to description
           </button>
         ))}
     </div>
