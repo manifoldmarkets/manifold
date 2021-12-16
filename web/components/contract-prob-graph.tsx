@@ -20,6 +20,12 @@ export function ContractProbGraph(props: { contract: Contract }) {
     ...bets.map((bet) => bet.createdTime),
   ].map((time) => new Date(time))
   const probs = [seedProb, ...bets.map((bet) => bet.probAfter)]
+
+  // Add a fake datapoint in future so the line continues horizontally
+  // to the right.
+  times.push(dayjs().add(1, 'day').toDate())
+  probs.push(probs[probs.length - 1])
+
   const points = probs.map((prob, i) => ({ x: times[i], y: prob * 100 }))
   const data = [{ id: 'Yes', data: points, color: '#11b981' }]
 
@@ -27,9 +33,16 @@ export function ContractProbGraph(props: { contract: Contract }) {
     times[times.length - 1].getTime() - times[0].getTime() <
     1000 * 60 * 60 * 24 * 7
 
-  const tickValues = [0, 25, 50, 75, 100]
+  const yTickValues = [0, 25, 50, 75, 100]
 
   const { width } = useWindowSize()
+
+  const numXTickValues = !width || width < 800 ? 4 : 8
+  const now = dayjs()
+  const hoursAgo = now.subtract(8, 'hours')
+  const startDate = dayjs(times[0]).isBefore(hoursAgo)
+    ? times[0]
+    : hoursAgo.toDate()
 
   return (
     <div className="w-full" style={{ height: 400 }}>
@@ -37,15 +50,19 @@ export function ContractProbGraph(props: { contract: Contract }) {
         data={data}
         yScale={{ min: 0, max: 100, type: 'linear' }}
         yFormat={formatPercent}
-        gridYValues={tickValues}
+        gridYValues={yTickValues}
         axisLeft={{
-          tickValues,
+          tickValues: yTickValues,
           format: formatPercent,
         }}
-        xScale={{ type: 'time' }}
+        xScale={{
+          type: 'time',
+          min: startDate,
+          max: now.toDate(),
+        }}
         xFormat={(d) => formatTime(+d.valueOf(), lessThanAWeek)}
         axisBottom={{
-          tickValues: !width || width < 800 ? 4 : 8,
+          tickValues: numXTickValues,
           format: (time) => formatTime(+time, lessThanAWeek),
         }}
         colors={{ datum: 'color' }}
