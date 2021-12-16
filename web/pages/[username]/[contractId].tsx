@@ -82,8 +82,8 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
     <div className="p-4">
       {userBets && userBets.length > 0 && (
         <>
-          <Title text="My bets" />
-          <MyBetsSummary className="ml-1" contract={contract} bets={userBets} />
+          <Title text="Your bets" />
+          <MyBetsSummary contract={contract} bets={userBets} />
           <Spacer h={6} />
           <ContractBetsTable contract={contract} bets={userBets} />
           <Spacer h={6} />
