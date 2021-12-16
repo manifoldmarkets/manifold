@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { useEffect, useState } from 'react'
-import { useUser } from '../hooks/use-user'
 import {
   compute,
   Contract,
@@ -11,6 +10,7 @@ import {
 } from '../lib/firebase/contracts'
 import { formatMoney } from '../lib/util/format'
 import { User } from '../lib/firebase/users'
+import { UserLink } from '../pages/account'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
@@ -18,7 +18,9 @@ export function ContractDetails(props: { contract: Contract }) {
 
   return (
     <Row className="flex-wrap text-sm text-gray-500">
-      <div className="whitespace-nowrap">By {contract.creatorName}</div>
+      <div className="whitespace-nowrap">
+        <UserLink displayName={contract.creatorName} />
+      </div>
       <div className="mx-2">•</div>
       <div className="whitespace-nowrap">
         {resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}
