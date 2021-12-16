@@ -174,7 +174,7 @@ export function MyBetsSummary(props: {
   return (
     <Row className={clsx('gap-8', className)}>
       <Col>
-        <div className="text-sm text-gray-500">Total bet</div>
+        <div className="text-sm text-gray-500">Total bets</div>
         <div>{formatMoney(betsTotal)}</div>
       </Col>
       {resolution ? (
@@ -188,13 +188,13 @@ export function MyBetsSummary(props: {
         <>
           <Col>
             <div className="text-sm text-gray-500">
-              If <YesLabel />
+              Payout if <YesLabel />
             </div>
             <div>{formatMoney(yesWinnings)}</div>
           </Col>
           <Col>
             <div className="text-sm text-gray-500">
-              If <NoLabel />
+              Payout if <NoLabel />
             </div>
             <div>{formatMoney(noWinnings)}</div>
           </Col>

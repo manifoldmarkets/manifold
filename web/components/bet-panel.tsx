@@ -135,14 +135,16 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
       <div className="mt-3 mb-1 text-sm text-gray-400">Remaining balance</div>
       <div>{formatMoney(remainingBalance > 0 ? remainingBalance : 0)}</div>
 
-      <div className="mt-2 mb-1 text-sm text-gray-400">Implied chance</div>
+      <div className="mt-2 mb-1 text-sm text-gray-400">Implied probability</div>
       <Row>
         <div>{formatPercent(initialProb)}</div>
         <div className="mx-2">→</div>
         <div>{formatPercent(resultProb)}</div>
       </Row>
 
-      <div className="mt-2 mb-1 text-sm text-gray-400">Max payout (estimated)</div>
+      <div className="mt-2 mb-1 text-sm text-gray-400">
+        Max payout (estimated)
+      </div>
       <div>
         {formatMoney(estimatedWinnings)} &nbsp; (+{estimatedReturnPercent})
       </div>
