@@ -13,7 +13,7 @@ export default function NewContract() {
   const creator = useUser()
 
   useEffect(() => {
-    if (!creator) router.push('/')
+    if (creator === null) router.push('/')
   })
 
   const [initialProb, setInitialProb] = useState(50)
