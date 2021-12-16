@@ -8,6 +8,12 @@ import { Col } from '../../components/layout/col'
 import { useUser } from '../../hooks/use-user'
 import { ResolutionPanel } from '../../components/resolution-panel'
 import clsx from 'clsx'
+import { ContractBetsTable, MyBetsSummary } from '../../components/bets-list'
+import { useBets } from '../../hooks/use-bets'
+import { Title } from '../../components/title'
+import { Spacer } from '../../components/layout/spacer'
+import { Contract } from '../../lib/firebase/contracts'
+import { User } from '../../lib/firebase/users'
 
 export default function ContractPage() {
   const user = useUser()
@@ -47,7 +53,7 @@ export default function ContractPage() {
           <>
             <div className="mt-12 md:mt-0 md:ml-8" />
 
-            <Col className="w-full sm:w-auto sm:self-center">
+            <Col className="w-full sm:w-auto">
               <BetPanel contract={contract} />
 
               {isCreator && (
@@ -57,6 +63,34 @@ export default function ContractPage() {
           </>
         )}
       </Col>
+
+      <BetsSection contract={contract} user={user} />
     </Col>
+  )
+}
+
+function BetsSection(props: { contract: Contract; user: User | null }) {
+  const { contract, user } = props
+  const bets = useBets(contract.id)
+
+  if (bets === 'loading' || bets.length === 0) return <></>
+
+  const userBets = user && bets.filter((bet) => bet.userId === user.id)
+
+  return (
+    <div className="p-4">
+      {userBets && userBets.length > 0 && (
+        <>
+          <Title text="My bets" />
+          <MyBetsSummary className="ml-1" contract={contract} bets={userBets} />
+          <Spacer h={6} />
+          <ContractBetsTable contract={contract} bets={userBets} />
+          <Spacer h={6} />
+        </>
+      )}
+
+      <Title text="All bets" />
+      <ContractBetsTable contract={contract} bets={bets} />
+    </div>
   )
 }
