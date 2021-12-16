@@ -90,7 +90,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
   const { resolution } = contract
 
   return (
-    <div className="p-6 bg-white card card-body shadow-xl ">
+    <div className="p-6 bg-white card card-body shadow-xl">
       <Link href={path(contract)}>
         <a>
           <div className="font-medium text-indigo-700 mb-1 hover:underline hover:decoration-indigo-400 hover:decoration-2">
