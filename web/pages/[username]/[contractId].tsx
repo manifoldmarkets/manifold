@@ -44,10 +44,13 @@ export default function ContractPage() {
           isResolved ? 'md:justify-center' : 'md:justify-between'
         )}
       >
-        <ContractOverview
-          contract={contract}
-          className="max-w-4xl w-full p-4"
-        />
+        <div>
+          <ContractOverview
+            contract={contract}
+            className="max-w-4xl w-full p-4"
+          />
+          <BetsSection contract={contract} user={user ?? null} />
+        </div>
 
         {!isResolved && (
           <>
@@ -63,8 +66,6 @@ export default function ContractPage() {
           </>
         )}
       </Col>
-
-      <BetsSection contract={contract} user={user ?? null} />
     </Col>
   )
 }
