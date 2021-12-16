@@ -75,6 +75,9 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
 
   if (bets === 'loading' || bets.length === 0) return <></>
 
+  // Decending creation time.
+  bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
+
   const userBets = user && bets.filter((bet) => bet.userId === user.id)
 
   return (
