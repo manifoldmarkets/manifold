@@ -34,7 +34,7 @@ export function getDpmWeight(
     : (bet * Math.pow(yesPot, 2)) / (Math.pow(noPot, 2) + bet * noPot)
 }
 
-export function calculateWinnings(
+export function calculatePayout(
   contract: Contract,
   bet: Bet,
   outcome: 'YES' | 'NO' | 'CANCEL'
@@ -57,11 +57,16 @@ export function calculateWinnings(
 
   return (1 - fees) * (dpmWeight / dpmWeights[outcome]) * potSize + amount
 }
+export function resolvedPayout(contract: Contract, bet: Bet) {
+  if (contract.resolution)
+    return calculatePayout(contract, bet, contract.resolution)
+  throw new Error('Contract was not resolved')
+}
 
 export function currentValue(contract: Contract, bet: Bet) {
   const prob = getProbability(contract.pot)
-  const yesWinnings = calculateWinnings(contract, bet, 'YES')
-  const noWinnings = calculateWinnings(contract, bet, 'NO')
+  const yesPayout = calculatePayout(contract, bet, 'YES')
+  const noPayout = calculatePayout(contract, bet, 'NO')
 
-  return prob * yesWinnings + (1 - prob) * noWinnings
+  return prob * yesPayout + (1 - prob) * noPayout
 }
