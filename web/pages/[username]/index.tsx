@@ -7,7 +7,8 @@ import Error from 'next/error'
 export default function UserProfile() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
-  const { username } = router.query as { username: string }
+  const atUsername = router.query.username as string | undefined
+  const username = atUsername?.substring(1) || '' // Remove the initial @
   useEffect(() => {
     if (username) {
       getUserByUsername(username).then(setUser)

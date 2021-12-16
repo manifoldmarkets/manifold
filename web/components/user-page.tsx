@@ -11,10 +11,11 @@ import clsx from 'clsx'
 
 export function UserLink(props: { displayName: string; className?: string }) {
   const { displayName, className } = props
+  // Fix this when users can change their own names
   const username = displayName.replace(/\s+/g, '')
 
   return (
-    <Link href={`/${username}`}>
+    <Link href={`/@${username}`}>
       <a
         className={clsx(
           'hover:underline hover:decoration-indigo-400 hover:decoration-2',
