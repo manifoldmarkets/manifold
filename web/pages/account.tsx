@@ -30,5 +30,5 @@ function SignInCard() {
 
 export default function Account() {
   const user = useUser()
-  return user ? <UserPage user={user} /> : <SignInCard />
+  return user ? <UserPage user={user} currentUser={user} /> : <SignInCard />
 }
