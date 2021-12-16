@@ -3,7 +3,12 @@ import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { useEffect, useState } from 'react'
 import { useUser } from '../hooks/use-user'
-import { compute, Contract, listContracts } from '../lib/firebase/contracts'
+import {
+  compute,
+  Contract,
+  listContracts,
+  path,
+} from '../lib/firebase/contracts'
 import { formatMoney } from '../lib/util/format'
 
 export function ContractDetails(props: { contract: Contract }) {
@@ -42,7 +47,7 @@ function ContractCard(props: { contract: Contract }) {
   }[contract.resolution || '']
 
   return (
-    <Link href={`/contract/${contract.id}`}>
+    <Link href={path(contract)}>
       <a>
         <li className="col-span-1 bg-white hover:bg-gray-100 shadow-xl rounded-lg divide-y divide-gray-200">
           <div className="card">
@@ -81,10 +86,7 @@ function ContractCard(props: { contract: Contract }) {
 export function ContractsGrid(props: { contracts: Contract[] }) {
   const { contracts } = props
   return (
-    <ul
-      role="list"
-      className="grid grid-cols-1 gap-6 lg:grid-cols-2"
-    >
+    <ul role="list" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {contracts.map((contract) => (
         <ContractCard contract={contract} key={contract.id} />
       ))}

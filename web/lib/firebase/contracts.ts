@@ -37,6 +37,13 @@ export type Contract = {
   resolution?: 'YES' | 'NO' | 'CANCEL' // Chosen by creator; must be one of outcomes
 }
 
+export function path(contract: Contract) {
+  // For now, derive username from creatorName
+  // Fix this when users can change their own names
+  const username = contract.creatorName.replace(/\s+/g, '')
+  return `/${username}/${contract.id}`
+}
+
 export function compute(contract: Contract) {
   const { pot, seedAmounts, createdTime, resolutionTime, isResolved } = contract
   const volume = pot.YES + pot.NO - seedAmounts.YES - seedAmounts.NO
