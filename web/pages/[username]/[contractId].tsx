@@ -49,7 +49,9 @@ export default function ContractPage({ contract }: { contract: Contract }) {
   if (!contract) return <div />
 
   const { creatorId, isResolved } = contract
-  const isCreator = user?.id === creatorId
+  // const isCreator = user?.id === creatorId
+
+  const isCreator = false
 
   return (
     <>
@@ -91,7 +93,7 @@ export default function ContractPage({ contract }: { contract: Contract }) {
               <Col className="w-full sm:w-auto sm:self-center">
                 <BetPanel contract={contract} />
 
-                {isCreator && (
+                {isCreator && user && (
                   <ResolutionPanel creator={user} contract={contract} />
                 )}
               </Col>
