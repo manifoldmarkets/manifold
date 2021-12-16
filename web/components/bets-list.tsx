@@ -100,7 +100,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
       )}
       onClick={() => setCollapsed((collapsed) => !collapsed)}
     >
-      <Row>
+      <Row className="flex-wrap gap-4">
         <Col className="flex-[2] gap-1">
           <div>
             <Link href={path(contract)}>
@@ -120,7 +120,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
             {resolution && (
               <>
                 <div>•</div>
-                <div>
+                <div className="whitespace-nowrap">
                   Resolved <OutcomeLabel outcome={resolution} />
                 </div>
               </>
@@ -128,20 +128,25 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
           </Row>
         </Col>
 
-        <MyBetsSummary
-          className="flex-1 justify-end"
-          contract={contract}
-          bets={bets}
-        />
+        <Row className="flex-nowrap">
+          <MyBetsSummary
+            className="flex-1 justify-end"
+            contract={contract}
+            bets={bets}
+          />
 
-        {/* Show carrot for collapsing. Hack the positioning. */}
-        <div
-          className="collapse-title p-0 pr-8 relative w-0 h-0 min-h-0"
-          style={{ top: -10, right: -20 }}
-        />
+          {/* Show carrot for collapsing. Hack the positioning. */}
+          <div
+            className="collapse-title p-0 pr-8 relative w-0 h-0 min-h-0"
+            style={{ top: -10, right: -20 }}
+          />
+        </Row>
       </Row>
 
-      <div className="collapse-content" style={{ backgroundColor: 'white' }}>
+      <div
+        className="collapse-content"
+        style={{ backgroundColor: 'white', paddingBottom: 0 }}
+      >
         <Spacer h={8} />
 
         <ContractBetsTable contract={contract} bets={bets} />
@@ -172,31 +177,33 @@ export function MyBetsSummary(props: {
   )
 
   return (
-    <Row className={clsx('gap-8', className)}>
+    <Row className={clsx('gap-6', className)}>
       <Col>
-        <div className="text-sm text-gray-500">Total bets</div>
-        <div>{formatMoney(betsTotal)}</div>
+        <div className="text-sm text-gray-500 whitespace-nowrap">
+          Total bets
+        </div>
+        <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
       </Col>
       {resolution ? (
         <>
           <Col>
             <div className="text-sm text-gray-500">Winnings</div>
-            <div>{formatMoney(betsPayout)}</div>
+            <div className="whitespace-nowrap">{formatMoney(betsPayout)}</div>
           </Col>
         </>
       ) : (
         <>
           <Col>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 whitespace-nowrap">
               Payout if <YesLabel />
             </div>
-            <div>{formatMoney(yesWinnings)}</div>
+            <div className="whitespace-nowrap">{formatMoney(yesWinnings)}</div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 whitespace-nowrap">
               Payout if <NoLabel />
             </div>
-            <div>{formatMoney(noWinnings)}</div>
+            <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
           </Col>
         </>
       )}
