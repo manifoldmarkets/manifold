@@ -16,6 +16,7 @@ import {
   currentValue,
   resolvedPayout,
 } from '../lib/calculation/contract'
+import clsx from 'clsx'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -85,19 +86,6 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
   const { bets, contract } = props
   const { resolution } = contract
 
-  const betsTotal = _.sumBy(bets, (bet) => bet.amount)
-
-  const betsPayout = resolution
-    ? _.sumBy(bets, (bet) => resolvedPayout(contract, bet))
-    : 0
-
-  const yesWinnings = _.sumBy(bets, (bet) =>
-    calculatePayout(contract, bet, 'YES')
-  )
-  const noWinnings = _.sumBy(bets, (bet) =>
-    calculatePayout(contract, bet, 'NO')
-  )
-
   return (
     <div className="px-4">
       <Link href={path(contract)}>
@@ -126,35 +114,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
 
       <Spacer h={6} />
 
-      <Row className="gap-8">
-        <Col>
-          <div className="text-sm text-gray-500">Total bet</div>
-          <div>{formatMoney(betsTotal)}</div>
-        </Col>
-        {resolution ? (
-          <>
-            <Col>
-              <div className="text-sm text-gray-500">Winnings</div>
-              <div>{formatMoney(betsPayout)}</div>
-            </Col>
-          </>
-        ) : (
-          <>
-            <Col>
-              <div className="text-sm text-gray-500">
-                If <YesLabel />
-              </div>
-              <div>{formatMoney(yesWinnings)}</div>
-            </Col>
-            <Col>
-              <div className="text-sm text-gray-500">
-                If <NoLabel />
-              </div>
-              <div>{formatMoney(noWinnings)}</div>
-            </Col>
-          </>
-        )}
-      </Row>
+      <MyBetsSummary contract={contract} bets={bets} />
 
       <Spacer h={6} />
 
@@ -163,7 +123,61 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
   )
 }
 
-function ContractBetsTable(props: { contract: Contract; bets: Bet[] }) {
+export function MyBetsSummary(props: {
+  contract: Contract
+  bets: Bet[]
+  className?: string
+}) {
+  const { bets, contract, className } = props
+  const { resolution } = contract
+
+  const betsTotal = _.sumBy(bets, (bet) => bet.amount)
+
+  const betsPayout = resolution
+    ? _.sumBy(bets, (bet) => resolvedPayout(contract, bet))
+    : 0
+
+  const yesWinnings = _.sumBy(bets, (bet) =>
+    calculatePayout(contract, bet, 'YES')
+  )
+  const noWinnings = _.sumBy(bets, (bet) =>
+    calculatePayout(contract, bet, 'NO')
+  )
+
+  return (
+    <Row className={clsx('gap-8', className)}>
+      <Col>
+        <div className="text-sm text-gray-500">Total bet</div>
+        <div>{formatMoney(betsTotal)}</div>
+      </Col>
+      {resolution ? (
+        <>
+          <Col>
+            <div className="text-sm text-gray-500">Winnings</div>
+            <div>{formatMoney(betsPayout)}</div>
+          </Col>
+        </>
+      ) : (
+        <>
+          <Col>
+            <div className="text-sm text-gray-500">
+              If <YesLabel />
+            </div>
+            <div>{formatMoney(yesWinnings)}</div>
+          </Col>
+          <Col>
+            <div className="text-sm text-gray-500">
+              If <NoLabel />
+            </div>
+            <div>{formatMoney(noWinnings)}</div>
+          </Col>
+        </>
+      )}
+    </Row>
+  )
+}
+
+export function ContractBetsTable(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
 
   const { isResolved } = contract
