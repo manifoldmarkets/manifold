@@ -91,35 +91,38 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
 
   return (
     <div className="p-6 bg-white card card-body shadow-xl">
-      <Link href={path(contract)}>
-        <a>
-          <div className="font-medium text-indigo-700 mb-1 hover:underline hover:decoration-indigo-400 hover:decoration-2">
-            {contract.question}
-          </div>
-        </a>
-      </Link>
+      <Row>
+        <Col className="w-2/3">
+          <Link href={path(contract)}>
+            <a>
+              <div className="font-medium text-indigo-700 mb-1 hover:underline hover:decoration-indigo-400 hover:decoration-2">
+                {contract.question}
+              </div>
+            </a>
+          </Link>
 
-      <Row className="gap-2 text-gray-500 text-sm">
-        <div>
-          <UserLink displayName={contract.creatorName} />
-        </div>
-        {resolution && (
-          <>
-            <div>•</div>
+          <Row className="gap-2 text-gray-500 text-sm">
             <div>
-              Resolved {resolution === 'YES' && <YesLabel />}
-              {resolution === 'NO' && <NoLabel />}
-              {resolution === 'CANCEL' && <CancelLabel />}
+              <UserLink displayName={contract.creatorName} />
             </div>
-          </>
-        )}
+            {resolution && (
+              <>
+                <div>•</div>
+                <div>
+                  Resolved {resolution === 'YES' && <YesLabel />}
+                  {resolution === 'NO' && <NoLabel />}
+                  {resolution === 'CANCEL' && <CancelLabel />}
+                </div>
+              </>
+            )}
+          </Row>
+        </Col>
+
+        {/* Show this at the end of the flex */}
+        <MyBetsSummary contract={contract} bets={bets} className="ml-auto" />
       </Row>
 
-      <Spacer h={6} />
-
-      <MyBetsSummary contract={contract} bets={bets} />
-
-      <Spacer h={6} />
+      <Spacer h={8} />
 
       <ContractBetsTable contract={contract} bets={bets} />
     </div>
