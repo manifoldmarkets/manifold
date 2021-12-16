@@ -1,5 +1,5 @@
 import router from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { ContractsList } from '../components/contracts-list'
 import { Header } from '../components/header'
@@ -11,6 +11,10 @@ import { createContract } from '../lib/service/create-contract'
 // Allow user to create a new contract
 export default function NewContract() {
   const creator = useUser()
+
+  useEffect(() => {
+    if (!creator) router.push('/')
+  })
 
   const [initialProb, setInitialProb] = useState(50)
   const [question, setQuestion] = useState('')
@@ -33,6 +37,8 @@ export default function NewContract() {
   }
 
   const descriptionPlaceholder = `e.g. This market will resolve to “Yes” if, by June 2, 2021, 11:59:59 PM ET, Paxlovid (also known under PF-07321332)...`
+
+  if (!creator) return <></>
 
   return (
     <div>
