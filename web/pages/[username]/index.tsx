@@ -1,18 +1,23 @@
 import { useRouter } from 'next/router'
-import React from 'react'
-import { Header } from '../../components/header'
-import { Col } from '../../components/layout/col'
-import { Title } from '../../components/title'
+import React, { useEffect, useState } from 'react'
+import { getUserByUsername, User } from '../../lib/firebase/users'
+import { UserPage } from '../account'
+import Error from 'next/error'
 
-// For now, render a placeholder page
-export default function ContractPage() {
+export default function UserProfile() {
   const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
   const { username } = router.query as { username: string }
+  useEffect(() => {
+    if (username) {
+      getUserByUsername(username).then(setUser)
+    }
+  }, [username])
 
-  return (
-    <Col className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-      <Header />
-      <Title text={username} />
-    </Col>
+  const errorMessage = `Who is this "${username}" you speak of..`
+  return user ? (
+    <UserPage user={user} />
+  ) : (
+    <Error statusCode={404} title={errorMessage} />
   )
 }

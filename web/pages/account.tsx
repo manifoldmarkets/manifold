@@ -64,29 +64,29 @@ function SignInCard() {
   )
 }
 
-export default function Account() {
-  const user = useUser()
-
+export function UserPage(props: { user: User }) {
+  const { user } = props
   return (
     <div>
       <Header />
       <div className="max-w-4xl pt-8 pb-0 sm:pb-8 mx-auto">
-        {user ? (
-          <div>
-            <UserCard user={user} />
+        <div>
+          <UserCard user={user} />
 
-            <Title className="px-2" text="Your markets" />
-            <ContractsList />
+          <Title className="px-2" text="Your markets" />
+          <ContractsList creator={user} />
 
-            <Spacer h={4} />
+          <Spacer h={4} />
 
-            <Title className="px-2" text="Your bets" />
-            <BetsList user={user} />
-          </div>
-        ) : (
-          <SignInCard />
-        )}
+          <Title className="px-2" text="Your bets" />
+          <BetsList user={user} />
+        </div>
       </div>
     </div>
   )
+}
+
+export default function Account() {
+  const user = useUser()
+  return user ? <UserPage user={user} /> : <SignInCard />
 }
