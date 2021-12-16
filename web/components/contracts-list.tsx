@@ -10,6 +10,7 @@ import {
   path,
 } from '../lib/firebase/contracts'
 import { formatMoney } from '../lib/util/format'
+import { User } from '../lib/firebase/users'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
@@ -95,9 +96,8 @@ export function ContractsGrid(props: { contracts: Contract[] }) {
   )
 }
 
-export function ContractsList(props: {}) {
-  const creator = useUser()
-
+export function ContractsList(props: { creator: User }) {
+  const { creator } = props
   const [contracts, setContracts] = useState<Contract[]>([])
 
   useEffect(() => {

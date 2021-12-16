@@ -5,6 +5,11 @@ import {
   setDoc,
   getDoc,
   onSnapshot,
+  collection,
+  query,
+  where,
+  limit,
+  getDocs,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -33,6 +38,15 @@ export const auth = getAuth(app)
 export async function getUser(userId: string) {
   const docSnap = await getDoc(doc(db, 'users', userId))
   return docSnap.data() as User
+}
+
+export async function getUserByUsername(username: string) {
+  // Find a user whose username matches the given username, or null if no such user exists.
+  const userCollection = collection(db, 'users')
+  const q = query(userCollection, where('username', '==', username), limit(1))
+  const docs = await getDocs(q)
+  const users = docs.docs.map((doc) => doc.data() as User)
+  return users[0] || null
 }
 
 export async function setUser(userId: string, user: User) {
