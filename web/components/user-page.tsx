@@ -8,6 +8,7 @@ import { BetsList } from './bets-list'
 import { Spacer } from './layout/spacer'
 import Link from 'next/link'
 import clsx from 'clsx'
+import { SEO } from './SEO'
 
 export function UserLink(props: { displayName: string; className?: string }) {
   const { displayName, className } = props
@@ -28,8 +29,8 @@ export function UserLink(props: { displayName: string; className?: string }) {
   )
 }
 
-function UserCard(props: { user: User }) {
-  const { user } = props
+function UserCard(props: { user: User; showPrivateInfo?: boolean }) {
+  const { user, showPrivateInfo } = props
   return (
     <Row className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
       <div className="p-4">
@@ -43,41 +44,60 @@ function UserCard(props: { user: User }) {
         )}
       </div>
       <div className="max-w-md card-body">
-        <UserLink
-          displayName={user?.name}
-          className="card-title font-major-mono"
-        />
-        <p>{user?.email}</p>
-        <p>{formatMoney(user?.balance)}</p>
-        <div className="card-actions">
-          <button
-            className="btn glass rounded-full hover:bg-green-500"
-            onClick={firebaseLogout}
-          >
-            Sign Out
-          </button>
-        </div>
+        <div className="card-title font-major-mono">{user.name}</div>
+
+        {showPrivateInfo && (
+          <>
+            <p>{user?.email}</p>
+            <p>{formatMoney(user?.balance)}</p>
+            <div className="card-actions">
+              <button
+                className="btn glass rounded-full hover:bg-green-500"
+                onClick={firebaseLogout}
+              >
+                Sign Out
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </Row>
   )
 }
 
-export function UserPage(props: { user: User }) {
-  const { user } = props
+export function UserPage(props: { user: User; currentUser?: User }) {
+  const { user, currentUser } = props
+
+  const isCurrentUser = user.id === currentUser?.id
+
+  const possesive = isCurrentUser ? 'Your ' : `${user.username}'s `
+
   return (
     <div>
+      <SEO
+        title={possesive + 'markets'}
+        description={possesive + 'markets'}
+        url={`/@${user.username}`}
+      />
+
       <Header />
+
       <div className="max-w-4xl pt-8 pb-0 sm:pb-8 mx-auto">
         <div>
-          <UserCard user={user} />
+          <UserCard user={user} showPrivateInfo={isCurrentUser} />
 
-          <Title text="Your markets" />
+          <Title text={possesive + 'markets'} />
+
           <ContractsList creator={user} />
 
           <Spacer h={4} />
 
-          <Title text="Your bets" />
-          <BetsList user={user} />
+          {isCurrentUser && (
+            <>
+              <Title text={possesive + 'bets'} />
+              <BetsList user={user} />
+            </>
+          )}
         </div>
       </div>
     </div>
