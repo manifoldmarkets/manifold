@@ -64,7 +64,7 @@ export default function ContractPage() {
         )}
       </Col>
 
-      <BetsSection contract={contract} user={user} />
+      <BetsSection contract={contract} user={user ?? null} />
     </Col>
   )
 }
