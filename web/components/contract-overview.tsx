@@ -21,7 +21,7 @@ function ContractDescription(props: {
 }) {
   const { contract, isCreator } = props
   const [editing, setEditing] = useState(false)
-  const editStatement = () => `${dayjs().format('MMM D, H:mma')}: `
+  const editStatement = () => `${dayjs().format('MMM D, h:mma')}: `
   const [description, setDescription] = useState(editStatement())
 
   // Append the new description (after a newline)
@@ -42,7 +42,7 @@ function ContractDescription(props: {
         (editing ? (
           <form className="mt-4">
             <textarea
-              className="textarea h-24 textarea-bordered w-full"
+              className="textarea h-24 textarea-bordered w-full mb-2"
               value={description}
               onChange={(e) => setDescription(e.target.value || '')}
               autoFocus
@@ -53,29 +53,31 @@ function ContractDescription(props: {
                   description.length
                 )
               }
-            ></textarea>
-            <Row className="gap-2">
-              <button
-                className="btn btn-neutral btn-outline btn-sm mt-2"
-                onClick={saveDescription}
-              >
-                Save
-              </button>
+            />
+            <Row className="gap-4 justify-end">
               <button
                 className="btn btn-error btn-outline btn-sm mt-2"
                 onClick={() => setEditing(false)}
               >
                 Cancel
               </button>
+              <button
+                className="btn btn-neutral btn-outline btn-sm mt-2"
+                onClick={saveDescription}
+              >
+                Save
+              </button>
             </Row>
           </form>
         ) : (
-          <button
-            className="btn btn-neutral btn-outline btn-sm mt-4"
-            onClick={() => setEditing(true)}
-          >
-            Add to description
-          </button>
+          <Row className="justify-end">
+            <button
+              className="btn btn-neutral btn-outline btn-sm mt-4"
+              onClick={() => setEditing(true)}
+            >
+              Add to description
+            </button>
+          </Row>
         ))}
     </div>
   )
