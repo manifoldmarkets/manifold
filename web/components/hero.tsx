@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { firebaseLogin } from '../lib/firebase/users'
 import { Header } from './header'
 
@@ -28,6 +29,13 @@ export const Hero = () => {
                     >
                       Sign in to get started!
                     </button>
+                  </div>
+                  <div className="mt-2">
+                    <Link href="/markets">
+                      <a className="text-green-500 text-sm hover:underline hover:decoration-2">
+                        Or explore all markets
+                      </a>
+                    </Link>
                   </div>
                 </div>
               </div>
