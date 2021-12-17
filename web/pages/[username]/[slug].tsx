@@ -13,17 +13,17 @@ import { useBets } from '../../hooks/use-bets'
 import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
 import { User } from '../../lib/firebase/users'
-import { Contract, getContract } from '../../lib/firebase/contracts'
+import { Contract, getContractFromSlug } from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 
 export async function getStaticProps(props: { params: any }) {
-  const { username, contractId } = props.params
-  const contract = (await getContract(contractId)) || null
+  const { username, slug } = props.params
+  const contract = (await getContractFromSlug(slug)) || null
 
   return {
     props: {
       username,
-      contractId,
+      slug,
       contract,
     },
 
@@ -37,12 +37,12 @@ export async function getStaticPaths() {
 
 export default function ContractPage(props: {
   contract: Contract | null
-  contractId: string
+  slug: string
   username: string
 }) {
   const user = useUser()
 
-  const contract = useContractWithPreload(props.contractId, props.contract)
+  const contract = useContractWithPreload(props.slug, props.contract)
 
   if (!contract) {
     return <div>Contract not found...</div>
@@ -56,7 +56,7 @@ export default function ContractPage(props: {
       <SEO
         title={contract.question}
         description={contract.description}
-        url={`/${props.username}/${props.contractId}`}
+        url={`/${props.username}/${props.slug}`}
       />
 
       <Header />

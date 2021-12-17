@@ -1,5 +1,7 @@
 export type Contract = {
-  id: string // Chosen by creator; must be unique
+  id: string
+  slug: string // auto-generated; must be unique
+
   creatorId: string
   creatorName: string
 

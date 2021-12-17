@@ -16,7 +16,9 @@ import {
 import dayjs from 'dayjs'
 
 export type Contract = {
-  id: string // Chosen by creator; must be unique
+  id: string
+  slug: string // auto-generated; must be unique
+
   creatorId: string
   creatorName: string
 
@@ -42,7 +44,7 @@ export function path(contract: Contract) {
   // For now, derive username from creatorName
   // Fix this when users can change their own names
   const username = contract.creatorName.replace(/\s+/g, '')
-  return `/${username}/${contract.id}`
+  return `/${username}/${contract.slug}`
 }
 
 export function compute(contract: Contract) {
@@ -66,11 +68,26 @@ export async function setContract(contract: Contract) {
   await setDoc(docRef, contract)
 }
 
-export async function getContract(contractId: string) {
+export async function pushNewContract(contract: Omit<Contract, 'id'>) {
+  const newContractRef = doc(contractCollection)
+  const fullContract: Contract = { ...contract, id: newContractRef.id }
+
+  await setDoc(newContractRef, fullContract)
+  return fullContract
+}
+
+export async function getContractFromId(contractId: string) {
   const docRef = doc(db, 'contracts', contractId)
   const result = await getDoc(docRef)
 
   return result.exists() ? (result.data() as Contract) : undefined
+}
+
+export async function getContractFromSlug(slug: string) {
+  const q = query(contractCollection, where('slug', '==', slug))
+  const snapshot = await getDocs(q)
+
+  return snapshot.empty ? undefined : (snapshot.docs[0].data() as Contract)
 }
 
 export async function deleteContract(contractId: string) {

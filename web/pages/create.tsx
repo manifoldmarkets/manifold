@@ -6,6 +6,7 @@ import { Header } from '../components/header'
 import { Spacer } from '../components/layout/spacer'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
+import { path } from '../lib/firebase/contracts'
 import { createContract } from '../lib/service/create-contract'
 
 // Allow user to create a new contract
@@ -33,7 +34,7 @@ export default function NewContract() {
       initialProb,
       creator
     )
-    await router.push(`contract/${contract.id}`)
+    await router.push(path(contract))
   }
 
   const descriptionPlaceholder = `e.g. This market will resolve to “Yes” if, by June 2, 2021, 11:59:59 PM ET, Paxlovid (also known under PF-07321332)...`
