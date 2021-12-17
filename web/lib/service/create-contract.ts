@@ -1,4 +1,9 @@
-import { Contract, getContract, setContract } from '../firebase/contracts'
+import {
+  Contract,
+  getContractFromSlug,
+  pushNewContract,
+  setContract,
+} from '../firebase/contracts'
 import { User } from '../firebase/users'
 import { randomString } from '../util/random-string'
 import { slugify } from '../util/slugify'
@@ -10,16 +15,18 @@ export async function createContract(
   initialProb: number,
   creator: User
 ) {
-  const slug = slugify(question).substr(0, 35)
+  const proposedSlug = slugify(question).substring(0, 35)
 
-  const preexistingContract = await getContract(slug)
+  const preexistingContract = await getContractFromSlug(proposedSlug)
 
-  const contractId = preexistingContract ? slug + '-' + randomString() : slug
+  const slug = preexistingContract
+    ? proposedSlug + '-' + randomString()
+    : proposedSlug
 
   const { startYes, startNo } = calcStartPool(initialProb)
 
-  const contract: Contract = {
-    id: contractId,
+  const contract: Omit<Contract, 'id'> = {
+    slug,
     outcomeType: 'BINARY',
 
     creatorId: creator.id,
@@ -38,9 +45,7 @@ export async function createContract(
     lastUpdatedTime: Date.now(),
   }
 
-  await setContract(contract)
-
-  return contract
+  return await pushNewContract(contract)
 }
 
 export function calcStartPool(initialProb: number, initialCapital = 100) {

@@ -8,7 +8,7 @@ import { User } from '../lib/firebase/users'
 import { formatMoney, formatPercent } from '../lib/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
-import { Contract, getContract, path } from '../lib/firebase/contracts'
+import { Contract, getContractFromId, path } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import {
@@ -29,9 +29,11 @@ export function BetsList(props: { user: User }) {
     const contractIds = _.uniq(loadedBets.map((bet) => bet.contractId))
 
     let disposed = false
-    Promise.all(contractIds.map((id) => getContract(id))).then((contracts) => {
-      if (!disposed) setContracts(contracts.filter(Boolean) as Contract[])
-    })
+    Promise.all(contractIds.map((id) => getContractFromId(id))).then(
+      (contracts) => {
+        if (!disposed) setContracts(contracts.filter(Boolean) as Contract[])
+      }
+    )
 
     return () => {
       disposed = true
