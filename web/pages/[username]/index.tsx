@@ -8,11 +8,8 @@ import { useUser } from '../../hooks/use-user'
 
 export default function UserProfile() {
   const router = useRouter()
-  const atUsername = router.query.username as string | undefined
-  const username = atUsername?.substring(1) || '' // Remove the initial @
-
   const [user, setUser] = useState<User | null | 'loading'>('loading')
-
+  const { username } = router.query as { username: string }
   useEffect(() => {
     if (username) {
       getUserByUsername(username).then(setUser)
