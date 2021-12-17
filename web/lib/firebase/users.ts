@@ -61,43 +61,40 @@ export function listenForUser(userId: string, setUser: (user: User) => void) {
 }
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
-export function listenForLogin(onUser: (_user: User | null) => void) {
-  return onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      let fetchedUser = await getUser(user.uid)
-      if (!fetchedUser) {
+export function listenForLogin(onUser: (user: User | null) => void) {
+  const cachedUser = localStorage.getItem(CACHED_USER_KEY)
+  onUser(cachedUser ? JSON.parse(cachedUser) : null)
+
+  return onAuthStateChanged(auth, async (fbUser) => {
+    if (fbUser) {
+      let user = await getUser(fbUser.uid)
+      if (!user) {
         // User just created an account; save them to our database.
-        fetchedUser = {
-          id: user.uid,
-          name: user.displayName || 'Default Name',
-          username: user.displayName?.replace(/\s+/g, '') || 'DefaultUsername',
-          avatarUrl: user.photoURL || '',
-          email: user.email || 'default@blah.com',
+        user = {
+          id: fbUser.uid,
+          name: fbUser.displayName || 'Default Name',
+          username:
+            fbUser.displayName?.replace(/\s+/g, '') || 'DefaultUsername',
+          avatarUrl: fbUser.photoURL || '',
+          email: fbUser.email || 'default@blah.com',
           balance: STARTING_BALANCE,
           // TODO: use Firestore timestamp?
           createdTime: Date.now(),
           lastUpdatedTime: Date.now(),
         }
-        await setUser(user.uid, fetchedUser)
+        await setUser(fbUser.uid, user)
       }
-      onUser(fetchedUser)
+      onUser(user)
 
       // Persist to local storage, to reduce login blink next time.
       // Note: Cap on localStorage size is ~5mb
-      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(fetchedUser))
+      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(user))
     } else {
       // User logged out; reset to null
       onUser(null)
       localStorage.removeItem(CACHED_USER_KEY)
     }
   })
-}
-
-export function getCachedUser() {
-  if (typeof window !== 'undefined') {
-    const cachedUser = localStorage.getItem(CACHED_USER_KEY)
-    return cachedUser ? (JSON.parse(cachedUser) as User) : undefined
-  }
 }
 
 export async function firebaseLogin() {
