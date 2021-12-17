@@ -44,7 +44,8 @@ export function BetsList(props: { user: User }) {
     return <></>
   }
 
-  if (bets.length === 0) return <div>You have not made any bets yet!</div>
+  if (bets.length === 0)
+    return <div className="text-gray-500">You have not made any bets yet!</div>
 
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
