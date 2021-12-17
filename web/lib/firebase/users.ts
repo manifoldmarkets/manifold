@@ -62,12 +62,6 @@ export function listenForUser(userId: string, setUser: (user: User) => void) {
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
 export function listenForLogin(onUser: (_user: User | null) => void) {
-  // Immediately load any persisted user object from browser cache.
-  const cachedUser = localStorage.getItem(CACHED_USER_KEY)
-  if (cachedUser) {
-    onUser(JSON.parse(cachedUser))
-  }
-
   return onAuthStateChanged(auth, async (user) => {
     if (user) {
       let fetchedUser = await getUser(user.uid)
@@ -97,6 +91,13 @@ export function listenForLogin(onUser: (_user: User | null) => void) {
       localStorage.removeItem(CACHED_USER_KEY)
     }
   })
+}
+
+export function getCachedUser() {
+  if (typeof window !== 'undefined') {
+    const cachedUser = localStorage.getItem(CACHED_USER_KEY)
+    return cachedUser ? (JSON.parse(cachedUser) as User) : undefined
+  }
 }
 
 export async function firebaseLogin() {
