@@ -1,11 +1,20 @@
-import Link from 'next/link'
 import { firebaseLogin } from '../lib/firebase/users'
 import { Header } from './header'
 
 export const Hero = () => {
   return (
     <div className="relative overflow-hidden h-screen bg-world-trading bg-cover bg-gray-900 bg-center lg:bg-left">
-      <Header darkBackground />
+      <Header darkBackground>
+        <div
+          className="text-base font-medium text-white cursor-pointer hover:underline hover:decoration-teal-500 hover:decoration-2"
+          onClick={() => {
+            const aboutElem = document.getElementById('about')
+            window.scrollTo({ top: aboutElem?.offsetTop, behavior: 'smooth' })
+          }}
+        >
+          About
+        </div>
+      </Header>
       <main>
         <div className="pt-40 sm:pt-16 lg:pt-8 lg:pb-14 lg:overflow-hidden">
           <div className="mx-auto max-w-7xl lg:px-8">

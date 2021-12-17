@@ -3,11 +3,11 @@ import Link from 'next/link'
 
 import { useUser } from '../hooks/use-user'
 
-const navigation = [
-  {
-    name: 'About',
-    href: 'https://mantic.notion.site/About-Mantic-Markets-7c44bc161356474cad54cba2d2973fe2',
-  },
+const navigation: any[] = [
+  // {
+  //   name: 'About',
+  //   href: 'https://mantic.notion.site/About-Mantic-Markets-7c44bc161356474cad54cba2d2973fe2',
+  // },
 ]
 
 const hoverClasses =
@@ -43,8 +43,8 @@ function SignInLink(props: { darkBackground?: boolean }) {
   )
 }
 
-export function Header(props: { darkBackground?: boolean }) {
-  const { darkBackground } = props
+export function Header(props: { darkBackground?: boolean; children?: any }) {
+  const { darkBackground, children } = props
 
   return (
     <div className="pt-6">
@@ -81,13 +81,15 @@ export function Header(props: { darkBackground?: boolean }) {
                   target="_blank"
                   className={clsx(
                     'text-base font-medium ' + hoverClasses,
-                    darkBackground ? 'text-white' : ''
+                    darkBackground ? 'text-white hover:decoration-teal-500' : ''
                   )}
                 >
                   {item.name}
                 </a>
               </Link>
             ))}
+
+            {children}
 
             <SignInLink darkBackground={darkBackground} />
           </div>
