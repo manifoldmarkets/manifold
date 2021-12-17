@@ -48,7 +48,7 @@ export async function createContract(
   return await pushNewContract(contract)
 }
 
-export function calcStartPool(initialProb: number, initialCapital = 100) {
+export function calcStartPool(initialProb: number, initialCapital = 200) {
   const p = initialProb / 100.0
 
   const startYes =
