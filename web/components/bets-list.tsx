@@ -96,7 +96,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
       tabIndex={0}
       className={clsx(
         'p-6 bg-white card card-body shadow-xl collapse collapse-arrow cursor-pointer',
-        collapsed ? 'collapse-close' : 'collapse-open'
+        collapsed ? 'collapse-close' : 'collapse-open pb-2'
       )}
       onClick={() => setCollapsed((collapsed) => !collapsed)}
     >
@@ -143,10 +143,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
         </Row>
       </Row>
 
-      <div
-        className="collapse-content"
-        style={{ backgroundColor: 'white', paddingBottom: 0 }}
-      >
+      <div className="collapse-content" style={{ backgroundColor: 'white' }}>
         <Spacer h={8} />
 
         <ContractBetsTable contract={contract} bets={bets} />
