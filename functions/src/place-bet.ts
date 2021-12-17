@@ -43,7 +43,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
-      const { newBet, newPot, newDpmWeights, newBalance } = getNewBetInfo(
+      const { newBet, newPool, newDpmWeights, newBalance } = getNewBetInfo(
         user,
         outcome,
         amount,
@@ -52,7 +52,10 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       )
 
       transaction.create(newBetDoc, newBet)
-      transaction.update(contractDoc, { pot: newPot, dpmWeights: newDpmWeights })
+      transaction.update(contractDoc, {
+        pool: newPool,
+        dpmWeights: newDpmWeights,
+      })
       transaction.update(userDoc, { balance: newBalance })
 
       return { status: 'success' }
@@ -69,35 +72,37 @@ const getNewBetInfo = (
   contract: Contract,
   newBetId: string
 ) => {
-  const { YES: yesPot, NO: noPot } = contract.pot
+  const { YES: yesPool, NO: noPool } = contract.pool
 
-  const newPot =
+  const newPool =
     outcome === 'YES'
-      ? { YES: yesPot + amount, NO: noPot }
-      : { YES: yesPot, NO: noPot + amount }
+      ? { YES: yesPool + amount, NO: noPool }
+      : { YES: yesPool, NO: noPool + amount }
 
   const dpmWeight =
     outcome === 'YES'
-      ? (amount * noPot ** 2) / (yesPot ** 2 + amount * yesPot)
-      : (amount * yesPot ** 2) / (noPot ** 2 + amount * noPot)
+      ? (amount * noPool ** 2) / (yesPool ** 2 + amount * yesPool)
+      : (amount * yesPool ** 2) / (noPool ** 2 + amount * noPool)
 
-  const { YES: yesWeight, NO: noWeight } = contract.dpmWeights
-    || { YES: 0, NO: 0 } // only nesc for old contracts
+  const { YES: yesWeight, NO: noWeight } = contract.dpmWeights || {
+    YES: 0,
+    NO: 0,
+  } // only nesc for old contracts
 
   const newDpmWeights =
     outcome === 'YES'
       ? { YES: yesWeight + dpmWeight, NO: noWeight }
       : { YES: yesWeight, NO: noWeight + dpmWeight }
 
-  const probBefore = yesPot ** 2 / (yesPot ** 2 + noPot ** 2)
+  const probBefore = yesPool ** 2 / (yesPool ** 2 + noPool ** 2)
 
   const probAverage =
     (amount +
-      noPot * Math.atan(yesPot / noPot) -
-      noPot * Math.atan((amount + yesPot) / noPot)) /
+      noPool * Math.atan(yesPool / noPool) -
+      noPool * Math.atan((amount + yesPool) / noPool)) /
     amount
 
-  const probAfter = newPot.YES ** 2 / (newPot.YES ** 2 + newPot.NO ** 2)
+  const probAfter = newPool.YES ** 2 / (newPool.YES ** 2 + newPool.NO ** 2)
 
   const newBet: Bet = {
     id: newBetId,
@@ -114,5 +119,5 @@ const getNewBetInfo = (
 
   const newBalance = user.balance - amount
 
-  return { newBet, newPot, newDpmWeights, newBalance }
+  return { newBet, newPool, newDpmWeights, newBalance }
 }

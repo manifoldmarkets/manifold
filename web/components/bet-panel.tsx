@@ -77,13 +77,13 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getProbability(contract.pot)
+  const initialProb = getProbability(contract.pool)
   const resultProb = getProbabilityAfterBet(
-    contract.pot,
+    contract.pool,
     betChoice,
     betAmount ?? 0
   )
-  const dpmWeight = getDpmWeight(contract.pot, betAmount ?? 0, betChoice)
+  const dpmWeight = getDpmWeight(contract.pool, betAmount ?? 0, betChoice)
 
   const estimatedWinnings = Math.floor((betAmount ?? 0) + dpmWeight)
   const estimatedReturn = betAmount

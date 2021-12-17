@@ -3,35 +3,35 @@ import { Contract } from '../firebase/contracts'
 
 const fees = 0.02
 
-export function getProbability(pot: { YES: number; NO: number }) {
-  const [yesPot, noPot] = [pot.YES, pot.NO]
-  const numerator = Math.pow(yesPot, 2)
-  const denominator = Math.pow(yesPot, 2) + Math.pow(noPot, 2)
+export function getProbability(pool: { YES: number; NO: number }) {
+  const [yesPool, noPool] = [pool.YES, pool.NO]
+  const numerator = Math.pow(yesPool, 2)
+  const denominator = Math.pow(yesPool, 2) + Math.pow(noPool, 2)
   return numerator / denominator
 }
 
 export function getProbabilityAfterBet(
-  pot: { YES: number; NO: number },
+  pool: { YES: number; NO: number },
   outcome: 'YES' | 'NO',
   bet: number
 ) {
   const [YES, NO] = [
-    pot.YES + (outcome === 'YES' ? bet : 0),
-    pot.NO + (outcome === 'NO' ? bet : 0),
+    pool.YES + (outcome === 'YES' ? bet : 0),
+    pool.NO + (outcome === 'NO' ? bet : 0),
   ]
   return getProbability({ YES, NO })
 }
 
 export function getDpmWeight(
-  pot: { YES: number; NO: number },
+  pool: { YES: number; NO: number },
   bet: number,
   betChoice: 'YES' | 'NO'
 ) {
-  const [yesPot, noPot] = [pot.YES, pot.NO]
+  const [yesPool, noPool] = [pool.YES, pool.NO]
 
   return betChoice === 'YES'
-    ? (bet * Math.pow(noPot, 2)) / (Math.pow(yesPot, 2) + bet * yesPot)
-    : (bet * Math.pow(yesPot, 2)) / (Math.pow(noPot, 2) + bet * noPot)
+    ? (bet * Math.pow(noPool, 2)) / (Math.pow(yesPool, 2) + bet * yesPool)
+    : (bet * Math.pow(yesPool, 2)) / (Math.pow(noPool, 2) + bet * noPool)
 }
 
 export function calculatePayout(
@@ -44,18 +44,18 @@ export function calculatePayout(
   if (outcome === 'CANCEL') return amount
   if (betOutcome !== outcome) return 0
 
-  let { dpmWeights, pot, seedAmounts } = contract
+  let { dpmWeights, pool, startPool } = contract
 
   // Fake data if not set.
   if (!dpmWeights) dpmWeights = { YES: 100, NO: 100 }
 
   // Fake data if not set.
-  if (!pot) pot = { YES: 100, NO: 100 }
+  if (!pool) pool = { YES: 100, NO: 100 }
 
   const otherOutcome = outcome === 'YES' ? 'NO' : 'YES'
-  const potSize = pot[otherOutcome] - seedAmounts[otherOutcome]
+  const poolSize = pool[otherOutcome] - startPool[otherOutcome]
 
-  return (1 - fees) * (dpmWeight / dpmWeights[outcome]) * potSize + amount
+  return (1 - fees) * (dpmWeight / dpmWeights[outcome]) * poolSize + amount
 }
 export function resolvedPayout(contract: Contract, bet: Bet) {
   if (contract.resolution)
@@ -64,7 +64,7 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
 }
 
 export function currentValue(contract: Contract, bet: Bet) {
-  const prob = getProbability(contract.pot)
+  const prob = getProbability(contract.pool)
   const yesPayout = calculatePayout(contract, bet, 'YES')
   const noPayout = calculatePayout(contract, bet, 'NO')
 
