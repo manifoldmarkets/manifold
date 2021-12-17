@@ -7,19 +7,19 @@ import { Contract } from '../lib/firebase/contracts'
 
 export function ContractProbGraph(props: { contract: Contract }) {
   const { contract } = props
-  const { id, seedAmounts, resolutionTime } = contract
+  const { id, startPool, resolutionTime } = contract
 
   let bets = useBets(id)
   if (bets === 'loading') bets = []
 
-  const seedProb =
-    seedAmounts.YES ** 2 / (seedAmounts.YES ** 2 + seedAmounts.NO ** 2)
+  const startProb =
+    startPool.YES ** 2 / (startPool.YES ** 2 + startPool.NO ** 2)
 
   const times = [
     contract.createdTime,
     ...bets.map((bet) => bet.createdTime),
   ].map((time) => new Date(time))
-  const probs = [seedProb, ...bets.map((bet) => bet.probAfter)]
+  const probs = [startProb, ...bets.map((bet) => bet.probAfter)]
 
   const latestTime = dayjs(resolutionTime ? resolutionTime : Date.now())
 

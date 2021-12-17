@@ -16,7 +16,7 @@ export async function createContract(
 
   const contractId = preexistingContract ? slug + '-' + randomString() : slug
 
-  const { seedYes, seedNo } = calcSeedBets(initialProb)
+  const { startYes, startNo } = calcStartPool(initialProb)
 
   const contract: Contract = {
     id: contractId,
@@ -28,8 +28,8 @@ export async function createContract(
     question: question.trim(),
     description: description.trim(),
 
-    seedAmounts: { YES: seedYes, NO: seedNo },
-    pot: { YES: seedYes, NO: seedNo },
+    startPool: { YES: startYes, NO: startNo },
+    pool: { YES: startYes, NO: startNo },
     dpmWeights: { YES: 0, NO: 0 },
     isResolved: false,
 
@@ -43,15 +43,15 @@ export async function createContract(
   return contract
 }
 
-export function calcSeedBets(initialProb: number, initialCapital = 100) {
+export function calcStartPool(initialProb: number, initialCapital = 100) {
   const p = initialProb / 100.0
 
-  const seedYes =
+  const startYes =
     p === 0.5
       ? p * initialCapital
       : -(initialCapital * (-p + Math.sqrt((-1 + p) * -p))) / (-1 + 2 * p)
 
-  const seedNo = initialCapital - seedYes
+  const startNo = initialCapital - startYes
 
-  return { seedYes, seedNo }
+  return { startYes, startNo }
 }

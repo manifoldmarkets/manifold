@@ -24,8 +24,9 @@ export type Contract = {
   description: string // More info about what the contract is about
   outcomeType: 'BINARY' // | 'MULTI' | 'interval' | 'date'
   // outcomes: ['YES', 'NO']
-  seedAmounts: { YES: number; NO: number } // seedBets: [number, number]
-  pot: { YES: number; NO: number }
+
+  startPool: { YES: number; NO: number }
+  pool: { YES: number; NO: number }
   dpmWeights: { YES: number; NO: number }
 
   createdTime: number // Milliseconds since epoch
@@ -33,7 +34,7 @@ export type Contract = {
   closeTime?: number // When no more trading is allowed
 
   isResolved: boolean
-  resolutionTime?: number // When the contract creator resolved the market; 0 if unresolved
+  resolutionTime?: number // When the contract creator resolved the market
   resolution?: 'YES' | 'NO' | 'CANCEL' // Chosen by creator; must be one of outcomes
 }
 
@@ -45,9 +46,9 @@ export function path(contract: Contract) {
 }
 
 export function compute(contract: Contract) {
-  const { pot, seedAmounts, createdTime, resolutionTime, isResolved } = contract
-  const volume = pot.YES + pot.NO - seedAmounts.YES - seedAmounts.NO
-  const prob = pot.YES ** 2 / (pot.YES ** 2 + pot.NO ** 2)
+  const { pool, startPool, createdTime, resolutionTime, isResolved } = contract
+  const volume = pool.YES + pool.NO - startPool.YES - startPool.NO
+  const prob = pool.YES ** 2 / (pool.YES ** 2 + pool.NO ** 2)
   const probPercent = Math.round(prob * 100) + '%'
   const createdDate = dayjs(createdTime).format('MMM D')
   const resolvedDate = isResolved
