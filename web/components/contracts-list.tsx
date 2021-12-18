@@ -21,7 +21,7 @@ export function ContractDetails(props: { contract: Contract }) {
   return (
     <Row className="flex-wrap text-sm text-gray-500">
       <div className="whitespace-nowrap">
-        <UserLink displayName={contract.creatorName} />
+        <UserLink username={contract.creatorUsername} />
       </div>
       <div className="mx-2">•</div>
       <div className="whitespace-nowrap">
