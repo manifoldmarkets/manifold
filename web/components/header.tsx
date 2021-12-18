@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import Image from 'next/Image'
+import Image from 'next/image'
 
 import { useUser } from '../hooks/use-user'
 import { formatMoney } from '../lib/util/format'
