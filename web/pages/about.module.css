@@ -1,0 +1,64 @@
+.div {
+  /* Tailwind Gray 700 */
+  color: #334155;
+  font-size: 1.1em;
+}
+
+.h1,
+.h2,
+.h3 {
+  color: #4338ca;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-family: 'Major Mono Display', monospace;
+}
+
+.h1 {
+  font-size: 3rem;
+}
+
+.h2 {
+  font-size: 2rem;
+}
+
+.h3 {
+  font-size: 1.5rem;
+}
+
+.p {
+  margin-bottom: 0.75rem;
+}
+
+.a {
+  /* Tailwind Indigo 700 */
+  color: #4338ca;
+}
+
+.a:hover {
+  text-decoration: solid underline #4338ca 2px;
+}
+
+.aside {
+  border-radius: 0.5rem;
+  /* Tailwind Slate 200 */
+  background-color: #e2e8f0;
+  padding: 1.5rem;
+}
+
+.hr {
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ul {
+  list-style-type: disc;
+}
+
+.ol {
+  list-style-type: decimal;
+}
+
+.li {
+  margin-left: 2rem;
+  margin-bottom: 0.5rem;
+}
