@@ -16,8 +16,7 @@ export default function BetsPage() {
       <div className="max-w-4xl pt-8 pb-0 sm:pb-8 mx-auto">
         <div>
           <Title text="Your bets" />
-
-          <BetsList user={user} />
+          {user && <BetsList user={user} />}
         </div>
       </div>
     </div>
