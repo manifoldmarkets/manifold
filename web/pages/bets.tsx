@@ -2,10 +2,10 @@ import { BetsList } from '../components/bets-list'
 import { Header } from '../components/header'
 import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
-import { User } from '../lib/firebase/users'
+import { useUser } from '../hooks/use-user'
 
-export default function BetsPage(props: { user: User; currentUser?: User }) {
-  const { user } = props
+export default function BetsPage() {
+  const user = useUser()
 
   return (
     <div>

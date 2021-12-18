@@ -74,7 +74,7 @@ export function BetsList(props: { user: User }) {
   )
 
   return (
-    <Col className="mt-6 gap-10">
+    <Col className="mt-6 gap-6">
       <Row className="gap-8">
         <Col>
           <div className="text-sm text-gray-500">Active bets</div>
