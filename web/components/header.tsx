@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useUser } from '../hooks/use-user'
 import { formatMoney } from '../lib/util/format'
 import { Row } from './layout/row'
-import { User } from '../lib/firebase/users'
+import { firebaseLogin, User } from '../lib/firebase/users'
 
 const hoverClasses =
   'hover:underline hover:decoration-indigo-400 hover:decoration-2'
@@ -49,7 +49,12 @@ function SignedOutHeaders(props: { themeClasses?: string }) {
 
   return (
     <>
-      <div className={clsx('text-base font-medium', themeClasses)}>Sign in</div>
+      <div
+        className={clsx('text-base font-medium cursor-pointer', themeClasses)}
+        onClick={firebaseLogin}
+      >
+        Sign in
+      </div>
     </>
   )
 }
