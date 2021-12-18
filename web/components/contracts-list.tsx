@@ -108,9 +108,12 @@ export function SearchableGrid(props: {
   function check(corpus: String) {
     return corpus.toLowerCase().includes(query.toLowerCase())
   }
-  // TODO: Search through @username
   let matches = contracts.filter(
-    (c) => check(c.question) || check(c.description) || check(c.creatorName)
+    (c) =>
+      check(c.question) ||
+      check(c.description) ||
+      check(c.creatorName) ||
+      check(c.creatorUsername)
   )
 
   if (sort === 'createdTime' || sort === 'resolved' || sort === 'all') {
