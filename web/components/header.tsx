@@ -69,14 +69,14 @@ export function Header(props: { darkBackground?: boolean; children?: any }) {
       <Link href="/">
         <a className="flex flex-row gap-3">
           <Image
-            className="h-6 w-6 sm:h-10 sm:w-10 hover:rotate-12 transition-all"
+            className="sm:h-10 sm:w-10 hover:rotate-12 transition-all"
             src="/logo-icon.svg"
             width={40}
             height={40}
           />
           <div
             className={clsx(
-              'font-major-mono lowercase mt-1 sm:text-2xl',
+              'font-major-mono lowercase mt-1 hidden sm:block sm:text-2xl',
               darkBackground && 'text-white'
             )}
           >

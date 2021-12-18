@@ -89,15 +89,6 @@ export function UserPage(props: { user: User; currentUser?: User }) {
           <Title text={possesive + 'markets'} />
 
           <ContractsList creator={user} />
-
-          <Spacer h={4} />
-
-          {isCurrentUser && (
-            <>
-              <Title text={possesive + 'bets'} />
-              <BetsList user={user} />
-            </>
-          )}
         </div>
       </div>
     </div>
