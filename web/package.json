@@ -10,6 +10,7 @@
     "prepare": "cd .. && husky install web/.husky"
   },
   "dependencies": {
+    "@headlessui/react": "^1.4.2",
     "@heroicons/react": "^1.0.5",
     "@nivo/core": "0.74.0",
     "@nivo/line": "0.74.0",
