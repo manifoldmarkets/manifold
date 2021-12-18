@@ -4,15 +4,12 @@ import { ContractsList } from './contracts-list'
 import { Title } from './title'
 import { Row } from './layout/row'
 import { formatMoney } from '../lib/util/format'
-import { BetsList } from './bets-list'
-import { Spacer } from './layout/spacer'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { SEO } from './SEO'
 
-export function UserLink(props: { displayName: string; className?: string }) {
-  const { displayName, className } = props
-  const username = displayName.replace(/\s+/g, '')
+export function UserLink(props: { username: string; className?: string }) {
+  const { username, className } = props
 
   return (
     <Link href={`/${username}`}>

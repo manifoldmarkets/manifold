@@ -31,6 +31,7 @@ export async function createContract(
 
     creatorId: creator.id,
     creatorName: creator.name,
+    creatorUsername: creator.username,
 
     question: question.trim(),
     description: description.trim(),

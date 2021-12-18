@@ -21,6 +21,7 @@ export type Contract = {
 
   creatorId: string
   creatorName: string
+  creatorUsername: string
 
   question: string
   description: string // More info about what the contract is about
@@ -42,9 +43,7 @@ export type Contract = {
 
 export function path(contract: Contract) {
   // For now, derive username from creatorName
-  // Fix this when users can change their own names
-  const username = contract.creatorName.replace(/\s+/g, '')
-  return `/${username}/${contract.slug}`
+  return `/${contract.creatorUsername}/${contract.slug}`
 }
 
 export function compute(contract: Contract) {
