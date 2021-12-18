@@ -1,5 +1,7 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-cd web
-npx lint-staged
+npx pretty-quick --staged
+# Disable tsc lint for now, cuz it's been annoying
+# cd web
+# npx lint-staged
