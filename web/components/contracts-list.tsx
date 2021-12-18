@@ -86,6 +86,20 @@ function ContractsGrid(props: { contracts: Contract[] }) {
   )
   const contracts = [...activeContracts, ...resolvedContracts]
 
+  if (contracts.length === 0) {
+    return (
+      <p>
+        No markets found. Would you like to{' '}
+        <Link href="/create">
+          <a className="text-green-500 hover:underline hover:decoration-2">
+            create one
+          </a>
+        </Link>
+        ?
+      </p>
+    )
+  }
+
   return (
     <ul role="list" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {contracts.map((contract) => (

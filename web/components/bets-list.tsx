@@ -45,7 +45,16 @@ export function BetsList(props: { user: User }) {
   }
 
   if (bets.length === 0)
-    return <div className="text-gray-500">You have not made any bets yet!</div>
+    return (
+      <div>
+        You have not made any bets yet.{' '}
+        <Link href="/">
+          <a className="text-green-500 hover:underline hover:decoration-2">
+            Find a prediction market!
+          </a>
+        </Link>
+      </div>
+    )
 
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
