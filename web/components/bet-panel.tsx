@@ -15,6 +15,7 @@ import {
   getDpmWeight,
   getProbabilityAfterBet,
 } from '../lib/calculation/contract'
+import { firebaseLogin } from '../lib/firebase/users'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -132,8 +133,14 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         )}
       </Col>
 
-      <div className="mt-3 mb-1 text-sm text-gray-400">Remaining balance</div>
-      <div>{formatMoney(remainingBalance > 0 ? remainingBalance : 0)}</div>
+      {user && (
+        <>
+          <div className="mt-3 mb-1 text-sm text-gray-400">
+            Remaining balance
+          </div>
+          <div>{formatMoney(remainingBalance > 0 ? remainingBalance : 0)}</div>
+        </>
+      )}
 
       <div className="mt-2 mb-1 text-sm text-gray-400">Implied probability</div>
       <Row>
@@ -151,20 +158,29 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
       <Spacer h={6} />
 
-      <button
-        className={clsx(
-          'btn',
-          betDisabled
-            ? 'btn-disabled'
-            : betChoice === 'YES'
-            ? 'btn-primary'
-            : 'bg-red-400 hover:bg-red-500 border-none',
-          isSubmitting ? 'loading' : ''
-        )}
-        onClick={betDisabled ? undefined : submitBet}
-      >
-        {isSubmitting ? 'Submitting...' : 'Place bet'}
-      </button>
+      {user ? (
+        <button
+          className={clsx(
+            'btn',
+            betDisabled
+              ? 'btn-disabled'
+              : betChoice === 'YES'
+              ? 'btn-primary'
+              : 'bg-red-400 hover:bg-red-500 border-none',
+            isSubmitting ? 'loading' : ''
+          )}
+          onClick={betDisabled ? undefined : submitBet}
+        >
+          {isSubmitting ? 'Submitting...' : 'Place bet'}
+        </button>
+      ) : (
+        <button
+          className="btn mt-4 border-none normal-case text-lg font-medium px-10 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
+          onClick={firebaseLogin}
+        >
+          Sign in to bet!
+        </button>
+      )}
 
       {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
     </Col>
