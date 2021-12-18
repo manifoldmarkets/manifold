@@ -29,7 +29,7 @@ export function UserLink(props: { username: string; className?: string }) {
 function UserCard(props: { user: User; showPrivateInfo?: boolean }) {
   const { user, showPrivateInfo } = props
   return (
-    <Row className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
+    <Row className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm my-12">
       <div className="p-4">
         {user?.avatarUrl && (
           <img
@@ -70,7 +70,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
   const possesive = isCurrentUser ? 'Your ' : `${user.username}'s `
 
   return (
-    <div>
+    <div className="max-w-4xl px-4 pb-8 mx-auto">
       <SEO
         title={possesive + 'markets'}
         description={possesive + 'markets'}
@@ -79,15 +79,11 @@ export function UserPage(props: { user: User; currentUser?: User }) {
 
       <Header />
 
-      <div className="max-w-4xl pt-8 pb-0 sm:pb-8 mx-auto">
-        <div>
-          <UserCard user={user} showPrivateInfo={isCurrentUser} />
+      <UserCard user={user} showPrivateInfo={isCurrentUser} />
 
-          <Title text={possesive + 'markets'} />
+      <Title text={possesive + 'markets'} />
 
-          <ContractsList creator={user} />
-        </div>
-      </div>
+      <ContractsList creator={user} />
     </div>
   )
 }

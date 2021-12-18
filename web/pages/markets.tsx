@@ -6,11 +6,9 @@ export default function Markets() {
   const contracts = useContracts()
 
   return (
-    <div>
+    <div className="max-w-4xl px-4 pb-8 mx-auto">
       <Header />
-      <div className="max-w-4xl py-8 mx-auto">
-        <SearchableGrid contracts={contracts === 'loading' ? [] : contracts} />
-      </div>
+      <SearchableGrid contracts={contracts === 'loading' ? [] : contracts} />
     </div>
   )
 }

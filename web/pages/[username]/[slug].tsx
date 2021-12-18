@@ -52,7 +52,12 @@ export default function ContractPage(props: {
   const isCreator = user?.id === creatorId
 
   return (
-    <Col className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <Col
+      className={clsx(
+        'px-4 pb-8 mx-auto',
+        isResolved ? 'max-w-4xl' : 'max-w-7xl'
+      )}
+    >
       <SEO
         title={contract.question}
         description={contract.description}
@@ -61,22 +66,17 @@ export default function ContractPage(props: {
 
       <Header />
 
-      <Col
-        className={clsx(
-          'w-full items-start md:flex-row mt-4',
-          isResolved ? 'md:justify-center' : 'md:justify-between'
-        )}
-      >
-        <div className="max-w-4xl w-full ">
-          <ContractOverview contract={contract} className="p-4" />
+      <Col className="w-full md:flex-row justify-between mt-6">
+        <div className="flex-[3]">
+          <ContractOverview contract={contract} />
           <BetsSection contract={contract} user={user ?? null} />
         </div>
 
         {!isResolved && (
           <>
-            <div className="mt-12 md:mt-0 md:ml-8" />
+            <div className="md:ml-8" />
 
-            <Col className="w-full sm:w-auto">
+            <Col className="flex-1">
               <BetPanel contract={contract} />
 
               {isCreator && user && (
@@ -104,12 +104,13 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
   if (!userBets || userBets.length === 0) return <></>
 
   return (
-    <div className="p-4">
+    <div>
+      <Spacer h={6} />
       <Title text="Your bets" />
       <MyBetsSummary contract={contract} bets={userBets} />
       <Spacer h={6} />
       <ContractBetsTable contract={contract} bets={userBets} />
-      <Spacer h={6} />
+      <Spacer h={12} />
     </div>
   )
 }

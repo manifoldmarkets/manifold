@@ -57,7 +57,7 @@ function ContractCard(props: { contract: Contract }) {
         <li className="col-span-1 bg-white hover:bg-gray-100 shadow-xl rounded-lg divide-y divide-gray-200">
           <div className="card">
             <div className="card-body p-6">
-              <Row className="justify-between gap-2 mb-2">
+              <Row className="justify-between gap-4 mb-2">
                 <p className="font-medium text-indigo-700">
                   {contract.question}
                 </p>
@@ -88,7 +88,7 @@ function ContractsGrid(props: { contracts: Contract[] }) {
 
   if (contracts.length === 0) {
     return (
-      <p>
+      <p className="mx-4">
         No markets found. Would you like to{' '}
         <Link href="/create">
           <a className="text-green-500 hover:underline hover:decoration-2">
@@ -105,7 +105,6 @@ function ContractsGrid(props: { contracts: Contract[] }) {
       {contracts.map((contract) => (
         <ContractCard contract={contract} key={contract.id} />
       ))}
-      {/* TODO: Show placeholder if empty */}
     </ul>
   )
 }
