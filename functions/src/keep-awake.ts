@@ -9,4 +9,15 @@ export const keepAwake = functions.pubsub
       callCloudFunction('placeBet'),
       callCloudFunction('resolveMarket'),
     ])
+
+    await sleep(30)
+
+    await Promise.all([
+      callCloudFunction('placeBet'),
+      callCloudFunction('resolveMarket'),
+    ])
   })
+
+const sleep = (seconds: number) => {
+  return new Promise((resolve) => setTimeout(resolve, seconds * 1000))
+}
