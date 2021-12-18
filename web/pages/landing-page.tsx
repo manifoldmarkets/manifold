@@ -67,13 +67,16 @@ function Hero() {
               </div>
             </div>
           </div>
-          <div className="absolute bottom-12 w-full">
+          <div
+            className="absolute bottom-12 w-full text-white animate-bounce cursor-pointer"
+            onClick={scrollToAbout}
+          >
+            <div className="text-center">Learn more</div>
             <ArrowDownIcon
-              className="text-white mx-auto cursor-pointer animate-bounce"
+              className="mx-auto "
               width={32}
               height={32}
-              onClick={scrollToAbout}
-            />
+            ></ArrowDownIcon>
           </div>
         </div>
       </main>
