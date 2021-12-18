@@ -12,6 +12,7 @@ import { useContracts } from '../hooks/use-contracts'
 import { SearchableGrid } from '../components/contracts-list'
 import { Col } from '../components/layout/col'
 import { Header } from '../components/header'
+import Link from 'next/link'
 
 export default function LandingPage() {
   return (
@@ -82,9 +83,6 @@ function Hero() {
   )
 }
 
-const notionAboutUrl =
-  'https://mantic.notion.site/About-Mantic-Markets-7c44bc161356474cad54cba2d2973fe2'
-
 function FeaturesSection() {
   const features = [
     {
@@ -150,13 +148,9 @@ function FeaturesSection() {
         </div>
 
         <Col className="mt-20">
-          <a
-            className="btn btn-primary mx-auto"
-            href={notionAboutUrl}
-            target="_blank"
-          >
-            Learn more
-          </a>
+          <Link href="/about">
+            <a className="btn btn-primary mx-auto">Learn more</a>
+          </Link>
         </Col>
       </div>
     </div>
