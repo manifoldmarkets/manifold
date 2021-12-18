@@ -8,17 +8,11 @@ export default function BetsPage() {
   const user = useUser()
 
   return (
-    <div>
+    <div className="max-w-4xl px-4 pb-8 mx-auto">
       <SEO title="Your bets" description="Your bets" url="/bets" />
-
       <Header />
-
-      <div className="max-w-4xl pt-8 pb-0 sm:pb-8 mx-auto">
-        <div>
-          <Title text="Your bets" />
-          {user && <BetsList user={user} />}
-        </div>
-      </div>
+      <Title text="Your bets" />
+      {user && <BetsList user={user} />}
     </div>
   )
 }

@@ -145,7 +145,7 @@ export const ContractOverview = (props: {
     <Col className={className}>
       <Col className="justify-between md:flex-row">
         <Col>
-          <div className="text-3xl text-indigo-700 mt-2 mb-4">
+          <div className="text-3xl text-indigo-700 mb-4">
             {contract.question}
           </div>
 
@@ -153,12 +153,12 @@ export const ContractOverview = (props: {
         </Col>
 
         {resolution ? (
-          <Col className="text-4xl mt-4 md:mt-2 md:ml-4 md:mr-6 items-end self-center md:self-start">
+          <Col className="text-4xl mt-8 md:mt-0 md:ml-4 md:mr-6 items-end self-center md:self-start">
             <div className="text-xl text-gray-500">Resolved</div>
             <div className={resolutionColor}>{resolution}</div>
           </Col>
         ) : (
-          <Col className="text-4xl mt-4 md:mt-2 md:ml-4 md:mr-6 text-primary items-end self-center md:self-start">
+          <Col className="text-4xl mt-8 md:mt-0 md:ml-4 md:mr-6 text-primary items-end self-center md:self-start">
             {probPercent}
             <div className="text-xl">chance</div>
           </Col>

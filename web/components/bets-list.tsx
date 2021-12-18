@@ -114,7 +114,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
     >
       <Row className="flex-wrap gap-4">
         <Col className="flex-[2] gap-1">
-          <div>
+          <Row>
             <Link href={path(contract)}>
               <a
                 className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
@@ -123,7 +123,13 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
                 {contract.question}
               </a>
             </Link>
-          </div>
+
+            {/* Show carrot for collapsing. Hack the positioning. */}
+            <div
+              className="collapse-title flex-1 p-0 pr-8 relative w-0 h-0 min-h-0"
+              style={{ top: -10, right: -20 }}
+            />
+          </Row>
 
           <Row className="gap-2 text-gray-500 text-sm">
             <div>
@@ -140,19 +146,11 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
           </Row>
         </Col>
 
-        <Row className="flex-nowrap">
-          <MyBetsSummary
-            className="flex-1 justify-end"
-            contract={contract}
-            bets={bets}
-          />
-
-          {/* Show carrot for collapsing. Hack the positioning. */}
-          <div
-            className="collapse-title p-0 pr-8 relative w-0 h-0 min-h-0"
-            style={{ top: -10, right: -20 }}
-          />
-        </Row>
+        <MyBetsSummary
+          className="flex-1 justify-end"
+          contract={contract}
+          bets={bets}
+        />
       </Row>
 
       <div className="collapse-content" style={{ backgroundColor: 'white' }}>

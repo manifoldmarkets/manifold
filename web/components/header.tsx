@@ -53,7 +53,7 @@ function SignedInHeaders(props: { user: User; themeClasses?: string }) {
       <Link href="/create">
         <a
           className={clsx(
-            'text-base font-medium hidden md:block',
+            'text-base font-medium hidden md:block whitespace-nowrap',
             themeClasses
           )}
         >
@@ -64,7 +64,7 @@ function SignedInHeaders(props: { user: User; themeClasses?: string }) {
       <Link href="/bets">
         <a
           className={clsx(
-            'text-base font-medium hidden md:block',
+            'text-base font-medium hidden md:block whitespace-nowrap',
             themeClasses
           )}
         >
@@ -111,7 +111,7 @@ export function Header(props: { darkBackground?: boolean; children?: any }) {
 
   return (
     <nav
-      className="max-w-7xl w-full flex flex-row justify-between md:justify-start mx-auto pt-5 px-4 sm:px-6"
+      className="max-w-7xl w-full flex flex-row justify-between md:justify-start pt-5 pb-4"
       aria-label="Global"
     >
       <Link href="/">
