@@ -146,7 +146,7 @@ export function SearchableGrid(props: {
   return (
     <div>
       {/* Show a search input next to a sort dropdown */}
-      <div className="flex justify-between gap-2 my-8">
+      <div className="flex justify-between gap-2 mt-2 mb-8">
         <input
           type="text"
           value={query}
