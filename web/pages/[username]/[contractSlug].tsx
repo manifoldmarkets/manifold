@@ -17,13 +17,13 @@ import { Contract, getContractFromSlug } from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 
 export async function getStaticProps(props: { params: any }) {
-  const { username, slug } = props.params
-  const contract = (await getContractFromSlug(slug)) || null
+  const { username, contractSlug } = props.params
+  const contract = (await getContractFromSlug(contractSlug)) || null
 
   return {
     props: {
       username,
-      slug,
+      slug: contractSlug,
       contract,
     },
 
