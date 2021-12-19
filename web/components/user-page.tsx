@@ -29,7 +29,7 @@ export function UserLink(props: { username: string; className?: string }) {
 function UserCard(props: { user: User; showPrivateInfo?: boolean }) {
   const { user, showPrivateInfo } = props
   return (
-    <Row className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm my-12">
+    <Row className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm my-12 mx-auto">
       <div className="p-4">
         {user?.avatarUrl && (
           <img
