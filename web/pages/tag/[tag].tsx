@@ -3,7 +3,6 @@ import { SearchableGrid } from '../../components/contracts-list'
 import { Header } from '../../components/header'
 import { Title } from '../../components/title'
 import { useContracts } from '../../hooks/use-contracts'
-import Markets from '../markets'
 
 export default function TagPage() {
   const router = useRouter()
