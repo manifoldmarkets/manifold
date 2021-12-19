@@ -4,7 +4,7 @@ import clsx from 'clsx'
 
 export function MenuButton(props: {
   buttonContent: any
-  menuItems: { name: string; href: string }[]
+  menuItems: { name: string; href: string; onClick?: () => void }[]
   className?: string
 }) {
   const { buttonContent, menuItems, className } = props
@@ -34,6 +34,7 @@ export function MenuButton(props: {
               {({ active }) => (
                 <a
                   href={item.href}
+                  onClick={item.onClick}
                   className={clsx(
                     active ? 'bg-gray-100' : '',
                     'block py-2 px-4 text-sm text-gray-700'

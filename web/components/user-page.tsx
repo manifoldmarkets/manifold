@@ -79,7 +79,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
 
       <Header />
 
-      <UserCard user={user} showPrivateInfo={isCurrentUser} />
+      {/* <UserCard user={user} showPrivateInfo={isCurrentUser} /> */}
 
       <Title text={possesive + 'markets'} />
 

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useUser } from '../hooks/use-user'
 import { formatMoney } from '../lib/util/format'
 import { Row } from './layout/row'
-import { firebaseLogin, User } from '../lib/firebase/users'
+import { firebaseLogin, firebaseLogout, User } from '../lib/firebase/users'
 import { MenuButton } from './menu'
 
 const hoverClasses =
@@ -34,6 +34,11 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
     {
       name: 'Your markets',
       href: `/${user.username}`,
+    },
+
+    {
+      name: 'Sign out',
+      onClick: () => firebaseLogout(),
     },
   ]
 }
