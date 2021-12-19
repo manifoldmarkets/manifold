@@ -12,8 +12,10 @@ export default function TagPage() {
   let contracts = useContracts()
 
   if (tag && contracts !== 'loading') {
-    contracts = contracts.filter((contract) =>
-      contract.description.toLowerCase().includes(`#${tag.toLowerCase()}`)
+    contracts = contracts.filter(
+      (contract) =>
+        contract.description.toLowerCase().includes(`#${tag.toLowerCase()}`) ||
+        contract.question.toLowerCase().includes(`#${tag.toLowerCase()}`)
     )
   }
 
