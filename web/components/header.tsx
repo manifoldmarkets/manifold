@@ -53,7 +53,7 @@ function SignedInHeaders(props: { user: User; themeClasses?: string }) {
       <Link href="/create">
         <a
           className={clsx(
-            'text-base font-medium hidden md:block whitespace-nowrap',
+            'text-base hidden md:block whitespace-nowrap',
             themeClasses
           )}
         >
@@ -64,7 +64,7 @@ function SignedInHeaders(props: { user: User; themeClasses?: string }) {
       <Link href="/bets">
         <a
           className={clsx(
-            'text-base font-medium hidden md:block whitespace-nowrap',
+            'text-base hidden md:block whitespace-nowrap',
             themeClasses
           )}
         >
@@ -73,7 +73,11 @@ function SignedInHeaders(props: { user: User; themeClasses?: string }) {
       </Link>
 
       <Link href="/account">
-        <a className={clsx('text-base font-medium hidden md:block')}>
+        <a
+          className={clsx(
+            'text-base hidden md:block hover:underline hover:decoration-2 hover:decoration-indigo-700'
+          )}
+        >
           <ProfileSummary user={user} />
         </a>
       </Link>
@@ -133,7 +137,12 @@ export function Header(props: { darkBackground?: boolean; children?: any }) {
         </a>
       </Link>
 
-      <Row className="gap-8 mt-1 md:ml-16">
+      <Row
+        className={clsx(
+          'gap-8 mt-1',
+          darkBackground ? 'md:ml-16' : 'md:ml-auto'
+        )}
+      >
         {children}
 
         {user ? (

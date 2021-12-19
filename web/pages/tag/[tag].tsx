@@ -18,12 +18,10 @@ export default function TagPage() {
   }
 
   return (
-    <div>
+    <div className="max-w-4xl px-4 pb-8 mx-auto">
       <Header />
-      <div className="max-w-4xl py-8 mx-auto">
-        <Title text={`#${tag}`} />
-        <SearchableGrid contracts={contracts === 'loading' ? [] : contracts} />
-      </div>
+      <Title text={`#${tag}`} />
+      <SearchableGrid contracts={contracts === 'loading' ? [] : contracts} />
     </div>
   )
 }

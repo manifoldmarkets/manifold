@@ -1,4 +1,5 @@
 import React from 'react'
+import { Header } from '../components/header'
 import { UserPage } from '../components/user-page'
 import { useUser } from '../hooks/use-user'
 import { firebaseLogin } from '../lib/firebase/users'
@@ -30,5 +31,12 @@ function SignInCard() {
 
 export default function Account() {
   const user = useUser()
-  return user ? <UserPage user={user} currentUser={user} /> : <SignInCard />
+  return user ? (
+    <UserPage user={user} currentUser={user} />
+  ) : (
+    <div className="max-w-4xl px-4 pb-8 mx-auto">
+      <Header />
+      <SignInCard />
+    </div>
+  )
 }
