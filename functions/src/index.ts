@@ -5,3 +5,4 @@ admin.initializeApp()
 export * from './keep-awake'
 export * from './place-bet'
 export * from './resolve-market'
+export * from './sell-bet'

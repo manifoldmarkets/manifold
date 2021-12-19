@@ -17,6 +17,7 @@ import {
   resolvedPayout,
 } from '../lib/calculation/contract'
 import clsx from 'clsx'
+import { cloudFunction } from '../lib/firebase/api-call'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -240,6 +241,7 @@ export function ContractBetsTable(props: {
             <th>Probability</th>
             {!isResolved && <th>Est. max payout</th>}
             <th>{isResolved ? <>Payout</> : <>Current value</>}</th>
+            {!isResolved && <th></th>}
           </tr>
         </thead>
         <tbody>
@@ -254,7 +256,7 @@ export function ContractBetsTable(props: {
 
 function BetRow(props: { bet: Bet; contract: Contract }) {
   const { bet, contract } = props
-  const { amount, outcome, createdTime, probBefore, probAfter, dpmWeight } = bet
+  const { amount, outcome, createdTime, probBefore, probAfter, dpmWeight, sale, isSold } = bet
   const { isResolved } = contract
 
   return (
@@ -275,9 +277,20 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
             : currentValue(contract, bet)
         )}
       </td>
+
+      {!isResolved && !sale && !isSold &&
+        <td>
+          <button className='btn' onClick={async e => {
+            e.preventDefault()
+            await sellBet({ contractId: contract.id, betId: bet.id })
+          }}>Sell</button>
+        </td>
+      }
     </tr>
   )
 }
+
+const sellBet = cloudFunction('sellBet')
 
 function OutcomeLabel(props: { outcome: 'YES' | 'NO' | 'CANCEL' }) {
   const { outcome } = props
