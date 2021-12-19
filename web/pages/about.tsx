@@ -40,7 +40,7 @@ const cloneWithStyle = (node: JSX.Element) => {
 function Contents() {
   return cloneWithStyle(
     <div>
-      <h1 id="about">About mantic markets</h1>
+      <h1 id="about">About</h1>
       <hr />
       <p>
         Mantic Markets is creating better forecasting through user-created
