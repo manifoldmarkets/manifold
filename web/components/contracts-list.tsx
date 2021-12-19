@@ -173,7 +173,7 @@ export function SearchableGrid(props: {
 
 export function ContractsList(props: { creator: User }) {
   const { creator } = props
-  const [contracts, setContracts] = useState<Contract[]>([])
+  const [contracts, setContracts] = useState<Contract[] | 'loading'>('loading')
 
   useEffect(() => {
     if (creator?.id) {
@@ -182,5 +182,9 @@ export function ContractsList(props: { creator: User }) {
     }
   }, [creator])
 
-  return <SearchableGrid contracts={contracts} defaultSort="all" />
+  return (
+    contracts !== 'loading' && (
+      <SearchableGrid contracts={contracts} defaultSort="all" />
+    )
+  )
 }
