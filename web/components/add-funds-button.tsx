@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { useState } from 'react'
 
 import { useUser } from '../hooks/use-user'
+import { checkoutURL } from '../lib/service/stripe'
 import { FundsSelector } from './yes-no-selector'
 
 export function AddFundsButton() {
@@ -41,7 +42,10 @@ export function AddFundsButton() {
               Back
             </label>
 
-            <form action={checkoutURL(user?.id || '', 500)} method="POST">
+            <form
+              action={checkoutURL(user?.id || '', amountSelected)}
+              method="POST"
+            >
               <button type="submit" className="btn btn-primary">
                 Checkout
               </button>
@@ -51,10 +55,4 @@ export function AddFundsButton() {
       </div>
     </>
   )
-}
-
-const checkoutURL = (userId: string, manticDollarQuantity: number) => {
-  const endpoint =
-    'https://us-central1-mantic-markets.cloudfunctions.net/createCheckoutSession'
-  return `${endpoint}?userId=${userId}&manticDollarQuantity=${manticDollarQuantity}`
 }

@@ -83,7 +83,7 @@ export function FundsSelector(props: {
       {fundAmounts.map((amount) => (
         <Button
           key={amount}
-          color={selected === amount ? 'purple' : 'gray'}
+          color={selected === amount ? 'green' : 'gray'}
           onClick={() => onSelect(amount as any)}
           className={btnClassName}
         >
