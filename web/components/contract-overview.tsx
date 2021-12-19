@@ -13,7 +13,7 @@ import router from 'next/router'
 import { useUser } from '../hooks/use-user'
 import { Row } from './layout/row'
 import dayjs from 'dayjs'
-import { Linkify } from './Linkify'
+import { Linkify } from './linkify'
 
 function ContractDescription(props: {
   contract: Contract
