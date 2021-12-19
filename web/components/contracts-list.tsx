@@ -13,7 +13,7 @@ import {
 import { formatMoney } from '../lib/util/format'
 import { User } from '../lib/firebase/users'
 import { UserLink } from './user-page'
-import { Linkify } from './Linkify'
+import { Linkify } from './linkify'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
