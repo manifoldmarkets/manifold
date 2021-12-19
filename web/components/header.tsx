@@ -20,7 +20,7 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
     },
     ...(mobile
       ? [
-          { name: 'FAQ', href: '/about' },
+          { name: 'About', href: '/about' },
           {
             name: 'Create a market',
             href: '/create',
@@ -65,7 +65,7 @@ function SignedInHeaders(props: { user: User; themeClasses?: string }) {
             themeClasses
           )}
         >
-          FAQ
+          About
         </a>
       </Link>
 
