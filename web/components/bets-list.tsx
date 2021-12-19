@@ -107,14 +107,14 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
     <div
       tabIndex={0}
       className={clsx(
-        'p-6 bg-white card card-body shadow-xl collapse collapse-arrow cursor-pointer',
+        'p-6 bg-white card card-body shadow-xl collapse collapse-arrow cursor-pointer relative',
         collapsed ? 'collapse-close' : 'collapse-open pb-2'
       )}
       onClick={() => setCollapsed((collapsed) => !collapsed)}
     >
       <Row className="flex-wrap gap-4">
         <Col className="flex-[2] gap-1">
-          <Row>
+          <Row className="mr-10">
             <Link href={path(contract)}>
               <a
                 className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
@@ -126,8 +126,8 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
 
             {/* Show carrot for collapsing. Hack the positioning. */}
             <div
-              className="collapse-title flex-1 p-0 pr-8 relative w-0 h-0 min-h-0"
-              style={{ top: -10, right: -20 }}
+              className="collapse-title p-0 absolute w-0 h-0 min-h-0"
+              style={{ top: -10, right: 4 }}
             />
           </Row>
 
@@ -147,7 +147,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
         </Col>
 
         <MyBetsSummary
-          className="flex-1 justify-end"
+          className="flex-1 justify-end mr-8"
           contract={contract}
           bets={bets}
         />
