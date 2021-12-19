@@ -11,24 +11,32 @@ import { MenuButton } from './menu'
 const hoverClasses =
   'hover:underline hover:decoration-indigo-400 hover:decoration-2'
 
-const mobileNavigation = [
-  {
-    name: 'Home',
-    href: '/',
-  },
-  {
-    name: 'Account',
-    href: '/account',
-  },
-  {
-    name: 'Your bets',
-    href: '/bets',
-  },
-  {
-    name: 'Create a market',
-    href: '/create',
-  },
-]
+function getNavigationOptions(user: User, options: { mobile: boolean }) {
+  const { mobile } = options
+  return [
+    {
+      name: 'Home',
+      href: '/',
+    },
+    ...(mobile
+      ? [
+          { name: 'FAQ', href: '/about' },
+          {
+            name: 'Create a market',
+            href: '/create',
+          },
+        ]
+      : []),
+    {
+      name: 'Your bets',
+      href: '/bets',
+    },
+    {
+      name: 'Your markets',
+      href: `/${user.username}`,
+    },
+  ]
+}
 
 function ProfileSummary(props: { user: User }) {
   const { user } = props
@@ -50,6 +58,17 @@ function SignedInHeaders(props: { user: User; themeClasses?: string }) {
 
   return (
     <>
+      <Link href="/about">
+        <a
+          className={clsx(
+            'text-base hidden md:block whitespace-nowrap',
+            themeClasses
+          )}
+        >
+          FAQ
+        </a>
+      </Link>
+
       <Link href="/create">
         <a
           className={clsx(
@@ -61,30 +80,15 @@ function SignedInHeaders(props: { user: User; themeClasses?: string }) {
         </a>
       </Link>
 
-      <Link href="/bets">
-        <a
-          className={clsx(
-            'text-base hidden md:block whitespace-nowrap',
-            themeClasses
-          )}
-        >
-          Your bets
-        </a>
-      </Link>
-
-      <Link href="/account">
-        <a
-          className={clsx(
-            'text-base hidden md:block hover:underline hover:decoration-2 hover:decoration-indigo-700'
-          )}
-        >
-          <ProfileSummary user={user} />
-        </a>
-      </Link>
+      <MenuButton
+        className="hidden md:block"
+        menuItems={getNavigationOptions(user, { mobile: false })}
+        buttonContent={<ProfileSummary user={user} />}
+      />
 
       <MenuButton
         className="md:hidden"
-        menuItems={mobileNavigation}
+        menuItems={getNavigationOptions(user, { mobile: true })}
         buttonContent={<ProfileSummary user={user} />}
       />
     </>
@@ -138,7 +142,7 @@ export function Header(props: {
           />
           <div
             className={clsx(
-              'font-major-mono lowercase mt-1 sm:text-2xl',
+              'font-major-mono lowercase mt-1 sm:text-2xl md:whitespace-nowrap',
               darkBackground && 'text-white'
             )}
           >
