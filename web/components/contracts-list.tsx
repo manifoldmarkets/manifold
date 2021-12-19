@@ -182,9 +182,7 @@ export function ContractsList(props: { creator: User }) {
     }
   }, [creator])
 
-  return (
-    contracts !== 'loading' && (
-      <SearchableGrid contracts={contracts} defaultSort="all" />
-    )
-  )
+  if (contracts === 'loading') return <></>
+
+  return <SearchableGrid contracts={contracts} defaultSort="all" />
 }
