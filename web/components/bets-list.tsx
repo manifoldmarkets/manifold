@@ -197,7 +197,7 @@ export function MyBetsSummary(props: {
       {resolution ? (
         <>
           <Col>
-            <div className="text-sm text-gray-500">Winnings</div>
+            <div className="text-sm text-gray-500">Payout</div>
             <div className="whitespace-nowrap">{formatMoney(betsPayout)}</div>
           </Col>
         </>
