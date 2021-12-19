@@ -5,12 +5,10 @@ import styles from './about.module.css'
 
 export default function About() {
   return (
-    <div>
+    <div className="max-w-3xl px-4 mx-auto">
       <SEO title="About" description="About" url="/about" />
       <Header />
-      <div className="max-w-3xl pt-8 pb-0 sm:pb-8 mx-auto">
-        <Contents />
-      </div>
+      <Contents />
     </div>
   )
 }

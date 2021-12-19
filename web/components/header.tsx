@@ -97,7 +97,10 @@ function SignedOutHeaders(props: { themeClasses?: string }) {
   return (
     <>
       <div
-        className={clsx('text-base font-medium cursor-pointer', themeClasses)}
+        className={clsx(
+          'text-base font-medium cursor-pointer whitespace-nowrap',
+          themeClasses
+        )}
         onClick={firebaseLogin}
       >
         Sign in
@@ -106,8 +109,12 @@ function SignedOutHeaders(props: { themeClasses?: string }) {
   )
 }
 
-export function Header(props: { darkBackground?: boolean; children?: any }) {
-  const { darkBackground, children } = props
+export function Header(props: {
+  darkBackground?: boolean
+  className?: string
+  children?: any
+}) {
+  const { darkBackground, className, children } = props
 
   const user = useUser()
 
@@ -115,7 +122,10 @@ export function Header(props: { darkBackground?: boolean; children?: any }) {
 
   return (
     <nav
-      className="max-w-7xl w-full flex flex-row justify-between md:justify-start pt-5 pb-4"
+      className={clsx(
+        'max-w-7xl w-full flex flex-row justify-between md:justify-start pt-5 pb-4',
+        className
+      )}
       aria-label="Global"
     >
       <Link href="/">
@@ -137,12 +147,7 @@ export function Header(props: { darkBackground?: boolean; children?: any }) {
         </a>
       </Link>
 
-      <Row
-        className={clsx(
-          'gap-8 mt-1',
-          darkBackground ? 'md:ml-16' : 'md:ml-auto'
-        )}
-      >
+      <Row className="gap-6 sm:gap-8 mt-1 md:ml-16">
         {children}
 
         {user ? (
