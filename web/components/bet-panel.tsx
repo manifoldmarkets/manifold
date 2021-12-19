@@ -136,10 +136,12 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           <div className="mt-3 mb-1 text-sm text-gray-400">
             Remaining balance
           </div>
-          <div>{formatMoney(remainingBalance > 0 ? remainingBalance : 0)}</div>
-          <div>
+          <Row className="flex-1 justify-between items-center gap-2">
+            <div>
+              {formatMoney(remainingBalance > 0 ? remainingBalance : 0)}
+            </div>
             <AddFundsButton />
-          </div>
+          </Row>
         </>
       )}
 

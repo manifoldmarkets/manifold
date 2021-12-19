@@ -67,10 +67,37 @@ export function YesNoCancelSelector(props: {
   )
 }
 
+const fundAmounts = [500, 1000, 2500, 10000]
+
+export function FundsSelector(props: {
+  selected: 500 | 1000 | 2500 | 10000
+  onSelect: (selected: 500 | 1000 | 2500 | 10000) => void
+  className?: string
+  btnClassName?: string
+}) {
+  const { selected, onSelect, className } = props
+  const btnClassName = clsx('px-2 whitespace-nowrap', props.btnClassName)
+
+  return (
+    <Row className={clsx('space-x-3', className)}>
+      {fundAmounts.map((amount) => (
+        <Button
+          key={amount}
+          color={selected === amount ? 'purple' : 'gray'}
+          onClick={() => onSelect(amount as any)}
+          className={btnClassName}
+        >
+          M$ {amount}
+        </Button>
+      ))}
+    </Row>
+  )
+}
+
 function Button(props: {
   className?: string
   onClick?: () => void
-  color: 'green' | 'red' | 'yellow' | 'gray'
+  color: 'green' | 'purple' | 'red' | 'yellow' | 'gray'
   children?: any
 }) {
   const { className, onClick, children, color } = props
@@ -81,6 +108,7 @@ function Button(props: {
       className={clsx(
         'flex-1 inline-flex justify-center items-center px-8 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white',
         color === 'green' && 'btn-primary',
+        color === 'purple' && 'btn-secondary',
         color === 'red' && 'bg-red-400 hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 hover:bg-yellow-500',
         color === 'gray' && 'text-gray-700 bg-gray-300 hover:bg-gray-400',
