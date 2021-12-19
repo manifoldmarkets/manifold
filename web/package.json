@@ -2,7 +2,8 @@
   "name": "mantic",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently -n NEXT,TS -c magenta,cyan \"next dev -p 3000\" \"yarn ts --watch\"",
+    "ts": "tsc --noEmit --incremental --preserveWatchOutput --pretty",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -10,8 +11,8 @@
     "prepare": "cd .. && husky install web/.husky"
   },
   "dependencies": {
-    "@headlessui/react": "^1.4.2",
-    "@heroicons/react": "^1.0.5",
+    "@headlessui/react": "1.4.2",
+    "@heroicons/react": "1.0.5",
     "@nivo/core": "0.74.0",
     "@nivo/line": "0.74.0",
     "clsx": "1.1.1",
@@ -25,19 +26,20 @@
   },
   "devDependencies": {
     "@tailwindcss/forms": "0.4.0",
-    "@types/lodash": "^4.14.178",
+    "@types/lodash": "4.14.178",
     "@types/node": "16.11.11",
     "@types/react": "17.0.37",
     "autoprefixer": "10.2.6",
+    "concurrently": "6.5.1",
     "eslint": "7.32.0",
     "eslint-config-next": "12.0.4",
-    "husky": "^7.0.4",
-    "lint-staged": "^12.1.3",
+    "husky": "7.0.4",
+    "lint-staged": "12.1.3",
     "postcss": "8.3.5",
     "prettier": "2.5.0",
-    "pretty-quick": "^3.1.2",
+    "pretty-quick": "3.1.2",
     "tailwindcss": "3.0.1",
-    "tsc-files": "^1.1.3",
+    "tsc-files": "1.1.3",
     "typescript": "4.5.2"
   },
   "lint-staged": {
