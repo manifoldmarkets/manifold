@@ -153,7 +153,10 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
         />
       </Row>
 
-      <div className="collapse-content" style={{ backgroundColor: 'white' }}>
+      <div
+        className="collapse-content !px-0"
+        style={{ backgroundColor: 'white' }}
+      >
         <Spacer h={8} />
 
         <ContractBetsTable contract={contract} bets={bets} />
