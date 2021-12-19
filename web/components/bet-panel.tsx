@@ -16,6 +16,7 @@ import {
   getProbabilityAfterBet,
 } from '../lib/calculation/contract'
 import { firebaseLogin } from '../lib/firebase/users'
+import { AddFundsButton } from './add-funds-button'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -136,6 +137,9 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
             Remaining balance
           </div>
           <div>{formatMoney(remainingBalance > 0 ? remainingBalance : 0)}</div>
+          <div>
+            <AddFundsButton />
+          </div>
         </>
       )}
 

@@ -101,7 +101,7 @@ const getPayouts = (outcome: string, contract: Contract, bets: Bet[]) => {
   ]) // add creator fee
 }
 
-const payUser = ([userId, payout]: [string, number]) => {
+export const payUser = ([userId, payout]: [string, number]) => {
   return firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${userId}`)
     const userSnap = await transaction.get(userDoc)
