@@ -61,7 +61,7 @@ export function YesNoCancelSelector(props: {
         onClick={() => onSelect('CANCEL')}
         className={btnClassName}
       >
-        CANCEL
+        N/A
       </Button>
     </Row>
   )

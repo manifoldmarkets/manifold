@@ -155,7 +155,9 @@ export const ContractOverview = (props: {
         {resolution ? (
           <Col className="text-4xl mt-8 md:mt-0 md:ml-4 md:mr-6 items-end self-center md:self-start">
             <div className="text-xl text-gray-500">Resolved</div>
-            <div className={resolutionColor}>{resolution}</div>
+            <div className={resolutionColor}>
+              {resolution === 'CANCEL' ? 'N/A' : resolution}
+            </div>
           </Col>
         ) : (
           <Col className="text-4xl mt-8 md:mt-0 md:ml-4 md:mr-6 text-primary items-end self-center md:self-start">

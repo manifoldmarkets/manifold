@@ -294,5 +294,5 @@ function NoLabel() {
 }
 
 function CancelLabel() {
-  return <span className="text-yellow-400">CANCEL</span>
+  return <span className="text-yellow-400">N/A</span>
 }
