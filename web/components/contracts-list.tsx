@@ -13,6 +13,7 @@ import {
 import { formatMoney } from '../lib/util/format'
 import { User } from '../lib/firebase/users'
 import { UserLink } from './user-page'
+import { Linkify } from './Linkify'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
@@ -59,7 +60,7 @@ function ContractCard(props: { contract: Contract }) {
             <div className="card-body p-6">
               <Row className="justify-between gap-4 mb-2">
                 <p className="font-medium text-indigo-700">
-                  {contract.question}
+                  <Linkify text={contract.question} />
                 </p>
                 <div className={clsx('text-4xl', resolutionColor)}>
                   {resolutionText || (
