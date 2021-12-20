@@ -43,7 +43,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
-      const { newBet, newPool, newDpmWeights, newBalance } = getNewBetInfo(
+      const { newBet, newPool, newTotalShares, newBalance } = getNewBetInfo(
         user,
         outcome,
         amount,
@@ -54,7 +54,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, {
         pool: newPool,
-        dpmWeights: newDpmWeights,
+        totalShares: newTotalShares,
       })
       transaction.update(userDoc, { balance: newBalance })
 
@@ -79,29 +79,19 @@ const getNewBetInfo = (
       ? { YES: yesPool + amount, NO: noPool }
       : { YES: yesPool, NO: noPool + amount }
 
-  const dpmWeight =
+  const shares =
     outcome === 'YES'
-      ? (amount * noPool ** 2) / (yesPool ** 2 + amount * yesPool)
-      : (amount * yesPool ** 2) / (noPool ** 2 + amount * noPool)
+      ? amount + (amount * noPool ** 2) / (yesPool ** 2 + amount * yesPool)
+      : amount + (amount * yesPool ** 2) / (noPool ** 2 + amount * noPool)
 
-  const { YES: yesWeight, NO: noWeight } = contract.dpmWeights || {
-    YES: 0,
-    NO: 0,
-  } // only nesc for old contracts
+  const { YES: yesShares, NO: noShares } = contract.totalShares
 
-  const newDpmWeights =
+  const newTotalShares =
     outcome === 'YES'
-      ? { YES: yesWeight + dpmWeight, NO: noWeight }
-      : { YES: yesWeight, NO: noWeight + dpmWeight }
+      ? { YES: yesShares + shares, NO: noShares }
+      : { YES: yesShares, NO: noShares + shares }
 
   const probBefore = yesPool ** 2 / (yesPool ** 2 + noPool ** 2)
-
-  const probAverage =
-    (amount +
-      noPool * Math.atan(yesPool / noPool) -
-      noPool * Math.atan((amount + yesPool) / noPool)) /
-    amount
-
   const probAfter = newPool.YES ** 2 / (newPool.YES ** 2 + newPool.NO ** 2)
 
   const newBet: Bet = {
@@ -109,15 +99,14 @@ const getNewBetInfo = (
     userId: user.id,
     contractId: contract.id,
     amount,
-    dpmWeight,
+    shares,
     outcome,
     probBefore,
-    probAverage,
     probAfter,
     createdTime: Date.now(),
   }
 
   const newBalance = user.balance - amount
 
-  return { newBet, newPool, newDpmWeights, newBalance }
+  return { newBet, newPool, newTotalShares, newBalance }
 }

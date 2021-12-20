@@ -30,7 +30,7 @@ export type Contract = {
 
   startPool: { YES: number; NO: number }
   pool: { YES: number; NO: number }
-  dpmWeights: { YES: number; NO: number }
+  totalShares: { YES: number; NO: number }
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime: number // If the question or description was changed
@@ -48,14 +48,14 @@ export function path(contract: Contract) {
 
 export function compute(contract: Contract) {
   const { pool, startPool, createdTime, resolutionTime, isResolved } = contract
-  const volume = pool.YES + pool.NO - startPool.YES - startPool.NO
+  const truePool = pool.YES + pool.NO - startPool.YES - startPool.NO
   const prob = pool.YES ** 2 / (pool.YES ** 2 + pool.NO ** 2)
   const probPercent = Math.round(prob * 100) + '%'
   const createdDate = dayjs(createdTime).format('MMM D')
   const resolvedDate = isResolved
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
-  return { volume, probPercent, createdDate, resolvedDate }
+  return { truePool, probPercent, createdDate, resolvedDate }
 }
 
 const db = getFirestore(app)

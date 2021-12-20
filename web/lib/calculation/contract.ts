@@ -22,7 +22,7 @@ export function getProbabilityAfterBet(
   return getProbability({ YES, NO })
 }
 
-export function getDpmWeight(
+export function calculateShares(
   pool: { YES: number; NO: number },
   bet: number,
   betChoice: 'YES' | 'NO'
@@ -30,8 +30,8 @@ export function getDpmWeight(
   const [yesPool, noPool] = [pool.YES, pool.NO]
 
   return betChoice === 'YES'
-    ? (bet * Math.pow(noPool, 2)) / (Math.pow(yesPool, 2) + bet * yesPool)
-    : (bet * Math.pow(yesPool, 2)) / (Math.pow(noPool, 2) + bet * noPool)
+    ? bet + (bet * noPool ** 2) / (yesPool ** 2 + bet * yesPool)
+    : bet + (bet * yesPool ** 2) / (noPool ** 2 + bet * noPool)
 }
 
 export function calculatePayout(
@@ -39,23 +39,20 @@ export function calculatePayout(
   bet: Bet,
   outcome: 'YES' | 'NO' | 'CANCEL'
 ) {
-  const { amount, outcome: betOutcome, dpmWeight } = bet
+  const { amount, outcome: betOutcome, shares } = bet
 
   if (outcome === 'CANCEL') return amount
   if (betOutcome !== outcome) return 0
 
-  let { dpmWeights, pool, startPool } = contract
+  let { totalShares } = contract
 
   // Fake data if not set.
-  if (!dpmWeights) dpmWeights = { YES: 100, NO: 100 }
+  // if (!totalShares) totalShares = { YES: 100, NO: 100 }
 
-  // Fake data if not set.
-  if (!pool) pool = { YES: 100, NO: 100 }
+  const startPool = contract.startPool.YES + contract.startPool.NO
+  const pool = contract.pool.YES + contract.pool.NO - startPool
 
-  const otherOutcome = outcome === 'YES' ? 'NO' : 'YES'
-  const poolSize = pool[otherOutcome] - startPool[otherOutcome]
-
-  return (1 - fees) * (dpmWeight / dpmWeights[outcome]) * poolSize + amount
+  return (1 - fees) * (shares / totalShares[outcome]) * pool
 }
 export function resolvedPayout(contract: Contract, bet: Bet) {
   if (contract.resolution)

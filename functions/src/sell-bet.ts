@@ -35,23 +35,17 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
 
       const betDoc = firestore.doc(`contracts/${contractId}/bets/${betId}`)
       const betSnap = await transaction.get(betDoc)
-      if (!betSnap.exists)
-        return { status: 'error', message: 'Invalid bet' }
+      if (!betSnap.exists) return { status: 'error', message: 'Invalid bet' }
       const bet = betSnap.data() as Bet
 
-      if (bet.isSold)
-        return { status: 'error', message: 'Bet already sold' }
+      if (bet.isSold) return { status: 'error', message: 'Bet already sold' }
 
       const newBetDoc = firestore
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
-      const { newBet, newPool, newDpmWeights, newBalance, creatorFee } = getSellBetInfo(
-        user,
-        bet,
-        contract,
-        newBetDoc.id
-      )
+      const { newBet, newPool, newTotalShares, newBalance, creatorFee } =
+        getSellBetInfo(user, bet, contract, newBetDoc.id)
 
       const creatorDoc = firestore.doc(`users/${contract.creatorId}`)
       const creatorSnap = await transaction.get(creatorDoc)
@@ -65,7 +59,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, {
         pool: newPool,
-        dpmWeights: newDpmWeights,
+        totalShares: newTotalShares,
       })
       transaction.update(userDoc, { balance: newBalance })
 
@@ -82,69 +76,86 @@ const getSellBetInfo = (
   contract: Contract,
   newBetId: string
 ) => {
-  const { id: betId, amount, dpmWeight, outcome } = bet
+  const { id: betId, amount, shares, outcome } = bet
 
   const { YES: yesPool, NO: noPool } = contract.pool
-  const { YES: yesWeights, NO: noWeights } = contract.dpmWeights
+  const { YES: yesStart, NO: noStart } = contract.startPool
+  const { YES: yesShares, NO: noShares } = contract.totalShares
 
-  // average implied probability after selling bet position
-  const p = outcome === 'YES'
-    ? (amount +
-      noPool * Math.atan((yesPool - amount) / noPool) -
-      noPool * Math.atan(yesPool / noPool)) /
-    amount
+  const [y, n, s] = [yesPool, noPool, shares]
 
-    : yesPool * (Math.atan((amount - noPool) / yesPool) + Math.atan(noPool / yesPool)) /
-    amount
-
-
-  const [sellYesAmount, sellNoAmount] = outcome === 'YES'
-    ? [
-      p * amount,
-      p * dpmWeight / yesWeights * noPool,
-    ]
-    : [
-      p * dpmWeight / noWeights * yesPool,
-      p * amount,
-    ]
-
-  const newPool = { YES: yesPool - sellYesAmount, NO: noPool - sellNoAmount }
-
-  const newDpmWeights =
+  const shareValue =
     outcome === 'YES'
-      ? { YES: yesWeights - dpmWeight, NO: noWeights }
-      : { YES: yesWeights, NO: noWeights - dpmWeight }
+      ? // https://www.wolframalpha.com/input/?i=b+%2B+%28b+n%5E2%29%2F%28y+%28-b+%2B+y%29%29+%3D+c+solve+b
+        (n ** 2 +
+          s * y +
+          y ** 2 -
+          Math.sqrt(
+            n ** 4 + (s - y) ** 2 * y ** 2 + 2 * n ** 2 * y * (s + y)
+          )) /
+        (2 * y)
+      : (y ** 2 +
+          s * n +
+          n ** 2 -
+          Math.sqrt(
+            y ** 4 + (s - n) ** 2 * n ** 2 + 2 * y ** 2 * n * (s + n)
+          )) /
+        (2 * n)
+
+  const startPool = yesStart + noStart
+  const pool = yesPool + noPool - startPool
+
+  const f = outcome === 'YES' ? pool / yesShares : pool / noShares
+
+  const myPool = outcome === 'YES' ? yesPool - yesStart : noPool - noStart
+
+  const adjShareValue = Math.min(Math.min(1, f) * shareValue, myPool)
+
+  const newPool =
+    outcome === 'YES'
+      ? { YES: yesPool - adjShareValue, NO: noPool }
+      : { YES: yesPool, NO: noPool - adjShareValue }
+
+  const newTotalShares =
+    outcome === 'YES'
+      ? { YES: yesShares - shares, NO: noShares }
+      : { YES: yesShares, NO: noShares - shares }
 
   const probBefore = yesPool ** 2 / (yesPool ** 2 + noPool ** 2)
-  const probAverage = p
   const probAfter = newPool.YES ** 2 / (newPool.YES ** 2 + newPool.NO ** 2)
 
-  const keep = 1 - CREATOR_FEE - PLATFORM_FEE
+  const creatorFee = CREATOR_FEE * adjShareValue
+  const saleAmount = (1 - CREATOR_FEE - PLATFORM_FEE) * adjShareValue
 
-  const [saleAmount, creatorFee] = outcome === 'YES'
-    ? [{ YES: sellYesAmount, NO: keep * sellNoAmount }, CREATOR_FEE * sellNoAmount]
-    : [{ YES: keep * sellYesAmount, NO: sellNoAmount }, CREATOR_FEE * sellYesAmount]
-
-  console.log('SELL M$', amount, outcome, 'at', p, 'prob', 'for M$', saleAmount.YES + saleAmount.NO, 'creator fee: M$', creatorFee)
+  console.log(
+    'SELL M$',
+    amount,
+    outcome,
+    'for M$',
+    saleAmount,
+    'M$/share:',
+    f,
+    'creator fee: M$',
+    creatorFee
+  )
 
   const newBet: Bet = {
     id: newBetId,
     userId: user.id,
     contractId: contract.id,
-    amount: -amount,
-    dpmWeight: -dpmWeight,
+    amount: -adjShareValue,
+    shares: -shares,
     outcome,
     probBefore,
-    probAverage,
     probAfter,
     createdTime: Date.now(),
     sale: {
       amount: saleAmount,
-      betId
-    }
+      betId,
+    },
   }
 
-  const newBalance = user.balance + sellYesAmount + sellNoAmount
+  const newBalance = user.balance + saleAmount
 
-  return { newBet, newPool, newDpmWeights, newBalance, creatorFee }
+  return { newBet, newPool, newTotalShares, newBalance, creatorFee }
 }

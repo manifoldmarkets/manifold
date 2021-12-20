@@ -12,7 +12,7 @@ export type Contract = {
 
   startPool: { YES: number; NO: number }
   pool: { YES: number; NO: number }
-  dpmWeights: { YES: number; NO: number }
+  totalShares: { YES: number; NO: number }
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime: number // If the question or description was changed

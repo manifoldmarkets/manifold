@@ -257,7 +257,16 @@ export function ContractBetsTable(props: {
 
 function BetRow(props: { bet: Bet; contract: Contract }) {
   const { bet, contract } = props
-  const { amount, outcome, createdTime, probBefore, probAfter, dpmWeight, sale, isSold } = bet
+  const {
+    amount,
+    outcome,
+    createdTime,
+    probBefore,
+    probAfter,
+    shares,
+    sale,
+    isSold,
+  } = bet
   const { isResolved } = contract
 
   return (
@@ -270,7 +279,7 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
-      {!isResolved && <td>{formatMoney(amount + dpmWeight)}</td>}
+      {!isResolved && <td>{formatMoney(shares)}</td>}
       <td>
         {formatMoney(
           isResolved
@@ -279,14 +288,19 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
         )}
       </td>
 
-      {!isResolved && !sale && !isSold &&
+      {!isResolved && !sale && !isSold && (
         <td>
-          <button className='btn' onClick={async e => {
-            e.preventDefault()
-            await sellBet({ contractId: contract.id, betId: bet.id })
-          }}>Sell</button>
+          <button
+            className="btn"
+            onClick={async (e) => {
+              e.preventDefault()
+              await sellBet({ contractId: contract.id, betId: bet.id })
+            }}
+          >
+            Sell
+          </button>
         </td>
-      }
+      )}
     </tr>
   )
 }

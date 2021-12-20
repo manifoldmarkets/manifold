@@ -12,7 +12,7 @@ import { formatMoney, formatPercent } from '../lib/util/format'
 import { Title } from './title'
 import {
   getProbability,
-  getDpmWeight,
+  calculateShares,
   getProbabilityAfterBet,
 } from '../lib/calculation/contract'
 import { firebaseLogin } from '../lib/firebase/users'
@@ -84,9 +84,9 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     betChoice,
     betAmount ?? 0
   )
-  const dpmWeight = getDpmWeight(contract.pool, betAmount ?? 0, betChoice)
+  const shares = calculateShares(contract.pool, betAmount ?? 0, betChoice)
 
-  const estimatedWinnings = Math.floor((betAmount ?? 0) + dpmWeight)
+  const estimatedWinnings = Math.floor(shares)
   const estimatedReturn = betAmount
     ? (estimatedWinnings - betAmount) / betAmount
     : 0
