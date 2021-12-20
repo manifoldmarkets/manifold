@@ -52,7 +52,11 @@ export function AddFundsButton() {
             </label>
 
             <form
-              action={checkoutURL(user?.id || '', amountSelected)}
+              action={checkoutURL(
+                user?.id || '',
+                amountSelected,
+                window.location.href
+              )}
               method="POST"
             >
               <button

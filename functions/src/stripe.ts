@@ -37,7 +37,8 @@ export const createCheckoutSession = functions
       return
     }
 
-    const referrer = req.headers.referer || 'https://mantic.markets'
+    const referrer =
+      req.query.referer || req.headers.referer || 'https://mantic.markets'
 
     const session = await stripe.checkout.sessions.create({
       metadata: {
@@ -54,8 +55,8 @@ export const createCheckoutSession = functions
         },
       ],
       mode: 'payment',
-      success_url: `${referrer}/?funding-success`,
-      cancel_url: `${referrer}/?funding-failiure`,
+      success_url: `${referrer}?funding-success`,
+      cancel_url: `${referrer}?funding-failiure`,
     })
 
     res.redirect(303, session.url || '')
