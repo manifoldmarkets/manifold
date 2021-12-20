@@ -16,7 +16,9 @@ export function AddFundsButton() {
     <>
       <label
         htmlFor="add-funds"
-        className={clsx('btn btn-sm btn-secondary modal-button')}
+        className={clsx(
+          'btn btn-sm modal-button bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 font-normal border-none'
+        )}
       >
         Add funds
       </label>
