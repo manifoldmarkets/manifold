@@ -1,5 +1,5 @@
 import { cloneElement } from 'react'
-import { Header } from '../components/header'
+import { NavBar } from '../components/nav-bar'
 import { SEO } from '../components/SEO'
 import styles from './about.module.css'
 
@@ -7,7 +7,7 @@ export default function About() {
   return (
     <div className="max-w-3xl px-4 mx-auto">
       <SEO title="About" description="About" url="/about" />
-      <Header />
+      <NavBar />
       <Contents />
     </div>
   )

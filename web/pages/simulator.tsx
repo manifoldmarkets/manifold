@@ -3,7 +3,7 @@ import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 
 import { Entry, makeEntries } from '../lib/simulator/entries'
-import { Header } from '../components/header'
+import { NavBar } from '../components/nav-bar'
 import { Col } from '../components/layout/col'
 
 function TableBody(props: { entries: Entry[] }) {
@@ -149,9 +149,7 @@ function NewBidTable(props: {
 
   function randomBid() {
     const bidType = Math.random() < 0.5 ? 'YES' : 'NO'
-    const p = bidType === 'YES'
-      ? nextEntry.prob
-      : 1 - nextEntry.prob
+    const p = bidType === 'YES' ? nextEntry.prob : 1 - nextEntry.prob
 
     const amount = Math.round(p * Math.random() * 300) + 1
     const bid = makeBid(bidType, amount)
@@ -256,7 +254,7 @@ export default function Simulator() {
 
   return (
     <Col>
-      <Header />
+      <NavBar />
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full mt-8 p-2 mx-auto text-center">
         {/* Left column */}
         <div>
