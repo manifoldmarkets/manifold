@@ -47,13 +47,11 @@ function PredictionRow(props: { prediction: Prediction }) {
 function PredictionList(props: { predictions: Prediction[] }) {
   const { predictions } = props
   return (
-    <div className="w-full bg-gray-100 rounded-lg shadow-xl px-6 py-4">
-      <Col className="divide-gray-300 divide-y border-gray-300 border rounded-md">
-        {predictions.map((prediction) => (
-          <PredictionRow key={prediction.question} prediction={prediction} />
-        ))}
-      </Col>
-    </div>
+    <Col className="divide-gray-300 divide-y border-gray-300 border rounded-md">
+      {predictions.map((prediction) => (
+        <PredictionRow key={prediction.question} prediction={prediction} />
+      ))}
+    </Col>
   )
 }
 
@@ -147,30 +145,32 @@ ${TEST_VALUE}
             onChange={(e) => setDescription(e.target.value || '')}
           />
         </div>
-      </div>
 
-      {predictions.length > 0 && (
-        <div>
-          <Spacer h={16} />
-          <Title text="Preview" />
-          <PredictionList predictions={predictions} />
+        {predictions.length > 0 && (
+          <div>
+            <Spacer h={4} />
+            <label className="label">
+              <span className="label-text">Preview</span>
+            </label>
+            <PredictionList predictions={predictions} />
+          </div>
+        )}
+
+        <Spacer h={4} />
+
+        <div className="flex justify-end my-4">
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={predictions.length === 0}
+            onClick={(e) => {
+              e.preventDefault()
+              createContracts()
+            }}
+          >
+            Create all
+          </button>
         </div>
-      )}
-
-      <Spacer h={4} />
-
-      <div className="flex justify-end my-4">
-        <button
-          type="submit"
-          className="btn btn-primary"
-          // disabled={isSubmitting || !question}
-          onClick={(e) => {
-            e.preventDefault()
-            createContracts()
-          }}
-        >
-          Create all
-        </button>
       </div>
     </Page>
   )
