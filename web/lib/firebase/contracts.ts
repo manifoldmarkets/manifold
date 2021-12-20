@@ -105,7 +105,7 @@ export async function listContracts(creatorId: string): Promise<Contract[]> {
 }
 
 export async function listAllContracts(): Promise<Contract[]> {
-  const q = query(contractCollection, orderBy('createdTime', 'desc'), limit(25))
+  const q = query(contractCollection, orderBy('createdTime', 'desc'), limit(99))
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => doc.data() as Contract)
 }
@@ -113,7 +113,7 @@ export async function listAllContracts(): Promise<Contract[]> {
 export function listenForContracts(
   setContracts: (contracts: Contract[]) => void
 ) {
-  const q = query(contractCollection, orderBy('createdTime', 'desc'), limit(25))
+  const q = query(contractCollection, orderBy('createdTime', 'desc'), limit(99))
   return onSnapshot(q, (snap) => {
     setContracts(snap.docs.map((doc) => doc.data() as Contract))
   })
