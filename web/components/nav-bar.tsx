@@ -7,9 +7,6 @@ import { firebaseLogin, User } from '../lib/firebase/users'
 import { ManticLogo } from './mantic-logo'
 import { ProfileMenu } from './profile-menu'
 
-const hoverClasses =
-  'hover:underline hover:decoration-indigo-400 hover:decoration-2'
-
 export function NavBar(props: {
   darkBackground?: boolean
   className?: string
@@ -19,19 +16,22 @@ export function NavBar(props: {
 
   const user = useUser()
 
+  const hoverClasses =
+    'hover:underline hover:decoration-indigo-400 hover:decoration-2'
   const themeClasses = clsx(darkBackground && 'text-white', hoverClasses)
 
   return (
     <nav
       className={clsx(
-        'w-full flex flex-row justify-between md:justify-start pt-5 pb-4',
+        'w-full flex flex-row justify-center items-center p-4 shadow-sm mb-4',
+        !darkBackground && 'bg-white',
         className
       )}
       aria-label="Global"
     >
       <ManticLogo darkBackground={darkBackground} />
 
-      <Row className="gap-6 sm:gap-8 mt-1 md:ml-16">
+      <Row className="items-center gap-6 sm:gap-8 md:ml-16 lg:ml-40">
         {children}
 
         {user ? (

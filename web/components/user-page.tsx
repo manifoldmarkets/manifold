@@ -1,5 +1,4 @@
 import { firebaseLogout, User } from '../lib/firebase/users'
-import { NavBar } from './nav-bar'
 import { ContractsList } from './contracts-list'
 import { Title } from './title'
 import { Row } from './layout/row'
@@ -7,6 +6,7 @@ import { formatMoney } from '../lib/util/format'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { SEO } from './SEO'
+import { Page } from './page'
 
 export function UserLink(props: { username: string; className?: string }) {
   const { username, className } = props
@@ -70,20 +70,18 @@ export function UserPage(props: { user: User; currentUser?: User }) {
   const possesive = isCurrentUser ? 'Your ' : `${user.username}'s `
 
   return (
-    <div className="max-w-4xl px-4 pb-8 mx-auto">
+    <Page>
       <SEO
         title={possesive + 'markets'}
         description={possesive + 'markets'}
         url={`/@${user.username}`}
       />
 
-      <NavBar />
-
       {/* <UserCard user={user} showPrivateInfo={isCurrentUser} /> */}
 
       <Title text={possesive + 'markets'} />
 
       <ContractsList creator={user} />
-    </div>
+    </Page>
   )
 }

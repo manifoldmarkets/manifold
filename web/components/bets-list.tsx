@@ -114,7 +114,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
     >
       <Row className="flex-wrap gap-4">
         <Col className="flex-[2] gap-1">
-          <Row className="mr-10">
+          <Row className="mr-6">
             <Link href={path(contract)}>
               <a
                 className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
@@ -147,7 +147,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
         </Col>
 
         <MyBetsSummary
-          className="flex-1 justify-end mr-8"
+          className="flex-1 justify-end mr-5 sm:mr-8"
           contract={contract}
           bets={bets}
         />
@@ -187,7 +187,7 @@ export function MyBetsSummary(props: {
   )
 
   return (
-    <Row className={clsx('gap-6', className)}>
+    <Row className={clsx('gap-4 sm:gap-6', className)}>
       <Col>
         <div className="text-sm text-gray-500 whitespace-nowrap">
           Total bets

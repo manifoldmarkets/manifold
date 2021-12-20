@@ -1,15 +1,14 @@
 import { cloneElement } from 'react'
-import { NavBar } from '../components/nav-bar'
+import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import styles from './about.module.css'
 
 export default function About() {
   return (
-    <div className="max-w-3xl px-4 mx-auto">
+    <Page>
       <SEO title="About" description="About" url="/about" />
-      <NavBar />
       <Contents />
-    </div>
+    </Page>
   )
 }
 
