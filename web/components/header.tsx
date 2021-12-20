@@ -150,9 +150,10 @@ export function Header(props: {
           />
           <div
             className={clsx(
-              'font-major-mono mt-1 sm:text-2xl md:whitespace-nowrap',
+              'font-major-mono lowercase mt-1 sm:text-2xl md:whitespace-nowrap',
               darkBackground && 'text-white'
             )}
+            style={{ fontFamily: 'Major Mono Display,monospace' }}
           >
             Mantic Markets
           </div>
