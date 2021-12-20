@@ -11,7 +11,7 @@ import { firebaseLogin } from '../lib/firebase/users'
 import { useContracts } from '../hooks/use-contracts'
 import { SearchableGrid } from '../components/contracts-list'
 import { Col } from '../components/layout/col'
-import { Header } from '../components/header'
+import { NavBar } from '../components/nav-bar'
 import Link from 'next/link'
 
 export default function LandingPage() {
@@ -33,14 +33,14 @@ function Hero() {
   return (
     <div className="overflow-hidden h-screen bg-world-trading bg-cover bg-gray-900 bg-center lg:bg-left">
       <div className="max-w-7xl w-full mx-auto">
-        <Header className="px-6 sm:px-8" darkBackground>
+        <NavBar className="px-6 sm:px-8" darkBackground>
           <div
             className="text-base font-medium text-white cursor-pointer hover:underline hover:decoration-teal-500 hover:decoration-2"
             onClick={scrollToAbout}
           >
             About
           </div>
-        </Header>
+        </NavBar>
       </div>
       <main>
         <div className="pt-32 sm:pt-8 lg:pt-0 lg:pb-14 lg:overflow-hidden">

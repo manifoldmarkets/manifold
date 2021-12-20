@@ -1,5 +1,5 @@
 import React from 'react'
-import { Header } from '../components/header'
+import { NavBar } from '../components/nav-bar'
 import { UserPage } from '../components/user-page'
 import { useUser } from '../hooks/use-user'
 import { firebaseLogin } from '../lib/firebase/users'
@@ -35,7 +35,7 @@ export default function Account() {
     <UserPage user={user} currentUser={user} />
   ) : (
     <div className="max-w-4xl px-4 pb-8 mx-auto">
-      <Header />
+      <NavBar />
       <SignInCard />
     </div>
   )

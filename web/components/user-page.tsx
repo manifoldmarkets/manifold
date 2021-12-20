@@ -1,5 +1,5 @@
 import { firebaseLogout, User } from '../lib/firebase/users'
-import { Header } from './header'
+import { NavBar } from './nav-bar'
 import { ContractsList } from './contracts-list'
 import { Title } from './title'
 import { Row } from './layout/row'
@@ -77,7 +77,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         url={`/@${user.username}`}
       />
 
-      <Header />
+      <NavBar />
 
       {/* <UserCard user={user} showPrivateInfo={isCurrentUser} /> */}
 

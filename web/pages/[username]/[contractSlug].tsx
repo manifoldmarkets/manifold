@@ -2,7 +2,7 @@ import React from 'react'
 import clsx from 'clsx'
 
 import { useContractWithPreload } from '../../hooks/use-contract'
-import { Header } from '../../components/header'
+import { NavBar } from '../../components/nav-bar'
 import { ContractOverview } from '../../components/contract-overview'
 import { BetPanel } from '../../components/bet-panel'
 import { Col } from '../../components/layout/col'
@@ -64,7 +64,7 @@ export default function ContractPage(props: {
         url={`/${props.username}/${props.slug}`}
       />
 
-      <Header />
+      <NavBar />
 
       <Col className="w-full md:flex-row justify-between mt-6">
         <div className="flex-[3]">

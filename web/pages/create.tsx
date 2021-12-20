@@ -2,7 +2,7 @@ import router from 'next/router'
 import { useEffect, useState } from 'react'
 
 import { ContractsList } from '../components/contracts-list'
-import { Header } from '../components/header'
+import { NavBar } from '../components/nav-bar'
 import { Spacer } from '../components/layout/spacer'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
@@ -43,7 +43,7 @@ export default function NewContract() {
 
   return (
     <div className="max-w-4xl px-4 pb-8 mx-auto">
-      <Header />
+      <NavBar />
 
       <Title text="Create a new prediction market" />
 

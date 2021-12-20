@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import { SearchableGrid } from '../../components/contracts-list'
-import { Header } from '../../components/header'
+import { NavBar } from '../../components/nav-bar'
 import { Title } from '../../components/title'
 import { useContracts } from '../../hooks/use-contracts'
 
@@ -20,7 +20,7 @@ export default function TagPage() {
 
   return (
     <div className="max-w-4xl px-4 pb-8 mx-auto">
-      <Header />
+      <NavBar />
       <Title text={`#${tag}`} />
       <SearchableGrid contracts={contracts === 'loading' ? [] : contracts} />
     </div>
