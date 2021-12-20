@@ -24,7 +24,12 @@ export function AddFundsButton() {
 
       <div className="modal">
         <div className="modal-box">
-          <div className="text-lg mb-6">Buy Mantic Dollars</div>
+          <div className="text-lg mb-6">Get Mantic Dollars</div>
+
+          <div className="text-gray-500 mb-6">
+            Use Mantic Dollars to trade in your favorite markets. <br /> (Not
+            redeemable for cash.)
+          </div>
 
           <div className="text-gray-500 text-sm mb-2">Amount</div>
           <FundsSelector
