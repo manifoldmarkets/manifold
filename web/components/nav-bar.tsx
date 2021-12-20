@@ -9,10 +9,11 @@ import { ProfileMenu } from './profile-menu'
 
 export function NavBar(props: {
   darkBackground?: boolean
+  wide?: boolean
   className?: string
   children?: any
 }) {
-  const { darkBackground, className, children } = props
+  const { darkBackground, wide, className, children } = props
 
   const user = useUser()
 
@@ -23,22 +24,29 @@ export function NavBar(props: {
   return (
     <nav
       className={clsx(
-        'w-full flex flex-row justify-center items-center p-4 shadow-sm mb-4',
+        'w-full p-4 mb-4 shadow-sm',
         !darkBackground && 'bg-white',
         className
       )}
       aria-label="Global"
     >
-      <ManticLogo darkBackground={darkBackground} />
-
-      <Row className="items-center gap-6 sm:gap-8 md:ml-16 lg:ml-40">
-        {children}
-
-        {user ? (
-          <SignedInHeaders user={user} themeClasses={themeClasses} />
-        ) : (
-          <SignedOutHeaders themeClasses={themeClasses} />
+      <Row
+        className={clsx(
+          'justify-between items-center mx-auto px-4',
+          wide ? 'max-w-7xl' : 'max-w-4xl'
         )}
+      >
+        <ManticLogo darkBackground={darkBackground} />
+
+        <Row className="items-center gap-6 sm:gap-8 md:ml-16 lg:ml-40">
+          {children}
+
+          {user ? (
+            <SignedInHeaders user={user} themeClasses={themeClasses} />
+          ) : (
+            <SignedOutHeaders themeClasses={themeClasses} />
+          )}
+        </Row>
       </Row>
     </nav>
   )
