@@ -28,8 +28,10 @@ export function ResolutionPanel(props: {
   const resolve = async () => {
     setIsSubmitting(true)
 
-    const result = await resolveMarket({ outcome, contractId: contract.id })
-      .then(r => r.data as any)
+    const result = await resolveMarket({
+      outcome,
+      contractId: contract.id,
+    }).then((r) => r.data as any)
 
     console.log('resolved', outcome, 'result:', result)
 
@@ -43,17 +45,14 @@ export function ResolutionPanel(props: {
     outcome === 'YES'
       ? 'btn-primary'
       : outcome === 'NO'
-        ? 'bg-red-400 hover:bg-red-500'
-        : outcome === 'CANCEL'
-          ? 'bg-yellow-400 hover:bg-yellow-500'
-          : 'btn-disabled'
+      ? 'bg-red-400 hover:bg-red-500'
+      : outcome === 'CANCEL'
+      ? 'bg-yellow-400 hover:bg-yellow-500'
+      : 'btn-disabled'
 
   return (
     <Col
-      className={clsx(
-        'bg-gray-100 shadow-xl px-8 py-6 rounded-md w-full md:w-auto',
-        className
-      )}
+      className={clsx('bg-gray-100 shadow-xl px-8 py-6 rounded-md', className)}
     >
       <Title className="mt-0" text="Your market" />
 
@@ -67,7 +66,6 @@ export function ResolutionPanel(props: {
       />
 
       <Spacer h={3} />
-
 
       <div>
         {outcome === 'YES' ? (
@@ -87,12 +85,9 @@ export function ResolutionPanel(props: {
         )}
       </div>
 
-
       <Spacer h={3} />
 
-      {!!error &&
-        <div className='text-red-500'>{error}</div>
-      }
+      {!!error && <div className="text-red-500">{error}</div>}
 
       <ConfirmationButton
         id="resolution-modal"

@@ -2,12 +2,12 @@ import router from 'next/router'
 import { useEffect, useState } from 'react'
 
 import { ContractsList } from '../components/contracts-list'
-import { Header } from '../components/header'
 import { Spacer } from '../components/layout/spacer'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
 import { path } from '../lib/firebase/contracts'
 import { createContract } from '../lib/service/create-contract'
+import { Page } from '../components/page'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -42,88 +42,84 @@ export default function NewContract() {
   if (!creator) return <></>
 
   return (
-    <div>
-      <Header />
+    <Page>
+      <Title text="Create a new prediction market" />
 
-      <div className="max-w-4xl py-12 lg:mx-auto px-4">
-        <Title text="Create a new prediction market" />
+      <div className="w-full bg-gray-100 rounded-lg shadow-xl px-6 py-4">
+        {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
+        {/* When the form is submitted, create a new contract in the database */}
+        <form>
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Question</span>
+            </label>
 
-        <div className="w-full bg-gray-100 rounded-lg shadow-xl px-6 py-4">
-          {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
-          {/* When the form is submitted, create a new contract in the database */}
-          <form>
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Question</span>
-              </label>
+            <input
+              type="text"
+              placeholder="e.g. Will the FDA approve Paxlovid before Jun 2nd, 2022?"
+              className="input"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value || '')}
+            />
+          </div>
 
-              <input
-                type="text"
-                placeholder="e.g. Will the FDA approve Paxlovid before Jun 2nd, 2022?"
-                className="input"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value || '')}
-              />
-            </div>
+          <Spacer h={4} />
 
-            <Spacer h={4} />
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Description (optional)</span>
+            </label>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Description (optional)</span>
-              </label>
+            <textarea
+              className="textarea h-24 textarea-bordered"
+              placeholder={descriptionPlaceholder}
+              value={description}
+              onChange={(e) => setDescription(e.target.value || '')}
+            ></textarea>
+          </div>
 
-              <textarea
-                className="textarea h-24 textarea-bordered"
-                placeholder={descriptionPlaceholder}
-                value={description}
-                onChange={(e) => setDescription(e.target.value || '')}
-              ></textarea>
-            </div>
+          <Spacer h={4} />
 
-            <Spacer h={4} />
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">
+                Initial probability: {initialProb}%
+              </span>
+            </label>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">
-                  Initial probability: {initialProb}%
-                </span>
-              </label>
+            <input
+              type="range"
+              className="range range-lg range-primary"
+              min="1"
+              max={99}
+              value={initialProb}
+              onChange={(e) => setInitialProb(parseInt(e.target.value))}
+            />
+          </div>
 
-              <input
-                type="range"
-                className="range range-lg range-primary"
-                min="1"
-                max={99}
-                value={initialProb}
-                onChange={(e) => setInitialProb(parseInt(e.target.value))}
-              />
-            </div>
+          <Spacer h={4} />
 
-            <Spacer h={4} />
-
-            <div className="flex justify-end my-4">
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isSubmitting || !question}
-                onClick={(e) => {
-                  e.preventDefault()
-                  submit()
-                }}
-              >
-                Create market
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <Spacer h={10} />
-
-        <Title text="Your markets" />
-
-        {creator && <ContractsList creator={creator} />}
+          <div className="flex justify-end my-4">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting || !question}
+              onClick={(e) => {
+                e.preventDefault()
+                submit()
+              }}
+            >
+              Create market
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
+
+      <Spacer h={10} />
+
+      <Title text="Your markets" />
+
+      {creator && <ContractsList creator={creator} />}
+    </Page>
   )
 }

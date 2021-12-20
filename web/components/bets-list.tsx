@@ -108,14 +108,14 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
     <div
       tabIndex={0}
       className={clsx(
-        'p-6 bg-white card card-body shadow-xl collapse collapse-arrow cursor-pointer',
+        'p-6 bg-white card card-body shadow-xl collapse collapse-arrow cursor-pointer relative',
         collapsed ? 'collapse-close' : 'collapse-open pb-2'
       )}
       onClick={() => setCollapsed((collapsed) => !collapsed)}
     >
       <Row className="flex-wrap gap-4">
         <Col className="flex-[2] gap-1">
-          <div>
+          <Row className="mr-6">
             <Link href={path(contract)}>
               <a
                 className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
@@ -124,7 +124,13 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
                 {contract.question}
               </a>
             </Link>
-          </div>
+
+            {/* Show carrot for collapsing. Hack the positioning. */}
+            <div
+              className="collapse-title p-0 absolute w-0 h-0 min-h-0"
+              style={{ top: -10, right: 4 }}
+            />
+          </Row>
 
           <Row className="gap-2 text-gray-500 text-sm">
             <div>
@@ -141,22 +147,17 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
           </Row>
         </Col>
 
-        <Row className="flex-nowrap">
-          <MyBetsSummary
-            className="flex-1 justify-end"
-            contract={contract}
-            bets={bets}
-          />
-
-          {/* Show carrot for collapsing. Hack the positioning. */}
-          <div
-            className="collapse-title p-0 pr-8 relative w-0 h-0 min-h-0"
-            style={{ top: -10, right: -20 }}
-          />
-        </Row>
+        <MyBetsSummary
+          className="flex-1 justify-end mr-5 sm:mr-8"
+          contract={contract}
+          bets={bets}
+        />
       </Row>
 
-      <div className="collapse-content" style={{ backgroundColor: 'white' }}>
+      <div
+        className="collapse-content !px-0"
+        style={{ backgroundColor: 'white' }}
+      >
         <Spacer h={8} />
 
         <ContractBetsTable contract={contract} bets={bets} />
@@ -187,7 +188,7 @@ export function MyBetsSummary(props: {
   )
 
   return (
-    <Row className={clsx('gap-6', className)}>
+    <Row className={clsx('gap-4 sm:gap-6', className)}>
       <Col>
         <div className="text-sm text-gray-500 whitespace-nowrap">
           Total bets
@@ -197,7 +198,7 @@ export function MyBetsSummary(props: {
       {resolution ? (
         <>
           <Col>
-            <div className="text-sm text-gray-500">Winnings</div>
+            <div className="text-sm text-gray-500">Payout</div>
             <div className="whitespace-nowrap">{formatMoney(betsPayout)}</div>
           </Col>
         </>
@@ -309,5 +310,5 @@ function NoLabel() {
 }
 
 function CancelLabel() {
-  return <span className="text-yellow-400">CANCEL</span>
+  return <span className="text-yellow-400">N/A</span>
 }

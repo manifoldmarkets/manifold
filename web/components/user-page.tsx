@@ -1,5 +1,4 @@
 import { firebaseLogout, User } from '../lib/firebase/users'
-import { Header } from './header'
 import { ContractsList } from './contracts-list'
 import { Title } from './title'
 import { Row } from './layout/row'
@@ -7,6 +6,7 @@ import { formatMoney } from '../lib/util/format'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { SEO } from './SEO'
+import { Page } from './page'
 
 export function UserLink(props: { username: string; className?: string }) {
   const { username, className } = props
@@ -29,7 +29,7 @@ export function UserLink(props: { username: string; className?: string }) {
 function UserCard(props: { user: User; showPrivateInfo?: boolean }) {
   const { user, showPrivateInfo } = props
   return (
-    <Row className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
+    <Row className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm my-12 mx-auto">
       <div className="p-4">
         {user?.avatarUrl && (
           <img
@@ -70,24 +70,18 @@ export function UserPage(props: { user: User; currentUser?: User }) {
   const possesive = isCurrentUser ? 'Your ' : `${user.username}'s `
 
   return (
-    <div>
+    <Page>
       <SEO
         title={possesive + 'markets'}
         description={possesive + 'markets'}
         url={`/@${user.username}`}
       />
 
-      <Header />
+      {/* <UserCard user={user} showPrivateInfo={isCurrentUser} /> */}
 
-      <div className="max-w-4xl pt-8 pb-0 sm:pb-8 mx-auto">
-        <div>
-          <UserCard user={user} showPrivateInfo={isCurrentUser} />
+      <Title text={possesive + 'markets'} />
 
-          <Title text={possesive + 'markets'} />
-
-          <ContractsList creator={user} />
-        </div>
-      </div>
-    </div>
+      <ContractsList creator={user} />
+    </Page>
   )
 }

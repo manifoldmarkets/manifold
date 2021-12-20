@@ -13,6 +13,7 @@ import {
 import { formatMoney } from '../lib/util/format'
 import { User } from '../lib/firebase/users'
 import { UserLink } from './user-page'
+import { Linkify } from './linkify'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
@@ -57,9 +58,9 @@ function ContractCard(props: { contract: Contract }) {
         <li className="col-span-1 bg-white hover:bg-gray-100 shadow-xl rounded-lg divide-y divide-gray-200">
           <div className="card">
             <div className="card-body p-6">
-              <Row className="justify-between gap-2 mb-2">
+              <Row className="justify-between gap-4 mb-2">
                 <p className="font-medium text-indigo-700">
-                  {contract.question}
+                  <Linkify text={contract.question} />
                 </p>
                 <div className={clsx('text-4xl', resolutionColor)}>
                   {resolutionText || (
@@ -88,7 +89,7 @@ function ContractsGrid(props: { contracts: Contract[] }) {
 
   if (contracts.length === 0) {
     return (
-      <p>
+      <p className="mx-4">
         No markets found. Would you like to{' '}
         <Link href="/create">
           <a className="text-green-500 hover:underline hover:decoration-2">
@@ -105,7 +106,6 @@ function ContractsGrid(props: { contracts: Contract[] }) {
       {contracts.map((contract) => (
         <ContractCard contract={contract} key={contract.id} />
       ))}
-      {/* TODO: Show placeholder if empty */}
     </ul>
   )
 }
@@ -173,7 +173,7 @@ export function SearchableGrid(props: {
 
 export function ContractsList(props: { creator: User }) {
   const { creator } = props
-  const [contracts, setContracts] = useState<Contract[]>([])
+  const [contracts, setContracts] = useState<Contract[] | 'loading'>('loading')
 
   useEffect(() => {
     if (creator?.id) {
@@ -181,6 +181,8 @@ export function ContractsList(props: { creator: User }) {
       listContracts(creator.id).then(setContracts)
     }
   }, [creator])
+
+  if (contracts === 'loading') return <></>
 
   return <SearchableGrid contracts={contracts} defaultSort="all" />
 }

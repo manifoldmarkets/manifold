@@ -8,7 +8,7 @@ module.exports = {
     fontFamily: Object.assign(
       { ...defaultTheme.fontFamily },
       {
-        'major-mono': ['Major Mono Display', 'monospace'],
+        'major-mono': ['Courier', 'monospace'],
         'readex-pro': ['Readex Pro', 'sans-serif'],
       }
     ),

@@ -11,7 +11,8 @@ import { firebaseLogin } from '../lib/firebase/users'
 import { useContracts } from '../hooks/use-contracts'
 import { SearchableGrid } from '../components/contracts-list'
 import { Col } from '../components/layout/col'
-import { Header } from '../components/header'
+import { NavBar } from '../components/nav-bar'
+import Link from 'next/link'
 
 export default function LandingPage() {
   return (
@@ -23,25 +24,25 @@ export default function LandingPage() {
   )
 }
 
-function Hero() {
-  const scrollToAbout = () => {
-    const aboutElem = document.getElementById('about')
-    window.scrollTo({ top: aboutElem?.offsetTop, behavior: 'smooth' })
-  }
+const scrollToAbout = () => {
+  const aboutElem = document.getElementById('about')
+  window.scrollTo({ top: aboutElem?.offsetTop, behavior: 'smooth' })
+}
 
+function Hero() {
   return (
     <div className="overflow-hidden h-screen bg-world-trading bg-cover bg-gray-900 bg-center lg:bg-left">
-      <Header darkBackground>
+      <NavBar wide darkBackground>
         <div
-          className="text-base font-medium text-white cursor-pointer hover:underline hover:decoration-teal-500 hover:decoration-2"
+          className="text-base font-medium text-white ml-8 cursor-pointer hover:underline hover:decoration-teal-500 hover:decoration-2"
           onClick={scrollToAbout}
         >
           About
         </div>
-      </Header>
+      </NavBar>
       <main>
-        <div className="pt-40 sm:pt-16 lg:pt-8 lg:pb-14 lg:overflow-hidden">
-          <div className="mx-auto max-w-7xl lg:px-8">
+        <div className="pt-32 sm:pt-8 lg:pt-0 lg:pb-14 lg:overflow-hidden">
+          <div className="mx-auto max-w-7xl lg:px-8 xl:px-0">
             <div className="lg:grid lg:grid-cols-2 lg:gap-8">
               <div className="mx-auto max-w-md px-8 sm:max-w-2xl sm:text-center lg:px-0 lg:text-left lg:flex lg:items-center">
                 <div className="lg:py-24">
@@ -51,7 +52,7 @@ function Hero() {
                       prediction markets
                     </div>
                   </h1>
-                  <p className="mt-3 text-base text-gray-300 sm:mt-5 sm:text-xl lg:text-lg xl:text-xl">
+                  <p className="mt-3 text-base text-white sm:mt-5 sm:text-xl lg:text-lg xl:text-xl">
                     Better forecasting through accessible prediction markets
                     <br />
                     for you and your community
@@ -81,9 +82,6 @@ function Hero() {
     </div>
   )
 }
-
-const notionAboutUrl =
-  'https://mantic.notion.site/About-Mantic-Markets-7c44bc161356474cad54cba2d2973fe2'
 
 function FeaturesSection() {
   const features = [
@@ -115,7 +113,7 @@ function FeaturesSection() {
   return (
     <div id="about" className="w-full py-16 bg-green-50">
       <div className="max-w-4xl py-12 mx-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="lg:text-center">
             <h2 className="text-base text-teal-600 font-semibold tracking-wide uppercase">
               Mantic Markets
@@ -150,13 +148,9 @@ function FeaturesSection() {
         </div>
 
         <Col className="mt-20">
-          <a
-            className="btn btn-primary mx-auto"
-            href={notionAboutUrl}
-            target="_blank"
-          >
-            Learn more
-          </a>
+          <Link href="/about">
+            <a className="btn btn-primary mx-auto">Learn more</a>
+          </Link>
         </Col>
       </div>
     </div>
@@ -167,8 +161,8 @@ function ExploreMarketsSection() {
   const contracts = useContracts()
 
   return (
-    <div className="max-w-4xl py-8 mx-auto">
-      <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-indigo-700 sm:text-4xl">
+    <div className="max-w-4xl px-4 py-8 mx-auto">
+      <p className="my-12 text-3xl leading-8 font-extrabold tracking-tight text-indigo-700 sm:text-4xl">
         Explore our markets
       </p>
       <SearchableGrid contracts={contracts === 'loading' ? [] : contracts} />

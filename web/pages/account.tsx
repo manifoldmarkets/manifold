@@ -1,11 +1,12 @@
 import React from 'react'
+import { Page } from '../components/page'
 import { UserPage } from '../components/user-page'
 import { useUser } from '../hooks/use-user'
 import { firebaseLogin } from '../lib/firebase/users'
 
 function SignInCard() {
   return (
-    <div className="card glass lg:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-auto my-12">
+    <div className="card glass sm:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-4 sm:mx-auto my-12">
       <div className="p-4">
         <img
           src="/logo-icon-white-bg.png"
@@ -30,5 +31,11 @@ function SignInCard() {
 
 export default function Account() {
   const user = useUser()
-  return user ? <UserPage user={user} currentUser={user} /> : <SignInCard />
+  return user ? (
+    <UserPage user={user} currentUser={user} />
+  ) : (
+    <Page>
+      <SignInCard />
+    </Page>
+  )
 }
