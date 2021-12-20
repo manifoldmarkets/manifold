@@ -41,6 +41,7 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
     },
     {
       name: 'Sign out',
+      href: '#',
       onClick: () => firebaseLogout(),
     },
   ]
