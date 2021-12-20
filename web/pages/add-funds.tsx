@@ -23,6 +23,12 @@ export default function AddFundsPage() {
       <Col className="items-center">
         <Col>
           <Title text="Get Mantic Dollars" />
+          <Image
+            className="block mt-6"
+            src="/praying-mantis-light.svg"
+            width={200}
+            height={200}
+          />
 
           <div className="text-gray-500 mb-6">
             Use Mantic Dollars to trade in your favorite markets. <br /> (Not
@@ -50,19 +56,12 @@ export default function AddFundsPage() {
           >
             <button
               type="submit"
-              className="btn btn-primary px-16 font-medium bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
+              className="btn btn-primary w-full font-medium bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
             >
               Checkout
             </button>
           </form>
         </Col>
-        <Spacer h={4} />
-        <Image
-          className="block mt-6"
-          src="/praying-mantis-light.svg"
-          width={200}
-          height={200}
-        />
       </Col>
     </Page>
   )
