@@ -1,8 +1,6 @@
 import React from 'react'
-import clsx from 'clsx'
 
 import { useContractWithPreload } from '../../hooks/use-contract'
-import { Header } from '../../components/header'
 import { ContractOverview } from '../../components/contract-overview'
 import { BetPanel } from '../../components/bet-panel'
 import { Col } from '../../components/layout/col'
@@ -15,6 +13,7 @@ import { Spacer } from '../../components/layout/spacer'
 import { User } from '../../lib/firebase/users'
 import { Contract, getContractFromSlug } from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
+import { Page } from '../../components/page'
 
 export async function getStaticProps(props: { params: any }) {
   const { username, contractSlug } = props.params
@@ -52,19 +51,12 @@ export default function ContractPage(props: {
   const isCreator = user?.id === creatorId
 
   return (
-    <Col
-      className={clsx(
-        'px-4 pb-8 mx-auto',
-        isResolved ? 'max-w-4xl' : 'max-w-7xl'
-      )}
-    >
+    <Page wide={!isResolved}>
       <SEO
         title={contract.question}
         description={contract.description}
         url={`/${props.username}/${props.slug}`}
       />
-
-      <Header />
 
       <Col className="w-full md:flex-row justify-between mt-6">
         <div className="flex-[3]">
@@ -86,7 +78,7 @@ export default function ContractPage(props: {
           </>
         )}
       </Col>
-    </Col>
+    </Page>
   )
 }
 
@@ -105,7 +97,6 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
 
   return (
     <div>
-      <Spacer h={6} />
       <Title text="Your bets" />
       <MyBetsSummary contract={contract} bets={userBets} />
       <Spacer h={6} />
