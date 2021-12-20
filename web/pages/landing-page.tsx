@@ -24,24 +24,22 @@ export default function LandingPage() {
   )
 }
 
-function Hero() {
-  const scrollToAbout = () => {
-    const aboutElem = document.getElementById('about')
-    window.scrollTo({ top: aboutElem?.offsetTop, behavior: 'smooth' })
-  }
+const scrollToAbout = () => {
+  const aboutElem = document.getElementById('about')
+  window.scrollTo({ top: aboutElem?.offsetTop, behavior: 'smooth' })
+}
 
+function Hero() {
   return (
     <div className="overflow-hidden h-screen bg-world-trading bg-cover bg-gray-900 bg-center lg:bg-left">
-      <div className="max-w-7xl w-full mx-auto">
-        <NavBar className="px-6 sm:px-8" darkBackground>
-          <div
-            className="text-base font-medium text-white cursor-pointer hover:underline hover:decoration-teal-500 hover:decoration-2"
-            onClick={scrollToAbout}
-          >
-            About
-          </div>
-        </NavBar>
-      </div>
+      <NavBar className="max-w-4xl" darkBackground>
+        <div
+          className="text-base font-medium text-white ml-8 cursor-pointer hover:underline hover:decoration-teal-500 hover:decoration-2"
+          onClick={scrollToAbout}
+        >
+          About
+        </div>
+      </NavBar>
       <main>
         <div className="pt-32 sm:pt-8 lg:pt-0 lg:pb-14 lg:overflow-hidden">
           <div className="mx-auto max-w-7xl lg:px-8">

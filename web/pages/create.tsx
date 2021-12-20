@@ -2,12 +2,12 @@ import router from 'next/router'
 import { useEffect, useState } from 'react'
 
 import { ContractsList } from '../components/contracts-list'
-import { NavBar } from '../components/nav-bar'
 import { Spacer } from '../components/layout/spacer'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
 import { path } from '../lib/firebase/contracts'
 import { createContract } from '../lib/service/create-contract'
+import { Page } from '../components/page'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -42,9 +42,7 @@ export default function NewContract() {
   if (!creator) return <></>
 
   return (
-    <div className="max-w-4xl px-4 pb-8 mx-auto">
-      <NavBar />
-
+    <Page>
       <Title text="Create a new prediction market" />
 
       <div className="w-full bg-gray-100 rounded-lg shadow-xl px-6 py-4">
@@ -122,6 +120,6 @@ export default function NewContract() {
       <Title text="Your markets" />
 
       {creator && <ContractsList creator={creator} />}
-    </div>
+    </Page>
   )
 }
