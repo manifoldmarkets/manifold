@@ -23,8 +23,8 @@ export function AddFundsButton() {
       <input type="checkbox" id="add-funds" className="modal-toggle" />
 
       <div className="modal">
-        <div className="modal-box">
-          <div className="text-lg mb-6">Get Mantic Dollars</div>
+        <div className="modal-box bg-green-50">
+          <div className="text-xl mb-6">Get Mantic Dollars</div>
 
           <div className="text-gray-500 mb-6">
             Use Mantic Dollars to trade in your favorite markets. <br /> (Not
@@ -39,7 +39,9 @@ export function AddFundsButton() {
 
           <div className="mt-6">
             <div className="text-gray-500 text-sm mb-1">Price USD</div>
-            <div>${Math.round(amountSelected / 100)}.00</div>
+            <div className="text-xl">
+              ${Math.round(amountSelected / 100)}.00
+            </div>
           </div>
 
           <div className="modal-action">
@@ -51,7 +53,10 @@ export function AddFundsButton() {
               action={checkoutURL(user?.id || '', amountSelected)}
               method="POST"
             >
-              <button type="submit" className="btn btn-primary">
+              <button
+                type="submit"
+                className="btn btn-primary px-10 font-medium bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
+              >
                 Checkout
               </button>
             </form>
