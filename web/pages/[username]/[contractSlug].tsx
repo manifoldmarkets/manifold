@@ -97,7 +97,6 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
 
   return (
     <div>
-      <Spacer h={6} />
       <Title text="Your bets" />
       <MyBetsSummary contract={contract} bets={userBets} />
       <Spacer h={6} />

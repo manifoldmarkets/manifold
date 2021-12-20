@@ -32,7 +32,7 @@ export function NavBar(props: {
     >
       <Row
         className={clsx(
-          'justify-between items-center mx-auto px-4',
+          'justify-between items-center mx-auto sm:px-4',
           wide ? 'max-w-7xl' : 'max-w-4xl'
         )}
       >

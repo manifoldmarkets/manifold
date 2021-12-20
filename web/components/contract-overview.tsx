@@ -14,6 +14,7 @@ import { useUser } from '../hooks/use-user'
 import { Row } from './layout/row'
 import dayjs from 'dayjs'
 import { Linkify } from './linkify'
+import clsx from 'clsx'
 
 function ContractDescription(props: {
   contract: Contract
@@ -102,7 +103,7 @@ export const ContractOverview = (props: {
   }[contract.resolution || '']
 
   return (
-    <Col className={className}>
+    <Col className={clsx('mb-6', className)}>
       <Col className="justify-between md:flex-row">
         <Col>
           <div className="text-3xl text-indigo-700 mb-4">
