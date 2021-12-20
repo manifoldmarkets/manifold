@@ -1,4 +1,5 @@
 import * as functions from 'firebase-functions'
+import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 
 import { payUser } from './resolve-market'
@@ -8,19 +9,31 @@ const stripe = new Stripe(functions.config().stripe.apikey, {
   typescript: true,
 })
 
+// manage at https://dashboard.stripe.com/test/products?active=true
 const manticDollarStripePrice = {
   500: 'price_1K8W10GdoFKoCJW7KWORLec1',
+  1000: 'price_1K8bC1GdoFKoCJW76k3g5MJk',
+  2500: 'price_1K8bDSGdoFKoCJW7avAwpV0e',
+  10000: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
 }
 
 export const createCheckoutSession = functions
   .runWith({ minInstances: 1 })
   .https.onRequest(async (req, res) => {
     const userId = req.query.userId?.toString()
-    const manticDollarQuantity =
-      req.query.manticDollarQuantity?.toString() || '500'
+
+    const manticDollarQuantity = req.query.manticDollarQuantity?.toString()
 
     if (!userId) {
-      res.send('Invalid user ID')
+      res.status(400).send('Invalid user ID')
+      return
+    }
+
+    if (
+      !manticDollarQuantity ||
+      !Object.keys(manticDollarStripePrice).includes(manticDollarQuantity)
+    ) {
+      res.status(400).send('Invalid Mantic Dollar quantity')
       return
     }
 
@@ -33,13 +46,16 @@ export const createCheckoutSession = functions
       },
       line_items: [
         {
-          price: manticDollarStripePrice[500],
+          price:
+            manticDollarStripePrice[
+              manticDollarQuantity as unknown as keyof typeof manticDollarStripePrice
+            ],
           quantity: 1,
         },
       ],
       mode: 'payment',
-      success_url: `${referrer}/?success=true`,
-      cancel_url: `${referrer}/?success=false`,
+      success_url: `${referrer}/?funding-success`,
+      cancel_url: `${referrer}/?funding-failiure`,
     })
 
     res.redirect(303, session.url || '')
@@ -64,15 +80,38 @@ export const stripeWebhook = functions
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as any
-      issueMoneys(session)
+      await issueMoneys(session)
     }
 
-    res.status(200)
+    res.status(200).send('success')
   })
 
 const issueMoneys = async (session: any) => {
+  const { id: sessionId } = session
+
+  const query = await firestore
+    .collection('stripe-transactions')
+    .where('sessionId', '==', sessionId)
+    .get()
+
+  if (!query.empty) {
+    console.log('session', sessionId, 'already processed')
+    return
+  }
+
   const { userId, manticDollarQuantity } = session.metadata
   const payout = Number.parseInt(manticDollarQuantity)
 
-  return await payUser([userId, payout])
+  await firestore.collection('stripe-transactions').add({
+    userId,
+    manticDollarQuantity: payout, // save as number
+    sessionId,
+    session,
+  })
+
+  await payUser([userId, payout])
+
+  console.log('user', userId, 'paid M$', payout)
 }
+
+const firestore = admin.firestore()
