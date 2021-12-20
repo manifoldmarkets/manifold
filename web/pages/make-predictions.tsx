@@ -1,3 +1,5 @@
+import clsx from 'clsx'
+import Link from 'next/link'
 import { useState } from 'react'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
@@ -6,12 +8,24 @@ import { Linkify } from '../components/linkify'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
+import { compute, Contract, path } from '../lib/firebase/contracts'
 import { createContract } from '../lib/service/create-contract'
 
 type Prediction = {
   question: string
   description: string
-  initalProb: number
+  initialProb: number
+  createdUrl?: string
+}
+
+function toPrediction(contract: Contract): Prediction {
+  const { startProb } = compute(contract)
+  return {
+    question: contract.question,
+    description: contract.description,
+    initialProb: startProb * 100,
+    createdUrl: path(contract),
+  }
 }
 
 function PredictionRow(props: { prediction: Prediction }) {
@@ -28,7 +42,8 @@ function PredictionRow(props: { prediction: Prediction }) {
       <div className="ml-auto">
         <div className="text-3xl">
           <div className="text-primary">
-            {prediction.initalProb}%<div className="text-lg">chance</div>
+            {prediction.initialProb.toFixed(0)}%
+            <div className="text-lg">chance</div>
           </div>
         </div>
       </div>
@@ -36,7 +51,7 @@ function PredictionRow(props: { prediction: Prediction }) {
       {/* <div>
         <div className="text-3xl">
           <div className="text-primary">
-            {prediction.initalProb}%<div className="text-lg">chance</div>
+            {prediction.initialProb}%<div className="text-lg">chance</div>
           </div>
         </div>
       </div> */}
@@ -48,9 +63,20 @@ function PredictionList(props: { predictions: Prediction[] }) {
   const { predictions } = props
   return (
     <Col className="divide-gray-300 divide-y border-gray-300 border rounded-md">
-      {predictions.map((prediction) => (
-        <PredictionRow key={prediction.question} prediction={prediction} />
-      ))}
+      {predictions.map((prediction) =>
+        prediction.createdUrl ? (
+          <Link href={prediction.createdUrl}>
+            <a>
+              <PredictionRow
+                key={prediction.question}
+                prediction={prediction}
+              />
+            </a>
+          </Link>
+        ) : (
+          <PredictionRow key={prediction.question} prediction={prediction} />
+        )
+      )}
     </Col>
   )
 }
@@ -64,8 +90,10 @@ const TEST_VALUE = `1. Biden approval rating (as per 538) is greater than 50%: 8
 
 export default function MakePredictions() {
   const user = useUser()
-  const [predictionsString, setBulkContracts] = useState('')
+  const [predictionsString, setPredictionsString] = useState('')
   const [description, setDescription] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [createdContracts, setCreatedContracts] = useState<Contract[]>([])
 
   const bulkPlaceholder = `e.g.
 ${TEST_VALUE}
@@ -75,13 +103,13 @@ ${TEST_VALUE}
   const predictions: Prediction[] = []
 
   // Parse bulkContracts, then run createContract for each
-  const lines = predictionsString.split('\n')
+  const lines = predictionsString ? predictionsString.split('\n') : []
   for (const line of lines) {
     // Parse line with regex
     const matches = line.match(/^(.*):\s*(\d+)%\s*$/) || ['', '', '']
     const [_, question, prob] = matches
 
-    if (!user || !question || !prob) {
+    if (!question || !prob) {
       console.error('Invalid prediction: ', line)
       continue
     }
@@ -89,7 +117,7 @@ ${TEST_VALUE}
     predictions.push({
       question,
       description,
-      initalProb: parseInt(prob),
+      initialProb: parseInt(prob),
     })
   }
 
@@ -99,16 +127,18 @@ ${TEST_VALUE}
       console.error('You need to be signed in!')
       return
     }
+    setIsSubmitting(true)
     for (const prediction of predictions) {
-      await createContract(
+      const contract = await createContract(
         prediction.question,
         prediction.description,
-        prediction.initalProb,
+        prediction.initialProb,
         user
       )
-      // TODO: Convey success in the UI
-      console.log('Created contract: ', prediction.question)
+      setCreatedContracts((prev) => [...prev, contract])
     }
+    setPredictionsString('')
+    setIsSubmitting(false)
   }
 
   return (
@@ -125,7 +155,7 @@ ${TEST_VALUE}
               className="textarea h-60 textarea-bordered"
               placeholder={bulkPlaceholder}
               value={predictionsString}
-              onChange={(e) => setBulkContracts(e.target.value || '')}
+              onChange={(e) => setPredictionsString(e.target.value || '')}
             ></textarea>
           </div>
         </form>
@@ -161,8 +191,10 @@ ${TEST_VALUE}
         <div className="flex justify-end my-4">
           <button
             type="submit"
-            className="btn btn-primary"
-            disabled={predictions.length === 0}
+            className={clsx('btn btn-primary', {
+              loading: isSubmitting,
+            })}
+            disabled={predictions.length === 0 || isSubmitting}
             onClick={(e) => {
               e.preventDefault()
               createContracts()
@@ -172,6 +204,16 @@ ${TEST_VALUE}
           </button>
         </div>
       </div>
+
+      {createdContracts.length > 0 && (
+        <>
+          <Spacer h={16} />
+          <Title text="Created Predictions" />
+          <div className="w-full bg-gray-100 rounded-lg shadow-xl px-6 py-4">
+            <PredictionList predictions={createdContracts.map(toPrediction)} />
+          </div>
+        </>
+      )}
     </Page>
   )
 }
