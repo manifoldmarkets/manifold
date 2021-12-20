@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import React from 'react'
+import { formatMoney } from '../lib/util/format'
 import { Row } from './layout/row'
 
 export function YesNoSelector(props: {
@@ -87,7 +88,7 @@ export function FundsSelector(props: {
           onClick={() => onSelect(amount as any)}
           className={btnClassName}
         >
-          M$ {amount}
+          {formatMoney(amount)}
         </Button>
       ))}
     </Row>

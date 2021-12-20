@@ -38,7 +38,7 @@ export function AddFundsButton() {
           </div>
 
           <div className="modal-action">
-            <label htmlFor="add-funds" className={clsx('btn')}>
+            <label htmlFor="add-funds" className={clsx('btn btn-ghost')}>
               Back
             </label>
 
