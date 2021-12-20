@@ -32,7 +32,7 @@ const scrollToAbout = () => {
 function Hero() {
   return (
     <div className="overflow-hidden h-screen bg-world-trading bg-cover bg-gray-900 bg-center lg:bg-left">
-      <NavBar className="max-w-4xl" darkBackground>
+      <NavBar wide darkBackground>
         <div
           className="text-base font-medium text-white ml-8 cursor-pointer hover:underline hover:decoration-teal-500 hover:decoration-2"
           onClick={scrollToAbout}
@@ -42,7 +42,7 @@ function Hero() {
       </NavBar>
       <main>
         <div className="pt-32 sm:pt-8 lg:pt-0 lg:pb-14 lg:overflow-hidden">
-          <div className="mx-auto max-w-7xl lg:px-8">
+          <div className="mx-auto max-w-7xl lg:px-8 xl:px-0">
             <div className="lg:grid lg:grid-cols-2 lg:gap-8">
               <div className="mx-auto max-w-md px-8 sm:max-w-2xl sm:text-center lg:px-0 lg:text-left lg:flex lg:items-center">
                 <div className="lg:py-24">
