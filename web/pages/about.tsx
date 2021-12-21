@@ -84,18 +84,16 @@ function Contents() {
             Anyone can create a market for any yes-or-no question.
           </strong>
         </li>
-      </ol>
-      <p>
-        You can ask questions about the future like &quot;Will Taiwan remove its
-        14-day COVID quarantine by Jun 01, 2022?&quot; Then use the information
-        to plan your trip.
-      </p>
-      <p>
-        You can also ask subjective, personal questions like &quot;Will I enjoy
-        my 2022 Taiwan trip?&quot;. Then share the market with your family and
-        friends.
-      </p>
-      <ol>
+        <p>
+          You can ask questions about the future like &quot;Will Taiwan remove
+          its 14-day COVID quarantine by Jun 01, 2022?&quot; Then use the
+          information to plan your trip.
+        </p>
+        <p>
+          You can also ask subjective, personal questions like &quot;Will I
+          enjoy my 2022 Taiwan trip?&quot;. Then share the market with your
+          family and friends.
+        </p>
         <li>
           <strong>
             Anyone can bet on a market using Mantic Dollars (M$), our platform
