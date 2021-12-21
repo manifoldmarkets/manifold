@@ -51,11 +51,13 @@ export function compute(contract: Contract) {
   const volume = pool.YES + pool.NO - startPool.YES - startPool.NO
   const prob = pool.YES ** 2 / (pool.YES ** 2 + pool.NO ** 2)
   const probPercent = Math.round(prob * 100) + '%'
+  const startProb =
+    startPool.YES ** 2 / (startPool.YES ** 2 + startPool.NO ** 2)
   const createdDate = dayjs(createdTime).format('MMM D')
   const resolvedDate = isResolved
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
-  return { volume, probPercent, createdDate, resolvedDate }
+  return { volume, probPercent, startProb, createdDate, resolvedDate }
 }
 
 const db = getFirestore(app)
