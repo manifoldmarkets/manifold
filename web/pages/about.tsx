@@ -104,20 +104,22 @@ function Contents() {
       <p>
         You get M$ 1,000 just for signing up, so you can start betting
         immediately! When a market creator decides an outcome in your favor,
-        you&#39;ll win money from people who bet against you.
+        you&#39;ll win Mantic Dollars from people who bet against you.
       </p>
-      <p>
+      {/* <p>
         If you run out of money, you can purchase more at a rate of $1 USD to M$
         100. (Note that Mantic Dollars are not convertible to cash and can only
         be used within our platform.)
-      </p>
+      </p> */}
       <aside>
-        💡 We&#39;re still in Open Beta; we&#39;ll tweak this model and
-        periodically reset balances before our official launch. If you purchase
-        any M$ during the beta, we promise to honor that when we launch!
+        💡 We&#39;re still in Open Beta; we&#39;ll tweak the amounts of Mantic
+        Dollars given out and periodically reset balances before our official
+        launch.
+        {/* If you purchase
+        any M$ during the beta, we promise to honor that when we launch! */}
       </aside>
 
-      <h3 id="why-do-i-want-to-bet-with-play-money-">
+      {/* <h3 id="why-do-i-want-to-bet-with-play-money-">
         Why do I want to bet with play-money?
       </h3>
       <p>
@@ -136,7 +138,7 @@ function Contents() {
         We also have some thoughts on how to reward bettors: physical swag,
         exclusive conversations with market creators, NFTs...? If you have
         ideas, let us know!
-      </p>
+      </p> */}
       <h3 id="can-prediction-markets-work-without-real-money-">
         Can prediction markets work without real money?
       </h3>
@@ -198,7 +200,7 @@ function Contents() {
       <h3 id="how-is-this-different-from-metaculus-or-hypermind-">
         How is this different from Metaculus or Hypermind?
       </h3>
-      <p>
+      {/* <p>
         We believe that in order to get the best results, you have to have skin
         in the game. We require that people use real money to buy the currency
         they use on our platform.
@@ -207,9 +209,9 @@ function Contents() {
         With Mantic Dollars being a scarce resource, people will bet more
         carefully and can&#39;t rig the outcome by creating multiple accounts.
         The result is more accurate predictions.
-      </p>
+      </p> */}
       <p>
-        Mantic Markets is also focused on accessibility and allowing anyone to
+        Mantic Markets is focused on accessibility and allowing anyone to
         quickly create and judge a prediction market. When we all have the power
         to create and share prediction markets in seconds and apply our own
         judgment on the outcome, it leads to a qualitative shift in the number,
