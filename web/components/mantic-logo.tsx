@@ -17,7 +17,6 @@ export function ManticLogo(props: { darkBackground?: boolean }) {
             'font-major-mono lowercase mt-1 sm:text-2xl md:whitespace-nowrap',
             darkBackground && 'text-white'
           )}
-          style={{ fontFamily: 'Major Mono Display,monospace' }}
         >
           Mantic Markets
         </div>
