@@ -21,7 +21,11 @@ export default function TagPage() {
   return (
     <Page>
       <Title text={`#${tag}`} />
-      <SearchableGrid contracts={contracts === 'loading' ? [] : contracts} />
+      {contracts === 'loading' ? (
+        <></>
+      ) : (
+        <SearchableGrid contracts={contracts} />
+      )}
     </Page>
   )
 }
