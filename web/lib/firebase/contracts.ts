@@ -53,7 +53,6 @@ export function compute(contract: Contract) {
   const probPercent = Math.round(prob * 100) + '%'
   const startProb =
     startPool.YES ** 2 / (startPool.YES ** 2 + startPool.NO ** 2)
-  const startProbPercent = Math.round(startProb * 100) + '%'
   const createdDate = dayjs(createdTime).format('MMM D')
   const resolvedDate = isResolved
     ? dayjs(resolutionTime).format('MMM D')

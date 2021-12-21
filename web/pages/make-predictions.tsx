@@ -149,6 +149,10 @@ ${TEST_VALUE}
           <div className="form-control">
             <label className="label">
               <span className="label-text">Prediction</span>
+              <div className="text-sm text-gray-500 ml-1">
+                One prediction per line, each formatted like "The sun will rise
+                tomorrow: 99%"
+              </div>
             </label>
 
             <textarea
