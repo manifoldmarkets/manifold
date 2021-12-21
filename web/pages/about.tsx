@@ -102,7 +102,7 @@ function Contents() {
         </li>
       </ol>
       <p>
-        You get M$ 100 just for signing up, so you can start betting
+        You get M$ 1,000 just for signing up, so you can start betting
         immediately! When a market creator decides an outcome in your favor,
         you&#39;ll win money from people who bet against you.
       </p>
