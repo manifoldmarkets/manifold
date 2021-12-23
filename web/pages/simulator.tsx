@@ -149,9 +149,9 @@ function NewBidTable(props: {
 
   function randomBid() {
     const bidType = Math.random() < 0.5 ? 'YES' : 'NO'
-    const p = bidType === 'YES' ? nextEntry.prob : 1 - nextEntry.prob
+    // const p = bidType === 'YES' ? nextEntry.prob : 1 - nextEntry.prob
 
-    const amount = Math.round(p * Math.random() * 300) + 1
+    const amount = Math.floor(Math.random() * 300) + 1
     const bid = makeBid(bidType, amount)
 
     bids.splice(steps, 0, bid)
