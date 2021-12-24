@@ -112,7 +112,8 @@ export function calculateSaleAmount(contract: Contract, bet: Bet) {
   const startPool = yesStart + noStart
   const pool = yesPool + noPool - startPool
 
-  const f = outcome === 'YES' ? pool / yesShares : pool / noShares
+  const probBefore = yesPool ** 2 / (yesPool ** 2 + noPool ** 2)
+  const f = pool / (probBefore * yesShares + (1 - probBefore) * noShares)
 
   const myPool = outcome === 'YES' ? yesPool - yesStart : noPool - noStart
 

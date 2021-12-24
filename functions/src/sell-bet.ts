@@ -105,7 +105,9 @@ const getSellBetInfo = (
   const startPool = yesStart + noStart
   const pool = yesPool + noPool - startPool
 
-  const f = outcome === 'YES' ? pool / yesShares : pool / noShares
+  const probBefore = yesPool ** 2 / (yesPool ** 2 + noPool ** 2)
+
+  const f = pool / (probBefore * yesShares + (1 - probBefore) * noShares)
 
   const myPool = outcome === 'YES' ? yesPool - yesStart : noPool - noStart
 
@@ -121,7 +123,6 @@ const getSellBetInfo = (
       ? { YES: yesShares - shares, NO: noShares }
       : { YES: yesShares, NO: noShares - shares }
 
-  const probBefore = yesPool ** 2 / (yesPool ** 2 + noPool ** 2)
   const probAfter = newPool.YES ** 2 / (newPool.YES ** 2 + newPool.NO ** 2)
 
   const creatorFee = CREATOR_FEE * adjShareValue
