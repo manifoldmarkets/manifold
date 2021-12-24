@@ -14,7 +14,7 @@ import {
   getProbability,
   calculateShares,
   getProbabilityAfterBet,
-} from '../lib/calculation/contract'
+} from '../lib/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {

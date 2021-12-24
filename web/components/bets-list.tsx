@@ -13,11 +13,13 @@ import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import {
   calculatePayout,
+  calculateSaleAmount,
   currentValue,
   resolvedPayout,
-} from '../lib/calculation/contract'
+} from '../lib/calculate'
 import clsx from 'clsx'
 import { cloudFunction } from '../lib/firebase/api-call'
+import { ConfirmationButton } from './confirmation-button'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -229,6 +231,11 @@ export function ContractBetsTable(props: {
 }) {
   const { contract, bets, className } = props
 
+  const [sales, buys] = _.partition(bets, (bet) => bet.sale)
+  const salesDict = _.fromPairs(
+    sales.map((sale) => [sale.sale?.betId ?? '', sale])
+  )
+
   const { isResolved } = contract
 
   return (
@@ -238,16 +245,21 @@ export function ContractBetsTable(props: {
           <tr className="p-2">
             <th>Date</th>
             <th>Outcome</th>
-            <th>Bet</th>
+            <th>Amount</th>
             <th>Probability</th>
             {!isResolved && <th>Est. max payout</th>}
             <th>{isResolved ? <>Payout</> : <>Current value</>}</th>
-            {!isResolved && <th></th>}
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {bets.map((bet) => (
-            <BetRow key={bet.id} bet={bet} contract={contract} />
+          {buys.map((bet) => (
+            <BetRow
+              key={bet.id}
+              bet={bet}
+              sale={salesDict[bet.id]}
+              contract={contract}
+            />
           ))}
         </tbody>
       </table>
@@ -255,8 +267,8 @@ export function ContractBetsTable(props: {
   )
 }
 
-function BetRow(props: { bet: Bet; contract: Contract }) {
-  const { bet, contract } = props
+function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
+  const { bet, sale, contract } = props
   const {
     amount,
     outcome,
@@ -264,14 +276,13 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
     probBefore,
     probAfter,
     shares,
-    sale,
     isSold,
   } = bet
   const { isResolved } = contract
 
   return (
     <tr>
-      <td>{dayjs(createdTime).format('MMM D, H:mma')}</td>
+      <td>{dayjs(createdTime).format('MMM D, h:mma')}</td>
       <td>
         <OutcomeLabel outcome={outcome} />
       </td>
@@ -281,25 +292,39 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
       </td>
       {!isResolved && <td>{formatMoney(shares)}</td>}
       <td>
-        {formatMoney(
-          isResolved
-            ? resolvedPayout(contract, bet)
-            : currentValue(contract, bet)
-        )}
+        {bet.isSold
+          ? 'N/A'
+          : formatMoney(
+              isResolved
+                ? resolvedPayout(contract, bet)
+                : bet.sale
+                ? bet.sale.amount ?? 0
+                : currentValue(contract, bet)
+            )}
       </td>
 
-      {!isResolved && !sale && !isSold && (
-        <td>
-          <button
-            className="btn"
-            onClick={async (e) => {
-              e.preventDefault()
-              await sellBet({ contractId: contract.id, betId: bet.id })
-            }}
-          >
-            Sell
-          </button>
-        </td>
+      {sale ? (
+        <td>SOLD for {formatMoney(Math.abs(sale.amount))}</td>
+      ) : (
+        !isResolved &&
+        !isSold && (
+          <td className="text-neutral">
+            <ConfirmationButton
+              id={`sell-${bet.id}`}
+              openModelBtn={{ className: 'btn-sm', label: 'Sell' }}
+              submitBtn={{ className: 'btn-primary' }}
+              onSubmit={async () => {
+                await sellBet({ contractId: contract.id, betId: bet.id })
+              }}
+            >
+              <div className="text-2xl mb-4">Sell</div>
+              <div>
+                Do you want to sell your {formatMoney(bet.amount)} bet for{' '}
+                {formatMoney(calculateSaleAmount(contract, bet))}?
+              </div>
+            </ConfirmationButton>
+          </td>
+        )
       )}
     </tr>
   )

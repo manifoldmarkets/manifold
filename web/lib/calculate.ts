@@ -1,5 +1,5 @@
-import { Bet } from '../firebase/bets'
-import { Contract } from '../firebase/contracts'
+import { Bet } from './firebase/bets'
+import { Contract } from './firebase/contracts'
 
 const fees = 0.02
 
@@ -44,16 +44,24 @@ export function calculatePayout(
   if (outcome === 'CANCEL') return amount
   if (betOutcome !== outcome) return 0
 
-  let { totalShares } = contract
+  const { totalShares } = contract
 
-  // Fake data if not set.
-  // if (!totalShares) totalShares = { YES: 100, NO: 100 }
+  if (totalShares[outcome] === 0) return 0
 
   const startPool = contract.startPool.YES + contract.startPool.NO
   const pool = contract.pool.YES + contract.pool.NO - startPool
 
+  console.log(
+    'calcPayout',
+    'shares',
+    shares,
+    'totalShares',
+    totalShares,
+    'pool'
+  )
   return (1 - fees) * (shares / totalShares[outcome]) * pool
 }
+
 export function resolvedPayout(contract: Contract, bet: Bet) {
   if (contract.resolution)
     return calculatePayout(contract, bet, contract.resolution)
@@ -65,5 +73,51 @@ export function currentValue(contract: Contract, bet: Bet) {
   const yesPayout = calculatePayout(contract, bet, 'YES')
   const noPayout = calculatePayout(contract, bet, 'NO')
 
+  console.log('calculate value', {
+    prob,
+    yesPayout,
+    noPayout,
+    amount: bet.amount,
+  })
+
   return prob * yesPayout + (1 - prob) * noPayout
+}
+export function calculateSaleAmount(contract: Contract, bet: Bet) {
+  const { shares, outcome } = bet
+
+  const { YES: yesPool, NO: noPool } = contract.pool
+  const { YES: yesStart, NO: noStart } = contract.startPool
+  const { YES: yesShares, NO: noShares } = contract.totalShares
+
+  const [y, n, s] = [yesPool, noPool, shares]
+
+  const shareValue =
+    outcome === 'YES'
+      ? // https://www.wolframalpha.com/input/?i=b+%2B+%28b+n%5E2%29%2F%28y+%28-b+%2B+y%29%29+%3D+c+solve+b
+        (n ** 2 +
+          s * y +
+          y ** 2 -
+          Math.sqrt(
+            n ** 4 + (s - y) ** 2 * y ** 2 + 2 * n ** 2 * y * (s + y)
+          )) /
+        (2 * y)
+      : (y ** 2 +
+          s * n +
+          n ** 2 -
+          Math.sqrt(
+            y ** 4 + (s - n) ** 2 * n ** 2 + 2 * y ** 2 * n * (s + n)
+          )) /
+        (2 * n)
+
+  const startPool = yesStart + noStart
+  const pool = yesPool + noPool - startPool
+
+  const f = outcome === 'YES' ? pool / yesShares : pool / noShares
+
+  const myPool = outcome === 'YES' ? yesPool - yesStart : noPool - noStart
+
+  const adjShareValue = Math.min(Math.min(1, f) * shareValue, myPool)
+
+  const saleAmount = (1 - fees) * adjShareValue
+  return saleAmount
 }
