@@ -8,6 +8,7 @@ export const keepAwake = functions.pubsub
     await Promise.all([
       callCloudFunction('placeBet'),
       callCloudFunction('resolveMarket'),
+      callCloudFunction('sellBet'),
     ])
 
     await sleep(30)
@@ -15,6 +16,7 @@ export const keepAwake = functions.pubsub
     await Promise.all([
       callCloudFunction('placeBet'),
       callCloudFunction('resolveMarket'),
+      callCloudFunction('sellBet'),
     ])
   })
 
