@@ -41,8 +41,8 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
         ]
       : []),
     {
-      name: 'Your bets',
-      href: '/bets',
+      name: 'Your trades',
+      href: '/trades',
     },
     {
       name: 'Your markets',

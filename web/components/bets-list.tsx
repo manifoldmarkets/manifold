@@ -176,16 +176,17 @@ export function MyBetsSummary(props: {
   const { bets, contract, className } = props
   const { resolution } = contract
 
-  const betsTotal = _.sumBy(bets, (bet) => bet.amount)
+  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
+  const betsTotal = _.sumBy(excludeSales, (bet) => bet.amount)
 
   const betsPayout = resolution
     ? _.sumBy(bets, (bet) => resolvedPayout(contract, bet))
     : 0
 
-  const yesWinnings = _.sumBy(bets, (bet) =>
+  const yesWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'YES')
   )
-  const noWinnings = _.sumBy(bets, (bet) =>
+  const noWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
 
@@ -193,7 +194,7 @@ export function MyBetsSummary(props: {
     <Row className={clsx('gap-4 sm:gap-6', className)}>
       <Col>
         <div className="text-sm text-gray-500 whitespace-nowrap">
-          Total bets
+          Amount invested
         </div>
         <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
       </Col>

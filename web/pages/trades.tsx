@@ -4,13 +4,13 @@ import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
 
-export default function BetsPage() {
+export default function TradesPage() {
   const user = useUser()
 
   return (
     <Page>
-      <SEO title="Your bets" description="Your bets" url="/bets" />
-      <Title text="Your bets" />
+      <SEO title="Your trades" description="Your trades" url="/trades" />
+      <Title text="Your trades" />
       {user && <BetsList user={user} />}
     </Page>
   )
