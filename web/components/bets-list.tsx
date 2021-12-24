@@ -13,10 +13,13 @@ import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import {
   calculatePayout,
+  calculateSaleAmount,
   currentValue,
   resolvedPayout,
-} from '../lib/calculation/contract'
+} from '../lib/calculate'
 import clsx from 'clsx'
+import { cloudFunction } from '../lib/firebase/api-call'
+import { ConfirmationButton } from './confirmation-button'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -65,19 +68,26 @@ export function BetsList(props: { user: User }) {
     contracts,
     (contract) => contract.isResolved
   )
+
   const currentBets = _.sumBy(unresolved, (contract) =>
-    _.sumBy(contractBets[contract.id], (bet) => bet.amount)
+    _.sumBy(contractBets[contract.id], (bet) => {
+      if (bet.isSold || bet.sale) return 0
+      return bet.amount
+    })
   )
 
   const currentBetsValue = _.sumBy(unresolved, (contract) =>
-    _.sumBy(contractBets[contract.id], (bet) => currentValue(contract, bet))
+    _.sumBy(contractBets[contract.id], (bet) => {
+      if (bet.isSold || bet.sale) return 0
+      return currentValue(contract, bet)
+    })
   )
 
   return (
     <Col className="mt-6 gap-6">
       <Row className="gap-8">
         <Col>
-          <div className="text-sm text-gray-500">Active bets</div>
+          <div className="text-sm text-gray-500">Currently invested</div>
           <div>{formatMoney(currentBets)}</div>
         </Col>
         <Col>
@@ -173,16 +183,17 @@ export function MyBetsSummary(props: {
   const { bets, contract, className } = props
   const { resolution } = contract
 
-  const betsTotal = _.sumBy(bets, (bet) => bet.amount)
+  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
+  const betsTotal = _.sumBy(excludeSales, (bet) => bet.amount)
 
   const betsPayout = resolution
     ? _.sumBy(bets, (bet) => resolvedPayout(contract, bet))
     : 0
 
-  const yesWinnings = _.sumBy(bets, (bet) =>
+  const yesWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'YES')
   )
-  const noWinnings = _.sumBy(bets, (bet) =>
+  const noWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
 
@@ -190,7 +201,7 @@ export function MyBetsSummary(props: {
     <Row className={clsx('gap-4 sm:gap-6', className)}>
       <Col>
         <div className="text-sm text-gray-500 whitespace-nowrap">
-          Total bets
+          Amount invested
         </div>
         <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
       </Col>
@@ -228,6 +239,11 @@ export function ContractBetsTable(props: {
 }) {
   const { contract, bets, className } = props
 
+  const [sales, buys] = _.partition(bets, (bet) => bet.sale)
+  const salesDict = _.fromPairs(
+    sales.map((sale) => [sale.sale?.betId ?? '', sale])
+  )
+
   const { isResolved } = contract
 
   return (
@@ -237,15 +253,21 @@ export function ContractBetsTable(props: {
           <tr className="p-2">
             <th>Date</th>
             <th>Outcome</th>
-            <th>Bet</th>
+            <th>Amount</th>
             <th>Probability</th>
             {!isResolved && <th>Est. max payout</th>}
             <th>{isResolved ? <>Payout</> : <>Current value</>}</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {bets.map((bet) => (
-            <BetRow key={bet.id} bet={bet} contract={contract} />
+          {buys.map((bet) => (
+            <BetRow
+              key={bet.id}
+              bet={bet}
+              sale={salesDict[bet.id]}
+              contract={contract}
+            />
           ))}
         </tbody>
       </table>
@@ -253,14 +275,22 @@ export function ContractBetsTable(props: {
   )
 }
 
-function BetRow(props: { bet: Bet; contract: Contract }) {
-  const { bet, contract } = props
-  const { amount, outcome, createdTime, probBefore, probAfter, dpmWeight } = bet
+function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
+  const { bet, sale, contract } = props
+  const {
+    amount,
+    outcome,
+    createdTime,
+    probBefore,
+    probAfter,
+    shares,
+    isSold,
+  } = bet
   const { isResolved } = contract
 
   return (
     <tr>
-      <td>{dayjs(createdTime).format('MMM D, H:mma')}</td>
+      <td>{dayjs(createdTime).format('MMM D, h:mma')}</td>
       <td>
         <OutcomeLabel outcome={outcome} />
       </td>
@@ -268,15 +298,60 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
-      {!isResolved && <td>{formatMoney(amount + dpmWeight)}</td>}
+      {!isResolved && <td>{formatMoney(shares)}</td>}
       <td>
-        {formatMoney(
-          isResolved
-            ? resolvedPayout(contract, bet)
-            : currentValue(contract, bet)
-        )}
+        {bet.isSold
+          ? 'N/A'
+          : formatMoney(
+              isResolved
+                ? resolvedPayout(contract, bet)
+                : bet.sale
+                ? bet.sale.amount ?? 0
+                : currentValue(contract, bet)
+            )}
       </td>
+
+      {sale ? (
+        <td>SOLD for {formatMoney(Math.abs(sale.amount))}</td>
+      ) : (
+        !isResolved &&
+        !isSold && (
+          <td className="text-neutral">
+            <SellButton contract={contract} bet={bet} />
+          </td>
+        )
+      )}
     </tr>
+  )
+}
+
+const sellBet = cloudFunction('sellBet')
+
+function SellButton(props: { contract: Contract; bet: Bet }) {
+  const { contract, bet } = props
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  return (
+    <ConfirmationButton
+      id={`sell-${bet.id}`}
+      openModelBtn={{
+        className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
+        label: 'Sell',
+      }}
+      submitBtn={{ className: 'btn-primary' }}
+      onSubmit={async () => {
+        setIsSubmitting(true)
+        await sellBet({ contractId: contract.id, betId: bet.id })
+        setIsSubmitting(false)
+      }}
+    >
+      <div className="text-2xl mb-4">Sell</div>
+      <div>
+        Do you want to sell your {formatMoney(bet.amount)} position on{' '}
+        <OutcomeLabel outcome={bet.outcome} /> for{' '}
+        {formatMoney(calculateSaleAmount(contract, bet))}?
+      </div>
+    </ConfirmationButton>
   )
 }
 

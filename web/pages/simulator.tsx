@@ -86,7 +86,7 @@ function TableRowEnd(props: { entry: Entry | null; isNew?: boolean }) {
     return (
       <>
         <td>{(entry.prob * 100).toFixed(1)}%</td>
-        <td>${(entry.yesBid + entry.yesWeight).toFixed(0)}</td>
+        <td>${entry.yesWeight.toFixed(0)}</td>
         {!props.isNew && (
           <>
             <td>${entry.yesPayout.toFixed(0)}</td>
@@ -99,7 +99,7 @@ function TableRowEnd(props: { entry: Entry | null; isNew?: boolean }) {
     return (
       <>
         <td>{(entry.prob * 100).toFixed(1)}%</td>
-        <td>${(entry.noBid + entry.noWeight).toFixed(0)}</td>
+        <td>${entry.noWeight.toFixed(0)}</td>
         {!props.isNew && (
           <>
             <td>${entry.noPayout.toFixed(0)}</td>
@@ -149,9 +149,9 @@ function NewBidTable(props: {
 
   function randomBid() {
     const bidType = Math.random() < 0.5 ? 'YES' : 'NO'
-    const p = bidType === 'YES' ? nextEntry.prob : 1 - nextEntry.prob
+    // const p = bidType === 'YES' ? nextEntry.prob : 1 - nextEntry.prob
 
-    const amount = Math.round(p * Math.random() * 300) + 1
+    const amount = Math.floor(Math.random() * 300) + 1
     const bid = makeBid(bidType, amount)
 
     bids.splice(steps, 0, bid)
@@ -238,7 +238,7 @@ function NewBidTable(props: {
 // Show a hello world React page
 export default function Simulator() {
   const [steps, setSteps] = useState(1)
-  const [bids, setBids] = useState([{ yesBid: 550, noBid: 450 }])
+  const [bids, setBids] = useState([{ yesBid: 100, noBid: 100 }])
 
   const entries = useMemo(
     () => makeEntries(bids.slice(0, steps)),

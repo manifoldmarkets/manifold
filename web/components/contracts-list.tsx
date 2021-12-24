@@ -17,7 +17,7 @@ import { Linkify } from './linkify'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
-  const { volume, createdDate, resolvedDate } = compute(contract)
+  const { truePool, createdDate, resolvedDate } = compute(contract)
 
   return (
     <Row className="flex-wrap text-sm text-gray-500">
@@ -29,7 +29,7 @@ export function ContractDetails(props: { contract: Contract }) {
         {resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}
       </div>
       <div className="mx-2">•</div>
-      <div className="whitespace-nowrap">{formatMoney(volume)} volume</div>
+      <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
     </Row>
   )
 }
@@ -110,14 +110,14 @@ function ContractsGrid(props: { contracts: Contract[] }) {
   )
 }
 
-type Sort = 'createdTime' | 'volume' | 'resolved' | 'all'
+type Sort = 'createdTime' | 'pool' | 'resolved' | 'all'
 export function SearchableGrid(props: {
   contracts: Contract[]
   defaultSort?: Sort
 }) {
   const { contracts, defaultSort } = props
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState(defaultSort || 'volume')
+  const [sort, setSort] = useState(defaultSort || 'pool')
 
   function check(corpus: String) {
     return corpus.toLowerCase().includes(query.toLowerCase())
@@ -132,8 +132,8 @@ export function SearchableGrid(props: {
 
   if (sort === 'createdTime' || sort === 'resolved' || sort === 'all') {
     matches.sort((a, b) => b.createdTime - a.createdTime)
-  } else if (sort === 'volume') {
-    matches.sort((a, b) => compute(b).volume - compute(a).volume)
+  } else if (sort === 'pool') {
+    matches.sort((a, b) => compute(b).truePool - compute(a).truePool)
   }
 
   if (sort !== 'all') {
@@ -159,7 +159,7 @@ export function SearchableGrid(props: {
           value={sort}
           onChange={(e) => setSort(e.target.value as Sort)}
         >
-          <option value="volume">Most traded</option>
+          <option value="pool">Most traded</option>
           <option value="createdTime">Newest first</option>
           <option value="resolved">Resolved</option>
           <option value="all">All markets</option>
