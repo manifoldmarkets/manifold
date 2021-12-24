@@ -317,20 +317,7 @@ function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
         !isResolved &&
         !isSold && (
           <td className="text-neutral">
-            <ConfirmationButton
-              id={`sell-${bet.id}`}
-              openModelBtn={{ className: 'btn-sm', label: 'Sell' }}
-              submitBtn={{ className: 'btn-primary' }}
-              onSubmit={async () => {
-                await sellBet({ contractId: contract.id, betId: bet.id })
-              }}
-            >
-              <div className="text-2xl mb-4">Sell</div>
-              <div>
-                Do you want to sell your {formatMoney(bet.amount)} bet for{' '}
-                {formatMoney(calculateSaleAmount(contract, bet))}?
-              </div>
-            </ConfirmationButton>
+            <SellButton contract={contract} bet={bet} />
           </td>
         )
       )}
@@ -339,6 +326,33 @@ function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
 }
 
 const sellBet = cloudFunction('sellBet')
+
+function SellButton(props: { contract: Contract; bet: Bet }) {
+  const { contract, bet } = props
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  return (
+    <ConfirmationButton
+      id={`sell-${bet.id}`}
+      openModelBtn={{
+        className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
+        label: 'Sell',
+      }}
+      submitBtn={{ className: 'btn-primary' }}
+      onSubmit={async () => {
+        setIsSubmitting(true)
+        await sellBet({ contractId: contract.id, betId: bet.id })
+        setIsSubmitting(false)
+      }}
+    >
+      <div className="text-2xl mb-4">Sell</div>
+      <div>
+        Do you want to sell your {formatMoney(bet.amount)} bet for{' '}
+        {formatMoney(calculateSaleAmount(contract, bet))}?
+      </div>
+    </ConfirmationButton>
+  )
+}
 
 function OutcomeLabel(props: { outcome: 'YES' | 'NO' | 'CANCEL' }) {
   const { outcome } = props
