@@ -68,19 +68,26 @@ export function BetsList(props: { user: User }) {
     contracts,
     (contract) => contract.isResolved
   )
+
   const currentBets = _.sumBy(unresolved, (contract) =>
-    _.sumBy(contractBets[contract.id], (bet) => bet.amount)
+    _.sumBy(contractBets[contract.id], (bet) => {
+      if (bet.isSold || bet.sale) return 0
+      return bet.amount
+    })
   )
 
   const currentBetsValue = _.sumBy(unresolved, (contract) =>
-    _.sumBy(contractBets[contract.id], (bet) => currentValue(contract, bet))
+    _.sumBy(contractBets[contract.id], (bet) => {
+      if (bet.isSold || bet.sale) return 0
+      return currentValue(contract, bet)
+    })
   )
 
   return (
     <Col className="mt-6 gap-6">
       <Row className="gap-8">
         <Col>
-          <div className="text-sm text-gray-500">Active bets</div>
+          <div className="text-sm text-gray-500">Currently invested</div>
           <div>{formatMoney(currentBets)}</div>
         </Col>
         <Col>

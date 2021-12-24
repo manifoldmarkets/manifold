@@ -51,14 +51,6 @@ export function calculatePayout(
   const startPool = contract.startPool.YES + contract.startPool.NO
   const pool = contract.pool.YES + contract.pool.NO - startPool
 
-  console.log(
-    'calcPayout',
-    'shares',
-    shares,
-    'totalShares',
-    totalShares,
-    'pool'
-  )
   return (1 - fees) * (shares / totalShares[outcome]) * pool
 }
 
@@ -69,18 +61,36 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
 }
 
 export function currentValue(contract: Contract, bet: Bet) {
-  const prob = getProbability(contract.pool)
-  const yesPayout = calculatePayout(contract, bet, 'YES')
-  const noPayout = calculatePayout(contract, bet, 'NO')
+  // const prob = getProbability(contract.pool)
+  // const yesPayout = calculatePayout(contract, bet, 'YES')
+  // const noPayout = calculatePayout(contract, bet, 'NO')
 
-  console.log('calculate value', {
-    prob,
-    yesPayout,
-    noPayout,
-    amount: bet.amount,
-  })
+  // return prob * yesPayout + (1 - prob) * noPayout
 
-  return prob * yesPayout + (1 - prob) * noPayout
+  const { shares, outcome } = bet
+
+  const { YES: yesPool, NO: noPool } = contract.pool
+  const [y, n, s] = [yesPool, noPool, shares]
+
+  const shareValue =
+    outcome === 'YES'
+      ? // https://www.wolframalpha.com/input/?i=b+%2B+%28b+n%5E2%29%2F%28y+%28-b+%2B+y%29%29+%3D+c+solve+b
+        (n ** 2 +
+          s * y +
+          y ** 2 -
+          Math.sqrt(
+            n ** 4 + (s - y) ** 2 * y ** 2 + 2 * n ** 2 * y * (s + y)
+          )) /
+        (2 * y)
+      : (y ** 2 +
+          s * n +
+          n ** 2 -
+          Math.sqrt(
+            y ** 4 + (s - n) ** 2 * n ** 2 + 2 * y ** 2 * n * (s + n)
+          )) /
+        (2 * n)
+
+  return (1 - fees) * shareValue
 }
 export function calculateSaleAmount(contract: Contract, bet: Bet) {
   const { shares, outcome } = bet
