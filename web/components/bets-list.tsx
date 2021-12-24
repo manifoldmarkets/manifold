@@ -347,7 +347,8 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
     >
       <div className="text-2xl mb-4">Sell</div>
       <div>
-        Do you want to sell your {formatMoney(bet.amount)} bet for{' '}
+        Do you want to sell your {formatMoney(bet.amount)} position on{' '}
+        <OutcomeLabel outcome={bet.outcome} /> for{' '}
         {formatMoney(calculateSaleAmount(contract, bet))}?
       </div>
     </ConfirmationButton>
