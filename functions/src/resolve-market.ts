@@ -78,22 +78,27 @@ export const resolveMarket = functions
 const firestore = admin.firestore()
 
 const getPayouts = (outcome: string, contract: Contract, bets: Bet[]) => {
-  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
+  const openBets = bets.filter((b) => !b.isSold && !b.sale)
+  const [yesBets, noBets] = _.partition(
+    openBets,
+    (bet) => bet.outcome === 'YES'
+  )
 
-  const [pool, winningBets] =
+  const startPool = contract.startPool.YES + contract.startPool.NO
+  const truePool = contract.pool.YES + contract.pool.NO - startPool
+
+  const [totalShares, winningBets] =
     outcome === 'YES'
-      ? [contract.pool.NO - contract.startPool.NO, yesBets]
-      : [contract.pool.YES - contract.startPool.YES, noBets]
+      ? [contract.totalShares.YES, yesBets]
+      : [contract.totalShares.NO, noBets]
 
-  const finalPool = (1 - PLATFORM_FEE - CREATOR_FEE) * pool
-  const creatorPayout = CREATOR_FEE * pool
+  const finalPool = (1 - PLATFORM_FEE - CREATOR_FEE) * truePool
+  const creatorPayout = CREATOR_FEE * truePool
   console.log('final pool:', finalPool, 'creator fee:', creatorPayout)
-
-  const sumWeights = _.sumBy(winningBets, (bet) => bet.dpmWeight)
 
   const winnerPayouts = winningBets.map((bet) => ({
     userId: bet.userId,
-    payout: bet.amount + (bet.dpmWeight / sumWeights) * finalPool,
+    payout: (bet.shares / totalShares) * finalPool,
   }))
 
   return winnerPayouts.concat([

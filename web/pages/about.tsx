@@ -162,8 +162,8 @@ function Contents() {
       </p>
       <h3 id="how-are-markets-resolved-">How are markets resolved?</h3>
       <p>
-        The creator of the prediction market decides the outcome and earns 0.5%
-        of the trade volume for their effort.
+        The creator of the prediction market decides the outcome and earns 1% of
+        the betting pool for their effort.
       </p>
       <p>
         This simple resolution mechanism has surprising benefits in allowing a

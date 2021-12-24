@@ -2,7 +2,6 @@ import {
   Contract,
   getContractFromSlug,
   pushNewContract,
-  setContract,
 } from '../firebase/contracts'
 import { User } from '../firebase/users'
 import { randomString } from '../util/random-string'
@@ -38,7 +37,7 @@ export async function createContract(
 
     startPool: { YES: startYes, NO: startNo },
     pool: { YES: startYes, NO: startNo },
-    dpmWeights: { YES: 0, NO: 0 },
+    totalShares: { YES: 0, NO: 0 },
     isResolved: false,
 
     // TODO: Set create time to Firestore timestamp
@@ -49,8 +48,8 @@ export async function createContract(
   return await pushNewContract(contract)
 }
 
-export function calcStartPool(initialProb: number, initialCapital = 200) {
-  const p = initialProb / 100.0
+export function calcStartPool(initialProbInt: number, initialCapital = 200) {
+  const p = initialProbInt / 100.0
 
   const startYes =
     p === 0.5

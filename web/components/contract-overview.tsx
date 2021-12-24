@@ -90,7 +90,7 @@ export const ContractOverview = (props: {
 }) => {
   const { contract, className } = props
   const { resolution, creatorId } = contract
-  const { probPercent, volume } = compute(contract)
+  const { probPercent, truePool } = compute(contract)
 
   const user = useUser()
   const isCreator = user?.id === creatorId
@@ -140,7 +140,7 @@ export const ContractOverview = (props: {
       <ContractDescription contract={contract} isCreator={isCreator} />
 
       {/* Show a delete button for contracts without any trading */}
-      {isCreator && volume === 0 && (
+      {isCreator && truePool === 0 && (
         <>
           <Spacer h={8} />
           <button

@@ -12,9 +12,9 @@ import { formatMoney, formatPercent } from '../lib/util/format'
 import { Title } from './title'
 import {
   getProbability,
-  getDpmWeight,
+  calculateShares,
   getProbabilityAfterBet,
-} from '../lib/calculation/contract'
+} from '../lib/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {
@@ -84,9 +84,9 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     betChoice,
     betAmount ?? 0
   )
-  const dpmWeight = getDpmWeight(contract.pool, betAmount ?? 0, betChoice)
+  const shares = calculateShares(contract.pool, betAmount ?? 0, betChoice)
 
-  const estimatedWinnings = Math.floor((betAmount ?? 0) + dpmWeight)
+  const estimatedWinnings = Math.floor(shares)
   const estimatedReturn = betAmount
     ? (estimatedWinnings - betAmount) / betAmount
     : 0
@@ -98,7 +98,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     <Col
       className={clsx('bg-gray-100 shadow-xl px-8 py-6 rounded-md', className)}
     >
-      <Title className="!mt-0 whitespace-nowrap" text="Place a bet" />
+      <Title className="!mt-0 whitespace-nowrap" text="Place a trade" />
 
       <div className="mt-2 mb-1 text-sm text-gray-400">Outcome</div>
       <YesNoSelector
@@ -107,7 +107,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         onSelect={(choice) => onBetChoice(choice)}
       />
 
-      <div className="mt-3 mb-1 text-sm text-gray-400">Bet amount</div>
+      <div className="mt-3 mb-1 text-sm text-gray-400">Amount</div>
       <Col className="my-2">
         <label className="input-group">
           <span className="text-sm bg-gray-200">M$</span>
@@ -168,18 +168,18 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Place bet'}
+          {isSubmitting ? 'Submitting...' : 'Submit trade'}
         </button>
       ) : (
         <button
           className="btn mt-4 border-none normal-case text-lg font-medium px-10 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
           onClick={firebaseLogin}
         >
-          Sign in to bet!
+          Sign in to trade!
         </button>
       )}
 
-      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
+      {wasSubmitted && <div className="mt-4">Trade submitted!</div>}
     </Col>
   )
 }
