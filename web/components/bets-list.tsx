@@ -200,9 +200,7 @@ export function MyBetsSummary(props: {
   return (
     <Row className={clsx('gap-4 sm:gap-6', className)}>
       <Col>
-        <div className="text-sm text-gray-500 whitespace-nowrap">
-          Amount invested
-        </div>
+        <div className="text-sm text-gray-500 whitespace-nowrap">Invested</div>
         <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
       </Col>
       {resolution ? (
