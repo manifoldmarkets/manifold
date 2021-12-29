@@ -54,10 +54,7 @@ export const resolveMarket = functions
 
       const payouts =
         outcome === 'CANCEL'
-          ? bets.map((bet) => ({
-              userId: bet.userId,
-              payout: bet.amount,
-            }))
+          ? getCancelPayouts(contract, bets)
           : getPayouts(outcome, contract, bets)
 
       console.log('payouts:', payouts)
@@ -76,6 +73,20 @@ export const resolveMarket = functions
   )
 
 const firestore = admin.firestore()
+
+const getCancelPayouts = (contract: Contract, bets: Bet[]) => {
+  const startPool = contract.startPool.YES + contract.startPool.NO
+  const truePool = contract.pool.YES + contract.pool.NO - startPool
+
+  const openBets = bets.filter((b) => !b.isSold && !b.sale)
+
+  const betSum = _.sumBy(openBets, (b) => b.amount)
+
+  return openBets.map((bet) => ({
+    userId: bet.userId,
+    payout: (bet.amount / betSum) * truePool,
+  }))
+}
 
 const getPayouts = (outcome: string, contract: Contract, bets: Bet[]) => {
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
