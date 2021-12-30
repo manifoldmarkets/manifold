@@ -14,6 +14,8 @@ import { formatMoney } from '../lib/util/format'
 import { User } from '../lib/firebase/users'
 import { UserLink } from './user-page'
 import { Linkify } from './linkify'
+import { Col } from './layout/col'
+import { SiteLink } from './link'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
@@ -110,16 +112,63 @@ function ContractsGrid(props: { contracts: Contract[] }) {
   )
 }
 
+export function CreatorContractsGrid(props: { contracts: Contract[] }) {
+  const { contracts } = props
+
+  const byCreator = _.groupBy(contracts, (contract) => contract.creatorId)
+  const creatorIds = _.sortBy(Object.keys(byCreator), (creatorId) =>
+    _.sumBy(byCreator[creatorId], (contract) => -1 * compute(contract).truePool)
+  )
+
+  return (
+    <Col className="gap-6">
+      {creatorIds.map((creatorId) => {
+        const { creatorUsername, creatorName } = byCreator[creatorId][0]
+
+        return (
+          <Col className="gap-6">
+            <SiteLink href={`/${creatorUsername}`}>{creatorName}</SiteLink>
+
+            <ul role="list" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {byCreator[creatorId].slice(0, 6).map((contract) => (
+                <ContractCard contract={contract} key={contract.id} />
+              ))}
+            </ul>
+
+            {byCreator[creatorId].length > 6 ? (
+              <Link href={`/${creatorUsername}`}>
+                <a
+                  className={clsx(
+                    'self-end hover:underline hover:decoration-indigo-400 hover:decoration-2'
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  See all
+                </a>
+              </Link>
+            ) : (
+              <div />
+            )}
+          </Col>
+        )
+      })}
+    </Col>
+  )
+}
+
 const MAX_CONTRACTS_DISPLAYED = 99
 
-type Sort = 'createdTime' | 'pool' | 'resolved' | 'all'
+type Sort = 'creator' | 'createdTime' | 'pool' | 'resolved' | 'all'
 export function SearchableGrid(props: {
   contracts: Contract[]
   defaultSort?: Sort
+  byOneCreator?: boolean
 }) {
-  const { contracts, defaultSort } = props
+  const { contracts, defaultSort, byOneCreator } = props
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState(defaultSort || 'pool')
+  const [sort, setSort] = useState(
+    defaultSort || (byOneCreator ? 'pool' : 'creator')
+  )
 
   function check(corpus: String) {
     return corpus.toLowerCase().includes(query.toLowerCase())
@@ -134,7 +183,7 @@ export function SearchableGrid(props: {
 
   if (sort === 'createdTime' || sort === 'resolved' || sort === 'all') {
     matches.sort((a, b) => b.createdTime - a.createdTime)
-  } else if (sort === 'pool') {
+  } else if (sort === 'pool' || sort === 'creator') {
     matches.sort((a, b) => compute(b).truePool - compute(a).truePool)
   }
 
@@ -164,19 +213,27 @@ export function SearchableGrid(props: {
           value={sort}
           onChange={(e) => setSort(e.target.value as Sort)}
         >
+          {byOneCreator ? (
+            <option value="all">All markets</option>
+          ) : (
+            <option value="creator">By creator</option>
+          )}
           <option value="pool">Most traded</option>
           <option value="createdTime">Newest first</option>
           <option value="resolved">Resolved</option>
-          <option value="all">All markets</option>
         </select>
       </div>
 
-      <ContractsGrid contracts={matches} />
+      {!byOneCreator && (sort === 'creator' || sort === 'resolved') ? (
+        <CreatorContractsGrid contracts={matches} />
+      ) : (
+        <ContractsGrid contracts={matches} />
+      )}
     </div>
   )
 }
 
-export function ContractsList(props: { creator: User }) {
+export function CreatorContractsList(props: { creator: User }) {
   const { creator } = props
   const [contracts, setContracts] = useState<Contract[] | 'loading'>('loading')
 
@@ -189,5 +246,5 @@ export function ContractsList(props: { creator: User }) {
 
   if (contracts === 'loading') return <></>
 
-  return <SearchableGrid contracts={contracts} defaultSort="all" />
+  return <SearchableGrid contracts={contracts} byOneCreator defaultSort="all" />
 }
