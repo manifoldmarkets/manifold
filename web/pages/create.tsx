@@ -45,7 +45,7 @@ export default function NewContract() {
     <Page>
       <Title text="Create a new prediction market" />
 
-      <div className="w-full bg-gray-100 rounded-lg shadow-xl px-6 py-4">
+      <div className="w-full bg-white rounded-lg shadow-md px-6 py-4">
         {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
         {/* When the form is submitted, create a new contract in the database */}
         <form>
@@ -57,7 +57,7 @@ export default function NewContract() {
             <input
               type="text"
               placeholder="e.g. Will the FDA approve Paxlovid before Jun 2nd, 2022?"
-              className="input"
+              className="input input-bordered"
               value={question}
               onChange={(e) => setQuestion(e.target.value || '')}
             />
