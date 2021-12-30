@@ -110,6 +110,8 @@ function ContractsGrid(props: { contracts: Contract[] }) {
   )
 }
 
+const MAX_CONTRACTS_DISPLAYED = 99
+
 type Sort = 'createdTime' | 'pool' | 'resolved' | 'all'
 export function SearchableGrid(props: {
   contracts: Contract[]
@@ -142,6 +144,9 @@ export function SearchableGrid(props: {
       sort === 'resolved' ? c.resolution : !c.resolution
     )
   }
+
+  if (matches.length > MAX_CONTRACTS_DISPLAYED)
+    matches = _.slice(matches, 0, MAX_CONTRACTS_DISPLAYED)
 
   return (
     <div>
