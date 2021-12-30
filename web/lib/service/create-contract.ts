@@ -12,7 +12,8 @@ export async function createContract(
   question: string,
   description: string,
   initialProb: number,
-  creator: User
+  creator: User,
+  closeTime?: number
 ) {
   const proposedSlug = slugify(question).substring(0, 35)
 
@@ -44,6 +45,9 @@ export async function createContract(
     // TODO: Set create time to Firestore timestamp
     createdTime: Date.now(),
     lastUpdatedTime: Date.now(),
+  }
+  if (closeTime) {
+    contract.closeTime = closeTime
   }
 
   return await pushNewContract(contract)

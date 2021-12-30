@@ -10,6 +10,7 @@ import { createContract } from '../lib/service/create-contract'
 import { Page } from '../components/page'
 import { Row } from '../components/layout/row'
 import clsx from 'clsx'
+import dayjs from 'dayjs'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -22,8 +23,22 @@ export default function NewContract() {
   const [initialProb, setInitialProb] = useState(50)
   const [question, setQuestion] = useState('')
   const [description, setDescription] = useState('')
+  const [closeDate, setCloseDate] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [collapsed, setCollapsed] = useState(true)
+
+  // Given a date string like '2022-04-02',
+  // return the time just before midnight on that date (in the user's local time), as millis since epoch
+  function dateToMillis(date: string) {
+    return dayjs(date)
+      .set('hour', 23)
+      .set('minute', 59)
+      .set('second', 59)
+      .valueOf()
+  }
+  const closeTime = dateToMillis(closeDate)
+  // We'd like this to look like "Apr 2, 2022, 23:59:59 PM PT" but timezones are hard with dayjs
+  const formattedCloseTime = new Date(closeTime).toString()
 
   async function submit() {
     // TODO: add more rigorous error handling for question
@@ -35,7 +50,8 @@ export default function NewContract() {
       question,
       description,
       initialProb,
-      creator
+      creator,
+      closeTime
     )
     await router.push(path(contract))
   }
@@ -78,6 +94,7 @@ export default function NewContract() {
                   className="input input-bordered input-md"
                   min={1}
                   max={99}
+                  // TODO: validate that this is a number between 1 and 99
                   onChange={(e) => setInitialProb(parseInt(e.target.value))}
                 />
                 <span>%</span>
@@ -121,19 +138,23 @@ export default function NewContract() {
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">
-                    Close date (optional; trading ends on 4pm EST of this day)
-                  </span>
+                  <span className="label-text">Close date (optional)</span>
                 </label>
                 <input
                   type="date"
                   className="input input-bordered"
                   onClick={(e) => e.stopPropagation()}
-                  value="2012-07-22"
-                  min="2022-01-01"
-                  max="2022-12-31"
+                  onChange={(e) => setCloseDate(e.target.value || '')}
+                  value={closeDate}
                 />
               </div>
+              <label>
+                {closeDate && (
+                  <span className="label-text text-gray-400 ml-1">
+                    No new trades will be allowed after {formattedCloseTime}
+                  </span>
+                )}
+              </label>
             </div>
           </div>
 
