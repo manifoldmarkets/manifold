@@ -112,6 +112,8 @@ function ContractsGrid(props: { contracts: Contract[] }) {
   )
 }
 
+const MAX_GROUPED_CONTRACTS_DISPLAYED = 6
+
 export function CreatorContractsGrid(props: { contracts: Contract[] }) {
   const { contracts } = props
 
@@ -126,16 +128,20 @@ export function CreatorContractsGrid(props: { contracts: Contract[] }) {
         const { creatorUsername, creatorName } = byCreator[creatorId][0]
 
         return (
-          <Col className="gap-6">
-            <SiteLink href={`/${creatorUsername}`}>{creatorName}</SiteLink>
+          <Col className="gap-4">
+            <SiteLink className="text-lg" href={`/${creatorUsername}`}>
+              {creatorName}
+            </SiteLink>
 
-            <ul role="list" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {byCreator[creatorId].slice(0, 6).map((contract) => (
-                <ContractCard contract={contract} key={contract.id} />
-              ))}
+            <ul role="list" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {byCreator[creatorId]
+                .slice(0, MAX_GROUPED_CONTRACTS_DISPLAYED)
+                .map((contract) => (
+                  <ContractCard contract={contract} key={contract.id} />
+                ))}
             </ul>
 
-            {byCreator[creatorId].length > 6 ? (
+            {byCreator[creatorId].length > MAX_GROUPED_CONTRACTS_DISPLAYED ? (
               <Link href={`/${creatorUsername}`}>
                 <a
                   className={clsx(
