@@ -68,18 +68,14 @@ export function ResolutionPanel(props: {
       <div>
         {outcome === 'YES' ? (
           <>
-            Winnings will be paid out to YES bettors. You earn 1% of the NO
-            bets.
+            Winnings will be paid out to YES bettors. You earn 1% of the pool.
           </>
         ) : outcome === 'NO' ? (
-          <>
-            Winnings will be paid out to NO bettors. You earn 1% of the YES
-            bets.
-          </>
+          <>Winnings will be paid out to NO bettors. You earn 1% of the pool.</>
         ) : outcome === 'CANCEL' ? (
-          <>All bets will be returned with no fees.</>
+          <>The pool will be returned to traders with no fees.</>
         ) : (
-          <>Resolving this market will immediately pay out bettors.</>
+          <>Resolving this market will immediately pay out traders.</>
         )}
       </div>
 
