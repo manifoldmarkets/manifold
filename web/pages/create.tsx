@@ -1,7 +1,7 @@
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 
-import { ContractsList } from '../components/contracts-list'
+import { CreatorContractsList } from '../components/contracts-list'
 import { Spacer } from '../components/layout/spacer'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
@@ -119,7 +119,7 @@ export default function NewContract() {
 
       <Title text="Your markets" />
 
-      {creator && <ContractsList creator={creator} />}
+      {creator && <CreatorContractsList creator={creator} />}
     </Page>
   )
 }

@@ -1,28 +1,19 @@
 import { firebaseLogout, User } from '../lib/firebase/users'
-import { ContractsList } from './contracts-list'
+import { CreatorContractsList } from './contracts-list'
 import { Title } from './title'
 import { Row } from './layout/row'
 import { formatMoney } from '../lib/util/format'
-import Link from 'next/link'
-import clsx from 'clsx'
 import { SEO } from './SEO'
 import { Page } from './page'
+import { SiteLink } from './link'
 
 export function UserLink(props: { username: string; className?: string }) {
   const { username, className } = props
 
   return (
-    <Link href={`/${username}`}>
-      <a
-        className={clsx(
-          'hover:underline hover:decoration-indigo-400 hover:decoration-2',
-          className
-        )}
-        onClick={(e) => e.stopPropagation()}
-      >
-        @{username}
-      </a>
-    </Link>
+    <SiteLink href={`/${username}`} className={className}>
+      @{username}
+    </SiteLink>
   )
 }
 
@@ -81,7 +72,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
 
       <Title text={possesive + 'markets'} />
 
-      <ContractsList creator={user} />
+      <CreatorContractsList creator={user} />
     </Page>
   )
 }
