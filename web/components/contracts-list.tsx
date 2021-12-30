@@ -55,7 +55,7 @@ function ContractCard(props: { contract: Contract }) {
   return (
     <Link href={path(contract)}>
       <a>
-        <li className="col-span-1 bg-white hover:bg-gray-100 shadow-xl rounded-lg divide-y divide-gray-200">
+        <li className="col-span-1 bg-white hover:bg-gray-100 shadow-md rounded-lg divide-y divide-gray-200">
           <div className="card">
             <div className="card-body p-6">
               <Row className="justify-between gap-4 mb-2">
