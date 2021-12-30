@@ -1,7 +1,9 @@
 import { getFirestore } from '@firebase/firestore'
 import { initializeApp } from 'firebase/app'
 
-export const isProd = process.env.NODE_ENV === 'production'
+// TODO: Reenable this when we have a way to set the Firebase db in dev
+// export const isProd = process.env.NODE_ENV === 'production'
+export const isProd = true
 
 const firebaseConfig = isProd
   ? {
