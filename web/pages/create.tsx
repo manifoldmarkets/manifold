@@ -61,7 +61,7 @@ export default function NewContract() {
               <input
                 type="text"
                 placeholder="e.g. The FDA will approve Paxlovid before Jun 2nd, 2022"
-                className="input"
+                className="input input-bordered"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value || '')}
               />
@@ -85,35 +85,30 @@ export default function NewContract() {
             </div>
           </div>
 
-          <div className="mt-2 mb-4">
-            <a
-              href="#"
-              className="text-sm text-gray-400"
-              onClick={() => setCollapsed(!collapsed)}
-            >
-              ▼ Advanced
-            </a>
-          </div>
-
           {/* Collapsible "Advanced" section */}
           <div
             tabIndex={0}
             className={clsx(
-              'cursor-pointer relative',
+              'cursor-pointer relative collapse collapse-arrow',
               collapsed ? 'collapse-close' : 'collapse-open'
             )}
-            onClick={() => setCollapsed((collapsed) => !collapsed)}
           >
+            <div
+              className="mt-4 mr-6 text-sm text-gray-400 text-right"
+              onClick={() => setCollapsed((collapsed) => !collapsed)}
+            >
+              Advanced
+            </div>
             <Row>
               <div
                 className="collapse-title p-0 absolute w-0 h-0 min-h-0"
-                style={{ top: -10, right: 4 }}
+                style={{ top: -2, right: -15, color: '#9ca3af' /* gray-400 */ }}
               />
             </Row>
             <div className="collapse-content !p-0 m-0 !bg-transparent">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Description</span>
+                  <span className="label-text">Description (optional)</span>
                 </label>
                 <textarea
                   className="textarea w-full h-24 textarea-bordered"
@@ -126,11 +121,13 @@ export default function NewContract() {
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Resolution date</span>
+                  <span className="label-text">
+                    Close date (optional; trading ends on 4pm EST of this day)
+                  </span>
                 </label>
                 <input
                   type="date"
-                  className="input"
+                  className="input input-bordered"
                   onClick={(e) => e.stopPropagation()}
                   value="2012-07-22"
                   min="2022-01-01"
