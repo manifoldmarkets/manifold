@@ -22,14 +22,7 @@ export function NavBar(props: {
   const themeClasses = clsx(darkBackground && 'text-white', hoverClasses)
 
   return (
-    <nav
-      className={clsx(
-        'w-full p-4 mb-4 shadow-sm',
-        !darkBackground && 'bg-white',
-        className
-      )}
-      aria-label="Global"
-    >
+    <nav className={clsx('w-full p-4 mb-4', className)} aria-label="Global">
       <Row
         className={clsx(
           'justify-between items-center mx-auto sm:px-4',
