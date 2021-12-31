@@ -5,7 +5,11 @@ import { useEffect, useState } from 'react'
 import { useUserBets } from '../hooks/use-user-bets'
 import { Bet } from '../lib/firebase/bets'
 import { User } from '../lib/firebase/users'
-import { formatMoney, formatPercent } from '../lib/util/format'
+import {
+  formatMoney,
+  formatPercent,
+  formatWithCommas,
+} from '../lib/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { Contract, getContractFromId, path } from '../lib/firebase/contracts'
@@ -253,7 +257,7 @@ export function ContractBetsTable(props: {
             <th>Outcome</th>
             <th>Amount</th>
             <th>Probability</th>
-            {!isResolved && <th>Est. max payout</th>}
+            <th>Shares</th>
             <th>{isResolved ? <>Payout</> : <>Current value</>}</th>
             <th></th>
           </tr>
@@ -296,7 +300,7 @@ function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
-      {!isResolved && <td>{formatMoney(shares)}</td>}
+      <td>{formatWithCommas(shares)}</td>
       <td>
         {bet.isSold
           ? 'N/A'
