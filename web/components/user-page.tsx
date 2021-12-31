@@ -58,7 +58,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
 
   const isCurrentUser = user.id === currentUser?.id
 
-  const possesive = isCurrentUser ? 'Your ' : `${user.username}'s `
+  const possesive = isCurrentUser ? 'Your ' : `${user.name}'s `
 
   return (
     <Page>
