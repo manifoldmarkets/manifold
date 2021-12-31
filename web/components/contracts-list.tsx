@@ -16,6 +16,7 @@ import { UserLink } from './user-page'
 import { Linkify } from './linkify'
 import { Col } from './layout/col'
 import { SiteLink } from './site-link'
+import { parseTags } from '../lib/util/parse'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
@@ -162,9 +163,64 @@ export function CreatorContractsGrid(props: { contracts: Contract[] }) {
   )
 }
 
+export function TagContractsGrid(props: { contracts: Contract[] }) {
+  const { contracts } = props
+
+  const contractTags = _.flatMap(contracts, (contract) =>
+    parseTags(contract.question + ' ' + contract.description).map((tag) => ({
+      tag,
+      contract,
+    }))
+  )
+  const groupedByTag = _.groupBy(contractTags, ({ tag }) => tag)
+  const byTag = _.mapValues(groupedByTag, (contractTags) =>
+    contractTags.map(({ contract }) => contract)
+  )
+  const tags = _.sortBy(Object.keys(byTag), (tag) =>
+    _.sumBy(byTag[tag], (contract) => -1 * compute(contract).truePool)
+  )
+
+  return (
+    <Col className="gap-6">
+      {tags.map((tag) => {
+        return (
+          <Col className="gap-4">
+            <SiteLink className="text-lg" href={`/tag/${tag}`}>
+              #{tag}
+            </SiteLink>
+
+            <ul role="list" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {byTag[tag]
+                .slice(0, MAX_GROUPED_CONTRACTS_DISPLAYED)
+                .map((contract) => (
+                  <ContractCard contract={contract} key={contract.id} />
+                ))}
+            </ul>
+
+            {byTag[tag].length > MAX_GROUPED_CONTRACTS_DISPLAYED ? (
+              <Link href={`/tag/${tag}`}>
+                <a
+                  className={clsx(
+                    'self-end hover:underline hover:decoration-indigo-400 hover:decoration-2'
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  See all
+                </a>
+              </Link>
+            ) : (
+              <div />
+            )}
+          </Col>
+        )
+      })}
+    </Col>
+  )
+}
+
 const MAX_CONTRACTS_DISPLAYED = 99
 
-type Sort = 'creator' | 'createdTime' | 'pool' | 'resolved' | 'all'
+type Sort = 'creator' | 'tag' | 'createdTime' | 'pool' | 'resolved' | 'all'
 export function SearchableGrid(props: {
   contracts: Contract[]
   defaultSort?: Sort
@@ -189,7 +245,7 @@ export function SearchableGrid(props: {
 
   if (sort === 'createdTime' || sort === 'resolved' || sort === 'all') {
     matches.sort((a, b) => b.createdTime - a.createdTime)
-  } else if (sort === 'pool' || sort === 'creator') {
+  } else if (sort === 'pool' || sort === 'creator' || sort === 'tag') {
     matches.sort((a, b) => compute(b).truePool - compute(a).truePool)
   }
 
@@ -224,13 +280,16 @@ export function SearchableGrid(props: {
           ) : (
             <option value="creator">By creator</option>
           )}
+          <option value="tag">By tag</option>
           <option value="pool">Most traded</option>
           <option value="createdTime">Newest first</option>
           <option value="resolved">Resolved</option>
         </select>
       </div>
 
-      {!byOneCreator && (sort === 'creator' || sort === 'resolved') ? (
+      {sort === 'tag' ? (
+        <TagContractsGrid contracts={matches} />
+      ) : !byOneCreator && (sort === 'creator' || sort === 'resolved') ? (
         <CreatorContractsGrid contracts={matches} />
       ) : (
         <ContractsGrid contracts={matches} />
