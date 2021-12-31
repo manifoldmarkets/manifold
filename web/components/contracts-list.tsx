@@ -15,7 +15,7 @@ import { User } from '../lib/firebase/users'
 import { UserLink } from './user-page'
 import { Linkify } from './linkify'
 import { Col } from './layout/col'
-import { SiteLink } from './link'
+import { SiteLink } from './site-link'
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props

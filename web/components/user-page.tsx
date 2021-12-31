@@ -5,7 +5,7 @@ import { Row } from './layout/row'
 import { formatMoney } from '../lib/util/format'
 import { SEO } from './SEO'
 import { Page } from './page'
-import { SiteLink } from './link'
+import { SiteLink } from './site-link'
 
 export function UserLink(props: { username: string; className?: string }) {
   const { username, className } = props
