@@ -48,7 +48,10 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
       name: 'Your markets',
       href: `/${user.username}`,
     },
-
+    {
+      name: 'Discord',
+      href: 'https://discord.gg/eHQBNBqXuh',
+    },
     {
       name: 'Sign out',
       href: '#',

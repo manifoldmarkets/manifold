@@ -34,6 +34,7 @@ export function MenuButton(props: {
               {({ active }) => (
                 <a
                   href={item.href}
+                  target={item.href.startsWith('http') ? '_blank' : undefined}
                   onClick={item.onClick}
                   className={clsx(
                     active ? 'bg-gray-100' : '',
