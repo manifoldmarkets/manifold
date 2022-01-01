@@ -223,14 +223,19 @@ const MAX_CONTRACTS_DISPLAYED = 99
 type Sort = 'creator' | 'tag' | 'createdTime' | 'pool' | 'resolved' | 'all'
 export function SearchableGrid(props: {
   contracts: Contract[]
-  defaultSort?: Sort
+  sort?: Sort
+  setSort: (sort: Sort) => void
   byOneCreator?: boolean
 }) {
-  const { contracts, defaultSort, byOneCreator } = props
+  const { contracts, sort, setSort, byOneCreator } = props
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState(
-    defaultSort || (byOneCreator ? 'pool' : 'creator')
-  )
+  // const [sort, setSort] = useState(
+  //   defaultSort || (byOneCreator ? 'pool' : 'creator')
+  // )
+
+  // useEffect(() => {
+  //   if (defaultSort) setSort(defaultSort)
+  // }, [defaultSort])
 
   function check(corpus: String) {
     return corpus.toLowerCase().includes(query.toLowerCase())
@@ -311,5 +316,12 @@ export function CreatorContractsList(props: { creator: User }) {
 
   if (contracts === 'loading') return <></>
 
-  return <SearchableGrid contracts={contracts} byOneCreator defaultSort="all" />
+  return (
+    <SearchableGrid
+      contracts={contracts}
+      byOneCreator
+      sort="all"
+      setSort={() => {}}
+    />
+  )
 }
