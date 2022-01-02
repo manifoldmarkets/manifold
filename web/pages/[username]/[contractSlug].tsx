@@ -11,7 +11,11 @@ import { useBets } from '../../hooks/use-bets'
 import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
 import { User } from '../../lib/firebase/users'
-import { Contract, getContractFromSlug } from '../../lib/firebase/contracts'
+import {
+  compute,
+  Contract,
+  getContractFromSlug,
+} from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
 
@@ -47,14 +51,20 @@ export default function ContractPage(props: {
     return <div>Contract not found...</div>
   }
 
-  const { creatorId, isResolved } = contract
+  const { creatorId, isResolved, resolution, question } = contract
   const isCreator = user?.id === creatorId
+
+  const { probPercent } = compute(contract)
+
+  const description = resolution
+    ? `Resolved ${resolution}. ${contract.description}`
+    : `${probPercent} chance. ${contract.description}`
 
   return (
     <Page wide={!isResolved}>
       <SEO
-        title={contract.question}
-        description={contract.description}
+        title={question}
+        description={description}
         url={`/${props.username}/${props.slug}`}
       />
 

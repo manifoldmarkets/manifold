@@ -8,13 +8,13 @@ import {
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
-import { ContractDetails } from './contracts-list'
 import router from 'next/router'
 import { useUser } from '../hooks/use-user'
 import { Row } from './layout/row'
 import dayjs from 'dayjs'
 import { Linkify } from './linkify'
 import clsx from 'clsx'
+import { ContractDetails, ResolutionOrChance } from './contract-card'
 
 function ContractDescription(props: {
   contract: Contract
@@ -35,7 +35,7 @@ function ContractDescription(props: {
   }
 
   return (
-    <div className="whitespace-pre-line">
+    <div className="whitespace-pre-line break-words">
       <Linkify text={contract.description} />
       <br />
       {isCreator &&
@@ -95,38 +95,31 @@ export const ContractOverview = (props: {
   const user = useUser()
   const isCreator = user?.id === creatorId
 
-  const resolutionColor = {
-    YES: 'text-primary',
-    NO: 'text-red-400',
-    CANCEL: 'text-yellow-400',
-    '': '', // Empty if unresolved
-  }[contract.resolution || '']
-
   return (
     <Col className={clsx('mb-6', className)}>
-      <Col className="justify-between md:flex-row">
-        <Col>
-          <div className="text-3xl text-indigo-700 mb-4">
+      <Row className="justify-between gap-4">
+        <Col className="gap-4">
+          <div className="text-2xl md:text-3xl text-indigo-700">
             <Linkify text={contract.question} />
           </div>
+
+          <ResolutionOrChance
+            className="md:hidden"
+            resolution={resolution}
+            probPercent={probPercent}
+            large
+          />
 
           <ContractDetails contract={contract} />
         </Col>
 
-        {resolution ? (
-          <Col className="text-4xl mt-8 md:mt-0 md:ml-4 md:mr-6 items-end self-center md:self-start">
-            <div className="text-xl text-gray-500">Resolved</div>
-            <div className={resolutionColor}>
-              {resolution === 'CANCEL' ? 'N/A' : resolution}
-            </div>
-          </Col>
-        ) : (
-          <Col className="text-4xl mt-8 md:mt-0 md:ml-4 md:mr-6 text-primary items-end self-center md:self-start">
-            {probPercent}
-            <div className="text-xl">chance</div>
-          </Col>
-        )}
-      </Col>
+        <ResolutionOrChance
+          className="hidden md:flex md:items-end"
+          resolution={resolution}
+          probPercent={probPercent}
+          large
+        />
+      </Row>
 
       <Spacer h={4} />
 

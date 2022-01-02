@@ -15,7 +15,7 @@ export function Linkify(props: { text: string }) {
       {
         '@': `/${tag}`,
         '#': `/tag/${tag}`,
-      }[symbol] ?? match
+      }[symbol] ?? match.trim()
 
     return (
       <>

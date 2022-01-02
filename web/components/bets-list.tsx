@@ -191,7 +191,7 @@ export function MyBetsSummary(props: {
   const betsTotal = _.sumBy(excludeSales, (bet) => bet.amount)
 
   const betsPayout = resolution
-    ? _.sumBy(bets, (bet) => resolvedPayout(contract, bet))
+    ? _.sumBy(excludeSales, (bet) => resolvedPayout(contract, bet))
     : 0
 
   const yesWinnings = _.sumBy(excludeSales, (bet) =>
@@ -357,11 +357,12 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   )
 }
 
-function OutcomeLabel(props: { outcome: 'YES' | 'NO' | 'CANCEL' }) {
+function OutcomeLabel(props: { outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' }) {
   const { outcome } = props
 
   if (outcome === 'YES') return <YesLabel />
   if (outcome === 'NO') return <NoLabel />
+  if (outcome === 'MKT') return <MarketLabel />
   return <CancelLabel />
 }
 
@@ -375,4 +376,8 @@ function NoLabel() {
 
 function CancelLabel() {
   return <span className="text-yellow-400">N/A</span>
+}
+
+function MarketLabel() {
+  return <span className="text-blue-400">MKT</span>
 }
