@@ -44,14 +44,20 @@ export function calculatePayout(
   if (outcome === 'CANCEL') return amount
   if (betOutcome !== outcome) return 0
 
-  const { totalShares } = contract
+  const { totalShares, totalBets } = contract
 
   if (totalShares[outcome] === 0) return 0
 
   const startPool = contract.startPool.YES + contract.startPool.NO
-  const pool = contract.pool.YES + contract.pool.NO - startPool
+  const truePool = contract.pool.YES + contract.pool.NO - startPool
 
-  return (1 - fees) * (shares / totalShares[outcome]) * pool
+  if (totalBets[outcome] >= truePool)
+    return (amount / totalBets[outcome]) * truePool
+
+  const total = totalShares[outcome] - totalBets[outcome]
+  const winningsPool = truePool - totalBets[outcome]
+
+  return (1 - fees) * (amount + ((shares - amount) / total) * winningsPool)
 }
 
 export function resolvedPayout(contract: Contract, bet: Bet) {
