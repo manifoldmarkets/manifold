@@ -55,15 +55,16 @@ export default function ContractPage(props: {
   const isCreator = user?.id === creatorId
 
   const { probPercent } = compute(contract)
-  const title = resolution
-    ? `Resolved ${resolution}: ${question}`
-    : `${probPercent} chance: ${question}`
+
+  const description = resolution
+    ? `Resolved ${resolution}. ${contract.description}`
+    : `${probPercent} chance. ${contract.description}`
 
   return (
     <Page wide={!isResolved}>
       <SEO
-        title={title}
-        description={contract.description}
+        title={question}
+        description={description}
         url={`/${props.username}/${props.slug}`}
       />
 
