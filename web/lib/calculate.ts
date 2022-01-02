@@ -51,7 +51,7 @@ export function calculatePayout(
   const startPool = contract.startPool.YES + contract.startPool.NO
   const truePool = contract.pool.YES + contract.pool.NO - startPool
 
-  if (totalBets[outcome] <= truePool)
+  if (totalBets[outcome] >= truePool)
     return (amount / totalBets[outcome]) * truePool
 
   const total = totalShares[outcome] - totalBets[outcome]

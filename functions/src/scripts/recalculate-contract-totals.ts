@@ -43,7 +43,7 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
   console.log()
 }
 
-async function migrateContracts() {
+async function recalculateContractTotals() {
   console.log('Recalculating contract info')
 
   const snapshot = await firestore.collection('contracts').get()
@@ -58,4 +58,5 @@ async function migrateContracts() {
   }
 }
 
-if (require.main === module) migrateContracts().then(() => process.exit())
+if (require.main === module)
+  recalculateContractTotals().then(() => process.exit())
