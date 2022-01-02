@@ -14,7 +14,7 @@ import { Row } from './layout/row'
 import dayjs from 'dayjs'
 import { Linkify } from './linkify'
 import clsx from 'clsx'
-import { ContractDetails } from './contract-card'
+import { ContractDetails, ResolutionOrChance } from './contract-card'
 
 function ContractDescription(props: {
   contract: Contract
@@ -84,40 +84,6 @@ function ContractDescription(props: {
   )
 }
 
-function ResolutionOrChance(props: {
-  resolution?: 'YES' | 'NO' | 'MKT' | 'CANCEL'
-  probPercent: string
-  className?: string
-}) {
-  const { resolution, probPercent, className } = props
-
-  const resolutionColor = {
-    YES: 'text-primary',
-    NO: 'text-red-400',
-    MKT: 'text-blue-400',
-    CANCEL: 'text-yellow-400',
-    '': '', // Empty if unresolved
-  }[resolution || '']
-
-  return (
-    <Col className={clsx('text-3xl md:text-4xl', className)}>
-      {resolution ? (
-        <>
-          <div className="text-lg md:text-xl text-gray-500">Resolved</div>
-          <div className={resolutionColor}>
-            {resolution === 'CANCEL' ? 'N/A' : resolution}
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="text-primary">{probPercent}</div>
-          <div className="text-lg md:text-xl text-primary">chance</div>
-        </>
-      )}
-    </Col>
-  )
-}
-
 export const ContractOverview = (props: {
   contract: Contract
   className?: string
@@ -141,6 +107,7 @@ export const ContractOverview = (props: {
             className="md:hidden"
             resolution={resolution}
             probPercent={probPercent}
+            large
           />
 
           <ContractDetails contract={contract} />
@@ -150,6 +117,7 @@ export const ContractOverview = (props: {
           className="hidden md:flex md:items-end"
           resolution={resolution}
           probPercent={probPercent}
+          large
         />
       </Row>
 

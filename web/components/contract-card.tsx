@@ -5,26 +5,12 @@ import { formatMoney } from '../lib/util/format'
 import { UserLink } from './user-page'
 import { Linkify } from './linkify'
 import { Contract, compute, path } from '../lib/firebase/contracts'
+import { Col } from './layout/col'
 
 export function ContractCard(props: { contract: Contract }) {
   const { contract } = props
+  const { resolution } = contract
   const { probPercent } = compute(contract)
-
-  const resolutionColor = {
-    YES: 'text-primary',
-    NO: 'text-red-400',
-    MKT: 'text-blue-400',
-    CANCEL: 'text-yellow-400',
-    '': '', // Empty if unresolved
-  }[contract.resolution || '']
-
-  const resolutionText = {
-    YES: 'YES',
-    NO: 'NO',
-    MKT: 'MKT',
-    CANCEL: 'N/A',
-    '': '',
-  }[contract.resolution || '']
 
   return (
     <Link href={path(contract)}>
@@ -36,14 +22,11 @@ export function ContractCard(props: { contract: Contract }) {
                 <p className="font-medium text-indigo-700">
                   <Linkify text={contract.question} />
                 </p>
-                <div className={clsx('text-4xl', resolutionColor)}>
-                  {resolutionText || (
-                    <div className="text-primary">
-                      {probPercent}
-                      <div className="text-lg">chance</div>
-                    </div>
-                  )}
-                </div>
+                <ResolutionOrChance
+                  className="items-center"
+                  resolution={resolution}
+                  probPercent={probPercent}
+                />
               </Row>
               <ContractDetails contract={contract} />
             </div>
@@ -51,6 +34,55 @@ export function ContractCard(props: { contract: Contract }) {
         </li>
       </a>
     </Link>
+  )
+}
+
+export function ResolutionOrChance(props: {
+  resolution?: 'YES' | 'NO' | 'MKT' | 'CANCEL'
+  probPercent: string
+  large?: boolean
+  className?: string
+}) {
+  const { resolution, probPercent, large, className } = props
+
+  const resolutionColor = {
+    YES: 'text-primary',
+    NO: 'text-red-400',
+    MKT: 'text-blue-400',
+    CANCEL: 'text-yellow-400',
+    '': '', // Empty if unresolved
+  }[resolution || '']
+
+  const resolutionText = {
+    YES: 'YES',
+    NO: 'NO',
+    MKT: 'MKT',
+    CANCEL: 'N/A',
+    '': '',
+  }[resolution || '']
+
+  return (
+    <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
+      {resolution ? (
+        <>
+          <div
+            className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}
+          >
+            Resolved
+          </div>
+          <div className={resolutionColor}>{resolutionText}</div>
+        </>
+      ) : (
+        <>
+          <div className="text-primary">{probPercent}</div>
+          <div
+            className={clsx('text-primary', large ? 'text-xl' : 'text-base')}
+          >
+            chance
+          </div>
+        </>
+      )}
+    </Col>
   )
 }
 
