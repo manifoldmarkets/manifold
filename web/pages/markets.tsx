@@ -1,6 +1,7 @@
 import { SearchableGrid } from '../components/contracts-list'
 import { Page } from '../components/page'
 import { useContracts } from '../hooks/use-contracts'
+import { useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 import { Contract, listAllContracts } from '../lib/firebase/contracts'
 
 export async function getStaticProps() {
@@ -17,12 +18,17 @@ export async function getStaticProps() {
 
 export default function Markets(props: { contracts: Contract[] }) {
   const contracts = useContracts()
+  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
 
   return (
     <Page>
       {(props.contracts || contracts !== 'loading') && (
         <SearchableGrid
           contracts={contracts === 'loading' ? props.contracts : contracts}
+          query={query}
+          setQuery={setQuery}
+          sort={sort}
+          setSort={setSort}
         />
       )}
     </Page>
