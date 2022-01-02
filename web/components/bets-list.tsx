@@ -191,7 +191,7 @@ export function MyBetsSummary(props: {
   const betsTotal = _.sumBy(excludeSales, (bet) => bet.amount)
 
   const betsPayout = resolution
-    ? _.sumBy(bets, (bet) => resolvedPayout(contract, bet))
+    ? _.sumBy(excludeSales, (bet) => resolvedPayout(contract, bet))
     : 0
 
   const yesWinnings = _.sumBy(excludeSales, (bet) =>
