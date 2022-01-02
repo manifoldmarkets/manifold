@@ -1,7 +1,7 @@
-import { useRouter } from 'next/router'
 import { SearchableGrid } from '../components/contracts-list'
 import { Page } from '../components/page'
 import { useContracts } from '../hooks/use-contracts'
+import { useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 import { Contract, listAllContracts } from '../lib/firebase/contracts'
 
 export async function getStaticProps() {
@@ -18,34 +18,15 @@ export async function getStaticProps() {
 
 export default function Markets(props: { contracts: Contract[] }) {
   const contracts = useContracts()
-
-  const router = useRouter()
-  const { tag, creator, newest, mostTraded } = router.query as {
-    tag?: string
-    creator?: string
-    newest?: string
-    mostTraded?: string
-  }
-  const sort =
-    tag === ''
-      ? 'tag'
-      : creator === ''
-      ? 'creator'
-      : newest === ''
-      ? 'createdTime'
-      : mostTraded === ''
-      ? 'pool'
-      : undefined
-
-  const setSort = () => {
-    router.push(router.pathname, '?tag')
-  }
+  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
 
   return (
     <Page>
-      {(props.contracts || contracts !== 'loading') && router.isReady && (
+      {(props.contracts || contracts !== 'loading') && (
         <SearchableGrid
           contracts={contracts === 'loading' ? props.contracts : contracts}
+          query={query}
+          setQuery={setQuery}
           sort={sort}
           setSort={setSort}
         />
