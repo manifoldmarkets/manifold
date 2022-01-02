@@ -21,7 +21,6 @@ A market you bet in has been resolved!
 
 Creator: ${contract.creatorName}
 Question: ${contract.question}
-
 Resolution: ${toDisplayResolution[resolution]}
 
 Your payout is M$ ${Math.round(payout)}
