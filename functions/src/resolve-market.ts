@@ -26,7 +26,7 @@ export const resolveMarket = functions
 
       const { outcome, contractId } = data
 
-      if (!['YES', 'NO', 'CANCEL'].includes(outcome))
+      if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
         return { status: 'error', message: 'Invalid outcome' }
 
       const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -155,7 +155,6 @@ const getStandardPayouts = (
   const shareDifferenceSum = _.sumBy(winningBets, (b) => b.shares - b.amount)
 
   const winningsPool = truePool - betSum
-  const fees = PLATFORM_FEE + CREATOR_FEE
 
   const winnerPayouts = winningBets.map((bet) => ({
     userId: bet.userId,
@@ -173,11 +172,53 @@ const getStandardPayouts = (
 const getMktPayouts = (truePool: number, contract: Contract, bets: Bet[]) => {
   const p =
     contract.pool.YES ** 2 / (contract.pool.YES ** 2 + contract.pool.NO ** 2)
-  console.log('Resolved MKT at p=', p)
+  console.log('Resolved MKT at p=', p, 'pool: $M', truePool)
+
+  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
+
+  const weightedBetTotal =
+    p * _.sumBy(yesBets, (b) => b.amount) +
+    (1 - p) * _.sumBy(noBets, (b) => b.amount)
+
+  if (weightedBetTotal >= truePool) {
+    return bets.map((bet) => ({
+      userId: bet.userId,
+      payout:
+        (((bet.outcome === 'YES' ? p : 1 - p) * bet.amount) /
+          weightedBetTotal) *
+        truePool,
+    }))
+  }
+
+  const winningsPool = truePool - weightedBetTotal
+
+  const weightedShareTotal =
+    p * _.sumBy(yesBets, (b) => b.shares - b.amount) +
+    (1 - p) * _.sumBy(noBets, (b) => b.shares - b.amount)
+
+  const yesPayouts = yesBets.map((bet) => ({
+    userId: bet.userId,
+    payout:
+      (1 - fees) *
+      (p * bet.amount +
+        ((p * (bet.shares - bet.amount)) / weightedShareTotal) * winningsPool),
+  }))
+
+  const noPayouts = noBets.map((bet) => ({
+    userId: bet.userId,
+    payout:
+      (1 - fees) *
+      ((1 - p) * bet.amount +
+        (((1 - p) * (bet.shares - bet.amount)) / weightedShareTotal) *
+          winningsPool),
+  }))
+
+  const creatorPayout = CREATOR_FEE * truePool
 
   return [
-    ...getStandardPayouts('YES', p * truePool, contract, bets),
-    ...getStandardPayouts('NO', (1 - p) * truePool, contract, bets),
+    ...yesPayouts,
+    ...noPayouts,
+    { userId: contract.creatorId, payout: creatorPayout },
   ]
 }
 
@@ -192,3 +233,5 @@ const payUser = ([userId, payout]: [string, number]) => {
     transaction.update(userDoc, { balance: newUserBalance })
   })
 }
+
+const fees = PLATFORM_FEE + CREATOR_FEE

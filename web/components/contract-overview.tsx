@@ -98,6 +98,7 @@ export const ContractOverview = (props: {
   const resolutionColor = {
     YES: 'text-primary',
     NO: 'text-red-400',
+    MKT: 'text-blue-400',
     CANCEL: 'text-yellow-400',
     '': '', // Empty if unresolved
   }[contract.resolution || '']
