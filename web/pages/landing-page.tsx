@@ -13,6 +13,7 @@ import { SearchableGrid } from '../components/contracts-list'
 import { Col } from '../components/layout/col'
 import { NavBar } from '../components/nav-bar'
 import Link from 'next/link'
+import { useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 
 export default function LandingPage() {
   return (
@@ -159,13 +160,20 @@ function FeaturesSection() {
 
 function ExploreMarketsSection() {
   const contracts = useContracts()
+  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
 
   return (
     <div className="max-w-4xl px-4 py-8 mx-auto">
       <p className="my-12 text-3xl leading-8 font-extrabold tracking-tight text-indigo-700 sm:text-4xl">
         Explore our markets
       </p>
-      <SearchableGrid contracts={contracts === 'loading' ? [] : contracts} />
+      <SearchableGrid
+        contracts={contracts === 'loading' ? [] : contracts}
+        query={query}
+        setQuery={setQuery}
+        sort={sort}
+        setSort={setSort}
+      />
     </div>
   )
 }

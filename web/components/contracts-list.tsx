@@ -3,17 +3,13 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 
-import {
-  compute,
-  Contract,
-  listContracts,
-  path,
-} from '../lib/firebase/contracts'
+import { compute, Contract, listContracts } from '../lib/firebase/contracts'
 import { User } from '../lib/firebase/users'
 import { Col } from './layout/col'
 import { SiteLink } from './site-link'
 import { parseTags } from '../lib/util/parse'
 import { ContractCard } from './contract-card'
+import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 
 function ContractsGrid(props: { contracts: Contract[] }) {
   const [resolvedContracts, activeContracts] = _.partition(
@@ -61,7 +57,7 @@ function CreatorContractsGrid(props: { contracts: Contract[] }) {
         const { creatorUsername, creatorName } = byCreator[creatorId][0]
 
         return (
-          <Col className="gap-4">
+          <Col className="gap-4" key={creatorUsername}>
             <SiteLink className="text-lg" href={`/${creatorUsername}`}>
               {creatorName}
             </SiteLink>
@@ -116,7 +112,7 @@ function TagContractsGrid(props: { contracts: Contract[] }) {
     <Col className="gap-6">
       {tags.map((tag) => {
         return (
-          <Col className="gap-4">
+          <Col className="gap-4" key={tag}>
             <SiteLink className="text-lg" href={`/tag/${tag}`}>
               #{tag}
             </SiteLink>
@@ -152,17 +148,15 @@ function TagContractsGrid(props: { contracts: Contract[] }) {
 
 const MAX_CONTRACTS_DISPLAYED = 99
 
-type Sort = 'creator' | 'tag' | 'createdTime' | 'pool' | 'resolved' | 'all'
 export function SearchableGrid(props: {
   contracts: Contract[]
-  defaultSort?: Sort
+  query: string
+  setQuery: (query: string) => void
+  sort: Sort
+  setSort: (sort: Sort) => void
   byOneCreator?: boolean
 }) {
-  const { contracts, defaultSort, byOneCreator } = props
-  const [query, setQuery] = useState('')
-  const [sort, setSort] = useState(
-    defaultSort || (byOneCreator ? 'pool' : 'creator')
-  )
+  const { contracts, query, setQuery, sort, setSort, byOneCreator } = props
 
   function check(corpus: String) {
     return corpus.toLowerCase().includes(query.toLowerCase())
@@ -175,9 +169,9 @@ export function SearchableGrid(props: {
       check(c.creatorUsername)
   )
 
-  if (sort === 'createdTime' || sort === 'resolved' || sort === 'all') {
+  if (sort === 'newest' || sort === 'resolved' || sort === 'all') {
     matches.sort((a, b) => b.createdTime - a.createdTime)
-  } else if (sort === 'pool' || sort === 'creator' || sort === 'tag') {
+  } else if (sort === 'most-traded' || sort === 'creator' || sort === 'tag') {
     matches.sort((a, b) => compute(b).truePool - compute(a).truePool)
   }
 
@@ -213,8 +207,8 @@ export function SearchableGrid(props: {
             <option value="creator">By creator</option>
           )}
           <option value="tag">By tag</option>
-          <option value="pool">Most traded</option>
-          <option value="createdTime">Newest first</option>
+          <option value="most-traded">Most traded</option>
+          <option value="newest">Newest</option>
           <option value="resolved">Resolved</option>
         </select>
       </div>
@@ -234,6 +228,10 @@ export function CreatorContractsList(props: { creator: User }) {
   const { creator } = props
   const [contracts, setContracts] = useState<Contract[] | 'loading'>('loading')
 
+  const { query, setQuery, sort, setSort } = useQueryAndSortParams({
+    defaultSort: 'all',
+  })
+
   useEffect(() => {
     if (creator?.id) {
       // TODO: stream changes from firestore
@@ -243,5 +241,14 @@ export function CreatorContractsList(props: { creator: User }) {
 
   if (contracts === 'loading') return <></>
 
-  return <SearchableGrid contracts={contracts} byOneCreator defaultSort="all" />
+  return (
+    <SearchableGrid
+      contracts={contracts}
+      byOneCreator
+      query={query}
+      setQuery={setQuery}
+      sort={sort}
+      setSort={setSort}
+    />
+  )
 }
