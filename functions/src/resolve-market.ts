@@ -24,7 +24,7 @@ export const resolveMarket = functions
 
       const { outcome, contractId } = data
 
-      if (!['YES', 'NO', 'CANCEL'].includes(outcome))
+      if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
         return { status: 'error', message: 'Invalid outcome' }
 
       const contractDoc = firestore.doc(`contracts/${contractId}`)

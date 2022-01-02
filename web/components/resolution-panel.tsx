@@ -20,7 +20,9 @@ export function ResolutionPanel(props: {
 }) {
   const { contract, className } = props
 
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'CANCEL' | undefined>()
+  const [outcome, setOutcome] = useState<
+    'YES' | 'NO' | 'MKT' | 'CANCEL' | undefined
+  >()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
@@ -48,6 +50,8 @@ export function ResolutionPanel(props: {
       ? 'bg-red-400 hover:bg-red-500'
       : outcome === 'CANCEL'
       ? 'bg-yellow-400 hover:bg-yellow-500'
+      : outcome === 'MKT'
+      ? 'bg-blue-400 hover:bg-blue-500'
       : 'btn-disabled'
 
   return (
@@ -74,6 +78,11 @@ export function ResolutionPanel(props: {
           <>Winnings will be paid out to NO bettors. You earn 1% of the pool.</>
         ) : outcome === 'CANCEL' ? (
           <>The pool will be returned to traders with no fees.</>
+        ) : outcome === 'MKT' ? (
+          <>
+            Traders will be paid out at the current implied probability. You
+            earn 1% of the pool.
+          </>
         ) : (
           <>Resolving this market will immediately pay out traders.</>
         )}

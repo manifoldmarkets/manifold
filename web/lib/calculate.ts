@@ -37,27 +37,36 @@ export function calculateShares(
 export function calculatePayout(
   contract: Contract,
   bet: Bet,
-  outcome: 'YES' | 'NO' | 'CANCEL'
+  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
 ) {
   const { amount, outcome: betOutcome, shares } = bet
 
   if (outcome === 'CANCEL') return amount
-  if (betOutcome !== outcome) return 0
+
+  const impliedProbabilility =
+    contract.pool.YES ** 2 / (contract.pool.YES ** 2 + contract.pool.NO ** 2)
+
+  const p =
+    outcome === 'MKT'
+      ? betOutcome === 'YES'
+        ? impliedProbabilility
+        : 1 - impliedProbabilility
+      : outcome === 'YES'
+      ? 1
+      : 0
 
   const { totalShares, totalBets } = contract
-
-  if (totalShares[outcome] === 0) return 0
 
   const startPool = contract.startPool.YES + contract.startPool.NO
   const truePool = contract.pool.YES + contract.pool.NO - startPool
 
-  if (totalBets[outcome] <= truePool)
-    return (amount / totalBets[outcome]) * truePool
+  if (totalBets[betOutcome] <= truePool)
+    return p * (amount / totalBets[betOutcome]) * truePool
 
-  const total = totalShares[outcome] - totalBets[outcome]
-  const winningsPool = truePool - totalBets[outcome]
+  const total = totalShares[betOutcome] - totalBets[betOutcome]
+  const winningsPool = truePool - totalBets[betOutcome]
 
-  return (1 - fees) * (amount + ((shares - amount) / total) * winningsPool)
+  return p * (1 - fees) * (amount + ((shares - amount) / total) * winningsPool)
 }
 
 export function resolvedPayout(contract: Contract, bet: Bet) {
