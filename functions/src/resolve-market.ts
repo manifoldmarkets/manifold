@@ -55,12 +55,19 @@ export const resolveMarket = functions
       const betsSnap = await firestore
         .collection(`contracts/${contractId}/bets`)
         .get()
+
       const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
+      const openBets = bets.filter((b) => !b.isSold && !b.sale)
+
+      const startPool = contract.startPool.YES + contract.startPool.NO
+      const truePool = contract.pool.YES + contract.pool.NO - startPool
 
       const payouts =
         outcome === 'CANCEL'
-          ? getCancelPayouts(contract, bets)
-          : getPayouts(outcome, contract, bets)
+          ? getCancelPayouts(truePool, openBets)
+          : outcome === 'MKT'
+          ? getMktPayouts(truePool, contract, openBets)
+          : getStandardPayouts(outcome, truePool, contract, openBets)
 
       console.log('payouts:', payouts)
 
@@ -96,47 +103,67 @@ export const resolveMarket = functions
 
 const firestore = admin.firestore()
 
-const getCancelPayouts = (contract: Contract, bets: Bet[]) => {
-  const startPool = contract.startPool.YES + contract.startPool.NO
-  const truePool = contract.pool.YES + contract.pool.NO - startPool
+const getCancelPayouts = (truePool: number, bets: Bet[]) => {
+  console.log('resolved N/A, pool M$', truePool)
 
-  const openBets = bets.filter((b) => !b.isSold && !b.sale)
+  const betSum = _.sumBy(bets, (b) => b.amount)
 
-  const betSum = _.sumBy(openBets, (b) => b.amount)
-
-  return openBets.map((bet) => ({
+  return bets.map((bet) => ({
     userId: bet.userId,
     payout: (bet.amount / betSum) * truePool,
   }))
 }
 
-const getPayouts = (outcome: string, contract: Contract, bets: Bet[]) => {
-  const openBets = bets.filter((b) => !b.isSold && !b.sale)
-  const [yesBets, noBets] = _.partition(
-    openBets,
-    (bet) => bet.outcome === 'YES'
+const getStandardPayouts = (
+  outcome: string,
+  truePool: number,
+  contract: Contract,
+  bets: Bet[]
+) => {
+  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
+  const winningBets = outcome === 'YES' ? yesBets : noBets
+
+  const betSum = _.sumBy(winningBets, (b) => b.amount)
+
+  if (betSum >= truePool) return getCancelPayouts(truePool, winningBets)
+
+  const creatorPayout = CREATOR_FEE * truePool
+  console.log(
+    'resolved',
+    outcome,
+    'pool: M$',
+    truePool,
+    'creator fee: M$',
+    creatorPayout
   )
 
-  const startPool = contract.startPool.YES + contract.startPool.NO
-  const truePool = contract.pool.YES + contract.pool.NO - startPool
+  const shareDifferenceSum = _.sumBy(winningBets, (b) => b.shares - b.amount)
 
-  const [totalShares, winningBets] =
-    outcome === 'YES'
-      ? [contract.totalShares.YES, yesBets]
-      : [contract.totalShares.NO, noBets]
-
-  const finalPool = (1 - PLATFORM_FEE - CREATOR_FEE) * truePool
-  const creatorPayout = CREATOR_FEE * truePool
-  console.log('final pool:', finalPool, 'creator fee:', creatorPayout)
+  const winningsPool = truePool - betSum
+  const fees = PLATFORM_FEE + CREATOR_FEE
 
   const winnerPayouts = winningBets.map((bet) => ({
     userId: bet.userId,
-    payout: (bet.shares / totalShares) * finalPool,
+    payout:
+      (1 - fees) *
+      (bet.amount +
+        ((bet.shares - bet.amount) / shareDifferenceSum) * winningsPool),
   }))
 
   return winnerPayouts.concat([
     { userId: contract.creatorId, payout: creatorPayout },
   ]) // add creator fee
+}
+
+const getMktPayouts = (truePool: number, contract: Contract, bets: Bet[]) => {
+  const p =
+    contract.pool.YES ** 2 / (contract.pool.YES ** 2 + contract.pool.NO ** 2)
+  console.log('Resolved MKT at p=', p)
+
+  return [
+    ...getStandardPayouts('YES', p * truePool, contract, bets),
+    ...getStandardPayouts('NO', (1 - p) * truePool, contract, bets),
+  ]
 }
 
 const payUser = ([userId, payout]: [string, number]) => {

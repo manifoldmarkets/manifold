@@ -43,18 +43,14 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
-      const { newBet, newPool, newTotalShares, newBalance } = getNewBetInfo(
-        user,
-        outcome,
-        amount,
-        contract,
-        newBetDoc.id
-      )
+      const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
+        getNewBetInfo(user, outcome, amount, contract, newBetDoc.id)
 
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, {
         pool: newPool,
         totalShares: newTotalShares,
+        totalBets: newTotalBets,
       })
       transaction.update(userDoc, { balance: newBalance })
 
@@ -91,6 +87,13 @@ const getNewBetInfo = (
       ? { YES: yesShares + shares, NO: noShares }
       : { YES: yesShares, NO: noShares + shares }
 
+  const { YES: yesBets, NO: noBets } = contract.totalBets
+
+  const newTotalBets =
+    outcome === 'YES'
+      ? { YES: yesBets + amount, NO: noBets }
+      : { YES: yesBets, NO: noBets + amount }
+
   const probBefore = yesPool ** 2 / (yesPool ** 2 + noPool ** 2)
   const probAfter = newPool.YES ** 2 / (newPool.YES ** 2 + newPool.NO ** 2)
 
@@ -108,5 +111,5 @@ const getNewBetInfo = (
 
   const newBalance = user.balance - amount
 
-  return { newBet, newPool, newTotalShares, newBalance }
+  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
 }

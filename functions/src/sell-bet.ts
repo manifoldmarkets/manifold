@@ -44,8 +44,14 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
-      const { newBet, newPool, newTotalShares, newBalance, creatorFee } =
-        getSellBetInfo(user, bet, contract, newBetDoc.id)
+      const {
+        newBet,
+        newPool,
+        newTotalShares,
+        newTotalBets,
+        newBalance,
+        creatorFee,
+      } = getSellBetInfo(user, bet, contract, newBetDoc.id)
 
       const creatorDoc = firestore.doc(`users/${contract.creatorId}`)
       const creatorSnap = await transaction.get(creatorDoc)
@@ -60,6 +66,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
       transaction.update(contractDoc, {
         pool: newPool,
         totalShares: newTotalShares,
+        totalBets: newTotalBets,
       })
       transaction.update(userDoc, { balance: newBalance })
 
@@ -81,6 +88,7 @@ const getSellBetInfo = (
   const { YES: yesPool, NO: noPool } = contract.pool
   const { YES: yesStart, NO: noStart } = contract.startPool
   const { YES: yesShares, NO: noShares } = contract.totalShares
+  const { YES: yesBets, NO: noBets } = contract.totalBets
 
   const [y, n, s] = [yesPool, noPool, shares]
 
@@ -123,6 +131,11 @@ const getSellBetInfo = (
       ? { YES: yesShares - shares, NO: noShares }
       : { YES: yesShares, NO: noShares - shares }
 
+  const newTotalBets =
+    outcome === 'YES'
+      ? { YES: yesBets - amount, NO: noBets }
+      : { YES: yesBets, NO: noBets - amount }
+
   const probAfter = newPool.YES ** 2 / (newPool.YES ** 2 + newPool.NO ** 2)
 
   const creatorFee = CREATOR_FEE * adjShareValue
@@ -158,5 +171,12 @@ const getSellBetInfo = (
 
   const newBalance = user.balance + saleAmount
 
-  return { newBet, newPool, newTotalShares, newBalance, creatorFee }
+  return {
+    newBet,
+    newPool,
+    newTotalShares,
+    newTotalBets,
+    newBalance,
+    creatorFee,
+  }
 }
