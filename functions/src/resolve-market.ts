@@ -5,6 +5,8 @@ import * as _ from 'lodash'
 import { Contract } from './types/contract'
 import { User } from './types/user'
 import { Bet } from './types/bet'
+import { getUser } from './utils'
+import { sendMarketResolutionEmail } from './emails'
 
 export const PLATFORM_FEE = 0.01 // 1%
 export const CREATOR_FEE = 0.01 // 1%
@@ -14,7 +16,7 @@ export const resolveMarket = functions
   .https.onCall(
     async (
       data: {
-        outcome: string
+        outcome: 'YES' | 'NO' | 'CANCEL'
         contractId: string
       },
       context
@@ -38,6 +40,9 @@ export const resolveMarket = functions
 
       if (contract.resolution)
         return { status: 'error', message: 'Contract already resolved' }
+
+      const creator = await getUser(contract.creatorId)
+      if (!creator) return { status: 'error', message: 'Creator not found' }
 
       await contractDoc.update({
         isResolved: true,
@@ -66,9 +71,26 @@ export const resolveMarket = functions
 
       const payoutPromises = Object.entries(userPayouts).map(payUser)
 
-      return await Promise.all(payoutPromises)
+      const result = await Promise.all(payoutPromises)
         .catch((e) => ({ status: 'error', message: e }))
         .then(() => ({ status: 'success' }))
+
+      const activeBets = bets.filter((bet) => !bet.isSold && !bet.sale)
+      const nonWinners = _.difference(
+        _.uniq(activeBets.map(({ userId }) => userId)),
+        Object.keys(userPayouts)
+      )
+      const emailPayouts = [
+        ...Object.entries(userPayouts),
+        ...nonWinners.map((userId) => [userId, 0] as const),
+      ]
+      await Promise.all(
+        emailPayouts.map(([userId, payout]) =>
+          sendMarketResolutionEmail(userId, payout, creator, contract, outcome)
+        )
+      )
+
+      return result
     }
   )
 
