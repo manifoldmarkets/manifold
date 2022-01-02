@@ -44,6 +44,7 @@ function ContractCard(props: { contract: Contract }) {
   const resolutionColor = {
     YES: 'text-primary',
     NO: 'text-red-400',
+    MKT: 'text-blue-400',
     CANCEL: 'text-yellow-400',
     '': '', // Empty if unresolved
   }[contract.resolution || '']
@@ -51,6 +52,7 @@ function ContractCard(props: { contract: Contract }) {
   const resolutionText = {
     YES: 'YES',
     NO: 'NO',
+    MKT: 'MKT',
     CANCEL: 'N/A',
     '': '',
   }[contract.resolution || '']

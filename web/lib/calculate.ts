@@ -37,11 +37,13 @@ export function calculateShares(
 export function calculatePayout(
   contract: Contract,
   bet: Bet,
-  outcome: 'YES' | 'NO' | 'CANCEL'
+  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
 ) {
   const { amount, outcome: betOutcome, shares } = bet
 
   if (outcome === 'CANCEL') return amount
+  if (outcome === 'MKT') return calculateMktPayout(contract, bet)
+
   if (betOutcome !== outcome) return 0
 
   const { totalShares, totalBets } = contract
@@ -58,6 +60,34 @@ export function calculatePayout(
   const winningsPool = truePool - totalBets[outcome]
 
   return (1 - fees) * (amount + ((shares - amount) / total) * winningsPool)
+}
+
+function calculateMktPayout(contract: Contract, bet: Bet) {
+  const p =
+    contract.pool.YES ** 2 / (contract.pool.YES ** 2 + contract.pool.NO ** 2)
+  const weightedTotal =
+    p * contract.totalBets.YES + (1 - p) * contract.totalBets.NO
+
+  const startPool = contract.startPool.YES + contract.startPool.NO
+  const truePool = contract.pool.YES + contract.pool.NO - startPool
+
+  const betP = bet.outcome === 'YES' ? p : 1 - p
+
+  if (weightedTotal >= truePool) {
+    return ((betP * bet.amount) / weightedTotal) * truePool
+  }
+
+  const winningsPool = truePool - weightedTotal
+
+  const weightedShareTotal =
+    p * (contract.totalShares.YES - contract.totalBets.YES) +
+    (1 - p) * (contract.totalShares.NO - contract.totalBets.NO)
+
+  return (
+    (1 - fees) *
+    (betP * bet.amount +
+      ((betP * (bet.shares - bet.amount)) / weightedShareTotal) * winningsPool)
+  )
 }
 
 export function resolvedPayout(contract: Contract, bet: Bet) {
