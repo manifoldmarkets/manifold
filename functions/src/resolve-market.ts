@@ -16,7 +16,7 @@ export const resolveMarket = functions
   .https.onCall(
     async (
       data: {
-        outcome: 'YES' | 'NO' | 'CANCEL'
+        outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
         contractId: string
       },
       context
@@ -82,24 +82,39 @@ export const resolveMarket = functions
         .catch((e) => ({ status: 'error', message: e }))
         .then(() => ({ status: 'success' }))
 
-      const activeBets = bets.filter((bet) => !bet.isSold && !bet.sale)
-      const nonWinners = _.difference(
-        _.uniq(activeBets.map(({ userId }) => userId)),
-        Object.keys(userPayouts)
-      )
-      const emailPayouts = [
-        ...Object.entries(userPayouts),
-        ...nonWinners.map((userId) => [userId, 0] as const),
-      ]
-      await Promise.all(
-        emailPayouts.map(([userId, payout]) =>
-          sendMarketResolutionEmail(userId, payout, creator, contract, outcome)
-        )
+      await sendResolutionEmails(
+        openBets,
+        userPayouts,
+        creator,
+        contract,
+        outcome
       )
 
       return result
     }
   )
+
+const sendResolutionEmails = async (
+  openBets: Bet[],
+  userPayouts: { [userId: string]: number },
+  creator: User,
+  contract: Contract,
+  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
+) => {
+  const nonWinners = _.difference(
+    _.uniq(openBets.map(({ userId }) => userId)),
+    Object.keys(userPayouts)
+  )
+  const emailPayouts = [
+    ...Object.entries(userPayouts),
+    ...nonWinners.map((userId) => [userId, 0] as const),
+  ]
+  await Promise.all(
+    emailPayouts.map(([userId, payout]) =>
+      sendMarketResolutionEmail(userId, payout, creator, contract, outcome)
+    )
+  )
+}
 
 const firestore = admin.firestore()
 

@@ -8,7 +8,7 @@ export const sendMarketResolutionEmail = async (
   payout: number,
   creator: User,
   contract: Contract,
-  resolution: 'YES' | 'NO' | 'CANCEL'
+  resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT'
 ) => {
   const user = await getUser(userId)
   if (!user) return
@@ -32,4 +32,4 @@ https://mantic.markets/${creator.username}/${contract.slug}
   await sendEmail(user.email, subject, body)
 }
 
-const toDisplayResolution = { YES: 'YES', NO: 'NO', CANCEL: 'N/A' }
+const toDisplayResolution = { YES: 'YES', NO: 'NO', CANCEL: 'N/A', MKT: 'MKT' }
