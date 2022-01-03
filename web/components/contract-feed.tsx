@@ -249,9 +249,7 @@ function toActivityItem(bet: Bet) {
 // - Do not have a comment
 // - Were not created by this user
 // Return a list of ActivityItems
-function group(bets: Bet[]) {
-  const user = useUser()
-
+function group(bets: Bet[], userId?: string) {
   const items: any[] = []
   let group: Bet[] = []
 
@@ -266,7 +264,7 @@ function group(bets: Bet[]) {
   }
 
   for (const bet of bets) {
-    const isCreator = user?.id === bet.userId
+    const isCreator = userId === bet.userId
 
     if (bet.comment || isCreator) {
       pushGroup()
@@ -346,11 +344,12 @@ type ActivityItem = {
 export function ContractFeed(props: { contract: Contract }) {
   const { contract } = props
   const { id } = contract
+  const user = useUser()
 
   let bets = useBets(id)
   if (bets === 'loading') bets = []
 
-  const allItems = [{ type: 'start', id: 0 }, ...group(bets)]
+  const allItems = [{ type: 'start', id: 0 }, ...group(bets, user?.id)]
 
   return (
     <div className="flow-root">
