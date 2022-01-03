@@ -1,6 +1,6 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
 import { Fragment, useState } from 'react'
-import { ChatAltIcon, TagIcon, UserCircleIcon } from '@heroicons/react/solid'
+import { ChatAltIcon, StarIcon, UserCircleIcon } from '@heroicons/react/solid'
 import { useBets } from '../hooks/use-bets'
 import { Bet, createComment } from '../lib/firebase/bets'
 import dayjs from 'dayjs'
@@ -38,7 +38,7 @@ function FeedComment(props: { activityItem: any }) {
             <Timestamp time={createdTime} />
           </p>
         </div>
-        <div className="mt-2 text-sm text-gray-700">
+        <div className="mt-2 text-gray-700">
           <p className="whitespace-pre-wrap">
             <Linkify text={text} />
           </p>
@@ -110,6 +110,33 @@ function FeedBet(props: { activityItem: any; user: User | null }) {
   )
 }
 
+function FeedStart(props: { contract: Contract }) {
+  const { contract } = props
+  return (
+    <>
+      <div>
+        <div className="relative px-1">
+          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+            <StarIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+          </div>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1 py-1.5">
+        <div className="text-sm text-gray-500">
+          <span className="text-gray-900">{contract.creatorName}</span> created
+          this market <Timestamp time={contract.createdTime} />
+        </div>
+        <div className="mt-2 text-gray-700">
+          <p className="whitespace-pre-wrap">
+            <Linkify text={contract.description} />
+            {/* TODO: Allow creator to update the description */}
+          </p>
+        </div>
+      </div>
+    </>
+  )
+}
+
 function toFeedBet(bet: Bet) {
   return {
     id: bet.id,
@@ -156,8 +183,13 @@ export function ContractFeed(props: { contract: Contract }) {
   let bets = useBets(id)
   if (bets === 'loading') bets = []
 
-  // TODO: aggregate bets across each day window
-  const allItems = bets.map(toActivityItem)
+  const allItems = [{ type: 'start', id: 0 }, ...bets.map(toActivityItem)]
+
+  // Missing feed items:
+  // - Aggegated bets (e.g. daily)
+  // - Bet sale
+  // - Market closed
+  // - Market resolved
 
   return (
     <div className="flow-root">
@@ -172,7 +204,9 @@ export function ContractFeed(props: { contract: Contract }) {
                 />
               ) : null}
               <div className="relative flex items-start space-x-3">
-                {activityItem.type === 'comment' ? (
+                {activityItem.type === 'start' ? (
+                  <FeedStart contract={contract} />
+                ) : activityItem.type === 'comment' ? (
                   <FeedComment activityItem={activityItem} />
                 ) : activityItem.type === 'bet' ? (
                   <FeedBet activityItem={activityItem} user={user || null} />

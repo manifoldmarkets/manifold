@@ -145,14 +145,6 @@ export const ContractOverview = (props: {
 
       <Spacer h={4} />
 
-      {((isCreator && !contract.resolution) || contract.description) && (
-        <label className="text-gray-500 mb-2 text-sm">Description</label>
-      )}
-
-      <ContractDescription contract={contract} isCreator={isCreator} />
-
-      <Spacer h={12} />
-
       <ContractFeed contract={contract} />
 
       {/* Show a delete button for contracts without any trading */}
