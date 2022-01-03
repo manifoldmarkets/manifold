@@ -8,7 +8,6 @@ import { useUser } from '../hooks/use-user'
 import { path } from '../lib/firebase/contracts'
 import { createContract } from '../lib/service/create-contract'
 import { Page } from '../components/page'
-import { Row } from '../components/layout/row'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 
@@ -75,37 +74,52 @@ export default function NewContract() {
         {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
         {/* When the form is submitted, create a new contract in the database */}
         <form>
-          <div className="flex justify-between gap-4 items-center">
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">Prediction</span>
-              </label>
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="label-text">Prediction</span>
+            </label>
 
+            <input
+              type="text"
+              placeholder="e.g. The FDA will approve Paxlovid before Jun 2nd, 2022"
+              className="input input-bordered"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value || '')}
+            />
+          </div>
+
+          <Spacer h={4} />
+
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Initial probability</span>
+            </label>
+            <label className="input-group input-group-md w-fit">
               <input
-                type="text"
-                placeholder="e.g. The FDA will approve Paxlovid before Jun 2nd, 2022"
-                className="input input-bordered"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value || '')}
+                type="number"
+                value={initialProb}
+                className="input input-bordered input-md"
+                min={1}
+                max={99}
+                onChange={(e) => setInitialProb(parseInt(e.target.value))}
               />
-            </div>
+              <span>%</span>
+            </label>
+          </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Chance</span>
-              </label>
-              <label className="input-group input-group-md w-fit">
-                <input
-                  type="number"
-                  value={initialProb}
-                  className="input input-bordered input-md"
-                  min={1}
-                  max={99}
-                  onChange={(e) => setInitialProb(parseInt(e.target.value))}
-                />
-                <span>%</span>
-              </label>
-            </div>
+          <Spacer h={4} />
+
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Description (optional)</span>
+            </label>
+            <textarea
+              className="textarea w-full h-24 textarea-bordered"
+              placeholder={descriptionPlaceholder}
+              value={description}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setDescription(e.target.value || '')}
+            />
           </div>
 
           {/* Collapsible "Advanced" section */}
@@ -116,32 +130,20 @@ export default function NewContract() {
               collapsed ? 'collapse-close' : 'collapse-open'
             )}
           >
-            <div
-              className="mt-4 mr-6 text-sm text-gray-400 text-right"
-              onClick={() => setCollapsed((collapsed) => !collapsed)}
-            >
-              Advanced
-            </div>
-            <Row>
+            <div onClick={() => setCollapsed((collapsed) => !collapsed)}>
+              <div className="mt-4 mr-6 text-sm text-gray-400 text-right">
+                Advanced
+              </div>
               <div
                 className="collapse-title p-0 absolute w-0 h-0 min-h-0"
-                style={{ top: -2, right: -15, color: '#9ca3af' /* gray-400 */ }}
+                style={{
+                  top: -2,
+                  right: -15,
+                  color: '#9ca3af' /* gray-400 */,
+                }}
               />
-            </Row>
+            </div>
             <div className="collapse-content !p-0 m-0 !bg-transparent">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Description (optional)</span>
-                </label>
-                <textarea
-                  className="textarea w-full h-24 textarea-bordered"
-                  placeholder={descriptionPlaceholder}
-                  value={description}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => setDescription(e.target.value || '')}
-                ></textarea>
-              </div>
-
               <div className="form-control">
                 <label className="label">
                   <span className="label-text">Close date (optional)</span>
