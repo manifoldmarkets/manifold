@@ -24,6 +24,7 @@ import {
 import clsx from 'clsx'
 import { cloudFunction } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
+import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -302,26 +303,21 @@ function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
       </td>
       <td>{formatWithCommas(shares)}</td>
       <td>
-        {bet.isSold
-          ? 'N/A'
-          : formatMoney(
-              isResolved
-                ? resolvedPayout(contract, bet)
-                : bet.sale
-                ? bet.sale.amount ?? 0
-                : calculateSaleAmount(contract, bet)
-            )}
+        {sale ? (
+          <>SOLD for {formatMoney(Math.abs(sale.amount))}</>
+        ) : (
+          formatMoney(
+            isResolved
+              ? resolvedPayout(contract, bet)
+              : calculateSaleAmount(contract, bet)
+          )
+        )}
       </td>
 
-      {sale ? (
-        <td>SOLD for {formatMoney(Math.abs(sale.amount))}</td>
-      ) : (
-        !isResolved &&
-        !isSold && (
-          <td className="text-neutral">
-            <SellButton contract={contract} bet={bet} />
-          </td>
-        )
+      {!isResolved && !isSold && (
+        <td className="text-neutral">
+          <SellButton contract={contract} bet={bet} />
+        </td>
       )}
     </tr>
   )
@@ -357,29 +353,4 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
       </div>
     </ConfirmationButton>
   )
-}
-
-function OutcomeLabel(props: { outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' }) {
-  const { outcome } = props
-
-  if (outcome === 'YES') return <YesLabel />
-  if (outcome === 'NO') return <NoLabel />
-  if (outcome === 'MKT') return <MarketLabel />
-  return <CancelLabel />
-}
-
-function YesLabel() {
-  return <span className="text-primary">YES</span>
-}
-
-function NoLabel() {
-  return <span className="text-red-400">NO</span>
-}
-
-function CancelLabel() {
-  return <span className="text-yellow-400">N/A</span>
-}
-
-function MarketLabel() {
-  return <span className="text-blue-400">MKT</span>
 }
