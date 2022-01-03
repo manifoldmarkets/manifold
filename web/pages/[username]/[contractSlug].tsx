@@ -53,6 +53,9 @@ export default function ContractPage(props: {
 
   const { creatorId, isResolved, resolution, question } = contract
   const isCreator = user?.id === creatorId
+  const allowTrade =
+    !isResolved && (!contract.closeTime || contract.closeTime > Date.now())
+  const allowResolve = !isResolved && isCreator && user
 
   const { probPercent } = compute(contract)
 
@@ -61,7 +64,7 @@ export default function ContractPage(props: {
     : `${probPercent} chance. ${contract.description}`
 
   return (
-    <Page wide={!isResolved}>
+    <Page wide={allowTrade}>
       <SEO
         title={question}
         description={description}
@@ -74,14 +77,13 @@ export default function ContractPage(props: {
           <BetsSection contract={contract} user={user ?? null} />
         </div>
 
-        {!isResolved && (
+        {(allowTrade || allowResolve) && (
           <>
             <div className="md:ml-8" />
 
             <Col className="flex-1">
-              <BetPanel contract={contract} />
-
-              {isCreator && user && (
+              {allowTrade && <BetPanel contract={contract} />}
+              {allowResolve && (
                 <ResolutionPanel creator={user} contract={contract} />
               )}
             </Col>
