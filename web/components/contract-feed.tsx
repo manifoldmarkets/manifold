@@ -1,12 +1,15 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { ChatAltIcon, TagIcon, UserCircleIcon } from '@heroicons/react/solid'
 import { useBets } from '../hooks/use-bets'
-import { Bet } from '../lib/firebase/bets'
+import { Bet, createComment } from '../lib/firebase/bets'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { Contract } from '../lib/firebase/contracts'
 import { OutcomeLabel } from './outcome-label'
+import { useUser } from '../hooks/use-user'
+import { User } from '../lib/firebase/users'
+import { Linkify } from './linkify'
 dayjs.extend(relativeTime)
 
 const activity = [
@@ -55,44 +58,61 @@ function classNames(...classes) {
 
 function FeedComment(props: { activityItem: any }) {
   const { activityItem } = props
+  const { person, text, date, amount, outcome, createdTime } = activityItem
   return (
     <>
       <div className="relative">
         <img
-          className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-white"
-          src={activityItem.imageUrl}
+          className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-gray-50"
+          src={person.avatarUrl}
           alt=""
         />
 
-        <span className="absolute -bottom-0.5 -right-1 bg-white rounded-tl px-0.5 py-px">
+        <span className="absolute -bottom-3 -right-2 bg-gray-50 rounded-tl px-0.5 py-px">
           <ChatAltIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
         </span>
       </div>
       <div className="min-w-0 flex-1">
         <div>
-          <div className="text-sm">
-            <a
-              href={activityItem.person.href}
-              className="font-medium text-gray-900"
-            >
-              {activityItem.person.name}
-            </a>
-          </div>
           <p className="mt-0.5 text-sm text-gray-500">
-            Commented {activityItem.date}
+            <a href={person.href} className="font-medium text-gray-900">
+              {person.name}
+            </a>{' '}
+            placed M$ {amount} on <OutcomeLabel outcome={outcome} />{' '}
+            <Timestamp time={createdTime} />
           </p>
         </div>
         <div className="mt-2 text-sm text-gray-700">
-          <p>{activityItem.comment}</p>
+          <p>
+            <Linkify text={text} />
+          </p>
         </div>
       </div>
     </>
   )
 }
 
-function FeedBet(props: { activityItem: any }) {
-  const { activityItem } = props
-  const { amount, outcome, createdTime } = activityItem
+function Timestamp(props: { time: number }) {
+  const { time } = props
+  return (
+    <span
+      className="whitespace-nowrap text-gray-300"
+      title={dayjs(time).format('MMM D, h:mma')}
+    >
+      {dayjs(time).fromNow()}
+    </span>
+  )
+}
+
+function FeedBet(props: { activityItem: any; user: User }) {
+  const { activityItem, user } = props
+  const { id, contractId, amount, outcome, createdTime } = activityItem
+  const isCreator = user.id == activityItem.userId
+
+  const [comment, setComment] = useState('')
+  async function submitComment() {
+    await createComment(contractId, id, comment, user)
+  }
   return (
     <>
       <div>
@@ -107,14 +127,26 @@ function FeedBet(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span className="text-gray-900">Someone</span> placed M$ {amount} on{' '}
-          <OutcomeLabel outcome={outcome} />{' '}
-          <span
-            className="whitespace-nowrap"
-            title={dayjs(createdTime).format('MMM D, h:mma')}
-          >
-            {dayjs(createdTime).fromNow()}
-          </span>
+          <span className="text-gray-900">{isCreator ? 'You' : 'Someone'}</span>{' '}
+          placed M$ {amount} on <OutcomeLabel outcome={outcome} />{' '}
+          <Timestamp time={createdTime} />
+          {isCreator && (
+            // Allow user to comment in an textarea if they are the creator
+            <div className="mt-2">
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="textarea textarea-bordered w-full"
+                placeholder="Add a comment..."
+              />
+              <button
+                className="btn btn-primary btn-outline btn-sm mt-1"
+                onClick={submitComment}
+              >
+                Comment
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -176,6 +208,7 @@ function FeedTags(props: { activityItem: any }) {
 function toFeedBet(bet: Bet) {
   return {
     id: bet.id,
+    contractId: bet.contractId,
     userId: bet.userId,
     type: 'bet',
     amount: bet.amount,
@@ -185,17 +218,41 @@ function toFeedBet(bet: Bet) {
   }
 }
 
+function toComment(bet: Bet) {
+  return {
+    id: bet.id,
+    contractId: bet.contractId,
+    userId: bet.userId,
+    type: 'comment',
+    amount: bet.amount,
+    outcome: bet.outcome,
+    createdTime: bet.createdTime,
+    date: dayjs(bet.createdTime).fromNow(),
+
+    // Invariant: bet.comment exists
+    text: bet.comment!.text,
+    person: {
+      href: `/${bet.comment!.userUsername}`,
+      name: bet.comment!.userName,
+      avatarUrl: bet.comment!.userAvatarUrl,
+    },
+  }
+}
+
+function toActivityItem(bet: Bet) {
+  return bet.comment ? toComment(bet) : toFeedBet(bet)
+}
+
 export function ContractFeed(props: { contract: Contract }) {
   const { contract } = props
   const { id } = contract
+  const user = useUser()
 
   let bets = useBets(id)
   if (bets === 'loading') bets = []
 
-  // const allItems = [...bets.map(toFeedBet), ...activity]
-  const allItems = bets.map(toFeedBet)
-
   // TODO: aggregate bets across each day window
+  const allItems = bets.map(toActivityItem)
 
   return (
     <div className="flow-root">
@@ -213,7 +270,7 @@ export function ContractFeed(props: { contract: Contract }) {
                 {activityItem.type === 'comment' ? (
                   <FeedComment activityItem={activityItem} />
                 ) : activityItem.type === 'bet' ? (
-                  <FeedBet activityItem={activityItem} />
+                  <FeedBet activityItem={activityItem} user={user} />
                 ) : activityItem.type === 'tags' ? (
                   <FeedTags activityItem={activityItem} />
                 ) : null}
