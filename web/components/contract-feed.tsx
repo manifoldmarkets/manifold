@@ -1,6 +1,11 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
 import { useState } from 'react'
-import { ChatAltIcon, StarIcon, UserCircleIcon } from '@heroicons/react/solid'
+import {
+  ChatAltIcon,
+  StarIcon,
+  UserIcon,
+  UsersIcon,
+} from '@heroicons/react/solid'
 import { useBets } from '../hooks/use-bets'
 import { Bet, createComment } from '../lib/firebase/bets'
 import dayjs from 'dayjs'
@@ -76,10 +81,7 @@ function FeedBet(props: { activityItem: any }) {
       <div>
         <div className="relative px-1">
           <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
-            <UserCircleIcon
-              className="h-5 w-5 text-gray-500"
-              aria-hidden="true"
-            />
+            <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
         </div>
       </div>
@@ -242,21 +244,113 @@ function toActivityItem(bet: Bet) {
   return bet.comment ? toComment(bet) : toFeedBet(bet)
 }
 
+// Group together bets that are:
+// - Within 24h of the first in the group
+// - Do not have a comment
+// - Were not created by this user
+// Return a list of ActivityItems
+function group(bets: Bet[]) {
+  const user = useUser()
+
+  const items: any[] = []
+  let group: Bet[] = []
+
+  // Turn the current group into an ActivityItem
+  function pushGroup() {
+    if (group.length == 1) {
+      items.push(toActivityItem(group[0]))
+    } else if (group.length > 1) {
+      items.push({ type: 'betgroup', bets: [...group] })
+    }
+    group = []
+  }
+
+  for (const bet of bets) {
+    const isCreator = user?.id === bet.userId
+
+    if (bet.comment || isCreator) {
+      pushGroup()
+      // Create a single item for this
+      items.push(toActivityItem(bet))
+    } else {
+      if (
+        group.length > 0 &&
+        dayjs(bet.createdTime).diff(dayjs(group[0].createdTime), 'hour') > 24
+      ) {
+        // More than 24h has passed; start a new group
+        pushGroup()
+      }
+      group.push(bet)
+    }
+  }
+  if (group.length > 0) {
+    pushGroup()
+  }
+  return items as ActivityItem[]
+}
+
+// TODO: Make this expandable to show all grouped bets?
+function FeedBetGroup(props: { activityItem: any }) {
+  const { activityItem } = props
+  const bets: Bet[] = activityItem.bets
+
+  const yesAmount = bets
+    .filter((b) => b.outcome == 'YES')
+    .reduce((acc, bet) => acc + bet.amount, 0)
+  const yesSpan = yesAmount ? (
+    <span>
+      M$ {yesAmount} on <OutcomeLabel outcome={'YES'} />
+    </span>
+  ) : null
+  const noAmount = bets
+    .filter((b) => b.outcome == 'NO')
+    .reduce((acc, bet) => acc + bet.amount, 0)
+  const noSpan = noAmount ? (
+    <span>
+      M$ {noAmount} on <OutcomeLabel outcome={'NO'} />
+    </span>
+  ) : null
+  const traderCount = bets.length
+  const createdTime = bets[0].createdTime
+
+  return (
+    <>
+      <div>
+        <div className="relative px-1">
+          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+            <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+          </div>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1 py-1.5">
+        <div className="text-sm text-gray-500">
+          <span className="text-gray-900">{traderCount} traders</span> placed{' '}
+          {yesSpan}
+          {yesAmount && noAmount ? ' and ' : ''}
+          {noSpan} <Timestamp time={createdTime} />
+        </div>
+      </div>
+    </>
+  )
+}
+
+// Missing feed items:
+// - Bet sold?
+// - Market closed
+// - Market resolved
+type ActivityItem = {
+  id: string
+  type: 'bet' | 'comment' | 'start' | 'betgroup'
+}
+
 export function ContractFeed(props: { contract: Contract }) {
   const { contract } = props
   const { id } = contract
-  const user = useUser()
 
   let bets = useBets(id)
   if (bets === 'loading') bets = []
 
-  const allItems = [{ type: 'start', id: 0 }, ...bets.map(toActivityItem)]
-
-  // Missing feed items:
-  // - Aggegated bets (e.g. daily)
-  // - Bet sale
-  // - Market closed
-  // - Market resolved
+  const allItems = [{ type: 'start', id: 0 }, ...group(bets)]
 
   return (
     <div className="flow-root">
@@ -277,6 +371,8 @@ export function ContractFeed(props: { contract: Contract }) {
                   <FeedComment activityItem={activityItem} />
                 ) : activityItem.type === 'bet' ? (
                   <FeedBet activityItem={activityItem} />
+                ) : activityItem.type === 'betgroup' ? (
+                  <FeedBetGroup activityItem={activityItem} />
                 ) : null}
               </div>
             </div>
