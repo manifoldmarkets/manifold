@@ -40,9 +40,16 @@ export default function NewContract() {
   // We'd like this to look like "Apr 2, 2022, 23:59:59 PM PT" but timezones are hard with dayjs
   const formattedCloseTime = new Date(closeTime).toString()
 
+  const isValid =
+    initialProb > 0 &&
+    initialProb < 100 &&
+    question.length > 0 &&
+    // If set, closeTime must be in the future
+    (!closeDate || closeTime > Date.now())
+
   async function submit() {
-    // TODO: add more rigorous error handling for question
-    if (!creator || !question) return
+    // TODO: Tell users why their contract is invalid
+    if (!creator || !isValid) return
 
     setIsSubmitting(true)
 
@@ -94,7 +101,6 @@ export default function NewContract() {
                   className="input input-bordered input-md"
                   min={1}
                   max={99}
-                  // TODO: validate that this is a number between 1 and 99
                   onChange={(e) => setInitialProb(parseInt(e.target.value))}
                 />
                 <span>%</span>
@@ -145,6 +151,7 @@ export default function NewContract() {
                   className="input input-bordered"
                   onClick={(e) => e.stopPropagation()}
                   onChange={(e) => setCloseDate(e.target.value || '')}
+                  min={new Date().toISOString().split('T')[0]}
                   value={closeDate}
                 />
               </div>
@@ -164,7 +171,7 @@ export default function NewContract() {
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={isSubmitting || !question}
+              disabled={isSubmitting || !isValid}
               onClick={(e) => {
                 e.preventDefault()
                 submit()
