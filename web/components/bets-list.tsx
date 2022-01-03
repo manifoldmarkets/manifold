@@ -258,7 +258,7 @@ export function ContractBetsTable(props: {
             <th>Amount</th>
             <th>Probability</th>
             <th>Shares</th>
-            <th>{isResolved ? <>Payout</> : <>Current value</>}</th>
+            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             <th></th>
           </tr>
         </thead>
@@ -309,7 +309,7 @@ function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
                 ? resolvedPayout(contract, bet)
                 : bet.sale
                 ? bet.sale.amount ?? 0
-                : currentValue(contract, bet)
+                : calculateSaleAmount(contract, bet)
             )}
       </td>
 
@@ -347,9 +347,11 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
         setIsSubmitting(false)
       }}
     >
-      <div className="text-2xl mb-4">Sell</div>
+      <div className="text-2xl mb-4">
+        Sell <OutcomeLabel outcome={bet.outcome} />
+      </div>
       <div>
-        Do you want to sell your {formatMoney(bet.amount)} position on{' '}
+        Do you want to sell {formatWithCommas(bet.shares)} shares of{' '}
         <OutcomeLabel outcome={bet.outcome} /> for{' '}
         {formatMoney(calculateSaleAmount(contract, bet))}?
       </div>
