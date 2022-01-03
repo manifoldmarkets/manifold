@@ -101,7 +101,9 @@ export default function NewContract() {
                 className="input input-bordered input-md"
                 min={1}
                 max={99}
-                onChange={(e) => setInitialProb(parseInt(e.target.value))}
+                onChange={(e) =>
+                  setInitialProb(parseInt(e.target.value.substring(0, 2)))
+                }
               />
               <span>%</span>
             </label>
@@ -158,11 +160,10 @@ export default function NewContract() {
                 />
               </div>
               <label>
-                {closeDate && (
-                  <span className="label-text text-gray-400 ml-1">
-                    No new trades will be allowed after {formattedCloseTime}
-                  </span>
-                )}
+                <span className="label-text text-gray-400 ml-1">
+                  No new trades will be allowed after{' '}
+                  {closeDate ? formattedCloseTime : 'this time'}
+                </span>
               </label>
             </div>
           </div>
