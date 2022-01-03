@@ -6,6 +6,7 @@ import { Bet } from '../lib/firebase/bets'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { Contract } from '../lib/firebase/contracts'
+import { OutcomeLabel } from './outcome-label'
 dayjs.extend(relativeTime)
 
 const activity = [
@@ -96,7 +97,7 @@ function FeedBet(props: { activityItem: any }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-100 rounded-full ring-8 ring-white flex items-center justify-center">
+          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
             <UserCircleIcon
               className="h-5 w-5 text-gray-500"
               aria-hidden="true"
@@ -107,7 +108,7 @@ function FeedBet(props: { activityItem: any }) {
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
           <span className="text-gray-900">Someone</span> placed M$ {amount} on{' '}
-          {outcome}{' '}
+          <OutcomeLabel outcome={outcome} />{' '}
           <span
             className="whitespace-nowrap"
             title={dayjs(createdTime).format('MMM D, h:mma')}
@@ -175,6 +176,7 @@ function FeedTags(props: { activityItem: any }) {
 function toFeedBet(bet: Bet) {
   return {
     id: bet.id,
+    userId: bet.userId,
     type: 'bet',
     amount: bet.amount,
     outcome: bet.outcome,
@@ -192,6 +194,8 @@ export function ContractFeed(props: { contract: Contract }) {
 
   // const allItems = [...bets.map(toFeedBet), ...activity]
   const allItems = bets.map(toFeedBet)
+
+  // TODO: aggregate bets across each day window
 
   return (
     <div className="flow-root">
