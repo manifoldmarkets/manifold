@@ -16,6 +16,19 @@ import { Linkify } from './linkify'
 import clsx from 'clsx'
 import { ContractDetails, ResolutionOrChance } from './contract-card'
 
+function ContractCloseTime(props: { contract: Contract }) {
+  const closeTime = props.contract.closeTime
+  if (!closeTime) {
+    return null
+  }
+  return (
+    <div className="text-gray-500 text-sm">
+      Trading {closeTime > Date.now() ? 'closes' : 'closed'} at{' '}
+      {dayjs(closeTime).format('MMM D, h:mma')}
+    </div>
+  )
+}
+
 function ContractDescription(props: {
   contract: Contract
   isCreator: boolean
@@ -127,9 +140,14 @@ export const ContractOverview = (props: {
 
       <Spacer h={12} />
 
+      <ContractCloseTime contract={contract} />
+
+      <Spacer h={4} />
+
       {((isCreator && !contract.resolution) || contract.description) && (
         <label className="text-gray-500 mb-2 text-sm">Description</label>
       )}
+
       <ContractDescription contract={contract} isCreator={isCreator} />
 
       {/* Show a delete button for contracts without any trading */}
