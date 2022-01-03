@@ -1,6 +1,12 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
 import { Fragment } from 'react'
 import { ChatAltIcon, TagIcon, UserCircleIcon } from '@heroicons/react/solid'
+import { useBets } from '../hooks/use-bets'
+import { Bet } from '../lib/firebase/bets'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import { Contract } from '../lib/firebase/contracts'
+dayjs.extend(relativeTime)
 
 const activity = [
   {
@@ -14,10 +20,10 @@ const activity = [
     date: '6d ago',
   },
   {
-    id: 2,
-    type: 'assignment',
-    person: { name: 'Hilary Mahy', href: '#' },
-    assigned: { name: 'Kristin Watson', href: '#' },
+    id: 'hifadsdf',
+    type: 'bet',
+    outcome: 'YES',
+    amount: 30,
     date: '2d ago',
   },
   {
@@ -83,8 +89,9 @@ function FeedComment(props: { activityItem: any }) {
   )
 }
 
-function FeedAssignment(props: { activityItem: any }) {
+function FeedBet(props: { activityItem: any }) {
   const { activityItem } = props
+  const { amount, outcome, createdTime } = activityItem
   return (
     <>
       <div>
@@ -99,20 +106,14 @@ function FeedAssignment(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <a
-            href={activityItem.person.href}
-            className="font-medium text-gray-900"
+          <span className="text-gray-900">Someone</span> placed M$ {amount} on{' '}
+          {outcome}{' '}
+          <span
+            className="whitespace-nowrap"
+            title={dayjs(createdTime).format('MMM D, h:mma')}
           >
-            {activityItem.person.name}
-          </a>{' '}
-          assigned{' '}
-          <a
-            href={activityItem.assigned.href}
-            className="font-medium text-gray-900"
-          >
-            {activityItem.assigned.name}
-          </a>{' '}
-          <span className="whitespace-nowrap">{activityItem.date}</span>
+            {dayjs(createdTime).fromNow()}
+          </span>
         </div>
       </div>
     </>
@@ -171,14 +172,34 @@ function FeedTags(props: { activityItem: any }) {
   )
 }
 
-export function ContractFeed() {
+function toFeedBet(bet: Bet) {
+  return {
+    id: bet.id,
+    type: 'bet',
+    amount: bet.amount,
+    outcome: bet.outcome,
+    createdTime: bet.createdTime,
+    date: dayjs(bet.createdTime).fromNow(),
+  }
+}
+
+export function ContractFeed(props: { contract: Contract }) {
+  const { contract } = props
+  const { id } = contract
+
+  let bets = useBets(id)
+  if (bets === 'loading') bets = []
+
+  // const allItems = [...bets.map(toFeedBet), ...activity]
+  const allItems = bets.map(toFeedBet)
+
   return (
     <div className="flow-root">
       <ul role="list" className="-mb-8">
-        {activity.map((activityItem, activityItemIdx) => (
+        {allItems.map((activityItem, activityItemIdx) => (
           <li key={activityItem.id}>
             <div className="relative pb-8">
-              {activityItemIdx !== activity.length - 1 ? (
+              {activityItemIdx !== allItems.length - 1 ? (
                 <span
                   className="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200"
                   aria-hidden="true"
@@ -187,8 +208,8 @@ export function ContractFeed() {
               <div className="relative flex items-start space-x-3">
                 {activityItem.type === 'comment' ? (
                   <FeedComment activityItem={activityItem} />
-                ) : activityItem.type === 'assignment' ? (
-                  <FeedAssignment activityItem={activityItem} />
+                ) : activityItem.type === 'bet' ? (
+                  <FeedBet activityItem={activityItem} />
                 ) : activityItem.type === 'tags' ? (
                   <FeedTags activityItem={activityItem} />
                 ) : null}

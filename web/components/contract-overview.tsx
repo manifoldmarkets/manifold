@@ -15,6 +15,7 @@ import dayjs from 'dayjs'
 import { Linkify } from './linkify'
 import clsx from 'clsx'
 import { ContractDetails, ResolutionOrChance } from './contract-card'
+import { ContractFeed } from './contract-feed'
 
 function ContractCloseTime(props: { contract: Contract }) {
   const closeTime = props.contract.closeTime
@@ -149,6 +150,10 @@ export const ContractOverview = (props: {
       )}
 
       <ContractDescription contract={contract} isCreator={isCreator} />
+
+      <Spacer h={12} />
+
+      <ContractFeed contract={contract} />
 
       {/* Show a delete button for contracts without any trading */}
       {isCreator && truePool === 0 && (
