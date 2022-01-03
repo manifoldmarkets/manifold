@@ -1,15 +1,15 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 import { ChatAltIcon, StarIcon, UserCircleIcon } from '@heroicons/react/solid'
 import { useBets } from '../hooks/use-bets'
 import { Bet, createComment } from '../lib/firebase/bets'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { Contract } from '../lib/firebase/contracts'
 import { OutcomeLabel } from './outcome-label'
+import { Contract, setContract } from '../lib/firebase/contracts'
 import { useUser } from '../hooks/use-user'
-import { User } from '../lib/firebase/users'
 import { Linkify } from './linkify'
+import { Row } from './layout/row'
 dayjs.extend(relativeTime)
 
 function FeedComment(props: { activityItem: any }) {
@@ -60,14 +60,15 @@ function Timestamp(props: { time: number }) {
   )
 }
 
-function FeedBet(props: { activityItem: any; user: User | null }) {
-  const { activityItem, user } = props
+function FeedBet(props: { activityItem: any }) {
+  const { activityItem } = props
   const { id, contractId, amount, outcome, createdTime } = activityItem
+  const user = useUser()
   const isCreator = user?.id == activityItem.userId
 
   const [comment, setComment] = useState('')
   async function submitComment() {
-    if (!user) return
+    if (!user || !comment) return
     await createComment(contractId, id, comment, user)
   }
   return (
@@ -97,7 +98,7 @@ function FeedBet(props: { activityItem: any; user: User | null }) {
                 placeholder="Add a comment..."
               />
               <button
-                className="btn btn-primary btn-outline btn-sm mt-1"
+                className="btn btn-outline btn-sm mt-1"
                 onClick={submitComment}
               >
                 Comment
@@ -110,8 +111,79 @@ function FeedBet(props: { activityItem: any; user: User | null }) {
   )
 }
 
+export function ContractDescription(props: {
+  contract: Contract
+  isCreator: boolean
+}) {
+  const { contract, isCreator } = props
+  const [editing, setEditing] = useState(false)
+  const editStatement = () => `${dayjs().format('MMM D, h:mma')}: `
+  const [description, setDescription] = useState(editStatement())
+
+  // Append the new description (after a newline)
+  async function saveDescription(e: any) {
+    e.preventDefault()
+    setEditing(false)
+    contract.description = `${contract.description}\n${description}`.trim()
+    await setContract(contract)
+    setDescription(editStatement())
+  }
+
+  return (
+    <div className="whitespace-pre-line break-words mt-2 text-gray-700">
+      <Linkify text={contract.description} />
+      <br />
+      {isCreator &&
+        !contract.resolution &&
+        (editing ? (
+          <form className="mt-4">
+            <textarea
+              className="textarea h-24 textarea-bordered w-full mb-1"
+              value={description}
+              onChange={(e) => setDescription(e.target.value || '')}
+              autoFocus
+              onFocus={(e) =>
+                // Focus starts at end of description.
+                e.target.setSelectionRange(
+                  description.length,
+                  description.length
+                )
+              }
+            />
+            <Row className="gap-2">
+              <button
+                className="btn btn-neutral btn-outline btn-sm"
+                onClick={saveDescription}
+              >
+                Save
+              </button>
+              <button
+                className="btn btn-error btn-outline btn-sm"
+                onClick={() => setEditing(false)}
+              >
+                Cancel
+              </button>
+            </Row>
+          </form>
+        ) : (
+          <Row>
+            <button
+              className="btn btn-neutral btn-outline btn-sm mt-4"
+              onClick={() => setEditing(true)}
+            >
+              Add to description
+            </button>
+          </Row>
+        ))}
+    </div>
+  )
+}
+
 function FeedStart(props: { contract: Contract }) {
   const { contract } = props
+  const user = useUser()
+  const isCreator = user?.id === contract.creatorId
+
   return (
     <>
       <div>
@@ -126,12 +198,7 @@ function FeedStart(props: { contract: Contract }) {
           <span className="text-gray-900">{contract.creatorName}</span> created
           this market <Timestamp time={contract.createdTime} />
         </div>
-        <div className="mt-2 text-gray-700">
-          <p className="whitespace-pre-wrap">
-            <Linkify text={contract.description} />
-            {/* TODO: Allow creator to update the description */}
-          </p>
-        </div>
+        <ContractDescription contract={contract} isCreator={isCreator} />
       </div>
     </>
   )
@@ -209,7 +276,7 @@ export function ContractFeed(props: { contract: Contract }) {
                 ) : activityItem.type === 'comment' ? (
                   <FeedComment activityItem={activityItem} />
                 ) : activityItem.type === 'bet' ? (
-                  <FeedBet activityItem={activityItem} user={user || null} />
+                  <FeedBet activityItem={activityItem} />
                 ) : null}
               </div>
             </div>
