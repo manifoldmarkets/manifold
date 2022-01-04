@@ -68,6 +68,7 @@ export const ContractOverview = (props: {
           />
 
           <ContractDetails contract={contract} inlineTags />
+          <TweetButton tweetText={tweetText} />
         </Col>
 
         <ResolutionOrChance
@@ -77,10 +78,6 @@ export const ContractOverview = (props: {
           large
         />
       </Row>
-
-      <Spacer h={4} />
-
-      <TweetButton tweetText={tweetText} />
 
       <Spacer h={4} />
 

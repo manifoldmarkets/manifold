@@ -1,9 +1,14 @@
-export function TweetButton(props: { tweetText?: string }) {
-  const { tweetText } = props
+import clsx from 'clsx'
+
+export function TweetButton(props: { className?: string; tweetText?: string }) {
+  const { tweetText, className } = props
 
   return (
     <a
-      className="btn btn-sm normal-case self-start border-none"
+      className={clsx(
+        'btn btn-xs normal-case self-start border-none',
+        className
+      )}
       style={{ backgroundColor: '#1da1f2' }}
       href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
         tweetText ?? ''
@@ -13,8 +18,8 @@ export function TweetButton(props: { tweetText?: string }) {
       <img
         className="mr-2"
         src={'/twitter-icon-white.svg'}
-        width={18}
-        height={18}
+        width={15}
+        height={15}
       />
       Tweet
     </a>
