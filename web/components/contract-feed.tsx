@@ -13,7 +13,8 @@ import {
   XIcon,
 } from '@heroicons/react/solid'
 import { useBets } from '../hooks/use-bets'
-import { Bet, createComment } from '../lib/firebase/bets'
+import { Bet } from '../lib/firebase/bets'
+import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { OutcomeLabel } from './outcome-label'
@@ -21,6 +22,8 @@ import { Contract, setContract } from '../lib/firebase/contracts'
 import { useUser } from '../hooks/use-user'
 import { Linkify } from './linkify'
 import { Row } from './layout/row'
+import { createComment } from '../lib/firebase/comments'
+import { useComments } from '../hooks/use-comments'
 dayjs.extend(relativeTime)
 
 function FeedComment(props: { activityItem: any }) {
@@ -289,7 +292,7 @@ function toFeedBet(bet: Bet) {
   }
 }
 
-function toComment(bet: Bet) {
+function toFeedComment(bet: Bet, comment: Comment) {
   return {
     id: bet.id,
     contractId: bet.contractId,
@@ -301,17 +304,13 @@ function toComment(bet: Bet) {
     date: dayjs(bet.createdTime).fromNow(),
 
     // Invariant: bet.comment exists
-    text: bet.comment!.text,
+    text: comment.text,
     person: {
-      href: `/${bet.comment!.userUsername}`,
-      name: bet.comment!.userName,
-      avatarUrl: bet.comment!.userAvatarUrl,
+      href: `/${comment.userUsername}`,
+      name: comment.userName,
+      avatarUrl: comment.userAvatarUrl,
     },
   }
-}
-
-function toActivityItem(bet: Bet) {
-  return bet.comment ? toComment(bet) : toFeedBet(bet)
 }
 
 // Group together bets that are:
@@ -319,7 +318,8 @@ function toActivityItem(bet: Bet) {
 // - Do not have a comment
 // - Were not created by this user
 // Return a list of ActivityItems
-function group(bets: Bet[], userId?: string) {
+function group(bets: Bet[], comments: Comment[], userId?: string) {
+  const commentsMap = mapCommentsByBetId(comments)
   const items: any[] = []
   let group: Bet[] = []
 
@@ -328,15 +328,20 @@ function group(bets: Bet[], userId?: string) {
     if (group.length == 1) {
       items.push(toActivityItem(group[0]))
     } else if (group.length > 1) {
-      items.push({ type: 'betgroup', bets: [...group] })
+      items.push({ type: 'betgroup', bets: [...group], id: group[0].id })
     }
     group = []
+  }
+
+  function toActivityItem(bet: Bet) {
+    const comment = commentsMap[bet.id]
+    return comment ? toFeedComment(bet, comment) : toFeedBet(bet)
   }
 
   for (const bet of bets) {
     const isCreator = userId === bet.userId
 
-    if (bet.comment || isCreator) {
+    if (commentsMap[bet.id] || isCreator) {
       pushGroup()
       // Create a single item for this
       items.push(toActivityItem(bet))
@@ -417,7 +422,13 @@ export function ContractFeed(props: { contract: Contract }) {
   let bets = useBets(id)
   if (bets === 'loading') bets = []
 
-  const allItems = [{ type: 'start', id: 0 }, ...group(bets, user?.id)]
+  let comments = useComments(id)
+  if (comments === 'loading') comments = []
+
+  const allItems = [
+    { type: 'start', id: 0 },
+    ...group(bets, comments, user?.id),
+  ]
   if (contract.closeTime) {
     allItems.push({ type: 'close', id: `${contract.closeTime}` })
   }

@@ -4,11 +4,8 @@ import {
   query,
   onSnapshot,
   where,
-  doc,
-  updateDoc,
 } from 'firebase/firestore'
 import { db } from './init'
-import { User } from './users'
 
 export type Bet = {
   id: string
@@ -31,16 +28,6 @@ export type Bet = {
   isSold?: boolean // true if this BUY bet has been sold
 
   createdTime: number
-
-  // Currently, comments are created after the bet, not atomically with the bet.
-  comment?: {
-    text: string
-    createdTime: number
-    // Denormalized, for rendering comments
-    userName?: string
-    userUsername?: string
-    userAvatarUrl?: string
-  }
 }
 
 function getBetsCollection(contractId: string) {
@@ -73,23 +60,5 @@ export function listenForUserBets(
     const bets = snap.docs.map((doc) => doc.data() as Bet)
     bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
     setBets(bets)
-  })
-}
-
-export async function createComment(
-  contractId: string,
-  betId: string,
-  text: string,
-  commenter: User
-) {
-  const betRef = doc(getBetsCollection(contractId), betId)
-  return await updateDoc(betRef, {
-    comment: {
-      text: text,
-      createdTime: Date.now(),
-      userName: commenter.name,
-      userUsername: commenter.username,
-      userAvatarUrl: commenter.avatarUrl,
-    },
   })
 }
