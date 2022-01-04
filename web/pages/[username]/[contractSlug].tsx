@@ -110,7 +110,7 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
   return (
     <div>
       <Title text="Your trades" />
-      <MyBetsSummary contract={contract} bets={userBets} />
+      <MyBetsSummary contract={contract} bets={userBets} showMKT />
       <Spacer h={6} />
       <ContractBetsTable contract={contract} bets={userBets} />
       <Spacer h={12} />

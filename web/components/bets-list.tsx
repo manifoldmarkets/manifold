@@ -18,13 +18,12 @@ import { UserLink } from './user-page'
 import {
   calculatePayout,
   calculateSaleAmount,
-  currentValue,
   resolvedPayout,
 } from '../lib/calculate'
 import clsx from 'clsx'
 import { cloudFunction } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
-import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
+import { OutcomeLabel, YesLabel, NoLabel, MarketLabel } from './outcome-label'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -84,7 +83,7 @@ export function BetsList(props: { user: User }) {
   const currentBetsValue = _.sumBy(unresolved, (contract) =>
     _.sumBy(contractBets[contract.id], (bet) => {
       if (bet.isSold || bet.sale) return 0
-      return currentValue(contract, bet)
+      return calculatePayout(contract, bet, 'MKT')
     })
   )
 
@@ -183,9 +182,10 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
 export function MyBetsSummary(props: {
   contract: Contract
   bets: Bet[]
+  showMKT?: boolean
   className?: string
 }) {
-  const { bets, contract, className } = props
+  const { bets, contract, showMKT, className } = props
   const { resolution } = contract
 
   const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
@@ -202,21 +202,29 @@ export function MyBetsSummary(props: {
     calculatePayout(contract, bet, 'NO')
   )
 
+  const marketWinnings = _.sumBy(excludeSales, (bet) =>
+    calculatePayout(contract, bet, 'MKT')
+  )
+
   return (
-    <Row className={clsx('gap-4 sm:gap-6', className)}>
+    <Row
+      className={clsx(
+        'gap-4 sm:gap-6',
+        showMKT && 'flex-wrap sm:flex-nowrap',
+        className
+      )}
+    >
       <Col>
         <div className="text-sm text-gray-500 whitespace-nowrap">Invested</div>
         <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
       </Col>
       {resolution ? (
-        <>
-          <Col>
-            <div className="text-sm text-gray-500">Payout</div>
-            <div className="whitespace-nowrap">{formatMoney(betsPayout)}</div>
-          </Col>
-        </>
+        <Col>
+          <div className="text-sm text-gray-500">Payout</div>
+          <div className="whitespace-nowrap">{formatMoney(betsPayout)}</div>
+        </Col>
       ) : (
-        <>
+        <Row className="gap-4 sm:gap-6">
           <Col>
             <div className="text-sm text-gray-500 whitespace-nowrap">
               Payout if <YesLabel />
@@ -229,7 +237,17 @@ export function MyBetsSummary(props: {
             </div>
             <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
           </Col>
-        </>
+          {showMKT && (
+            <Col>
+              <div className="text-sm text-gray-500 whitespace-nowrap">
+                Payout if <MarketLabel />
+              </div>
+              <div className="whitespace-nowrap">
+                {formatMoney(marketWinnings)}
+              </div>
+            </Col>
+          )}
+        </Row>
       )}
     </Row>
   )
