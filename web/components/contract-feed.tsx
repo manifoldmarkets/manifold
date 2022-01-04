@@ -6,8 +6,6 @@ import {
   CheckIcon,
   LockClosedIcon,
   StarIcon,
-  ThumbDownIcon,
-  ThumbUpIcon,
   UserIcon,
   UsersIcon,
   XIcon,
@@ -24,6 +22,7 @@ import { Linkify } from './linkify'
 import { Row } from './layout/row'
 import { createComment } from '../lib/firebase/comments'
 import { useComments } from '../hooks/use-comments'
+import { formatMoney } from '../lib/util/format'
 dayjs.extend(relativeTime)
 
 function FeedComment(props: { activityItem: any }) {
@@ -99,7 +98,7 @@ function FeedBet(props: { activityItem: any }) {
           <span className="text-gray-900">
             {isCreator ? 'You' : 'A trader'}
           </span>{' '}
-          placed M$ {amount} on <OutcomeLabel outcome={outcome} />{' '}
+          placed {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
           <Timestamp time={createdTime} />
           {isCreator && (
             // Allow user to comment in an textarea if they are the creator
@@ -372,7 +371,7 @@ function FeedBetGroup(props: { activityItem: any }) {
     .reduce((acc, bet) => acc + bet.amount, 0)
   const yesSpan = yesAmount ? (
     <span>
-      M$ {yesAmount} on <OutcomeLabel outcome={'YES'} />
+      {formatMoney(yesAmount)} on <OutcomeLabel outcome={'YES'} />
     </span>
   ) : null
   const noAmount = bets
@@ -380,7 +379,7 @@ function FeedBetGroup(props: { activityItem: any }) {
     .reduce((acc, bet) => acc + bet.amount, 0)
   const noSpan = noAmount ? (
     <span>
-      M$ {noAmount} on <OutcomeLabel outcome={'NO'} />
+      {formatMoney(noAmount)} on <OutcomeLabel outcome={'NO'} />
     </span>
   ) : null
   const traderCount = bets.length
