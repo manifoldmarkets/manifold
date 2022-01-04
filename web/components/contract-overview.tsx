@@ -1,4 +1,9 @@
-import { compute, Contract, deleteContract } from '../lib/firebase/contracts'
+import {
+  compute,
+  Contract,
+  deleteContract,
+  path,
+} from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
@@ -10,6 +15,7 @@ import { Linkify } from './linkify'
 import clsx from 'clsx'
 import { ContractDetails, ResolutionOrChance } from './contract-card'
 import { ContractFeed } from './contract-feed'
+import { TweetButton } from './tweet-button'
 
 function ContractCloseTime(props: { contract: Contract }) {
   const closeTime = props.contract.closeTime
@@ -29,11 +35,22 @@ export const ContractOverview = (props: {
   className?: string
 }) => {
   const { contract, className } = props
-  const { resolution, creatorId } = contract
+  const { resolution, creatorId, creatorName } = contract
   const { probPercent, truePool } = compute(contract)
 
   const user = useUser()
   const isCreator = user?.id === creatorId
+
+  const tweetQuestion = isCreator
+    ? contract.question
+    : `${creatorName}: ${contract.question}`
+  const tweetDescription = resolution
+    ? isCreator
+      ? `Resolved ${resolution}!`
+      : `Resolved ${resolution} by ${creatorName}:`
+    : `Currently ${probPercent} chance, place your bets here:`
+  const url = `https://mantic.markets${path(contract)}`
+  const tweetText = `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
 
   return (
     <Col className={clsx('mb-6', className)}>
@@ -60,6 +77,10 @@ export const ContractOverview = (props: {
           large
         />
       </Row>
+
+      <Spacer h={4} />
+
+      <TweetButton tweetText={tweetText} />
 
       <Spacer h={4} />
 
