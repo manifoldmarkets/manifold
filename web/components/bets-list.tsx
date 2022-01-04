@@ -322,7 +322,7 @@ function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
       <td>{formatWithCommas(shares)}</td>
       <td>
         {sale ? (
-          <>SOLD for {formatMoney(Math.abs(sale.amount))}</>
+          <>{formatMoney(Math.abs(sale.amount))} (sold)</>
         ) : (
           formatMoney(
             isResolved
