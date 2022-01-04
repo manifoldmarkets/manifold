@@ -4,6 +4,7 @@ import {
   BanIcon,
   ChatAltIcon,
   CheckIcon,
+  LockClosedIcon,
   StarIcon,
   ThumbDownIcon,
   ThumbUpIcon,
@@ -250,6 +251,31 @@ function FeedResolve(props: { contract: Contract }) {
   )
 }
 
+function FeedClose(props: { contract: Contract }) {
+  const { contract } = props
+
+  return (
+    <>
+      <div>
+        <div className="relative px-1">
+          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+            <LockClosedIcon
+              className="h-5 w-5 text-gray-500"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1 py-1.5">
+        <div className="text-sm text-gray-500">
+          Trading closed in this market{' '}
+          <Timestamp time={contract.closeTime || 0} />
+        </div>
+      </div>
+    </>
+  )
+}
+
 function toFeedBet(bet: Bet) {
   return {
     id: bet.id,
@@ -378,10 +404,9 @@ function FeedBetGroup(props: { activityItem: any }) {
 
 // Missing feed items:
 // - Bet sold?
-// - Market closed?
 type ActivityItem = {
   id: string
-  type: 'bet' | 'comment' | 'start' | 'betgroup' | 'resolve'
+  type: 'bet' | 'comment' | 'start' | 'betgroup' | 'close' | 'resolve'
 }
 
 export function ContractFeed(props: { contract: Contract }) {
@@ -393,6 +418,9 @@ export function ContractFeed(props: { contract: Contract }) {
   if (bets === 'loading') bets = []
 
   const allItems = [{ type: 'start', id: 0 }, ...group(bets, user?.id)]
+  if (contract.closeTime) {
+    allItems.push({ type: 'close', id: `${contract.closeTime}` })
+  }
   if (contract.resolution) {
     allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
   }
@@ -418,6 +446,8 @@ export function ContractFeed(props: { contract: Contract }) {
                   <FeedBet activityItem={activityItem} />
                 ) : activityItem.type === 'betgroup' ? (
                   <FeedBetGroup activityItem={activityItem} />
+                ) : activityItem.type === 'close' ? (
+                  <FeedClose contract={contract} />
                 ) : activityItem.type === 'resolve' ? (
                   <FeedResolve contract={contract} />
                 ) : null}
