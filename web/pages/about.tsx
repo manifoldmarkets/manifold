@@ -217,17 +217,35 @@ function Contents() {
         judgment on the outcome, it leads to a qualitative shift in the number,
         variety, and usefulness of prediction markets.
       </p>
-      <h3 id="how-does-betting-in-a-market-work-on-a-technical-level-">
-        How does betting in a market work on a technical level?
-      </h3>
+
+      <h3 id="how-does-betting-work">How does betting work?</h3>
+      <ul>
+        <li>
+          Markets are structured around a question with a binary outcome (either
+          YES or NO)
+        </li>
+        <li>
+          Traders can place a bet on either YES or NO. The bet amount is added
+          to the corresponding bet pool for the outcome. The trader receives
+          some shares of the final pool. The number of shares depends on the
+          current implied probability.
+        </li>
+        <li>
+          When the market is resolved, the traders who bet on the correct
+          outcome are paid out of the total pool (YES pool + NO pool) in
+          proportion to the amount of shares they own, minus any fees.
+        </li>
+      </ul>
+
+      <h3 id="type-of-market-maker">What kind of betting system do you use?</h3>
       <p>
         Mantic Markets uses a special type of automated market marker based on a
         dynamic pari-mutuel (DPM) betting system.
       </p>
       <p>
         Like traditional pari-mutuel systems, your payoff is not known at the
-        time you place your bet (it&#39;s dependent on the size of the pot when
-        the event ends).
+        time you place your bet (it&#39;s dependent on the size of the pool when
+        the event is resolved).
       </p>
       <p>
         Unlike traditional pari-mutuel systems, the price or probability that
@@ -238,6 +256,7 @@ function Contents() {
         The result is a market that can function well when trading volume is low
         without any risk to the market creator.
       </p>
+
       <h3 id="who-are-we-">Who are we?</h3>
       <p>Mantic Markets is currently a team of three:</p>
       <ul>
@@ -272,9 +291,16 @@ function Contents() {
           Join the Mantic Markets Discord Server!
         </a>
       </p>
+
       <h1 id="further-reading">Further Reading</h1>
       <hr />
+
       <ul>
+        <li>
+          <a href="https://mantic.notion.site/Technical-Overview-b9b48a09ea1f45b88d991231171730c5">
+            Technical Overview of Mantic Markets
+          </a>
+        </li>
         <li>
           <a href="https://en.wikipedia.org/wiki/Prediction_market">
             Wikipedia: Prediction markets
