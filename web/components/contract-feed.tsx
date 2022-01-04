@@ -1,10 +1,15 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
 import { useState } from 'react'
 import {
+  BanIcon,
   ChatAltIcon,
+  CheckIcon,
   StarIcon,
+  ThumbDownIcon,
+  ThumbUpIcon,
   UserIcon,
   UsersIcon,
+  XIcon,
 } from '@heroicons/react/solid'
 import { useBets } from '../hooks/use-bets'
 import { Bet, createComment } from '../lib/firebase/bets'
@@ -87,7 +92,9 @@ function FeedBet(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span className="text-gray-900">{isCreator ? 'You' : 'Someone'}</span>{' '}
+          <span className="text-gray-900">
+            {isCreator ? 'You' : 'A trader'}
+          </span>{' '}
           placed M$ {amount} on <OutcomeLabel outcome={outcome} />{' '}
           <Timestamp time={createdTime} />
           {isCreator && (
@@ -201,6 +208,43 @@ function FeedStart(props: { contract: Contract }) {
           this market <Timestamp time={contract.createdTime} />
         </div>
         <ContractDescription contract={contract} isCreator={isCreator} />
+      </div>
+    </>
+  )
+}
+
+function OutcomeIcon(props: { outcome?: 'YES' | 'NO' | 'CANCEL' }) {
+  const { outcome } = props
+  switch (outcome) {
+    case 'YES':
+      return <CheckIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+    case 'NO':
+      return <XIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+    case 'CANCEL':
+    default:
+      return <BanIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+  }
+}
+
+function FeedResolve(props: { contract: Contract }) {
+  const { contract } = props
+  const resolution = contract.resolution || 'CANCEL'
+
+  return (
+    <>
+      <div>
+        <div className="relative px-1">
+          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+            <OutcomeIcon outcome={resolution} />
+          </div>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1 py-1.5">
+        <div className="text-sm text-gray-500">
+          <span className="text-gray-900">{contract.creatorName}</span> resolved
+          this market to <OutcomeLabel outcome={resolution} />{' '}
+          <Timestamp time={contract.resolutionTime || 0} />
+        </div>
       </div>
     </>
   )
@@ -334,11 +378,10 @@ function FeedBetGroup(props: { activityItem: any }) {
 
 // Missing feed items:
 // - Bet sold?
-// - Market closed
-// - Market resolved
+// - Market closed?
 type ActivityItem = {
   id: string
-  type: 'bet' | 'comment' | 'start' | 'betgroup'
+  type: 'bet' | 'comment' | 'start' | 'betgroup' | 'resolve'
 }
 
 export function ContractFeed(props: { contract: Contract }) {
@@ -350,6 +393,9 @@ export function ContractFeed(props: { contract: Contract }) {
   if (bets === 'loading') bets = []
 
   const allItems = [{ type: 'start', id: 0 }, ...group(bets, user?.id)]
+  if (contract.resolution) {
+    allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
+  }
 
   return (
     <div className="flow-root">
@@ -372,6 +418,8 @@ export function ContractFeed(props: { contract: Contract }) {
                   <FeedBet activityItem={activityItem} />
                 ) : activityItem.type === 'betgroup' ? (
                   <FeedBetGroup activityItem={activityItem} />
+                ) : activityItem.type === 'resolve' ? (
+                  <FeedResolve contract={contract} />
                 ) : null}
               </div>
             </div>
