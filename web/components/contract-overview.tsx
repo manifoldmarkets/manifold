@@ -1,10 +1,4 @@
-import { useState } from 'react'
-import {
-  compute,
-  Contract,
-  deleteContract,
-  setContract,
-} from '../lib/firebase/contracts'
+import { compute, Contract, deleteContract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
@@ -15,6 +9,7 @@ import dayjs from 'dayjs'
 import { Linkify } from './linkify'
 import clsx from 'clsx'
 import { ContractDetails, ResolutionOrChance } from './contract-card'
+import { ContractFeed } from './contract-feed'
 
 function ContractCloseTime(props: { contract: Contract }) {
   const closeTime = props.contract.closeTime
@@ -25,74 +20,6 @@ function ContractCloseTime(props: { contract: Contract }) {
     <div className="text-gray-500 text-sm">
       Trading {closeTime > Date.now() ? 'closes' : 'closed'} at{' '}
       {dayjs(closeTime).format('MMM D, h:mma')}
-    </div>
-  )
-}
-
-function ContractDescription(props: {
-  contract: Contract
-  isCreator: boolean
-}) {
-  const { contract, isCreator } = props
-  const [editing, setEditing] = useState(false)
-  const editStatement = () => `${dayjs().format('MMM D, h:mma')}: `
-  const [description, setDescription] = useState(editStatement())
-
-  // Append the new description (after a newline)
-  async function saveDescription(e: any) {
-    e.preventDefault()
-    setEditing(false)
-    contract.description = `${contract.description}\n${description}`.trim()
-    await setContract(contract)
-    setDescription(editStatement())
-  }
-
-  return (
-    <div className="whitespace-pre-line break-words">
-      <Linkify text={contract.description} />
-      <br />
-      {isCreator &&
-        !contract.resolution &&
-        (editing ? (
-          <form className="mt-4">
-            <textarea
-              className="textarea h-24 textarea-bordered w-full mb-2"
-              value={description}
-              onChange={(e) => setDescription(e.target.value || '')}
-              autoFocus
-              onFocus={(e) =>
-                // Focus starts at end of description.
-                e.target.setSelectionRange(
-                  description.length,
-                  description.length
-                )
-              }
-            />
-            <Row className="gap-4 justify-end">
-              <button
-                className="btn btn-error btn-outline btn-sm mt-2"
-                onClick={() => setEditing(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-neutral btn-outline btn-sm mt-2"
-                onClick={saveDescription}
-              >
-                Save
-              </button>
-            </Row>
-          </form>
-        ) : (
-          <Row className="justify-end">
-            <button
-              className="btn btn-neutral btn-outline btn-sm mt-4"
-              onClick={() => setEditing(true)}
-            >
-              Add to description
-            </button>
-          </Row>
-        ))}
     </div>
   )
 }
@@ -142,14 +69,6 @@ export const ContractOverview = (props: {
 
       <ContractCloseTime contract={contract} />
 
-      <Spacer h={4} />
-
-      {((isCreator && !contract.resolution) || contract.description) && (
-        <label className="text-gray-500 mb-2 text-sm">Description</label>
-      )}
-
-      <ContractDescription contract={contract} isCreator={isCreator} />
-
       {/* Show a delete button for contracts without any trading */}
       {isCreator && truePool === 0 && (
         <>
@@ -166,6 +85,10 @@ export const ContractOverview = (props: {
           </button>
         </>
       )}
+
+      <Spacer h={4} />
+
+      <ContractFeed contract={contract} />
     </Col>
   )
 }
