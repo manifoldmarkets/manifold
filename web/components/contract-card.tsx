@@ -114,7 +114,9 @@ export function ContractDetails(props: {
         <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
       </Row>
 
-      {inlineTags && <div className="hidden sm:block">•</div>}
+      {inlineTags && tags.length > 0 && (
+        <div className="hidden sm:block">•</div>
+      )}
 
       <Row className="gap-2 flex-wrap">
         {tags.map((tag) => (
