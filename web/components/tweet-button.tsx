@@ -4,7 +4,7 @@ export function TweetButton(props: { tweetText?: string }) {
   return (
     <a
       className="twitter-share-button"
-      href={`https://twitter.com/intent/tweet?text=${encodeURI(
+      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
         tweetText ?? ''
       )}`}
       data-size="large"
