@@ -6,10 +6,11 @@ import { UserLink } from './user-page'
 import { Linkify } from './linkify'
 import { Contract, compute, path } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
+import { parseTags } from '../lib/util/parse'
 
 export function ContractCard(props: { contract: Contract }) {
   const { contract } = props
-  const { resolution } = contract
+  const { question, resolution } = contract
   const { probPercent } = compute(contract)
 
   return (
@@ -19,9 +20,7 @@ export function ContractCard(props: { contract: Contract }) {
           <div className="card">
             <div className="card-body p-6">
               <Row className="justify-between gap-4 mb-2">
-                <p className="font-medium text-indigo-700">
-                  <Linkify text={contract.question} />
-                </p>
+                <p className="font-medium text-indigo-700">{question}</p>
                 <ResolutionOrChance
                   className="items-center"
                   resolution={resolution}
@@ -86,21 +85,44 @@ export function ResolutionOrChance(props: {
   )
 }
 
-export function ContractDetails(props: { contract: Contract }) {
-  const { contract } = props
+export function ContractDetails(props: {
+  contract: Contract
+  inlineTags?: boolean
+}) {
+  const { contract, inlineTags } = props
+  const { question, description } = contract
   const { truePool, createdDate, resolvedDate } = compute(contract)
 
+  const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
+
   return (
-    <Row className="flex-wrap text-sm text-gray-500">
-      <div className="whitespace-nowrap">
-        <UserLink username={contract.creatorUsername} />
-      </div>
-      <div className="mx-2">•</div>
-      <div className="whitespace-nowrap">
-        {resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}
-      </div>
-      <div className="mx-2">•</div>
-      <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
-    </Row>
+    <Col
+      className={clsx(
+        'text-sm text-gray-500 gap-2',
+        inlineTags && 'sm:flex-row sm:flex-wrap'
+      )}
+    >
+      <Row className="gap-2 flex-wrap">
+        <div className="whitespace-nowrap">
+          <UserLink username={contract.creatorUsername} />
+        </div>
+        <div className="">•</div>
+        <div className="whitespace-nowrap">
+          {resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}
+        </div>
+        <div className="">•</div>
+        <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
+      </Row>
+
+      {inlineTags && <div className="hidden sm:block">•</div>}
+
+      <Row className="gap-2 flex-wrap">
+        {tags.map((tag) => (
+          <div className="bg-gray-100 px-1">
+            <Linkify text={tag} gray />
+          </div>
+        ))}
+      </Row>
+    </Col>
   )
 }

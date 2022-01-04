@@ -67,7 +67,7 @@ export const ContractOverview = (props: {
             large
           />
 
-          <ContractDetails contract={contract} />
+          <ContractDetails contract={contract} inlineTags />
         </Col>
 
         <ResolutionOrChance
