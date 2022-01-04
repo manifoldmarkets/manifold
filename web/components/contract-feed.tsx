@@ -429,7 +429,7 @@ export function ContractFeed(props: { contract: Contract }) {
     { type: 'start', id: 0 },
     ...group(bets, comments, user?.id),
   ]
-  if (contract.closeTime) {
+  if (contract.closeTime && contract.closeTime <= Date.now()) {
     allItems.push({ type: 'close', id: `${contract.closeTime}` })
   }
   if (contract.resolution) {

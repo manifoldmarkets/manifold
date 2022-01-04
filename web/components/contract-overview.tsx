@@ -67,8 +67,6 @@ export const ContractOverview = (props: {
 
       <Spacer h={12} />
 
-      <ContractCloseTime contract={contract} />
-
       {/* Show a delete button for contracts without any trading */}
       {isCreator && truePool === 0 && (
         <>
@@ -86,9 +84,11 @@ export const ContractOverview = (props: {
         </>
       )}
 
+      <ContractFeed contract={contract} />
+
       <Spacer h={4} />
 
-      <ContractFeed contract={contract} />
+      <ContractCloseTime contract={contract} />
     </Col>
   )
 }
