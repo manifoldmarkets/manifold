@@ -1,4 +1,5 @@
 import { Html, Head, Main, NextScript } from 'next/document'
+import { TwitterScript } from '../components/tweet-button'
 
 export default function Document() {
   return (
@@ -31,6 +32,8 @@ export default function Document() {
           `,
           }}
         />
+
+        <TwitterScript />
       </Head>
 
       <body className="min-h-screen font-readex-pro bg-base-200">
