@@ -120,7 +120,7 @@ export function ContractDetails(props: {
 
       <Row className="gap-2 flex-wrap">
         {tags.map((tag) => (
-          <div className="bg-gray-100 px-1">
+          <div key={tag} className="bg-gray-100 px-1">
             <Linkify text={tag} gray />
           </div>
         ))}

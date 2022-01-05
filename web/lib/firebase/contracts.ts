@@ -11,9 +11,10 @@ import {
   onSnapshot,
   orderBy,
   getDoc,
-  limit,
 } from 'firebase/firestore'
 import dayjs from 'dayjs'
+import { Bet, getRecentBets } from './bets'
+import _ from 'lodash'
 
 export type Contract = {
   id: string
@@ -130,4 +131,18 @@ export function listenForContract(
   return onSnapshot(contractRef, (contractSnap) => {
     setContract((contractSnap.data() ?? null) as Contract | null)
   })
+}
+
+export function computeHotContracts(recentBets: Bet[]) {
+  const contractBets = _.groupBy(recentBets, (bet) => bet.contractId)
+  const hotContractIds = _.sortBy(Object.keys(contractBets), (contractId) =>
+    _.sumBy(contractBets[contractId], (bet) => -1 * bet.amount)
+  ).slice(0, 4)
+  return hotContractIds
+}
+
+export async function getHotContracts() {
+  const oneDay = 1000 * 60 * 60 * 24
+  const recentBets = await getRecentBets(oneDay)
+  return computeHotContracts(recentBets)
 }
