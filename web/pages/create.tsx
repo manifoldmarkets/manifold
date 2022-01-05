@@ -70,18 +70,18 @@ export default function NewContract() {
     <Page>
       <Title text="Create a new prediction market" />
 
-      <div className="w-full bg-white rounded-lg shadow-md px-6 py-4">
+      <div className="w-full bg-gray-100 rounded-lg shadow-md px-6 py-4">
         {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
         {/* When the form is submitted, create a new contract in the database */}
         <form>
           <div className="form-control w-full">
             <label className="label">
-              <span className="label-text">Prediction</span>
+              <span className="label-text">Question</span>
             </label>
 
             <input
               type="text"
-              placeholder="e.g. The FDA will approve Paxlovid before Jun 2nd, 2022"
+              placeholder="e.g. Will the FDA will approve Paxlovid before Jun 2nd, 2022?"
               className="input input-bordered"
               value={question}
               onChange={(e) => setQuestion(e.target.value || '')}
@@ -146,7 +146,7 @@ export default function NewContract() {
               />
             </div>
             <div className="collapse-content !p-0 m-0 !bg-transparent">
-              <div className="form-control">
+              <div className="form-control mb-1">
                 <label className="label">
                   <span className="label-text">Close date (optional)</span>
                 </label>
@@ -160,7 +160,7 @@ export default function NewContract() {
                 />
               </div>
               <label>
-                <span className="label-text text-gray-400 ml-1">
+                <span className="label-text text-gray-400 ml-2">
                   No new trades will be allowed after{' '}
                   {closeDate ? formattedCloseTime : 'this time'}
                 </span>
