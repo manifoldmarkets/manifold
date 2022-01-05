@@ -297,7 +297,7 @@ function Contents() {
 
       <ul>
         <li>
-          <a href="https://mantic.notion.site/Technical-Overview-b9b48a09ea1f45b88d991231171730c5">
+          <a href="https://manifoldmarkets.notion.site/Technical-Overview-b9b48a09ea1f45b88d991231171730c5">
             Technical Overview of Mantic Markets
           </a>
         </li>
