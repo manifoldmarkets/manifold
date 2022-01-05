@@ -7,6 +7,7 @@ import { Linkify } from './linkify'
 import { Contract, compute, path } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { parseTags } from '../lib/util/parse'
+import dayjs from 'dayjs'
 
 export function ContractCard(props: { contract: Contract }) {
   const { contract } = props
@@ -104,7 +105,7 @@ export function AbbrContractDetails(props: { contract: Contract }) {
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
-  const { question, description } = contract
+  const { question, description, closeTime } = contract
   const { truePool, createdDate, resolvedDate } = compute(contract)
 
   const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
@@ -119,6 +120,15 @@ export function ContractDetails(props: { contract: Contract }) {
         <div className="whitespace-nowrap">
           {resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}
         </div>
+        {!resolvedDate && closeTime && (
+          <>
+            <div className="">•</div>
+            <div className="whitespace-nowrap">
+              {closeTime > Date.now() ? 'Closes' : 'Closed'}{' '}
+              {dayjs(closeTime).format('MMM D, h:mma')}
+            </div>
+          </>
+        )}
         <div className="">•</div>
         <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
       </Row>
