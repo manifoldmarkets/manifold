@@ -10,25 +10,11 @@ import { ContractProbGraph } from './contract-prob-graph'
 import router from 'next/router'
 import { useUser } from '../hooks/use-user'
 import { Row } from './layout/row'
-import dayjs from 'dayjs'
 import { Linkify } from './linkify'
 import clsx from 'clsx'
 import { ContractDetails, ResolutionOrChance } from './contract-card'
 import { ContractFeed } from './contract-feed'
 import { TweetButton } from './tweet-button'
-
-function ContractCloseTime(props: { contract: Contract }) {
-  const closeTime = props.contract.closeTime
-  if (!closeTime) {
-    return null
-  }
-  return (
-    <div className="text-gray-500 text-sm">
-      Trading {closeTime > Date.now() ? 'closes' : 'closed'} at{' '}
-      {dayjs(closeTime).format('MMM D, h:mma')}
-    </div>
-  )
-}
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -103,10 +89,6 @@ export const ContractOverview = (props: {
       )}
 
       <ContractFeed contract={contract} />
-
-      <Spacer h={4} />
-
-      <ContractCloseTime contract={contract} />
     </Col>
   )
 }
