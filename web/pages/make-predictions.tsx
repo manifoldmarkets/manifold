@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Col } from '../components/layout/col'
@@ -9,7 +10,9 @@ import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
 import { compute, Contract, path } from '../lib/firebase/contracts'
-import { createContract } from '../lib/service/create-contract'
+
+const functions = getFunctions()
+export const createContract = httpsCallable(functions, 'createContract')
 
 type Prediction = {
   question: string
@@ -129,12 +132,12 @@ ${TEST_VALUE}
     }
     setIsSubmitting(true)
     for (const prediction of predictions) {
-      const contract = await createContract(
-        prediction.question,
-        prediction.description,
-        prediction.initialProb,
-        user
-      )
+      const contract = await createContract({
+        question: prediction.question,
+        description: prediction.description,
+        initialProb: prediction.initialProb,
+      }).then((r) => (r.data as any).contract)
+
       setCreatedContracts((prev) => [...prev, contract])
     }
     setPredictionsString('')
