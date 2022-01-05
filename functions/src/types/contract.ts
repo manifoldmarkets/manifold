@@ -4,6 +4,7 @@ export type Contract = {
 
   creatorId: string
   creatorName: string
+  creatorUsername: string
 
   question: string
   description: string // More info about what the contract is about

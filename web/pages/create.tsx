@@ -1,15 +1,16 @@
 import router from 'next/router'
 import { useEffect, useState } from 'react'
+import clsx from 'clsx'
+import dayjs from 'dayjs'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 
 import { CreatorContractsList } from '../components/contracts-list'
 import { Spacer } from '../components/layout/spacer'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
-import { path } from '../lib/firebase/contracts'
-import { createContract } from '../lib/service/create-contract'
+import { Contract, path } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
-import clsx from 'clsx'
-import dayjs from 'dayjs'
+import { formatMoney } from '../lib/util/format'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -22,29 +23,28 @@ export default function NewContract() {
   const [initialProb, setInitialProb] = useState(50)
   const [question, setQuestion] = useState('')
   const [description, setDescription] = useState('')
+
+  const [ante, setAnte] = useState<number | undefined>(0)
+  const [anteError, setAnteError] = useState('')
   const [closeDate, setCloseDate] = useState('')
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [collapsed, setCollapsed] = useState(true)
 
-  // Given a date string like '2022-04-02',
-  // return the time just before midnight on that date (in the user's local time), as millis since epoch
-  function dateToMillis(date: string) {
-    return dayjs(date)
-      .set('hour', 23)
-      .set('minute', 59)
-      .set('second', 59)
-      .valueOf()
-  }
-  const closeTime = dateToMillis(closeDate)
+  const closeTime = dateToMillis(closeDate) || undefined
   // We'd like this to look like "Apr 2, 2022, 23:59:59 PM PT" but timezones are hard with dayjs
-  const formattedCloseTime = new Date(closeTime).toString()
+  const formattedCloseTime = closeTime ? new Date(closeTime).toString() : ''
+
+  const user = useUser()
+  const remainingBalance = (user?.balance || 0) - (ante || 0)
 
   const isValid =
     initialProb > 0 &&
     initialProb < 100 &&
     question.length > 0 &&
+    (ante === undefined || (ante >= 0 && ante <= remainingBalance)) &&
     // If set, closeTime must be in the future
-    (!closeDate || closeTime > Date.now())
+    (!closeTime || closeTime > Date.now())
 
   async function submit() {
     // TODO: Tell users why their contract is invalid
@@ -52,14 +52,31 @@ export default function NewContract() {
 
     setIsSubmitting(true)
 
-    const contract = await createContract(
+    const result: any = await createContract({
       question,
       description,
       initialProb,
-      creator,
-      closeTime
-    )
-    await router.push(path(contract))
+      ante,
+      closeTime: closeTime || undefined,
+    }).then((r) => r.data || {})
+
+    if (result.status !== 'success') {
+      console.log('error creating contract', result)
+      return
+    }
+
+    await router.push(path(result.contract as Contract))
+  }
+
+  function onAnteChange(str: string) {
+    const amount = parseInt(str)
+
+    if (str && isNaN(amount)) return
+
+    setAnte(str ? amount : undefined)
+
+    if (user && user.balance < amount) setAnteError('Insufficient balance')
+    else setAnteError('')
   }
 
   const descriptionPlaceholder = `e.g. This market will resolve to “Yes” if, by June 2, 2021, 11:59:59 PM ET, Paxlovid (also known under PF-07321332)...`
@@ -113,7 +130,7 @@ export default function NewContract() {
 
           <div className="form-control">
             <label className="label">
-              <span className="label-text">Description (optional)</span>
+              <span className="label-text">Description</span>
             </label>
             <textarea
               className="textarea w-full h-24 textarea-bordered"
@@ -145,8 +162,40 @@ export default function NewContract() {
                 }}
               />
             </div>
+
             <div className="collapse-content !p-0 m-0 !bg-transparent">
               <div className="form-control mb-1">
+                <label className="label">
+                  <span className="label-text">Subsidize your market</span>
+                </label>
+
+                <label className="input-group">
+                  <span className="text-sm bg-gray-200">M$</span>
+                  <input
+                    className={clsx(
+                      'input input-bordered',
+                      anteError && 'input-error'
+                    )}
+                    type="text"
+                    placeholder="0"
+                    maxLength={9}
+                    value={ante ?? ''}
+                    disabled={isSubmitting}
+                    onChange={(e) => onAnteChange(e.target.value)}
+                  />
+                </label>
+
+                <div className="mt-3 mb-1 text-sm text-gray-400">
+                  Remaining balance
+                </div>
+                <div>
+                  {formatMoney(remainingBalance > 0 ? remainingBalance : 0)}
+                </div>
+              </div>
+
+              <Spacer h={4} />
+
+              <div className="form-control">
                 <label className="label">
                   <span className="label-text">Close date (optional)</span>
                 </label>
@@ -156,6 +205,7 @@ export default function NewContract() {
                   onClick={(e) => e.stopPropagation()}
                   onChange={(e) => setCloseDate(e.target.value || '')}
                   min={new Date().toISOString().split('T')[0]}
+                  disabled={isSubmitting}
                   value={closeDate}
                 />
               </div>
@@ -173,14 +223,17 @@ export default function NewContract() {
           <div className="flex justify-end my-4">
             <button
               type="submit"
-              className="btn btn-primary"
+              className={clsx(
+                'btn btn-primary',
+                isSubmitting && 'loading disabled'
+              )}
               disabled={isSubmitting || !isValid}
               onClick={(e) => {
                 e.preventDefault()
                 submit()
               }}
             >
-              Create market
+              {isSubmitting ? 'Creating...' : 'Create market'}
             </button>
           </div>
         </form>
@@ -193,4 +246,17 @@ export default function NewContract() {
       {creator && <CreatorContractsList creator={creator} />}
     </Page>
   )
+}
+
+const functions = getFunctions()
+export const createContract = httpsCallable(functions, 'createContract')
+
+// Given a date string like '2022-04-02',
+// return the time just before midnight on that date (in the user's local time), as millis since epoch
+function dateToMillis(date: string) {
+  return dayjs(date)
+    .set('hour', 23)
+    .set('minute', 59)
+    .set('second', 59)
+    .valueOf()
 }
