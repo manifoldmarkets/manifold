@@ -16,6 +16,10 @@ service cloud.firestore {
       allow read;
     }
 
+    match /{somePath=**}/bets/{betId} {
+      allow read;
+    }
+
     match /contracts/comments/{commentId} {
       allow read;
       allow create: if request.auth != null;
