@@ -11,7 +11,7 @@ import { parseTags } from '../lib/util/parse'
 import { ContractCard } from './contract-card'
 import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 
-function ContractsGrid(props: { contracts: Contract[] }) {
+export function ContractsGrid(props: { contracts: Contract[] }) {
   const [resolvedContracts, activeContracts] = _.partition(
     props.contracts,
     (c) => c.isResolved
