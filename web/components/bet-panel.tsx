@@ -8,14 +8,22 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import { YesNoSelector } from './yes-no-selector'
-import { formatMoney, formatPercent } from '../lib/util/format'
+import {
+  formatMoney,
+  formatPercent,
+  formatWithCommas,
+} from '../lib/util/format'
 import { Title } from './title'
 import {
   getProbability,
   calculateShares,
   getProbabilityAfterBet,
+  calculatePayout,
 } from '../lib/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
+import { OutcomeLabel } from './outcome-label'
+import { AdvancedPanel } from './advanced-panel'
+import { Bet } from '../lib/firebase/bets'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -150,6 +158,29 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
       <div>
         {formatMoney(estimatedWinnings)} &nbsp; (+{estimatedReturnPercent})
       </div>
+
+      <AdvancedPanel>
+        <div className="mt-2 mb-1 text-sm text-gray-400">
+          <OutcomeLabel outcome={betChoice} /> shares
+        </div>
+        <div>
+          {formatWithCommas(shares)} of{' '}
+          {formatWithCommas(shares + contract.totalShares[betChoice])}
+        </div>
+
+        <div className="mt-2 mb-1 text-sm text-gray-400">
+          Current payout if <OutcomeLabel outcome={betChoice} />
+        </div>
+        <div>
+          {formatMoney(
+            calculatePayout(
+              contract,
+              { outcome: betChoice, amount: betAmount ?? 0, shares } as Bet,
+              betChoice
+            )
+          )}
+        </div>
+      </AdvancedPanel>
 
       <Spacer h={6} />
 

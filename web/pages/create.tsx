@@ -11,6 +11,7 @@ import { useUser } from '../hooks/use-user'
 import { Contract, path } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
 import { formatMoney } from '../lib/util/format'
+import { AdvancedPanel } from '../components/advanced-panel'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -29,7 +30,6 @@ export default function NewContract() {
   const [closeDate, setCloseDate] = useState('')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [collapsed, setCollapsed] = useState(true)
 
   const closeTime = dateToMillis(closeDate) || undefined
   // We'd like this to look like "Apr 2, 2022, 23:59:59 PM PT" but timezones are hard with dayjs
@@ -141,82 +141,59 @@ export default function NewContract() {
             />
           </div>
 
-          {/* Collapsible "Advanced" section */}
-          <div
-            tabIndex={0}
-            className={clsx(
-              'cursor-pointer relative collapse collapse-arrow',
-              collapsed ? 'collapse-close' : 'collapse-open'
-            )}
-          >
-            <div onClick={() => setCollapsed((collapsed) => !collapsed)}>
-              <div className="mt-4 mr-6 text-sm text-gray-400 text-right">
-                Advanced
+          <AdvancedPanel>
+            <div className="form-control mb-1">
+              <label className="label">
+                <span className="label-text">Subsidize your market</span>
+              </label>
+
+              <label className="input-group">
+                <span className="text-sm bg-gray-200">M$</span>
+                <input
+                  className={clsx(
+                    'input input-bordered',
+                    anteError && 'input-error'
+                  )}
+                  type="text"
+                  placeholder="0"
+                  maxLength={9}
+                  value={ante ?? ''}
+                  disabled={isSubmitting}
+                  onChange={(e) => onAnteChange(e.target.value)}
+                />
+              </label>
+
+              <div className="mt-3 mb-1 text-sm text-gray-400">
+                Remaining balance
               </div>
-              <div
-                className="collapse-title p-0 absolute w-0 h-0 min-h-0"
-                style={{
-                  top: -2,
-                  right: -15,
-                  color: '#9ca3af' /* gray-400 */,
-                }}
+              <div>
+                {formatMoney(remainingBalance > 0 ? remainingBalance : 0)}
+              </div>
+            </div>
+
+            <Spacer h={4} />
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Close date (optional)</span>
+              </label>
+              <input
+                type="date"
+                className="input input-bordered"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setCloseDate(e.target.value || '')}
+                min={new Date().toISOString().split('T')[0]}
+                disabled={isSubmitting}
+                value={closeDate}
               />
             </div>
-
-            <div className="collapse-content !p-0 m-0 !bg-transparent">
-              <div className="form-control mb-1">
-                <label className="label">
-                  <span className="label-text">Subsidize your market</span>
-                </label>
-
-                <label className="input-group">
-                  <span className="text-sm bg-gray-200">M$</span>
-                  <input
-                    className={clsx(
-                      'input input-bordered',
-                      anteError && 'input-error'
-                    )}
-                    type="text"
-                    placeholder="0"
-                    maxLength={9}
-                    value={ante ?? ''}
-                    disabled={isSubmitting}
-                    onChange={(e) => onAnteChange(e.target.value)}
-                  />
-                </label>
-
-                <div className="mt-3 mb-1 text-sm text-gray-400">
-                  Remaining balance
-                </div>
-                <div>
-                  {formatMoney(remainingBalance > 0 ? remainingBalance : 0)}
-                </div>
-              </div>
-
-              <Spacer h={4} />
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Close date (optional)</span>
-                </label>
-                <input
-                  type="date"
-                  className="input input-bordered"
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => setCloseDate(e.target.value || '')}
-                  min={new Date().toISOString().split('T')[0]}
-                  disabled={isSubmitting}
-                  value={closeDate}
-                />
-              </div>
-              <label>
-                <span className="label-text text-gray-400 ml-2">
-                  No new trades will be allowed after{' '}
-                  {closeDate ? formattedCloseTime : 'this time'}
-                </span>
-              </label>
-            </div>
-          </div>
+            <label>
+              <span className="label-text text-gray-400 ml-2">
+                No new trades will be allowed after{' '}
+                {closeDate ? formattedCloseTime : 'this time'}
+              </span>
+            </label>
+          </AdvancedPanel>
 
           <Spacer h={4} />
 
