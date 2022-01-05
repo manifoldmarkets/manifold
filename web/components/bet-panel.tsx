@@ -18,7 +18,7 @@ import {
   getProbability,
   calculateShares,
   getProbabilityAfterBet,
-  calculatePayout,
+  calculatePayoutAfterCorrectBet,
 } from '../lib/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
 import { OutcomeLabel } from './outcome-label'
@@ -179,11 +179,13 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         </div>
         <div>
           {formatMoney(
-            calculatePayout(
-              contract,
-              { outcome: betChoice, amount: betAmount ?? 0, shares } as Bet,
-              betChoice
-            )
+            betAmount
+              ? calculatePayoutAfterCorrectBet(contract, {
+                  outcome: betChoice,
+                  amount: betAmount,
+                  shares,
+                } as Bet)
+              : 0
           )}
         </div>
       </AdvancedPanel>
