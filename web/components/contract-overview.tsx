@@ -67,7 +67,7 @@ export const ContractOverview = (props: {
             large
           />
 
-          <ContractDetails contract={contract} inlineTags />
+          <ContractDetails contract={contract} />
           <TweetButton tweetText={tweetText} />
         </Col>
 

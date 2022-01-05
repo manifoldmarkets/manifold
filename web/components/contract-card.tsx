@@ -27,7 +27,7 @@ export function ContractCard(props: { contract: Contract }) {
                   probPercent={probPercent}
                 />
               </Row>
-              <ContractDetails contract={contract} />
+              <AbbrContractDetails contract={contract} />
             </div>
           </div>
         </li>
@@ -85,23 +85,32 @@ export function ResolutionOrChance(props: {
   )
 }
 
-export function ContractDetails(props: {
-  contract: Contract
-  inlineTags?: boolean
-}) {
-  const { contract, inlineTags } = props
+export function AbbrContractDetails(props: { contract: Contract }) {
+  const { contract } = props
+  const { truePool } = compute(contract)
+
+  return (
+    <Col className={clsx('text-sm text-gray-500 gap-2')}>
+      <Row className="gap-2 flex-wrap">
+        <div className="whitespace-nowrap">
+          <UserLink username={contract.creatorUsername} />
+        </div>
+        <div className="">•</div>
+        <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
+      </Row>
+    </Col>
+  )
+}
+
+export function ContractDetails(props: { contract: Contract }) {
+  const { contract } = props
   const { question, description } = contract
   const { truePool, createdDate, resolvedDate } = compute(contract)
 
   const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
 
   return (
-    <Col
-      className={clsx(
-        'text-sm text-gray-500 gap-2',
-        inlineTags && 'sm:flex-row sm:flex-wrap'
-      )}
-    >
+    <Col className="text-sm text-gray-500 gap-2 sm:flex-row sm:flex-wrap">
       <Row className="gap-2 flex-wrap">
         <div className="whitespace-nowrap">
           <UserLink username={contract.creatorUsername} />
@@ -114,17 +123,19 @@ export function ContractDetails(props: {
         <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
       </Row>
 
-      {inlineTags && tags.length > 0 && (
-        <div className="hidden sm:block">•</div>
-      )}
+      {tags.length > 0 && (
+        <>
+          <div className="hidden sm:block">•</div>
 
-      <Row className="gap-2 flex-wrap">
-        {tags.map((tag) => (
-          <div key={tag} className="bg-gray-100 px-1">
-            <Linkify text={tag} gray />
-          </div>
-        ))}
-      </Row>
+          <Row className="gap-2 flex-wrap">
+            {tags.map((tag) => (
+              <div key={tag} className="bg-gray-100 px-1">
+                <Linkify text={tag} gray />
+              </div>
+            ))}
+          </Row>
+        </>
+      )}
     </Col>
   )
 }
