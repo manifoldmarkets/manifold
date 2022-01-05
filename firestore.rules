@@ -12,7 +12,7 @@ service cloud.firestore {
       allow read;
     }
 
-    match /contracts/bets/{betId} {
+    match /contracts/{contractId}/bets/{betId} {
       allow read;
     }
 
@@ -20,9 +20,13 @@ service cloud.firestore {
       allow read;
     }
 
-    match /contracts/comments/{commentId} {
+    match /contracts/{contractId}/comments/{commentId} {
       allow read;
       allow create: if request.auth != null;
+    }
+
+    match /{somePath=**}/comments/{commentId} {
+      allow read;
     }
 
   }
