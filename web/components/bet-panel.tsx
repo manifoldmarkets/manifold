@@ -1,6 +1,6 @@
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import clsx from 'clsx'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { useUser } from '../hooks/use-user'
 import { Contract } from '../lib/firebase/contracts'
@@ -24,8 +24,14 @@ import { firebaseLogin } from '../lib/firebase/users'
 import { OutcomeLabel } from './outcome-label'
 import { AdvancedPanel } from './advanced-panel'
 import { Bet } from '../lib/firebase/bets'
+import { placeBet } from '../lib/firebase/api-call'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {
+  useEffect(() => {
+    // warm up cloud function
+    placeBet({}).catch()
+  }, [])
+
   const { contract, className } = props
 
   const user = useUser()
@@ -212,6 +218,3 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     </Col>
   )
 }
-
-const functions = getFunctions()
-export const placeBet = httpsCallable(functions, 'placeBet')

@@ -1,6 +1,5 @@
 import clsx from 'clsx'
-import React, { useState } from 'react'
-import { getFunctions, httpsCallable } from 'firebase/functions'
+import React, { useEffect, useState } from 'react'
 
 import { Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
@@ -9,15 +8,18 @@ import { User } from '../lib/firebase/users'
 import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ConfirmationButton as ConfirmationButton } from './confirmation-button'
-
-const functions = getFunctions()
-export const resolveMarket = httpsCallable(functions, 'resolveMarket')
+import { resolveMarket } from '../lib/firebase/api-call'
 
 export function ResolutionPanel(props: {
   creator: User
   contract: Contract
   className?: string
 }) {
+  useEffect(() => {
+    // warm up cloud function
+    resolveMarket({}).catch()
+  }, [])
+
   const { contract, className } = props
 
   const [outcome, setOutcome] = useState<

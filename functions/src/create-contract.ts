@@ -29,6 +29,9 @@ export const createContract = functions
 
       const { question, description, initialProb, ante, closeTime } = data
 
+      if (!question || !initialProb)
+        return { status: 'error', message: 'Missing contract attributes' }
+
       if (ante !== undefined && (ante < 0 || ante > creator.balance))
         return { status: 'error', message: 'Invalid ante' }
 

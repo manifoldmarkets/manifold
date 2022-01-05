@@ -2,6 +2,8 @@ import Link from 'next/link'
 import _ from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
+import clsx from 'clsx'
+
 import { useUserBets } from '../hooks/use-user-bets'
 import { Bet } from '../lib/firebase/bets'
 import { User } from '../lib/firebase/users'
@@ -20,8 +22,7 @@ import {
   calculateSaleAmount,
   resolvedPayout,
 } from '../lib/calculate'
-import clsx from 'clsx'
-import { cloudFunction } from '../lib/firebase/api-call'
+import { sellBet } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel, MarketLabel } from './outcome-label'
 
@@ -341,9 +342,12 @@ function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
   )
 }
 
-const sellBet = cloudFunction('sellBet')
-
 function SellButton(props: { contract: Contract; bet: Bet }) {
+  useEffect(() => {
+    // warm up cloud function
+    sellBet({}).catch()
+  }, [])
+
   const { contract, bet } = props
   const [isSubmitting, setIsSubmitting] = useState(false)
 
