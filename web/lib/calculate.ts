@@ -62,6 +62,25 @@ export function calculatePayout(
   return (1 - fees) * (amount + ((shares - amount) / total) * winningsPool)
 }
 
+export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
+  const { amount, outcome, shares } = bet
+  const { totalShares, totalBets } = contract
+
+  const startPool = contract.startPool.YES + contract.startPool.NO
+  const truePool = amount + contract.pool.YES + contract.pool.NO - startPool
+
+  const totalBetsOutcome = totalBets[outcome] + amount
+  const totalSharesOutcome = totalShares[outcome] + shares
+
+  if (totalBetsOutcome >= truePool)
+    return (amount / totalBetsOutcome) * truePool
+
+  const total = totalSharesOutcome - totalBetsOutcome
+  const winningsPool = truePool - totalBetsOutcome
+
+  return (1 - fees) * (amount + ((shares - amount) / total) * winningsPool)
+}
+
 function calculateMktPayout(contract: Contract, bet: Bet) {
   const p =
     contract.pool.YES ** 2 / (contract.pool.YES ** 2 + contract.pool.NO ** 2)
