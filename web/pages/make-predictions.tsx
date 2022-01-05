@@ -1,7 +1,7 @@
 import clsx from 'clsx'
-import { getFunctions, httpsCallable } from 'firebase/functions'
 import Link from 'next/link'
 import { useState } from 'react'
+
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { Spacer } from '../components/layout/spacer'
@@ -9,10 +9,8 @@ import { Linkify } from '../components/linkify'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
+import { createContract } from '../lib/firebase/api-call'
 import { compute, Contract, path } from '../lib/firebase/contracts'
-
-const functions = getFunctions()
-export const createContract = httpsCallable(functions, 'createContract')
 
 type Prediction = {
   question: string

@@ -2,7 +2,6 @@ import router from 'next/router'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { getFunctions, httpsCallable } from 'firebase/functions'
 
 import { CreatorContractsList } from '../components/contracts-list'
 import { Spacer } from '../components/layout/spacer'
@@ -12,6 +11,7 @@ import { Contract, path } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
 import { formatMoney } from '../lib/util/format'
 import { AdvancedPanel } from '../components/advanced-panel'
+import { createContract } from '../lib/firebase/api-call'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -19,7 +19,12 @@ export default function NewContract() {
 
   useEffect(() => {
     if (creator === null) router.push('/')
-  })
+  }, [creator])
+
+  useEffect(() => {
+    // warm up function
+    createContract({}).catch()
+  }, [])
 
   const [initialProb, setInitialProb] = useState(50)
   const [question, setQuestion] = useState('')
@@ -224,9 +229,6 @@ export default function NewContract() {
     </Page>
   )
 }
-
-const functions = getFunctions()
-export const createContract = httpsCallable(functions, 'createContract')
 
 // Given a date string like '2022-04-02',
 // return the time just before midnight on that date (in the user's local time), as millis since epoch
