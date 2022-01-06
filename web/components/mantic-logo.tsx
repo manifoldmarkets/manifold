@@ -14,11 +14,11 @@ export function ManticLogo(props: { darkBackground?: boolean }) {
         />
         <div
           className={clsx(
-            'font-major-mono lowercase mt-1 sm:text-2xl md:whitespace-nowrap',
+            'hidden sm:flex font-major-mono lowercase mt-1 sm:text-2xl md:whitespace-nowrap',
             darkBackground && 'text-white'
           )}
         >
-          Mantic Markets
+          Manifold Markets
         </div>
       </a>
     </Link>
