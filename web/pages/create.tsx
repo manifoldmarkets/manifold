@@ -2,6 +2,7 @@ import router from 'next/router'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
+import Textarea from 'react-expanding-textarea'
 
 import { CreatorContractsList } from '../components/contracts-list'
 import { Spacer } from '../components/layout/spacer'
@@ -12,6 +13,7 @@ import { Page } from '../components/page'
 import { formatMoney } from '../lib/util/format'
 import { AdvancedPanel } from '../components/advanced-panel'
 import { createContract } from '../lib/firebase/api-call'
+import { Row } from '../components/layout/row'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -101,10 +103,9 @@ export default function NewContract() {
               <span className="label-text">Question</span>
             </label>
 
-            <input
-              type="text"
+            <Textarea
               placeholder="e.g. Will the FDA will approve Paxlovid before Jun 2nd, 2022?"
-              className="input input-bordered"
+              className="input input-bordered resize-none"
               disabled={isSubmitting}
               value={question}
               onChange={(e) => setQuestion(e.target.value || '')}
@@ -117,20 +118,30 @@ export default function NewContract() {
             <label className="label">
               <span className="label-text">Initial probability</span>
             </label>
-            <label className="input-group input-group-md w-fit">
+            <Row className="items-center gap-2">
+              <label className="input-group input-group-lg w-fit text-xl">
+                <input
+                  type="number"
+                  value={initialProb}
+                  className="input input-bordered input-md text-primary text-4xl w-24"
+                  disabled={isSubmitting}
+                  min={1}
+                  max={99}
+                  onChange={(e) =>
+                    setInitialProb(parseInt(e.target.value.substring(0, 2)))
+                  }
+                />
+                <span>%</span>
+              </label>
               <input
-                type="number"
-                value={initialProb}
-                className="input input-bordered input-md"
-                disabled={isSubmitting}
+                type="range"
+                className="range range-primary"
                 min={1}
                 max={99}
-                onChange={(e) =>
-                  setInitialProb(parseInt(e.target.value.substring(0, 2)))
-                }
+                value={initialProb}
+                onChange={(e) => setInitialProb(parseInt(e.target.value))}
               />
-              <span>%</span>
-            </label>
+            </Row>
           </div>
 
           <Spacer h={4} />
@@ -139,8 +150,9 @@ export default function NewContract() {
             <label className="label">
               <span className="label-text">Description</span>
             </label>
-            <textarea
-              className="textarea w-full h-24 textarea-bordered"
+            <Textarea
+              className="textarea w-full textarea-bordered"
+              rows={3}
               placeholder={descriptionPlaceholder}
               value={description}
               disabled={isSubmitting}
@@ -156,7 +168,7 @@ export default function NewContract() {
               </label>
 
               <label className="input-group">
-                <span className="text-sm bg-gray-200">M$</span>
+                <span className="text-sm ">M$</span>
                 <input
                   className={clsx(
                     'input input-bordered',
@@ -170,20 +182,19 @@ export default function NewContract() {
                   onChange={(e) => onAnteChange(e.target.value)}
                 />
               </label>
-
-              <div className="mt-3 mb-1 text-sm text-gray-400">
-                Remaining balance
-              </div>
-              <div>
-                {formatMoney(remainingBalance > 0 ? remainingBalance : 0)}
-              </div>
+              <label>
+                <span className="label-text text-gray-400 ml-1">
+                  Remaining balance:{' '}
+                  {formatMoney(remainingBalance > 0 ? remainingBalance : 0)}
+                </span>
+              </label>
             </div>
 
             <Spacer h={4} />
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Close date (optional)</span>
+                <span className="label-text">Close date</span>
               </label>
               <input
                 type="date"
@@ -196,7 +207,7 @@ export default function NewContract() {
               />
             </div>
             <label>
-              <span className="label-text text-gray-400 ml-2">
+              <span className="label-text text-gray-400 ml-1">
                 No new trades will be allowed after{' '}
                 {closeDate ? formattedCloseTime : 'this time'}
               </span>
