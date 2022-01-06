@@ -10,6 +10,7 @@ service cloud.firestore {
 
     match /contracts/{contractId} {
       allow read;
+      allow delete: if resource.data.creatorId == request.auth.uid;
     }
 
     match /contracts/{contractId}/bets/{betId} {
