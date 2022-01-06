@@ -1,4 +1,4 @@
-# Mantic Markets web
+# Manifold Markets web
 
 ## Getting Started
 

@@ -26,7 +26,7 @@ Resolution: ${toDisplayResolution[resolution]}
 Your payout is M$ ${Math.round(payout)}
 
 View the market here:
-https://mantic.markets/${creator.username}/${contract.slug}
+https://manifold.markets/${creator.username}/${contract.slug}
 `
   await sendEmail(user.email, subject, body)
 }
