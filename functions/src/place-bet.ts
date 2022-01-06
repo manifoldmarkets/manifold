@@ -54,7 +54,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       })
       transaction.update(userDoc, { balance: newBalance })
 
-      return { status: 'success' }
+      return { status: 'success', betId: newBetDoc.id }
     })
   }
 )
