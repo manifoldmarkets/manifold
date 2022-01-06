@@ -10,7 +10,7 @@ export function SEO(props: {
 
   return (
     <Head>
-      <title>{title} | Mantic Markets</title>
+      <title>{title} | Manifold Markets</title>
 
       <meta
         property="og:title"
@@ -29,7 +29,7 @@ export function SEO(props: {
       {url && (
         <meta
           property="og:url"
-          content={'https://mantic.markets' + url}
+          content={'https://manifold.markets' + url}
           key="url"
         />
       )}

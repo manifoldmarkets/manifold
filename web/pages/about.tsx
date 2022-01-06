@@ -42,7 +42,7 @@ function Contents() {
       <h1 id="about">About</h1>
       <hr />
       <p>
-        Mantic Markets is creating better forecasting through user-created
+        Manifold Markets is creating better forecasting through user-created
         prediction markets.
       </p>
       <p>
@@ -77,7 +77,9 @@ function Contents() {
         </a>
         . This is the power of prediction markets!
       </p>
-      <h3 id="how-does-mantic-markets-work-">How does Mantic Markets work?</h3>
+      <h3 id="how-does-manifold-markets-work-">
+        How does Manifold Markets work?
+      </h3>
       <ol>
         <li>
           <strong>
@@ -96,7 +98,7 @@ function Contents() {
         </p>
         <li>
           <strong>
-            Anyone can bet on a market using Mantic Dollars (M$), our platform
+            Anyone can bet on a market using Manifold Dollars (M$), our platform
             currency.
           </strong>
         </li>
@@ -104,15 +106,15 @@ function Contents() {
       <p>
         You get M$ 1,000 just for signing up, so you can start betting
         immediately! When a market creator decides an outcome in your favor,
-        you&#39;ll win Mantic Dollars from people who bet against you.
+        you&#39;ll win Manifold Dollars from people who bet against you.
       </p>
       {/* <p>
         If you run out of money, you can purchase more at a rate of $1 USD to M$
-        100. (Note that Mantic Dollars are not convertible to cash and can only
+        100. (Note that Manifold Dollars are not convertible to cash and can only
         be used within our platform.)
       </p> */}
       <aside>
-        💡 We&#39;re still in Open Beta; we&#39;ll tweak the amounts of Mantic
+        💡 We&#39;re still in Open Beta; we&#39;ll tweak the amounts of Manifold
         Dollars given out and periodically reset balances before our official
         launch.
         {/* If you purchase
@@ -130,7 +132,7 @@ function Contents() {
       </p>
       <p>By buying M$, you support:</p>
       <ul>
-        <li>The continued development of Mantic Markets</li>
+        <li>The continued development of Manifold Markets</li>
         <li>Cash payouts to market creators (TBD)</li>
         <li>Forecasting tournaments for bettors (TBD)</li>
       </ul>
@@ -206,12 +208,12 @@ function Contents() {
         they use on our platform.
       </p>
       <p>
-        With Mantic Dollars being a scarce resource, people will bet more
+        With Manifold Dollars being a scarce resource, people will bet more
         carefully and can&#39;t rig the outcome by creating multiple accounts.
         The result is more accurate predictions.
       </p> */}
       <p>
-        Mantic Markets is focused on accessibility and allowing anyone to
+        Manifold Markets is focused on accessibility and allowing anyone to
         quickly create and judge a prediction market. When we all have the power
         to create and share prediction markets in seconds and apply our own
         judgment on the outcome, it leads to a qualitative shift in the number,
@@ -239,8 +241,8 @@ function Contents() {
 
       <h3 id="type-of-market-maker">What kind of betting system do you use?</h3>
       <p>
-        Mantic Markets uses a special type of automated market marker based on a
-        dynamic pari-mutuel (DPM) betting system.
+        Manifold Markets uses a special type of automated market marker based on
+        a dynamic pari-mutuel (DPM) betting system.
       </p>
       <p>
         Like traditional pari-mutuel systems, your payoff is not known at the
@@ -258,7 +260,7 @@ function Contents() {
       </p>
 
       <h3 id="who-are-we-">Who are we?</h3>
-      <p>Mantic Markets is currently a team of three:</p>
+      <p>Manifold Markets is currently a team of three:</p>
       <ul>
         <li>James Grugett</li>
         <li>Stephen Grugett</li>
@@ -278,7 +280,7 @@ function Contents() {
       </p>
       <ul>
         <li>
-          Email: <code>info@mantic.markets</code>
+          Email: <code>info@manifold.markets</code>
         </li>
         <li>
           Office hours:{' '}
@@ -288,7 +290,7 @@ function Contents() {
       </ul>
       <p>
         <a href="https://discord.gg/eHQBNBqXuh">
-          Join the Mantic Markets Discord Server!
+          Join the Manifold Markets Discord Server!
         </a>
       </p>
 
@@ -298,7 +300,7 @@ function Contents() {
       <ul>
         <li>
           <a href="https://manifoldmarkets.notion.site/Technical-Overview-b9b48a09ea1f45b88d991231171730c5">
-            Technical Overview of Mantic Markets
+            Technical Overview of Manifold Markets
           </a>
         </li>
         <li>
@@ -322,7 +324,7 @@ function Contents() {
           </a>
         </li>
         <li>
-          <a href="https://mantic.markets/simulator">
+          <a href="https://manifold.markets/simulator">
             Dynamic parimutuel market simulator
           </a>
         </li>
