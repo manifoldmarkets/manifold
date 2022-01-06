@@ -54,15 +54,18 @@ export const ContractOverview = (props: {
           />
 
           <ContractDetails contract={contract} />
-          <TweetButton tweetText={tweetText} />
+          <TweetButton className="self-end md:hidden" tweetText={tweetText} />
         </Col>
 
-        <ResolutionOrChance
-          className="hidden md:flex md:items-end"
-          resolution={resolution}
-          probPercent={probPercent}
-          large
-        />
+        <Col className="hidden md:flex justify-between items-end">
+          <ResolutionOrChance
+            className="items-end"
+            resolution={resolution}
+            probPercent={probPercent}
+            large
+          />
+          <TweetButton className="mt-6" tweetText={tweetText} />
+        </Col>
       </Row>
 
       <Spacer h={4} />

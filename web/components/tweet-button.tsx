@@ -5,11 +5,8 @@ export function TweetButton(props: { className?: string; tweetText?: string }) {
 
   return (
     <a
-      className={clsx(
-        'btn btn-xs normal-case self-start border-none',
-        className
-      )}
-      style={{ backgroundColor: '#1da1f2' }}
+      className={clsx('btn btn-xs normal-case border-none', className)}
+      style={{ backgroundColor: '#1da1f2', width: 75 }}
       href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
         tweetText ?? ''
       )}`}
