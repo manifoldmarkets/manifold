@@ -109,8 +109,10 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   const remainingBalance = (user?.balance || 0) - (betAmount || 0)
 
   return (
-    <Col className={clsx('bg-white shadow-md px-8 py-6 rounded-md', className)}>
-      <Title className="!mt-0 whitespace-nowrap" text="Place a trade" />
+    <Col
+      className={clsx('bg-gray-100 shadow-md px-8 py-6 rounded-md', className)}
+    >
+      <Title className="!mt-0 whitespace-nowrap" text={`Buy ${betChoice}`} />
 
       <div className="mt-2 mb-1 text-sm text-gray-400">Outcome</div>
       <YesNoSelector
@@ -119,7 +121,14 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         onSelect={(choice) => onBetChoice(choice)}
       />
 
-      <div className="mt-3 mb-1 text-sm text-gray-400">Amount</div>
+      <div className="mt-3 mb-1 text-sm text-gray-400">
+        Amount{' '}
+        {user && (
+          <span className="float-right">
+            {formatMoney(remainingBalance > 0 ? remainingBalance : 0)} left
+          </span>
+        )}
+      </div>
       <Col className="my-2">
         <label className="input-group">
           <span className="text-sm bg-gray-200">M$</span>
@@ -142,15 +151,6 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         )}
       </Col>
 
-      {user && (
-        <>
-          <div className="mt-3 mb-1 text-sm text-gray-400">
-            Remaining balance
-          </div>
-          <div>{formatMoney(remainingBalance > 0 ? remainingBalance : 0)}</div>
-        </>
-      )}
-
       <div className="mt-2 mb-1 text-sm text-gray-400">Implied probability</div>
       <Row>
         <div>{formatPercent(initialProb)}</div>
@@ -159,10 +159,11 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
       </Row>
 
       <div className="mt-2 mb-1 text-sm text-gray-400">
-        Max payout (estimated)
+        Estimated max payout
       </div>
       <div>
-        {formatMoney(estimatedWinnings)} &nbsp; (+{estimatedReturnPercent})
+        {formatMoney(estimatedWinnings)} &nbsp;{' '}
+        {estimatedWinnings ? <span>(+{estimatedReturnPercent})</span> : null}
       </div>
 
       <AdvancedPanel>
