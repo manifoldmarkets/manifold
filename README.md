@@ -1,2 +1,3 @@
 # mantic
-Mantic Markets
+
+Manifold Markets
