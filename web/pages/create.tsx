@@ -105,6 +105,7 @@ export default function NewContract() {
               type="text"
               placeholder="e.g. Will the FDA will approve Paxlovid before Jun 2nd, 2022?"
               className="input input-bordered"
+              disabled={isSubmitting}
               value={question}
               onChange={(e) => setQuestion(e.target.value || '')}
             />
@@ -121,6 +122,7 @@ export default function NewContract() {
                 type="number"
                 value={initialProb}
                 className="input input-bordered input-md"
+                disabled={isSubmitting}
                 min={1}
                 max={99}
                 onChange={(e) =>
@@ -141,6 +143,7 @@ export default function NewContract() {
               className="textarea w-full h-24 textarea-bordered"
               placeholder={descriptionPlaceholder}
               value={description}
+              disabled={isSubmitting}
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setDescription(e.target.value || '')}
             />
