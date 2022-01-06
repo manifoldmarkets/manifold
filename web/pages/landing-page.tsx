@@ -94,7 +94,7 @@ function FeaturesSection() {
     {
       name: 'Play money, real results',
       description:
-        'Get accurate predictions by betting with Mantic Dollars, our virtual currency.',
+        'Get accurate predictions by betting with Manifold Dollars, our virtual currency.',
       icon: LightningBoltIcon,
     },
     {
@@ -117,7 +117,7 @@ function FeaturesSection() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="lg:text-center">
             <h2 className="text-base text-teal-600 font-semibold tracking-wide uppercase">
-              Mantic Markets
+              Manifold Markets
             </h2>
             <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
               Better forecasting for everyone
