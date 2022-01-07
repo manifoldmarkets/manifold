@@ -42,7 +42,7 @@ function Contents() {
       <h1 id="about">About</h1>
       <hr />
       <p>
-        Mantic Markets is creating better forecasting through user-created
+        Manifold Markets is creating better forecasting through user-created
         prediction markets.
       </p>
       <p>
@@ -77,49 +77,51 @@ function Contents() {
         </a>
         . This is the power of prediction markets!
       </p>
-      <h3 id="how-does-mantic-markets-work-">How does Mantic Markets work?</h3>
+      <h3 id="how-does-manifold-markets-work-">
+        How does Manifold Markets work?
+      </h3>
       <ol>
         <li>
           <strong>
             Anyone can create a market for any yes-or-no question.
           </strong>
         </li>
-      </ol>
-      <p>
-        You can ask questions about the future like &quot;Will Taiwan remove its
-        14-day COVID quarantine by Jun 01, 2022?&quot; Then use the information
-        to plan your trip.
-      </p>
-      <p>
-        You can also ask subjective, personal questions like &quot;Will I enjoy
-        my 2022 Taiwan trip?&quot;. Then share the market with your family and
-        friends.
-      </p>
-      <ol>
+        <p>
+          You can ask questions about the future like &quot;Will Taiwan remove
+          its 14-day COVID quarantine by Jun 01, 2022?&quot; Then use the
+          information to plan your trip.
+        </p>
+        <p>
+          You can also ask subjective, personal questions like &quot;Will I
+          enjoy my 2022 Taiwan trip?&quot;. Then share the market with your
+          family and friends.
+        </p>
         <li>
           <strong>
-            Anyone can bet on a market using Mantic Dollars (M$), our platform
+            Anyone can bet on a market using Manifold Dollars (M$), our platform
             currency.
           </strong>
         </li>
       </ol>
       <p>
-        You get M$ 100 just for signing up, so you can start betting
+        You get M$ 1,000 just for signing up, so you can start betting
         immediately! When a market creator decides an outcome in your favor,
-        you&#39;ll win money from people who bet against you.
+        you&#39;ll win Manifold Dollars from people who bet against you.
       </p>
-      <p>
+      {/* <p>
         If you run out of money, you can purchase more at a rate of $1 USD to M$
-        100. (Note that Mantic Dollars are not convertible to cash and can only
+        100. (Note that Manifold Dollars are not convertible to cash and can only
         be used within our platform.)
-      </p>
+      </p> */}
       <aside>
-        💡 We&#39;re still in Open Beta; we&#39;ll tweak this model and
-        periodically reset balances before our official launch. If you purchase
-        any M$ during the beta, we promise to honor that when we launch!
+        💡 We&#39;re still in Open Beta; we&#39;ll tweak the amounts of Manifold
+        Dollars given out and periodically reset balances before our official
+        launch.
+        {/* If you purchase
+        any M$ during the beta, we promise to honor that when we launch! */}
       </aside>
 
-      <h3 id="why-do-i-want-to-bet-with-play-money-">
+      {/* <h3 id="why-do-i-want-to-bet-with-play-money-">
         Why do I want to bet with play-money?
       </h3>
       <p>
@@ -130,7 +132,7 @@ function Contents() {
       </p>
       <p>By buying M$, you support:</p>
       <ul>
-        <li>The continued development of Mantic Markets</li>
+        <li>The continued development of Manifold Markets</li>
         <li>Cash payouts to market creators (TBD)</li>
         <li>Forecasting tournaments for bettors (TBD)</li>
       </ul>
@@ -138,7 +140,7 @@ function Contents() {
         We also have some thoughts on how to reward bettors: physical swag,
         exclusive conversations with market creators, NFTs...? If you have
         ideas, let us know!
-      </p>
+      </p> */}
       <h3 id="can-prediction-markets-work-without-real-money-">
         Can prediction markets work without real money?
       </h3>
@@ -162,8 +164,8 @@ function Contents() {
       </p>
       <h3 id="how-are-markets-resolved-">How are markets resolved?</h3>
       <p>
-        The creator of the prediction market decides the outcome and earns 0.5%
-        of the trade volume for their effort.
+        The creator of the prediction market decides the outcome and earns 1% of
+        the betting pool for their effort.
       </p>
       <p>
         This simple resolution mechanism has surprising benefits in allowing a
@@ -200,34 +202,52 @@ function Contents() {
       <h3 id="how-is-this-different-from-metaculus-or-hypermind-">
         How is this different from Metaculus or Hypermind?
       </h3>
-      <p>
+      {/* <p>
         We believe that in order to get the best results, you have to have skin
         in the game. We require that people use real money to buy the currency
         they use on our platform.
       </p>
       <p>
-        With Mantic Dollars being a scarce resource, people will bet more
+        With Manifold Dollars being a scarce resource, people will bet more
         carefully and can&#39;t rig the outcome by creating multiple accounts.
         The result is more accurate predictions.
-      </p>
+      </p> */}
       <p>
-        Mantic Markets is also focused on accessibility and allowing anyone to
+        Manifold Markets is focused on accessibility and allowing anyone to
         quickly create and judge a prediction market. When we all have the power
         to create and share prediction markets in seconds and apply our own
         judgment on the outcome, it leads to a qualitative shift in the number,
         variety, and usefulness of prediction markets.
       </p>
-      <h3 id="how-does-betting-in-a-market-work-on-a-technical-level-">
-        How does betting in a market work on a technical level?
-      </h3>
+
+      <h3 id="how-does-betting-work">How does betting work?</h3>
+      <ul>
+        <li>
+          Markets are structured around a question with a binary outcome (either
+          YES or NO)
+        </li>
+        <li>
+          Traders can place a bet on either YES or NO. The bet amount is added
+          to the corresponding bet pool for the outcome. The trader receives
+          some shares of the final pool. The number of shares depends on the
+          current implied probability.
+        </li>
+        <li>
+          When the market is resolved, the traders who bet on the correct
+          outcome are paid out of the total pool (YES pool + NO pool) in
+          proportion to the amount of shares they own, minus any fees.
+        </li>
+      </ul>
+
+      <h3 id="type-of-market-maker">What kind of betting system do you use?</h3>
       <p>
-        Mantic Markets uses a special type of automated market marker based on a
-        dynamic pari-mutuel (DPM) betting system.
+        Manifold Markets uses a special type of automated market marker based on
+        a dynamic pari-mutuel (DPM) betting system.
       </p>
       <p>
         Like traditional pari-mutuel systems, your payoff is not known at the
-        time you place your bet (it&#39;s dependent on the size of the pot when
-        the event ends).
+        time you place your bet (it&#39;s dependent on the size of the pool when
+        the event is resolved).
       </p>
       <p>
         Unlike traditional pari-mutuel systems, the price or probability that
@@ -238,8 +258,9 @@ function Contents() {
         The result is a market that can function well when trading volume is low
         without any risk to the market creator.
       </p>
+
       <h3 id="who-are-we-">Who are we?</h3>
-      <p>Mantic Markets is currently a team of three:</p>
+      <p>Manifold Markets is currently a team of three:</p>
       <ul>
         <li>James Grugett</li>
         <li>Stephen Grugett</li>
@@ -259,7 +280,7 @@ function Contents() {
       </p>
       <ul>
         <li>
-          Email: <code>info@mantic.markets</code>
+          Email: <code>info@manifold.markets</code>
         </li>
         <li>
           Office hours:{' '}
@@ -269,12 +290,19 @@ function Contents() {
       </ul>
       <p>
         <a href="https://discord.gg/eHQBNBqXuh">
-          Join the Mantic Markets Discord Server!
+          Join the Manifold Markets Discord Server!
         </a>
       </p>
+
       <h1 id="further-reading">Further Reading</h1>
       <hr />
+
       <ul>
+        <li>
+          <a href="https://manifoldmarkets.notion.site/Technical-Overview-b9b48a09ea1f45b88d991231171730c5">
+            Technical Overview of Manifold Markets
+          </a>
+        </li>
         <li>
           <a href="https://en.wikipedia.org/wiki/Prediction_market">
             Wikipedia: Prediction markets
@@ -296,7 +324,7 @@ function Contents() {
           </a>
         </li>
         <li>
-          <a href="https://mantic.markets/simulator">
+          <a href="https://manifold.markets/simulator">
             Dynamic parimutuel market simulator
           </a>
         </li>

@@ -1,9 +1,9 @@
-import Link from 'next/link'
 import { Fragment } from 'react'
+import { SiteLink } from './site-link'
 
 // Return a JSX span, linkifying @username, #hashtags, and https://...
-export function Linkify(props: { text: string }) {
-  const { text } = props
+export function Linkify(props: { text: string; gray?: boolean }) {
+  const { text, gray } = props
   const regex = /(?:^|\s)(?:[@#][a-z0-9_]+|https?:\/\/\S+)/gi
   const matches = text.match(regex) || []
   const links = matches.map((match) => {
@@ -15,17 +15,18 @@ export function Linkify(props: { text: string }) {
       {
         '@': `/${tag}`,
         '#': `/tag/${tag}`,
-      }[symbol] ?? match
+      }[symbol] ?? match.trim()
 
     return (
       <>
         {whitespace}
-        <Link href={href}>
-          <a className="text-indigo-700 hover:underline hover:decoration-2">
-            {symbol}
-            {tag}
-          </a>
-        </Link>
+        <SiteLink
+          className={gray ? 'text-gray-500' : 'text-indigo-700'}
+          href={href}
+        >
+          {symbol}
+          {tag}
+        </SiteLink>
       </>
     )
   })

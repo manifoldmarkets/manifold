@@ -11,7 +11,11 @@ import { useBets } from '../../hooks/use-bets'
 import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
 import { User } from '../../lib/firebase/users'
-import { Contract, getContractFromSlug } from '../../lib/firebase/contracts'
+import {
+  compute,
+  Contract,
+  getContractFromSlug,
+} from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
 
@@ -47,14 +51,23 @@ export default function ContractPage(props: {
     return <div>Contract not found...</div>
   }
 
-  const { creatorId, isResolved } = contract
+  const { creatorId, isResolved, resolution, question } = contract
   const isCreator = user?.id === creatorId
+  const allowTrade =
+    !isResolved && (!contract.closeTime || contract.closeTime > Date.now())
+  const allowResolve = !isResolved && isCreator && user
+
+  const { probPercent } = compute(contract)
+
+  const description = resolution
+    ? `Resolved ${resolution}. ${contract.description}`
+    : `${probPercent} chance. ${contract.description}`
 
   return (
-    <Page wide={!isResolved}>
+    <Page wide={allowTrade}>
       <SEO
-        title={contract.question}
-        description={contract.description}
+        title={question}
+        description={description}
         url={`/${props.username}/${props.slug}`}
       />
 
@@ -64,14 +77,13 @@ export default function ContractPage(props: {
           <BetsSection contract={contract} user={user ?? null} />
         </div>
 
-        {!isResolved && (
+        {(allowTrade || allowResolve) && (
           <>
             <div className="md:ml-8" />
 
             <Col className="flex-1">
-              <BetPanel contract={contract} />
-
-              {isCreator && user && (
+              {allowTrade && <BetPanel contract={contract} />}
+              {allowResolve && (
                 <ResolutionPanel creator={user} contract={contract} />
               )}
             </Col>
@@ -97,8 +109,8 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
 
   return (
     <div>
-      <Title text="Your bets" />
-      <MyBetsSummary contract={contract} bets={userBets} />
+      <Title text="Your trades" />
+      <MyBetsSummary contract={contract} bets={userBets} showMKT />
       <Spacer h={6} />
       <ContractBetsTable contract={contract} bets={userBets} />
       <Spacer h={12} />

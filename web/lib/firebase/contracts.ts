@@ -11,9 +11,10 @@ import {
   onSnapshot,
   orderBy,
   getDoc,
-  limit,
 } from 'firebase/firestore'
 import dayjs from 'dayjs'
+import { Bet, getRecentBets } from './bets'
+import _ from 'lodash'
 
 export type Contract = {
   id: string
@@ -30,7 +31,8 @@ export type Contract = {
 
   startPool: { YES: number; NO: number }
   pool: { YES: number; NO: number }
-  dpmWeights: { YES: number; NO: number }
+  totalShares: { YES: number; NO: number }
+  totalBets: { YES: number; NO: number }
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime: number // If the question or description was changed
@@ -48,14 +50,16 @@ export function path(contract: Contract) {
 
 export function compute(contract: Contract) {
   const { pool, startPool, createdTime, resolutionTime, isResolved } = contract
-  const volume = pool.YES + pool.NO - startPool.YES - startPool.NO
+  const truePool = pool.YES + pool.NO - startPool.YES - startPool.NO
   const prob = pool.YES ** 2 / (pool.YES ** 2 + pool.NO ** 2)
   const probPercent = Math.round(prob * 100) + '%'
+  const startProb =
+    startPool.YES ** 2 / (startPool.YES ** 2 + startPool.NO ** 2)
   const createdDate = dayjs(createdTime).format('MMM D')
   const resolvedDate = isResolved
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
-  return { volume, probPercent, createdDate, resolvedDate }
+  return { truePool, probPercent, startProb, createdDate, resolvedDate }
 }
 
 const db = getFirestore(app)
@@ -105,7 +109,7 @@ export async function listContracts(creatorId: string): Promise<Contract[]> {
 }
 
 export async function listAllContracts(): Promise<Contract[]> {
-  const q = query(contractCollection, orderBy('createdTime', 'desc'), limit(25))
+  const q = query(contractCollection, orderBy('createdTime', 'desc'))
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => doc.data() as Contract)
 }
@@ -113,7 +117,7 @@ export async function listAllContracts(): Promise<Contract[]> {
 export function listenForContracts(
   setContracts: (contracts: Contract[]) => void
 ) {
-  const q = query(contractCollection, orderBy('createdTime', 'desc'), limit(25))
+  const q = query(contractCollection, orderBy('createdTime', 'desc'))
   return onSnapshot(q, (snap) => {
     setContracts(snap.docs.map((doc) => doc.data() as Contract))
   })
@@ -127,4 +131,18 @@ export function listenForContract(
   return onSnapshot(contractRef, (contractSnap) => {
     setContract((contractSnap.data() ?? null) as Contract | null)
   })
+}
+
+export function computeHotContracts(recentBets: Bet[]) {
+  const contractBets = _.groupBy(recentBets, (bet) => bet.contractId)
+  const hotContractIds = _.sortBy(Object.keys(contractBets), (contractId) =>
+    _.sumBy(contractBets[contractId], (bet) => -1 * bet.amount)
+  ).slice(0, 4)
+  return hotContractIds
+}
+
+export async function getHotContracts() {
+  const oneDay = 1000 * 60 * 60 * 24
+  const recentBets = await getRecentBets(oneDay)
+  return computeHotContracts(recentBets)
 }

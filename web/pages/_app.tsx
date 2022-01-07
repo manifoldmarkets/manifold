@@ -6,32 +6,35 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>Mantic Markets</title>
+        <title>Manifold Markets</title>
 
         <meta
           property="og:title"
           name="twitter:title"
-          content="Mantic Markets"
+          content="Manifold Markets"
           key="title"
         />
         <meta
           name="description"
-          content="Mantic Markets is creating better forecasting through user-created prediction markets."
+          content="Manifold Markets is creating better forecasting through user-created prediction markets."
           key="description1"
         />
         <meta
           property="og:description"
           name="twitter:description"
-          content="Mantic Markets is creating better forecasting through user-created prediction markets."
+          content="Manifold Markets is creating better forecasting through user-created prediction markets."
           key="description2"
         />
-        <meta property="og:url" content="https://mantic.markets" key="url" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@manticmarkets" />
+        <meta property="og:url" content="https://manifold.markets" key="url" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
           property="og:image"
+          content="https://manifold.markets/logo-cover.png"
+        />
+        <meta
           name="twitter:image"
-          content="https://mantic.markets/logo-cover.png"
+          content="https://manifold.markets/logo-bg.png"
         />
       </Head>
 

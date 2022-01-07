@@ -41,8 +41,8 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
         ]
       : []),
     {
-      name: 'Your bets',
-      href: '/bets',
+      name: 'Your trades',
+      href: '/trades',
     },
     {
       name: 'Your markets',
@@ -57,6 +57,10 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
       href: '#',
       onClick: () => firebaseLogout(),
     },
+    {
+      name: 'Discord',
+      href: 'https://discord.gg/eHQBNBqXuh',
+    },
   ]
 }
 
@@ -67,7 +71,7 @@ function ProfileSummary(props: { user: User }) {
       <div className="rounded-full w-10 h-10 mr-4">
         <Image src={user.avatarUrl} width={40} height={40} />
       </div>
-      <div className="truncate" style={{ maxWidth: 175 }}>
+      <div className="truncate text-left" style={{ maxWidth: 170 }}>
         {user.name}
         <div className="text-gray-700 text-sm">{formatMoney(user.balance)}</div>
       </div>

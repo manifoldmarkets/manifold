@@ -2,10 +2,16 @@ import Link from 'next/link'
 import _ from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
+import clsx from 'clsx'
+
 import { useUserBets } from '../hooks/use-user-bets'
 import { Bet } from '../lib/firebase/bets'
 import { User } from '../lib/firebase/users'
-import { formatMoney, formatPercent } from '../lib/util/format'
+import {
+  formatMoney,
+  formatPercent,
+  formatWithCommas,
+} from '../lib/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { Contract, getContractFromId, path } from '../lib/firebase/contracts'
@@ -13,10 +19,12 @@ import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import {
   calculatePayout,
-  currentValue,
+  calculateSaleAmount,
   resolvedPayout,
-} from '../lib/calculation/contract'
-import clsx from 'clsx'
+} from '../lib/calculate'
+import { sellBet } from '../lib/firebase/api-call'
+import { ConfirmationButton } from './confirmation-button'
+import { OutcomeLabel, YesLabel, NoLabel, MarketLabel } from './outcome-label'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -65,19 +73,26 @@ export function BetsList(props: { user: User }) {
     contracts,
     (contract) => contract.isResolved
   )
+
   const currentBets = _.sumBy(unresolved, (contract) =>
-    _.sumBy(contractBets[contract.id], (bet) => bet.amount)
+    _.sumBy(contractBets[contract.id], (bet) => {
+      if (bet.isSold || bet.sale) return 0
+      return bet.amount
+    })
   )
 
   const currentBetsValue = _.sumBy(unresolved, (contract) =>
-    _.sumBy(contractBets[contract.id], (bet) => currentValue(contract, bet))
+    _.sumBy(contractBets[contract.id], (bet) => {
+      if (bet.isSold || bet.sale) return 0
+      return calculatePayout(contract, bet, 'MKT')
+    })
   )
 
   return (
     <Col className="mt-6 gap-6">
       <Row className="gap-8">
         <Col>
-          <div className="text-sm text-gray-500">Active bets</div>
+          <div className="text-sm text-gray-500">Currently invested</div>
           <div>{formatMoney(currentBets)}</div>
         </Col>
         <Col>
@@ -168,41 +183,49 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
 export function MyBetsSummary(props: {
   contract: Contract
   bets: Bet[]
+  showMKT?: boolean
   className?: string
 }) {
-  const { bets, contract, className } = props
+  const { bets, contract, showMKT, className } = props
   const { resolution } = contract
 
-  const betsTotal = _.sumBy(bets, (bet) => bet.amount)
+  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
+  const betsTotal = _.sumBy(excludeSales, (bet) => bet.amount)
 
   const betsPayout = resolution
-    ? _.sumBy(bets, (bet) => resolvedPayout(contract, bet))
+    ? _.sumBy(excludeSales, (bet) => resolvedPayout(contract, bet))
     : 0
 
-  const yesWinnings = _.sumBy(bets, (bet) =>
+  const yesWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'YES')
   )
-  const noWinnings = _.sumBy(bets, (bet) =>
+  const noWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
 
+  const marketWinnings = _.sumBy(excludeSales, (bet) =>
+    calculatePayout(contract, bet, 'MKT')
+  )
+
   return (
-    <Row className={clsx('gap-4 sm:gap-6', className)}>
+    <Row
+      className={clsx(
+        'gap-4 sm:gap-6',
+        showMKT && 'flex-wrap sm:flex-nowrap',
+        className
+      )}
+    >
       <Col>
-        <div className="text-sm text-gray-500 whitespace-nowrap">
-          Total bets
-        </div>
+        <div className="text-sm text-gray-500 whitespace-nowrap">Invested</div>
         <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
       </Col>
       {resolution ? (
-        <>
-          <Col>
-            <div className="text-sm text-gray-500">Payout</div>
-            <div className="whitespace-nowrap">{formatMoney(betsPayout)}</div>
-          </Col>
-        </>
+        <Col>
+          <div className="text-sm text-gray-500">Payout</div>
+          <div className="whitespace-nowrap">{formatMoney(betsPayout)}</div>
+        </Col>
       ) : (
-        <>
+        <Row className="gap-4 sm:gap-6">
           <Col>
             <div className="text-sm text-gray-500 whitespace-nowrap">
               Payout if <YesLabel />
@@ -215,7 +238,17 @@ export function MyBetsSummary(props: {
             </div>
             <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
           </Col>
-        </>
+          {showMKT && (
+            <Col>
+              <div className="text-sm text-gray-500 whitespace-nowrap">
+                Payout if <MarketLabel />
+              </div>
+              <div className="whitespace-nowrap">
+                {formatMoney(marketWinnings)}
+              </div>
+            </Col>
+          )}
+        </Row>
       )}
     </Row>
   )
@@ -228,6 +261,11 @@ export function ContractBetsTable(props: {
 }) {
   const { contract, bets, className } = props
 
+  const [sales, buys] = _.partition(bets, (bet) => bet.sale)
+  const salesDict = _.fromPairs(
+    sales.map((sale) => [sale.sale?.betId ?? '', sale])
+  )
+
   const { isResolved } = contract
 
   return (
@@ -237,15 +275,21 @@ export function ContractBetsTable(props: {
           <tr className="p-2">
             <th>Date</th>
             <th>Outcome</th>
-            <th>Bet</th>
+            <th>Amount</th>
             <th>Probability</th>
-            {!isResolved && <th>Est. max payout</th>}
-            <th>{isResolved ? <>Payout</> : <>Current value</>}</th>
+            <th>Shares</th>
+            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {bets.map((bet) => (
-            <BetRow key={bet.id} bet={bet} contract={contract} />
+          {buys.map((bet) => (
+            <BetRow
+              key={bet.id}
+              bet={bet}
+              sale={salesDict[bet.id]}
+              contract={contract}
+            />
           ))}
         </tbody>
       </table>
@@ -253,14 +297,22 @@ export function ContractBetsTable(props: {
   )
 }
 
-function BetRow(props: { bet: Bet; contract: Contract }) {
-  const { bet, contract } = props
-  const { amount, outcome, createdTime, probBefore, probAfter, dpmWeight } = bet
+function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
+  const { bet, sale, contract } = props
+  const {
+    amount,
+    outcome,
+    createdTime,
+    probBefore,
+    probAfter,
+    shares,
+    isSold,
+  } = bet
   const { isResolved } = contract
 
   return (
     <tr>
-      <td>{dayjs(createdTime).format('MMM D, H:mma')}</td>
+      <td>{dayjs(createdTime).format('MMM D, h:mma')}</td>
       <td>
         <OutcomeLabel outcome={outcome} />
       </td>
@@ -268,34 +320,59 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
-      {!isResolved && <td>{formatMoney(amount + dpmWeight)}</td>}
+      <td>{formatWithCommas(shares)}</td>
       <td>
-        {formatMoney(
-          isResolved
-            ? resolvedPayout(contract, bet)
-            : currentValue(contract, bet)
+        {sale ? (
+          <>{formatMoney(Math.abs(sale.amount))} (sold)</>
+        ) : (
+          formatMoney(
+            isResolved
+              ? resolvedPayout(contract, bet)
+              : calculateSaleAmount(contract, bet)
+          )
         )}
       </td>
+
+      {!isResolved && !isSold && (
+        <td className="text-neutral">
+          <SellButton contract={contract} bet={bet} />
+        </td>
+      )}
     </tr>
   )
 }
 
-function OutcomeLabel(props: { outcome: 'YES' | 'NO' | 'CANCEL' }) {
-  const { outcome } = props
+function SellButton(props: { contract: Contract; bet: Bet }) {
+  useEffect(() => {
+    // warm up cloud function
+    sellBet({}).catch()
+  }, [])
 
-  if (outcome === 'YES') return <YesLabel />
-  if (outcome === 'NO') return <NoLabel />
-  return <CancelLabel />
-}
+  const { contract, bet } = props
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-function YesLabel() {
-  return <span className="text-primary">YES</span>
-}
-
-function NoLabel() {
-  return <span className="text-red-400">NO</span>
-}
-
-function CancelLabel() {
-  return <span className="text-yellow-400">N/A</span>
+  return (
+    <ConfirmationButton
+      id={`sell-${bet.id}`}
+      openModelBtn={{
+        className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
+        label: 'Sell',
+      }}
+      submitBtn={{ className: 'btn-primary' }}
+      onSubmit={async () => {
+        setIsSubmitting(true)
+        await sellBet({ contractId: contract.id, betId: bet.id })
+        setIsSubmitting(false)
+      }}
+    >
+      <div className="text-2xl mb-4">
+        Sell <OutcomeLabel outcome={bet.outcome} />
+      </div>
+      <div>
+        Do you want to sell {formatWithCommas(bet.shares)} shares of{' '}
+        <OutcomeLabel outcome={bet.outcome} /> for{' '}
+        {formatMoney(calculateSaleAmount(contract, bet))}?
+      </div>
+    </ConfirmationButton>
+  )
 }

@@ -3,84 +3,15 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 
-import { Row } from '../components/layout/row'
-import {
-  compute,
-  Contract,
-  listContracts,
-  path,
-} from '../lib/firebase/contracts'
-import { formatMoney } from '../lib/util/format'
+import { compute, Contract, listContracts } from '../lib/firebase/contracts'
 import { User } from '../lib/firebase/users'
-import { UserLink } from './user-page'
-import { Linkify } from './linkify'
+import { Col } from './layout/col'
+import { SiteLink } from './site-link'
+import { parseTags } from '../lib/util/parse'
+import { ContractCard } from './contract-card'
+import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 
-export function ContractDetails(props: { contract: Contract }) {
-  const { contract } = props
-  const { volume, createdDate, resolvedDate } = compute(contract)
-
-  return (
-    <Row className="flex-wrap text-sm text-gray-500">
-      <div className="whitespace-nowrap">
-        <UserLink username={contract.creatorUsername} />
-      </div>
-      <div className="mx-2">•</div>
-      <div className="whitespace-nowrap">
-        {resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}
-      </div>
-      <div className="mx-2">•</div>
-      <div className="whitespace-nowrap">{formatMoney(volume)} volume</div>
-    </Row>
-  )
-}
-
-function ContractCard(props: { contract: Contract }) {
-  const { contract } = props
-  const { probPercent } = compute(contract)
-
-  const resolutionColor = {
-    YES: 'text-primary',
-    NO: 'text-red-400',
-    CANCEL: 'text-yellow-400',
-    '': '', // Empty if unresolved
-  }[contract.resolution || '']
-
-  const resolutionText = {
-    YES: 'YES',
-    NO: 'NO',
-    CANCEL: 'N/A',
-    '': '',
-  }[contract.resolution || '']
-
-  return (
-    <Link href={path(contract)}>
-      <a>
-        <li className="col-span-1 bg-white hover:bg-gray-100 shadow-xl rounded-lg divide-y divide-gray-200">
-          <div className="card">
-            <div className="card-body p-6">
-              <Row className="justify-between gap-4 mb-2">
-                <p className="font-medium text-indigo-700">
-                  <Linkify text={contract.question} />
-                </p>
-                <div className={clsx('text-4xl', resolutionColor)}>
-                  {resolutionText || (
-                    <div className="text-primary">
-                      {probPercent}
-                      <div className="text-lg">chance</div>
-                    </div>
-                  )}
-                </div>
-              </Row>
-              <ContractDetails contract={contract} />
-            </div>
-          </div>
-        </li>
-      </a>
-    </Link>
-  )
-}
-
-function ContractsGrid(props: { contracts: Contract[] }) {
+export function ContractsGrid(props: { contracts: Contract[] }) {
   const [resolvedContracts, activeContracts] = _.partition(
     props.contracts,
     (c) => c.isResolved
@@ -110,14 +41,122 @@ function ContractsGrid(props: { contracts: Contract[] }) {
   )
 }
 
-type Sort = 'createdTime' | 'volume' | 'resolved' | 'all'
+const MAX_GROUPED_CONTRACTS_DISPLAYED = 6
+
+function CreatorContractsGrid(props: { contracts: Contract[] }) {
+  const { contracts } = props
+
+  const byCreator = _.groupBy(contracts, (contract) => contract.creatorId)
+  const creatorIds = _.sortBy(Object.keys(byCreator), (creatorId) =>
+    _.sumBy(byCreator[creatorId], (contract) => -1 * compute(contract).truePool)
+  )
+
+  return (
+    <Col className="gap-6">
+      {creatorIds.map((creatorId) => {
+        const { creatorUsername, creatorName } = byCreator[creatorId][0]
+
+        return (
+          <Col className="gap-4" key={creatorUsername}>
+            <SiteLink className="text-lg" href={`/${creatorUsername}`}>
+              {creatorName}
+            </SiteLink>
+
+            <ul role="list" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {byCreator[creatorId]
+                .slice(0, MAX_GROUPED_CONTRACTS_DISPLAYED)
+                .map((contract) => (
+                  <ContractCard contract={contract} key={contract.id} />
+                ))}
+            </ul>
+
+            {byCreator[creatorId].length > MAX_GROUPED_CONTRACTS_DISPLAYED ? (
+              <Link href={`/${creatorUsername}`}>
+                <a
+                  className={clsx(
+                    'self-end hover:underline hover:decoration-indigo-400 hover:decoration-2'
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  See all
+                </a>
+              </Link>
+            ) : (
+              <div />
+            )}
+          </Col>
+        )
+      })}
+    </Col>
+  )
+}
+
+function TagContractsGrid(props: { contracts: Contract[] }) {
+  const { contracts } = props
+
+  const contractTags = _.flatMap(contracts, (contract) =>
+    parseTags(contract.question + ' ' + contract.description).map((tag) => ({
+      tag,
+      contract,
+    }))
+  )
+  const groupedByTag = _.groupBy(contractTags, ({ tag }) => tag)
+  const byTag = _.mapValues(groupedByTag, (contractTags) =>
+    contractTags.map(({ contract }) => contract)
+  )
+  const tags = _.sortBy(Object.keys(byTag), (tag) =>
+    _.sumBy(byTag[tag], (contract) => -1 * compute(contract).truePool)
+  )
+
+  return (
+    <Col className="gap-6">
+      {tags.map((tag) => {
+        return (
+          <Col className="gap-4" key={tag}>
+            <SiteLink className="text-lg" href={`/tag/${tag}`}>
+              #{tag}
+            </SiteLink>
+
+            <ul role="list" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {byTag[tag]
+                .slice(0, MAX_GROUPED_CONTRACTS_DISPLAYED)
+                .map((contract) => (
+                  <ContractCard contract={contract} key={contract.id} />
+                ))}
+            </ul>
+
+            {byTag[tag].length > MAX_GROUPED_CONTRACTS_DISPLAYED ? (
+              <Link href={`/tag/${tag}`}>
+                <a
+                  className={clsx(
+                    'self-end hover:underline hover:decoration-indigo-400 hover:decoration-2'
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  See all
+                </a>
+              </Link>
+            ) : (
+              <div />
+            )}
+          </Col>
+        )
+      })}
+    </Col>
+  )
+}
+
+const MAX_CONTRACTS_DISPLAYED = 99
+
 export function SearchableGrid(props: {
   contracts: Contract[]
-  defaultSort?: Sort
+  query: string
+  setQuery: (query: string) => void
+  sort: Sort
+  setSort: (sort: Sort) => void
+  byOneCreator?: boolean
 }) {
-  const { contracts, defaultSort } = props
-  const [query, setQuery] = useState('')
-  const [sort, setSort] = useState(defaultSort || 'volume')
+  const { contracts, query, setQuery, sort, setSort, byOneCreator } = props
 
   function check(corpus: String) {
     return corpus.toLowerCase().includes(query.toLowerCase())
@@ -130,10 +169,10 @@ export function SearchableGrid(props: {
       check(c.creatorUsername)
   )
 
-  if (sort === 'createdTime' || sort === 'resolved' || sort === 'all') {
+  if (sort === 'newest' || sort === 'resolved' || sort === 'all') {
     matches.sort((a, b) => b.createdTime - a.createdTime)
-  } else if (sort === 'volume') {
-    matches.sort((a, b) => compute(b).volume - compute(a).volume)
+  } else if (sort === 'most-traded' || sort === 'creator' || sort === 'tag') {
+    matches.sort((a, b) => compute(b).truePool - compute(a).truePool)
   }
 
   if (sort !== 'all') {
@@ -142,6 +181,9 @@ export function SearchableGrid(props: {
       sort === 'resolved' ? c.resolution : !c.resolution
     )
   }
+
+  if (matches.length > MAX_CONTRACTS_DISPLAYED)
+    matches = _.slice(matches, 0, MAX_CONTRACTS_DISPLAYED)
 
   return (
     <div>
@@ -159,21 +201,36 @@ export function SearchableGrid(props: {
           value={sort}
           onChange={(e) => setSort(e.target.value as Sort)}
         >
-          <option value="volume">Most traded</option>
-          <option value="createdTime">Newest first</option>
+          {byOneCreator ? (
+            <option value="all">All markets</option>
+          ) : (
+            <option value="creator">By creator</option>
+          )}
+          <option value="tag">By tag</option>
+          <option value="most-traded">Most traded</option>
+          <option value="newest">Newest</option>
           <option value="resolved">Resolved</option>
-          <option value="all">All markets</option>
         </select>
       </div>
 
-      <ContractsGrid contracts={matches} />
+      {sort === 'tag' ? (
+        <TagContractsGrid contracts={matches} />
+      ) : !byOneCreator && (sort === 'creator' || sort === 'resolved') ? (
+        <CreatorContractsGrid contracts={matches} />
+      ) : (
+        <ContractsGrid contracts={matches} />
+      )}
     </div>
   )
 }
 
-export function ContractsList(props: { creator: User }) {
+export function CreatorContractsList(props: { creator: User }) {
   const { creator } = props
   const [contracts, setContracts] = useState<Contract[] | 'loading'>('loading')
+
+  const { query, setQuery, sort, setSort } = useQueryAndSortParams({
+    defaultSort: 'all',
+  })
 
   useEffect(() => {
     if (creator?.id) {
@@ -184,5 +241,14 @@ export function ContractsList(props: { creator: User }) {
 
   if (contracts === 'loading') return <></>
 
-  return <SearchableGrid contracts={contracts} defaultSort="all" />
+  return (
+    <SearchableGrid
+      contracts={contracts}
+      byOneCreator
+      query={query}
+      setQuery={setQuery}
+      sort={sort}
+      setSort={setSort}
+    />
+  )
 }

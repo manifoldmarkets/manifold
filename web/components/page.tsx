@@ -7,6 +7,7 @@ export function Page(props: { wide?: boolean; children?: any }) {
   return (
     <div>
       <NavBar wide={wide} />
+
       <div
         className={clsx(
           'w-full px-4 pb-8 mx-auto',

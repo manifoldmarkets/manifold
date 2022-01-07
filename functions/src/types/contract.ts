@@ -4,6 +4,7 @@ export type Contract = {
 
   creatorId: string
   creatorName: string
+  creatorUsername: string
 
   question: string
   description: string // More info about what the contract is about
@@ -12,7 +13,8 @@ export type Contract = {
 
   startPool: { YES: number; NO: number }
   pool: { YES: number; NO: number }
-  dpmWeights: { YES: number; NO: number }
+  totalShares: { YES: number; NO: number }
+  totalBets: { YES: number; NO: number }
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime: number // If the question or description was changed

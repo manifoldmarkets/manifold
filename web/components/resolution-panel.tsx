@@ -1,6 +1,5 @@
 import clsx from 'clsx'
-import React, { useState } from 'react'
-import { getFunctions, httpsCallable } from 'firebase/functions'
+import React, { useEffect, useState } from 'react'
 
 import { Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
@@ -9,18 +8,23 @@ import { User } from '../lib/firebase/users'
 import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ConfirmationButton as ConfirmationButton } from './confirmation-button'
-
-const functions = getFunctions()
-export const resolveMarket = httpsCallable(functions, 'resolveMarket')
+import { resolveMarket } from '../lib/firebase/api-call'
 
 export function ResolutionPanel(props: {
   creator: User
   contract: Contract
   className?: string
 }) {
+  useEffect(() => {
+    // warm up cloud function
+    resolveMarket({}).catch()
+  }, [])
+
   const { contract, className } = props
 
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'CANCEL' | undefined>()
+  const [outcome, setOutcome] = useState<
+    'YES' | 'NO' | 'MKT' | 'CANCEL' | undefined
+  >()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
@@ -48,11 +52,13 @@ export function ResolutionPanel(props: {
       ? 'bg-red-400 hover:bg-red-500'
       : outcome === 'CANCEL'
       ? 'bg-yellow-400 hover:bg-yellow-500'
+      : outcome === 'MKT'
+      ? 'bg-blue-400 hover:bg-blue-500'
       : 'btn-disabled'
 
   return (
     <Col
-      className={clsx('bg-gray-100 shadow-xl px-8 py-6 rounded-md', className)}
+      className={clsx('bg-gray-100 shadow-md px-8 py-6 rounded-md', className)}
     >
       <Title className="mt-0" text="Your market" />
 
@@ -70,18 +76,19 @@ export function ResolutionPanel(props: {
       <div>
         {outcome === 'YES' ? (
           <>
-            Winnings will be paid out to YES bettors. You earn 1% of the NO
-            bets.
+            Winnings will be paid out to YES bettors. You earn 1% of the pool.
           </>
         ) : outcome === 'NO' ? (
-          <>
-            Winnings will be paid out to NO bettors. You earn 1% of the YES
-            bets.
-          </>
+          <>Winnings will be paid out to NO bettors. You earn 1% of the pool.</>
         ) : outcome === 'CANCEL' ? (
-          <>All bets will be returned with no fees.</>
+          <>The pool will be returned to traders with no fees.</>
+        ) : outcome === 'MKT' ? (
+          <>
+            Traders will be paid out at the current implied probability. You
+            earn 1% of the pool.
+          </>
         ) : (
-          <>Resolving this market will immediately pay out bettors.</>
+          <>Resolving this market will immediately pay out traders.</>
         )}
       </div>
 
