@@ -48,10 +48,10 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
       name: 'Your markets',
       href: `/${user.username}`,
     },
-    {
-      name: 'Add funds',
-      href: '/add-funds',
-    },
+    // {
+    //   name: 'Add funds',
+    //   href: '/add-funds',
+    // },
     {
       name: 'Sign out',
       href: '#',
