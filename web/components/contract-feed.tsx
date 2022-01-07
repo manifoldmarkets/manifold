@@ -16,7 +16,7 @@ import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { OutcomeLabel } from './outcome-label'
-import { Contract, setContract } from '../lib/firebase/contracts'
+import { Contract, updateContract } from '../lib/firebase/contracts'
 import { useUser } from '../hooks/use-user'
 import { Linkify } from './linkify'
 import { Row } from './layout/row'
@@ -136,8 +136,10 @@ export function ContractDescription(props: {
   async function saveDescription(e: any) {
     e.preventDefault()
     setEditing(false)
-    contract.description = `${contract.description}\n${description}`.trim()
-    await setContract(contract)
+
+    const newDescription = `${contract.description}\n${description}`.trim()
+    await updateContract(contract.id, { description: newDescription })
+
     setDescription(editStatement())
   }
 
