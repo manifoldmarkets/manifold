@@ -1,12 +1,12 @@
 import * as mailgun from 'mailgun-js'
 import * as functions from 'firebase-functions'
 
-const DOMAIN = 'mg.mantic.markets'
+const DOMAIN = 'mg.manifold.markets'
 const mg = mailgun({ apiKey: functions.config().mailgun.key, domain: DOMAIN })
 
 export const sendEmail = (to: string, subject: string, text: string) => {
   const data = {
-    from: 'Mantic Markets <no-reply@mantic.markets>',
+    from: 'Manifold Markets <no-reply@manifold.markets>',
     to,
     subject,
     text,
