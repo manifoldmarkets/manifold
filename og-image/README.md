@@ -1,4 +1,17 @@
-<a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fog-image&demo-title=OG%20Image%20Generator&demo-description=A%20service%20that%20generates%20dynamic%20Open%20Graph%20images&demo-url=https%3A%2F%2Fog-image.vercel.app%2F&demo-image=https%3A%2F%2Fog-image.vercel.app%2FOpen%2520Graph%2520Image%2520as%2520a%2520Service.png%3Ftheme%3Dlight%26md%3D1%26fontSize%3D95px%26images%3Dhttps%253A%252F%252Fassets.vercel.com%252Fimage%252Fupload%252Ffront%252Fassets%252Fdesign%252Fzeit-black-triangle.svg"><img src="https://vercel.com/button" alt="Deploy with Vercel" align="right" width="128"/></a>
+# Quickstart
+
+1. To get started: `yarn install`
+2. To test locally: `yarn start`
+   The local image preview is broken for some reason; but the service works.
+   E.g. try `http://localhost:3000/manifold.png`
+3. To deploy: push to Github
+
+For more info, see Contributing.md
+
+nb2: (Not `dev` because that's reserved for Vercel)
+nb3: (Or `cd .. && vercel --prod`, I think)
+
+(Everything below is from the original repo)
 
 # [Open Graph Image as a Service](https://og-image.vercel.app)
 
