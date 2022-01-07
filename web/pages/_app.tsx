@@ -30,8 +30,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
           property="og:image"
+          content="https://manifold.markets/logo-cover.png"
+        />
+        <meta
           name="twitter:image"
-          content="https://manifold.markets/logo-banner.png"
+          content="https://manifold.markets/logo-bg.png"
         />
       </Head>
 
