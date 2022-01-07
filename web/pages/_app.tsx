@@ -26,12 +26,12 @@ function MyApp({ Component, pageProps }: AppProps) {
           key="description2"
         />
         <meta property="og:url" content="https://manifold.markets" key="url" />
-        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:card" content="summary" />
         <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
           property="og:image"
           name="twitter:image"
-          content="https://manifold.markets/logo-cover.png"
+          content="https://manifold.markets/logo-banner.png"
         />
       </Head>
 
