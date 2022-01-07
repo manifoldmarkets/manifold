@@ -22,7 +22,7 @@ export default function AddFundsPage() {
 
       <Col className="items-center">
         <Col>
-          <Title text="Get Mantic Dollars" />
+          <Title text="Get Manifold Dollars" />
           <Image
             className="block mt-6"
             src="/praying-mantis-light.svg"
@@ -31,7 +31,7 @@ export default function AddFundsPage() {
           />
 
           <div className="text-gray-500 mb-6">
-            Use Mantic Dollars to trade in your favorite markets. <br /> (Not
+            Use Manifold Dollars to trade in your favorite markets. <br /> (Not
             redeemable for cash.)
           </div>
 

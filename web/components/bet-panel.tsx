@@ -150,21 +150,8 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
             {error}
           </div>
         )}
+        {user && <AddFundsButton className="self-end mt-3" />}
       </Col>
-
-      {user && (
-        <>
-          <div className="mt-3 mb-1 text-sm text-gray-400">
-            Remaining balance
-          </div>
-          <Row className="flex-1 justify-between items-center gap-2">
-            <div>
-              {formatMoney(remainingBalance > 0 ? remainingBalance : 0)}
-            </div>
-            <AddFundsButton />
-          </Row>
-        </>
-      )}
 
       <div className="mt-2 mb-1 text-sm text-gray-400">Implied probability</div>
       <Row>

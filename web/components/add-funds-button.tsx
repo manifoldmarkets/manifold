@@ -5,7 +5,8 @@ import { useUser } from '../hooks/use-user'
 import { checkoutURL } from '../lib/service/stripe'
 import { FundsSelector } from './yes-no-selector'
 
-export function AddFundsButton() {
+export function AddFundsButton(props: { className?: string }) {
+  const { className } = props
   const user = useUser()
 
   const [amountSelected, setAmountSelected] = useState<
@@ -17,7 +18,8 @@ export function AddFundsButton() {
       <label
         htmlFor="add-funds"
         className={clsx(
-          'btn btn-sm modal-button bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 font-normal border-none'
+          'btn btn-sm normal-case modal-button bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 font-normal border-none',
+          className
         )}
       >
         Add funds
@@ -25,11 +27,11 @@ export function AddFundsButton() {
       <input type="checkbox" id="add-funds" className="modal-toggle" />
 
       <div className="modal">
-        <div className="modal-box bg-green-50">
-          <div className="text-xl mb-6">Get Mantic Dollars</div>
+        <div className="modal-box">
+          <div className="text-xl mb-6">Get Manifold Dollars</div>
 
           <div className="text-gray-500 mb-6">
-            Use Mantic Dollars to trade in your favorite markets. <br /> (Not
+            Use Manifold Dollars to trade in your favorite markets. <br /> (Not
             redeemable for cash.)
           </div>
 
