@@ -53,7 +53,7 @@ function getArray(stringOrArray: string[] | string | undefined): string[] {
   }
 }
 
-function getDefaultImages(images: string[], theme: Theme): string[] {
+function getDefaultImages(images: string[]): string[] {
   const defaultImage = "https://manifold.markets/logo.png";
 
   if (!images || !images[0]) {

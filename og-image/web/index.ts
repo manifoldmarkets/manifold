@@ -149,6 +149,10 @@ const markdownOptions: DropdownOption[] = [
 
 const imageLightOptions: DropdownOption[] = [
   {
+    text: "Manifold",
+    value: "https://manifold.markets/logo.png",
+  },
+  {
     text: "Vercel",
     value:
       "https://assets.vercel.com/image/upload/front/assets/design/vercel-triangle-black.svg",
@@ -166,6 +170,10 @@ const imageLightOptions: DropdownOption[] = [
 ];
 
 const imageDarkOptions: DropdownOption[] = [
+  {
+    text: "Manifold",
+    value: "https://manifold.markets/logo.png",
+  },
   {
     text: "Vercel",
     value:
