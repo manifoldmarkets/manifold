@@ -1,20 +1,9 @@
-import { readFileSync } from "fs";
 import marked from "marked";
 import { sanitizeHtml } from "./sanitizer";
 import { ParsedRequest } from "./types";
 const twemoji = require("twemoji");
 const twOptions = { folder: "svg", ext: ".svg" };
 const emojify = (text: string) => twemoji.parse(text, twOptions);
-
-const rglr = readFileSync(
-  `${__dirname}/../_fonts/Inter-Regular.woff2`
-).toString("base64");
-const bold = readFileSync(`${__dirname}/../_fonts/Inter-Bold.woff2`).toString(
-  "base64"
-);
-const mono = readFileSync(`${__dirname}/../_fonts/Vera-Mono.woff2`).toString(
-  "base64"
-);
 
 function getCss(theme: string, fontSize: string) {
   let background = "white";
@@ -29,27 +18,6 @@ function getCss(theme: string, fontSize: string) {
   // To use Readex Pro: `font-family: 'Readex Pro', sans-serif;`
   return `
     @import url('https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Readex+Pro:wght@400;700&display=swap');
-
-    @font-face {
-        font-family: 'Inter';
-        font-style:  normal;
-        font-weight: normal;
-        src: url(data:font/woff2;charset=utf-8;base64,${rglr}) format('woff2');
-    }
-
-    @font-face {
-        font-family: 'Inter';
-        font-style:  normal;
-        font-weight: bold;
-        src: url(data:font/woff2;charset=utf-8;base64,${bold}) format('woff2');
-    }
-
-    @font-face {
-        font-family: 'Vera';
-        font-style: normal;
-        font-weight: normal;
-        src: url(data:font/woff2;charset=utf-8;base64,${mono})  format("woff2");
-      }
 
     body {
         background: ${background};
@@ -115,15 +83,18 @@ export function getHtml(parsedReq: ParsedRequest) {
   const { text, theme, md, fontSize, images, widths, heights } = parsedReq;
   return `<!DOCTYPE html>
 <html>
-    <meta charset="utf-8">
-    <title>Generated Image</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <head>
+        <meta charset="utf-8">
+        <title>Generated Image</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
     <style>
         ${getCss(theme, fontSize)}
     </style>
     <body>
         <div>
-            <div class="spacer">
+            <div class="spacer"></div>
             <div class="logo-wrapper">
                 ${images
                   .map(
@@ -132,7 +103,6 @@ export function getHtml(parsedReq: ParsedRequest) {
                   )
                   .join("")}
             </div>
-            <div class="spacer">
             <div class="heading">${emojify(
               md ? marked(text) : sanitizeHtml(text)
             )}
