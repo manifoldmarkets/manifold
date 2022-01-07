@@ -11,6 +11,7 @@ import {
   onSnapshot,
   orderBy,
   getDoc,
+  updateDoc,
 } from 'firebase/firestore'
 import dayjs from 'dayjs'
 import { Bet, getRecentBets } from './bets'
@@ -69,6 +70,14 @@ const contractCollection = collection(db, 'contracts')
 export async function setContract(contract: Contract) {
   const docRef = doc(db, 'contracts', contract.id)
   await setDoc(docRef, contract)
+}
+
+export async function updateContract(
+  contractId: string,
+  update: Partial<Contract>
+) {
+  const docRef = doc(db, 'contracts', contractId)
+  await updateDoc(docRef, update)
 }
 
 export async function pushNewContract(contract: Omit<Contract, 'id'>) {
