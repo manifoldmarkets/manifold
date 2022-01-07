@@ -10,12 +10,20 @@ const stripe = new Stripe(functions.config().stripe.apikey, {
 })
 
 // manage at https://dashboard.stripe.com/test/products?active=true
-const manticDollarStripePrice = {
-  500: 'price_1K8W10GdoFKoCJW7KWORLec1',
-  1000: 'price_1K8bC1GdoFKoCJW76k3g5MJk',
-  2500: 'price_1K8bDSGdoFKoCJW7avAwpV0e',
-  10000: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
-}
+const manticDollarStripePrice =
+  admin.instanceId().app.options.projectId === 'mantic-markets'
+    ? {
+        500: 'price_1KFQXcGdoFKoCJW770gTNBrm',
+        1000: 'price_1KFQp1GdoFKoCJW7Iu0dsF65',
+        2500: 'price_1KFQqNGdoFKoCJW7SDvrSaEB',
+        10000: 'price_1KFQraGdoFKoCJW77I4XCwM3',
+      }
+    : {
+        500: 'price_1K8W10GdoFKoCJW7KWORLec1',
+        1000: 'price_1K8bC1GdoFKoCJW76k3g5MJk',
+        2500: 'price_1K8bDSGdoFKoCJW7avAwpV0e',
+        10000: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
+      }
 
 export const createCheckoutSession = functions
   .runWith({ minInstances: 1 })
