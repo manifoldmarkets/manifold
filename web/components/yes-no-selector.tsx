@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import React from 'react'
+import { formatMoney } from '../lib/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 
@@ -77,6 +78,33 @@ export function YesNoCancelSelector(props: {
         </Button>
       </Row>
     </Col>
+  )
+}
+
+const fundAmounts = [500, 1000, 2500, 10000]
+
+export function FundsSelector(props: {
+  selected: 500 | 1000 | 2500 | 10000
+  onSelect: (selected: 500 | 1000 | 2500 | 10000) => void
+  className?: string
+  btnClassName?: string
+}) {
+  const { selected, onSelect, className } = props
+  const btnClassName = clsx('px-2 whitespace-nowrap', props.btnClassName)
+
+  return (
+    <Row className={clsx('space-x-3', className)}>
+      {fundAmounts.map((amount) => (
+        <Button
+          key={amount}
+          color={selected === amount ? 'green' : 'gray'}
+          onClick={() => onSelect(amount as any)}
+          className={btnClassName}
+        >
+          {formatMoney(amount)}
+        </Button>
+      ))}
+    </Row>
   )
 }
 
