@@ -100,7 +100,7 @@ export default function NewContract() {
         <form>
           <div className="form-control w-full">
             <label className="label">
-              <span className="label-text">Question</span>
+              <span className="mb-1">Question</span>
             </label>
 
             <Textarea
@@ -116,14 +116,14 @@ export default function NewContract() {
 
           <div className="form-control">
             <label className="label">
-              <span className="label-text">Initial probability</span>
+              <span className="mb-1">Initial probability</span>
             </label>
             <Row className="items-center gap-2">
               <label className="input-group input-group-lg w-fit text-xl">
                 <input
                   type="number"
                   value={initialProb}
-                  className="input input-bordered input-md text-primary text-4xl w-24"
+                  className="input input-bordered input-md text-primary text-3xl w-24"
                   disabled={isSubmitting}
                   min={1}
                   max={99}
@@ -148,7 +148,7 @@ export default function NewContract() {
 
           <div className="form-control">
             <label className="label">
-              <span className="label-text">Description</span>
+              <span className="mb-1">Description</span>
             </label>
             <Textarea
               className="textarea w-full textarea-bordered"
@@ -164,7 +164,7 @@ export default function NewContract() {
           <AdvancedPanel>
             <div className="form-control mb-1">
               <label className="label">
-                <span className="label-text">Subsidize your market</span>
+                <span className="mb-1">Subsidize your market</span>
               </label>
 
               <label className="input-group">
@@ -194,7 +194,7 @@ export default function NewContract() {
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Close date</span>
+                <span className="mb-1">Close date</span>
               </label>
               <input
                 type="date"
