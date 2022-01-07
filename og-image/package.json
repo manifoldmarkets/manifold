@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "build": "tsc -p api/tsconfig.json && tsc -p web/tsconfig.json",
-    "start": "vercel dev"
+    "start": "cd .. && vercel dev"
   },
   "dependencies": {
     "chrome-aws-lambda": "7.0.0",

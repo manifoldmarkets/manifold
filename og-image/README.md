@@ -8,8 +8,22 @@
 
 For more info, see Contributing.md
 
-nb2: (Not `dev` because that's reserved for Vercel)
-nb3: (Or `cd .. && vercel --prod`, I think)
+- note2: You may have to configure Vercel the first time:
+
+  ```
+  $ yarn start
+  yarn run v1.22.10
+  $ cd .. && vercel dev
+  Vercel CLI 23.1.2 dev (beta) — https://vercel.com/feedback
+  ? Set up and develop “~/Code/mantic”? [Y/n] y
+  ? Which scope should contain your project? Mantic Markets
+  ? Found project “mantic/mantic”. Link to it? [Y/n] n
+  ? Link to different existing project? [Y/n] y
+  ? What’s the name of your existing project? manifold-og-image
+  ```
+
+- note2: (Not `dev` because that's reserved for Vercel)
+- note3: (Or `cd .. && vercel --prod`, I think)
 
 (Everything below is from the original repo)
 
