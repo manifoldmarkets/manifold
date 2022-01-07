@@ -21,6 +21,7 @@ import {
   calculatePayoutAfterCorrectBet,
 } from '../lib/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
+import { AddFundsButton } from './add-funds-button'
 import { OutcomeLabel } from './outcome-label'
 import { AdvancedPanel } from './advanced-panel'
 import { Bet } from '../lib/firebase/bets'
@@ -149,6 +150,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
             {error}
           </div>
         )}
+        {user && <AddFundsButton className="self-end mt-3" />}
       </Col>
 
       <div className="mt-2 mb-1 text-sm text-gray-400">Implied probability</div>
