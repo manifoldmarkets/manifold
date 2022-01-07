@@ -4,14 +4,14 @@ import { Contract } from './types/contract'
 import { User } from './types/user'
 
 export const getValue = async <T>(collection: string, doc: string) => {
-  const snap = await admin.firestore()
-    .collection(collection)
-    .doc(doc)
-    .get()
+  const snap = await admin.firestore().collection(collection).doc(doc).get()
 
-  return snap.exists
-    ? snap.data() as T
-    : undefined
+  return snap.exists ? (snap.data() as T) : undefined
+}
+
+export const getValues = async <T>(query: admin.firestore.Query) => {
+  const snap = await query.get()
+  return snap.docs.map((doc) => doc.data() as T)
 }
 
 export const getContract = (contractId: string) => {
