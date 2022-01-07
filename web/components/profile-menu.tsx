@@ -53,13 +53,13 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
     //   href: '/add-funds',
     // },
     {
+      name: 'Discord',
+      href: 'https://discord.gg/eHQBNBqXuh',
+    },
+    {
       name: 'Sign out',
       href: '#',
       onClick: () => firebaseLogout(),
-    },
-    {
-      name: 'Discord',
-      href: 'https://discord.gg/eHQBNBqXuh',
     },
   ]
 }
