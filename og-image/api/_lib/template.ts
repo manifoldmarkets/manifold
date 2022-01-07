@@ -26,7 +26,10 @@ function getCss(theme: string, fontSize: string) {
     foreground = "white";
     radial = "dimgray";
   }
+  // To use Readex Pro: `font-family: 'Readex Pro', sans-serif;`
   return `
+    @import url('https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Readex+Pro:wght@400;700&display=swap');
+
     @font-face {
         font-family: 'Inter';
         font-style:  normal;
@@ -100,7 +103,7 @@ function getCss(theme: string, fontSize: string) {
     }
     
     .heading {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Major Mono Display', monospace;
         font-size: ${sanitizeHtml(fontSize)};
         font-style: normal;
         color: ${foreground};
