@@ -9,5 +9,7 @@ export const checkoutURL = (
     ? 'https://us-central1-mantic-markets.cloudfunctions.net/createCheckoutSession'
     : 'https://us-central1-dev-mantic-markets.cloudfunctions.net/createCheckoutSession'
 
-  return `${endpoint}?userId=${userId}&manticDollarQuantity=${manticDollarQuantity}&referer=${referer}`
+  return `${endpoint}?userId=${userId}&manticDollarQuantity=${manticDollarQuantity}&referer=${encodeURIComponent(
+    referer
+  )}`
 }
