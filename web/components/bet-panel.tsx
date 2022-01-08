@@ -52,7 +52,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   function onBetChange(str: string) {
     setWasSubmitted(false)
 
-    const amount = parseInt(str)
+    const amount = parseInt(str.replace(/[^\d]/, ''))
 
     if (str && isNaN(amount)) return
 

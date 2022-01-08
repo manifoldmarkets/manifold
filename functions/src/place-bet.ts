@@ -19,6 +19,9 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
 
     const { amount, outcome, contractId } = data
 
+    if (amount <= 0 || isNaN(amount) || !isFinite(amount))
+      return { status: 'error', message: 'Invalid amount' }
+
     if (outcome !== 'YES' && outcome !== 'NO')
       return { status: 'error', message: 'Invalid outcome' }
 
