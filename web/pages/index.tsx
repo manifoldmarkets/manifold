@@ -31,13 +31,15 @@ const Home = (props: { contracts: Contract[]; hotContractIds: string[] }) => {
 
   if (user === undefined) return <></>
 
+  const { contracts, hotContractIds } = props
+  const hotContracts = hotContractIds.map(
+    (id) => contracts.find((contract) => contract.id === id) as Contract
+  )
+
   return user ? (
-    <Markets
-      contracts={props.contracts}
-      hotContractIds={props.hotContractIds}
-    />
+    <Markets contracts={contracts} hotContractIds={hotContractIds} />
   ) : (
-    <LandingPage />
+    <LandingPage hotContracts={hotContracts} />
   )
 }
 

@@ -8,19 +8,20 @@ import {
 } from '@heroicons/react/outline'
 
 import { firebaseLogin } from '../lib/firebase/users'
-import { useContracts } from '../hooks/use-contracts'
-import { SearchableGrid } from '../components/contracts-list'
+import { ContractsGrid } from '../components/contracts-list'
 import { Col } from '../components/layout/col'
 import { NavBar } from '../components/nav-bar'
 import Link from 'next/link'
-import { useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
+import { Contract } from '../lib/firebase/contracts'
 
-export default function LandingPage() {
+export default function LandingPage(props: { hotContracts: Contract[] }) {
+  const { hotContracts } = props
+
   return (
     <div>
       <Hero />
       <FeaturesSection />
-      <ExploreMarketsSection />
+      <ExploreMarketsSection hotContracts={hotContracts} />
     </div>
   )
 }
@@ -100,7 +101,7 @@ function FeaturesSection() {
     {
       name: 'Creator-driven markets',
       description:
-        'Resolve markets you create with your own judgment—enabling new markets with subjective or personal questions',
+        'Resolve markets you create with your own judgment—enabling new markets with subjective or personal questions.',
       icon: ScaleIcon,
     },
     {
@@ -158,22 +159,15 @@ function FeaturesSection() {
   )
 }
 
-function ExploreMarketsSection() {
-  const contracts = useContracts()
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
-
+function ExploreMarketsSection(props: { hotContracts: Contract[] }) {
+  const { hotContracts } = props
   return (
     <div className="max-w-4xl px-4 py-8 mx-auto">
       <p className="my-12 text-3xl leading-8 font-extrabold tracking-tight text-indigo-700 sm:text-4xl">
-        Explore our markets
+        Today's top markets
       </p>
-      <SearchableGrid
-        contracts={contracts === 'loading' ? [] : contracts}
-        query={query}
-        setQuery={setQuery}
-        sort={sort}
-        setSort={setSort}
-      />
+
+      <ContractsGrid contracts={hotContracts} />
     </div>
   )
 }
