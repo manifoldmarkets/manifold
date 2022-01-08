@@ -32,7 +32,10 @@ export const createContract = functions
       if (!question || !initialProb)
         return { status: 'error', message: 'Missing contract attributes' }
 
-      if (ante !== undefined && (ante < 0 || ante > creator.balance))
+      if (
+        ante !== undefined &&
+        (ante < 0 || ante > creator.balance || isNaN(ante) || !isFinite(ante))
+      )
         return { status: 'error', message: 'Invalid ante' }
 
       console.log(

@@ -76,7 +76,7 @@ export default function NewContract() {
   }
 
   function onAnteChange(str: string) {
-    const amount = parseInt(str)
+    const amount = parseInt(str.replace(/[^\d]/, ''))
 
     if (str && isNaN(amount)) return
 
