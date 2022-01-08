@@ -126,7 +126,10 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         Amount{' '}
         {user && (
           <span className="float-right">
-            {formatMoney(remainingBalance > 0 ? remainingBalance : 0)} left
+            {formatMoney(
+              remainingBalance > 0 ? Math.floor(remainingBalance) : 0
+            )}{' '}
+            left
           </span>
         )}
       </div>

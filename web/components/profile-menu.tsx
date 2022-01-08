@@ -73,7 +73,9 @@ function ProfileSummary(props: { user: User }) {
       </div>
       <div className="truncate text-left" style={{ maxWidth: 170 }}>
         {user.name}
-        <div className="text-gray-700 text-sm">{formatMoney(user.balance)}</div>
+        <div className="text-gray-700 text-sm">
+          {formatMoney(Math.floor(user.balance))}
+        </div>
       </div>
     </Row>
   )
