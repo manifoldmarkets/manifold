@@ -1,9 +1,5 @@
-import marked from "marked";
 import { sanitizeHtml } from "./sanitizer";
 import { ParsedRequest } from "./types";
-const twemoji = require("twemoji");
-const twOptions = { folder: "svg", ext: ".svg" };
-const emojify = (text: string) => twemoji.parse(text, twOptions);
 
 function getCss(theme: string, fontSize: string) {
   let background = "white";
@@ -24,10 +20,7 @@ function getCss(theme: string, fontSize: string) {
         background-image: radial-gradient(circle at 25px 25px, ${radial} 2%, transparent 0%), radial-gradient(circle at 75px 75px, ${radial} 2%, transparent 0%);
         background-size: 100px 100px;
         height: 100vh;
-        display: flex;
-        text-align: center;
-        align-items: center;
-        justify-content: center;
+        font-family: "Readex Pro", sans-serif;
     }
 
     code {
@@ -76,11 +69,20 @@ function getCss(theme: string, fontSize: string) {
         font-style: normal;
         color: ${foreground};
         line-height: 1.8;
-    }`;
+    }
+    
+    .font-major-mono {
+      font-family: "Major Mono Display", monospace;
+    }
+
+    .text-primary {
+      color: #11b981;
+    }
+    `;
 }
 
 export function getHtml(parsedReq: ParsedRequest) {
-  const { text, theme, md, fontSize, images, widths, heights } = parsedReq;
+  const { theme, fontSize } = parsedReq;
   return `<!DOCTYPE html>
 <html>
     <head>
@@ -92,36 +94,58 @@ export function getHtml(parsedReq: ParsedRequest) {
     <style>
         ${getCss(theme, fontSize)}
     </style>
-    <body>
-        <div>
-            <div class="spacer"></div>
-            <div class="logo-wrapper">
-                ${images
-                  .map(
-                    (img, i) =>
-                      getPlusSign(i) + getImage(img, widths[i], heights[i])
-                  )
-                  .join("")}
-            </div>
-            <div class="heading">${emojify(
-              md ? marked(text) : sanitizeHtml(text)
-            )}
-            </div>
+  <body>
+    <div class="px-24">
+      <!-- Profile image -->
+      <div class="absolute left-24 top-8">
+        <div class="flex flex-row align-bottom gap-6">
+          <img
+            class="h-24 w-24 rounded-full bg-gray-400 flex items-center justify-center"
+            src="https://lh3.googleusercontent.com/a-/AOh14GiZyl1lBehuBMGyJYJhZd-N-mstaUtgE4xdI22lLw=s96-c"
+            alt=""
+          />
+          <div class="flex flex-col">
+            <p class="text-gray-900 text-3xl">Austin Chen</p>
+            <p class="text-gray-500 text-3xl">@AustinChen</p>
+          </div>
         </div>
-    </body>
+      </div>
+
+      <!-- Mantic logo -->
+      <div class="absolute right-24 top-8">
+        <a class="flex flex-row gap-3" href="/"
+          ><img
+            class="sm:h-12 sm:w-12"
+            src="https:&#x2F;&#x2F;manifold.markets&#x2F;logo.png"
+            width="40"
+            height="40"
+          />
+          <div
+            class="hidden sm:flex font-major-mono lowercase mt-1 sm:text-3xl md:whitespace-nowrap"
+          >
+            Manifold Markets
+          </div></a
+        >
+      </div>
+
+      <div class="flex flex-row justify-between gap-12 pt-36">
+        <div class="text-indigo-700 text-6xl">
+          Will Manifold switch its logo to a manatee by April?
+        </div>
+        <div class="flex flex-col text-primary">
+          <div class="text-8xl">30%</div>
+          <div class="text-4xl">chance</div>
+        </div>
+      </div>
+
+      <!-- Metadata -->
+      <div class="absolute bottom-16">
+        <div class="text-gray-500 text-3xl">
+          Jan 7 &nbsp;•&nbsp; Closes Mar 31, 9:59pm &nbsp;•&nbsp; M$ 448 pool
+          &nbsp;•&nbsp; #ManifoldMarkets #fun
+        </div>
+      </div>
+    </div>
+  </body>
 </html>`;
-}
-
-function getImage(src: string, width = "auto", height = "225") {
-  return `<img
-        class="logo"
-        alt="Generated Image"
-        src="${sanitizeHtml(src)}"
-        width="${sanitizeHtml(width)}"
-        height="${sanitizeHtml(height)}"
-    />`;
-}
-
-function getPlusSign(i: number) {
-  return i === 0 ? "" : '<div class="plus">+</div>';
 }
