@@ -5,7 +5,22 @@ import { ParsedRequest } from "./types";
 export function parseRequest(req: IncomingMessage) {
   console.log("HTTP " + req.url);
   const { pathname, query } = parse(req.url || "/", true);
-  const { fontSize, images, widths, heights, theme, md } = query || {};
+  const {
+    fontSize,
+    images,
+    widths,
+    heights,
+    theme,
+    md,
+
+    // Attributes for Manifold card:
+    question,
+    probability,
+    metadata,
+    creatorName,
+    creatorUsername,
+    creatorAvatarUrl,
+  } = query || {};
 
   if (Array.isArray(fontSize)) {
     throw new Error("Expected a single fontSize");
@@ -26,6 +41,15 @@ export function parseRequest(req: IncomingMessage) {
     text = arr.join(".");
   }
 
+  // Take a url query param and return a single string
+  const getString = (stringOrArray: string[] | string | undefined): string => {
+    if (Array.isArray(stringOrArray)) {
+      // If the query param is an array, return the first element
+      return stringOrArray[0];
+    }
+    return stringOrArray || "";
+  };
+
   const parsedRequest: ParsedRequest = {
     fileType: extension === "jpeg" ? extension : "png",
     text: decodeURIComponent(text),
@@ -35,6 +59,15 @@ export function parseRequest(req: IncomingMessage) {
     images: getArray(images),
     widths: getArray(widths),
     heights: getArray(heights),
+
+    question:
+      getString(question) || "Will you create a prediction market on Manifold?",
+    probability: getString(probability) || "85",
+    metadata: getString(metadata) || "Jan 1 &nbsp;•&nbsp; M$ 123 pool",
+    creatorName: getString(creatorName) || "Manifold Markets",
+    creatorUsername: getString(creatorUsername) || "ManifoldMarkets",
+    creatorAvatarUrl:
+      getString(creatorAvatarUrl) || "https://manifold.markets/logo.png",
   };
   parsedRequest.images = getDefaultImages(parsedRequest.images);
   return parsedRequest;

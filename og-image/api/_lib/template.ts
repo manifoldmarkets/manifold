@@ -82,7 +82,17 @@ function getCss(theme: string, fontSize: string) {
 }
 
 export function getHtml(parsedReq: ParsedRequest) {
-  const { theme, fontSize } = parsedReq;
+  const {
+    theme,
+    fontSize,
+
+    question,
+    probability,
+    metadata,
+    creatorName,
+    creatorUsername,
+    creatorAvatarUrl,
+  } = parsedReq;
   return `<!DOCTYPE html>
 <html>
     <head>
@@ -100,13 +110,13 @@ export function getHtml(parsedReq: ParsedRequest) {
       <div class="absolute left-24 top-8">
         <div class="flex flex-row align-bottom gap-6">
           <img
-            class="h-24 w-24 rounded-full bg-gray-400 flex items-center justify-center"
-            src="https://lh3.googleusercontent.com/a-/AOh14GiZyl1lBehuBMGyJYJhZd-N-mstaUtgE4xdI22lLw=s96-c"
+            class="h-24 w-24 rounded-full bg-white flex items-center justify-center"
+            src="${creatorAvatarUrl}"
             alt=""
           />
           <div class="flex flex-col">
-            <p class="text-gray-900 text-3xl">Austin Chen</p>
-            <p class="text-gray-500 text-3xl">@AustinChen</p>
+            <p class="text-gray-900 text-3xl">${creatorName}</p>
+            <p class="text-gray-500 text-3xl">@${creatorUsername}</p>
           </div>
         </div>
       </div>
@@ -129,11 +139,11 @@ export function getHtml(parsedReq: ParsedRequest) {
       </div>
 
       <div class="flex flex-row justify-between gap-12 pt-36">
-        <div class="text-indigo-700 text-6xl">
-          Will Manifold switch its logo to a manatee by April?
+        <div class="text-indigo-700 text-6xl leading-snug">
+          ${question}
         </div>
         <div class="flex flex-col text-primary">
-          <div class="text-8xl">30%</div>
+          <div class="text-8xl">${probability}%</div>
           <div class="text-4xl">chance</div>
         </div>
       </div>
@@ -141,8 +151,7 @@ export function getHtml(parsedReq: ParsedRequest) {
       <!-- Metadata -->
       <div class="absolute bottom-16">
         <div class="text-gray-500 text-3xl">
-          Jan 7 &nbsp;•&nbsp; Closes Mar 31, 9:59pm &nbsp;•&nbsp; M$ 448 pool
-          &nbsp;•&nbsp; #ManifoldMarkets #fun
+          ${metadata}
         </div>
       </div>
     </div>
