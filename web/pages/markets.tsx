@@ -42,7 +42,7 @@ export default function Markets(props: {
     <Page>
       <div className="w-full bg-indigo-50 border-2 border-indigo-100 p-6 rounded-lg shadow-md">
         <Title className="mt-0" text="🔥 Markets" />
-        <ContractsGrid contracts={readyHotContracts} />
+        <ContractsGrid contracts={readyHotContracts} showHotVolume />
       </div>
 
       <Spacer h={10} />
