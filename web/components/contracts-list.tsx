@@ -57,7 +57,7 @@ function CreatorContractsGrid(props: { contracts: Contract[] }) {
 
   const byCreator = _.groupBy(contracts, (contract) => contract.creatorId)
   const creatorIds = _.sortBy(Object.keys(byCreator), (creatorId) =>
-    _.sumBy(byCreator[creatorId], (contract) => -1 * compute(contract).truePool)
+    _.sumBy(byCreator[creatorId], (contract) => -1 * contract.volume7Days)
   )
 
   return (
@@ -114,7 +114,7 @@ function TagContractsGrid(props: { contracts: Contract[] }) {
     contractTags.map(({ contract }) => contract)
   )
   const tags = _.sortBy(Object.keys(byTag), (tag) =>
-    _.sumBy(byTag[tag], (contract) => -1 * compute(contract).truePool)
+    _.sumBy(byTag[tag], (contract) => -1 * contract.volume7Days)
   )
 
   return (
