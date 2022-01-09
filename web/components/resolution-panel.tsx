@@ -62,7 +62,7 @@ export function ResolutionPanel(props: {
     >
       <Title className="mt-0" text="Your market" />
 
-      <div className="pt-2 pb-1 text-sm text-gray-400">Resolve outcome</div>
+      <div className="pt-2 pb-1 text-sm text-gray-500">Resolve outcome</div>
 
       <YesNoCancelSelector
         className="mx-auto my-2"
