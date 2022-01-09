@@ -56,8 +56,12 @@ function CreatorContractsGrid(props: { contracts: Contract[] }) {
   const { contracts } = props
 
   const byCreator = _.groupBy(contracts, (contract) => contract.creatorId)
-  const creatorIds = _.sortBy(Object.keys(byCreator), (creatorId) =>
-    _.sumBy(byCreator[creatorId], (contract) => -1 * contract.volume7Days)
+  const creator7DayVol = _.mapValues(byCreator, (contracts) =>
+    _.sumBy(contracts, (contract) => contract.volume7Days)
+  )
+  const creatorIds = _.sortBy(
+    Object.keys(byCreator).filter((creatorId) => creator7DayVol[creatorId] > 0),
+    (creatorId) => -1 * creator7DayVol[creatorId]
   )
 
   return (
@@ -113,8 +117,12 @@ function TagContractsGrid(props: { contracts: Contract[] }) {
   const byTag = _.mapValues(groupedByTag, (contractTags) =>
     contractTags.map(({ contract }) => contract)
   )
-  const tags = _.sortBy(Object.keys(byTag), (tag) =>
-    _.sumBy(byTag[tag], (contract) => -1 * contract.volume7Days)
+  const tag7DayVol = _.mapValues(byTag, (contracts) =>
+    _.sumBy(contracts, (contract) => contract.volume7Days)
+  )
+  const tags = _.sortBy(
+    Object.keys(byTag).filter((tag) => tag7DayVol[tag] > 0),
+    (creatorId) => -1 * tag7DayVol[creatorId]
   )
 
   return (
@@ -180,8 +188,10 @@ export function SearchableGrid(props: {
 
   if (sort === 'newest' || sort === 'resolved' || sort === 'all') {
     matches.sort((a, b) => b.createdTime - a.createdTime)
-  } else if (sort === 'most-traded' || sort === 'creator' || sort === 'tag') {
+  } else if (sort === 'most-traded') {
     matches.sort((a, b) => compute(b).truePool - compute(a).truePool)
+  } else if (sort === 'creator' || sort === 'tag') {
+    matches.sort((a, b) => b.volume7Days - a.volume7Days)
   }
 
   if (sort !== 'all') {
