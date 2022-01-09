@@ -4,7 +4,6 @@ import {
   query,
   onSnapshot,
   where,
-  getDocs,
 } from 'firebase/firestore'
 import _ from 'lodash'
 import { db } from './init'
@@ -63,35 +62,4 @@ export function listenForUserBets(
     bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
     setBets(bets)
   })
-}
-
-export function listenForRecentBets(
-  timePeriodMs: number,
-  setBets: (bets: Bet[]) => void
-) {
-  const recentQuery = query(
-    collectionGroup(db, 'bets'),
-    where('createdTime', '>', Date.now() - timePeriodMs)
-  )
-  return onSnapshot(recentQuery, (snap) => {
-    const bets = snap.docs.map((doc) => doc.data() as Bet)
-
-    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-
-    setBets(bets)
-  })
-}
-
-export async function getRecentBets(timePeriodMs: number) {
-  const recentQuery = query(
-    collectionGroup(db, 'bets'),
-    where('createdTime', '>', Date.now() - timePeriodMs)
-  )
-
-  const snapshot = await getDocs(recentQuery)
-  const bets = snapshot.docs.map((doc) => doc.data() as Bet)
-
-  bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-
-  return bets
 }

@@ -1,5 +1,5 @@
 import React from 'react'
-
+import _ from 'lodash'
 import { useUser } from '../hooks/use-user'
 import Markets from './markets'
 import LandingPage from './landing-page'
@@ -8,10 +8,9 @@ import {
   getHotContracts,
   listAllContracts,
 } from '../lib/firebase/contracts'
-import _ from 'lodash'
 
 export async function getStaticProps() {
-  const [contracts, hotContractIds] = await Promise.all([
+  const [contracts, hotContracts] = await Promise.all([
     listAllContracts().catch((_) => []),
     getHotContracts().catch(() => []),
   ])
@@ -19,26 +18,22 @@ export async function getStaticProps() {
   return {
     props: {
       contracts,
-      hotContractIds,
+      hotContracts,
     },
 
     revalidate: 60, // regenerate after a minute
   }
 }
 
-const Home = (props: { contracts: Contract[]; hotContractIds: string[] }) => {
+const Home = (props: { contracts: Contract[]; hotContracts: Contract[] }) => {
   const user = useUser()
 
   if (user === undefined) return <></>
 
-  const { contracts, hotContractIds } = props
-  const hotContracts = hotContractIds
-    .map((id) => contracts.find((contract) => contract.id === id) as Contract)
-    .filter((contract) => !contract.isResolved)
-    .slice(0, 4)
+  const { contracts, hotContracts } = props
 
   return user ? (
-    <Markets contracts={contracts} hotContractIds={hotContractIds} />
+    <Markets contracts={contracts} hotContracts={hotContracts} />
   ) : (
     <LandingPage hotContracts={hotContracts} />
   )

@@ -12,7 +12,7 @@ import {
 } from '../lib/firebase/contracts'
 
 export async function getStaticProps() {
-  const [contracts, hotContractIds] = await Promise.all([
+  const [contracts, hotContracts] = await Promise.all([
     listAllContracts().catch((_) => []),
     getHotContracts().catch(() => []),
   ])
@@ -20,7 +20,7 @@ export async function getStaticProps() {
   return {
     props: {
       contracts,
-      hotContractIds,
+      hotContracts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -29,29 +29,20 @@ export async function getStaticProps() {
 
 export default function Markets(props: {
   contracts: Contract[]
-  hotContractIds: string[]
+  hotContracts: Contract[]
 }) {
   const contracts = useContracts()
+  const hotContracts = useHotContracts()
   const { query, setQuery, sort, setSort } = useQueryAndSortParams()
-  const hotContractIds = useHotContracts()
 
-  const readyHotContractIds =
-    hotContractIds === 'loading' ? props.hotContractIds : hotContractIds
+  const readyHotContracts = hotContracts ?? props.hotContracts
   const readyContracts = contracts === 'loading' ? props.contracts : contracts
-
-  const hotContracts = readyHotContractIds
-    .map(
-      (hotId) =>
-        _.find(readyContracts, (contract) => contract.id === hotId) as Contract
-    )
-    .filter((contract) => !contract.isResolved)
-    .slice(0, 4)
 
   return (
     <Page>
       <div className="w-full bg-indigo-50 border-2 border-indigo-100 p-6 rounded-lg shadow-md">
         <Title className="mt-0" text="🔥 Markets" />
-        <ContractsGrid contracts={hotContracts} />
+        <ContractsGrid contracts={readyHotContracts} />
       </div>
 
       <Spacer h={10} />
