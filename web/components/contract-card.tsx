@@ -109,7 +109,7 @@ export function AbbrContractDetails(props: {
         <div>•</div>
         {showHotVolume ? (
           <div className="whitespace-nowrap">
-            {formatMoney(volume24Hours)} 🔥
+            {formatMoney(volume24Hours)} 24h vol
           </div>
         ) : (
           <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
