@@ -183,7 +183,7 @@ export default function NewContract() {
                 />
               </label>
               <label>
-                <span className="label-text text-gray-400 ml-1">
+                <span className="label-text text-gray-500 ml-1">
                   Remaining balance:{' '}
                   {formatMoney(remainingBalance > 0 ? remainingBalance : 0)}
                 </span>
@@ -207,7 +207,7 @@ export default function NewContract() {
               />
             </div>
             <label>
-              <span className="label-text text-gray-400 ml-1">
+              <span className="label-text text-gray-500 ml-1">
                 No new trades will be allowed after{' '}
                 {closeDate ? formattedCloseTime : 'this time'}
               </span>

@@ -1,4 +1,3 @@
-import { getFunctions, httpsCallable } from 'firebase/functions'
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 
@@ -115,14 +114,14 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     >
       <Title className="!mt-0 whitespace-nowrap" text={`Buy ${betChoice}`} />
 
-      <div className="mt-2 mb-1 text-sm text-gray-400">Outcome</div>
+      <div className="mt-2 mb-1 text-sm text-gray-500">Outcome</div>
       <YesNoSelector
         className="my-2"
         selected={betChoice}
         onSelect={(choice) => onBetChoice(choice)}
       />
 
-      <div className="mt-3 mb-1 text-sm text-gray-400">
+      <div className="mt-3 mb-1 text-sm text-gray-500">
         Amount{' '}
         {user && (
           <span className="float-right">
@@ -156,14 +155,14 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         {user && <AddFundsButton className="self-end mt-3" />}
       </Col>
 
-      <div className="mt-2 mb-1 text-sm text-gray-400">Implied probability</div>
+      <div className="mt-2 mb-1 text-sm text-gray-500">Implied probability</div>
       <Row>
         <div>{formatPercent(initialProb)}</div>
         <div className="mx-2">→</div>
         <div>{formatPercent(resultProb)}</div>
       </Row>
 
-      <div className="mt-2 mb-1 text-sm text-gray-400">
+      <div className="mt-2 mb-1 text-sm text-gray-500">
         Estimated max payout
       </div>
       <div>
@@ -172,7 +171,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
       </div>
 
       <AdvancedPanel>
-        <div className="mt-2 mb-1 text-sm text-gray-400">
+        <div className="mt-2 mb-1 text-sm text-gray-500">
           <OutcomeLabel outcome={betChoice} /> shares
         </div>
         <div>
@@ -180,7 +179,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
           {formatWithCommas(shares + contract.totalShares[betChoice])}
         </div>
 
-        <div className="mt-2 mb-1 text-sm text-gray-400">
+        <div className="mt-2 mb-1 text-sm text-gray-500">
           Current payout if <OutcomeLabel outcome={betChoice} />
         </div>
         <div>
