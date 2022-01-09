@@ -36,7 +36,7 @@ export default function Markets(props: {
   const { query, setQuery, sort, setSort } = useQueryAndSortParams()
 
   const readyHotContracts = hotContracts ?? props.hotContracts
-  const readyContracts = contracts === 'loading' ? props.contracts : contracts
+  const readyContracts = contracts ?? props.contracts
 
   return (
     <Page>
@@ -47,15 +47,13 @@ export default function Markets(props: {
 
       <Spacer h={10} />
 
-      {(props.contracts || contracts !== 'loading') && (
-        <SearchableGrid
-          contracts={readyContracts}
-          query={query}
-          setQuery={setQuery}
-          sort={sort}
-          setSort={setSort}
-        />
-      )}
+      <SearchableGrid
+        contracts={readyContracts}
+        query={query}
+        setQuery={setQuery}
+        sort={sort}
+        setSort={setSort}
+      />
     </Page>
   )
 }

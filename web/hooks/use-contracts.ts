@@ -7,7 +7,7 @@ import {
 } from '../lib/firebase/contracts'
 
 export const useContracts = () => {
-  const [contracts, setContracts] = useState<Contract[] | 'loading'>('loading')
+  const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   useEffect(() => {
     return listenForContracts(setContracts)
