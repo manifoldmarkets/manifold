@@ -17,7 +17,7 @@ export function AdvancedPanel(props: { children: any }) {
         onClick={() => setCollapsed((collapsed) => !collapsed)}
         className="cursor-pointer"
       >
-        <div className="mt-4 mr-6 text-sm text-gray-400 text-right">
+        <div className="mt-4 mr-6 text-sm text-gray-500 text-right">
           Advanced
         </div>
         <div
@@ -25,7 +25,7 @@ export function AdvancedPanel(props: { children: any }) {
           style={{
             top: -2,
             right: -15,
-            color: '#9ca3af' /* gray-400 */,
+            color: '#6a7280' /* gray-500 */,
           }}
         />
       </div>
