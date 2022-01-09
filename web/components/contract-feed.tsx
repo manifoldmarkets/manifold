@@ -137,7 +137,7 @@ export function ContractDescription(props: {
     e.preventDefault()
     setEditing(false)
 
-    const newDescription = `${contract.description}\n${description}`.trim()
+    const newDescription = `${contract.description}\n\n${description}`.trim()
     await updateContract(contract.id, { description: newDescription })
 
     setDescription(editStatement())
