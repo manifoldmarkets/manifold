@@ -4,20 +4,34 @@ import { Page } from '../../components/page'
 import { Title } from '../../components/title'
 import { useContracts } from '../../hooks/use-contracts'
 import { useQueryAndSortParams } from '../../hooks/use-sort-and-query-params'
+import { Contract, listAllContracts } from '../../lib/firebase/contracts'
 
-export default function TagPage() {
+export async function getStaticProps() {
+  const contracts = await listAllContracts().catch((_) => [])
+  return {
+    props: {
+      contracts,
+    },
+
+    revalidate: 60, // regenerate after a minute
+  }
+}
+
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+export default function TagPage(props: { contracts: Contract[] }) {
   const router = useRouter()
   const { tag } = router.query as { tag: string }
 
-  let contracts = useContracts()
+  const contracts = useContracts()
 
-  if (tag && contracts !== 'loading') {
-    contracts = contracts.filter(
-      (contract) =>
-        contract.description.toLowerCase().includes(`#${tag.toLowerCase()}`) ||
-        contract.question.toLowerCase().includes(`#${tag.toLowerCase()}`)
-    )
-  }
+  const taggedContracts = (contracts ?? props.contracts).filter(
+    (contract) =>
+      contract.description.toLowerCase().includes(`#${tag.toLowerCase()}`) ||
+      contract.question.toLowerCase().includes(`#${tag.toLowerCase()}`)
+  )
 
   const { query, setQuery, sort, setSort } = useQueryAndSortParams({
     defaultSort: 'most-traded',
@@ -26,17 +40,13 @@ export default function TagPage() {
   return (
     <Page>
       <Title text={`#${tag}`} />
-      {contracts === 'loading' ? (
-        <></>
-      ) : (
-        <SearchableGrid
-          contracts={contracts}
-          query={query}
-          setQuery={setQuery}
-          sort={sort}
-          setSort={setSort}
-        />
-      )}
+      <SearchableGrid
+        contracts={taggedContracts}
+        query={query}
+        setQuery={setQuery}
+        sort={sort}
+        setSort={setSort}
+      />
     </Page>
   )
 }
