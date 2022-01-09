@@ -11,7 +11,12 @@ import { parseTags } from '../lib/util/parse'
 import { ContractCard } from './contract-card'
 import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 
-export function ContractsGrid(props: { contracts: Contract[] }) {
+export function ContractsGrid(props: {
+  contracts: Contract[]
+  showHotVolume?: boolean
+}) {
+  const { showHotVolume } = props
+
   const [resolvedContracts, activeContracts] = _.partition(
     props.contracts,
     (c) => c.isResolved
@@ -35,7 +40,11 @@ export function ContractsGrid(props: { contracts: Contract[] }) {
   return (
     <ul role="list" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {contracts.map((contract) => (
-        <ContractCard contract={contract} key={contract.id} />
+        <ContractCard
+          contract={contract}
+          key={contract.id}
+          showHotVolume={showHotVolume}
+        />
       ))}
     </ul>
   )

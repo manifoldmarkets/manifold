@@ -9,8 +9,11 @@ import { Col } from './layout/col'
 import { parseTags } from '../lib/util/parse'
 import dayjs from 'dayjs'
 
-export function ContractCard(props: { contract: Contract }) {
-  const { contract } = props
+export function ContractCard(props: {
+  contract: Contract
+  showHotVolume?: boolean
+}) {
+  const { contract, showHotVolume } = props
   const { question, resolution } = contract
   const { probPercent } = compute(contract)
 
@@ -28,7 +31,10 @@ export function ContractCard(props: { contract: Contract }) {
                   probPercent={probPercent}
                 />
               </Row>
-              <AbbrContractDetails contract={contract} />
+              <AbbrContractDetails
+                contract={contract}
+                showHotVolume={showHotVolume}
+              />
             </div>
           </div>
         </li>
@@ -86,8 +92,12 @@ export function ResolutionOrChance(props: {
   )
 }
 
-export function AbbrContractDetails(props: { contract: Contract }) {
-  const { contract } = props
+export function AbbrContractDetails(props: {
+  contract: Contract
+  showHotVolume?: boolean
+}) {
+  const { contract, showHotVolume } = props
+  const { volume24Hours } = contract
   const { truePool } = compute(contract)
 
   return (
@@ -96,8 +106,14 @@ export function AbbrContractDetails(props: { contract: Contract }) {
         <div className="whitespace-nowrap">
           <UserLink username={contract.creatorUsername} />
         </div>
-        <div className="">•</div>
-        <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
+        <div>•</div>
+        {showHotVolume ? (
+          <div className="whitespace-nowrap">
+            {formatMoney(volume24Hours)} 🔥
+          </div>
+        ) : (
+          <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
+        )}
       </Row>
     </Col>
   )
