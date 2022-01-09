@@ -146,7 +146,7 @@ export function computeHotContracts(recentBets: Bet[]) {
   const contractBets = _.groupBy(recentBets, (bet) => bet.contractId)
   const hotContractIds = _.sortBy(Object.keys(contractBets), (contractId) =>
     _.sumBy(contractBets[contractId], (bet) => -1 * bet.amount)
-  ).slice(0, 4)
+  )
   return hotContractIds
 }
 

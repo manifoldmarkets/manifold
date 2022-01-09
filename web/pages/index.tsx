@@ -32,9 +32,10 @@ const Home = (props: { contracts: Contract[]; hotContractIds: string[] }) => {
   if (user === undefined) return <></>
 
   const { contracts, hotContractIds } = props
-  const hotContracts = hotContractIds.map(
-    (id) => contracts.find((contract) => contract.id === id) as Contract
-  )
+  const hotContracts = hotContractIds
+    .map((id) => contracts.find((contract) => contract.id === id) as Contract)
+    .filter((contract) => !contract.isResolved)
+    .slice(0, 4)
 
   return user ? (
     <Markets contracts={contracts} hotContractIds={hotContractIds} />

@@ -39,10 +39,13 @@ export default function Markets(props: {
     hotContractIds === 'loading' ? props.hotContractIds : hotContractIds
   const readyContracts = contracts === 'loading' ? props.contracts : contracts
 
-  const hotContracts = readyHotContractIds.map(
-    (hotId) =>
-      _.find(readyContracts, (contract) => contract.id === hotId) as Contract
-  )
+  const hotContracts = readyHotContractIds
+    .map(
+      (hotId) =>
+        _.find(readyContracts, (contract) => contract.id === hotId) as Contract
+    )
+    .filter((contract) => !contract.isResolved)
+    .slice(0, 4)
 
   return (
     <Page>
