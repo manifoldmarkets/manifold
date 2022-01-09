@@ -23,4 +23,7 @@ export type Contract = {
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
   resolution?: 'YES' | 'NO' | 'CANCEL' // Chosen by creator; must be one of outcomes
+
+  volume24Hours: number
+  volume7Days: number
 }

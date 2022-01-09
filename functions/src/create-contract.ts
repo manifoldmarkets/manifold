@@ -114,6 +114,9 @@ function getNewContract(
 
     createdTime: Date.now(),
     lastUpdatedTime: Date.now(),
+
+    volume24Hours: 0,
+    volume7Days: 0,
   }
 
   if (closeTime) contract.closeTime = closeTime
