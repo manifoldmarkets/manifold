@@ -214,7 +214,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         </button>
       ) : (
         <button
-          className="btn mt-4 border-none normal-case text-lg font-medium px-10 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
+          className="btn mt-4 border-none normal-case text-lg font-medium whitespace-nowrap px-10 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
           onClick={firebaseLogin}
         >
           Sign in to trade!
