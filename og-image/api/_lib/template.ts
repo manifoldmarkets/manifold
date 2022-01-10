@@ -93,6 +93,7 @@ export function getHtml(parsedReq: ParsedRequest) {
     creatorUsername,
     creatorAvatarUrl,
   } = parsedReq;
+  const hideAvatar = creatorAvatarUrl ? "" : "hidden";
   return `<!DOCTYPE html>
 <html>
     <head>
@@ -110,11 +111,11 @@ export function getHtml(parsedReq: ParsedRequest) {
       <div class="absolute left-24 top-8">
         <div class="flex flex-row align-bottom gap-6">
           <img
-            class="h-24 w-24 rounded-full bg-white flex items-center justify-center"
+            class="h-24 w-24 rounded-full bg-white flex items-center justify-center ${hideAvatar}"
             src="${creatorAvatarUrl}"
             alt=""
           />
-          <div class="flex flex-col">
+          <div class="flex flex-col gap-2">
             <p class="text-gray-900 text-3xl">${creatorName}</p>
             <p class="text-gray-500 text-3xl">@${creatorUsername}</p>
           </div>
@@ -139,7 +140,7 @@ export function getHtml(parsedReq: ParsedRequest) {
       </div>
 
       <div class="flex flex-row justify-between gap-12 pt-36">
-        <div class="text-indigo-700 text-6xl leading-snug">
+        <div class="text-indigo-700 text-6xl leading-tight">
           ${question}
         </div>
         <div class="flex flex-col text-primary">

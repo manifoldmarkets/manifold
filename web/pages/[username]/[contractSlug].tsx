@@ -71,7 +71,6 @@ export default function ContractPage(props: {
     creatorName: contract.creatorName,
     creatorUsername: contract.creatorUsername,
     // TODO: replace with actual avatar url
-    creatorAvatarUrl: `https://avatars.dicebear.com/v2/identicon/${contract.creatorUsername}.svg`,
   }
 
   return (
