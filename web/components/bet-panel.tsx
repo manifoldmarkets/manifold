@@ -152,7 +152,9 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
             {error}
           </div>
         )}
-        {user && <AddFundsButton className="self-end mt-3" />}
+        {user && user.balance !== 1000 && (
+          <AddFundsButton className="self-end mt-3" />
+        )}
       </Col>
 
       <div className="mt-2 mb-1 text-sm text-gray-500">Implied probability</div>
