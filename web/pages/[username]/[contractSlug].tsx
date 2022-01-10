@@ -18,6 +18,7 @@ import {
 } from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
+import { contractTextDetails } from '../../components/contract-card'
 
 export async function getStaticProps(props: { params: any }) {
   const { username, contractSlug } = props.params
@@ -63,12 +64,23 @@ export default function ContractPage(props: {
     ? `Resolved ${resolution}. ${contract.description}`
     : `${probPercent} chance. ${contract.description}`
 
+  const openGraphProps = {
+    question,
+    probability: probPercent,
+    metadata: contractTextDetails(contract),
+    creatorName: contract.creatorName,
+    creatorUsername: contract.creatorUsername,
+    // TODO: replace with actual avatar url
+    creatorAvatarUrl: `https://avatars.dicebear.com/v2/identicon/${contract.creatorUsername}.svg`,
+  }
+
   return (
     <Page wide={allowTrade}>
       <SEO
         title={question}
         description={description}
         url={`/${props.username}/${props.slug}`}
+        openGraph={openGraphProps}
       />
 
       <Col className="w-full md:flex-row justify-between mt-6">
