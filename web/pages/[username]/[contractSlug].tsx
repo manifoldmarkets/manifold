@@ -70,7 +70,6 @@ export default function ContractPage(props: {
     metadata: contractTextDetails(contract),
     creatorName: contract.creatorName,
     creatorUsername: contract.creatorUsername,
-    // TODO: replace with actual avatar url
   }
 
   return (
