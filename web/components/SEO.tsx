@@ -1,6 +1,6 @@
 import Head from 'next/head'
 
-export type OpenGraphProps = {
+export type OgCardProps = {
   question: string
   probability: string
   metadata: string
@@ -9,7 +9,7 @@ export type OpenGraphProps = {
   creatorAvatarUrl: string
 }
 
-function buildCardUrl(props: OpenGraphProps) {
+function buildCardUrl(props: OgCardProps) {
   // URL encode each of the props, then add them as query params
   return (
     `https://manifold-og-image.vercel.app/m.png` +
@@ -27,9 +27,9 @@ export function SEO(props: {
   description: string
   url?: string
   children?: any[]
-  openGraph?: OpenGraphProps
+  ogCardProps?: OgCardProps
 }) {
-  const { title, description, url, children, openGraph } = props
+  const { title, description, url, children, ogCardProps } = props
 
   return (
     <Head>
@@ -57,17 +57,17 @@ export function SEO(props: {
         />
       )}
 
-      {openGraph && (
+      {ogCardProps && (
         <>
           <meta
             property="og:image"
-            content={buildCardUrl(openGraph)}
+            content={buildCardUrl(ogCardProps)}
             key="image1"
           />
           <meta name="twitter:card" content="summary_large_image" key="card" />
           <meta
             name="twitter:image"
-            content={buildCardUrl(openGraph)}
+            content={buildCardUrl(ogCardProps)}
             key="image2"
           />
         </>

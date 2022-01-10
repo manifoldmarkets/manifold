@@ -64,7 +64,7 @@ export default function ContractPage(props: {
     ? `Resolved ${resolution}. ${contract.description}`
     : `${probPercent} chance. ${contract.description}`
 
-  const openGraphProps = {
+  const ogCardProps = {
     question,
     probability: probPercent,
     metadata: contractTextDetails(contract),
@@ -80,7 +80,7 @@ export default function ContractPage(props: {
         title={question}
         description={description}
         url={`/${props.username}/${props.slug}`}
-        openGraph={openGraphProps}
+        ogCardProps={ogCardProps}
       />
 
       <Col className="w-full md:flex-row justify-between mt-6">
