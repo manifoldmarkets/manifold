@@ -1,20 +1,5 @@
-import { readFileSync } from "fs";
-import marked from "marked";
 import { sanitizeHtml } from "./sanitizer";
 import { ParsedRequest } from "./types";
-const twemoji = require("twemoji");
-const twOptions = { folder: "svg", ext: ".svg" };
-const emojify = (text: string) => twemoji.parse(text, twOptions);
-
-const rglr = readFileSync(
-  `${__dirname}/../_fonts/Inter-Regular.woff2`
-).toString("base64");
-const bold = readFileSync(`${__dirname}/../_fonts/Inter-Bold.woff2`).toString(
-  "base64"
-);
-const mono = readFileSync(`${__dirname}/../_fonts/Vera-Mono.woff2`).toString(
-  "base64"
-);
 
 function getCss(theme: string, fontSize: string) {
   let background = "white";
@@ -30,36 +15,12 @@ function getCss(theme: string, fontSize: string) {
   return `
     @import url('https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Readex+Pro:wght@400;700&display=swap');
 
-    @font-face {
-        font-family: 'Inter';
-        font-style:  normal;
-        font-weight: normal;
-        src: url(data:font/woff2;charset=utf-8;base64,${rglr}) format('woff2');
-    }
-
-    @font-face {
-        font-family: 'Inter';
-        font-style:  normal;
-        font-weight: bold;
-        src: url(data:font/woff2;charset=utf-8;base64,${bold}) format('woff2');
-    }
-
-    @font-face {
-        font-family: 'Vera';
-        font-style: normal;
-        font-weight: normal;
-        src: url(data:font/woff2;charset=utf-8;base64,${mono})  format("woff2");
-      }
-
     body {
         background: ${background};
         background-image: radial-gradient(circle at 25px 25px, ${radial} 2%, transparent 0%), radial-gradient(circle at 75px 75px, ${radial} 2%, transparent 0%);
         background-size: 100px 100px;
         height: 100vh;
-        display: flex;
-        text-align: center;
-        align-items: center;
-        justify-content: center;
+        font-family: "Readex Pro", sans-serif;
     }
 
     code {
@@ -108,50 +69,92 @@ function getCss(theme: string, fontSize: string) {
         font-style: normal;
         color: ${foreground};
         line-height: 1.8;
-    }`;
+    }
+    
+    .font-major-mono {
+      font-family: "Major Mono Display", monospace;
+    }
+
+    .text-primary {
+      color: #11b981;
+    }
+    `;
 }
 
 export function getHtml(parsedReq: ParsedRequest) {
-  const { text, theme, md, fontSize, images, widths, heights } = parsedReq;
+  const {
+    theme,
+    fontSize,
+
+    question,
+    probability,
+    metadata,
+    creatorName,
+    creatorUsername,
+    creatorAvatarUrl,
+  } = parsedReq;
   return `<!DOCTYPE html>
 <html>
-    <meta charset="utf-8">
-    <title>Generated Image</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <head>
+        <meta charset="utf-8">
+        <title>Generated Image</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
     <style>
         ${getCss(theme, fontSize)}
     </style>
-    <body>
-        <div>
-            <div class="spacer">
-            <div class="logo-wrapper">
-                ${images
-                  .map(
-                    (img, i) =>
-                      getPlusSign(i) + getImage(img, widths[i], heights[i])
-                  )
-                  .join("")}
-            </div>
-            <div class="spacer">
-            <div class="heading">${emojify(
-              md ? marked(text) : sanitizeHtml(text)
-            )}
-            </div>
+  <body>
+    <div class="px-24">
+      <!-- Profile image -->
+      <div class="absolute left-24 top-8">
+        <div class="flex flex-row align-bottom gap-6">
+          <img
+            class="h-24 w-24 rounded-full bg-white flex items-center justify-center"
+            src="${creatorAvatarUrl}"
+            alt=""
+          />
+          <div class="flex flex-col">
+            <p class="text-gray-900 text-3xl">${creatorName}</p>
+            <p class="text-gray-500 text-3xl">@${creatorUsername}</p>
+          </div>
         </div>
-    </body>
+      </div>
+
+      <!-- Mantic logo -->
+      <div class="absolute right-24 top-8">
+        <a class="flex flex-row gap-3" href="/"
+          ><img
+            class="sm:h-12 sm:w-12"
+            src="https:&#x2F;&#x2F;manifold.markets&#x2F;logo.png"
+            width="40"
+            height="40"
+          />
+          <div
+            class="hidden sm:flex font-major-mono lowercase mt-1 sm:text-3xl md:whitespace-nowrap"
+          >
+            Manifold Markets
+          </div></a
+        >
+      </div>
+
+      <div class="flex flex-row justify-between gap-12 pt-36">
+        <div class="text-indigo-700 text-6xl leading-snug">
+          ${question}
+        </div>
+        <div class="flex flex-col text-primary">
+          <div class="text-8xl">${probability}%</div>
+          <div class="text-4xl">chance</div>
+        </div>
+      </div>
+
+      <!-- Metadata -->
+      <div class="absolute bottom-16">
+        <div class="text-gray-500 text-3xl">
+          ${metadata}
+        </div>
+      </div>
+    </div>
+  </body>
 </html>`;
-}
-
-function getImage(src: string, width = "auto", height = "225") {
-  return `<img
-        class="logo"
-        alt="Generated Image"
-        src="${sanitizeHtml(src)}"
-        width="${sanitizeHtml(width)}"
-        height="${sanitizeHtml(height)}"
-    />`;
-}
-
-function getPlusSign(i: number) {
-  return i === 0 ? "" : '<div class="plus">+</div>';
 }
