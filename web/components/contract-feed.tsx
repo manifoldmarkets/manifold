@@ -227,6 +227,7 @@ function FeedQuestion(props: { contract: Contract }) {
             probPercent={probPercent}
           />
         </Row>
+        <ContractDescription contract={contract} isCreator={false} />
       </div>
     </>
   )
