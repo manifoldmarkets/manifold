@@ -174,9 +174,7 @@ export function contractTextDetails(contract: Contract) {
   const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
 
   return (
-    `${contract.creatorUsername} • ${
-      resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate
-    }` +
+    `${resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}` +
     (closeTime
       ? ` • ${closeTime > Date.now() ? 'Closes' : 'Closed'} ${dayjs(
           closeTime
