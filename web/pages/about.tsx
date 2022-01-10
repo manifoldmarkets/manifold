@@ -222,20 +222,16 @@ function Contents() {
 
       <h3 id="how-does-betting-work">How does betting work?</h3>
       <ul>
+        <li>Markets are structured around a question with a binary outcome.</li>
         <li>
-          Markets are structured around a question with a binary outcome (either
-          YES or NO)
-        </li>
-        <li>
-          Traders can place a bet on either YES or NO. The bet amount is added
-          to the corresponding bet pool for the outcome. The trader receives
-          some shares of the final pool. The number of shares depends on the
-          current implied probability.
+          Traders can place a bet on either YES or NO. The trader receives some
+          shares of the betting pool. The number of shares depends on the
+          current probability.
         </li>
         <li>
           When the market is resolved, the traders who bet on the correct
-          outcome are paid out of the total pool (YES pool + NO pool) in
-          proportion to the amount of shares they own, minus any fees.
+          outcome are paid out of the final pool in proportion to the number of
+          shares they own.
         </li>
       </ul>
 
@@ -286,46 +282,27 @@ function Contents() {
           Office hours:{' '}
           <a href="https://calendly.com/austinchen/mantic">Calendly</a>
         </li>
-        <li>Discord:</li>
+        <li>
+          Chat:{' '}
+          <a href="https://discord.gg/eHQBNBqXuh">
+            Manifold Markets Discord server
+          </a>
+        </li>
       </ul>
-      <p>
-        <a href="https://discord.gg/eHQBNBqXuh">
-          Join the Manifold Markets Discord Server!
-        </a>
-      </p>
+      <p></p>
 
       <h1 id="further-reading">Further Reading</h1>
       <hr />
 
       <ul>
         <li>
-          <a href="https://manifoldmarkets.notion.site/Technical-Overview-b9b48a09ea1f45b88d991231171730c5">
-            Technical Overview of Manifold Markets
-          </a>
-        </li>
-        <li>
-          <a href="https://en.wikipedia.org/wiki/Prediction_market">
-            Wikipedia: Prediction markets
-          </a>
-        </li>
-        <li>
-          <a href="https://www.gwern.net/Prediction-markets">
-            Gwern: Prediction markets
-          </a>
-        </li>
-        <li>
-          <a href="https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.91.7441&amp;rep=rep1&amp;type=pdf">
-            David Pennock: Dynamic parimutuel markets
+          <a href="https://manifoldmarkets.notion.site/Technical-Guide-to-Manifold-Markets-b9b48a09ea1f45b88d991231171730c5">
+            Technical Guide to Manifold Markets
           </a>
         </li>
         <li>
           <a href="https://sideways-view.com/2019/10/27/prediction-markets-for-internet-points/">
             Paul Christiano: Prediction markets for internet points
-          </a>
-        </li>
-        <li>
-          <a href="https://manifold.markets/simulator">
-            Dynamic parimutuel market simulator
           </a>
         </li>
         <li>
