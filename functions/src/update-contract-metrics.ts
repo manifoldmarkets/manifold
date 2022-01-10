@@ -1,9 +1,10 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
-import { Contract } from './types/contract'
+
 import { getValues } from './utils'
-import { Bet } from './types/bet'
+import { Contract } from '../../common/contract'
+import { Bet } from '../../common/bet'
 
 const firestore = admin.firestore()
 

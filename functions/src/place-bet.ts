@@ -1,9 +1,9 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract } from './types/contract'
-import { User } from './types/user'
-import { Bet } from './types/bet'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
+import { Bet } from '../../common/bet'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (

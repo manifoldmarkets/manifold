@@ -1,6 +1,6 @@
 import { sendEmail } from './send-email'
-import { Contract } from './types/contract'
-import { User } from './types/user'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
 import { getUser } from './utils'
 
 export const sendMarketResolutionEmail = async (

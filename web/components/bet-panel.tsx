@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 
 import { useUser } from '../hooks/use-user'
-import { Contract } from '../lib/firebase/contracts'
+import { Contract } from '../../common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
@@ -18,12 +18,12 @@ import {
   calculateShares,
   getProbabilityAfterBet,
   calculatePayoutAfterCorrectBet,
-} from '../lib/calculate'
+} from '../../common/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
 import { AddFundsButton } from './add-funds-button'
 import { OutcomeLabel } from './outcome-label'
 import { AdvancedPanel } from './advanced-panel'
-import { Bet } from '../lib/firebase/bets'
+import { Bet } from '../../common/bet'
 import { placeBet } from '../lib/firebase/api-call'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {

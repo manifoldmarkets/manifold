@@ -1,12 +1,12 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { randomString } from './util/random-string'
-import { slugify } from './util/slugify'
-import { Contract } from './types/contract'
 import { getUser } from './utils'
 import { payUser } from '.'
-import { User } from './types/user'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
+import { slugify } from '../../common/util/slugify'
+import { randomString } from '../../common/util/random-string'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })
