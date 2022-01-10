@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
-import { Contract } from '../types/contract'
+
+import { Contract } from '../../../common/contract'
 import { getValues } from '../utils'
 
 // Generate your own private key, and set the path below:

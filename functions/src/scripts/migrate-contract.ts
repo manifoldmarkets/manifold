@@ -1,7 +1,8 @@
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
-import { Bet } from '../types/bet'
-import { Contract } from '../types/contract'
+
+import { Bet } from '../../../common/bet'
+import { Contract } from '../../../common/contract'
 
 type DocRef = admin.firestore.DocumentReference
 

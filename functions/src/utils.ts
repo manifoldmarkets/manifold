@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 
-import { Contract } from './types/contract'
-import { User } from './types/user'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
 
 export const getValue = async <T>(collection: string, doc: string) => {
   const snap = await admin.firestore().collection(collection).doc(doc).get()

@@ -6,30 +6,10 @@ import {
   where,
 } from 'firebase/firestore'
 import _ from 'lodash'
+
 import { db } from './init'
-
-export type Bet = {
-  id: string
-  userId: string
-  contractId: string
-
-  amount: number // bet size; negative if SELL bet
-  outcome: 'YES' | 'NO'
-  shares: number // dynamic parimutuel pool weight; negative if SELL bet
-
-  probBefore: number
-  probAfter: number
-
-  sale?: {
-    amount: number // amount user makes from sale
-    betId: string // id of bet being sold
-    // TODO: add sale time?
-  }
-
-  isSold?: boolean // true if this BUY bet has been sold
-
-  createdTime: number
-}
+import { Bet } from '../../../common/bet'
+export type { Bet }
 
 function getBetsCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'bets')

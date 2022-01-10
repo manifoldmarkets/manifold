@@ -2,14 +2,12 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
-import { Contract } from './types/contract'
-import { User } from './types/user'
-import { Bet } from './types/bet'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
+import { Bet } from '../../common/bet'
+import { CREATOR_FEE, PLATFORM_FEE } from '../../common/fees'
 import { getUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
-
-export const PLATFORM_FEE = 0.01 // 1%
-export const CREATOR_FEE = 0.01 // 1%
 
 export const resolveMarket = functions
   .runWith({ minInstances: 1 })

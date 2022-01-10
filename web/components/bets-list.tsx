@@ -21,7 +21,7 @@ import {
   calculatePayout,
   calculateSaleAmount,
   resolvedPayout,
-} from '../lib/calculate'
+} from '../../common/calculate'
 import { sellBet } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel, MarketLabel } from './outcome-label'

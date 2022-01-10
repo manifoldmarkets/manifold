@@ -19,18 +19,10 @@ import {
   signInWithPopup,
 } from 'firebase/auth'
 
-export const STARTING_BALANCE = 1000
+import { User } from '../../../common/user'
+export type { User }
 
-export type User = {
-  id: string
-  email: string
-  name: string
-  username: string
-  avatarUrl: string
-  balance: number
-  createdTime: number
-  lastUpdatedTime: number
-}
+export const STARTING_BALANCE = 1000
 
 const db = getFirestore(app)
 export const auth = getAuth(app)
