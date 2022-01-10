@@ -103,10 +103,8 @@ function FeedBet(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span className="text-gray-900">
-            {isCreator ? 'You' : 'A trader'}
-          </span>{' '}
-          placed {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
+          <span>{isCreator ? 'You' : 'A trader'}</span> placed{' '}
+          {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
           <Timestamp time={createdTime} />
           {isCreator && (
             // Allow user to comment in an textarea if they are the creator
@@ -446,8 +444,7 @@ function FeedBetGroup(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span className="text-gray-900">{traderCount} traders</span> placed{' '}
-          {yesSpan}
+          <span>{traderCount} traders</span> placed {yesSpan}
           {yesAmount && noAmount ? ' and ' : ''}
           {noSpan} <Timestamp time={createdTime} />
         </div>
@@ -478,7 +475,7 @@ export function ContractFeed(props: {
   let comments = useComments(id)
   if (comments === 'loading') comments = []
 
-  const groupWindow = feedType == 'activity' ? DAY_IN_MS : 10 * DAY_IN_MS
+  const groupWindow = feedType == 'activity' ? 10 * DAY_IN_MS : DAY_IN_MS
 
   const allItems = [
     { type: 'start', id: 0 },
