@@ -18,6 +18,7 @@ import {
 } from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
+import { contractTextDetails } from '../../components/contract-card'
 
 export async function getStaticProps(props: { params: any }) {
   const { username, contractSlug } = props.params
@@ -63,12 +64,21 @@ export default function ContractPage(props: {
     ? `Resolved ${resolution}. ${contract.description}`
     : `${probPercent} chance. ${contract.description}`
 
+  const ogCardProps = {
+    question,
+    probability: probPercent,
+    metadata: contractTextDetails(contract),
+    creatorName: contract.creatorName,
+    creatorUsername: contract.creatorUsername,
+  }
+
   return (
     <Page wide={allowTrade}>
       <SEO
         title={question}
         description={description}
         url={`/${props.username}/${props.slug}`}
+        ogCardProps={ogCardProps}
       />
 
       <Col className="w-full md:flex-row justify-between mt-6">

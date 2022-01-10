@@ -165,3 +165,24 @@ export function ContractDetails(props: { contract: Contract }) {
     </Col>
   )
 }
+
+// String version of the above, to send to the OpenGraph image generator
+export function contractTextDetails(contract: Contract) {
+  const { question, description, closeTime } = contract
+  const { truePool, createdDate, resolvedDate } = compute(contract)
+
+  const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
+
+  return (
+    `${contract.creatorUsername} • ${
+      resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate
+    }` +
+    (closeTime
+      ? ` • ${closeTime > Date.now() ? 'Closes' : 'Closed'} ${dayjs(
+          closeTime
+        ).format('MMM D, h:mma')}`
+      : '') +
+    ` • ${formatMoney(truePool)} pool` +
+    (tags.length > 0 ? ` • ${tags.join(' ')}` : '')
+  )
+}

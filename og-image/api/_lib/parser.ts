@@ -62,12 +62,11 @@ export function parseRequest(req: IncomingMessage) {
 
     question:
       getString(question) || "Will you create a prediction market on Manifold?",
-    probability: getString(probability) || "85",
+    probability: getString(probability) || "85%",
     metadata: getString(metadata) || "Jan 1 &nbsp;•&nbsp; M$ 123 pool",
     creatorName: getString(creatorName) || "Manifold Markets",
     creatorUsername: getString(creatorUsername) || "ManifoldMarkets",
-    creatorAvatarUrl:
-      getString(creatorAvatarUrl) || "https://manifold.markets/logo.png",
+    creatorAvatarUrl: getString(creatorAvatarUrl) || "",
   };
   parsedRequest.images = getDefaultImages(parsedRequest.images);
   return parsedRequest;
