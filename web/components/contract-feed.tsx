@@ -47,7 +47,7 @@ function FeedComment(props: { activityItem: any }) {
             <a href={person.href} className="font-medium text-gray-900">
               {person.name}
             </a>{' '}
-            placed M$ {amount} on <OutcomeLabel outcome={outcome} />{' '}
+            placed {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
             <Timestamp time={createdTime} />
           </p>
         </div>
@@ -286,7 +286,7 @@ function toFeedBet(bet: Bet) {
     contractId: bet.contractId,
     userId: bet.userId,
     type: 'bet',
-    amount: bet.amount,
+    amount: bet.sale ? -bet.sale.amount : bet.amount,
     outcome: bet.outcome,
     createdTime: bet.createdTime,
     date: dayjs(bet.createdTime).fromNow(),
@@ -299,7 +299,7 @@ function toFeedComment(bet: Bet, comment: Comment) {
     contractId: bet.contractId,
     userId: bet.userId,
     type: 'comment',
-    amount: bet.amount,
+    amount: bet.sale ? -bet.sale.amount : bet.amount,
     outcome: bet.outcome,
     createdTime: bet.createdTime,
     date: dayjs(bet.createdTime).fromNow(),
