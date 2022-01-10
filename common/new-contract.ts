@@ -1,6 +1,6 @@
-import { calcStartPool } from "./antes";
-import { Contract } from "./contract";
-import { User } from "./user";
+import { calcStartPool } from './antes'
+import { Contract } from './contract'
+import { User } from './user'
 
 export function getNewContract(
   id: string,
@@ -15,12 +15,12 @@ export function getNewContract(
   const { startYes, startNo, poolYes, poolNo } = calcStartPool(
     initialProb,
     ante
-  );
+  )
 
   const contract: Contract = {
     id,
     slug,
-    outcomeType: "BINARY",
+    outcomeType: 'BINARY',
 
     creatorId: creator.id,
     creatorName: creator.name,
@@ -40,9 +40,9 @@ export function getNewContract(
 
     volume24Hours: 0,
     volume7Days: 0,
-  };
+  }
 
-  if (closeTime) contract.closeTime = closeTime;
+  if (closeTime) contract.closeTime = closeTime
 
-  return contract;
+  return contract
 }
