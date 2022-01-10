@@ -10,4 +10,12 @@ export interface ParsedRequest {
   images: string[];
   widths: string[];
   heights: string[];
+
+  // Attributes for Manifold card:
+  question: string;
+  probability: string;
+  metadata: string;
+  creatorName: string;
+  creatorUsername: string;
+  creatorAvatarUrl: string;
 }
