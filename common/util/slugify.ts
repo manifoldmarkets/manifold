@@ -1,4 +1,8 @@
-export const slugify = (text: any, separator = "-"): string => {
+export const slugify = (
+  text: string,
+  separator = "-",
+  maxLength = 35
+): string => {
   return text
     .toString()
     .normalize("NFD") // split an accented letter in the base letter and the acent
@@ -6,5 +10,7 @@ export const slugify = (text: any, separator = "-"): string => {
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9 ]/g, "") // remove all chars not letters, numbers and spaces (to be replaced)
-    .replace(/\s+/g, separator);
+    .replace(/\s+/g, separator)
+    .substring(0, maxLength)
+    .replace(new RegExp(separator + "+$", "g"), ""); // remove terminal separators
 };
