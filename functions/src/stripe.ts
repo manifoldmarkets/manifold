@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 
-import { payUser } from './resolve-market'
+import { payUser } from './utils'
 
 const stripe = new Stripe(functions.config().stripe.apikey, {
   apiVersion: '2020-08-27',
@@ -118,7 +118,7 @@ const issueMoneys = async (session: any) => {
     session,
   })
 
-  await payUser([userId, payout])
+  await payUser(userId, payout)
 
   console.log('user', userId, 'paid M$', payout)
 }
