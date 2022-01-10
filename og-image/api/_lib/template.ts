@@ -143,7 +143,7 @@ export function getHtml(parsedReq: ParsedRequest) {
           ${question}
         </div>
         <div class="flex flex-col text-primary">
-          <div class="text-8xl">${probability}%</div>
+          <div class="text-8xl">${probability}</div>
           <div class="text-4xl">chance</div>
         </div>
       </div>
