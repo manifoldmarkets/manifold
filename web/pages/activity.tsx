@@ -12,7 +12,7 @@ function FeedCard(props: { contract: Contract }) {
   const { contract } = props
   return (
     <div className="card bg-white shadow-md rounded-lg divide-y divide-gray-200 py-6 px-4 mb-4">
-      <ContractFeed contract={contract} />
+      <ContractFeed contract={contract} feedType="activity" />
     </div>
   )
 }
