@@ -308,7 +308,8 @@ function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
     shares,
     isSold,
   } = bet
-  const { isResolved } = contract
+  const { isResolved, closeTime } = contract
+  const isClosed = closeTime && Date.now() > closeTime
 
   return (
     <tr>
@@ -333,7 +334,7 @@ function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
         )}
       </td>
 
-      {!isResolved && !isSold && (
+      {!isResolved && !isClosed && !isSold && (
         <td className="text-neutral">
           <SellButton contract={contract} bet={bet} />
         </td>
