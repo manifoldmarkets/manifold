@@ -12,7 +12,7 @@
   "engines": {
     "node": "14"
   },
-  "main": "lib/index.js",
+  "main": "lib/functions/src/index.js",
   "dependencies": {
     "fetch": "1.1.0",
     "firebase-admin": "10.0.0",
