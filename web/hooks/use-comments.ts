@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Comment, listenForComments } from '../lib/firebase/comments'
+import {
+  Comment,
+  listenForComments,
+  listenForRecentComments,
+} from '../lib/firebase/comments'
 
 export const useComments = (contractId: string) => {
   const [comments, setComments] = useState<Comment[] | 'loading'>('loading')
@@ -9,4 +13,10 @@ export const useComments = (contractId: string) => {
   }, [contractId])
 
   return comments
+}
+
+export const useRecentComments = () => {
+  const [recentComments, setRecentComments] = useState<Comment[] | undefined>()
+  useEffect(() => listenForRecentComments(setRecentComments), [])
+  return recentComments
 }

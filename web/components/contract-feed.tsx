@@ -16,13 +16,21 @@ import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { OutcomeLabel } from './outcome-label'
-import { Contract, updateContract } from '../lib/firebase/contracts'
+import {
+  compute,
+  Contract,
+  path,
+  updateContract,
+} from '../lib/firebase/contracts'
 import { useUser } from '../hooks/use-user'
 import { Linkify } from './linkify'
 import { Row } from './layout/row'
 import { createComment } from '../lib/firebase/comments'
 import { useComments } from '../hooks/use-comments'
 import { formatMoney } from '../lib/util/format'
+import { ResolutionOrChance } from './contract-card'
+import Link from 'next/link'
+import { SiteLink } from './site-link'
 dayjs.extend(relativeTime)
 
 function FeedComment(props: { activityItem: any }) {
@@ -95,10 +103,8 @@ function FeedBet(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span className="text-gray-900">
-            {isCreator ? 'You' : 'A trader'}
-          </span>{' '}
-          placed {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
+          <span>{isCreator ? 'You' : 'A trader'}</span> placed{' '}
+          {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
           <Timestamp time={createdTime} />
           {isCreator && (
             // Allow user to comment in an textarea if they are the creator
@@ -193,7 +199,41 @@ export function ContractDescription(props: {
   )
 }
 
-function FeedStart(props: { contract: Contract }) {
+function FeedQuestion(props: { contract: Contract }) {
+  const { contract } = props
+  const { probPercent } = compute(contract)
+
+  return (
+    <>
+      <div>
+        <div className="relative px-1">
+          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+            <StarIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+          </div>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1 py-1.5">
+        <div className="text-sm text-gray-500">
+          <span className="text-gray-900">{contract.creatorName}</span> asked{' '}
+          <Timestamp time={contract.createdTime} />
+        </div>
+        <Row className="justify-between gap-4 mb-2">
+          <SiteLink href={path(contract)} className="text-xl text-indigo-700">
+            {contract.question}
+          </SiteLink>
+          <ResolutionOrChance
+            className="items-center"
+            resolution={contract.resolution}
+            probPercent={probPercent}
+          />
+        </Row>
+        <ContractDescription contract={contract} isCreator={false} />
+      </div>
+    </>
+  )
+}
+
+function FeedDescription(props: { contract: Contract }) {
   const { contract } = props
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
@@ -314,12 +354,19 @@ function toFeedComment(bet: Bet, comment: Comment) {
   }
 }
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000
+
 // Group together bets that are:
-// - Within 24h of the first in the group
+// - Within `windowMs` of the first in the group
 // - Do not have a comment
 // - Were not created by this user
 // Return a list of ActivityItems
-function group(bets: Bet[], comments: Comment[], userId?: string) {
+function groupBets(
+  bets: Bet[],
+  comments: Comment[],
+  windowMs: number,
+  userId?: string
+) {
   const commentsMap = mapCommentsByBetId(comments)
   const items: any[] = []
   let group: Bet[] = []
@@ -349,9 +396,9 @@ function group(bets: Bet[], comments: Comment[], userId?: string) {
     } else {
       if (
         group.length > 0 &&
-        dayjs(bet.createdTime).diff(dayjs(group[0].createdTime), 'hour') > 24
+        bet.createdTime - group[0].createdTime > windowMs
       ) {
-        // More than 24h has passed; start a new group
+        // More than `windowMs` has passed; start a new group
         pushGroup()
       }
       group.push(bet)
@@ -398,8 +445,7 @@ function FeedBetGroup(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span className="text-gray-900">{traderCount} traders</span> placed{' '}
-          {yesSpan}
+          <span>{traderCount} traders</span> placed {yesSpan}
           {yesAmount && noAmount ? ' and ' : ''}
           {noSpan} <Timestamp time={createdTime} />
         </div>
@@ -415,8 +461,12 @@ type ActivityItem = {
   type: 'bet' | 'comment' | 'start' | 'betgroup' | 'close' | 'resolve'
 }
 
-export function ContractFeed(props: { contract: Contract }) {
-  const { contract } = props
+export function ContractFeed(props: {
+  contract: Contract
+  // Feed types: 'activity' = Activity feed, 'market' = Comments feed on a market
+  feedType: 'activity' | 'market'
+}) {
+  const { contract, feedType } = props
   const { id } = contract
   const user = useUser()
 
@@ -426,9 +476,11 @@ export function ContractFeed(props: { contract: Contract }) {
   let comments = useComments(id)
   if (comments === 'loading') comments = []
 
+  const groupWindow = feedType == 'activity' ? 10 * DAY_IN_MS : DAY_IN_MS
+
   const allItems = [
     { type: 'start', id: 0 },
-    ...group(bets, comments, user?.id),
+    ...groupBets(bets, comments, groupWindow, user?.id),
   ]
   if (contract.closeTime && contract.closeTime <= Date.now()) {
     allItems.push({ type: 'close', id: `${contract.closeTime}` })
@@ -451,7 +503,11 @@ export function ContractFeed(props: { contract: Contract }) {
               ) : null}
               <div className="relative flex items-start space-x-3">
                 {activityItem.type === 'start' ? (
-                  <FeedStart contract={contract} />
+                  feedType == 'activity' ? (
+                    <FeedQuestion contract={contract} />
+                  ) : (
+                    <FeedDescription contract={contract} />
+                  )
                 ) : activityItem.type === 'comment' ? (
                   <FeedComment activityItem={activityItem} />
                 ) : activityItem.type === 'bet' ? (
