@@ -11,6 +11,7 @@ export type Contract = {
   outcomeType: 'BINARY' // | 'MULTI' | 'interval' | 'date'
   // outcomes: ['YES', 'NO']
 
+  mechanism: 'dpm-2'
   startPool: { YES: number; NO: number }
   pool: { YES: number; NO: number }
   totalShares: { YES: number; NO: number }
