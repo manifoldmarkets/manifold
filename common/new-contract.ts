@@ -12,7 +12,7 @@ export function getNewContract(
   ante?: number,
   closeTime?: number
 ) {
-  const { startYes, startNo, poolYes, poolNo } = calcStartPool(
+  const { sharesYes, sharesNo, poolYes, poolNo } = calcStartPool(
     initialProb,
     ante
   )
@@ -29,10 +29,10 @@ export function getNewContract(
     question: question.trim(),
     description: description.trim(),
 
-    startPool: { YES: startYes, NO: startNo },
+    startPool: { YES: poolYes, NO: poolNo },
     pool: { YES: poolYes, NO: poolNo },
-    totalShares: { YES: 0, NO: 0 },
-    totalBets: { YES: 0, NO: 0 },
+    totalShares: { YES: sharesYes, NO: sharesNo },
+    totalBets: { YES: poolYes, NO: poolNo },
     isResolved: false,
 
     createdTime: Date.now(),
@@ -46,3 +46,5 @@ export function getNewContract(
 
   return contract
 }
+
+function getAnteBets() {}

@@ -1,4 +1,5 @@
 import { Bet } from './bet'
+import { getProbability } from './calculate'
 import { Contract } from './contract'
 import { CREATOR_FEE, FEES } from './fees'
 
@@ -58,8 +59,7 @@ export const getMktPayouts = (
   contract: Contract,
   bets: Bet[]
 ) => {
-  const p =
-    contract.pool.YES ** 2 / (contract.pool.YES ** 2 + contract.pool.NO ** 2)
+  const p = getProbability(contract.totalShares)
   console.log('Resolved MKT at p=', p, 'pool: $M', truePool)
 
   const [yesBets, noBets] = partition(bets, (bet) => bet.outcome === 'YES')

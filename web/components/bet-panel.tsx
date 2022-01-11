@@ -94,7 +94,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
   const initialProb = getProbability(contract.pool)
   const resultProb = getProbabilityAfterBet(
-    contract.pool,
+    contract.totalShares,
     betChoice,
     betAmount ?? 0
   )

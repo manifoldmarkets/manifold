@@ -1,4 +1,5 @@
 import { Bet } from './bet'
+import { calculateShares, getProbability } from './calculate'
 import { Contract } from './contract'
 import { User } from './user'
 
@@ -16,10 +17,7 @@ export const getNewBetInfo = (
       ? { YES: yesPool + amount, NO: noPool }
       : { YES: yesPool, NO: noPool + amount }
 
-  const shares =
-    outcome === 'YES'
-      ? amount + (amount * noPool ** 2) / (yesPool ** 2 + amount * yesPool)
-      : amount + (amount * yesPool ** 2) / (noPool ** 2 + amount * noPool)
+  const shares = calculateShares(contract.totalShares, amount, outcome)
 
   const { YES: yesShares, NO: noShares } = contract.totalShares
 
@@ -35,8 +33,8 @@ export const getNewBetInfo = (
       ? { YES: yesBets + amount, NO: noBets }
       : { YES: yesBets, NO: noBets + amount }
 
-  const probBefore = yesPool ** 2 / (yesPool ** 2 + noPool ** 2)
-  const probAfter = newPool.YES ** 2 / (newPool.YES ** 2 + newPool.NO ** 2)
+  const probBefore = getProbability(contract.totalShares)
+  const probAfter = getProbability(newTotalShares)
 
   const newBet: Bet = {
     id: newBetId,

@@ -61,8 +61,7 @@ export const resolveMarket = functions
       const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
       const openBets = bets.filter((b) => !b.isSold && !b.sale)
 
-      const startPool = contract.startPool.YES + contract.startPool.NO
-      const truePool = contract.pool.YES + contract.pool.NO - startPool
+      const truePool = contract.pool.YES + contract.pool.NO
 
       const payouts =
         outcome === 'CANCEL'
