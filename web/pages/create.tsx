@@ -8,7 +8,7 @@ import { CreatorContractsList } from '../components/contracts-list'
 import { Spacer } from '../components/layout/spacer'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
-import { Contract, path } from '../lib/firebase/contracts'
+import { Contract, contractPath } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
 import { AdvancedPanel } from '../components/advanced-panel'
 import { createContract } from '../lib/firebase/api-call'
@@ -73,7 +73,7 @@ export default function NewContract() {
       return
     }
 
-    await router.push(path(result.contract as Contract))
+    await router.push(contractPath(result.contract as Contract))
   }
 
   const descriptionPlaceholder = `e.g. This market will resolve to “Yes” if, by June 2, 2021, 11:59:59 PM ET, Paxlovid (also known under PF-07321332)...`

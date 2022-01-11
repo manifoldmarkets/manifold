@@ -1,8 +1,8 @@
 import {
-  compute,
+  contractMetrics,
   Contract,
   deleteContract,
-  path,
+  contractPath,
 } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
@@ -22,7 +22,7 @@ export const ContractOverview = (props: {
 }) => {
   const { contract, className } = props
   const { resolution, creatorId, creatorName } = contract
-  const { probPercent, truePool } = compute(contract)
+  const { probPercent, truePool } = contractMetrics(contract)
 
   const user = useUser()
   const isCreator = user?.id === creatorId
@@ -35,7 +35,7 @@ export const ContractOverview = (props: {
       ? `Resolved ${resolution}!`
       : `Resolved ${resolution} by ${creatorName}:`
     : `Currently ${probPercent} chance, place your bets here:`
-  const url = `https://manifold.markets${path(contract)}`
+  const url = `https://manifold.markets${contractPath(contract)}`
   const tweetText = `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
 
   return (

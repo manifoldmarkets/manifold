@@ -17,9 +17,9 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { OutcomeLabel } from './outcome-label'
 import {
-  compute,
+  contractMetrics,
   Contract,
-  path,
+  contractPath,
   updateContract,
 } from '../lib/firebase/contracts'
 import { useUser } from '../hooks/use-user'
@@ -201,7 +201,7 @@ export function ContractDescription(props: {
 
 function FeedQuestion(props: { contract: Contract }) {
   const { contract } = props
-  const { probPercent } = compute(contract)
+  const { probPercent } = contractMetrics(contract)
 
   return (
     <>
@@ -218,7 +218,10 @@ function FeedQuestion(props: { contract: Contract }) {
           <Timestamp time={contract.createdTime} />
         </div>
         <Row className="justify-between gap-4 mb-2">
-          <SiteLink href={path(contract)} className="text-xl text-indigo-700">
+          <SiteLink
+            href={contractPath(contract)}
+            className="text-xl text-indigo-700"
+          >
             {contract.question}
           </SiteLink>
           <ResolutionOrChance

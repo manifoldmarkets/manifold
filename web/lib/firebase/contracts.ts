@@ -18,24 +18,36 @@ import {
 import { app } from './init'
 import { getValues, listenForValues } from './utils'
 import { Contract } from '../../../common/contract'
+import { getProbability } from '../../../common/calculate'
 export type { Contract }
 
-export function path(contract: Contract) {
+export function contractPath(contract: Contract) {
   // For now, derive username from creatorName
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 
-export function compute(contract: Contract) {
-  const { pool, startPool, createdTime, resolutionTime, isResolved } = contract
-  const truePool = pool.YES + pool.NO - startPool.YES - startPool.NO
-  const prob = pool.YES ** 2 / (pool.YES ** 2 + pool.NO ** 2)
+export function contractMetrics(contract: Contract) {
+  const {
+    pool,
+    startPool,
+    totalShares,
+    createdTime,
+    resolutionTime,
+    isResolved,
+  } = contract
+
+  const truePool = pool.YES + pool.NO
+  const prob = getProbability(totalShares)
   const probPercent = Math.round(prob * 100) + '%'
-  const startProb =
-    startPool.YES ** 2 / (startPool.YES ** 2 + startPool.NO ** 2)
+
+  const startProb = getProbability(startPool)
+
   const createdDate = dayjs(createdTime).format('MMM D')
+
   const resolvedDate = isResolved
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
+
   return { truePool, probPercent, startProb, createdDate, resolvedDate }
 }
 
