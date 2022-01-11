@@ -6,12 +6,12 @@ export function ManifoldLogo(props: { darkBackground?: boolean }) {
 
   return (
     <Link href="/">
-      <a className="flex flex-row gap-3">
+      <a className="flex flex-row gap-4">
         <img
           className="hover:rotate-12 transition-all"
           src="/logo.svg"
-          width={60}
-          height={60}
+          width={40}
+          height={40}
         />
         <div
           className={clsx(
