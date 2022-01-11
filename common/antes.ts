@@ -1,3 +1,8 @@
+import { Bet } from './bet'
+import { getProbability } from './calculate'
+import { Contract } from './contract'
+import { User } from './user'
+
 export const PHANTOM_ANTE = 200
 
 export const calcStartPool = (initialProbInt: number, ante = 0) => {
@@ -14,4 +19,40 @@ export const calcStartPool = (initialProbInt: number, ante = 0) => {
   const startNo = Math.sqrt(1 - p) * PHANTOM_ANTE
 
   return { sharesYes, sharesNo, poolYes, poolNo, startYes, startNo }
+}
+
+export function getAnteBets(
+  creator: User,
+  contract: Contract,
+  yesAnteId: string,
+  noAnteId: string
+) {
+  const p = getProbability(contract.totalShares)
+  const ante = contract.totalBets.YES + contract.totalBets.NO
+
+  const yesBet: Bet = {
+    id: yesAnteId,
+    userId: creator.id,
+    contractId: contract.id,
+    amount: p * ante,
+    shares: Math.sqrt(p) * ante,
+    outcome: 'YES',
+    probBefore: p,
+    probAfter: p,
+    createdTime: Date.now(),
+  }
+
+  const noBet: Bet = {
+    id: noAnteId,
+    userId: creator.id,
+    contractId: contract.id,
+    amount: (1 - p) * ante,
+    shares: Math.sqrt(1 - p) * ante,
+    outcome: 'NO',
+    probBefore: p,
+    probAfter: p,
+    createdTime: Date.now(),
+  }
+
+  return { yesBet, noBet }
 }

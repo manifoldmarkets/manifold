@@ -36,6 +36,22 @@ export function calculateShares(
     : Math.sqrt(bet ** 2 + noShares ** 2 + c) - noShares
 }
 
+export function calculateEstimatedWinnings(
+  totalShares: { YES: number; NO: number },
+  shares: number,
+  betChoice: 'YES' | 'NO'
+) {
+  const ind = betChoice === 'YES' ? 1 : 0
+
+  const yesShares = totalShares.YES + ind * shares
+  const noShares = totalShares.NO + (1 - ind) * shares
+
+  const estPool = Math.sqrt(yesShares ** 2 + noShares ** 2)
+  const total = ind * yesShares + (1 - ind) * noShares
+
+  return (shares * estPool) / total
+}
+
 export function calculateRawShareValue(
   totalShares: { YES: number; NO: number },
   shares: number,
@@ -112,15 +128,35 @@ export function calculateStandardPayout(
   if (totalBets[outcome] >= truePool)
     return (amount / totalBets[outcome]) * truePool
 
-  const startShares = startPool.YES + startPool.NO
-  const total = totalShares[outcome] - startShares - totalBets[outcome]
+  const total = totalShares[outcome] - startPool[outcome] - totalBets[outcome]
   const winningsPool = truePool - totalBets[outcome]
 
   return (1 - FEES) * (amount + ((shares - amount) / total) * winningsPool)
 }
 
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
-  return calculateStandardPayout(contract, bet, bet.outcome)
+  const { totalShares, pool, totalBets } = contract
+
+  const ind = bet.outcome === 'YES' ? 1 : 0
+  const { shares, amount } = bet
+
+  const newContract = {
+    ...contract,
+    totalShares: {
+      YES: totalShares.YES + ind * shares,
+      NO: totalShares.NO + (1 - ind) * shares,
+    },
+    pool: {
+      YES: pool.YES + ind * amount,
+      NO: pool.NO + (1 - ind) * amount,
+    },
+    totalBets: {
+      YES: totalBets.YES + ind * amount,
+      NO: totalBets.NO + (1 - ind) * amount,
+    },
+  }
+
+  return calculateStandardPayout(newContract, bet, bet.outcome)
 }
 
 function calculateMktPayout(contract: Contract, bet: Bet) {

@@ -1,4 +1,5 @@
 import { calcStartPool } from './antes'
+
 import { Contract } from './contract'
 import { User } from './user'
 
@@ -45,5 +46,3 @@ export function getNewContract(
 
   return contract
 }
-
-function getAnteBets() {}

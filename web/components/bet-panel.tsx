@@ -18,6 +18,7 @@ import {
   calculateShares,
   getProbabilityAfterBet,
   calculatePayoutAfterCorrectBet,
+  calculateEstimatedWinnings,
 } from '../../common/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
 import { OutcomeLabel } from './outcome-label'
@@ -84,18 +85,30 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getProbability(contract.pool)
+  const initialProb = getProbability(contract.totalShares)
+
   const resultProb = getProbabilityAfterBet(
     contract.totalShares,
     betChoice,
     betAmount ?? 0
   )
-  const shares = calculateShares(contract.pool, betAmount ?? 0, betChoice)
 
-  const estimatedWinnings = Math.floor(shares)
+  const shares = calculateShares(
+    contract.totalShares,
+    betAmount ?? 0,
+    betChoice
+  )
+
+  const estimatedWinnings = calculateEstimatedWinnings(
+    contract.totalShares,
+    shares,
+    betChoice
+  )
+
   const estimatedReturn = betAmount
     ? (estimatedWinnings - betAmount) / betAmount
     : 0
+
   const estimatedReturnPercent = (estimatedReturn * 100).toFixed() + '%'
 
   return (
