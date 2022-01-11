@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 
-import { Contract } from './types/contract'
-import { User } from './types/user'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
 
 export const getValue = async <T>(collection: string, doc: string) => {
   const snap = await admin.firestore().collection(collection).doc(doc).get()
@@ -20,4 +20,38 @@ export const getContract = (contractId: string) => {
 
 export const getUser = (userId: string) => {
   return getValue<User>('users', userId)
+}
+
+const firestore = admin.firestore()
+
+const updateUserBalance = (userId: string, delta: number) => {
+  return firestore.runTransaction(async (transaction) => {
+    const userDoc = firestore.doc(`users/${userId}`)
+    const userSnap = await transaction.get(userDoc)
+    if (!userSnap.exists) return
+    const user = userSnap.data() as User
+
+    const newUserBalance = user.balance + delta
+
+    if (newUserBalance < 0)
+      throw new Error(
+        `User (${userId}) balance cannot be negative: ${newUserBalance}`
+      )
+
+    transaction.update(userDoc, { balance: newUserBalance })
+  })
+}
+
+export const payUser = (userId: string, payout: number) => {
+  if (!isFinite(payout) || payout <= 0)
+    throw new Error('Payout is not positive: ' + payout)
+
+  return updateUserBalance(userId, payout)
+}
+
+export const chargeUser = (userId: string, charge: number) => {
+  if (!isFinite(charge) || charge <= 0)
+    throw new Error('User charge is not positive: ' + charge)
+
+  return updateUserBalance(userId, -charge)
 }

@@ -1,12 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { randomString } from './util/random-string'
-import { slugify } from './util/slugify'
-import { Contract } from './types/contract'
-import { getUser } from './utils'
-import { payUser } from '.'
-import { User } from './types/user'
+import { chargeUser, getUser } from './utils'
+import { Contract } from '../../common/contract'
+import { slugify } from '../../common/util/slugify'
+import { randomString } from '../../common/util/random-string'
+import { getNewContract } from '../../common/new-contract'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })
@@ -62,7 +61,7 @@ export const createContract = functions
         closeTime
       )
 
-      if (ante) await payUser([creator.id, -ante])
+      if (ante) await chargeUser(creator.id, ante)
 
       await contractRef.create(contract)
       return { status: 'success', contract }
@@ -70,80 +69,13 @@ export const createContract = functions
   )
 
 const getSlug = async (question: string) => {
-  const proposedSlug = slugify(question).substring(0, 35)
+  const proposedSlug = slugify(question)
 
   const preexistingContract = await getContractFromSlug(proposedSlug)
 
   return preexistingContract
     ? proposedSlug + '-' + randomString()
     : proposedSlug
-}
-
-function getNewContract(
-  id: string,
-  slug: string,
-  creator: User,
-  question: string,
-  description: string,
-  initialProb: number,
-  ante?: number,
-  closeTime?: number
-) {
-  const { startYes, startNo, poolYes, poolNo } = calcStartPool(
-    initialProb,
-    ante
-  )
-
-  const contract: Contract = {
-    id,
-    slug,
-    outcomeType: 'BINARY',
-
-    creatorId: creator.id,
-    creatorName: creator.name,
-    creatorUsername: creator.username,
-
-    question: question.trim(),
-    description: description.trim(),
-
-    startPool: { YES: startYes, NO: startNo },
-    pool: { YES: poolYes, NO: poolNo },
-    totalShares: { YES: 0, NO: 0 },
-    totalBets: { YES: 0, NO: 0 },
-    isResolved: false,
-
-    createdTime: Date.now(),
-    lastUpdatedTime: Date.now(),
-
-    volume24Hours: 0,
-    volume7Days: 0,
-  }
-
-  if (closeTime) contract.closeTime = closeTime
-
-  return contract
-}
-
-const calcStartPool = (
-  initialProbInt: number,
-  ante?: number,
-  phantomAnte = 200
-) => {
-  const p = initialProbInt / 100.0
-  const totalAnte = phantomAnte + (ante || 0)
-
-  const poolYes =
-    p === 0.5
-      ? p * totalAnte
-      : -(totalAnte * (-p + Math.sqrt((-1 + p) * -p))) / (-1 + 2 * p)
-
-  const poolNo = totalAnte - poolYes
-
-  const f = phantomAnte / totalAnte
-  const startYes = f * poolYes
-  const startNo = f * poolNo
-
-  return { startYes, startNo, poolYes, poolNo }
 }
 
 const firestore = admin.firestore()

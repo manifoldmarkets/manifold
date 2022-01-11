@@ -1,7 +1,16 @@
-import { sendEmail } from './send-email'
-import { Contract } from './types/contract'
-import { User } from './types/user'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
+import { sendTemplateEmail } from './send-email'
 import { getUser } from './utils'
+
+type market_resolved_template = {
+  name: string
+  creatorName: string
+  question: string
+  outcome: string
+  payout: string
+  url: string
+}
 
 export const sendMarketResolutionEmail = async (
   userId: string,
@@ -13,22 +22,24 @@ export const sendMarketResolutionEmail = async (
   const user = await getUser(userId)
   if (!user) return
 
-  const subject = `Resolved ${toDisplayResolution[resolution]}: ${contract.question}`
+  const outcome = toDisplayResolution[resolution]
 
-  const body = `Dear ${user.name},
+  const subject = `Resolved ${outcome}: ${contract.question}`
 
-A market you bet in has been resolved!
+  const templateData: market_resolved_template = {
+    name: user.name,
+    creatorName: creator.name,
+    question: contract.question,
+    outcome,
+    payout: `${Math.round(payout)}`,
+    url: `https://manifold.markets/${creator.username}/${contract.slug}`,
+  }
 
-Creator: ${contract.creatorName}
-Question: ${contract.question}
-Resolution: ${toDisplayResolution[resolution]}
+  // Modify template here:
+  // https://app.mailgun.com/app/sending/domains/mg.manifold.markets/templates/edit/market-resolved/initial
+  // Mailgun username: james@mantic.markets
 
-Your payout is M$ ${Math.round(payout)}
-
-View the market here:
-https://manifold.markets/${creator.username}/${contract.slug}
-`
-  await sendEmail(user.email, subject, body)
+  await sendTemplateEmail(user.email, subject, 'market-resolved', templateData)
 }
 
 const toDisplayResolution = { YES: 'YES', NO: 'NO', CANCEL: 'N/A', MKT: 'MKT' }

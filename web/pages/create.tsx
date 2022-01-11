@@ -10,10 +10,10 @@ import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
 import { Contract, path } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
-import { formatMoney } from '../lib/util/format'
 import { AdvancedPanel } from '../components/advanced-panel'
 import { createContract } from '../lib/firebase/api-call'
 import { Row } from '../components/layout/row'
+import { AmountInput } from '../components/amount-input'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -33,7 +33,7 @@ export default function NewContract() {
   const [description, setDescription] = useState('')
 
   const [ante, setAnte] = useState<number | undefined>(0)
-  const [anteError, setAnteError] = useState('')
+  const [anteError, setAnteError] = useState<string | undefined>()
   const [closeDate, setCloseDate] = useState('')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -73,17 +73,6 @@ export default function NewContract() {
     }
 
     await router.push(path(result.contract as Contract))
-  }
-
-  function onAnteChange(str: string) {
-    const amount = parseInt(str.replace(/[^\d]/, ''))
-
-    if (str && isNaN(amount)) return
-
-    setAnte(str ? amount : undefined)
-
-    if (user && user.balance < amount) setAnteError('Insufficient balance')
-    else setAnteError('')
   }
 
   const descriptionPlaceholder = `e.g. This market will resolve to “Yes” if, by June 2, 2021, 11:59:59 PM ET, Paxlovid (also known under PF-07321332)...`
@@ -166,33 +155,19 @@ export default function NewContract() {
               <label className="label">
                 <span className="mb-1">Subsidize your market</span>
               </label>
-
-              <label className="input-group">
-                <span className="text-sm ">M$</span>
-                <input
-                  className={clsx(
-                    'input input-bordered',
-                    anteError && 'input-error'
-                  )}
-                  type="text"
-                  placeholder="0"
-                  maxLength={9}
-                  value={ante ?? ''}
-                  disabled={isSubmitting}
-                  onChange={(e) => onAnteChange(e.target.value)}
-                />
-              </label>
-              <label>
-                <span className="label-text text-gray-500 ml-1">
-                  Remaining balance:{' '}
-                  {formatMoney(remainingBalance > 0 ? remainingBalance : 0)}
-                </span>
-              </label>
+              <AmountInput
+                className="items-start"
+                amount={ante}
+                onChange={setAnte}
+                error={anteError}
+                setError={setAnteError}
+                disabled={isSubmitting}
+              />
             </div>
 
             <Spacer h={4} />
 
-            <div className="form-control">
+            <div className="form-control items-start mb-1">
               <label className="label">
                 <span className="mb-1">Close date</span>
               </label>
@@ -208,8 +183,8 @@ export default function NewContract() {
             </div>
             <label>
               <span className="label-text text-gray-500 ml-1">
-                No new trades will be allowed after{' '}
-                {closeDate ? formattedCloseTime : 'this time'}
+                No trades allowed after this date
+                {/* {closeDate ? formattedCloseTime : 'this date'} */}
               </span>
             </label>
           </AdvancedPanel>

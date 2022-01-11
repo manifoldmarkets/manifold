@@ -13,6 +13,7 @@ export type Bet = {
   sale?: {
     amount: number // amount user makes from sale
     betId: string // id of bet being sold
+    // TODO: add sale time?
   }
 
   isSold?: boolean // true if this BUY bet has been sold

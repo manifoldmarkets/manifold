@@ -56,7 +56,7 @@ export default function ContractPage(props: {
   const isCreator = user?.id === creatorId
   const allowTrade =
     !isResolved && (!contract.closeTime || contract.closeTime > Date.now())
-  const allowResolve = !isResolved && isCreator && user
+  const allowResolve = !isResolved && isCreator && !!user
 
   const { probPercent } = compute(contract)
 
@@ -73,7 +73,7 @@ export default function ContractPage(props: {
   }
 
   return (
-    <Page wide={allowTrade}>
+    <Page wide={allowTrade || allowResolve}>
       <SEO
         title={question}
         description={description}

@@ -2,14 +2,16 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
-import { Contract } from './types/contract'
-import { User } from './types/user'
-import { Bet } from './types/bet'
-import { getUser } from './utils'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
+import { Bet } from '../../common/bet'
+import { getUser, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
-
-export const PLATFORM_FEE = 0.01 // 1%
-export const CREATOR_FEE = 0.01 // 1%
+import {
+  getCancelPayouts,
+  getMktPayouts,
+  getStandardPayouts,
+} from '../../common/payouts'
 
 export const resolveMarket = functions
   .runWith({ minInstances: 1 })
@@ -76,7 +78,9 @@ export const resolveMarket = functions
         _.sumBy(group, (g) => g.payout)
       )
 
-      const payoutPromises = Object.entries(userPayouts).map(payUser)
+      const payoutPromises = Object.entries(userPayouts).map(
+        ([userId, payout]) => payUser(userId, payout)
+      )
 
       const result = await Promise.all(payoutPromises)
         .catch((e) => ({ status: 'error', message: e }))
@@ -117,121 +121,3 @@ const sendResolutionEmails = async (
 }
 
 const firestore = admin.firestore()
-
-const getCancelPayouts = (truePool: number, bets: Bet[]) => {
-  console.log('resolved N/A, pool M$', truePool)
-
-  const betSum = _.sumBy(bets, (b) => b.amount)
-
-  return bets.map((bet) => ({
-    userId: bet.userId,
-    payout: (bet.amount / betSum) * truePool,
-  }))
-}
-
-const getStandardPayouts = (
-  outcome: string,
-  truePool: number,
-  contract: Contract,
-  bets: Bet[]
-) => {
-  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
-  const winningBets = outcome === 'YES' ? yesBets : noBets
-
-  const betSum = _.sumBy(winningBets, (b) => b.amount)
-
-  if (betSum >= truePool) return getCancelPayouts(truePool, winningBets)
-
-  const creatorPayout = CREATOR_FEE * truePool
-  console.log(
-    'resolved',
-    outcome,
-    'pool: M$',
-    truePool,
-    'creator fee: M$',
-    creatorPayout
-  )
-
-  const shareDifferenceSum = _.sumBy(winningBets, (b) => b.shares - b.amount)
-
-  const winningsPool = truePool - betSum
-
-  const winnerPayouts = winningBets.map((bet) => ({
-    userId: bet.userId,
-    payout:
-      (1 - fees) *
-      (bet.amount +
-        ((bet.shares - bet.amount) / shareDifferenceSum) * winningsPool),
-  }))
-
-  return winnerPayouts.concat([
-    { userId: contract.creatorId, payout: creatorPayout },
-  ]) // add creator fee
-}
-
-const getMktPayouts = (truePool: number, contract: Contract, bets: Bet[]) => {
-  const p =
-    contract.pool.YES ** 2 / (contract.pool.YES ** 2 + contract.pool.NO ** 2)
-  console.log('Resolved MKT at p=', p, 'pool: $M', truePool)
-
-  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
-
-  const weightedBetTotal =
-    p * _.sumBy(yesBets, (b) => b.amount) +
-    (1 - p) * _.sumBy(noBets, (b) => b.amount)
-
-  if (weightedBetTotal >= truePool) {
-    return bets.map((bet) => ({
-      userId: bet.userId,
-      payout:
-        (((bet.outcome === 'YES' ? p : 1 - p) * bet.amount) /
-          weightedBetTotal) *
-        truePool,
-    }))
-  }
-
-  const winningsPool = truePool - weightedBetTotal
-
-  const weightedShareTotal =
-    p * _.sumBy(yesBets, (b) => b.shares - b.amount) +
-    (1 - p) * _.sumBy(noBets, (b) => b.shares - b.amount)
-
-  const yesPayouts = yesBets.map((bet) => ({
-    userId: bet.userId,
-    payout:
-      (1 - fees) *
-      (p * bet.amount +
-        ((p * (bet.shares - bet.amount)) / weightedShareTotal) * winningsPool),
-  }))
-
-  const noPayouts = noBets.map((bet) => ({
-    userId: bet.userId,
-    payout:
-      (1 - fees) *
-      ((1 - p) * bet.amount +
-        (((1 - p) * (bet.shares - bet.amount)) / weightedShareTotal) *
-          winningsPool),
-  }))
-
-  const creatorPayout = CREATOR_FEE * truePool
-
-  return [
-    ...yesPayouts,
-    ...noPayouts,
-    { userId: contract.creatorId, payout: creatorPayout },
-  ]
-}
-
-export const payUser = ([userId, payout]: [string, number]) => {
-  return firestore.runTransaction(async (transaction) => {
-    const userDoc = firestore.doc(`users/${userId}`)
-    const userSnap = await transaction.get(userDoc)
-    if (!userSnap.exists) return
-    const user = userSnap.data() as User
-
-    const newUserBalance = user.balance + payout
-    transaction.update(userDoc, { balance: newUserBalance })
-  })
-}
-
-const fees = PLATFORM_FEE + CREATOR_FEE

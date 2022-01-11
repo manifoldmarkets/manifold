@@ -1,9 +1,10 @@
-import { Bet } from './firebase/bets'
-import { Contract } from './firebase/contracts'
+import { Bet } from './bet'
+import { Contract } from './contract'
+import { FEES } from './fees'
 
-const fees = 0.02
+export const blah = () => 999
 
-export function getProbability(pool: { YES: number; NO: number }) {
+export const getProbability = (pool: { YES: number; NO: number }) => {
   const [yesPool, noPool] = [pool.YES, pool.NO]
   const numerator = Math.pow(yesPool, 2)
   const denominator = Math.pow(yesPool, 2) + Math.pow(noPool, 2)
@@ -59,7 +60,7 @@ export function calculatePayout(
   const total = totalShares[outcome] - totalBets[outcome]
   const winningsPool = truePool - totalBets[outcome]
 
-  return (1 - fees) * (amount + ((shares - amount) / total) * winningsPool)
+  return (1 - FEES) * (amount + ((shares - amount) / total) * winningsPool)
 }
 
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
@@ -78,7 +79,7 @@ export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
   const total = totalSharesOutcome - totalBetsOutcome
   const winningsPool = truePool - totalBetsOutcome
 
-  return (1 - fees) * (amount + ((shares - amount) / total) * winningsPool)
+  return (1 - FEES) * (amount + ((shares - amount) / total) * winningsPool)
 }
 
 function calculateMktPayout(contract: Contract, bet: Bet) {
@@ -103,7 +104,7 @@ function calculateMktPayout(contract: Contract, bet: Bet) {
     (1 - p) * (contract.totalShares.NO - contract.totalBets.NO)
 
   return (
-    (1 - fees) *
+    (1 - FEES) *
     (betP * bet.amount +
       ((betP * (bet.shares - bet.amount)) / weightedShareTotal) * winningsPool)
   )
@@ -160,6 +161,6 @@ export function calculateSaleAmount(contract: Contract, bet: Bet) {
 
   const adjShareValue = Math.min(Math.min(1, f) * shareValue, myPool)
 
-  const saleAmount = (1 - fees) * adjShareValue
+  const saleAmount = (1 - FEES) * adjShareValue
   return saleAmount
 }

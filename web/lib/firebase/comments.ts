@@ -9,22 +9,11 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore'
-import { db } from './init'
-import { User } from './users'
 import { listenForValues } from './utils'
-
-// Currently, comments are created after the bet, not atomically with the bet.
-// They're uniquely identified by the pair contractId/betId.
-export type Comment = {
-  contractId: string
-  betId: string
-  text: string
-  createdTime: number
-  // Denormalized, for rendering comments
-  userName?: string
-  userUsername?: string
-  userAvatarUrl?: string
-}
+import { db } from './init'
+import { User } from '../../../common/user'
+import { Comment } from '../../../common/comment'
+export type { Comment }
 
 export async function createComment(
   contractId: string,
