@@ -91,7 +91,7 @@ export const ContractOverview = (props: {
         </>
       )}
 
-      <ContractFeed contract={contract} />
+      <ContractFeed contract={contract} feedType="market" />
     </Col>
   )
 }

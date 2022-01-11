@@ -1,5 +1,15 @@
-import { doc, collection, onSnapshot, setDoc } from 'firebase/firestore'
-
+import {
+  doc,
+  collection,
+  onSnapshot,
+  setDoc,
+  query,
+  collectionGroup,
+  getDocs,
+  where,
+  orderBy,
+} from 'firebase/firestore'
+import { listenForValues } from './utils'
 import { db } from './init'
 import { User } from '../../../common/user'
 import { Comment } from '../../../common/comment'
@@ -47,4 +57,25 @@ export function mapCommentsByBetId(comments: Comment[]) {
     map[comment.betId] = comment
   }
   return map
+}
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000
+
+// Define "recent" as "<3 days ago" for now
+const recentCommentsQuery = query(
+  collectionGroup(db, 'comments'),
+  where('createdTime', '>', Date.now() - 3 * DAY_IN_MS),
+  orderBy('createdTime', 'desc')
+)
+
+export async function getRecentComments() {
+  const snapshot = await getDocs(recentCommentsQuery)
+  const comments = snapshot.docs.map((doc) => doc.data() as Comment)
+  return comments
+}
+
+export function listenForRecentComments(
+  setComments: (comments: Comment[]) => void
+) {
+  return listenForValues<Comment>(recentCommentsQuery, setComments)
 }
