@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useUser } from '../hooks/use-user'
 import { Row } from './layout/row'
 import { firebaseLogin, User } from '../lib/firebase/users'
-import { ManticLogo } from './mantic-logo'
+import { ManifoldLogo } from './manifold-logo'
 import { ProfileMenu } from './profile-menu'
 
 export function NavBar(props: {
@@ -29,7 +29,7 @@ export function NavBar(props: {
           wide ? 'max-w-6xl' : 'max-w-4xl'
         )}
       >
-        <ManticLogo darkBackground={darkBackground} />
+        <ManifoldLogo darkBackground={darkBackground} />
 
         <Row className="items-center gap-6 sm:gap-8 md:ml-16 lg:ml-40">
           {children}

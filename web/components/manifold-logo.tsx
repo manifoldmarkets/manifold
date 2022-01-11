@@ -1,16 +1,17 @@
 import Link from 'next/link'
 import clsx from 'clsx'
 
-export function ManticLogo(props: { darkBackground?: boolean }) {
+export function ManifoldLogo(props: { darkBackground?: boolean }) {
   const { darkBackground } = props
+
   return (
     <Link href="/">
       <a className="flex flex-row gap-3">
         <img
-          className="sm:h-10 sm:w-10 hover:rotate-12 transition-all"
-          src="/logo-icon.svg"
-          width={40}
-          height={40}
+          className="hover:rotate-12 transition-all"
+          src="/logo.svg"
+          width={60}
+          height={60}
         />
         <div
           className={clsx(
