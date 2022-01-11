@@ -1,17 +1,17 @@
 import _ from 'lodash'
 import { ContractFeed } from '../components/contract-feed'
-import { Row } from '../components/layout/row'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { useRecentComments } from '../hooks/use-comments'
 import { useContracts } from '../hooks/use-contracts'
 import { Contract } from '../lib/firebase/contracts'
 import { Comment } from '../lib/firebase/comments'
+import { Col } from '../components/layout/col'
 
 function FeedCard(props: { contract: Contract }) {
   const { contract } = props
   return (
-    <div className="card bg-white shadow-md rounded-lg divide-y divide-gray-200 py-6 px-4 mb-4">
+    <div className="card bg-white shadow-md rounded-lg divide-y divide-gray-200 py-6 px-4 max-w-3xl">
       <ContractFeed contract={contract} feedType="activity" />
     </div>
   )
@@ -74,16 +74,14 @@ export function ActivityFeed() {
   const recentComments = useRecentComments() || []
   // TODO: Handle static props correctly?
   const activeContracts = findActiveContracts(contracts, recentComments)
-  return contracts ? (
+  return contracts.length > 0 ? (
     <>
       <Title text="Recent Activity" />
-      <Row className="gap-4">
-        <div>
-          {activeContracts.map((contract) => (
-            <FeedCard contract={contract} />
-          ))}
-        </div>
-      </Row>
+      <Col className="gap-4">
+        {activeContracts.map((contract) => (
+          <FeedCard contract={contract} />
+        ))}
+      </Col>
     </>
   ) : (
     <></>
