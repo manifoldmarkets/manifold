@@ -14,6 +14,7 @@ import { AdvancedPanel } from '../components/advanced-panel'
 import { createContract } from '../lib/firebase/api-call'
 import { Row } from '../components/layout/row'
 import { AmountInput } from '../components/amount-input'
+import { ActivityFeed } from './activity'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -210,11 +211,9 @@ export default function NewContract() {
         </form>
       </div>
 
-      <Spacer h={10} />
+      <Spacer h={6} />
 
-      <Title text="Your markets" />
-
-      {creator && <CreatorContractsList creator={creator} />}
+      <ActivityFeed />
     </Page>
   )
 }
