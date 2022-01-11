@@ -69,26 +69,31 @@ function findActiveContracts(
   return contracts
 }
 
-export default function ActivityPage() {
+export function ActivityFeed() {
   const contracts = useContracts() || []
   const recentComments = useRecentComments() || []
   // TODO: Handle static props correctly?
   const activeContracts = findActiveContracts(contracts, recentComments)
+  return contracts ? (
+    <>
+      <Title text="Recent Activity" />
+      <Row className="gap-4">
+        <div>
+          {activeContracts.map((contract) => (
+            <FeedCard contract={contract} />
+          ))}
+        </div>
+      </Row>
+    </>
+  ) : (
+    <></>
+  )
+}
 
+export default function ActivityPage() {
   return (
     <Page>
-      <Title text="Recent Activity" />
-      {contracts ? (
-        <Row className="gap-4">
-          <div>
-            {activeContracts.map((contract) => (
-              <FeedCard contract={contract} />
-            ))}
-          </div>
-        </Row>
-      ) : (
-        <></>
-      )}
+      <ActivityFeed />
     </Page>
   )
 }
