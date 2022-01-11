@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { firebaseLogout, User } from '../lib/firebase/users'
 import { formatMoney } from '../lib/util/format'
-import { Row } from './layout/row'
+import { Col } from './layout/col'
 import { MenuButton } from './menu'
 
 export function ProfileMenu(props: { user: User }) {
@@ -67,16 +67,16 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
 function ProfileSummary(props: { user: User }) {
   const { user } = props
   return (
-    <Row className="avatar items-center">
-      <div className="rounded-full w-10 h-10 mr-4">
+    <Col className="avatar items-center sm:flex-row gap-2 sm:gap-0">
+      <div className="rounded-full w-10 h-10 sm:mr-4">
         <Image src={user.avatarUrl} width={40} height={40} />
       </div>
       <div className="truncate text-left" style={{ maxWidth: 170 }}>
-        {user.name}
+        <div className="hidden sm:flex">{user.name}</div>
         <div className="text-gray-700 text-sm">
           {formatMoney(Math.floor(user.balance))}
         </div>
       </div>
-    </Row>
+    </Col>
   )
 }

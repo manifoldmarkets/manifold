@@ -9,7 +9,7 @@ function SignInCard() {
     <div className="card glass sm:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-4 sm:mx-auto my-12">
       <div className="p-4">
         <img
-          src="/logo-icon-white-bg.png"
+          src="/logo-bg-white.png"
           className="rounded-lg shadow-lg w-20 h-20"
         />
       </div>

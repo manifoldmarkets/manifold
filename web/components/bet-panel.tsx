@@ -20,11 +20,11 @@ import {
   calculatePayoutAfterCorrectBet,
 } from '../../common/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
-import { AddFundsButton } from './add-funds-button'
 import { OutcomeLabel } from './outcome-label'
 import { AdvancedPanel } from './advanced-panel'
 import { Bet } from '../../common/bet'
 import { placeBet } from '../lib/firebase/api-call'
+import { AmountInput } from './amount-input'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {
   useEffect(() => {
@@ -48,17 +48,9 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     setWasSubmitted(false)
   }
 
-  function onBetChange(str: string) {
+  function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
-
-    const amount = parseInt(str.replace(/[^\d]/, ''))
-
-    if (str && isNaN(amount)) return
-
-    setBetAmount(str ? amount : undefined)
-
-    if (user && user.balance < amount) setError('Insufficient balance')
-    else setError(undefined)
+    setBetAmount(newAmount)
   }
 
   async function submitBet() {
@@ -106,8 +98,6 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     : 0
   const estimatedReturnPercent = (estimatedReturn * 100).toFixed() + '%'
 
-  const remainingBalance = (user?.balance || 0) - (betAmount || 0)
-
   return (
     <Col
       className={clsx('bg-gray-100 shadow-md px-8 py-6 rounded-md', className)}
@@ -121,41 +111,17 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         onSelect={(choice) => onBetChoice(choice)}
       />
 
-      <div className="mt-3 mb-1 text-sm text-gray-500">
-        Amount{' '}
-        {user && (
-          <span className="float-right">
-            {formatMoney(
-              remainingBalance > 0 ? Math.floor(remainingBalance) : 0
-            )}{' '}
-            left
-          </span>
-        )}
-      </div>
-      <Col className="my-2">
-        <label className="input-group">
-          <span className="text-sm bg-gray-200">M$</span>
-          <input
-            className={clsx(
-              'input input-bordered w-full',
-              error && 'input-error'
-            )}
-            type="text"
-            placeholder="0"
-            maxLength={9}
-            value={betAmount ?? ''}
-            onChange={(e) => onBetChange(e.target.value)}
-          />
-        </label>
-        {error && (
-          <div className="font-medium tracking-wide text-red-500 text-xs mt-3">
-            {error}
-          </div>
-        )}
-        {user && user.balance !== 1000 && (
-          <AddFundsButton className="self-end mt-3" />
-        )}
-      </Col>
+      <div className="my-3 text-sm text-gray-500">Amount </div>
+      <AmountInput
+        inputClassName="w-full"
+        amount={betAmount}
+        onChange={onBetChange}
+        error={error}
+        setError={setError}
+        disabled={isSubmitting}
+      />
+
+      <Spacer h={4} />
 
       <div className="mt-2 mb-1 text-sm text-gray-500">Implied probability</div>
       <Row>

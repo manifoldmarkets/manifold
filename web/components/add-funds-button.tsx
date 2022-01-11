@@ -18,7 +18,7 @@ export function AddFundsButton(props: { className?: string }) {
       <label
         htmlFor="add-funds"
         className={clsx(
-          'btn btn-sm normal-case modal-button bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 font-normal border-none',
+          'btn btn-xs normal-case modal-button bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600 font-normal border-none',
           className
         )}
       >
