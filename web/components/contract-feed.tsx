@@ -86,6 +86,8 @@ function FeedBet(props: { activityItem: any }) {
   const { id, contractId, amount, outcome, createdTime } = activityItem
   const user = useUser()
   const isCreator = user?.id == activityItem.userId
+  // The creator can comment if the bet was posted in the last hour
+  const canComment = isCreator && Date.now() - createdTime < 60 * 60 * 1000
 
   const [comment, setComment] = useState('')
   async function submitComment() {
@@ -106,7 +108,7 @@ function FeedBet(props: { activityItem: any }) {
           <span>{isCreator ? 'You' : 'A trader'}</span> placed{' '}
           {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
           <Timestamp time={createdTime} />
-          {isCreator && (
+          {canComment && (
             // Allow user to comment in an textarea if they are the creator
             <div className="mt-2">
               <textarea
