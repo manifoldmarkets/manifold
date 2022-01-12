@@ -31,7 +31,7 @@ export function Linkify(props: { text: string; gray?: boolean }) {
     )
   })
   return (
-    <span>
+    <span className="break-words">
       {text.split(regex).map((part, i) => (
         <Fragment key={i}>
           {part}

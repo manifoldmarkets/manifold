@@ -10,11 +10,7 @@ import { Col } from '../components/layout/col'
 
 function FeedCard(props: { contract: Contract }) {
   const { contract } = props
-  return (
-    <div className="card bg-white shadow-md rounded-lg divide-y divide-gray-200 py-6 px-4 max-w-3xl">
-      <ContractFeed contract={contract} feedType="activity" />
-    </div>
-  )
+  return <ContractFeed contract={contract} feedType="activity" />
 }
 
 // This does NOT include comment times, since those aren't part of the contract atm.
@@ -80,10 +76,12 @@ export function ActivityFeed(props: {
 
   return contracts.length > 0 ? (
     <>
-      <Title text="Recent Activity" />
-      <Col className="gap-4">
+      <Title className="mb-0" text="Recent Activity" />
+      <Col className="divide-gray-300 divide-y">
         {activeContracts.map((contract) => (
-          <FeedCard contract={contract} />
+          <div className="py-6 px-1 hover:bg-gray-100">
+            <FeedCard contract={contract} />
+          </div>
         ))}
       </Col>
     </>
