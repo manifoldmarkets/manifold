@@ -8,6 +8,7 @@ import { Contract, compute, path } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { parseTags } from '../lib/util/parse'
 import dayjs from 'dayjs'
+import { TrendingUpIcon } from '@heroicons/react/solid'
 
 export function ContractCard(props: {
   contract: Contract
@@ -109,7 +110,8 @@ export function AbbrContractDetails(props: {
         <div>•</div>
         {showHotVolume ? (
           <div className="whitespace-nowrap">
-            {formatMoney(volume24Hours)} 24h vol
+            <TrendingUpIcon className="h-5 w-5 text-gray-500 inline" />{' '}
+            {formatMoney(volume24Hours)}
           </div>
         ) : (
           <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
