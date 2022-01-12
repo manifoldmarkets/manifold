@@ -160,8 +160,8 @@ export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
 }
 
 function calculateMktPayout(contract: Contract, bet: Bet) {
-  const p =
-    contract.pool.YES ** 2 / (contract.pool.YES ** 2 + contract.pool.NO ** 2)
+  const p = getProbability(contract.totalShares)
+
   const weightedTotal =
     p * contract.totalBets.YES + (1 - p) * contract.totalBets.NO
 
@@ -196,6 +196,7 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
   throw new Error('Contract was not resolved')
 }
 
+// deprecated use MKT payout
 export function currentValue(contract: Contract, bet: Bet) {
   const prob = getProbability(contract.pool)
   const yesPayout = calculatePayout(contract, bet, 'YES')
