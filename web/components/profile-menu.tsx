@@ -16,7 +16,7 @@ export function ProfileMenu(props: { user: User }) {
       />
 
       <MenuButton
-        className="md:hidden"
+        className="md:hidden mr-2"
         menuItems={getNavigationOptions(user, { mobile: true })}
         buttonContent={<ProfileSummary user={user} />}
       />
@@ -33,7 +33,10 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
     },
     ...(mobile
       ? [
-          { name: 'About', href: '/about' },
+          {
+            name: 'All markets',
+            href: '/markets',
+          },
           {
             name: 'Create a market',
             href: '/create',
@@ -56,6 +59,7 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
       name: 'Discord',
       href: 'https://discord.gg/eHQBNBqXuh',
     },
+    ...(mobile ? [{ name: 'About', href: '/about' }] : []),
     {
       name: 'Sign out',
       href: '#',

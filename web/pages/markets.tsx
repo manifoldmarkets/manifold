@@ -1,54 +1,30 @@
 import _ from 'lodash'
-import { ContractsGrid, SearchableGrid } from '../components/contracts-list'
-import { Spacer } from '../components/layout/spacer'
+import { SearchableGrid } from '../components/contracts-list'
 import { Page } from '../components/page'
-import { Title } from '../components/title'
-import { useContracts, useHotContracts } from '../hooks/use-contracts'
+import { useContracts } from '../hooks/use-contracts'
 import { useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
-import {
-  Contract,
-  getHotContracts,
-  listAllContracts,
-} from '../lib/firebase/contracts'
+import { Contract, listAllContracts } from '../lib/firebase/contracts'
 
 export async function getStaticProps() {
-  const [contracts, hotContracts] = await Promise.all([
-    listAllContracts().catch((_) => []),
-    getHotContracts().catch(() => []),
-  ])
+  const contracts = await listAllContracts().catch((_) => {})
 
   return {
     props: {
       contracts,
-      hotContracts,
     },
 
     revalidate: 60, // regenerate after a minute
   }
 }
 
-export default function Markets(props: {
-  contracts: Contract[]
-  hotContracts: Contract[]
-}) {
-  const contracts = useContracts()
-  const hotContracts = useHotContracts()
+export default function Markets(props: { contracts: Contract[] }) {
+  const contracts = useContracts() ?? props.contracts
   const { query, setQuery, sort, setSort } = useQueryAndSortParams()
-
-  const readyHotContracts = hotContracts ?? props.hotContracts
-  const readyContracts = contracts ?? props.contracts
 
   return (
     <Page>
-      <div className="w-full bg-indigo-50 border-2 border-indigo-100 p-6 rounded-lg shadow-md">
-        <Title className="mt-0" text="🔥 Markets" />
-        <ContractsGrid contracts={readyHotContracts} showHotVolume />
-      </div>
-
-      <Spacer h={10} />
-
       <SearchableGrid
-        contracts={readyContracts}
+        contracts={contracts}
         query={query}
         setQuery={setQuery}
         sort={sort}

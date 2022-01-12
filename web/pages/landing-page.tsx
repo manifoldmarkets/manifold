@@ -34,14 +34,7 @@ const scrollToAbout = () => {
 function Hero() {
   return (
     <div className="overflow-hidden h-screen bg-world-trading bg-cover bg-gray-900 bg-center lg:bg-left">
-      <NavBar isLandingPage darkBackground>
-        <div
-          className="text-base font-medium text-white ml-8 cursor-pointer hover:underline hover:decoration-teal-500 hover:decoration-2"
-          onClick={scrollToAbout}
-        >
-          About
-        </div>
-      </NavBar>
+      <NavBar isLandingPage darkBackground />
       <main>
         <div className="pt-32 sm:pt-8 lg:pt-0 lg:pb-14 lg:overflow-hidden">
           <div className="mx-auto max-w-7xl lg:px-8 xl:px-0">

@@ -212,7 +212,7 @@ export default function NewContract() {
 
       <Spacer h={6} />
 
-      <ActivityFeed />
+      <ActivityFeed contracts={[]} recentComments={[]} />
     </Page>
   )
 }
