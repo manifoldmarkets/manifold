@@ -18,11 +18,11 @@ export function AddFundsButton(props: { className?: string }) {
       <label
         htmlFor="add-funds"
         className={clsx(
-          'btn btn-xs btn-ghost normal-case modal-button font-normal border-none',
+          'btn btn-xs btn-outline normal-case modal-button font-normal',
           className
         )}
       >
-        (add funds)
+        Add funds
       </label>
       <input type="checkbox" id="add-funds" className="modal-toggle" />
 
