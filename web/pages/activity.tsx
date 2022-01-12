@@ -75,16 +75,18 @@ export function ActivityFeed(props: {
   const activeContracts = findActiveContracts(contracts, recentComments)
 
   return contracts.length > 0 ? (
-    <>
-      <Title className="mb-0" text="Recent Activity" />
-      <Col className="divide-gray-300 divide-y">
-        {activeContracts.map((contract) => (
-          <div className="py-6 px-1 hover:bg-gray-100">
-            <FeedCard contract={contract} />
-          </div>
-        ))}
+    <Col className="items-center">
+      <Col className="w-full max-w-3xl">
+        <Title text="Recent Activity" />
+        <Col className="w-full bg-white self-center divide-gray-300 divide-y">
+          {activeContracts.map((contract) => (
+            <div className="py-6 px-1 sm:px-4">
+              <FeedCard contract={contract} />
+            </div>
+          ))}
+        </Col>
       </Col>
-    </>
+    </Col>
   ) : (
     <></>
   )
