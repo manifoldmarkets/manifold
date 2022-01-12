@@ -1,19 +1,19 @@
 import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
+import { getProbability } from '../../common/calculate'
 import { useBets } from '../hooks/use-bets'
 import { useWindowSize } from '../hooks/use-window-size'
 import { Contract } from '../lib/firebase/contracts'
 
 export function ContractProbGraph(props: { contract: Contract }) {
   const { contract } = props
-  const { id, startPool, resolutionTime } = contract
+  const { id, phantomShares, resolutionTime } = contract
 
   let bets = useBets(id)
   if (bets === 'loading') bets = []
 
-  const startProb =
-    startPool.YES ** 2 / (startPool.YES ** 2 + startPool.NO ** 2)
+  const startProb = getProbability(phantomShares)
 
   const times = [
     contract.createdTime,

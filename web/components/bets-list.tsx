@@ -14,7 +14,11 @@ import {
 } from '../lib/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
-import { Contract, getContractFromId, path } from '../lib/firebase/contracts'
+import {
+  Contract,
+  getContractFromId,
+  contractPath,
+} from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import {
@@ -130,7 +134,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
       <Row className="flex-wrap gap-4">
         <Col className="flex-[2] gap-1">
           <Row className="mr-6">
-            <Link href={path(contract)}>
+            <Link href={contractPath(contract)}>
               <a
                 className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
                 onClick={(e) => e.stopPropagation()}

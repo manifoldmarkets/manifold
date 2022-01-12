@@ -3,7 +3,11 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 
-import { compute, Contract, listContracts } from '../lib/firebase/contracts'
+import {
+  contractMetrics,
+  Contract,
+  listContracts,
+} from '../lib/firebase/contracts'
 import { User } from '../lib/firebase/users'
 import { Col } from './layout/col'
 import { SiteLink } from './site-link'
@@ -189,7 +193,9 @@ export function SearchableGrid(props: {
   if (sort === 'newest' || sort === 'resolved' || sort === 'all') {
     matches.sort((a, b) => b.createdTime - a.createdTime)
   } else if (sort === 'most-traded') {
-    matches.sort((a, b) => compute(b).truePool - compute(a).truePool)
+    matches.sort(
+      (a, b) => contractMetrics(b).truePool - contractMetrics(a).truePool
+    )
   } else if (sort === 'creator' || sort === 'tag') {
     matches.sort((a, b) => b.volume7Days - a.volume7Days)
   }
