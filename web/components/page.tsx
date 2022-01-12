@@ -10,7 +10,7 @@ export function Page(props: { wide?: boolean; children?: any }) {
 
       <div
         className={clsx(
-          'w-full px-4 pb-8 mx-auto',
+          'w-full px-2 pb-8 mx-auto',
           wide ? 'max-w-6xl' : 'max-w-4xl'
         )}
       >
