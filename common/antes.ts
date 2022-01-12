@@ -15,10 +15,10 @@ export const calcStartPool = (initialProbInt: number, ante = 0) => {
   const poolYes = p * ante
   const poolNo = (1 - p) * ante
 
-  const startYes = Math.sqrt(p) * PHANTOM_ANTE
-  const startNo = Math.sqrt(1 - p) * PHANTOM_ANTE
+  const phantomYes = Math.sqrt(p) * PHANTOM_ANTE
+  const phantomNo = Math.sqrt(1 - p) * PHANTOM_ANTE
 
-  return { sharesYes, sharesNo, poolYes, poolNo, startYes, startNo }
+  return { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo }
 }
 
 export function getAnteBets(

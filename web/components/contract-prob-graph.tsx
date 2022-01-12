@@ -8,12 +8,12 @@ import { Contract } from '../lib/firebase/contracts'
 
 export function ContractProbGraph(props: { contract: Contract }) {
   const { contract } = props
-  const { id, startPool, resolutionTime } = contract
+  const { id, phantomShares, resolutionTime } = contract
 
   let bets = useBets(id)
   if (bets === 'loading') bets = []
 
-  const startProb = getProbability(startPool)
+  const startProb = getProbability(phantomShares)
 
   const times = [
     contract.createdTime,

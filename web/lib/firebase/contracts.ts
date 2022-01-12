@@ -29,7 +29,7 @@ export function contractPath(contract: Contract) {
 export function contractMetrics(contract: Contract) {
   const {
     pool,
-    startPool,
+    phantomShares,
     totalShares,
     createdTime,
     resolutionTime,
@@ -40,7 +40,7 @@ export function contractMetrics(contract: Contract) {
   const prob = getProbability(totalShares)
   const probPercent = Math.round(prob * 100) + '%'
 
-  const startProb = getProbability(startPool)
+  const startProb = getProbability(phantomShares)
 
   const createdDate = dayjs(createdTime).format('MMM D')
 

@@ -120,7 +120,7 @@ export function calculateStandardPayout(
   const { amount, outcome: betOutcome, shares } = bet
   if (betOutcome !== outcome) return 0
 
-  const { totalShares, totalBets, startPool } = contract
+  const { totalShares, totalBets, phantomShares } = contract
   if (totalShares[outcome] === 0) return 0
 
   const truePool = contract.pool.YES + contract.pool.NO
@@ -128,7 +128,8 @@ export function calculateStandardPayout(
   if (totalBets[outcome] >= truePool)
     return (amount / totalBets[outcome]) * truePool
 
-  const total = totalShares[outcome] - startPool[outcome] - totalBets[outcome]
+  const total =
+    totalShares[outcome] - phantomShares[outcome] - totalBets[outcome]
   const winningsPool = truePool - totalBets[outcome]
 
   return (1 - FEES) * (amount + ((shares - amount) / total) * winningsPool)
@@ -178,10 +179,12 @@ function calculateMktPayout(contract: Contract, bet: Bet) {
   const weightedShareTotal =
     p *
       (contract.totalShares.YES -
-        contract.startPool.YES -
+        contract.phantomShares.YES -
         contract.totalBets.YES) +
     (1 - p) *
-      (contract.totalShares.NO - contract.startPool.NO - contract.totalBets.NO)
+      (contract.totalShares.NO -
+        contract.phantomShares.NO -
+        contract.totalBets.NO)
 
   return (
     (1 - FEES) *

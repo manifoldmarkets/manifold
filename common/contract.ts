@@ -12,7 +12,7 @@ export type Contract = {
   // outcomes: ['YES', 'NO']
 
   mechanism: 'dpm-2'
-  startPool: { YES: number; NO: number }
+  phantomShares: { YES: number; NO: number }
   pool: { YES: number; NO: number }
   totalShares: { YES: number; NO: number }
   totalBets: { YES: number; NO: number }

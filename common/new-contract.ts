@@ -13,7 +13,7 @@ export function getNewContract(
   ante?: number,
   closeTime?: number
 ) {
-  const { sharesYes, sharesNo, poolYes, poolNo, startYes, startNo } =
+  const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
     calcStartPool(initialProb, ante)
 
   const contract: Contract = {
@@ -29,7 +29,7 @@ export function getNewContract(
     description: description.trim(),
 
     mechanism: 'dpm-2',
-    startPool: { YES: startYes, NO: startNo },
+    phantomShares: { YES: phantomYes, NO: phantomNo },
     pool: { YES: poolYes, NO: poolNo },
     totalShares: { YES: sharesYes, NO: sharesNo },
     totalBets: { YES: poolYes, NO: poolNo },
