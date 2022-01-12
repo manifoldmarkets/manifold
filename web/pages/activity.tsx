@@ -11,7 +11,7 @@ import { Col } from '../components/layout/col'
 function FeedCard(props: { contract: Contract }) {
   const { contract } = props
   return (
-    <div className="card bg-white shadow-md rounded-lg divide-y divide-gray-200 py-6 px-4 max-w-3xl">
+    <div className="card bg-white shadow-md rounded-lg divide-y divide-gray-200 py-6 px-4 max-w-4xl">
       <ContractFeed contract={contract} feedType="activity" />
     </div>
   )

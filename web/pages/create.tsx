@@ -84,7 +84,7 @@ export default function NewContract() {
     <Page>
       <Title text="Create a new prediction market" />
 
-      <div className="w-full max-w-3xl bg-gray-100 rounded-lg shadow-md px-6 py-4">
+      <div className="w-full max-w-4xl bg-gray-100 rounded-lg shadow-md px-6 py-4">
         {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
         {/* When the form is submitted, create a new contract in the database */}
         <form>
