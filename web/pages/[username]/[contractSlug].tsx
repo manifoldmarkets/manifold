@@ -12,7 +12,7 @@ import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
 import { User } from '../../lib/firebase/users'
 import {
-  compute,
+  contractMetrics,
   Contract,
   getContractFromSlug,
 } from '../../lib/firebase/contracts'
@@ -58,7 +58,7 @@ export default function ContractPage(props: {
     !isResolved && (!contract.closeTime || contract.closeTime > Date.now())
   const allowResolve = !isResolved && isCreator && !!user
 
-  const { probPercent } = compute(contract)
+  const { probPercent } = contractMetrics(contract)
 
   const description = resolution
     ? `Resolved ${resolution}. ${contract.description}`

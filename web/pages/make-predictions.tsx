@@ -10,7 +10,11 @@ import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
 import { createContract } from '../lib/firebase/api-call'
-import { compute, Contract, path } from '../lib/firebase/contracts'
+import {
+  contractMetrics,
+  Contract,
+  contractPath,
+} from '../lib/firebase/contracts'
 
 type Prediction = {
   question: string
@@ -20,12 +24,12 @@ type Prediction = {
 }
 
 function toPrediction(contract: Contract): Prediction {
-  const { startProb } = compute(contract)
+  const { startProb } = contractMetrics(contract)
   return {
     question: contract.question,
     description: contract.description,
     initialProb: startProb * 100,
-    createdUrl: path(contract),
+    createdUrl: contractPath(contract),
   }
 }
 

@@ -6,6 +6,7 @@ import { Contract } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random-string'
 import { getNewContract } from '../../common/new-contract'
+import { getAnteBets } from '../../common/antes'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })
@@ -64,6 +65,26 @@ export const createContract = functions
       if (ante) await chargeUser(creator.id, ante)
 
       await contractRef.create(contract)
+
+      if (ante) {
+        const yesBetDoc = firestore
+          .collection(`contracts/${contract.id}/bets`)
+          .doc()
+
+        const noBetDoc = firestore
+          .collection(`contracts/${contract.id}/bets`)
+          .doc()
+
+        const { yesBet, noBet } = getAnteBets(
+          creator,
+          contract,
+          yesBetDoc.id,
+          noBetDoc.id
+        )
+        await yesBetDoc.set(yesBet)
+        await noBetDoc.set(noBet)
+      }
+
       return { status: 'success', contract }
     }
   )

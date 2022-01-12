@@ -1,4 +1,5 @@
 import { calcStartPool } from './antes'
+
 import { Contract } from './contract'
 import { User } from './user'
 
@@ -12,10 +13,8 @@ export function getNewContract(
   ante?: number,
   closeTime?: number
 ) {
-  const { startYes, startNo, poolYes, poolNo } = calcStartPool(
-    initialProb,
-    ante
-  )
+  const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
+    calcStartPool(initialProb, ante)
 
   const contract: Contract = {
     id,
@@ -29,10 +28,11 @@ export function getNewContract(
     question: question.trim(),
     description: description.trim(),
 
-    startPool: { YES: startYes, NO: startNo },
+    mechanism: 'dpm-2',
+    phantomShares: { YES: phantomYes, NO: phantomNo },
     pool: { YES: poolYes, NO: poolNo },
-    totalShares: { YES: 0, NO: 0 },
-    totalBets: { YES: 0, NO: 0 },
+    totalShares: { YES: sharesYes, NO: sharesNo },
+    totalBets: { YES: poolYes, NO: poolNo },
     isResolved: false,
 
     createdTime: Date.now(),

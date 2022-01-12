@@ -4,7 +4,11 @@ import { Row } from '../components/layout/row'
 import { formatMoney } from '../lib/util/format'
 import { UserLink } from './user-page'
 import { Linkify } from './linkify'
-import { Contract, compute, path } from '../lib/firebase/contracts'
+import {
+  Contract,
+  contractMetrics,
+  contractPath,
+} from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { parseTags } from '../lib/util/parse'
 import dayjs from 'dayjs'
@@ -16,10 +20,10 @@ export function ContractCard(props: {
 }) {
   const { contract, showHotVolume } = props
   const { question, resolution } = contract
-  const { probPercent } = compute(contract)
+  const { probPercent } = contractMetrics(contract)
 
   return (
-    <Link href={path(contract)}>
+    <Link href={contractPath(contract)}>
       <a>
         <li className="col-span-1 bg-white hover:bg-gray-100 shadow-md rounded-lg divide-y divide-gray-200">
           <div className="card">
@@ -99,7 +103,7 @@ export function AbbrContractDetails(props: {
 }) {
   const { contract, showHotVolume } = props
   const { volume24Hours } = contract
-  const { truePool } = compute(contract)
+  const { truePool } = contractMetrics(contract)
 
   return (
     <Col className={clsx('text-sm text-gray-500 gap-2')}>
@@ -124,7 +128,7 @@ export function AbbrContractDetails(props: {
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
   const { question, description, closeTime } = contract
-  const { truePool, createdDate, resolvedDate } = compute(contract)
+  const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
 
   const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
 
@@ -171,7 +175,7 @@ export function ContractDetails(props: { contract: Contract }) {
 // String version of the above, to send to the OpenGraph image generator
 export function contractTextDetails(contract: Contract) {
   const { question, description, closeTime } = contract
-  const { truePool, createdDate, resolvedDate } = compute(contract)
+  const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
 
   const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
 
