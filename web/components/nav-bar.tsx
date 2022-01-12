@@ -35,16 +35,18 @@ export function NavBar(props: {
         <Row className="items-center gap-6 sm:gap-8 md:ml-16 lg:ml-40">
           {children}
 
-          <Link href="/about">
-            <a
-              className={clsx(
-                'text-base hidden md:block whitespace-nowrap',
-                themeClasses
-              )}
-            >
-              About
-            </a>
-          </Link>
+          {!user && (
+            <Link href="/about">
+              <a
+                className={clsx(
+                  'text-base hidden md:block whitespace-nowrap',
+                  themeClasses
+                )}
+              >
+                About
+              </a>
+            </Link>
+          )}
 
           {!isLandingPage && (
             <Link href="/markets">
