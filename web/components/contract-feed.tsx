@@ -73,7 +73,7 @@ function Timestamp(props: { time: number }) {
   const { time } = props
   return (
     <span
-      className="whitespace-nowrap text-gray-300 ml-1"
+      className="whitespace-nowrap text-gray-400 ml-1"
       title={dayjs(time).format('MMM D, h:mma')}
     >
       {dayjs(time).fromNow()}
