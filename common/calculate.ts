@@ -49,7 +49,7 @@ export function calculateEstimatedWinnings(
   const estPool = Math.sqrt(yesShares ** 2 + noShares ** 2)
   const total = ind * yesShares + (1 - ind) * noShares
 
-  return (shares * estPool) / total
+  return ((1 - FEES) * (shares * estPool)) / total
 }
 
 export function calculateRawShareValue(
