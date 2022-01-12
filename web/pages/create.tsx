@@ -4,7 +4,6 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Textarea from 'react-expanding-textarea'
 
-import { CreatorContractsList } from '../components/contracts-list'
 import { Spacer } from '../components/layout/spacer'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
@@ -14,7 +13,6 @@ import { AdvancedPanel } from '../components/advanced-panel'
 import { createContract } from '../lib/firebase/api-call'
 import { Row } from '../components/layout/row'
 import { AmountInput } from '../components/amount-input'
-import { ActivityFeed } from './activity'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -84,7 +82,7 @@ export default function NewContract() {
     <Page>
       <Title text="Create a new prediction market" />
 
-      <div className="w-full bg-gray-100 rounded-lg shadow-md px-6 py-4">
+      <div className="w-full max-w-3xl bg-gray-100 rounded-lg shadow-md px-6 py-4">
         {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
         {/* When the form is submitted, create a new contract in the database */}
         <form>
@@ -210,10 +208,6 @@ export default function NewContract() {
           </div>
         </form>
       </div>
-
-      <Spacer h={6} />
-
-      <ActivityFeed />
     </Page>
   )
 }

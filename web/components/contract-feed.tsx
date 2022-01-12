@@ -29,8 +29,8 @@ import { createComment } from '../lib/firebase/comments'
 import { useComments } from '../hooks/use-comments'
 import { formatMoney } from '../lib/util/format'
 import { ResolutionOrChance } from './contract-card'
-import Link from 'next/link'
 import { SiteLink } from './site-link'
+import { Col } from './layout/col'
 dayjs.extend(relativeTime)
 
 function FeedComment(props: { activityItem: any }) {
@@ -73,7 +73,7 @@ function Timestamp(props: { time: number }) {
   const { time } = props
   return (
     <span
-      className="whitespace-nowrap text-gray-300 ml-1"
+      className="whitespace-nowrap text-gray-400 ml-1"
       title={dayjs(time).format('MMM D, h:mma')}
     >
       {dayjs(time).fromNow()}
@@ -149,6 +149,8 @@ export function ContractDescription(props: {
     setDescription(editStatement())
   }
 
+  if (!isCreator && !contract.description.trim()) return null
+
   return (
     <div className="whitespace-pre-line break-words mt-2 text-gray-700">
       <Linkify text={contract.description} />
@@ -213,14 +215,14 @@ function FeedQuestion(props: { contract: Contract }) {
         </div>
       </div>
       <div className="min-w-0 flex-1 py-1.5">
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 mb-2">
           <span className="text-gray-900">{contract.creatorName}</span> asked{' '}
           <Timestamp time={contract.createdTime} />
         </div>
-        <Row className="justify-between gap-4 mb-2">
+        <Col className="items-start sm:flex-row justify-between gap-2 sm:gap-4 mb-4 mr-2">
           <SiteLink
             href={contractPath(contract)}
-            className="text-xl text-indigo-700"
+            className="text-lg sm:text-xl text-indigo-700"
           >
             {contract.question}
           </SiteLink>
@@ -229,7 +231,7 @@ function FeedQuestion(props: { contract: Contract }) {
             resolution={contract.resolution}
             probPercent={probPercent}
           />
-        </Row>
+        </Col>
         <ContractDescription contract={contract} isCreator={false} />
       </div>
     </>
