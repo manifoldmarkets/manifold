@@ -50,7 +50,8 @@ export default function NewContract() {
     question.length > 0 &&
     (ante === undefined || (ante >= 0 && ante <= remainingBalance)) &&
     // If set, closeTime must be in the future
-    (!closeTime || closeTime > Date.now())
+    closeTime &&
+    closeTime > Date.now()
 
   async function submit() {
     // TODO: Tell users why their contract is invalid
@@ -74,7 +75,8 @@ export default function NewContract() {
     await router.push(path(result.contract as Contract))
   }
 
-  const descriptionPlaceholder = `e.g. This market will resolve to “Yes” if, by June 2, 2021, 11:59:59 PM ET, Paxlovid (also known under PF-07321332)...`
+  // const descriptionPlaceholder = `e.g. This market will resolve to “Yes” if, by June 2, 2021, 11:59:59 PM ET, Paxlovid (also known under PF-07321332)...`
+  const descriptionPlaceholder = `(Optional) Provide more detail on how you will resolve this market.`
 
   if (!creator) return <></>
 
@@ -134,6 +136,28 @@ export default function NewContract() {
 
           <Spacer h={4} />
 
+          <div className="form-control items-start mb-1">
+            <label className="label">
+              <span className="mb-1">Close date</span>
+            </label>
+            <input
+              type="date"
+              className="input input-bordered"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setCloseDate(e.target.value || '')}
+              min={new Date().toISOString().split('T')[0]}
+              disabled={isSubmitting}
+              value={closeDate}
+            />
+          </div>
+          <label>
+            <span className="label-text text-gray-500 ml-1">
+              No trading after this date
+            </span>
+          </label>
+
+          <Spacer h={4} />
+
           <div className="form-control">
             <label className="label">
               <span className="mb-1">Description</span>
@@ -162,29 +186,6 @@ export default function NewContract() {
                 disabled={isSubmitting}
               />
             </div>
-
-            <Spacer h={4} />
-
-            <div className="form-control items-start mb-1">
-              <label className="label">
-                <span className="mb-1">Close date</span>
-              </label>
-              <input
-                type="date"
-                className="input input-bordered"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setCloseDate(e.target.value || '')}
-                min={new Date().toISOString().split('T')[0]}
-                disabled={isSubmitting}
-                value={closeDate}
-              />
-            </div>
-            <label>
-              <span className="label-text text-gray-500 ml-1">
-                No trades allowed after this date
-                {/* {closeDate ? formattedCloseTime : 'this date'} */}
-              </span>
-            </label>
           </AdvancedPanel>
 
           <Spacer h={4} />
