@@ -57,23 +57,22 @@ export function AmountInput(props: {
           onChange={(e) => onAmountChange(e.target.value)}
         />
       </label>
-      {user && (
-        <Row className="text-sm text-gray-500 justify-between mt-3 gap-4 items-end">
-          {error ? (
-            <div className="font-medium tracking-wide text-red-500 text-xs whitespace-nowrap mr-auto self-center">
-              {error}
+      {user &&
+        (error ? (
+          <div className="font-medium tracking-wide text-red-500 text-xs whitespace-nowrap mr-auto self-center mt-4">
+            {error}
+          </div>
+        ) : (
+          <Col className="text-sm mt-3">
+            <div className="text-gray-500 whitespace-nowrap mb-2">
+              Remaining balance
             </div>
-          ) : (
-            <Col>
-              <div className="whitespace-nowrap">Remaining balance</div>
-              <div className="text-neutral mt-1">
-                {formatMoney(Math.floor(remainingBalance))}
-              </div>
-            </Col>
-          )}
-          {user.balance !== 1000 && <AddFundsButton className="mt-1" />}
-        </Row>
-      )}
+            <Row className="gap-4">
+              <div>{formatMoney(Math.floor(remainingBalance))}</div>
+              {user.balance !== 1000 && <AddFundsButton />}
+            </Row>
+          </Col>
+        ))}
     </Col>
   )
 }

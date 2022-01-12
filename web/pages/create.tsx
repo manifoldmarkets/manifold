@@ -31,7 +31,7 @@ export default function NewContract() {
   const [question, setQuestion] = useState('')
   const [description, setDescription] = useState('')
 
-  const [ante, setAnte] = useState<number | undefined>(0)
+  const [ante, setAnte] = useState<number | undefined>(undefined)
   const [anteError, setAnteError] = useState<string | undefined>()
   const [closeDate, setCloseDate] = useState('')
 
@@ -111,7 +111,7 @@ export default function NewContract() {
                 <input
                   type="number"
                   value={initialProb}
-                  className="input input-bordered input-md text-primary text-3xl w-24"
+                  className="input input-bordered input-md text-3xl w-24"
                   disabled={isSubmitting}
                   min={1}
                   max={99}
@@ -155,7 +155,6 @@ export default function NewContract() {
                 <span className="mb-1">Subsidize your market</span>
               </label>
               <AmountInput
-                className="items-start"
                 amount={ante}
                 onChange={setAnte}
                 error={anteError}
