@@ -69,11 +69,15 @@ function findActiveContracts(
   return contracts
 }
 
-export function ActivityFeed() {
-  const contracts = useContracts() || []
-  const recentComments = useRecentComments() || []
+export function ActivityFeed(props: {
+  contracts: Contract[]
+  recentComments: Comment[]
+}) {
+  const contracts = useContracts() ?? props.contracts
+  const recentComments = useRecentComments() ?? props.recentComments
   // TODO: Handle static props correctly?
   const activeContracts = findActiveContracts(contracts, recentComments)
+
   return contracts.length > 0 ? (
     <>
       <Title text="Recent Activity" />
@@ -91,7 +95,7 @@ export function ActivityFeed() {
 export default function ActivityPage() {
   return (
     <Page>
-      <ActivityFeed />
+      <ActivityFeed contracts={[]} recentComments={[]} />
     </Page>
   )
 }

@@ -35,6 +35,30 @@ export function NavBar(props: {
         <Row className="items-center gap-6 sm:gap-8 md:ml-16 lg:ml-40">
           {children}
 
+          <Link href="/about">
+            <a
+              className={clsx(
+                'text-base hidden md:block whitespace-nowrap',
+                themeClasses
+              )}
+            >
+              About
+            </a>
+          </Link>
+
+          {!isLandingPage && (
+            <Link href="/markets">
+              <a
+                className={clsx(
+                  'text-base hidden md:block whitespace-nowrap',
+                  themeClasses
+                )}
+              >
+                All markets
+              </a>
+            </Link>
+          )}
+
           {user ? (
             <SignedInHeaders user={user} themeClasses={themeClasses} />
           ) : (
@@ -51,17 +75,6 @@ function SignedInHeaders(props: { user: User; themeClasses?: string }) {
 
   return (
     <>
-      <Link href="/about">
-        <a
-          className={clsx(
-            'text-base hidden md:block whitespace-nowrap',
-            themeClasses
-          )}
-        >
-          About
-        </a>
-      </Link>
-
       <Link href="/create">
         <a
           className={clsx(
