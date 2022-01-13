@@ -9,6 +9,7 @@ import _ from 'lodash'
 
 import { db } from './init'
 import { Bet } from '../../../common/bet'
+import { Contract } from '../../../common/contract'
 export type { Bet }
 
 function getBetsCollection(contractId: string) {
@@ -42,4 +43,18 @@ export function listenForUserBets(
     bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
     setBets(bets)
   })
+}
+
+export function withoutAnteBets(contract: Contract, bets: Bet[]) {
+  const { createdTime } = contract
+
+  if (
+    bets.length >= 2 &&
+    bets[0].createdTime === createdTime &&
+    bets[1].createdTime === createdTime
+  ) {
+    return bets.slice(2)
+  }
+
+  return bets
 }
