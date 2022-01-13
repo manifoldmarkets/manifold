@@ -39,7 +39,7 @@ function FeedComment(props: { activityItem: any }) {
   const { person, text, amount, outcome, createdTime } = activityItem
   return (
     <>
-      <div className="relative">
+      <SiteLink className="relative" href={`/${person.username}`}>
         <img
           className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-gray-50"
           src={person.avatarUrl}
@@ -49,13 +49,15 @@ function FeedComment(props: { activityItem: any }) {
         <span className="absolute -bottom-3 -right-2 bg-gray-50 rounded-tl px-0.5 py-px">
           <ChatAltIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
         </span>
-      </div>
+      </SiteLink>
       <div className="min-w-0 flex-1">
         <div>
           <p className="mt-0.5 text-sm text-gray-500">
-            <a href={person.href} className="font-medium text-gray-900">
-              {person.name}
-            </a>{' '}
+            <UserLink
+              className="text-gray-500"
+              username={person.username}
+              name={person.name}
+            />{' '}
             placed {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
             <Timestamp time={createdTime} />
           </p>
@@ -371,7 +373,7 @@ function toFeedComment(bet: Bet, comment: Comment) {
     // Invariant: bet.comment exists
     text: comment.text,
     person: {
-      href: `/${comment.userUsername}`,
+      username: comment.userUsername,
       name: comment.userName,
       avatarUrl: comment.userAvatarUrl,
     },
