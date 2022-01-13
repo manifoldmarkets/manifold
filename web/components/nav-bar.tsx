@@ -30,7 +30,7 @@ export function NavBar(props: {
       >
         <ManifoldLogo darkBackground={darkBackground} />
 
-        <Row className="items-center gap-6 sm:gap-8 md:ml-16 lg:ml-40">
+        <Row className="items-center gap-6 sm:gap-8 ml-6">
           {(user || user === null) && (
             <NavOptions user={user} themeClasses={themeClasses} />
           )}
