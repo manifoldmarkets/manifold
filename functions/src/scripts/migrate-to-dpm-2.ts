@@ -1,9 +1,9 @@
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
+import { Contract } from '../../../common/contract'
 import { Bet } from '../../../common/bet'
 import { calculateShares, getProbability } from '../../../common/calculate'
-import { Contract } from '../../../common/contract'
 import { getSellBetInfo } from '../../../common/sell-bet'
 import { User } from '../../../common/user'
 
@@ -11,8 +11,8 @@ type DocRef = admin.firestore.DocumentReference
 
 // Generate your own private key, and set the path below:
 // https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
-const serviceAccount = require('../../../../../../Downloads/dev-mantic-markets-firebase-adminsdk-sir5m-b2d27f8970.json')
-// const serviceAccount = require('../../../../../../Downloads/mantic-markets-firebase-adminsdk-1ep46-351a65eca3.json')
+// const serviceAccount = require('../../../../../../Downloads/dev-mantic-markets-firebase-adminsdk-sir5m-b2d27f8970.json')
+const serviceAccount = require('../../../../../../Downloads/mantic-markets-firebase-adminsdk-1ep46-351a65eca3.json')
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -26,6 +26,8 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
 
   if (!startPool) return
 
+  console.log('recalculating', contract.slug)
+
   await firestore.runTransaction(async (transaction) => {
     const contractDoc = await transaction.get(contractRef)
     const contract = contractDoc.data() as Contract
@@ -38,28 +40,39 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
 
     const phantomAnte = startPool.YES + startPool.NO
 
-    // const s = ({ YES, NO }: any) => YES + NO
-    // const leftovers = _.sumBy(bets, (b) => b.amount) - s((contract as any).oldTotalBets || contract.totalBets)
-    // const poolTotal = s((contract as any).oldPool || contract.pool)
-
-    const realAnte = 0 // poolTotal - leftovers
-
-    // console.log(
-    //   'pool',
-    //   poolTotal,
-    //   'phantomAnte',
-    //   phantomAnte,
-    //   'realAnte',
-    //   realAnte,
-    //   'leftovers',
-    //   leftovers
-    // )
-
-    if (!(contract as any).oldTotalBets)
-      transaction.update(contractRef, {
-        oldTotalBets: contract.totalBets,
-        oldPool: contract.pool,
+    const leftovers =
+      _.sumBy(bets, (b) => b.amount) -
+      _.sumBy(bets, (b) => {
+        if (!b.sale) return b.amount
+        const soldBet = bets.find((bet) => bet.id === b.sale?.betId)
+        return soldBet?.amount || 0
       })
+    const poolTotal = contract.pool.YES + contract.pool.NO
+    const prevTotalBets = contract.totalBets.YES + contract.totalBets.NO
+    const calculatedrealAnte = poolTotal - prevTotalBets - leftovers
+
+    const realAnte = Math.max(
+      0,
+      (contract as any).realAnte || calculatedrealAnte
+    )
+
+    if (!(contract as any).realAnte)
+      transaction.update(contractRef, {
+        realAnte,
+      })
+
+    console.log(
+      'pool',
+      poolTotal,
+      'phantomAnte',
+      phantomAnte,
+      'realAnte',
+      realAnte,
+      'calculatedRealAnte',
+      calculatedrealAnte,
+      'leftovers',
+      leftovers
+    )
 
     let p = startPool.YES ** 2 / (startPool.YES ** 2 + startPool.NO ** 2)
 
@@ -76,41 +89,6 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
     let pool = { YES: p * realAnte, NO: (1 - p) * realAnte }
 
     let totalBets = { YES: p * realAnte, NO: (1 - p) * realAnte }
-
-    // const yesBetRef = firestore
-    //   .collection(`contracts/${contract.id}/bets`)
-    //   .doc('auto-yes-ante-' + contract.id)
-
-    // const noBetRef = firestore
-    //   .collection(`contracts/${contract.id}/bets`)
-    //   .doc('auto-no-ante-' + contract.id)
-
-    // const yesBet: Bet = {
-    //   id: yesBetRef.id,
-    //   userId: contract.creatorId,
-    //   contractId: contract.id,
-    //   amount: p * realAnte,
-    //   shares: Math.sqrt(p) * realAnte,
-    //   outcome: 'YES',
-    //   probBefore: p,
-    //   probAfter: p,
-    //   createdTime: contract.createdTime,
-    // }
-
-    // const noBet: Bet = {
-    //   id: noBetRef.id,
-    //   userId: contract.creatorId,
-    //   contractId: contract.id,
-    //   amount: (1 - p) * realAnte,
-    //   shares: Math.sqrt(1 - p) * realAnte,
-    //   outcome: 'NO',
-    //   probBefore: p,
-    //   probAfter: p,
-    //   createdTime: contract.createdTime,
-    // }
-
-    // transaction.set(yesBetRef, yesBet)
-    // transaction.set(noBetRef, noBet)
 
     const betsRef = contractRef.collection('bets')
 
@@ -135,6 +113,7 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
           getSellBetInfo(fakeUser, soldBet, fakeContract, bet.id)
 
         newBet.createdTime = bet.createdTime
+        // console.log('sale bet', newBet)
         transaction.update(betsRef.doc(bet.id), newBet)
 
         pool = newPool
@@ -173,7 +152,8 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
         probAfter,
       }
 
-      console.log('update', { pool, totalBets, totalShares })
+      // console.log('bet', betUpdate)
+      // console.log('update', { pool, totalBets, totalShares })
 
       transaction.update(betsRef.doc(bet.id), betUpdate)
     }
@@ -185,10 +165,12 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
       phantomShares,
     }
 
+    console.log('final', contractUpdate)
     transaction.update(contractRef, contractUpdate)
   })
 
   console.log('updated', contract.slug)
+  console.log()
   console.log()
 }
 
@@ -201,7 +183,7 @@ async function recalculateContractTotals() {
   console.log('Loaded', contracts.length, 'contracts')
 
   for (const contract of contracts) {
-    if (contract.slug !== 'another-test') continue
+    // if (contract.slug !== 'will-polymarket-list-any-new-market') continue
     const contractRef = firestore.doc(`contracts/${contract.id}`)
 
     await recalculateContract(contractRef, contract)
