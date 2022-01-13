@@ -42,7 +42,7 @@ export function ContractsGrid(props: {
   }
 
   return (
-    <ul role="list" className="w-full grid grid-cols-1 gap-6 md:grid-cols-2">
+    <ul className="w-full grid grid-cols-1 gap-6 md:grid-cols-2">
       {contracts.map((contract) => (
         <ContractCard
           contract={contract}
