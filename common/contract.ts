@@ -10,6 +10,7 @@ export type Contract = {
   description: string // More info about what the contract is about
   outcomeType: 'BINARY' // | 'MULTI' | 'interval' | 'date'
   // outcomes: ['YES', 'NO']
+  visibility: 'public' | 'unlisted'
 
   mechanism: 'dpm-2'
   phantomShares: { YES: number; NO: number }

@@ -133,6 +133,7 @@ export function listenForContract(
 const hotContractsQuery = query(
   contractCollection,
   where('isResolved', '==', false),
+  where('visibility', '==', 'public'),
   orderBy('volume24Hours', 'desc'),
   limit(4)
 )

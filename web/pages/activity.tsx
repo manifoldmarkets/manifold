@@ -61,6 +61,7 @@ function findActiveContracts(
   }
 
   contracts = _.uniqBy(contracts, (c) => c.id)
+  contracts = contracts.filter((contract) => contract.visibility === 'public')
   contracts = _.sortBy(contracts, (c) => -(idToActivityTime.get(c.id) ?? 0))
   return contracts
 }
