@@ -11,7 +11,7 @@ import {
   XIcon,
 } from '@heroicons/react/solid'
 import { useBets } from '../hooks/use-bets'
-import { Bet } from '../lib/firebase/bets'
+import { Bet, withoutAnteBets } from '../lib/firebase/bets'
 import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -479,6 +479,7 @@ export function ContractFeed(props: {
 
   let bets = useBets(id)
   if (bets === 'loading') bets = []
+  bets = withoutAnteBets(contract, bets)
 
   let comments = useComments(id)
   if (comments === 'loading') comments = []
