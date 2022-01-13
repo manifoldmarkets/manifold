@@ -151,9 +151,10 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
           </Row>
 
           <Row className="gap-2 text-gray-500 text-sm">
-            <div>
-              <UserLink username={contract.creatorUsername} />
-            </div>
+            <UserLink
+              name={contract.creatorName}
+              username={contract.creatorUsername}
+            />
             {resolution && (
               <>
                 <div>•</div>
