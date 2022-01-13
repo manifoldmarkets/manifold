@@ -10,11 +10,10 @@ import { ProfileMenu } from './profile-menu'
 export function NavBar(props: {
   darkBackground?: boolean
   wide?: boolean
-  isLandingPage?: boolean
   className?: string
   children?: any
 }) {
-  const { darkBackground, wide, isLandingPage, className, children } = props
+  const { darkBackground, wide, className, children } = props
 
   const user = useUser()
 
@@ -27,7 +26,7 @@ export function NavBar(props: {
       <Row
         className={clsx(
           'justify-between items-center mx-auto sm:px-4',
-          isLandingPage ? 'max-w-7xl' : wide ? 'max-w-6xl' : 'max-w-4xl'
+          wide ? 'max-w-6xl' : 'max-w-4xl'
         )}
       >
         <ManifoldLogo darkBackground={darkBackground} />
@@ -48,18 +47,16 @@ export function NavBar(props: {
             </Link>
           )}
 
-          {!isLandingPage && (
-            <Link href="/markets">
-              <a
-                className={clsx(
-                  'text-base hidden md:block whitespace-nowrap',
-                  themeClasses
-                )}
-              >
-                All markets
-              </a>
-            </Link>
-          )}
+          <Link href="/markets">
+            <a
+              className={clsx(
+                'text-base hidden md:block whitespace-nowrap',
+                themeClasses
+              )}
+            >
+              All markets
+            </a>
+          </Link>
 
           {user ? (
             <SignedInHeaders user={user} themeClasses={themeClasses} />
