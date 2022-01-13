@@ -27,6 +27,7 @@ export function getNewContract(
 
     question: question.trim(),
     description: description.trim(),
+    visibility: 'public',
 
     mechanism: 'dpm-2',
     phantomShares: { YES: phantomYes, NO: phantomNo },
