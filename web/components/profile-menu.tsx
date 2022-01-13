@@ -59,7 +59,6 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
       name: 'Discord',
       href: 'https://discord.gg/eHQBNBqXuh',
     },
-    ...(mobile ? [{ name: 'About', href: '/about' }] : []),
     {
       name: 'About',
       href: '/about',
