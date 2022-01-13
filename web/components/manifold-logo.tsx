@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import clsx from 'clsx'
 
 export function ManifoldLogo(props: { darkBackground?: boolean }) {
@@ -7,7 +8,7 @@ export function ManifoldLogo(props: { darkBackground?: boolean }) {
   return (
     <Link href="/">
       <a className="flex flex-row gap-4">
-        <img
+        <Image
           className="hover:rotate-12 transition-all"
           src={darkBackground ? '/logo-white.svg' : '/logo.svg'}
           width={45}
