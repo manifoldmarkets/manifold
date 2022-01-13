@@ -30,6 +30,8 @@ export function getAnteBets(
   const p = getProbability(contract.totalShares)
   const ante = contract.totalBets.YES + contract.totalBets.NO
 
+  const { createdTime } = contract
+
   const yesBet: Bet = {
     id: yesAnteId,
     userId: creator.id,
@@ -39,7 +41,7 @@ export function getAnteBets(
     outcome: 'YES',
     probBefore: p,
     probAfter: p,
-    createdTime: Date.now(),
+    createdTime,
   }
 
   const noBet: Bet = {
@@ -51,7 +53,7 @@ export function getAnteBets(
     outcome: 'NO',
     probBefore: p,
     probAfter: p,
-    createdTime: Date.now(),
+    createdTime,
   }
 
   return { yesBet, noBet }
