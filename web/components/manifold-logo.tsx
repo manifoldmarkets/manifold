@@ -7,7 +7,7 @@ export function ManifoldLogo(props: { darkBackground?: boolean }) {
 
   return (
     <Link href="/">
-      <a className="flex flex-row gap-4">
+      <a className="flex flex-row gap-4 flex-shrink-0">
         <Image
           className="hover:rotate-12 transition-all"
           src={darkBackground ? '/logo-white.svg' : '/logo.svg'}
