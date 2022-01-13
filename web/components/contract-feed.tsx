@@ -31,6 +31,7 @@ import { formatMoney } from '../lib/util/format'
 import { ResolutionOrChance } from './contract-card'
 import { SiteLink } from './site-link'
 import { Col } from './layout/col'
+import { UserLink } from './user-page'
 dayjs.extend(relativeTime)
 
 function FeedComment(props: { activityItem: any }) {
@@ -205,6 +206,8 @@ export function ContractDescription(props: {
 
 function FeedQuestion(props: { contract: Contract }) {
   const { contract } = props
+  const { creatorName, creatorUsername, createdTime, question, resolution } =
+    contract
   const { probPercent } = contractMetrics(contract)
 
   return (
@@ -218,19 +221,23 @@ function FeedQuestion(props: { contract: Contract }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500 mb-2">
-          <span className="text-gray-900">{contract.creatorName}</span> asked{' '}
-          <Timestamp time={contract.createdTime} />
+          <UserLink
+            className="text-gray-900"
+            name={creatorName}
+            username={creatorUsername}
+          />{' '}
+          asked <Timestamp time={createdTime} />
         </div>
         <Col className="items-start sm:flex-row justify-between gap-2 sm:gap-4 mb-4 mr-2">
           <SiteLink
             href={contractPath(contract)}
             className="text-lg sm:text-xl text-indigo-700"
           >
-            {contract.question}
+            {question}
           </SiteLink>
           <ResolutionOrChance
             className="items-center"
-            resolution={contract.resolution}
+            resolution={resolution}
             probPercent={probPercent}
           />
         </Col>
@@ -242,6 +249,7 @@ function FeedQuestion(props: { contract: Contract }) {
 
 function FeedDescription(props: { contract: Contract }) {
   const { contract } = props
+  const { creatorName, creatorUsername } = contract
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
 
@@ -256,8 +264,12 @@ function FeedDescription(props: { contract: Contract }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span className="text-gray-900">{contract.creatorName}</span> created
-          this market <Timestamp time={contract.createdTime} />
+          <UserLink
+            className="text-gray-900"
+            name={creatorName}
+            username={creatorUsername}
+          />{' '}
+          created this market <Timestamp time={contract.createdTime} />
         </div>
         <ContractDescription contract={contract} isCreator={isCreator} />
       </div>
@@ -280,6 +292,7 @@ function OutcomeIcon(props: { outcome?: 'YES' | 'NO' | 'CANCEL' }) {
 
 function FeedResolve(props: { contract: Contract }) {
   const { contract } = props
+  const { creatorName, creatorUsername } = contract
   const resolution = contract.resolution || 'CANCEL'
 
   return (
@@ -293,8 +306,12 @@ function FeedResolve(props: { contract: Contract }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span className="text-gray-900">{contract.creatorName}</span> resolved
-          this market to <OutcomeLabel outcome={resolution} />{' '}
+          <UserLink
+            className="text-gray-900"
+            name={creatorName}
+            username={creatorUsername}
+          />{' '}
+          resolved this market to <OutcomeLabel outcome={resolution} />{' '}
           <Timestamp time={contract.resolutionTime || 0} />
         </div>
       </div>

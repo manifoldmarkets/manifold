@@ -102,15 +102,17 @@ export function AbbrContractDetails(props: {
   showHotVolume?: boolean
 }) {
   const { contract, showHotVolume } = props
-  const { volume24Hours } = contract
+  const { volume24Hours, creatorName, creatorUsername } = contract
   const { truePool } = contractMetrics(contract)
 
   return (
     <Col className={clsx('text-sm text-gray-500 gap-2')}>
       <Row className="gap-2 flex-wrap">
-        <div className="whitespace-nowrap">
-          <UserLink username={contract.creatorUsername} />
-        </div>
+        <UserLink
+          className="whitespace-nowrap"
+          name={creatorName}
+          username={creatorUsername}
+        />
         <div>•</div>
         {showHotVolume ? (
           <div className="whitespace-nowrap">
@@ -127,7 +129,8 @@ export function AbbrContractDetails(props: {
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
-  const { question, description, closeTime } = contract
+  const { question, description, closeTime, creatorName, creatorUsername } =
+    contract
   const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
 
   const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
@@ -135,9 +138,11 @@ export function ContractDetails(props: { contract: Contract }) {
   return (
     <Col className="text-sm text-gray-500 gap-2 sm:flex-row sm:flex-wrap">
       <Row className="gap-2 flex-wrap">
-        <div className="whitespace-nowrap">
-          <UserLink username={contract.creatorUsername} />
-        </div>
+        <UserLink
+          className="whitespace-nowrap"
+          name={creatorName}
+          username={creatorUsername}
+        />
         <div className="">•</div>
         <div className="whitespace-nowrap">
           {resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}
