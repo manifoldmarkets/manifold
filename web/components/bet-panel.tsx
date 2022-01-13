@@ -115,7 +115,10 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     <Col
       className={clsx('bg-gray-100 shadow-md px-8 py-6 rounded-md', className)}
     >
-      <Title className="!mt-0 whitespace-nowrap" text={`Buy ${betChoice}`} />
+      <Title
+        className="mt-0 whitespace-nowrap text-neutral"
+        text={`Buy ${betChoice}`}
+      />
 
       <div className="mt-2 mb-1 text-sm text-gray-500">Outcome</div>
       <YesNoSelector
