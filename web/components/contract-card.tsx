@@ -24,8 +24,8 @@ export function ContractCard(props: {
 
   return (
     <Link href={contractPath(contract)}>
-      <a>
-        <li className="col-span-1 bg-white hover:bg-gray-100 shadow-md rounded-lg divide-y divide-gray-200">
+      <a className="col-span-1">
+        <li className="bg-white hover:bg-gray-100 shadow-md rounded-lg divide-y divide-gray-200">
           <div className="card">
             <div className="card-body p-6">
               <Row className="justify-between gap-4 mb-2">
