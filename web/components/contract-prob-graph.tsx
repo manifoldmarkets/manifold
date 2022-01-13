@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import { getProbability } from '../../common/calculate'
 import { useBets } from '../hooks/use-bets'
 import { useWindowSize } from '../hooks/use-window-size'
+import { withoutAnteBets } from '../lib/firebase/bets'
 import { Contract } from '../lib/firebase/contracts'
 
 export function ContractProbGraph(props: { contract: Contract }) {
@@ -12,6 +13,7 @@ export function ContractProbGraph(props: { contract: Contract }) {
 
   let bets = useBets(id)
   if (bets === 'loading') bets = []
+  bets = withoutAnteBets(contract, bets)
 
   const startProb = getProbability(phantomShares)
 
