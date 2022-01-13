@@ -69,12 +69,17 @@ export function calculateRawShareValue(
 }
 
 export function calculateMoneyRatio(contract: Contract) {
-  const { totalShares, pool } = contract
+  const { totalShares, phantomShares, pool } = contract
   const [yesShares, noShares] = [totalShares.YES, totalShares.NO]
+  const { YES: yesFake, NO: noFake } = phantomShares
 
   const actual = pool.YES + pool.NO
-  const expected = Math.sqrt(yesShares ** 2 + noShares ** 2)
-  return actual / expected
+
+  const expected = Math.sqrt(
+    (yesShares - yesFake) ** 2 + (noShares - noFake) ** 2
+  )
+
+  return expected === 0 ? 0 : actual / expected
 }
 
 export function calculateShareValue(contract: Contract, bet: Bet) {
