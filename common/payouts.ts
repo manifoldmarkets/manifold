@@ -27,7 +27,21 @@ export const getStandardPayouts = (
 
   if (betSum >= truePool) return getCancelPayouts(truePool, winningBets)
 
-  const creatorPayout = CREATOR_FEE * truePool
+  const shareDifferenceSum = sumBy(winningBets, (b) => b.shares - b.amount)
+
+  const winningsPool = truePool - betSum
+
+  const winnerPayouts = winningBets.map((bet) => ({
+    userId: bet.userId,
+    payout:
+      bet.amount +
+      (1 - 2 * FEES) *
+        ((bet.shares - bet.amount) / shareDifferenceSum) *
+        winningsPool,
+  }))
+
+  const creatorPayout = 2 * CREATOR_FEE * winningsPool
+
   console.log(
     'resolved',
     outcome,
@@ -36,18 +50,6 @@ export const getStandardPayouts = (
     'creator fee: M$',
     creatorPayout
   )
-
-  const shareDifferenceSum = sumBy(winningBets, (b) => b.shares - b.amount)
-
-  const winningsPool = truePool - betSum
-
-  const winnerPayouts = winningBets.map((bet) => ({
-    userId: bet.userId,
-    payout:
-      (1 - FEES) *
-      (bet.amount +
-        ((bet.shares - bet.amount) / shareDifferenceSum) * winningsPool),
-  }))
 
   return winnerPayouts.concat([
     { userId: contract.creatorId, payout: creatorPayout },
@@ -87,21 +89,22 @@ export const getMktPayouts = (
   const yesPayouts = yesBets.map((bet) => ({
     userId: bet.userId,
     payout:
-      (1 - FEES) *
-      (p * bet.amount +
-        ((p * (bet.shares - bet.amount)) / weightedShareTotal) * winningsPool),
+      p * bet.amount +
+      (1 - 2 * FEES) *
+        ((p * (bet.shares - bet.amount)) / weightedShareTotal) *
+        winningsPool,
   }))
 
   const noPayouts = noBets.map((bet) => ({
     userId: bet.userId,
     payout:
-      (1 - FEES) *
-      ((1 - p) * bet.amount +
+      (1 - p) * bet.amount +
+      (1 - 2 * FEES) *
         (((1 - p) * (bet.shares - bet.amount)) / weightedShareTotal) *
-          winningsPool),
+        winningsPool,
   }))
 
-  const creatorPayout = CREATOR_FEE * truePool
+  const creatorPayout = 2 * CREATOR_FEE * winningsPool
 
   return [
     ...yesPayouts,
