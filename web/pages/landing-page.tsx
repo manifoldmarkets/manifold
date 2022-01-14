@@ -34,7 +34,7 @@ const scrollToAbout = () => {
 function Hero() {
   return (
     <div className="overflow-hidden h-screen bg-world-trading bg-cover bg-gray-900 bg-center lg:bg-left">
-      <NavBar isLandingPage darkBackground />
+      <NavBar darkBackground />
       <main>
         <div className="pt-32 sm:pt-8 lg:pt-0 lg:pb-14 lg:overflow-hidden">
           <div className="mx-auto max-w-7xl lg:px-8 xl:px-0">

@@ -7,12 +7,18 @@ import { SEO } from './SEO'
 import { Page } from './page'
 import { SiteLink } from './site-link'
 
-export function UserLink(props: { username: string; className?: string }) {
-  const { username, className } = props
+export function UserLink(props: {
+  name: string
+  username: string
+  showUsername?: boolean
+  className?: string
+}) {
+  const { name, username, showUsername, className } = props
 
   return (
     <SiteLink href={`/${username}`} className={className}>
-      @{username}
+      {name}
+      {showUsername && ` (@${username})`}
     </SiteLink>
   )
 }

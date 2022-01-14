@@ -9,10 +9,7 @@ export function MenuButton(props: {
 }) {
   const { buttonContent, menuItems, className } = props
   return (
-    <Menu
-      as="div"
-      className={clsx('flex-shrink-0 relative ml-4 z-10', className)}
-    >
+    <Menu as="div" className={clsx('flex-shrink-0 relative z-10', className)}>
       <div>
         <Menu.Button className="rounded-full flex">
           <span className="sr-only">Open user menu</span>

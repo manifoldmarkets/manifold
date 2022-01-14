@@ -31,6 +31,7 @@ import { formatMoney } from '../lib/util/format'
 import { ResolutionOrChance } from './contract-card'
 import { SiteLink } from './site-link'
 import { Col } from './layout/col'
+import { UserLink } from './user-page'
 dayjs.extend(relativeTime)
 
 function FeedComment(props: { activityItem: any }) {
@@ -38,7 +39,7 @@ function FeedComment(props: { activityItem: any }) {
   const { person, text, amount, outcome, createdTime } = activityItem
   return (
     <>
-      <div className="relative">
+      <SiteLink className="relative" href={`/${person.username}`}>
         <img
           className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-gray-50"
           src={person.avatarUrl}
@@ -48,13 +49,15 @@ function FeedComment(props: { activityItem: any }) {
         <span className="absolute -bottom-3 -right-2 bg-gray-50 rounded-tl px-0.5 py-px">
           <ChatAltIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
         </span>
-      </div>
+      </SiteLink>
       <div className="min-w-0 flex-1">
         <div>
           <p className="mt-0.5 text-sm text-gray-500">
-            <a href={person.href} className="font-medium text-gray-900">
-              {person.name}
-            </a>{' '}
+            <UserLink
+              className="text-gray-500"
+              username={person.username}
+              name={person.name}
+            />{' '}
             placed {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
             <Timestamp time={createdTime} />
           </p>
@@ -205,6 +208,8 @@ export function ContractDescription(props: {
 
 function FeedQuestion(props: { contract: Contract }) {
   const { contract } = props
+  const { creatorName, creatorUsername, createdTime, question, resolution } =
+    contract
   const { probPercent } = contractMetrics(contract)
 
   return (
@@ -218,19 +223,23 @@ function FeedQuestion(props: { contract: Contract }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500 mb-2">
-          <span className="text-gray-900">{contract.creatorName}</span> asked{' '}
-          <Timestamp time={contract.createdTime} />
+          <UserLink
+            className="text-gray-900"
+            name={creatorName}
+            username={creatorUsername}
+          />{' '}
+          asked <Timestamp time={createdTime} />
         </div>
         <Col className="items-start sm:flex-row justify-between gap-2 sm:gap-4 mb-4 mr-2">
           <SiteLink
             href={contractPath(contract)}
             className="text-lg sm:text-xl text-indigo-700"
           >
-            {contract.question}
+            {question}
           </SiteLink>
           <ResolutionOrChance
             className="items-center"
-            resolution={contract.resolution}
+            resolution={resolution}
             probPercent={probPercent}
           />
         </Col>
@@ -242,6 +251,7 @@ function FeedQuestion(props: { contract: Contract }) {
 
 function FeedDescription(props: { contract: Contract }) {
   const { contract } = props
+  const { creatorName, creatorUsername } = contract
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
 
@@ -256,8 +266,12 @@ function FeedDescription(props: { contract: Contract }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span className="text-gray-900">{contract.creatorName}</span> created
-          this market <Timestamp time={contract.createdTime} />
+          <UserLink
+            className="text-gray-900"
+            name={creatorName}
+            username={creatorUsername}
+          />{' '}
+          created this market <Timestamp time={contract.createdTime} />
         </div>
         <ContractDescription contract={contract} isCreator={isCreator} />
       </div>
@@ -280,6 +294,7 @@ function OutcomeIcon(props: { outcome?: 'YES' | 'NO' | 'CANCEL' }) {
 
 function FeedResolve(props: { contract: Contract }) {
   const { contract } = props
+  const { creatorName, creatorUsername } = contract
   const resolution = contract.resolution || 'CANCEL'
 
   return (
@@ -293,8 +308,12 @@ function FeedResolve(props: { contract: Contract }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span className="text-gray-900">{contract.creatorName}</span> resolved
-          this market to <OutcomeLabel outcome={resolution} />{' '}
+          <UserLink
+            className="text-gray-900"
+            name={creatorName}
+            username={creatorUsername}
+          />{' '}
+          resolved this market to <OutcomeLabel outcome={resolution} />{' '}
           <Timestamp time={contract.resolutionTime || 0} />
         </div>
       </div>
@@ -354,7 +373,7 @@ function toFeedComment(bet: Bet, comment: Comment) {
     // Invariant: bet.comment exists
     text: comment.text,
     person: {
-      href: `/${comment.userUsername}`,
+      username: comment.userUsername,
       name: comment.userName,
       avatarUrl: comment.userAvatarUrl,
     },
