@@ -24,27 +24,26 @@ export function ContractCard(props: {
   const { probPercent } = contractMetrics(contract)
 
   return (
-    <Link href={contractPath(contract)}>
-      <a
-        className={clsx(
-          'col-span-1 bg-white hover:bg-gray-100 shadow-md rounded-lg list-none card card-body p-6',
-          className
-        )}
-      >
-        <Row className="justify-between gap-4 mb-2">
-          <p className="font-medium text-indigo-700">{question}</p>
-          <ResolutionOrChance
-            className="items-center"
-            resolution={resolution}
-            probPercent={probPercent}
-          />
-        </Row>
-        <AbbrContractDetails
-          contract={contract}
-          showHotVolume={showHotVolume}
-        />
-      </a>
-    </Link>
+    <div className={className}>
+      <Link href={contractPath(contract)}>
+        <a>
+          <div className="bg-white hover:bg-gray-100 shadow-md rounded-lg p-6">
+            <Row className="justify-between gap-4 mb-2">
+              <p className="font-medium text-indigo-700">{question}</p>
+              <ResolutionOrChance
+                className="items-center"
+                resolution={resolution}
+                probPercent={probPercent}
+              />
+            </Row>
+            <AbbrContractDetails
+              contract={contract}
+              showHotVolume={showHotVolume}
+            />
+          </div>
+        </a>
+      </Link>
+    </div>
   )
 }
 
@@ -152,7 +151,7 @@ export function ContractDetails(props: { contract: Contract }) {
             <div className="">•</div>
             <div className="whitespace-nowrap">
               {closeTime > Date.now() ? 'Closes' : 'Closed'}{' '}
-              {dayjs(closeTime).format('MMM D, h:mma')}
+              {dayjs(closeTime).format('MMM D, YYYY')}
             </div>
           </>
         )}
