@@ -90,7 +90,7 @@ export function FundsSelector(props: {
   btnClassName?: string
 }) {
   const { selected, onSelect, className } = props
-  const btnClassName = clsx('px-2 whitespace-nowrap', props.btnClassName)
+  const btnClassName = clsx('!px-2 whitespace-nowrap', props.btnClassName)
 
   return (
     <Row className={clsx('space-x-3', className)}>
