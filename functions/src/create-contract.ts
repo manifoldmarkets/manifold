@@ -6,7 +6,7 @@ import { Contract } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random-string'
 import { getNewContract } from '../../common/new-contract'
-import { getAnteBets } from '../../common/antes'
+import { getAnteBets, MINIMUM_ANTE } from '../../common/antes'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })
@@ -32,9 +32,15 @@ export const createContract = functions
       if (!question || !initialProb)
         return { status: 'error', message: 'Missing contract attributes' }
 
+      if (initialProb < 1 || initialProb > 99)
+        return { status: 'error', message: 'Invalid initial probability' }
+
       if (
-        ante !== undefined &&
-        (ante < 0 || ante > creator.balance || isNaN(ante) || !isFinite(ante))
+        ante === undefined ||
+        ante < MINIMUM_ANTE ||
+        ante > creator.balance ||
+        isNaN(ante) ||
+        !isFinite(ante)
       )
         return { status: 'error', message: 'Invalid ante' }
 

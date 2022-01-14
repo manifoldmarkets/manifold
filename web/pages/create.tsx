@@ -9,10 +9,10 @@ import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
 import { Contract, contractPath } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
-import { AdvancedPanel } from '../components/advanced-panel'
 import { createContract } from '../lib/firebase/api-call'
 import { Row } from '../components/layout/row'
 import { AmountInput } from '../components/amount-input'
+import { MINIMUM_ANTE } from '../../common/antes'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -23,8 +23,7 @@ export default function NewContract() {
   }, [creator])
 
   useEffect(() => {
-    // warm up function
-    createContract({}).catch()
+    createContract({}).catch() // warm up function
   }, [])
 
   const [initialProb, setInitialProb] = useState(50)
@@ -32,6 +31,13 @@ export default function NewContract() {
   const [description, setDescription] = useState('')
 
   const [ante, setAnte] = useState<number | undefined>(undefined)
+  useEffect(() => {
+    if (creator) {
+      const initialAnte = creator.balance < 100 ? 10 : 100
+      setAnte(initialAnte)
+    }
+  }, [creator])
+
   const [anteError, setAnteError] = useState<string | undefined>()
   const [closeDate, setCloseDate] = useState('')
 
@@ -41,14 +47,15 @@ export default function NewContract() {
   // We'd like this to look like "Apr 2, 2022, 23:59:59 PM PT" but timezones are hard with dayjs
   const formattedCloseTime = closeTime ? new Date(closeTime).toString() : ''
 
-  const user = useUser()
-  const remainingBalance = (user?.balance || 0) - (ante || 0)
+  const remainingBalance = (creator?.balance || 0) - (ante || 0)
 
   const isValid =
     initialProb > 0 &&
     initialProb < 100 &&
     question.length > 0 &&
-    (ante === undefined || (ante >= 0 && ante <= remainingBalance)) &&
+    ante !== undefined &&
+    ante >= MINIMUM_ANTE &&
+    ante <= remainingBalance &&
     // If set, closeTime must be in the future
     closeTime &&
     closeTime > Date.now()
@@ -76,7 +83,7 @@ export default function NewContract() {
   }
 
   // const descriptionPlaceholder = `e.g. This market will resolve to “Yes” if, by June 2, 2021, 11:59:59 PM ET, Paxlovid (also known under PF-07321332)...`
-  const descriptionPlaceholder = `(Optional) Provide more detail on how you will resolve this market.`
+  const descriptionPlaceholder = `Provide more detail on how you will resolve this market. (Optional)`
 
   if (!creator) return <></>
 
@@ -84,7 +91,7 @@ export default function NewContract() {
     <Page>
       <Title text="Create a new prediction market" />
 
-      <div className="w-full max-w-4xl bg-gray-100 rounded-lg shadow-md px-6 py-4">
+      <div className="w-full max-w-2xl bg-gray-100 rounded-lg shadow-md px-6 py-4">
         {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
         {/* When the form is submitted, create a new contract in the database */}
         <form>
@@ -94,7 +101,7 @@ export default function NewContract() {
             </label>
 
             <Textarea
-              placeholder="e.g. Will the FDA will approve Paxlovid before Jun 2nd, 2022?"
+              placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
               className="input input-bordered resize-none"
               disabled={isSubmitting}
               value={question}
@@ -109,11 +116,11 @@ export default function NewContract() {
               <span className="mb-1">Initial probability</span>
             </label>
             <Row className="items-center gap-2">
-              <label className="input-group input-group-lg w-fit text-xl">
+              <label className="input-group input-group-lg w-fit text-lg">
                 <input
                   type="number"
                   value={initialProb}
-                  className="input input-bordered input-md text-3xl w-24"
+                  className="input input-bordered input-md text-lg"
                   disabled={isSubmitting}
                   min={1}
                   max={99}
@@ -136,28 +143,6 @@ export default function NewContract() {
 
           <Spacer h={4} />
 
-          <div className="form-control items-start mb-1">
-            <label className="label">
-              <span className="mb-1">Close date</span>
-            </label>
-            <input
-              type="date"
-              className="input input-bordered"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setCloseDate(e.target.value || '')}
-              min={new Date().toISOString().split('T')[0]}
-              disabled={isSubmitting}
-              value={closeDate}
-            />
-          </div>
-          <label>
-            <span className="label-text text-gray-500 ml-1">
-              No trading after this date
-            </span>
-          </label>
-
-          <Spacer h={4} />
-
           <div className="form-control">
             <label className="label">
               <span className="mb-1">Description</span>
@@ -173,20 +158,43 @@ export default function NewContract() {
             />
           </div>
 
-          <AdvancedPanel>
-            <div className="form-control mb-1">
-              <label className="label">
-                <span className="mb-1">Subsidize your market</span>
-              </label>
-              <AmountInput
-                amount={ante}
-                onChange={setAnte}
-                error={anteError}
-                setError={setAnteError}
-                disabled={isSubmitting}
-              />
-            </div>
-          </AdvancedPanel>
+          <Spacer h={4} />
+
+          <div className="form-control items-start mb-1">
+            <label className="label">
+              <span className="mb-1">Last trading day</span>
+            </label>
+            <input
+              type="date"
+              className="input input-bordered"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setCloseDate(e.target.value || '')}
+              min={new Date().toISOString().split('T')[0]}
+              disabled={isSubmitting}
+              value={closeDate}
+            />
+          </div>
+          {/* <label>
+            <span className="label-text text-gray-500 ml-1">
+              No trading after this date
+            </span>
+          </label> */}
+
+          <Spacer h={4} />
+
+          <div className="form-control mb-1">
+            <label className="label">
+              <span className="mb-1">Subsidize your market</span>
+            </label>
+            <AmountInput
+              amount={ante}
+              minimumAmount={MINIMUM_ANTE}
+              onChange={setAnte}
+              error={anteError}
+              setError={setAnteError}
+              disabled={isSubmitting}
+            />
+          </div>
 
           <Spacer h={4} />
 
