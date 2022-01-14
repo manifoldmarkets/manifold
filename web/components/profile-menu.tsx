@@ -51,10 +51,6 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
       name: 'Your markets',
       href: `/${user.username}`,
     },
-    // {
-    //   name: 'Add funds',
-    //   href: '/add-funds',
-    // },
     {
       name: 'Discord',
       href: 'https://discord.gg/eHQBNBqXuh',

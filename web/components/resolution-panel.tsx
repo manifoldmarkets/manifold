@@ -60,7 +60,7 @@ export function ResolutionPanel(props: {
     <Col
       className={clsx('bg-gray-100 shadow-md px-8 py-6 rounded-md', className)}
     >
-      <Title className="mt-0" text="Your market" />
+      <Title className="mt-0 text-neutral" text="Your market" />
 
       <div className="pt-2 pb-1 text-sm text-gray-500">Resolve outcome</div>
 

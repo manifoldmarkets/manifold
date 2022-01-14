@@ -10,11 +10,9 @@ import { ProfileMenu } from './profile-menu'
 export function NavBar(props: {
   darkBackground?: boolean
   wide?: boolean
-  isLandingPage?: boolean
   className?: string
-  children?: any
 }) {
-  const { darkBackground, wide, isLandingPage, className, children } = props
+  const { darkBackground, wide, className } = props
 
   const user = useUser()
 
@@ -27,44 +25,14 @@ export function NavBar(props: {
       <Row
         className={clsx(
           'justify-between items-center mx-auto sm:px-4',
-          isLandingPage ? 'max-w-7xl' : wide ? 'max-w-6xl' : 'max-w-4xl'
+          wide ? 'max-w-6xl' : 'max-w-4xl'
         )}
       >
         <ManifoldLogo darkBackground={darkBackground} />
 
-        <Row className="items-center gap-6 sm:gap-8 md:ml-16 lg:ml-40">
-          {children}
-
-          {!user && (
-            <Link href="/about">
-              <a
-                className={clsx(
-                  'text-base hidden md:block whitespace-nowrap',
-                  themeClasses
-                )}
-              >
-                About
-              </a>
-            </Link>
-          )}
-
-          {!isLandingPage && (
-            <Link href="/markets">
-              <a
-                className={clsx(
-                  'text-base hidden md:block whitespace-nowrap',
-                  themeClasses
-                )}
-              >
-                All markets
-              </a>
-            </Link>
-          )}
-
-          {user ? (
-            <SignedInHeaders user={user} themeClasses={themeClasses} />
-          ) : (
-            <SignedOutHeaders themeClasses={themeClasses} />
+        <Row className="items-center gap-6 sm:gap-8 ml-6">
+          {(user || user === null) && (
+            <NavOptions user={user} themeClasses={themeClasses} />
           )}
         </Row>
       </Row>
@@ -72,41 +40,62 @@ export function NavBar(props: {
   )
 }
 
-function SignedInHeaders(props: { user: User; themeClasses?: string }) {
+function NavOptions(props: { user: User | null; themeClasses: string }) {
   const { user, themeClasses } = props
-
   return (
     <>
-      <Link href="/create">
+      {user === null && (
+        <Link href="/about">
+          <a
+            className={clsx(
+              'text-base hidden md:block whitespace-nowrap',
+              themeClasses
+            )}
+          >
+            About
+          </a>
+        </Link>
+      )}
+
+      <Link href="/markets">
         <a
           className={clsx(
             'text-base hidden md:block whitespace-nowrap',
             themeClasses
           )}
         >
-          Create a market
+          All markets
         </a>
       </Link>
 
-      <ProfileMenu user={user} />
-    </>
-  )
-}
+      {user === null ? (
+        <>
+          <div
+            className={clsx(
+              'text-base font-medium cursor-pointer whitespace-nowrap',
+              themeClasses
+            )}
+            onClick={firebaseLogin}
+          >
+            Sign in
+          </div>
+        </>
+      ) : (
+        <>
+          <Link href="/create">
+            <a
+              className={clsx(
+                'text-base hidden md:block whitespace-nowrap',
+                themeClasses
+              )}
+            >
+              Create a market
+            </a>
+          </Link>
 
-function SignedOutHeaders(props: { themeClasses?: string }) {
-  const { themeClasses } = props
-
-  return (
-    <>
-      <div
-        className={clsx(
-          'text-base font-medium cursor-pointer whitespace-nowrap',
-          themeClasses
-        )}
-        onClick={firebaseLogin}
-      >
-        Sign in
-      </div>
+          <ProfileMenu user={user} />
+        </>
+      )}
     </>
   )
 }
