@@ -68,14 +68,18 @@ export function calculateRawShareValue(
   return currentValue - postSaleValue
 }
 
-export function calculateMoneyRatio(contract: Contract) {
+export function calculateMoneyRatio(contract: Contract, bet: Bet) {
   const { totalShares, pool } = contract
+  const { amount } = bet
+
   const p = getProbability(totalShares)
 
-  const actual = pool.YES + pool.NO
-  const expected = p * contract.totalBets.YES + (1 - p) * contract.totalBets.NO
+  const actual = pool.YES + pool.NO - amount
 
-  return expected === 0 ? 0 : actual / expected
+  const expected =
+    p * contract.totalBets.YES + (1 - p) * contract.totalBets.NO - amount
+
+  return expected <= 0 ? 0 : actual / expected
 }
 
 export function calculateShareValue(contract: Contract, bet: Bet) {
@@ -84,7 +88,7 @@ export function calculateShareValue(contract: Contract, bet: Bet) {
     bet.shares,
     bet.outcome
   )
-  const f = calculateMoneyRatio(contract)
+  const f = calculateMoneyRatio(contract, bet)
 
   const myPool = contract.pool[bet.outcome]
   const adjShareValue = Math.min(Math.min(1, f) * shareValue, myPool)
@@ -92,7 +96,7 @@ export function calculateShareValue(contract: Contract, bet: Bet) {
 }
 
 export function calculateSaleAmount(contract: Contract, bet: Bet) {
-  return (1 - FEES) * calculateShareValue(contract, bet)
+  return (1 - 2 * FEES) * calculateShareValue(contract, bet)
 }
 
 export function calculatePayout(
@@ -133,7 +137,7 @@ export function calculateStandardPayout(
     totalShares[outcome] - phantomShares[outcome] - totalBets[outcome]
   const winningsPool = truePool - totalBets[outcome]
 
-  return (1 - FEES) * (amount + ((shares - amount) / total) * winningsPool)
+  return amount + (1 - 2 * FEES) * ((shares - amount) / total) * winningsPool
 }
 
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
@@ -188,9 +192,10 @@ function calculateMktPayout(contract: Contract, bet: Bet) {
         contract.totalBets.NO)
 
   return (
-    (1 - FEES) *
-    (betP * bet.amount +
-      ((betP * (bet.shares - bet.amount)) / weightedShareTotal) * winningsPool)
+    betP * bet.amount +
+    (1 - 2 * FEES) *
+      ((betP * (bet.shares - bet.amount)) / weightedShareTotal) *
+      winningsPool
   )
 }
 
