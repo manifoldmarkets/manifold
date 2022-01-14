@@ -10,6 +10,7 @@ export function AmountInput(props: {
   onChange: (newAmount: number | undefined) => void
   error: string | undefined
   setError: (error: string | undefined) => void
+  minimumAmount?: number
   disabled?: boolean
   className?: string
   inputClassName?: string
@@ -22,6 +23,7 @@ export function AmountInput(props: {
     disabled,
     className,
     inputClassName,
+    minimumAmount,
   } = props
 
   const user = useUser()
@@ -33,11 +35,16 @@ export function AmountInput(props: {
 
     onChange(str ? amount : undefined)
 
-    if (user && user.balance < amount) setError('Insufficient balance')
-    else setError(undefined)
+    if (user && user.balance < amount) {
+      setError('Insufficient balance')
+    } else if (minimumAmount && amount < minimumAmount) {
+      setError('Minimum amount: ' + formatMoney(minimumAmount))
+    } else {
+      setError(undefined)
+    }
   }
 
-  const remainingBalance = (user?.balance ?? 0) - (amount ?? 0)
+  const remainingBalance = Math.max(0, (user?.balance ?? 0) - (amount ?? 0))
 
   return (
     <Col className={className}>
@@ -57,22 +64,22 @@ export function AmountInput(props: {
           onChange={(e) => onAmountChange(e.target.value)}
         />
       </label>
-      {user &&
-        (error ? (
-          <div className="font-medium tracking-wide text-red-500 text-xs whitespace-nowrap mr-auto self-center mt-4">
-            {error}
+      {error && (
+        <div className="font-medium tracking-wide text-red-500 text-xs whitespace-nowrap mr-auto self-center mt-4">
+          {error}
+        </div>
+      )}
+      {user && (
+        <Col className="text-sm mt-3">
+          <div className="text-gray-500 whitespace-nowrap mb-2">
+            Remaining balance
           </div>
-        ) : (
-          <Col className="text-sm mt-3">
-            <div className="text-gray-500 whitespace-nowrap mb-2">
-              Remaining balance
-            </div>
-            <Row className="gap-4">
-              <div>{formatMoney(Math.floor(remainingBalance))}</div>
-              {user.balance !== 1000 && <AddFundsButton />}
-            </Row>
-          </Col>
-        ))}
+          <Row className="gap-4">
+            <div>{formatMoney(Math.floor(remainingBalance))}</div>
+            {user.balance !== 1000 && <AddFundsButton />}
+          </Row>
+        </Col>
+      )}
     </Col>
   )
 }
