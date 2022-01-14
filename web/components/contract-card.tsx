@@ -151,7 +151,7 @@ export function ContractDetails(props: { contract: Contract }) {
             <div className="">•</div>
             <div className="whitespace-nowrap">
               {closeTime > Date.now() ? 'Closes' : 'Closed'}{' '}
-              {dayjs(closeTime).format('MMM D, h:mma')}
+              {dayjs(closeTime).format('MMM D, YYYY')}
             </div>
           </>
         )}
