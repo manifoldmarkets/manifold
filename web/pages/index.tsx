@@ -55,11 +55,11 @@ const HotMarkets = (props: { hotContracts: Contract[] }) => {
     <div className="w-full bg-indigo-50 border-2 border-indigo-100 p-6 rounded-lg shadow-md">
       <Title className="mt-0" text="🔥 Markets" />
       <Col className="gap-6">
-        <Col className="md:flex-row gap-6">
+        <Col className="md:flex-row items-start gap-6">
           <ContractCard className="flex-1" contract={c1} showHotVolume />
           <ContractCard className="flex-1" contract={c2} showHotVolume />
         </Col>
-        <Col className="md:flex-row gap-6">
+        <Col className="md:flex-row items-start gap-6">
           <ContractCard className="flex-1" contract={c3} showHotVolume />
           <ContractCard className="flex-1" contract={c4} showHotVolume />
         </Col>

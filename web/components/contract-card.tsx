@@ -25,25 +25,24 @@ export function ContractCard(props: {
 
   return (
     <Link href={contractPath(contract)}>
-      <a className={clsx('col-span-1', className)}>
-        <li className="bg-white hover:bg-gray-100 shadow-md rounded-lg divide-y divide-gray-200 list-none">
-          <div className="card">
-            <div className="card-body p-6">
-              <Row className="justify-between gap-4 mb-2">
-                <p className="font-medium text-indigo-700">{question}</p>
-                <ResolutionOrChance
-                  className="items-center"
-                  resolution={resolution}
-                  probPercent={probPercent}
-                />
-              </Row>
-              <AbbrContractDetails
-                contract={contract}
-                showHotVolume={showHotVolume}
-              />
-            </div>
-          </div>
-        </li>
+      <a
+        className={clsx(
+          'col-span-1 bg-white hover:bg-gray-100 shadow-md rounded-lg list-none card card-body p-6',
+          className
+        )}
+      >
+        <Row className="justify-between gap-4 mb-2">
+          <p className="font-medium text-indigo-700">{question}</p>
+          <ResolutionOrChance
+            className="items-center"
+            resolution={resolution}
+            probPercent={probPercent}
+          />
+        </Row>
+        <AbbrContractDetails
+          contract={contract}
+          showHotVolume={showHotVolume}
+        />
       </a>
     </Link>
   )
