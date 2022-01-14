@@ -68,9 +68,8 @@ export function calculateRawShareValue(
   return currentValue - postSaleValue
 }
 
-export function calculateMoneyRatio(contract: Contract, bet: Bet) {
+export function calculateMoneyRatio(contract: Contract, amount: number) {
   const { totalShares, pool } = contract
-  const { amount } = bet
 
   const p = getProbability(totalShares)
 
@@ -79,7 +78,9 @@ export function calculateMoneyRatio(contract: Contract, bet: Bet) {
   const expected =
     p * contract.totalBets.YES + (1 - p) * contract.totalBets.NO - amount
 
-  return expected <= 0 ? 0 : actual / expected
+  if (actual <= 0 || expected <= 0) return 0
+
+  return actual / expected
 }
 
 export function calculateShareValue(contract: Contract, bet: Bet) {
@@ -88,7 +89,7 @@ export function calculateShareValue(contract: Contract, bet: Bet) {
     bet.shares,
     bet.outcome
   )
-  const f = calculateMoneyRatio(contract, bet)
+  const f = calculateMoneyRatio(contract, shareValue)
 
   const myPool = contract.pool[bet.outcome]
   const adjShareValue = Math.min(Math.min(1, f) * shareValue, myPool)
