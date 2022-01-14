@@ -17,15 +17,16 @@ import { TrendingUpIcon } from '@heroicons/react/solid'
 export function ContractCard(props: {
   contract: Contract
   showHotVolume?: boolean
+  className?: string
 }) {
-  const { contract, showHotVolume } = props
+  const { contract, showHotVolume, className } = props
   const { question, resolution } = contract
   const { probPercent } = contractMetrics(contract)
 
   return (
     <Link href={contractPath(contract)}>
-      <a className="col-span-1">
-        <li className="bg-white hover:bg-gray-100 shadow-md rounded-lg divide-y divide-gray-200">
+      <a className={clsx('col-span-1', className)}>
+        <li className="bg-white hover:bg-gray-100 shadow-md rounded-lg divide-y divide-gray-200 list-none">
           <div className="card">
             <div className="card-body p-6">
               <Row className="justify-between gap-4 mb-2">
