@@ -212,6 +212,15 @@ function FeedQuestion(props: { contract: Contract }) {
     contract
   const { probPercent } = contractMetrics(contract)
 
+  let description = contract.description
+  // Keep descriptions to at most 400 characters
+  if (description.length > 400) {
+    description = description.slice(0, 400)
+    // Make sure to end on a space
+    const i = description.lastIndexOf(' ')
+    description = description.slice(0, i)
+  }
+
   return (
     <>
       <div>
@@ -243,7 +252,14 @@ function FeedQuestion(props: { contract: Contract }) {
             probPercent={probPercent}
           />
         </Col>
-        <ContractDescription contract={contract} isCreator={false} />
+        <div className="whitespace-pre-line break-words mt-2 text-gray-700">
+          <Linkify text={description} />
+          {description != contract.description && (
+            <SiteLink href={contractPath(contract)} className="text-indigo-700">
+              ... (show more)
+            </SiteLink>
+          )}
+        </div>
       </div>
     </>
   )
