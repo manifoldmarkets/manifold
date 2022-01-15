@@ -24,25 +24,24 @@ export function ContractCard(props: {
   const { probPercent } = contractMetrics(contract)
 
   return (
-    <div className={className}>
+    <div
+      className={clsx(
+        'bg-white hover:bg-gray-100 shadow-md rounded-lg p-6 relative',
+        className
+      )}
+    >
       <Link href={contractPath(contract)}>
-        <a>
-          <div className="bg-white hover:bg-gray-100 shadow-md rounded-lg p-6">
-            <Row className="justify-between gap-4 mb-2">
-              <p className="font-medium text-indigo-700">{question}</p>
-              <ResolutionOrChance
-                className="items-center"
-                resolution={resolution}
-                probPercent={probPercent}
-              />
-            </Row>
-            <AbbrContractDetails
-              contract={contract}
-              showHotVolume={showHotVolume}
-            />
-          </div>
-        </a>
+        <a className="absolute left-0 right-0 top-0 bottom-0" />
       </Link>
+      <Row className="justify-between gap-4 mb-2">
+        <p className="font-medium text-indigo-700">{question}</p>
+        <ResolutionOrChance
+          className="items-center"
+          resolution={resolution}
+          probPercent={probPercent}
+        />
+      </Row>
+      <AbbrContractDetails contract={contract} showHotVolume={showHotVolume} />
     </div>
   )
 }
