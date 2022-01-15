@@ -4,6 +4,7 @@ import 'gridjs/dist/theme/mermaid.css'
 import { html } from 'gridjs'
 import dayjs from 'dayjs'
 import { useUsers } from '../hooks/use-users'
+import { useUser } from '../hooks/use-user'
 
 function avatarHtml(avatarUrl: string) {
   return `<img
@@ -14,7 +15,18 @@ function avatarHtml(avatarUrl: string) {
 }
 
 export default function Admin() {
+  const user = useUser()
   let users = useUsers()
+
+  const adminIds = [
+    'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
+    '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
+    'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
+  ]
+  if (!adminIds.includes(user?.id || '')) {
+    return <Page>Nice try. No access for you.</Page>
+  }
+
   // Sort users by createdTime descending, by default
   users = users.sort((a, b) => b.createdTime - a.createdTime)
 
