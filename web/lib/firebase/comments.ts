@@ -9,7 +9,7 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore'
-import { listenForValues } from './utils'
+import { getValues, listenForValues } from './utils'
 import { db } from './init'
 import { User } from '../../../common/user'
 import { Comment } from '../../../common/comment'
@@ -35,6 +35,12 @@ export async function createComment(
 
 function getCommentsCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'comments')
+}
+
+export async function listAllComments(contractId: string) {
+  const comments = await getValues<Comment>(getCommentsCollection(contractId))
+  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+  return comments
 }
 
 export function listenForComments(

@@ -6,7 +6,7 @@ import {
 } from '../lib/firebase/comments'
 
 export const useComments = (contractId: string) => {
-  const [comments, setComments] = useState<Comment[] | 'loading'>('loading')
+  const [comments, setComments] = useState<Comment[] | undefined>()
 
   useEffect(() => {
     if (contractId) return listenForComments(contractId, setComments)

@@ -7,10 +7,24 @@ import { useContracts } from '../hooks/use-contracts'
 import { Contract } from '../lib/firebase/contracts'
 import { Comment } from '../lib/firebase/comments'
 import { Col } from '../components/layout/col'
+import { Bet } from '../../common/bet'
 
-function FeedCard(props: { contract: Contract }) {
-  const { contract } = props
-  return <ContractFeed contract={contract} feedType="activity" />
+const MAX_ACTIVE_CONTRACTS = 75
+
+function FeedCard(props: {
+  contract: Contract
+  bets: Bet[]
+  comments: Comment[]
+}) {
+  const { contract, bets, comments } = props
+  return (
+    <ContractFeed
+      contract={contract}
+      bets={bets}
+      comments={comments}
+      feedType="activity"
+    />
+  )
 }
 
 // This does NOT include comment times, since those aren't part of the contract atm.
@@ -28,7 +42,7 @@ function lastActivityTime(contract: Contract) {
 // - Comment on a market
 // - New market created
 // - Market resolved
-function findActiveContracts(
+export function findActiveContracts(
   allContracts: Contract[],
   recentComments: Comment[]
 ) {
@@ -63,26 +77,33 @@ function findActiveContracts(
   contracts = _.uniqBy(contracts, (c) => c.id)
   contracts = contracts.filter((contract) => contract.visibility === 'public')
   contracts = _.sortBy(contracts, (c) => -(idToActivityTime.get(c.id) ?? 0))
-  return contracts
+  return contracts.slice(0, MAX_ACTIVE_CONTRACTS)
 }
 
 export function ActivityFeed(props: {
   contracts: Contract[]
-  recentComments: Comment[]
+  contractBets: Bet[][]
+  contractComments: Comment[][]
 }) {
+  const { contractBets, contractComments } = props
   const contracts = useContracts() ?? props.contracts
-  const recentComments = useRecentComments() ?? props.recentComments
-  // TODO: Handle static props correctly?
-  const activeContracts = findActiveContracts(contracts, recentComments)
+  const recentComments = useRecentComments()
+  const activeContracts = recentComments
+    ? findActiveContracts(contracts, recentComments)
+    : contracts
 
   return contracts.length > 0 ? (
     <Col className="items-center">
       <Col className="w-full max-w-3xl">
         <Title text="Recent Activity" />
         <Col className="w-full bg-white self-center divide-gray-300 divide-y">
-          {activeContracts.map((contract) => (
+          {activeContracts.map((contract, i) => (
             <div className="py-6 px-2 sm:px-4">
-              <FeedCard contract={contract} />
+              <FeedCard
+                contract={contract}
+                bets={contractBets[i]}
+                comments={contractComments[i]}
+              />
             </div>
           ))}
         </Col>
@@ -96,7 +117,7 @@ export function ActivityFeed(props: {
 export default function ActivityPage() {
   return (
     <Page>
-      <ActivityFeed contracts={[]} recentComments={[]} />
+      <ActivityFeed contracts={[]} contractBets={[]} contractComments={[]} />
     </Page>
   )
 }

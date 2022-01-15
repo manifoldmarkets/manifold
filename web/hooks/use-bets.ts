@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Bet, listenForBets } from '../lib/firebase/bets'
 
 export const useBets = (contractId: string) => {
-  const [bets, setBets] = useState<Bet[] | 'loading'>('loading')
+  const [bets, setBets] = useState<Bet[] | undefined>()
 
   useEffect(() => {
     if (contractId) return listenForBets(contractId, setBets)

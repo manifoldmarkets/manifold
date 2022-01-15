@@ -505,6 +505,8 @@ type ActivityItem = {
 
 export function ContractFeed(props: {
   contract: Contract
+  bets: Bet[]
+  comments: Comment[]
   // Feed types: 'activity' = Activity feed, 'market' = Comments feed on a market
   feedType: 'activity' | 'market'
 }) {
@@ -512,12 +514,10 @@ export function ContractFeed(props: {
   const { id } = contract
   const user = useUser()
 
-  let bets = useBets(id)
-  if (bets === 'loading') bets = []
+  let bets = useBets(id) ?? props.bets
   bets = withoutAnteBets(contract, bets)
 
-  let comments = useComments(id)
-  if (comments === 'loading') comments = []
+  const comments = useComments(id) ?? props.comments
 
   const groupWindow = feedType == 'activity' ? 10 * DAY_IN_MS : DAY_IN_MS
 
