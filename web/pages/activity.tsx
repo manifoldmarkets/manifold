@@ -11,22 +11,6 @@ import { Bet } from '../../common/bet'
 
 const MAX_ACTIVE_CONTRACTS = 75
 
-function FeedCard(props: {
-  contract: Contract
-  bets: Bet[]
-  comments: Comment[]
-}) {
-  const { contract, bets, comments } = props
-  return (
-    <ContractFeed
-      contract={contract}
-      bets={bets}
-      comments={comments}
-      feedType="activity"
-    />
-  )
-}
-
 // This does NOT include comment times, since those aren't part of the contract atm.
 // TODO: Maybe store last activity time directly in the contract?
 // Pros: simplifies this code; cons: harder to tweak "activity" definition later
@@ -90,7 +74,7 @@ export function ActivityFeed(props: {
   const recentComments = useRecentComments()
   const activeContracts = recentComments
     ? findActiveContracts(contracts, recentComments)
-    : contracts
+    : props.contracts
 
   return contracts.length > 0 ? (
     <Col className="items-center">
@@ -99,10 +83,11 @@ export function ActivityFeed(props: {
         <Col className="w-full bg-white self-center divide-gray-300 divide-y">
           {activeContracts.map((contract, i) => (
             <div className="py-6 px-2 sm:px-4">
-              <FeedCard
+              <ContractFeed
                 contract={contract}
                 bets={contractBets[i]}
                 comments={contractComments[i]}
+                feedType="activity"
               />
             </div>
           ))}
