@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { firebaseLogout, User } from '../lib/firebase/users'
 import { CreatorContractsList } from './contracts-list'
 import { Title } from './title'
@@ -16,7 +17,7 @@ export function UserLink(props: {
   const { name, username, showUsername, className } = props
 
   return (
-    <SiteLink href={`/${username}`} className={className}>
+    <SiteLink href={`/${username}`} className={clsx('z-10', className)}>
       {name}
       {showUsername && ` (@${username})`}
     </SiteLink>
