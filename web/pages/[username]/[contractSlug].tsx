@@ -19,16 +19,26 @@ import {
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
 import { contractTextDetails } from '../../components/contract-card'
+import { Bet, listAllBets } from '../../lib/firebase/bets'
+import { Comment, listAllComments } from '../../lib/firebase/comments'
 
 export async function getStaticProps(props: { params: any }) {
   const { username, contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
+  const contractId = contract?.id
+
+  const [bets, comments] = await Promise.all([
+    contractId ? listAllBets(contractId) : null,
+    contractId ? listAllComments(contractId) : null,
+  ])
 
   return {
     props: {
       username,
       slug: contractSlug,
       contract,
+      bets,
+      comments,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -41,12 +51,15 @@ export async function getStaticPaths() {
 
 export default function ContractPage(props: {
   contract: Contract | null
+  bets: Bet[] | null
+  comments: Comment[] | null
   slug: string
   username: string
 }) {
   const user = useUser()
 
   const contract = useContractWithPreload(props.slug, props.contract)
+  const { bets, comments } = props
 
   if (!contract) {
     return <div>Contract not found...</div>
@@ -83,7 +96,11 @@ export default function ContractPage(props: {
 
       <Col className="w-full md:flex-row justify-between mt-6">
         <div className="flex-[3]">
-          <ContractOverview contract={contract} />
+          <ContractOverview
+            contract={contract}
+            bets={bets ?? []}
+            comments={comments ?? []}
+          />
           <BetsSection contract={contract} user={user ?? null} />
         </div>
 
@@ -108,7 +125,7 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
   const { contract, user } = props
   const bets = useBets(contract.id)
 
-  if (bets === 'loading' || bets.length === 0) return <></>
+  if (!bets || bets.length === 0) return <></>
 
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)

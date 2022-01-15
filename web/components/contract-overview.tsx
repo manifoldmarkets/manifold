@@ -15,12 +15,16 @@ import clsx from 'clsx'
 import { ContractDetails, ResolutionOrChance } from './contract-card'
 import { ContractFeed } from './contract-feed'
 import { TweetButton } from './tweet-button'
+import { Bet } from '../../common/bet'
+import { Comment } from '../../common/comment'
 
 export const ContractOverview = (props: {
   contract: Contract
+  bets: Bet[]
+  comments: Comment[]
   className?: string
 }) => {
-  const { contract, className } = props
+  const { contract, bets, comments, className } = props
   const { resolution, creatorId, creatorName } = contract
   const { probPercent, truePool } = contractMetrics(contract)
 
@@ -91,7 +95,12 @@ export const ContractOverview = (props: {
         </>
       )}
 
-      <ContractFeed contract={contract} feedType="market" />
+      <ContractFeed
+        contract={contract}
+        bets={bets}
+        comments={comments}
+        feedType="market"
+      />
     </Col>
   )
 }

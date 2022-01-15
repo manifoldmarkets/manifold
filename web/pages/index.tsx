@@ -8,10 +8,15 @@ import {
 import { Spacer } from '../components/layout/spacer'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
-import { ActivityFeed } from './activity'
-import { getRecentComments, Comment } from '../lib/firebase/comments'
+import { ActivityFeed, findActiveContracts } from './activity'
+import {
+  getRecentComments,
+  Comment,
+  listAllComments,
+} from '../lib/firebase/comments'
 import { Col } from '../components/layout/col'
 import { ContractCard } from '../components/contract-card'
+import { Bet, listAllBets } from '../lib/firebase/bets'
 
 export async function getStaticProps() {
   const [contracts, hotContracts, recentComments] = await Promise.all([
@@ -20,11 +25,20 @@ export async function getStaticProps() {
     getRecentComments().catch(() => []),
   ])
 
+  const activeContracts = findActiveContracts(contracts, recentComments)
+  const activeContractBets = await Promise.all(
+    activeContracts.map((contract) => listAllBets(contract.id))
+  )
+  const activeContractComments = await Promise.all(
+    activeContracts.map((contract) => listAllComments(contract.id))
+  )
+
   return {
     props: {
-      contracts,
+      activeContracts,
+      activeContractBets,
+      activeContractComments,
       hotContracts,
-      recentComments,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -32,17 +46,27 @@ export async function getStaticProps() {
 }
 
 const Home = (props: {
-  contracts: Contract[]
+  activeContracts: Contract[]
+  activeContractBets: Bet[][]
+  activeContractComments: Comment[][]
   hotContracts: Contract[]
-  recentComments: Comment[]
 }) => {
-  const { contracts, hotContracts, recentComments } = props
+  const {
+    hotContracts,
+    activeContracts,
+    activeContractBets,
+    activeContractComments,
+  } = props
 
   return (
     <Page>
       <HotMarkets hotContracts={hotContracts} />
       <Spacer h={10} />
-      <ActivityFeed contracts={contracts} recentComments={recentComments} />
+      <ActivityFeed
+        contracts={activeContracts}
+        contractBets={activeContractBets}
+        contractComments={activeContractComments}
+      />
     </Page>
   )
 }

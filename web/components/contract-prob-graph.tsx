@@ -11,8 +11,7 @@ export function ContractProbGraph(props: { contract: Contract }) {
   const { contract } = props
   const { id, phantomShares, resolutionTime } = contract
 
-  let bets = useBets(id)
-  if (bets === 'loading') bets = []
+  let bets = useBets(id) ?? []
   bets = withoutAnteBets(contract, bets)
 
   const startProb = getProbability(phantomShares)
