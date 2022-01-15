@@ -18,14 +18,13 @@ import {
   calculateShares,
   getProbabilityAfterBet,
   calculatePayoutAfterCorrectBet,
-  calculateEstimatedWinnings,
 } from '../../common/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
-import { OutcomeLabel } from './outcome-label'
-import { AdvancedPanel } from './advanced-panel'
 import { Bet } from '../../common/bet'
 import { placeBet } from '../lib/firebase/api-call'
 import { AmountInput } from './amount-input'
+import { InfoTooltip } from './info-tooltip'
+import { OutcomeLabel } from './outcome-label'
 
 export function BetPanel(props: { contract: Contract; className?: string }) {
   useEffect(() => {
@@ -99,17 +98,16 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     betChoice
   )
 
-  const estimatedWinnings = calculateEstimatedWinnings(
-    contract.totalShares,
-    shares,
-    betChoice
-  )
-
-  const estimatedReturn = betAmount
-    ? (estimatedWinnings - betAmount) / betAmount
+  const currentPayout = betAmount
+    ? calculatePayoutAfterCorrectBet(contract, {
+        outcome: betChoice,
+        amount: betAmount,
+        shares,
+      } as Bet)
     : 0
 
-  const estimatedReturnPercent = (estimatedReturn * 100).toFixed() + '%'
+  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
+  const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
   return (
     <Col
@@ -127,7 +125,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         onSelect={(choice) => onBetChoice(choice)}
       />
 
-      <div className="my-3 text-sm text-gray-500">Amount </div>
+      <div className="my-3 text-sm text-gray-500 text-left">Amount </div>
       <AmountInput
         inputClassName="w-full"
         amount={betAmount}
@@ -146,38 +144,22 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         <div>{formatPercent(resultProb)}</div>
       </Row>
 
-      <div className="mt-2 mb-1 text-sm text-gray-500">
-        Estimated max payout
-      </div>
+      <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
+        Payout if <OutcomeLabel outcome={betChoice} />
+        <InfoTooltip
+          text={`Current payout for ${formatWithCommas(
+            shares
+          )} / ${formatWithCommas(
+            shares +
+              contract.totalShares[betChoice] -
+              contract.phantomShares[betChoice]
+          )} ${betChoice} shares`}
+        />
+      </Row>
       <div>
-        {formatMoney(estimatedWinnings)} &nbsp;{' '}
-        {estimatedWinnings ? <span>(+{estimatedReturnPercent})</span> : null}
+        {formatMoney(currentPayout)}
+        &nbsp; <span>(+{currentReturnPercent})</span>
       </div>
-
-      <AdvancedPanel>
-        <div className="mt-2 mb-1 text-sm text-gray-500">
-          <OutcomeLabel outcome={betChoice} /> shares
-        </div>
-        <div>
-          {formatWithCommas(shares)} of{' '}
-          {formatWithCommas(shares + contract.totalShares[betChoice])}
-        </div>
-
-        <div className="mt-2 mb-1 text-sm text-gray-500">
-          Current payout if <OutcomeLabel outcome={betChoice} />
-        </div>
-        <div>
-          {formatMoney(
-            betAmount
-              ? calculatePayoutAfterCorrectBet(contract, {
-                  outcome: betChoice,
-                  amount: betAmount,
-                  shares,
-                } as Bet)
-              : 0
-          )}
-        </div>
-      </AdvancedPanel>
 
       <Spacer h={6} />
 
