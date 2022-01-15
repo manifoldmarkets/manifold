@@ -292,7 +292,7 @@ export function ContractBetsTable(props: {
             <BetRow
               key={bet.id}
               bet={bet}
-              sale={salesDict[bet.id]}
+              saleBet={salesDict[bet.id]}
               contract={contract}
             />
           ))}
@@ -302,8 +302,8 @@ export function ContractBetsTable(props: {
   )
 }
 
-function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
-  const { bet, sale, contract } = props
+function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
+  const { bet, saleBet, contract } = props
   const {
     amount,
     outcome,
@@ -328,8 +328,8 @@ function BetRow(props: { bet: Bet; contract: Contract; sale?: Bet }) {
       </td>
       <td>{formatWithCommas(shares)}</td>
       <td>
-        {sale ? (
-          <>{formatMoney(Math.abs(sale.amount))} (sold)</>
+        {saleBet?.sale ? (
+          <>{formatMoney(Math.abs(saleBet.sale.amount))} (sold)</>
         ) : (
           formatMoney(
             isResolved
