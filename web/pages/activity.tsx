@@ -82,7 +82,7 @@ export function ActivityFeed(props: {
         <Title text="Recent Activity" />
         <Col className="w-full bg-white self-center divide-gray-300 divide-y">
           {activeContracts.map((contract, i) => (
-            <div className="py-6 px-2 sm:px-4">
+            <div key={contract.id} className="py-6 px-2 sm:px-4">
               <ContractFeed
                 contract={contract}
                 bets={contractBets[i]}
