@@ -25,7 +25,10 @@ export function ContractsGrid(props: {
     props.contracts,
     (c) => c.isResolved
   )
-  const contracts = [...activeContracts, ...resolvedContracts]
+  const contracts = [...activeContracts, ...resolvedContracts].slice(
+    0,
+    MAX_CONTRACTS_DISPLAYED
+  )
 
   if (contracts.length === 0) {
     return (
@@ -64,13 +67,25 @@ function CreatorContractsGrid(props: { contracts: Contract[] }) {
     _.sumBy(contracts, (contract) => contract.volume7Days)
   )
   const creatorIds = _.sortBy(
-    Object.keys(byCreator).filter((creatorId) => creator7DayVol[creatorId] > 0),
+    Object.keys(byCreator),
     (creatorId) => -1 * creator7DayVol[creatorId]
   )
 
+  let numContracts = 0
+  let maxIndex = 0
+  for (; maxIndex < creatorIds.length; maxIndex++) {
+    numContracts += Math.min(
+      MAX_GROUPED_CONTRACTS_DISPLAYED,
+      byCreator[creatorIds[maxIndex]].length
+    )
+    if (numContracts > MAX_CONTRACTS_DISPLAYED) break
+  }
+
+  const creatorIdsSubset = creatorIds.slice(0, maxIndex)
+
   return (
     <Col className="gap-6">
-      {creatorIds.map((creatorId) => {
+      {creatorIdsSubset.map((creatorId) => {
         const { creatorUsername, creatorName } = byCreator[creatorId][0]
 
         return (
@@ -125,13 +140,25 @@ function TagContractsGrid(props: { contracts: Contract[] }) {
     _.sumBy(contracts, (contract) => contract.volume7Days)
   )
   const tags = _.sortBy(
-    Object.keys(byTag).filter((tag) => tag7DayVol[tag] > 0),
+    Object.keys(byTag),
     (creatorId) => -1 * tag7DayVol[creatorId]
   )
 
+  let numContracts = 0
+  let maxIndex = 0
+  for (; maxIndex < tags.length; maxIndex++) {
+    numContracts += Math.min(
+      MAX_GROUPED_CONTRACTS_DISPLAYED,
+      byTag[tags[maxIndex]].length
+    )
+    if (numContracts > MAX_CONTRACTS_DISPLAYED) break
+  }
+
+  const tagsSubset = tags.slice(0, maxIndex)
+
   return (
     <Col className="gap-6">
-      {tags.map((tag) => {
+      {tagsSubset.map((tag) => {
         return (
           <Col className="gap-4" key={tag}>
             <SiteLink className="text-lg" href={`/tag/${tag}`}>
@@ -206,9 +233,6 @@ export function SearchableGrid(props: {
       sort === 'resolved' ? c.resolution : !c.resolution
     )
   }
-
-  if (matches.length > MAX_CONTRACTS_DISPLAYED)
-    matches = _.slice(matches, 0, MAX_CONTRACTS_DISPLAYED)
 
   return (
     <div>
