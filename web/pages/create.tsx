@@ -13,6 +13,8 @@ import { createContract } from '../lib/firebase/api-call'
 import { Row } from '../components/layout/row'
 import { AmountInput } from '../components/amount-input'
 import { MINIMUM_ANTE } from '../../common/antes'
+import { InfoTooltip } from '../components/info-tooltip'
+import { CREATOR_FEE } from '../../common/fees'
 
 // Allow user to create a new contract
 export default function NewContract() {
@@ -44,10 +46,8 @@ export default function NewContract() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const closeTime = dateToMillis(closeDate) || undefined
-  // We'd like this to look like "Apr 2, 2022, 23:59:59 PM PT" but timezones are hard with dayjs
-  const formattedCloseTime = closeTime ? new Date(closeTime).toString() : ''
 
-  const remainingBalance = (creator?.balance || 0) - (ante || 0)
+  const balance = creator?.balance || 0
 
   const isValid =
     initialProb > 0 &&
@@ -55,7 +55,7 @@ export default function NewContract() {
     question.length > 0 &&
     ante !== undefined &&
     ante >= MINIMUM_ANTE &&
-    ante <= remainingBalance &&
+    ante <= balance &&
     // If set, closeTime must be in the future
     closeTime &&
     closeTime > Date.now()
@@ -162,7 +162,8 @@ export default function NewContract() {
 
           <div className="form-control items-start mb-1">
             <label className="label">
-              <span className="mb-1">Last trading day</span>
+              <span className="mb-1 mr-1">Last trading day</span>
+              <InfoTooltip text="Trading allowed up to 11:59:59 pm local time on this date." />
             </label>
             <input
               type="date"
@@ -182,9 +183,13 @@ export default function NewContract() {
 
           <Spacer h={4} />
 
-          <div className="form-control mb-1">
+          <div className="form-control items-start mb-1">
             <label className="label">
-              <span className="mb-1">Subsidize your market</span>
+              <span className="mb-1 mr-1">Market ante</span>
+              <InfoTooltip
+                text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
+              You earn ${CREATOR_FEE * 100}% of trading volume.`}
+              />
             </label>
             <AmountInput
               amount={ante}
