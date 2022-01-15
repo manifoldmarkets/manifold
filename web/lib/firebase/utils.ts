@@ -33,6 +33,8 @@ export function listenForValues<T>(
   setValues: (values: T[]) => void
 ) {
   return onSnapshot(query, (snapshot) => {
+    if (snapshot.metadata.fromCache) return
+
     const values = snapshot.docs.map((doc) => doc.data() as T)
     setValues(values)
   })
