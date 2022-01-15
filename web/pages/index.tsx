@@ -17,7 +17,6 @@ import {
 import { Col } from '../components/layout/col'
 import { ContractCard } from '../components/contract-card'
 import { Bet, listAllBets } from '../lib/firebase/bets'
-import { useHotContracts } from '../hooks/use-contracts'
 
 export async function getStaticProps() {
   const [contracts, hotContracts, recentComments] = await Promise.all([
@@ -52,9 +51,12 @@ const Home = (props: {
   activeContractComments: Comment[][]
   hotContracts: Contract[]
 }) => {
-  const { activeContracts, activeContractBets, activeContractComments } = props
-
-  const hotContracts = useHotContracts() ?? props.hotContracts
+  const {
+    activeContracts,
+    activeContractBets,
+    activeContractComments,
+    hotContracts,
+  } = props
 
   return (
     <Page>
