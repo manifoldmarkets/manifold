@@ -19,6 +19,7 @@ import { app } from './init'
 import { getValues, listenForValues } from './utils'
 import { Contract } from '../../../common/contract'
 import { getProbability } from '../../../common/calculate'
+import { createRNG, shuffle } from '../../../common/util/random'
 export type { Contract }
 
 export function contractPath(contract: Contract) {
@@ -135,15 +136,24 @@ const hotContractsQuery = query(
   where('isResolved', '==', false),
   where('visibility', '==', 'public'),
   orderBy('volume24Hours', 'desc'),
-  limit(4)
+  limit(16)
 )
+
+function chooseHotContracts(contracts: Contract[]) {
+  const fiveMinutes = 5 * 60 * 1000
+  const seed = Math.round(Date.now() / fiveMinutes).toString()
+  shuffle(contracts, createRNG(seed))
+  return contracts.slice(0, 4)
+}
 
 export function listenForHotContracts(
   setHotContracts: (contracts: Contract[]) => void
 ) {
-  return listenForValues<Contract>(hotContractsQuery, setHotContracts)
+  return listenForValues<Contract>(hotContractsQuery, (contracts) =>
+    setHotContracts(chooseHotContracts(contracts))
+  )
 }
 
 export function getHotContracts() {
-  return getValues<Contract>(hotContractsQuery)
+  return getValues<Contract>(hotContractsQuery).then(chooseHotContracts)
 }

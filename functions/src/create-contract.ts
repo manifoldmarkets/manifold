@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin'
 import { chargeUser, getUser } from './utils'
 import { Contract } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
-import { randomString } from '../../common/util/random-string'
+import { randomString } from '../../common/util/random'
 import { getNewContract } from '../../common/new-contract'
 import { getAnteBets, MINIMUM_ANTE } from '../../common/antes'
 
