@@ -1,21 +1,9 @@
 import { Page } from '../components/page'
 import { Grid } from 'gridjs-react'
 import 'gridjs/dist/theme/mermaid.css'
-import { useEffect, useState } from 'react'
-import { User } from '../../common/user'
-import { listenForAllUsers } from '../lib/firebase/users'
 import { html } from 'gridjs'
 import dayjs from 'dayjs'
-
-export const useUsers = () => {
-  const [users, setUsers] = useState<User[]>([])
-
-  useEffect(() => {
-    listenForAllUsers(setUsers)
-  }, [])
-
-  return users
-}
+import { useUsers } from '../hooks/use-users'
 
 function avatarHtml(avatarUrl: string) {
   return `<img
@@ -26,7 +14,9 @@ function avatarHtml(avatarUrl: string) {
 }
 
 export default function Admin() {
-  const users = useUsers()
+  let users = useUsers()
+  // Sort users by createdTime descending, by default
+  users = users.sort((a, b) => b.createdTime - a.createdTime)
 
   return (
     <Page wide>
@@ -38,7 +28,14 @@ export default function Admin() {
             name: 'Avatar',
             formatter: (cell) => html(avatarHtml(cell as string)),
           },
-          'Username',
+          {
+            id: 'username',
+            name: 'Username',
+            formatter: (cell) =>
+              html(`<a 
+              class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              href="/${cell}">@${cell}</a>`),
+          },
           'Email',
           {
             id: 'createdTime',
@@ -50,7 +47,14 @@ export default function Admin() {
             name: 'Balance',
             formatter: (cell) => (cell as number).toFixed(0),
           },
-          'ID',
+          {
+            id: 'id',
+            name: 'ID',
+            formatter: (cell) =>
+              html(`<a
+              class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              href="https://console.firebase.google.com/project/mantic-markets/firestore/data/~2Fusers~2F${cell}">${cell}</a>`),
+          },
         ]}
         search={true}
         sort={true}
