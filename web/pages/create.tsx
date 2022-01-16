@@ -89,137 +89,132 @@ export default function NewContract() {
 
   return (
     <Page>
-      <Title text="Create a new prediction market" />
+      <div className="w-full max-w-2xl mx-auto">
+        <Title text="Create a new prediction market" />
 
-      <div className="w-full max-w-2xl bg-gray-100 rounded-lg shadow-md px-6 py-4">
-        {/* Create a Tailwind form that takes in all the fields needed for a new contract */}
-        {/* When the form is submitted, create a new contract in the database */}
-        <form>
-          <div className="form-control w-full">
-            <label className="label">
-              <span className="mb-1">Question</span>
-            </label>
+        <div className="bg-gray-100 rounded-lg shadow-md px-6 py-4">
+          <form>
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="mb-1">Question</span>
+              </label>
 
-            <Textarea
-              placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
-              className="input input-bordered resize-none"
-              disabled={isSubmitting}
-              value={question}
-              onChange={(e) => setQuestion(e.target.value || '')}
-            />
-          </div>
+              <Textarea
+                placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
+                className="input input-bordered resize-none"
+                disabled={isSubmitting}
+                value={question}
+                onChange={(e) => setQuestion(e.target.value || '')}
+              />
+            </div>
 
-          <Spacer h={4} />
+            <Spacer h={4} />
 
-          <div className="form-control">
-            <label className="label">
-              <span className="mb-1">Initial probability</span>
-            </label>
-            <Row className="items-center gap-2">
-              <label className="input-group input-group-lg w-fit text-lg">
+            <div className="form-control">
+              <label className="label">
+                <span className="mb-1">Initial probability</span>
+              </label>
+              <Row className="items-center gap-2">
+                <label className="input-group input-group-lg w-fit text-lg">
+                  <input
+                    type="number"
+                    value={initialProb}
+                    className="input input-bordered input-md text-lg"
+                    disabled={isSubmitting}
+                    min={1}
+                    max={99}
+                    onChange={(e) =>
+                      setInitialProb(parseInt(e.target.value.substring(0, 2)))
+                    }
+                  />
+                  <span>%</span>
+                </label>
                 <input
-                  type="number"
-                  value={initialProb}
-                  className="input input-bordered input-md text-lg"
-                  disabled={isSubmitting}
+                  type="range"
+                  className="range range-primary"
                   min={1}
                   max={99}
-                  onChange={(e) =>
-                    setInitialProb(parseInt(e.target.value.substring(0, 2)))
-                  }
+                  value={initialProb}
+                  onChange={(e) => setInitialProb(parseInt(e.target.value))}
                 />
-                <span>%</span>
+              </Row>
+            </div>
+
+            <Spacer h={4} />
+
+            <div className="form-control">
+              <label className="label">
+                <span className="mb-1">Description</span>
+              </label>
+              <Textarea
+                className="textarea w-full textarea-bordered"
+                rows={3}
+                placeholder={descriptionPlaceholder}
+                value={description}
+                disabled={isSubmitting}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setDescription(e.target.value || '')}
+              />
+            </div>
+
+            <Spacer h={4} />
+
+            <div className="form-control items-start mb-1">
+              <label className="label gap-2 mb-1">
+                <span>Last trading day</span>
+                <InfoTooltip text="Trading allowed through 11:59 pm local time on this date." />
               </label>
               <input
-                type="range"
-                className="range range-primary"
-                min={1}
-                max={99}
-                value={initialProb}
-                onChange={(e) => setInitialProb(parseInt(e.target.value))}
+                type="date"
+                className="input input-bordered"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setCloseDate(e.target.value || '')}
+                min={new Date().toISOString().split('T')[0]}
+                disabled={isSubmitting}
+                value={closeDate}
               />
-            </Row>
-          </div>
+            </div>
 
-          <Spacer h={4} />
+            <Spacer h={4} />
 
-          <div className="form-control">
-            <label className="label">
-              <span className="mb-1">Description</span>
-            </label>
-            <Textarea
-              className="textarea w-full textarea-bordered"
-              rows={3}
-              placeholder={descriptionPlaceholder}
-              value={description}
-              disabled={isSubmitting}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setDescription(e.target.value || '')}
-            />
-          </div>
-
-          <Spacer h={4} />
-
-          <div className="form-control items-start mb-1">
-            <label className="label">
-              <span className="mb-1 mr-1">Last trading day</span>
-              <InfoTooltip text="Trading allowed up to 11:59:59 pm local time on this date." />
-            </label>
-            <input
-              type="date"
-              className="input input-bordered"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setCloseDate(e.target.value || '')}
-              min={new Date().toISOString().split('T')[0]}
-              disabled={isSubmitting}
-              value={closeDate}
-            />
-          </div>
-          {/* <label>
-            <span className="label-text text-gray-500 ml-1">
-              No trading after this date
-            </span>
-          </label> */}
-
-          <Spacer h={4} />
-
-          <div className="form-control items-start mb-1">
-            <label className="label">
-              <span className="mb-1 mr-1">Market ante</span>
-              <InfoTooltip
-                text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
+            <div className="form-control items-start mb-1">
+              <label className="label gap-2 mb-1">
+                <span>Market ante</span>
+                <InfoTooltip
+                  text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
               You earn ${CREATOR_FEE * 100}% of trading volume.`}
+                />
+              </label>
+              <AmountInput
+                amount={ante}
+                minimumAmount={MINIMUM_ANTE}
+                onChange={setAnte}
+                error={anteError}
+                setError={setAnteError}
+                disabled={isSubmitting}
               />
-            </label>
-            <AmountInput
-              amount={ante}
-              minimumAmount={MINIMUM_ANTE}
-              onChange={setAnte}
-              error={anteError}
-              setError={setAnteError}
-              disabled={isSubmitting}
-            />
-          </div>
+            </div>
 
-          <Spacer h={4} />
+            <Spacer h={4} />
 
-          <div className="flex justify-end my-4">
-            <button
-              type="submit"
-              className={clsx(
-                'btn btn-primary',
-                isSubmitting && 'loading disabled'
-              )}
-              disabled={isSubmitting || !isValid}
-              onClick={(e) => {
-                e.preventDefault()
-                submit()
-              }}
-            >
-              {isSubmitting ? 'Creating...' : 'Create market'}
-            </button>
-          </div>
-        </form>
+            <div className="flex justify-end my-4">
+              <button
+                type="submit"
+                className={clsx(
+                  'btn btn-primary',
+                  isSubmitting && 'loading disabled'
+                )}
+                disabled={isSubmitting || !isValid}
+                onClick={(e) => {
+                  e.preventDefault()
+                  submit()
+                }}
+              >
+                {isSubmitting ? 'Creating...' : 'Create market'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </Page>
   )
