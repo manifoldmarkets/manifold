@@ -24,6 +24,7 @@ export function getNewContract(
     creatorId: creator.id,
     creatorName: creator.name,
     creatorUsername: creator.username,
+    creatorAvatarUrl: creator.avatarUrl,
 
     question: question.trim(),
     description: description.trim(),

@@ -69,14 +69,6 @@ export async function updateContract(
   await updateDoc(docRef, update)
 }
 
-export async function pushNewContract(contract: Omit<Contract, 'id'>) {
-  const newContractRef = doc(contractCollection)
-  const fullContract: Contract = { ...contract, id: newContractRef.id }
-
-  await setDoc(newContractRef, fullContract)
-  return fullContract
-}
-
 export async function getContractFromId(contractId: string) {
   const docRef = doc(db, 'contracts', contractId)
   const result = await getDoc(docRef)
