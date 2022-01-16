@@ -20,6 +20,7 @@ import {
 } from 'firebase/auth'
 
 import { User } from '../../../common/user'
+import { listenForValues } from './utils'
 export type { User }
 
 export const STARTING_BALANCE = 1000
@@ -110,4 +111,17 @@ export async function uploadData(
   const metadata = { cacheControl: 'public, max-age=86400, must-revalidate' }
   await uploadBytes(uploadRef, data, metadata)
   return await getDownloadURL(uploadRef)
+}
+
+export async function listAllUsers() {
+  const userCollection = collection(db, 'users')
+  const q = query(userCollection)
+  const docs = await getDocs(q)
+  return docs.docs.map((doc) => doc.data() as User)
+}
+
+export function listenForAllUsers(setUsers: (users: User[]) => void) {
+  const userCollection = collection(db, 'users')
+  const q = query(userCollection)
+  listenForValues(q, setUsers)
 }

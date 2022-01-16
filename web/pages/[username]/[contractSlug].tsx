@@ -21,6 +21,7 @@ import { Page } from '../../components/page'
 import { contractTextDetails } from '../../components/contract-card'
 import { Bet, listAllBets } from '../../lib/firebase/bets'
 import { Comment, listAllComments } from '../../lib/firebase/comments'
+import Custom404 from '../404'
 
 export async function getStaticProps(props: { params: any }) {
   const { username, contractSlug } = props.params
@@ -62,7 +63,7 @@ export default function ContractPage(props: {
   const { bets, comments } = props
 
   if (!contract) {
-    return <div>Contract not found...</div>
+    return <Custom404 />
   }
 
   const { creatorId, isResolved, resolution, question } = contract
