@@ -17,9 +17,14 @@ const serviceAccount = require('../../../../../../Downloads/mantic-markets-fireb
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 })
+
 const firestore = admin.firestore()
 
-async function recalculateContract(contractRef: DocRef, contract: Contract) {
+async function recalculateContract(
+  contractRef: DocRef,
+  contract: Contract,
+  isCommit = false
+) {
   const startPool = (contract as any).startPool as
     | undefined
     | { YES: number; NO: number }
@@ -113,8 +118,8 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
           getSellBetInfo(fakeUser, soldBet, fakeContract, bet.id)
 
         newBet.createdTime = bet.createdTime
-        // console.log('sale bet', newBet)
-        transaction.update(betsRef.doc(bet.id), newBet)
+        console.log('sale bet', newBet)
+        if (isCommit) transaction.update(betsRef.doc(bet.id), newBet)
 
         pool = newPool
         totalShares = newTotalShares
@@ -152,10 +157,10 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
         probAfter,
       }
 
-      // console.log('bet', betUpdate)
-      // console.log('update', { pool, totalBets, totalShares })
+      console.log('bet', betUpdate)
+      console.log('update', { pool, totalBets, totalShares })
 
-      transaction.update(betsRef.doc(bet.id), betUpdate)
+      if (isCommit) transaction.update(betsRef.doc(bet.id), betUpdate)
     }
 
     const contractUpdate: Partial<Contract> = {
@@ -166,7 +171,7 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
     }
 
     console.log('final', contractUpdate)
-    transaction.update(contractRef, contractUpdate)
+    if (isCommit) transaction.update(contractRef, contractUpdate)
   })
 
   console.log('updated', contract.slug)
@@ -174,21 +179,24 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
   console.log()
 }
 
-async function recalculateContractTotals() {
-  console.log('Migrating ante calculations to DPM-2')
+async function main() {
+  const slug = process.argv[2]
+  const isCommit = process.argv[3] === 'commit'
 
-  const snapshot = await firestore.collection('contracts').get()
-  const contracts = snapshot.docs.map((doc) => doc.data() as Contract)
+  const snap = await firestore
+    .collection('contracts')
+    .where('slug', '==', slug)
+    .get()
 
-  console.log('Loaded', contracts.length, 'contracts')
-
-  for (const contract of contracts) {
-    // if (contract.slug !== 'will-polymarket-list-any-new-market') continue
-    const contractRef = firestore.doc(`contracts/${contract.id}`)
-
-    await recalculateContract(contractRef, contract)
+  const contract = snap.docs[0]?.data() as Contract
+  if (!contract) {
+    console.log('No contract found for', slug)
+    return
   }
+
+  const contractRef = firestore.doc(`contracts/${contract.id}`)
+
+  await recalculateContract(contractRef, contract, isCommit)
 }
 
-if (require.main === module)
-  recalculateContractTotals().then(() => process.exit())
+if (require.main === module) main().then(() => process.exit())
