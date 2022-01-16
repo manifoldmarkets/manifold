@@ -6,6 +6,7 @@ import dayjs from 'dayjs'
 import { useUsers } from '../hooks/use-users'
 import { useUser } from '../hooks/use-user'
 import Error from 'next/error'
+import Custom404 from './404'
 
 function avatarHtml(avatarUrl: string) {
   return `<img
@@ -85,6 +86,6 @@ export default function Admin() {
       <UsersTable />
     </Page>
   ) : (
-    <Error statusCode={404} title='Who is this "admin" you speak of...' />
+    <Custom404 />
   )
 }
