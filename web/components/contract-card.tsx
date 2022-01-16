@@ -13,6 +13,7 @@ import { Col } from './layout/col'
 import { parseTags } from '../lib/util/parse'
 import dayjs from 'dayjs'
 import { TrendingUpIcon } from '@heroicons/react/solid'
+import { DateTimeTooltip } from './datetime-tooltip'
 
 export function ContractCard(props: {
   contract: Contract
@@ -143,14 +144,26 @@ export function ContractDetails(props: { contract: Contract }) {
         />
         <div className="">•</div>
         <div className="whitespace-nowrap">
-          {resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}
+          <DateTimeTooltip time={contract.createdTime}>
+            {createdDate}
+          </DateTimeTooltip>
+          {resolvedDate && contract.resolutionTime ? (
+            <>
+              {' - '}
+              <DateTimeTooltip time={contract.resolutionTime}>
+                {resolvedDate}
+              </DateTimeTooltip>
+            </>
+          ) : null}
         </div>
         {!resolvedDate && closeTime && (
           <>
             <div className="">•</div>
             <div className="whitespace-nowrap">
               {closeTime > Date.now() ? 'Closes' : 'Closed'}{' '}
-              {dayjs(closeTime).format('MMM D, YYYY')}
+              <DateTimeTooltip time={closeTime}>
+                {dayjs(closeTime).format('MMM D, YYYY')}
+              </DateTimeTooltip>
             </div>
           </>
         )}

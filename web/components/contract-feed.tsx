@@ -32,6 +32,7 @@ import { ResolutionOrChance } from './contract-card'
 import { SiteLink } from './site-link'
 import { Col } from './layout/col'
 import { UserLink } from './user-page'
+import { DateTimeTooltip } from './datetime-tooltip'
 dayjs.extend(relativeTime)
 
 function FeedComment(props: { activityItem: any }) {
@@ -75,12 +76,11 @@ function FeedComment(props: { activityItem: any }) {
 function Timestamp(props: { time: number }) {
   const { time } = props
   return (
-    <span
-      className="whitespace-nowrap text-gray-400 ml-1"
-      title={dayjs(time).format('MMM D, h:mma')}
-    >
-      {dayjs(time).fromNow()}
-    </span>
+    <DateTimeTooltip time={time}>
+      <span className="whitespace-nowrap text-gray-400 ml-1">
+        {dayjs(time).fromNow()}
+      </span>
+    </DateTimeTooltip>
   )
 }
 
