@@ -280,7 +280,7 @@ function Contents() {
         </li>
         <li>
           Office hours:{' '}
-          <a href="https://calendly.com/austinchen/mantic">Calendly</a>
+          <a href="https://calendly.com/austinchen/manifold">Calendly</a>
         </li>
         <li>
           Chat:{' '}
