@@ -14,7 +14,7 @@ export function DateTimeTooltip(props: {
   const { time } = props
   return (
     <span
-      className="tooltip cursor-default"
+      className="tooltip cursor-default overflow-hidden"
       data-tip={dayjs(time).format('MMM DD, YYYY hh:mm a z')}
     >
       {props.children}
