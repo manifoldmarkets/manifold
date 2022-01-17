@@ -1,4 +1,7 @@
-export const randomString = () => Math.random().toString(16).substr(2, 14)
+export const randomString = (length = 12) =>
+  Math.random()
+    .toString(16)
+    .substring(2, length + 2)
 
 export function createRNG(seed: string) {
   // https://stackoverflow.com/a/47593316/1592933

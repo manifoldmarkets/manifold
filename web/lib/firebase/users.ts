@@ -21,9 +21,8 @@ import {
 
 import { User } from '../../../common/user'
 import { listenForValues } from './utils'
+import { createUser } from './api-call'
 export type { User }
-
-export const STARTING_BALANCE = 1000
 
 const db = getFirestore(app)
 export const auth = getAuth(app)
@@ -54,31 +53,22 @@ export function listenForUser(userId: string, setUser: (user: User) => void) {
 }
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
+
 export function listenForLogin(onUser: (user: User | null) => void) {
   const cachedUser = localStorage.getItem(CACHED_USER_KEY)
   onUser(cachedUser ? JSON.parse(cachedUser) : null)
 
+  if (!cachedUser) createUser().catch(() => {}) // warm up cloud function
+
   return onAuthStateChanged(auth, async (fbUser) => {
     if (fbUser) {
-      let user = await getUser(fbUser.uid)
+      let user: User | null = await getUser(fbUser.uid)
+
       if (!user) {
         // User just created an account; save them to our database.
-        user = {
-          id: fbUser.uid,
-          name: fbUser.displayName || 'Default Name',
-          username:
-            fbUser.displayName?.replace(/\s+/g, '') || 'DefaultUsername',
-          avatarUrl: fbUser.photoURL || '',
-          email: fbUser.email || 'default@blah.com',
-          balance: STARTING_BALANCE,
-          // TODO: use Firestore timestamp?
-          createdTime: Date.now(),
-          lastUpdatedTime: Date.now(),
-          totalPnLCached: 0,
-          creatorVolumeCached: 0,
-        }
-        await setUser(fbUser.uid, user)
+        user = (await createUser()) || null
       }
+
       onUser(user)
 
       // Persist to local storage, to reduce login blink next time.
