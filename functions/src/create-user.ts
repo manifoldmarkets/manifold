@@ -14,7 +14,11 @@ export const createUser = functions
 
     const preexistingUser = await getUser(userId)
     if (preexistingUser)
-      return { status: 'error', message: 'User already created' }
+      return {
+        status: 'error',
+        message: 'User already created',
+        user: preexistingUser,
+      }
 
     const fbUser = await admin.auth().getUser(userId)
 
@@ -38,6 +42,8 @@ export const createUser = functions
       avatarUrl,
       balance: STARTING_BALANCE,
       createdTime: Date.now(),
+      totalPnLCached: 0,
+      creatorVolumeCached: 0,
     }
 
     await firestore.collection('users').doc(userId).create(user)
