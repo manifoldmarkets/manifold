@@ -7,4 +7,6 @@ export type User = {
   balance: number
   createdTime: number
   lastUpdatedTime: number
+  totalPnLCached: number
+  creatorVolumeCached: number
 }

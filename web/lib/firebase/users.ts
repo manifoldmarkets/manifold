@@ -74,6 +74,8 @@ export function listenForLogin(onUser: (user: User | null) => void) {
           // TODO: use Firestore timestamp?
           createdTime: Date.now(),
           lastUpdatedTime: Date.now(),
+          totalPnLCached: 0,
+          creatorVolumeCached: 0,
         }
         await setUser(fbUser.uid, user)
       }

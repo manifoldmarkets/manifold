@@ -4,6 +4,14 @@ import Stripe from 'stripe'
 
 import { payUser } from './utils'
 
+export type StripeTransaction = {
+  userId: string
+  manticDollarQuantity: number
+  sessionId: string
+  session: any
+  timestamp: number
+}
+
 const stripe = new Stripe(functions.config().stripe.apikey, {
   apiVersion: '2020-08-27',
   typescript: true,
@@ -111,12 +119,15 @@ const issueMoneys = async (session: any) => {
   const { userId, manticDollarQuantity } = session.metadata
   const payout = Number.parseInt(manticDollarQuantity)
 
-  await firestore.collection('stripe-transactions').add({
+  const transaction: StripeTransaction = {
     userId,
     manticDollarQuantity: payout, // save as number
     sessionId,
     session,
-  })
+    timestamp: Date.now(),
+  }
+
+  await firestore.collection('stripe-transactions').add(transaction)
 
   await payUser(userId, payout)
 
