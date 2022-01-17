@@ -2,6 +2,7 @@ import React from 'react'
 import _ from 'lodash'
 import {
   Contract,
+  getClosingSoonContracts,
   getHotContracts,
   listAllContracts,
 } from '../lib/firebase/contracts'
@@ -14,16 +15,17 @@ import {
   Comment,
   listAllComments,
 } from '../lib/firebase/comments'
-import { Col } from '../components/layout/col'
-import { ContractCard } from '../components/contract-card'
 import { Bet, listAllBets } from '../lib/firebase/bets'
+import { ContractsGrid } from '../components/contracts-list'
 
 export async function getStaticProps() {
-  const [contracts, hotContracts, recentComments] = await Promise.all([
-    listAllContracts().catch((_) => []),
-    getHotContracts().catch(() => []),
-    getRecentComments().catch(() => []),
-  ])
+  const [contracts, hotContracts, closingSoonContracts, recentComments] =
+    await Promise.all([
+      listAllContracts().catch((_) => []),
+      getHotContracts().catch(() => []),
+      getClosingSoonContracts().catch(() => []),
+      getRecentComments().catch(() => []),
+    ])
 
   const activeContracts = findActiveContracts(contracts, recentComments)
   const activeContractBets = await Promise.all(
@@ -39,6 +41,7 @@ export async function getStaticProps() {
       activeContractBets,
       activeContractComments,
       hotContracts,
+      closingSoonContracts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -50,17 +53,21 @@ const Home = (props: {
   activeContractBets: Bet[][]
   activeContractComments: Comment[][]
   hotContracts: Contract[]
+  closingSoonContracts: Contract[]
 }) => {
   const {
     activeContracts,
     activeContractBets,
     activeContractComments,
     hotContracts,
+    closingSoonContracts,
   } = props
 
   return (
     <Page>
-      <HotMarkets hotContracts={hotContracts} />
+      <HotMarkets contracts={hotContracts} />
+      <Spacer h={10} />
+      <ClosingSoonMarkets contracts={closingSoonContracts} />
       <Spacer h={10} />
       <ActivityFeed
         contracts={activeContracts}
@@ -71,25 +78,26 @@ const Home = (props: {
   )
 }
 
-const HotMarkets = (props: { hotContracts: Contract[] }) => {
-  const { hotContracts } = props
-  if (hotContracts.length < 4) return <></>
-
-  const [c1, c2, c3, c4] = hotContracts
+const HotMarkets = (props: { contracts: Contract[] }) => {
+  const { contracts } = props
+  if (contracts.length === 0) return <></>
 
   return (
     <div className="w-full bg-indigo-50 border-2 border-indigo-100 p-6 rounded-lg shadow-md">
       <Title className="mt-0" text="🔥 Markets" />
-      <Col className="gap-6">
-        <Col className="md:flex-row items-start gap-6">
-          <ContractCard className="flex-1" contract={c1} showHotVolume />
-          <ContractCard className="flex-1" contract={c2} showHotVolume />
-        </Col>
-        <Col className="md:flex-row items-start gap-6">
-          <ContractCard className="flex-1" contract={c3} showHotVolume />
-          <ContractCard className="flex-1" contract={c4} showHotVolume />
-        </Col>
-      </Col>
+      <ContractsGrid contracts={contracts} showHotVolume />
+    </div>
+  )
+}
+
+const ClosingSoonMarkets = (props: { contracts: Contract[] }) => {
+  const { contracts } = props
+  if (contracts.length === 0) return <></>
+
+  return (
+    <div className="w-full bg-green-50 border-2 border-green-100 p-6 rounded-lg shadow-md">
+      <Title className="mt-0" text="⏰ Closing soon" />
+      <ContractsGrid contracts={contracts} showCloseTime />
     </div>
   )
 }
