@@ -12,15 +12,16 @@ import {
 import { Col } from './layout/col'
 import { parseTags } from '../lib/util/parse'
 import dayjs from 'dayjs'
-import { TrendingUpIcon } from '@heroicons/react/solid'
+import { TrendingUpIcon, ClockIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from './datetime-tooltip'
 
 export function ContractCard(props: {
   contract: Contract
   showHotVolume?: boolean
+  showCloseTime?: boolean
   className?: string
 }) {
-  const { contract, showHotVolume, className } = props
+  const { contract, showHotVolume, showCloseTime, className } = props
   const { question, resolution } = contract
   const { probPercent } = contractMetrics(contract)
 
@@ -42,7 +43,11 @@ export function ContractCard(props: {
           probPercent={probPercent}
         />
       </Row>
-      <AbbrContractDetails contract={contract} showHotVolume={showHotVolume} />
+      <AbbrContractDetails
+        contract={contract}
+        showHotVolume={showHotVolume}
+        showCloseTime={showCloseTime}
+      />
     </div>
   )
 }
@@ -99,9 +104,10 @@ export function ResolutionOrChance(props: {
 export function AbbrContractDetails(props: {
   contract: Contract
   showHotVolume?: boolean
+  showCloseTime?: boolean
 }) {
-  const { contract, showHotVolume } = props
-  const { volume24Hours, creatorName, creatorUsername } = contract
+  const { contract, showHotVolume, showCloseTime } = props
+  const { volume24Hours, creatorName, creatorUsername, closeTime } = contract
   const { truePool } = contractMetrics(contract)
 
   return (
@@ -117,6 +123,11 @@ export function AbbrContractDetails(props: {
           <div className="whitespace-nowrap">
             <TrendingUpIcon className="h-5 w-5 text-gray-500 inline" />{' '}
             {formatMoney(volume24Hours)}
+          </div>
+        ) : showCloseTime ? (
+          <div className="whitespace-nowrap">
+            <ClockIcon className="h-5 w-5 text-gray-400 inline" />{' '}
+            {dayjs(closeTime).format('MMM D')}
           </div>
         ) : (
           <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
