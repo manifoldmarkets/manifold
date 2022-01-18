@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
-import { User } from '../../common/user'
+import { PrivateUser, User } from '../../common/user'
 
 export const getValue = async <T>(collection: string, doc: string) => {
   const snap = await admin.firestore().collection(collection).doc(doc).get()
@@ -20,6 +20,10 @@ export const getContract = (contractId: string) => {
 
 export const getUser = (userId: string) => {
   return getValue<User>('users', userId)
+}
+
+export const getPrivateUser = (userId: string) => {
+  return getValue<PrivateUser>('private-users', userId)
 }
 
 export const getUserByUsername = async (username: string) => {
