@@ -22,6 +22,15 @@ export const getUser = (userId: string) => {
   return getValue<User>('users', userId)
 }
 
+export const getUserByUsername = async (username: string) => {
+  const snap = await firestore
+    .collection('users')
+    .where('username', '==', username)
+    .get()
+
+  return snap.empty ? undefined : (snap.docs[0].data() as User)
+}
+
 const firestore = admin.firestore()
 
 const updateUserBalance = (userId: string, delta: number) => {

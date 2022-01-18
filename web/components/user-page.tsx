@@ -43,7 +43,6 @@ function UserCard(props: { user: User; showPrivateInfo?: boolean }) {
 
         {showPrivateInfo && (
           <>
-            <p>{user?.email}</p>
             <p>{formatMoney(user?.balance)}</p>
             <div className="card-actions">
               <button

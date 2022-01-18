@@ -90,7 +90,7 @@ function Leaderboard(props: {
                     <Row className="items-center gap-4">
                       <Image
                         className="rounded-full bg-gray-400 flex-shrink-0 ring-8 ring-gray-50"
-                        src={user.avatarUrl}
+                        src={user.avatarUrl || ''}
                         alt=""
                         width={32}
                         height={32}
