@@ -10,6 +10,7 @@ import {
   where,
   limit,
   getDocs,
+  orderBy,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -20,7 +21,7 @@ import {
 } from 'firebase/auth'
 
 import { User } from '../../../common/user'
-import { listenForValues } from './utils'
+import { getValues, listenForValues } from './utils'
 export type { User }
 
 export const STARTING_BALANCE = 1000
@@ -126,4 +127,24 @@ export function listenForAllUsers(setUsers: (users: User[]) => void) {
   const userCollection = collection(db, 'users')
   const q = query(userCollection)
   listenForValues(q, setUsers)
+}
+
+const topTradersQuery = query(
+  collection(db, 'users'),
+  orderBy('totalPnLCached', 'desc'),
+  limit(10)
+)
+
+export function getTopTraders() {
+  return getValues<User>(topTradersQuery)
+}
+
+const topCreatorsQuery = query(
+  collection(db, 'users'),
+  orderBy('creatorVolumeCached', 'desc'),
+  limit(10)
+)
+
+export function getTopCreators() {
+  return getValues<User>(topCreatorsQuery)
 }
