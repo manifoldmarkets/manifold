@@ -47,7 +47,10 @@ export function ContractProbGraph(props: { contract: Contract }) {
   const lessThanAWeek = dayjs(startDate).add(1, 'week').isAfter(latestTime)
 
   return (
-    <div className="w-full" style={{ height: 400 }}>
+    <div
+      className="w-full"
+      style={{ height: !width || width >= 800 ? 400 : 250 }}
+    >
       <ResponsiveLine
         data={data}
         yScale={{ min: 0, max: 100, type: 'linear' }}
