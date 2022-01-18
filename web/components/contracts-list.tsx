@@ -18,8 +18,9 @@ import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 export function ContractsGrid(props: {
   contracts: Contract[]
   showHotVolume?: boolean
+  showCloseTime?: boolean
 }) {
-  const { showHotVolume } = props
+  const { showHotVolume, showCloseTime } = props
 
   const [resolvedContracts, activeContracts] = _.partition(
     props.contracts,
@@ -51,6 +52,7 @@ export function ContractsGrid(props: {
           contract={contract}
           key={contract.id}
           showHotVolume={showHotVolume}
+          showCloseTime={showCloseTime}
         />
       ))}
     </ul>

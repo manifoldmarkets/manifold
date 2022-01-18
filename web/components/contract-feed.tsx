@@ -1,5 +1,6 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
 import { useState } from 'react'
+import _ from 'lodash'
 import {
   BanIcon,
   ChatAltIcon,
@@ -10,11 +11,11 @@ import {
   UsersIcon,
   XIcon,
 } from '@heroicons/react/solid'
-import { useBets } from '../hooks/use-bets'
-import { Bet, withoutAnteBets } from '../lib/firebase/bets'
-import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
+
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+dayjs.extend(relativeTime)
+
 import { OutcomeLabel } from './outcome-label'
 import {
   contractMetrics,
@@ -33,11 +34,18 @@ import { SiteLink } from './site-link'
 import { Col } from './layout/col'
 import { UserLink } from './user-page'
 import { DateTimeTooltip } from './datetime-tooltip'
-dayjs.extend(relativeTime)
+import { useBets } from '../hooks/use-bets'
+import { Bet, withoutAnteBets } from '../lib/firebase/bets'
+import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
+import { JoinSpans } from './join-spans'
 
 function FeedComment(props: { activityItem: any }) {
   const { activityItem } = props
   const { person, text, amount, outcome, createdTime } = activityItem
+
+  const bought = amount >= 0 ? 'bought' : 'sold'
+  const money = formatMoney(Math.abs(amount))
+
   return (
     <>
       <SiteLink className="relative" href={`/${person.username}`}>
@@ -59,7 +67,7 @@ function FeedComment(props: { activityItem: any }) {
               username={person.username}
               name={person.name}
             />{' '}
-            placed {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
+            {bought} {money} of <OutcomeLabel outcome={outcome} />{' '}
             <Timestamp time={createdTime} />
           </p>
         </div>
@@ -97,6 +105,10 @@ function FeedBet(props: { activityItem: any }) {
     if (!user || !comment) return
     await createComment(contractId, id, comment, user)
   }
+
+  const bought = amount >= 0 ? 'bought' : 'sold'
+  const money = formatMoney(Math.abs(amount))
+
   return (
     <>
       <div>
@@ -108,9 +120,8 @@ function FeedBet(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span>{isCreator ? 'You' : 'A trader'}</span> placed{' '}
-          {formatMoney(amount)} on <OutcomeLabel outcome={outcome} />{' '}
-          <Timestamp time={createdTime} />
+          <span>{isCreator ? 'You' : 'A trader'}</span> {bought} {money} of{' '}
+          <OutcomeLabel outcome={outcome} /> <Timestamp time={createdTime} />
           {canComment && (
             // Allow user to comment in an textarea if they are the creator
             <div className="mt-2">
@@ -452,44 +463,51 @@ function groupBets(
   return items as ActivityItem[]
 }
 
+function BetGroupSpan(props: { bets: Bet[]; outcome: 'YES' | 'NO' }) {
+  const { bets, outcome } = props
+
+  const numberTraders = _.uniqBy(bets, (b) => b.userId).length
+
+  const [buys, sells] = _.partition(bets, (bet) => bet.amount >= 0)
+  const buyTotal = _.sumBy(buys, (b) => b.amount)
+  const sellTotal = _.sumBy(sells, (b) => -b.amount)
+
+  return (
+    <span>
+      {numberTraders} {numberTraders > 1 ? 'traders' : 'trader'}{' '}
+      <JoinSpans>
+        {buyTotal > 0 && <>bought {formatMoney(buyTotal)} </>}
+        {sellTotal > 0 && <>sold {formatMoney(sellTotal)} </>}
+      </JoinSpans>
+      of <OutcomeLabel outcome={outcome} />
+    </span>
+  )
+}
+
 // TODO: Make this expandable to show all grouped bets?
 function FeedBetGroup(props: { activityItem: any }) {
   const { activityItem } = props
   const bets: Bet[] = activityItem.bets
 
-  const yesAmount = bets
-    .filter((b) => b.outcome == 'YES')
-    .reduce((acc, bet) => acc + bet.amount, 0)
-  const yesSpan = yesAmount ? (
-    <span>
-      {formatMoney(yesAmount)} on <OutcomeLabel outcome={'YES'} />
-    </span>
-  ) : null
-  const noAmount = bets
-    .filter((b) => b.outcome == 'NO')
-    .reduce((acc, bet) => acc + bet.amount, 0)
-  const noSpan = noAmount ? (
-    <span>
-      {formatMoney(noAmount)} on <OutcomeLabel outcome={'NO'} />
-    </span>
-  ) : null
-  const traderCount = bets.length
+  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
+
   const createdTime = bets[0].createdTime
 
   return (
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
-            <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+          <div className="h-10 w-10 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+            <UsersIcon className="h-6 w-6 text-gray-500" aria-hidden="true" />
           </div>
         </div>
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span>{traderCount} traders</span> placed {yesSpan}
-          {yesAmount && noAmount ? ' and ' : ''}
-          {noSpan} <Timestamp time={createdTime} />
+          {yesBets.length > 0 && <BetGroupSpan outcome="YES" bets={yesBets} />}
+          {yesBets.length > 0 && noBets.length > 0 && <br />}
+          {noBets.length > 0 && <BetGroupSpan outcome="NO" bets={noBets} />}
+          <Timestamp time={createdTime} />
         </div>
       </div>
     </>

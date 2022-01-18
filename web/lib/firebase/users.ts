@@ -9,6 +9,7 @@ import {
   where,
   limit,
   getDocs,
+  orderBy,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -20,8 +21,8 @@ import {
 
 import { app } from './init'
 import { User } from '../../../common/user'
-import { listenForValues } from './utils'
 import { createUser } from './api-call'
+import { getValues, listenForValues } from './utils'
 export type { User }
 
 const db = getFirestore(app)
@@ -122,4 +123,25 @@ export function listenForAllUsers(setUsers: (users: User[]) => void) {
   const userCollection = collection(db, 'users')
   const q = query(userCollection)
   listenForValues(q, setUsers)
+}
+
+const topTradersQuery = query(
+  collection(db, 'users'),
+  orderBy('totalPnLCached', 'desc'),
+  limit(21)
+)
+
+export async function getTopTraders() {
+  const users = await getValues<User>(topTradersQuery)
+  return users.filter((user) => user.username !== 'SG').slice(0, 20)
+}
+
+const topCreatorsQuery = query(
+  collection(db, 'users'),
+  orderBy('creatorVolumeCached', 'desc'),
+  limit(20)
+)
+
+export function getTopCreators() {
+  return getValues<User>(topCreatorsQuery)
 }

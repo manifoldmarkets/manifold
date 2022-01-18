@@ -14,6 +14,7 @@ import {
   updateDoc,
   limit,
 } from 'firebase/firestore'
+import _ from 'lodash'
 
 import { app } from './init'
 import { getValues, listenForValues } from './utils'
@@ -123,6 +124,13 @@ export function listenForContract(
   })
 }
 
+function chooseRandomSubset(contracts: Contract[], count: number) {
+  const fiveMinutes = 5 * 60 * 1000
+  const seed = Math.round(Date.now() / fiveMinutes).toString()
+  shuffle(contracts, createRNG(seed))
+  return contracts.slice(0, count)
+}
+
 const hotContractsQuery = query(
   contractCollection,
   where('isResolved', '==', false),
@@ -131,21 +139,38 @@ const hotContractsQuery = query(
   limit(16)
 )
 
-function chooseHotContracts(contracts: Contract[]) {
-  const fiveMinutes = 5 * 60 * 1000
-  const seed = Math.round(Date.now() / fiveMinutes).toString()
-  shuffle(contracts, createRNG(seed))
-  return contracts.slice(0, 4)
-}
-
 export function listenForHotContracts(
   setHotContracts: (contracts: Contract[]) => void
 ) {
-  return listenForValues<Contract>(hotContractsQuery, (contracts) =>
-    setHotContracts(chooseHotContracts(contracts))
+  return listenForValues<Contract>(hotContractsQuery, (contracts) => {
+    const hotContracts = _.sortBy(
+      chooseRandomSubset(contracts, 4),
+      (contract) => contract.volume24Hours
+    )
+    setHotContracts(hotContracts)
+  })
+}
+
+export async function getHotContracts() {
+  const contracts = await getValues<Contract>(hotContractsQuery)
+  return _.sortBy(
+    chooseRandomSubset(contracts, 4),
+    (contract) => -1 * contract.volume24Hours
   )
 }
 
-export function getHotContracts() {
-  return getValues<Contract>(hotContractsQuery).then(chooseHotContracts)
+const closingSoonQuery = query(
+  contractCollection,
+  where('isResolved', '==', false),
+  where('closeTime', '>', Date.now()),
+  orderBy('closeTime', 'asc'),
+  limit(6)
+)
+
+export async function getClosingSoonContracts() {
+  const contracts = await getValues<Contract>(closingSoonQuery)
+  return _.sortBy(
+    chooseRandomSubset(contracts, 2),
+    (contract) => contract.closeTime
+  )
 }
