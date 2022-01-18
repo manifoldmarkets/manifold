@@ -77,6 +77,7 @@ function ContractsTable() {
   let contracts = useContracts() ?? []
   // Sort users by createdTime descending, by default
   contracts.sort((a, b) => b.createdTime - a.createdTime)
+  contracts = contracts.filter((contract) => !contract.isResolved)
 
   return (
     <Grid
@@ -110,6 +111,11 @@ function ContractsTable() {
                 'MMM D, h:mma'
               )}</span>`
             ),
+        },
+        {
+          id: 'visibility',
+          name: 'Visibility',
+          formatter: (cell) => cell,
         },
         {
           id: 'id',
