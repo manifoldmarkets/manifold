@@ -64,6 +64,8 @@ export const createUser = functions
     console.log('created user', username, 'firebase id:', userId)
 
     const privateUser: PrivateUser = {
+      id: userId,
+      username,
       email,
       initialIpAddress: ipAddress,
       initialDeviceToken: deviceToken,
