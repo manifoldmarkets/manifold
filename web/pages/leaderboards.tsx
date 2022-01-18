@@ -1,4 +1,6 @@
 import _ from 'lodash'
+import Image from 'next/image'
+import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { Spacer } from '../components/layout/spacer'
 import { Page } from '../components/page'
@@ -31,27 +33,29 @@ export default function Leaderboards(props: {
 
   return (
     <Page>
-      <Leaderboard
-        title="Top traders"
-        users={topTraders}
-        columns={[
-          {
-            header: 'Total profit',
-            renderCell: (user) => formatMoney(user.totalPnLCached),
-          },
-        ]}
-      />
-      <Spacer h={4} />
-      <Leaderboard
-        title="Top creators"
-        users={topCreators}
-        columns={[
-          {
-            header: 'Market volume',
-            renderCell: (user) => formatMoney(user.creatorVolumeCached),
-          },
-        ]}
-      />
+      <Col className="items-center">
+        <Leaderboard
+          title="Top traders"
+          users={topTraders}
+          columns={[
+            {
+              header: 'Total profit',
+              renderCell: (user) => formatMoney(user.totalPnLCached),
+            },
+          ]}
+        />
+        <Spacer h={4} />
+        <Leaderboard
+          title="Top creators"
+          users={topCreators}
+          columns={[
+            {
+              header: 'Market volume',
+              renderCell: (user) => formatMoney(user.creatorVolumeCached),
+            },
+          ]}
+        />
+      </Col>
     </Page>
   )
 }
@@ -66,7 +70,7 @@ function Leaderboard(props: {
 }) {
   const { title, users, columns } = props
   return (
-    <div className="px-1">
+    <div className="max-w-xl w-full px-1">
       <Title text={title} />
       <div className="overflow-x-auto">
         <table className="table table-zebra table-compact text-gray-500 w-full">
@@ -81,15 +85,17 @@ function Leaderboard(props: {
           </thead>
           <tbody>
             {users.map((user, index) => (
-              <tr>
+              <tr key={user.id}>
                 <td>{index + 1}</td>
                 <td>
                   <SiteLink className="relative" href={`/${user.username}`}>
                     <Row className="items-center gap-4">
-                      <img
-                        className="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-gray-50"
+                      <Image
+                        className="rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-gray-50"
                         src={user.avatarUrl}
                         alt=""
+                        width={32}
+                        height={32}
                       />
                       <div>{user.name}</div>
                     </Row>

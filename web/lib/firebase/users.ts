@@ -132,17 +132,18 @@ export function listenForAllUsers(setUsers: (users: User[]) => void) {
 const topTradersQuery = query(
   collection(db, 'users'),
   orderBy('totalPnLCached', 'desc'),
-  limit(10)
+  limit(21)
 )
 
-export function getTopTraders() {
-  return getValues<User>(topTradersQuery)
+export async function getTopTraders() {
+  const users = await getValues<User>(topTradersQuery)
+  return users.filter((user) => user.username !== 'SG').slice(0, 20)
 }
 
 const topCreatorsQuery = query(
   collection(db, 'users'),
   orderBy('creatorVolumeCached', 'desc'),
-  limit(10)
+  limit(20)
 )
 
 export function getTopCreators() {
