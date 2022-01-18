@@ -2,7 +2,6 @@ import _ from 'lodash'
 import Image from 'next/image'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
-import { Spacer } from '../components/layout/spacer'
 import { Page } from '../components/page'
 import { SiteLink } from '../components/site-link'
 import { Title } from '../components/title'
@@ -33,7 +32,7 @@ export default function Leaderboards(props: {
 
   return (
     <Page>
-      <Col className="items-center">
+      <Col className="items-center lg:flex-row gap-10">
         <Leaderboard
           title="Top traders"
           users={topTraders}
@@ -44,7 +43,6 @@ export default function Leaderboards(props: {
             },
           ]}
         />
-        <Spacer h={4} />
         <Leaderboard
           title="Top creators"
           users={topCreators}
@@ -91,7 +89,7 @@ function Leaderboard(props: {
                   <SiteLink className="relative" href={`/${user.username}`}>
                     <Row className="items-center gap-4">
                       <Image
-                        className="rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-gray-50"
+                        className="rounded-full bg-gray-400 flex-shrink-0 ring-8 ring-gray-50"
                         src={user.avatarUrl}
                         alt=""
                         width={32}
