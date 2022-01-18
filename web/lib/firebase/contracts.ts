@@ -162,6 +162,7 @@ export async function getHotContracts() {
 const closingSoonQuery = query(
   contractCollection,
   where('isResolved', '==', false),
+  where('visibility', '==', 'public'),
   where('closeTime', '>', Date.now()),
   orderBy('closeTime', 'asc'),
   limit(6)
