@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 
 import { STARTING_BALANCE, User } from '../../common/user'
 import { getUser, getUserByUsername } from './utils'
-import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
 export const createUser = functions
@@ -47,14 +46,17 @@ export const createUser = functions
     }
 
     await firestore.collection('users').doc(userId).create(user)
-
     console.log('created user', username, 'firebase id:', userId)
 
     return { status: 'success', user }
   })
 
 const cleanUsername = (name: string) => {
-  return slugify(name.replace(/\s+/g, ''))
+  return name
+    .replace(/\s+/g, '')
+    .normalize('NFD') // split an accented letter in the base letter and the acent
+    .replace(/[\u0300-\u036f]/g, '') // remove all previously split accents
+    .replace(/[^A-Za-z0-9_]/g, '') // remove all chars not letters, numbers and underscores
 }
 
 const firestore = admin.firestore()
