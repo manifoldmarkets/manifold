@@ -28,7 +28,7 @@ export function NavBar(props: {
           wide ? 'max-w-6xl' : 'max-w-4xl'
         )}
       >
-        <ManifoldLogo darkBackground={darkBackground} />
+        <ManifoldLogo className="my-1" darkBackground={darkBackground} />
 
         <Row className="items-center gap-6 sm:gap-8 ml-6">
           {(user || user === null) && (
