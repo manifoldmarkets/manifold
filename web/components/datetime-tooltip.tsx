@@ -13,11 +13,14 @@ export function DateTimeTooltip(props: {
 }) {
   const { time } = props
   return (
-    <span
-      className="tooltip cursor-default hidden sm:inline-block"
-      data-tip={dayjs(time).format('MMM DD, YYYY hh:mm a z')}
-    >
-      {props.children}
-    </span>
+    <>
+      <span
+        className="tooltip cursor-default hidden sm:inline-block"
+        data-tip={dayjs(time).format('MMM DD, YYYY hh:mm a z')}
+      >
+        {props.children}
+      </span>
+      <span className="sm:hidden">{props.children}</span>
+    </>
   )
 }
