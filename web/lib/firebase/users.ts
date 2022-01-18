@@ -54,11 +54,14 @@ export function listenForUser(userId: string, setUser: (user: User) => void) {
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
 
+// used to avoid weird race condition
+let createUserPromise: Promise<User | null> | undefined = undefined
+
 export function listenForLogin(onUser: (user: User | null) => void) {
   const cachedUser = localStorage.getItem(CACHED_USER_KEY)
   onUser(cachedUser ? JSON.parse(cachedUser) : null)
 
-  if (!cachedUser) createUser().catch(() => {}) // warm up cloud function
+  if (!cachedUser) createUser() // warm up cloud function
 
   return onAuthStateChanged(auth, async (fbUser) => {
     if (fbUser) {
@@ -66,7 +69,11 @@ export function listenForLogin(onUser: (user: User | null) => void) {
 
       if (!user) {
         // User just created an account; save them to our database.
-        user = (await createUser()) || null
+        if (!createUserPromise) {
+          createUserPromise = createUser()
+          console.log('this should only be logged once')
+        }
+        user = (await createUserPromise) || null
       }
 
       onUser(user)
@@ -78,6 +85,7 @@ export function listenForLogin(onUser: (user: User | null) => void) {
       // User logged out; reset to null
       onUser(null)
       localStorage.removeItem(CACHED_USER_KEY)
+      createUserPromise = undefined
     }
   })
 }

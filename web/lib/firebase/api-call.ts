@@ -13,7 +13,7 @@ export const resolveMarket = cloudFunction('resolveMarket')
 
 export const sellBet = cloudFunction('sellBet')
 
-export const createUser = () =>
-  cloudFunction('createUser')({}).then(
-    (r) => (r.data as any)?.user as User | undefined
-  )
+export const createUser: () => Promise<User | null> = () =>
+  cloudFunction('createUser')({})
+    .then((r) => (r.data as any)?.user || null)
+    .catch(() => null)
