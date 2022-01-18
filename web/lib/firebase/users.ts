@@ -1,4 +1,3 @@
-import { app } from './init'
 import {
   getFirestore,
   doc,
@@ -19,6 +18,7 @@ import {
   signInWithPopup,
 } from 'firebase/auth'
 
+import { app } from './init'
 import { User } from '../../../common/user'
 import { listenForValues } from './utils'
 import { createUser } from './api-call'
@@ -68,10 +68,8 @@ export function listenForLogin(onUser: (user: User | null) => void) {
       let user: User | null = await getUser(fbUser.uid)
 
       if (!user) {
-        // User just created an account; save them to our database.
         if (!createUserPromise) {
           createUserPromise = createUser()
-          console.log('this should only be logged once')
         }
         user = (await createUserPromise) || null
       }
