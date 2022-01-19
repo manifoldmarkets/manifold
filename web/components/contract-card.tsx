@@ -156,30 +156,39 @@ export function ContractDetails(props: { contract: Contract }) {
           username={creatorUsername}
         />
         <div className="">•</div>
+
         <div className="whitespace-nowrap">
-          <DateTimeTooltip time={contract.createdTime}>
+          <DateTimeTooltip text="Market created:" time={contract.createdTime}>
             {createdDate}
           </DateTimeTooltip>
+
           {resolvedDate && contract.resolutionTime ? (
             <>
               {' - '}
-              <DateTimeTooltip time={contract.resolutionTime}>
+              <DateTimeTooltip
+                text="Market resolved:"
+                time={contract.resolutionTime}
+              >
                 {resolvedDate}
               </DateTimeTooltip>
             </>
           ) : null}
-        </div>
-        {!resolvedDate && closeTime && (
-          <>
-            <div className="">•</div>
-            <div className="whitespace-nowrap">
-              {closeTime > Date.now() ? 'Closes' : 'Closed'}{' '}
-              <DateTimeTooltip time={closeTime}>
+
+          {!resolvedDate && closeTime && (
+            <>
+              {' - '}
+              <DateTimeTooltip
+                text={
+                  closeTime > Date.now() ? 'Market closes: ' : 'Market closed:'
+                }
+                time={closeTime}
+              >
                 {dayjs(closeTime).format('MMM D, YYYY')}
               </DateTimeTooltip>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
+
         <div className="">•</div>
         <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
       </Row>
