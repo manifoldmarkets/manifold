@@ -5,7 +5,10 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read;
-      allow create: if request.auth != null;
+    }
+
+    match /private-users/{userId} {
+      allow read: if resource.data.creatorId == request.auth.uid;
     }
 
     match /contracts/{contractId} {
