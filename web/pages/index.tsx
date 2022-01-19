@@ -73,6 +73,7 @@ const Home = (props: {
         contracts={activeContracts}
         contractBets={activeContractBets}
         contractComments={activeContractComments}
+        listenForChanges
       />
     </Page>
   )

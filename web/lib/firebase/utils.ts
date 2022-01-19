@@ -8,8 +8,8 @@ import {
   DocumentReference,
 } from 'firebase/firestore'
 
-export const getValue = async <T>(collectionName: string, docName: string) => {
-  const snap = await getDoc(doc(db, collectionName, docName))
+export const getValue = async <T>(doc: DocumentReference) => {
+  const snap = await getDoc(doc)
   return snap.exists() ? (snap.data() as T) : null
 }
 

@@ -68,15 +68,17 @@ export function ActivityFeed(props: {
   contracts: Contract[]
   contractBets: Bet[][]
   contractComments: Comment[][]
+  listenForChanges?: boolean
 }) {
-  const { contractBets, contractComments } = props
+  const { contractBets, contractComments, listenForChanges } = props
   const contracts = useContracts() ?? props.contracts
   const recentComments = useRecentComments()
-  const activeContracts = recentComments
-    ? findActiveContracts(contracts, recentComments)
-    : props.contracts
+  const activeContracts =
+    listenForChanges && recentComments
+      ? findActiveContracts(contracts, recentComments)
+      : props.contracts
 
-  return contracts.length > 0 ? (
+  return activeContracts.length > 0 ? (
     <Col className="items-center">
       <Col className="w-full max-w-3xl">
         <Title text="Recent Activity" />

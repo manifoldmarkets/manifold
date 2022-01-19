@@ -35,5 +35,8 @@ service cloud.firestore {
       allow read;
     }
 
+    match /folds/{foldId} {
+      allow read;
+    }
   }
 }
