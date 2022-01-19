@@ -306,13 +306,19 @@ function FeedDescription(props: { contract: Contract }) {
 
   return (
     <>
-      <div>
+      {contract.creatorAvatarUrl ? (
+        <AvatarWithIcon
+          username={contract.creatorUsername}
+          avatarUrl={contract.creatorAvatarUrl}
+        />
+      ) : (
+        // TODO: After 2022-03-01, can just assume that all contracts have an avatarUrl
         <div className="relative px-1">
           <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
             <StarIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
         </div>
-      </div>
+      )}
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
           <UserLink
