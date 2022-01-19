@@ -43,6 +43,7 @@ export function getAnteBets(
     probBefore: p,
     probAfter: p,
     createdTime,
+    isAnte: true,
   }
 
   const noBet: Bet = {
@@ -55,6 +56,7 @@ export function getAnteBets(
     probBefore: p,
     probAfter: p,
     createdTime,
+    isAnte: true,
   }
 
   return { yesBet, noBet }

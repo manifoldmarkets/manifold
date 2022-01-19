@@ -312,9 +312,25 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     probAfter,
     shares,
     isSold,
+    isAnte,
   } = bet
+
   const { isResolved, closeTime } = contract
   const isClosed = closeTime && Date.now() > closeTime
+
+  const saleAmount = saleBet?.sale?.amount
+
+  const saleDisplay = bet.isAnte ? (
+    'ANTE'
+  ) : saleAmount !== undefined ? (
+    <>{formatMoney(saleAmount)} (sold)</>
+  ) : (
+    formatMoney(
+      isResolved
+        ? resolvedPayout(contract, bet)
+        : calculateSaleAmount(contract, bet)
+    )
+  )
 
   return (
     <tr>
@@ -327,19 +343,9 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
       <td>{formatWithCommas(shares)}</td>
-      <td>
-        {saleBet?.sale ? (
-          <>{formatMoney(Math.abs(saleBet.sale.amount))} (sold)</>
-        ) : (
-          formatMoney(
-            isResolved
-              ? resolvedPayout(contract, bet)
-              : calculateSaleAmount(contract, bet)
-          )
-        )}
-      </td>
+      <td>{saleDisplay}</td>
 
-      {!isResolved && !isClosed && !isSold && (
+      {!isResolved && !isClosed && !isSold && !isAnte && (
         <td className="text-neutral">
           <SellButton contract={contract} bet={bet} />
         </td>
