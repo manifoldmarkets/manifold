@@ -129,7 +129,7 @@ const issueMoneys = async (session: any) => {
 
   await firestore.collection('stripe-transactions').add(transaction)
 
-  await payUser(userId, payout)
+  await payUser(userId, payout, true)
 
   console.log('user', userId, 'paid M$', payout)
 }
