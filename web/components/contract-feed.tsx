@@ -38,6 +38,7 @@ import { useBets } from '../hooks/use-bets'
 import { Bet, withoutAnteBets } from '../lib/firebase/bets'
 import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
+import Textarea from 'react-expanding-textarea'
 
 function FeedComment(props: { activityItem: any }) {
   const { activityItem } = props
@@ -125,11 +126,12 @@ function FeedBet(props: { activityItem: any }) {
           {canComment && (
             // Allow user to comment in an textarea if they are the creator
             <div className="mt-2">
-              <textarea
+              <Textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 className="textarea textarea-bordered w-full"
                 placeholder="Add a comment..."
+                rows={3}
               />
               <button
                 className="btn btn-outline btn-sm mt-1"
@@ -175,8 +177,9 @@ export function ContractDescription(props: {
         !contract.resolution &&
         (editing ? (
           <form className="mt-4">
-            <textarea
+            <Textarea
               className="textarea h-24 textarea-bordered w-full mb-1"
+              rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value || '')}
               autoFocus
