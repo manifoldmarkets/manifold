@@ -179,7 +179,7 @@ export function ContractDetails(props: { contract: Contract }) {
               {' - '}
               <DateTimeTooltip
                 text={
-                  closeTime > Date.now() ? 'Market closes: ' : 'Market closed:'
+                  closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'
                 }
                 time={closeTime}
               >
