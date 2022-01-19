@@ -1,5 +1,5 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import { useState } from 'react'
+import { ReactChild, useState } from 'react'
 import _ from 'lodash'
 import {
   BanIcon,
@@ -40,6 +40,27 @@ import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
 import Textarea from 'react-expanding-textarea'
 
+function AvatarWithIcon(props: {
+  username: string
+  avatarUrl: string
+  children: ReactChild
+}) {
+  const { username, avatarUrl, children } = props
+  return (
+    <SiteLink className="relative" href={`/${username}`}>
+      <img
+        className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-gray-50"
+        src={avatarUrl}
+        alt=""
+      />
+
+      <span className="absolute -bottom-3 -right-2 bg-gray-50 rounded-tl px-0.5 py-px">
+        {children}
+      </span>
+    </SiteLink>
+  )
+}
+
 function FeedComment(props: { activityItem: any }) {
   const { activityItem } = props
   const { person, text, amount, outcome, createdTime } = activityItem
@@ -49,17 +70,9 @@ function FeedComment(props: { activityItem: any }) {
 
   return (
     <>
-      <SiteLink className="relative" href={`/${person.username}`}>
-        <img
-          className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-gray-50"
-          src={person.avatarUrl}
-          alt=""
-        />
-
-        <span className="absolute -bottom-3 -right-2 bg-gray-50 rounded-tl px-0.5 py-px">
-          <ChatAltIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-        </span>
-      </SiteLink>
+      <AvatarWithIcon username={person.username} avatarUrl={person.avatarUrl}>
+        <ChatAltIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+      </AvatarWithIcon>
       <div className="min-w-0 flex-1">
         <div>
           <p className="mt-0.5 text-sm text-gray-500">
@@ -246,13 +259,21 @@ function FeedQuestion(props: { contract: Contract }) {
 
   return (
     <>
-      <div>
+      {contract.creatorAvatarUrl ? (
+        <AvatarWithIcon
+          username={contract.creatorUsername}
+          avatarUrl={contract.creatorAvatarUrl}
+        >
+          <StarIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+        </AvatarWithIcon>
+      ) : (
+        // TODO: After 2022-03-01, can just assume that all contracts have an avatarUrl
         <div className="relative px-1">
           <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
             <StarIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
         </div>
-      </div>
+      )}
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500 mb-2">
           <UserLink
