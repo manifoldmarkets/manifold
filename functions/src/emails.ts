@@ -1,9 +1,7 @@
-import * as admin from 'firebase-admin'
-
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { sendTemplateEmail } from './send-email'
-import { getUser } from './utils'
+import { getPrivateUser, getUser } from './utils'
 
 type market_resolved_template = {
   name: string
@@ -21,12 +19,16 @@ export const sendMarketResolutionEmail = async (
   contract: Contract,
   resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT'
 ) => {
+  const privateUser = await getPrivateUser(userId)
+  if (
+    !privateUser ||
+    privateUser.unsubscribedFromResolutionEmails ||
+    !privateUser.email
+  )
+    return
+
   const user = await getUser(userId)
   if (!user) return
-
-  const fbUser = await admin.auth().getUser(userId)
-  const email = fbUser.email
-  if (!email) return
 
   const outcome = toDisplayResolution[resolution]
 
@@ -45,7 +47,12 @@ export const sendMarketResolutionEmail = async (
   // https://app.mailgun.com/app/sending/domains/mg.manifold.markets/templates/edit/market-resolved/initial
   // Mailgun username: james@mantic.markets
 
-  await sendTemplateEmail(email, subject, 'market-resolved', templateData)
+  await sendTemplateEmail(
+    privateUser.email,
+    subject,
+    'market-resolved',
+    templateData
+  )
 }
 
 const toDisplayResolution = { YES: 'YES', NO: 'NO', CANCEL: 'N/A', MKT: 'MKT' }
