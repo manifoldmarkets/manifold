@@ -177,7 +177,6 @@ export function ContractDescription(props: {
       <Linkify text={contract.description} />
       <br />
       {isCreator &&
-        !contract.resolution &&
         (editing ? (
           <form className="mt-4">
             <Textarea
