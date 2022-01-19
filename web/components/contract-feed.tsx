@@ -45,7 +45,7 @@ function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
   return (
     <SiteLink className="relative" href={`/${username}`}>
       <img
-        className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-gray-50"
+        className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center"
         src={avatarUrl}
         alt=""
       />
@@ -117,7 +117,7 @@ function FeedBet(props: { activityItem: any }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
             <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
         </div>
@@ -257,7 +257,7 @@ function FeedQuestion(props: { contract: Contract }) {
       ) : (
         // TODO: After 2022-03-01, can just assume that all contracts have an avatarUrl
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
             <StarIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
         </div>
@@ -308,7 +308,7 @@ function FeedDescription(props: { contract: Contract }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
             <StarIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
         </div>
@@ -350,7 +350,7 @@ function FeedResolve(props: { contract: Contract }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
             <OutcomeIcon outcome={resolution} />
           </div>
         </div>
@@ -377,7 +377,7 @@ function FeedClose(props: { contract: Contract }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
             <LockClosedIcon
               className="h-5 w-5 text-gray-500"
               aria-hidden="true"
@@ -519,7 +519,7 @@ function FeedBetGroup(props: { activityItem: any }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
             <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
         </div>
@@ -580,7 +580,7 @@ export function ContractFeed(props: {
             <div className="relative pb-8">
               {activityItemIdx !== allItems.length - 1 ? (
                 <span
-                  className="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200"
+                  className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
                   aria-hidden="true"
                 />
               ) : null}
