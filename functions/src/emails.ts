@@ -4,6 +4,7 @@ import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 
 type market_resolved_template = {
+  userId: string
   name: string
   creatorName: string
   question: string
@@ -35,6 +36,7 @@ export const sendMarketResolutionEmail = async (
   const subject = `Resolved ${outcome}: ${contract.question}`
 
   const templateData: market_resolved_template = {
+    userId: user.id,
     name: user.name,
     creatorName: creator.name,
     question: contract.question,
