@@ -5,7 +5,7 @@ export type Contract = {
   creatorId: string
   creatorName: string
   creatorUsername: string
-  creatorAvatarUrl?: string // Start requiring after Mar 01, 2022
+  creatorAvatarUrl?: string // Start requiring after 2022-03-01
 
   question: string
   description: string // More info about what the contract is about
