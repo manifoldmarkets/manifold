@@ -235,6 +235,15 @@ function FeedQuestion(props: { contract: Contract }) {
     description = description.slice(0, i)
   }
 
+  // Currently hidden on mobile; ideally we'd fit this in somewhere.
+  const closeMessage =
+    contract.isResolved || !contract.closeTime ? null : (
+      <span className="float-right text-gray-400 hidden sm:inline">
+        {contract.closeTime > Date.now() ? 'Closes' : 'Closed'}
+        <Timestamp time={contract.closeTime || 0} />
+      </span>
+    )
+
   return (
     <>
       <div>
@@ -252,8 +261,9 @@ function FeedQuestion(props: { contract: Contract }) {
             username={creatorUsername}
           />{' '}
           asked <Timestamp time={createdTime} />
+          {closeMessage}
         </div>
-        <Col className="items-start sm:flex-row justify-between gap-2 sm:gap-4 mb-4 mr-2">
+        <Col className="items-start sm:flex-row justify-between gap-2 sm:gap-4 mb-4">
           <SiteLink
             href={contractPath(contract)}
             className="text-lg sm:text-xl text-indigo-700"
