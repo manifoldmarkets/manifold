@@ -40,12 +40,8 @@ import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
 import Textarea from 'react-expanding-textarea'
 
-function AvatarWithIcon(props: {
-  username: string
-  avatarUrl: string
-  children: ReactChild
-}) {
-  const { username, avatarUrl, children } = props
+function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
+  const { username, avatarUrl } = props
   return (
     <SiteLink className="relative" href={`/${username}`}>
       <img
@@ -53,10 +49,6 @@ function AvatarWithIcon(props: {
         src={avatarUrl}
         alt=""
       />
-
-      <span className="absolute -bottom-3 -right-2 bg-gray-50 rounded-tl px-0.5 py-px">
-        {children}
-      </span>
     </SiteLink>
   )
 }
@@ -70,9 +62,7 @@ function FeedComment(props: { activityItem: any }) {
 
   return (
     <>
-      <AvatarWithIcon username={person.username} avatarUrl={person.avatarUrl}>
-        <ChatAltIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-      </AvatarWithIcon>
+      <AvatarWithIcon username={person.username} avatarUrl={person.avatarUrl} />
       <div className="min-w-0 flex-1">
         <div>
           <p className="mt-0.5 text-sm text-gray-500">
@@ -263,9 +253,7 @@ function FeedQuestion(props: { contract: Contract }) {
         <AvatarWithIcon
           username={contract.creatorUsername}
           avatarUrl={contract.creatorAvatarUrl}
-        >
-          <StarIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
-        </AvatarWithIcon>
+        />
       ) : (
         // TODO: After 2022-03-01, can just assume that all contracts have an avatarUrl
         <div className="relative px-1">
@@ -531,12 +519,12 @@ function FeedBetGroup(props: { activityItem: any }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-10 w-10 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
-            <UsersIcon className="h-6 w-6 text-gray-500" aria-hidden="true" />
+          <div className="h-8 w-8 bg-gray-200 rounded-full ring-8 ring-gray-50 flex items-center justify-center">
+            <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
         </div>
       </div>
-      <div className="min-w-0 flex-1 py-1.5">
+      <div className="min-w-0 flex-1">
         <div className="text-sm text-gray-500">
           {yesBets.length > 0 && <BetGroupSpan outcome="YES" bets={yesBets} />}
           {yesBets.length > 0 && noBets.length > 0 && <br />}
