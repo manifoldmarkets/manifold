@@ -7,6 +7,7 @@ export type User = {
   avatarUrl?: string
 
   balance: number
+  totalDeposits: number
   totalPnLCached: number
   creatorVolumeCached: number
 }

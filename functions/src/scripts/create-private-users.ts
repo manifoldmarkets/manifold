@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
-import { PrivateUser, User } from '../../../common/user'
+import { PrivateUser, STARTING_BALANCE, User } from '../../../common/user'
 
 // Generate your own private key, and set the path below:
 // https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
@@ -27,6 +27,15 @@ async function main() {
       id: user.id,
       email,
       username,
+    }
+
+    if (user.totalDeposits === undefined) {
+      await firestore
+        .collection('users')
+        .doc(user.id)
+        .update({ totalDeposits: STARTING_BALANCE })
+
+      console.log('set starting balance for:', user.username)
     }
 
     try {

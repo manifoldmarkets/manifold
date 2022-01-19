@@ -55,6 +55,7 @@ export const createUser = functions
       username,
       avatarUrl,
       balance,
+      totalDeposits: balance,
       createdTime: Date.now(),
       totalPnLCached: 0,
       creatorVolumeCached: 0,

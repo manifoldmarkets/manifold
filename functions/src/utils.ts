@@ -37,7 +37,11 @@ export const getUserByUsername = async (username: string) => {
 
 const firestore = admin.firestore()
 
-const updateUserBalance = (userId: string, delta: number) => {
+const updateUserBalance = (
+  userId: string,
+  delta: number,
+  isDeposit = false
+) => {
   return firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${userId}`)
     const userSnap = await transaction.get(userDoc)
@@ -51,15 +55,20 @@ const updateUserBalance = (userId: string, delta: number) => {
         `User (${userId}) balance cannot be negative: ${newUserBalance}`
       )
 
+    if (isDeposit) {
+      const newTotalDeposits = (user.totalDeposits || 0) + delta
+      transaction.update(userDoc, { totalDeposits: newTotalDeposits })
+    }
+
     transaction.update(userDoc, { balance: newUserBalance })
   })
 }
 
-export const payUser = (userId: string, payout: number) => {
+export const payUser = (userId: string, payout: number, isDeposit = false) => {
   if (!isFinite(payout) || payout <= 0)
     throw new Error('Payout is not positive: ' + payout)
 
-  return updateUserBalance(userId, payout)
+  return updateUserBalance(userId, payout, isDeposit)
 }
 
 export const chargeUser = (userId: string, charge: number) => {
