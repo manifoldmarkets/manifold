@@ -108,39 +108,6 @@ function Contents() {
         immediately! When a market creator decides an outcome in your favor,
         you&#39;ll win Manifold Dollars from people who bet against you.
       </p>
-      {/* <p>
-        If you run out of money, you can purchase more at a rate of $1 USD to M$
-        100. (Note that Manifold Dollars are not convertible to cash and can only
-        be used within our platform.)
-      </p> */}
-      <aside>
-        💡 We&#39;re still in Open Beta; we&#39;ll tweak the amounts of Manifold
-        Dollars given out and periodically reset balances before our official
-        launch.
-        {/* If you purchase
-        any M$ during the beta, we promise to honor that when we launch! */}
-      </aside>
-
-      {/* <h3 id="why-do-i-want-to-bet-with-play-money-">
-        Why do I want to bet with play-money?
-      </h3>
-      <p>
-        Prediction markets work best when bettors have skin in the game. By
-        restricting the supply of our currency, you know that the other bettors
-        have thought carefully about where to spend their M$, and that the
-        market prices line up with reality.
-      </p>
-      <p>By buying M$, you support:</p>
-      <ul>
-        <li>The continued development of Manifold Markets</li>
-        <li>Cash payouts to market creators (TBD)</li>
-        <li>Forecasting tournaments for bettors (TBD)</li>
-      </ul>
-      <p>
-        We also have some thoughts on how to reward bettors: physical swag,
-        exclusive conversations with market creators, NFTs...? If you have
-        ideas, let us know!
-      </p> */}
       <h3 id="can-prediction-markets-work-without-real-money-">
         Can prediction markets work without real money?
       </h3>
@@ -270,10 +237,7 @@ function Contents() {
       </p>
       <h1 id="talk-to-us-">Talk to us!</h1>
       <hr />
-      <p>
-        Questions? Comments? Want to create a market? Talk to us — unlike
-        praying mantises, we don’t bite!
-      </p>
+      <p>Questions? Comments? Want to create a market? Talk to us!</p>
       <ul>
         <li>
           Email: <code>info@manifold.markets</code>
