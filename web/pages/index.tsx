@@ -17,6 +17,8 @@ import {
 } from '../lib/firebase/comments'
 import { Bet, listAllBets } from '../lib/firebase/bets'
 import { ContractsGrid } from '../components/contracts-list'
+import { useContracts } from '../hooks/use-contracts'
+import { useRecentComments } from '../hooks/use-comments'
 
 export async function getStaticProps() {
   const [contracts, hotContracts, closingSoonContracts, recentComments] =
@@ -56,12 +58,17 @@ const Home = (props: {
   closingSoonContracts: Contract[]
 }) => {
   const {
-    activeContracts,
     activeContractBets,
     activeContractComments,
     hotContracts,
     closingSoonContracts,
   } = props
+
+  const contracts = useContracts() ?? props.activeContracts
+  const recentComments = useRecentComments()
+  const activeContracts = recentComments
+    ? findActiveContracts(contracts, recentComments)
+    : props.activeContracts
 
   return (
     <Page>
@@ -73,7 +80,6 @@ const Home = (props: {
         contracts={activeContracts}
         contractBets={activeContractBets}
         contractComments={activeContractComments}
-        listenForChanges
       />
     </Page>
   )
