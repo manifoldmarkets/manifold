@@ -71,7 +71,9 @@ export function NewContract(props: { question: string }) {
   }, [creator])
 
   const [anteError, setAnteError] = useState<string | undefined>()
-  const [closeDate, setCloseDate] = useState('')
+  // By default, close the market a week from today
+  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
+  const [closeDate, setCloseDate] = useState(weekFromToday)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
