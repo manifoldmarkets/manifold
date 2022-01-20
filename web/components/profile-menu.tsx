@@ -52,10 +52,6 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
       href: `/${user.username}`,
     },
     {
-      name: 'Leaderboards',
-      href: '/leaderboards',
-    },
-    {
       name: 'Discord',
       href: 'https://discord.gg/eHQBNBqXuh',
     },

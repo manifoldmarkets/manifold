@@ -82,14 +82,14 @@ function NavOptions(props: { user: User | null; themeClasses: string }) {
         </>
       ) : (
         <>
-          <Link href="/create">
+          <Link href="/leaderboards">
             <a
               className={clsx(
                 'text-base hidden md:block whitespace-nowrap',
                 themeClasses
               )}
             >
-              Create a market
+              Leaderboards
             </a>
           </Link>
 
