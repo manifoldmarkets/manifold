@@ -5,7 +5,7 @@ export type Fold = {
   curatorId: string // User id
   createdTime: number
 
-  tags: string
+  tags: string[]
 
   contractIds: string[]
   excludedContractIds: string[]

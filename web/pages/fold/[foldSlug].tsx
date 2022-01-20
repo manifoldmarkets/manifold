@@ -7,6 +7,7 @@ import { getRecentComments, listAllComments } from '../../lib/firebase/comments'
 import { Contract } from '../../lib/firebase/contracts'
 import { getFoldBySlug, getFoldContracts } from '../../lib/firebase/folds'
 import { ActivityFeed, findActiveContracts } from '../activity'
+import { TagsList } from '../../components/tags-list'
 
 export async function getStaticProps(props: { params: { foldSlug: string } }) {
   const { foldSlug } = props.params
@@ -50,9 +51,14 @@ export default function FoldPage(props: {
   const { fold, activeContracts, activeContractBets, activeContractComments } =
     props
 
+  const { tags } = fold
+
   return (
     <Page>
       <Title text={fold.name} />
+
+      <TagsList tags={tags} />
+
       <ActivityFeed
         contracts={activeContracts}
         contractBets={activeContractBets}
