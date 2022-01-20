@@ -70,7 +70,7 @@ const HotMarkets = (props: { contracts: Contract[] }) => {
 
   return (
     <div className="w-full bg-indigo-50 border-2 border-indigo-100 p-6 rounded-lg shadow-md">
-      <Title className="mt-0" text="🔥 Markets" />
+      <Title className="!mt-0" text="🔥 Markets" />
       <ContractsGrid contracts={contracts} showHotVolume />
     </div>
   )
@@ -82,7 +82,7 @@ const ClosingSoonMarkets = (props: { contracts: Contract[] }) => {
 
   return (
     <div className="w-full bg-green-50 border-2 border-green-100 p-6 rounded-lg shadow-md">
-      <Title className="mt-0" text="⏰ Closing soon" />
+      <Title className="!mt-0" text="⏰ Closing soon" />
       <ContractsGrid contracts={contracts} showCloseTime />
     </div>
   )
