@@ -37,8 +37,11 @@ export default function FeedCreate() {
             username={user.username}
             avatarUrl={user.avatarUrl || ''}
           />
-          <div className="min-w-0 flex-1 py-1.5">
+          <div className="min-w-0 flex-1">
             {/* TODO: Show focus, for accessibility */}
+            <div>
+              <p className="my-0.5 text-sm">Ask a question... </p>
+            </div>
             <Textarea
               className="text-lg sm:text-xl text-indigo-700 w-full border-transparent focus:border-transparent bg-transparent p-0 appearance-none resize-none focus:ring-transparent"
               placeholder={`e.g. ${placeholder}`}
