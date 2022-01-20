@@ -112,7 +112,7 @@ export function NewContract(props: { question: string }) {
     await router.push(contractPath(result.contract as Contract))
   }
 
-  const descriptionPlaceholder = `(Optional) Describe how you will resolve this market.\ne.g. This market resolves to "YES" if, two weeks after closing, the...`
+  const descriptionPlaceholder = `e.g. This market resolves to "YES" if, two weeks after closing, the...\n#politics #world`
 
   if (!creator) return <></>
 
@@ -152,9 +152,10 @@ export function NewContract(props: { question: string }) {
 
       <Spacer h={4} />
 
-      <div className="form-control">
-        <label className="label">
+      <div className="form-control items-start mb-1">
+        <label className="label gap-2 mb-1">
           <span className="mb-1">Description</span>
+          <InfoTooltip text="Optional. Describe how you will resolve this market." />
         </label>
         <Textarea
           className="textarea w-full textarea-bordered"
