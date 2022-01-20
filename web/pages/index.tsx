@@ -11,6 +11,7 @@ import {
 import { Bet, listAllBets } from '../lib/firebase/bets'
 import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
+import { Col } from '../components/layout/col'
 
 export async function getStaticProps() {
   const [contracts, recentComments] = await Promise.all([
@@ -46,13 +47,17 @@ const Home = (props: {
 
   return (
     <Page>
-      <FeedCreate />
-      <Spacer h={5} />
-      <ActivityFeed
-        contracts={activeContracts}
-        contractBets={activeContractBets}
-        contractComments={activeContractComments}
-      />
+      <Col className="items-center">
+        <Col className="max-w-3xl">
+          <FeedCreate />
+          <Spacer h={4} />
+          <ActivityFeed
+            contracts={activeContracts}
+            contractBets={activeContractBets}
+            contractComments={activeContractComments}
+          />
+        </Col>
+      </Col>
     </Page>
   )
 }
