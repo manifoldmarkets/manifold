@@ -10,7 +10,7 @@ import {
   contractPath,
 } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
-import { parseTags } from '../lib/util/parse'
+import { parseTags } from '../../common/util/parse'
 import dayjs from 'dayjs'
 import { TrendingUpIcon, ClockIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from './datetime-tooltip'
