@@ -53,8 +53,12 @@ export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
   )
 }
 
-function FeedComment(props: { activityItem: any }) {
-  const { activityItem } = props
+function FeedComment(props: {
+  activityItem: any
+  moreHref: string
+  feedType: 'activity' | 'market'
+}) {
+  const { activityItem, moreHref, feedType } = props
   const { person, text, amount, outcome, createdTime } = activityItem
 
   const bought = amount >= 0 ? 'bought' : 'sold'
@@ -75,11 +79,11 @@ function FeedComment(props: { activityItem: any }) {
             <Timestamp time={createdTime} />
           </p>
         </div>
-        <div className="mt-2 text-gray-700">
-          <p className="whitespace-pre-wrap">
-            <Linkify text={text} />
-          </p>
-        </div>
+        <TruncatedComment
+          comment={text}
+          moreHref={moreHref}
+          shouldTruncate={feedType == 'activity'}
+        />
       </div>
     </>
   )
@@ -222,20 +226,39 @@ export function ContractDescription(props: {
   )
 }
 
+function TruncatedComment(props: {
+  comment: string
+  moreHref: string
+  shouldTruncate?: boolean
+}) {
+  const { comment, moreHref, shouldTruncate } = props
+  let truncated = comment
+
+  // Keep descriptions to at most 400 characters
+  if (shouldTruncate && truncated.length > 400) {
+    truncated = truncated.slice(0, 400)
+    // Make sure to end on a space
+    const i = truncated.lastIndexOf(' ')
+    truncated = truncated.slice(0, i)
+  }
+
+  return (
+    <div className="whitespace-pre-line break-words mt-2 text-gray-700">
+      <Linkify text={truncated} />
+      {truncated != comment && (
+        <SiteLink href={moreHref} className="text-indigo-700">
+          ... (show more)
+        </SiteLink>
+      )}
+    </div>
+  )
+}
+
 function FeedQuestion(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername, createdTime, question, resolution } =
     contract
   const { probPercent } = contractMetrics(contract)
-
-  let description = contract.description
-  // Keep descriptions to at most 400 characters
-  if (description.length > 400) {
-    description = description.slice(0, 400)
-    // Make sure to end on a space
-    const i = description.lastIndexOf(' ')
-    description = description.slice(0, i)
-  }
 
   // Currently hidden on mobile; ideally we'd fit this in somewhere.
   const closeMessage =
@@ -284,14 +307,11 @@ function FeedQuestion(props: { contract: Contract }) {
             probPercent={probPercent}
           />
         </Col>
-        <div className="whitespace-pre-line break-words mt-2 text-gray-700">
-          <Linkify text={description} />
-          {description != contract.description && (
-            <SiteLink href={contractPath(contract)} className="text-indigo-700">
-              ... (show more)
-            </SiteLink>
-          )}
-        </div>
+        <TruncatedComment
+          comment={contract.description}
+          moreHref={contractPath(contract)}
+          shouldTruncate
+        />
       </div>
     </>
   )
@@ -597,7 +617,11 @@ export function ContractFeed(props: {
                     <FeedDescription contract={contract} />
                   )
                 ) : activityItem.type === 'comment' ? (
-                  <FeedComment activityItem={activityItem} />
+                  <FeedComment
+                    activityItem={activityItem}
+                    moreHref={contractPath(contract)}
+                    feedType={feedType}
+                  />
                 ) : activityItem.type === 'bet' ? (
                   <FeedBet activityItem={activityItem} />
                 ) : activityItem.type === 'betgroup' ? (
