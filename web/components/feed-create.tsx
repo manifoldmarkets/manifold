@@ -5,14 +5,14 @@ import Textarea from 'react-expanding-textarea'
 import { useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { NewContract } from '../pages/create'
-import { firebaseLogin } from '../lib/firebase/users'
+import { firebaseLogin, User } from '../lib/firebase/users'
 import { useHotContracts } from '../hooks/use-contracts'
 import { ContractsGrid } from './contracts-list'
 import { SiteLink } from './site-link'
+import { Contract } from '../../common/contract'
 
-export function FeedPromo() {
-  // TODO: Encode in static props
-  const hotContracts = useHotContracts()
+export function FeedPromo(props: { hotContracts: Contract[] }) {
+  const contracts = useHotContracts() ?? props.hotContracts
 
   return (
     <>
@@ -42,10 +42,7 @@ export function FeedPromo() {
         </div>
         <Spacer h={4} />
 
-        <ContractsGrid
-          contracts={hotContracts?.slice(0, 2) || []}
-          showHotVolume
-        />
+        <ContractsGrid contracts={contracts?.slice(0, 2) || []} showHotVolume />
       </div>
 
       <div className="text-gray-800 text-lg mb-0 mt-6 mx-6">
@@ -66,14 +63,9 @@ function Hashtag(props: { tag: string }) {
   )
 }
 
-export default function FeedCreate() {
-  const user = useUser()
+export default function FeedCreate(props: { user: User }) {
+  const { user } = props
   const [question, setQuestion] = useState('')
-
-  if (!user) {
-    // TODO: Improve logged-out experience
-    return <FeedPromo />
-  }
 
   const placeholders = [
     'Will I make a new friend this week?',
