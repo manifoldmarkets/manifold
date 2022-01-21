@@ -85,7 +85,7 @@ export default function FoldPage(props: {
         <Col className="max-w-3xl w-full">
           <Title text={fold.name} />
 
-          <Row className="items-center mb-2">
+          <Row className="items-center mb-2 flex-wrap">
             {isCurator && (
               <>
                 <SiteLink className="text-sm " href={`/fold/${fold.slug}/edit`}>
@@ -107,9 +107,8 @@ export default function FoldPage(props: {
               name={curator.name}
               username={curator.username}
             />
-            <div className="ml-2 mr-2">•</div>
-            <TagsList tags={tags.map((tag) => `#${tag}`)} />
           </Row>
+          <TagsList tags={tags.map((tag) => `#${tag}`)} />
 
           <Spacer h={4} />
 

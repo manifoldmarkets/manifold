@@ -24,7 +24,6 @@ import { createRNG, shuffle } from '../../../common/util/random'
 export type { Contract }
 
 export function contractPath(contract: Contract) {
-  // For now, derive username from creatorName
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 

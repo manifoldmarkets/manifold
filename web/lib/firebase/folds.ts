@@ -6,6 +6,14 @@ import { getValues } from './utils'
 
 const foldCollection = collection(db, 'folds')
 
+export function foldPath(fold: Fold, subpath?: 'edit' | 'leaderboards') {
+  return `/fold/${fold.slug}${subpath ? `/${subpath}` : ''}`
+}
+
+export async function listAllFolds() {
+  return getValues<Fold>(foldCollection)
+}
+
 export async function getFoldBySlug(slug: string) {
   const q = query(foldCollection, where('slug', '==', slug))
   const folds = await getValues<Fold>(q)
