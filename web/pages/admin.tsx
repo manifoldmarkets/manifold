@@ -77,7 +77,6 @@ function ContractsTable() {
   let contracts = useContracts() ?? []
   // Sort users by createdTime descending, by default
   contracts.sort((a, b) => b.createdTime - a.createdTime)
-  contracts = contracts.filter((contract) => !contract.isResolved)
 
   return (
     <Grid
@@ -95,16 +94,36 @@ function ContractsTable() {
         {
           id: 'question',
           name: 'Question',
-          formatter: (cell) => cell,
+          formatter: (cell) => html(`<div class="w-60">${cell}</div>`),
         },
         {
           id: 'volume24Hours',
-          name: '24 hour vol',
+          name: '24h vol',
           formatter: (cell) => (cell as number).toFixed(0),
+        },
+        {
+          id: 'createdTime',
+          name: 'Created time',
+          formatter: (cell) =>
+            html(
+              `<span class="whitespace-nowrap">${dayjs(cell as number).format(
+                'MMM D, h:mma'
+              )}</span>`
+            ),
         },
         {
           id: 'closeTime',
           name: 'Close time',
+          formatter: (cell) =>
+            html(
+              `<span class="whitespace-nowrap">${dayjs(cell as number).format(
+                'MMM D, h:mma'
+              )}</span>`
+            ),
+        },
+        {
+          id: 'resolvedTime',
+          name: 'Resolved time',
           formatter: (cell) =>
             html(
               `<span class="whitespace-nowrap">${dayjs(cell as number).format(

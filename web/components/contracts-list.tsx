@@ -51,8 +51,8 @@ export function ContractsGrid(props: {
         <ContractCard
           contract={contract}
           key={contract.id}
-          showHotVolume={showHotVolume}
-          showCloseTime={showCloseTime}
+          // showHotVolume={showHotVolume}
+          // showCloseTime={showCloseTime}
         />
       ))}
     </ul>

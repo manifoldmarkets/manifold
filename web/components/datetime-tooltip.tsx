@@ -9,14 +9,19 @@ dayjs.extend(advanced)
 
 export function DateTimeTooltip(props: {
   time: number
+  text?: string
   children?: React.ReactNode
 }) {
-  const { time } = props
+  const { time, text } = props
+
+  const formattedTime = dayjs(time).format('MMM DD, YYYY hh:mm a z')
+  const toolTip = text ? `${text} ${formattedTime}` : formattedTime
+
   return (
     <>
       <span
         className="tooltip cursor-default hidden sm:inline-block"
-        data-tip={dayjs(time).format('MMM DD, YYYY hh:mm a z')}
+        data-tip={toolTip}
       >
         {props.children}
       </span>

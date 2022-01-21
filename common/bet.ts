@@ -17,6 +17,7 @@ export type Bet = {
   }
 
   isSold?: boolean // true if this BUY bet has been sold
+  isAnte?: boolean
 
   createdTime: number
 }
