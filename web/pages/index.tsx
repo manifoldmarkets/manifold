@@ -49,13 +49,15 @@ const Home = (props: {
     <Page>
       <Col className="items-center">
         <Col className="max-w-3xl">
-          <FeedCreate />
-          <Spacer h={4} />
-          <ActivityFeed
-            contracts={activeContracts}
-            contractBets={activeContractBets}
-            contractComments={activeContractComments}
-          />
+          <div className="-mx-2 sm:mx-0">
+            <FeedCreate />
+            <Spacer h={4} />
+            <ActivityFeed
+              contracts={activeContracts}
+              contractBets={activeContractBets}
+              contractComments={activeContractComments}
+            />
+          </div>
         </Col>
       </Col>
     </Page>

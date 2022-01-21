@@ -8,34 +8,59 @@ import { NewContract } from '../pages/create'
 import { firebaseLogin } from '../lib/firebase/users'
 import { useHotContracts } from '../hooks/use-contracts'
 import { ContractsGrid } from './contracts-list'
+import { SiteLink } from './site-link'
 
 export function FeedPromo() {
   // TODO: Encode in statc props
   const hotContracts = useHotContracts()
 
   return (
-    <div className="w-full">
-      <Title text="Bet on the future and win" className="!mb-2 text-black" />
-      <div className="text-gray-500 mb-4">
-        <button
-          className="bg-gradient-to-r gradient-to-r from-teal-500 to-green-500 text-transparent bg-clip-text hover:underline hover:decoration-gray-300 hover:decoration-2"
-          onClick={firebaseLogin}
-        >
-          Sign up for free
-        </button>{' '}
-        and trade in any prediction market. Our hottest markets today:
+    <>
+      <div className="w-full bg-indigo-50 p-6 sm:border-2 sm:border-indigo-100 sm:rounded-lg">
+        <Title
+          text="What are you an expert in?"
+          className="!mt-2 text-gray-800"
+        />
+        <div className="text-gray-500 mb-4">
+          <button
+            className="bg-gradient-to-r gradient-to-r from-teal-500 to-green-500 text-transparent bg-clip-text hover:underline hover:decoration-gray-300 hover:decoration-2"
+            onClick={firebaseLogin}
+          >
+            Sign up for free
+          </button>{' '}
+          to trade in any prediction market. Don't see a market you like? Create
+          your own in two minutes!
+          <br />
+        </div>
+
+        <div className="flex flex-wrap mt-2 gap-2">
+          {['#politics', '#covid', '#gaming', '#sports', '#meta'].map((tag) => (
+            <Hashtag tag={tag} />
+          ))}
+        </div>
+        <Spacer h={4} />
+
+        <ContractsGrid
+          contracts={hotContracts?.slice(0, 2) || []}
+          showHotVolume
+        />
       </div>
 
-      <ContractsGrid
-        contracts={hotContracts?.slice(0, 2) || []}
-        showHotVolume
-      />
-
-      <Spacer h={4} />
-      <div className="text-gray-800 text-lg mb-0 mt-2">
+      <div className="text-gray-800 text-lg mb-0 mt-6 mx-6">
         Recent community activity
       </div>
-    </div>
+    </>
+  )
+}
+
+function Hashtag(props: { tag: string }) {
+  const { tag } = props
+  return (
+    <SiteLink href={`/tag/${tag.substring(1)}`} className="flex items-center">
+      <div className="bg-white hover:bg-gray-100 cursor-pointer px-4 py-2 rounded-full shadow-md">
+        <span className="text-gray-500">{tag}</span>
+      </div>
+    </SiteLink>
   )
 }
 
@@ -62,7 +87,7 @@ export default function FeedCreate() {
   const placeholder = placeholders[daysSinceEpoch % placeholders.length]
 
   return (
-    <div className="w-full bg-indigo-50 rounded-md p-4">
+    <div className="w-full bg-indigo-50 sm:rounded-md p-4">
       <div className="relative flex items-start space-x-3">
         <AvatarWithIcon
           username={user.username}
