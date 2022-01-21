@@ -11,25 +11,27 @@ import { ContractsGrid } from './contracts-list'
 import { SiteLink } from './site-link'
 
 export function FeedPromo() {
-  // TODO: Encode in statc props
+  // TODO: Encode in static props
   const hotContracts = useHotContracts()
 
   return (
     <>
       <div className="w-full bg-indigo-50 p-6 sm:border-2 sm:border-indigo-100 sm:rounded-lg">
         <Title
-          text="What are you an expert in?"
-          className="!mt-2 text-gray-800"
+          text="Bet on the future"
+          className="!mt-2 text-gray-800 !text-4xl"
         />
         <div className="text-gray-500 mb-4">
+          On Manifold Markets, you can find prediction markets run by your
+          favorite creators.
+          <br />
           <button
             className="bg-gradient-to-r gradient-to-r from-teal-500 to-green-500 text-transparent bg-clip-text hover:underline hover:decoration-gray-300 hover:decoration-2"
             onClick={firebaseLogin}
           >
-            Sign up for free
+            Sign up to get M$ 1000 for free
           </button>{' '}
-          to trade in any prediction market. Don't see a market you like? Create
-          your own in two minutes!
+          and start trading!
           <br />
         </div>
 
