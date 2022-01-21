@@ -1,5 +1,5 @@
 import { getFirestore } from '@firebase/firestore'
-import { initializeApp } from 'firebase/app'
+import { initializeApp, getApps, getApp } from 'firebase/app'
 
 // TODO: Reenable this when we have a way to set the Firebase db in dev
 // export const isProd = process.env.NODE_ENV === 'production'
@@ -26,5 +26,6 @@ const firebaseConfig = isProd
     }
 
 // Initialize Firebase
-export const app = initializeApp(firebaseConfig)
+export const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+
 export const db = getFirestore(app)

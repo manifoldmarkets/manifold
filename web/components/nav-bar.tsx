@@ -57,6 +57,17 @@ function NavOptions(props: { user: User | null; themeClasses: string }) {
         </Link>
       )}
 
+      {/* <Link href="/folds">
+        <a
+          className={clsx(
+            'text-base hidden md:block whitespace-nowrap',
+            themeClasses
+          )}
+        >
+          Folds
+        </a>
+      </Link> */}
+
       <Link href="/markets">
         <a
           className={clsx(

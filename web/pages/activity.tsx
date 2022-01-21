@@ -2,8 +2,6 @@ import _ from 'lodash'
 import { ContractFeed } from '../components/contract-feed'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
-import { useRecentComments } from '../hooks/use-comments'
-import { useContracts } from '../hooks/use-contracts'
 import { Contract } from '../lib/firebase/contracts'
 import { Comment } from '../lib/firebase/comments'
 import { Col } from '../components/layout/col'
@@ -69,18 +67,13 @@ export function ActivityFeed(props: {
   contractBets: Bet[][]
   contractComments: Comment[][]
 }) {
-  const { contractBets, contractComments } = props
-  const contracts = useContracts() ?? props.contracts
-  const recentComments = useRecentComments()
-  const activeContracts = recentComments
-    ? findActiveContracts(contracts, recentComments)
-    : props.contracts
+  const { contracts, contractBets, contractComments } = props
 
   return contracts.length > 0 ? (
     <Col className="items-center">
       <Col className="w-full max-w-3xl">
         <Col className="w-full bg-white self-center divide-gray-300 divide-y">
-          {activeContracts.map((contract, i) => (
+          {contracts.map((contract, i) => (
             <div key={contract.id} className="py-6 px-2 sm:px-4">
               <ContractFeed
                 contract={contract}

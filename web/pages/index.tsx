@@ -13,6 +13,8 @@ import {
   listAllComments,
 } from '../lib/firebase/comments'
 import { Bet, listAllBets } from '../lib/firebase/bets'
+import { useContracts } from '../hooks/use-contracts'
+import { useRecentComments } from '../hooks/use-comments'
 import FeedCreate, { FeedPromo } from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
@@ -51,12 +53,13 @@ const Home = (props: {
   activeContractComments: Comment[][]
   hotContracts: Contract[]
 }) => {
-  const {
-    activeContracts,
-    activeContractBets,
-    activeContractComments,
-    hotContracts,
-  } = props
+  const { activeContractBets, activeContractComments, hotContracts } = props
+
+  const contracts = useContracts() ?? props.activeContracts
+  const recentComments = useRecentComments()
+  const activeContracts = recentComments
+    ? findActiveContracts(contracts, recentComments)
+    : props.activeContracts
 
   const user = useUser()
 

@@ -1,12 +1,19 @@
 import { getFunctions, httpsCallable } from 'firebase/functions'
+import { Fold } from '../../../common/fold'
 import { User } from '../../../common/user'
 import { randomString } from '../../../common/util/random'
 
 const functions = getFunctions()
 
-export const cloudFunction = (name: string) => httpsCallable(functions, name)
+export const cloudFunction = <RequestData, ResponseData>(name: string) =>
+  httpsCallable<RequestData, ResponseData>(functions, name)
 
 export const createContract = cloudFunction('createContract')
+
+export const createFold = cloudFunction<
+  { name: string; tags: string[] },
+  { status: 'error' | 'success'; message?: string; fold?: Fold }
+>('createFold')
 
 export const placeBet = cloudFunction('placeBet')
 

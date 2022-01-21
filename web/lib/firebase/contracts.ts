@@ -24,7 +24,6 @@ import { createRNG, shuffle } from '../../../common/util/random'
 export type { Contract }
 
 export function contractPath(contract: Contract) {
-  // For now, derive username from creatorName
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 
@@ -54,7 +53,7 @@ export function contractMetrics(contract: Contract) {
 }
 
 const db = getFirestore(app)
-const contractCollection = collection(db, 'contracts')
+export const contractCollection = collection(db, 'contracts')
 
 // Push contract to Firestore
 export async function setContract(contract: Contract) {

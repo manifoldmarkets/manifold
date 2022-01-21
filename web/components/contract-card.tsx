@@ -3,17 +3,17 @@ import Link from 'next/link'
 import { Row } from '../components/layout/row'
 import { formatMoney } from '../lib/util/format'
 import { UserLink } from './user-page'
-import { Linkify } from './linkify'
 import {
   Contract,
   contractMetrics,
   contractPath,
 } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
-import { parseTags } from '../lib/util/parse'
+import { parseTags } from '../../common/util/parse'
 import dayjs from 'dayjs'
 import { TrendingUpIcon, ClockIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from './datetime-tooltip'
+import { TagsList } from './tags-list'
 
 export function ContractCard(props: {
   contract: Contract
@@ -196,14 +196,7 @@ export function ContractDetails(props: { contract: Contract }) {
       {tags.length > 0 && (
         <>
           <div className="hidden sm:block">•</div>
-
-          <Row className="gap-2 flex-wrap">
-            {tags.map((tag) => (
-              <div key={tag} className="bg-gray-100 px-1">
-                <Linkify text={tag} gray />
-              </div>
-            ))}
-          </Row>
+          <TagsList tags={tags} />
         </>
       )}
     </Col>
