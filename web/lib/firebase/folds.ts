@@ -1,4 +1,4 @@
-import { collection, query, where } from 'firebase/firestore'
+import { collection, doc, query, updateDoc, where } from 'firebase/firestore'
 import { Fold } from '../../../common/fold'
 import { Contract, contractCollection } from './contracts'
 import { db } from './init'
@@ -8,6 +8,10 @@ const foldCollection = collection(db, 'folds')
 
 export function foldPath(fold: Fold, subpath?: 'edit' | 'leaderboards') {
   return `/fold/${fold.slug}${subpath ? `/${subpath}` : ''}`
+}
+
+export function updateFold(fold: Fold, updates: Partial<Fold>) {
+  return updateDoc(doc(foldCollection, fold.id), updates)
 }
 
 export async function listAllFolds() {
