@@ -32,9 +32,11 @@ export async function getFoldContracts(fold: Fold) {
 
   const [tagsContracts, includedContracts] = await Promise.all([
     // TODO: if tags.length > 10, execute multiple parallel queries
-    getValues<Contract>(
-      query(contractCollection, where('tags', 'array-contains-any', tags))
-    ),
+    tags.length > 0
+      ? getValues<Contract>(
+          query(contractCollection, where('tags', 'array-contains-any', tags))
+        )
+      : [],
 
     // TODO: if contractIds.length > 10, execute multiple parallel queries
     contractIds.length > 0
