@@ -5,7 +5,6 @@ import {
   setDoc,
   query,
   collectionGroup,
-  getDocs,
   where,
   orderBy,
 } from 'firebase/firestore'
@@ -75,9 +74,7 @@ const recentCommentsQuery = query(
 )
 
 export async function getRecentComments() {
-  const snapshot = await getDocs(recentCommentsQuery)
-  const comments = snapshot.docs.map((doc) => doc.data() as Comment)
-  return comments
+  return getValues<Comment>(recentCommentsQuery)
 }
 
 export function listenForRecentComments(

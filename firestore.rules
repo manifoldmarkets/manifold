@@ -35,5 +35,9 @@ service cloud.firestore {
       allow read;
     }
 
+    match /folds/{foldId} {
+      allow read;
+      allow update: if request.auth.uid == resource.data.curatorId;
+    }
   }
 }

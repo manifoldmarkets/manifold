@@ -9,6 +9,7 @@ export type Contract = {
 
   question: string
   description: string // More info about what the contract is about
+  tags: string[]
   outcomeType: 'BINARY' // | 'MULTI' | 'interval' | 'date'
   // outcomes: ['YES', 'NO']
   visibility: 'public' | 'unlisted'

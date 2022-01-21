@@ -23,7 +23,9 @@ import { Bet, listAllBets } from '../../lib/firebase/bets'
 import { Comment, listAllComments } from '../../lib/firebase/comments'
 import Custom404 from '../404'
 
-export async function getStaticProps(props: { params: any }) {
+export async function getStaticProps(props: {
+  params: { username: string; contractSlug: string }
+}) {
   const { username, contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id

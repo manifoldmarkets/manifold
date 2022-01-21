@@ -2,6 +2,7 @@ import { calcStartPool } from './antes'
 
 import { Contract } from './contract'
 import { User } from './user'
+import { parseTags } from './util/parse'
 
 export function getNewContract(
   id: string,
@@ -28,6 +29,7 @@ export function getNewContract(
 
     question: question.trim(),
     description: description.trim(),
+    tags: parseTags(`${question} ${description}`),
     visibility: 'public',
 
     mechanism: 'dpm-2',
