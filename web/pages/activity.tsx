@@ -79,7 +79,6 @@ export function ActivityFeed(props: {
   return contracts.length > 0 ? (
     <Col className="items-center">
       <Col className="w-full max-w-3xl">
-        <Title text="Recent Activity" />
         <Col className="w-full bg-white self-center divide-gray-300 divide-y">
           {activeContracts.map((contract, i) => (
             <div key={contract.id} className="py-6 px-2 sm:px-4">

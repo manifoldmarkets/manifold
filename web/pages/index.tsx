@@ -2,13 +2,10 @@ import React from 'react'
 import _ from 'lodash'
 import {
   Contract,
-  getClosingSoonContracts,
   getHotContracts,
   listAllContracts,
 } from '../lib/firebase/contracts'
-import { Spacer } from '../components/layout/spacer'
 import { Page } from '../components/page'
-import { Title } from '../components/title'
 import { ActivityFeed, findActiveContracts } from './activity'
 import {
   getRecentComments,
@@ -16,16 +13,17 @@ import {
   listAllComments,
 } from '../lib/firebase/comments'
 import { Bet, listAllBets } from '../lib/firebase/bets'
-import { ContractsGrid } from '../components/contracts-list'
+import FeedCreate, { FeedPromo } from '../components/feed-create'
+import { Spacer } from '../components/layout/spacer'
+import { Col } from '../components/layout/col'
+import { useUser } from '../hooks/use-user'
 
 export async function getStaticProps() {
-  const [contracts, hotContracts, closingSoonContracts, recentComments] =
-    await Promise.all([
-      listAllContracts().catch((_) => []),
-      getHotContracts().catch(() => []),
-      getClosingSoonContracts().catch(() => []),
-      getRecentComments().catch(() => []),
-    ])
+  const [contracts, recentComments, hotContracts] = await Promise.all([
+    listAllContracts().catch((_) => []),
+    getRecentComments().catch(() => []),
+    getHotContracts().catch(() => []),
+  ])
 
   const activeContracts = findActiveContracts(contracts, recentComments)
   const activeContractBets = await Promise.all(
@@ -41,7 +39,6 @@ export async function getStaticProps() {
       activeContractBets,
       activeContractComments,
       hotContracts,
-      closingSoonContracts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -53,52 +50,36 @@ const Home = (props: {
   activeContractBets: Bet[][]
   activeContractComments: Comment[][]
   hotContracts: Contract[]
-  closingSoonContracts: Contract[]
 }) => {
   const {
     activeContracts,
     activeContractBets,
     activeContractComments,
     hotContracts,
-    closingSoonContracts,
   } = props
+
+  const user = useUser()
 
   return (
     <Page>
-      <HotMarkets contracts={hotContracts} />
-      <Spacer h={10} />
-      <ClosingSoonMarkets contracts={closingSoonContracts} />
-      <Spacer h={10} />
-      <ActivityFeed
-        contracts={activeContracts}
-        contractBets={activeContractBets}
-        contractComments={activeContractComments}
-      />
+      <Col className="items-center">
+        <Col className="max-w-3xl">
+          <div className="-mx-2 sm:mx-0">
+            {user ? (
+              <FeedCreate user={user} />
+            ) : (
+              <FeedPromo hotContracts={hotContracts} />
+            )}
+            <Spacer h={4} />
+            <ActivityFeed
+              contracts={activeContracts}
+              contractBets={activeContractBets}
+              contractComments={activeContractComments}
+            />
+          </div>
+        </Col>
+      </Col>
     </Page>
-  )
-}
-
-const HotMarkets = (props: { contracts: Contract[] }) => {
-  const { contracts } = props
-  if (contracts.length === 0) return <></>
-
-  return (
-    <div className="w-full bg-indigo-50 border-2 border-indigo-100 p-6 rounded-lg shadow-md">
-      <Title className="mt-0" text="🔥 Markets" />
-      <ContractsGrid contracts={contracts} showHotVolume />
-    </div>
-  )
-}
-
-const ClosingSoonMarkets = (props: { contracts: Contract[] }) => {
-  const { contracts } = props
-  if (contracts.length === 0) return <></>
-
-  return (
-    <div className="w-full bg-green-50 border-2 border-green-100 p-6 rounded-lg shadow-md">
-      <Title className="mt-0" text="⏰ Closing soon" />
-      <ContractsGrid contracts={contracts} showCloseTime />
-    </div>
   )
 }
 

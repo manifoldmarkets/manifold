@@ -40,7 +40,7 @@ import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
 import Textarea from 'react-expanding-textarea'
 
-function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
+export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
   const { username, avatarUrl } = props
   return (
     <SiteLink className="relative" href={`/${username}`}>
