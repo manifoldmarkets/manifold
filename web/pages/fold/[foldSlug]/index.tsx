@@ -6,7 +6,11 @@ import { Title } from '../../../components/title'
 import { Bet, listAllBets } from '../../../lib/firebase/bets'
 import { listAllComments } from '../../../lib/firebase/comments'
 import { Contract } from '../../../lib/firebase/contracts'
-import { getFoldBySlug, getFoldContracts } from '../../../lib/firebase/folds'
+import {
+  foldPath,
+  getFoldBySlug,
+  getFoldContracts,
+} from '../../../lib/firebase/folds'
 import { ActivityFeed, findActiveContracts } from '../../activity'
 import { TagsList } from '../../../components/tags-list'
 import { Row } from '../../../components/layout/row'
@@ -85,29 +89,29 @@ export default function FoldPage(props: {
         <Col className="max-w-3xl w-full">
           <Title text={fold.name} />
 
-          <Row className="items-center mb-2 flex-wrap">
+          <Row className="items-center gap-2 mb-2 flex-wrap">
             {isCurator && (
               <>
-                <SiteLink className="text-sm " href={`/fold/${fold.slug}/edit`}>
+                <SiteLink className="text-sm " href={foldPath(fold, 'edit')}>
                   Edit
                 </SiteLink>
-                <div className="ml-2 mr-2">•</div>
+                <div className="text-gray-500">•</div>
               </>
             )}
-            <SiteLink
-              className="text-sm"
-              href={`/fold/${fold.slug}/leaderboards`}
-            >
+            <SiteLink className="text-sm" href={foldPath(fold, 'leaderboards')}>
               Leaderboards
             </SiteLink>
-            <div className="ml-2 mr-2">•</div>
-            <div className="text-sm text-gray-500 mr-1">Curated by</div>
-            <UserLink
-              className="text-sm text-neutral"
-              name={curator.name}
-              username={curator.username}
-            />
+            <div className="text-gray-500">•</div>
+            <Row>
+              <div className="text-sm text-gray-500 mr-1">Curated by</div>
+              <UserLink
+                className="text-sm text-neutral"
+                name={curator.name}
+                username={curator.username}
+              />
+            </Row>
           </Row>
+
           <TagsList tags={tags.map((tag) => `#${tag}`)} />
 
           <Spacer h={4} />
