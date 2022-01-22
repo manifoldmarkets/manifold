@@ -5,6 +5,7 @@ import {
   BanIcon,
   ChatAltIcon,
   CheckIcon,
+  DotsVerticalIcon,
   LockClosedIcon,
   StarIcon,
   UserIcon,
@@ -235,8 +236,9 @@ function TruncatedComment(props: {
   let truncated = comment
 
   // Keep descriptions to at most 400 characters
-  if (shouldTruncate && truncated.length > 400) {
-    truncated = truncated.slice(0, 400)
+  const MAX_CHARS = 400
+  if (shouldTruncate && truncated.length > MAX_CHARS) {
+    truncated = truncated.slice(0, MAX_CHARS)
     // Make sure to end on a space
     const i = truncated.lastIndexOf(' ')
     truncated = truncated.slice(0, i)
@@ -561,11 +563,45 @@ function FeedBetGroup(props: { activityItem: any }) {
   )
 }
 
+// TODO: Should highlight the entire Feed segment
+function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
+  const { setExpanded } = props
+  return (
+    <>
+      <button onClick={() => setExpanded(true)}>
+        <div className="relative px-1">
+          <div className="h-8 w-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center">
+            <DotsVerticalIcon
+              className="h-5 w-5 text-gray-500"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+      </button>
+
+      <button onClick={() => setExpanded(true)}>
+        <div className="min-w-0 flex-1 py-1.5">
+          <div className="text-sm text-gray-500 hover:text-gray-700">
+            <span>Show all activity</span>
+          </div>
+        </div>
+      </button>
+    </>
+  )
+}
+
 // Missing feed items:
 // - Bet sold?
 type ActivityItem = {
   id: string
-  type: 'bet' | 'comment' | 'start' | 'betgroup' | 'close' | 'resolve'
+  type:
+    | 'bet'
+    | 'comment'
+    | 'start'
+    | 'betgroup'
+    | 'close'
+    | 'resolve'
+    | 'expand'
 }
 
 export function ContractFeed(props: {
@@ -577,6 +613,7 @@ export function ContractFeed(props: {
 }) {
   const { contract, feedType } = props
   const { id } = contract
+  const [expanded, setExpanded] = useState(false)
   const user = useUser()
 
   let bets = useBets(id) ?? props.bets
@@ -597,13 +634,23 @@ export function ContractFeed(props: {
     allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
   }
 
+  // If there are more than 5 items, only show the first, an expand item, and last 3
+  let items = allItems
+  if (!expanded && allItems.length > 5 && feedType == 'activity') {
+    items = [
+      allItems[0],
+      { type: 'expand', id: 'expand' },
+      ...allItems.slice(-3),
+    ]
+  }
+
   return (
     <div className="flow-root">
       <ul role="list" className="-mb-8">
-        {allItems.map((activityItem, activityItemIdx) => (
+        {items.map((activityItem, activityItemIdx) => (
           <li key={activityItem.id}>
             <div className="relative pb-8">
-              {activityItemIdx !== allItems.length - 1 ? (
+              {activityItemIdx !== items.length - 1 ? (
                 <span
                   className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
                   aria-hidden="true"
@@ -630,6 +677,8 @@ export function ContractFeed(props: {
                   <FeedClose contract={contract} />
                 ) : activityItem.type === 'resolve' ? (
                   <FeedResolve contract={contract} />
+                ) : activityItem.type === 'expand' ? (
+                  <FeedExpand setExpanded={setExpanded} />
                 ) : null}
               </div>
             </div>
