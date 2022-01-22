@@ -268,7 +268,7 @@ function FeedQuestion(props: { contract: Contract }) {
             name={creatorName}
             username={creatorUsername}
           />{' '}
-          asked <Timestamp time={createdTime} />
+          asked
           {closeMessage}
         </div>
         <Col className="items-start sm:flex-row justify-between gap-2 sm:gap-4 mb-4">
