@@ -6,19 +6,36 @@ import { Leaderboard } from '../../../components/leaderboard'
 import { Page } from '../../../components/page'
 import { SiteLink } from '../../../components/site-link'
 import { formatMoney } from '../../../lib/util/format'
-import { foldPath, getFoldBySlug } from '../../../lib/firebase/folds'
+import {
+  foldPath,
+  getFoldBySlug,
+  getFoldContracts,
+} from '../../../lib/firebase/folds'
 import { Fold } from '../../../../common/fold'
 import { Spacer } from '../../../components/layout/spacer'
+import { scoreCreators, scoreTraders } from '../../../lib/firebase/scoring'
+import { getUser, User } from '../../../lib/firebase/users'
+import { listAllBets } from '../../../lib/firebase/bets'
 
 export async function getStaticProps(props: { params: { foldSlug: string } }) {
   const { foldSlug } = props.params
 
   const fold = await getFoldBySlug(foldSlug)
+  const contracts = fold ? await getFoldContracts(fold) : []
+  const bets = await Promise.all(
+    contracts.map((contract) => listAllBets(contract.id))
+  )
+
+  const creatorScores = scoreCreators(contracts, bets)
+  const [topCreators, topCreatorScores] = await toUserScores(creatorScores)
+
+  const traderScores = scoreTraders(contracts, bets)
+  const [topTraders, topTraderScores] = await toUserScores(traderScores)
 
   return {
-    props: { fold },
+    props: { fold, topTraders, topTraderScores, topCreators, topCreatorScores },
 
-    revalidate: 60, // regenerate after a minute
+    revalidate: 15 * 60, // regenerate after 15 minutes
   }
 }
 
@@ -26,8 +43,27 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function Leaderboards(props: { fold: Fold }) {
-  const { fold } = props
+async function toUserScores(userScores: { [userId: string]: number }) {
+  const topUserPairs = _.take(
+    _.sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
+    10
+  )
+  const topUsers = await Promise.all(
+    topUserPairs.map(([userId]) => getUser(userId))
+  )
+  const topUserScores = topUserPairs.map(([_, score]) => score)
+  return [topUsers, topUserScores] as const
+}
+
+export default function Leaderboards(props: {
+  fold: Fold
+  topTraders: User[]
+  topTraderScores: number[]
+  topCreators: User[]
+  topCreatorScores: number[]
+}) {
+  const { fold, topTraders, topTraderScores, topCreators, topCreatorScores } =
+    props
   return (
     <Page>
       <SiteLink href={foldPath(fold)}>
@@ -37,24 +73,26 @@ export default function Leaderboards(props: { fold: Fold }) {
 
       <Spacer h={4} />
 
-      <Col className="items-center lg:flex-row gap-10">
+      <Col className="lg:flex-row gap-10">
         <Leaderboard
           title="🏅 Top traders"
-          users={[]}
+          users={topTraders}
           columns={[
             {
               header: 'Total profit',
-              renderCell: (user) => formatMoney(user.totalPnLCached),
+              renderCell: (user) =>
+                formatMoney(topTraderScores[topTraders.indexOf(user)]),
             },
           ]}
         />
         <Leaderboard
           title="🏅 Top creators"
-          users={[]}
+          users={topCreators}
           columns={[
             {
-              header: 'Market volume',
-              renderCell: (user) => formatMoney(user.creatorVolumeCached),
+              header: 'Market pool',
+              renderCell: (user) =>
+                formatMoney(topCreatorScores[topCreators.indexOf(user)]),
             },
           ]}
         />
