@@ -1,4 +1,3 @@
-import { useUser } from '../hooks/use-user'
 import { AvatarWithIcon } from './contract-feed'
 import { Title } from './title'
 import Textarea from 'react-expanding-textarea'
@@ -6,13 +5,12 @@ import { useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { NewContract } from '../pages/create'
 import { firebaseLogin, User } from '../lib/firebase/users'
-import { useHotContracts } from '../hooks/use-contracts'
 import { ContractsGrid } from './contracts-list'
 import { SiteLink } from './site-link'
 import { Contract } from '../../common/contract'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
-  const contracts = useHotContracts() ?? props.hotContracts
+  const { hotContracts } = props
 
   return (
     <>
@@ -42,11 +40,10 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
         </div>
         <Spacer h={4} />
 
-        <ContractsGrid contracts={contracts?.slice(0, 2) || []} showHotVolume />
-      </div>
-
-      <div className="text-gray-800 text-lg mb-0 mt-6 mx-6">
-        Recent community activity
+        <ContractsGrid
+          contracts={hotContracts?.slice(0, 6) || []}
+          showHotVolume
+        />
       </div>
     </>
   )

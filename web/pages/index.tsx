@@ -2,6 +2,7 @@ import React from 'react'
 import _ from 'lodash'
 import {
   Contract,
+  getClosingSoonContracts,
   getHotContracts,
   listAllContracts,
 } from '../lib/firebase/contracts'
@@ -19,13 +20,16 @@ import FeedCreate, { FeedPromo } from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
+import { ClosingSoonMarkets, HotMarkets } from './markets'
 
 export async function getStaticProps() {
-  const [contracts, recentComments, hotContracts] = await Promise.all([
-    listAllContracts().catch((_) => []),
-    getRecentComments().catch(() => []),
-    getHotContracts().catch(() => []),
-  ])
+  const [contracts, recentComments, hotContracts, closingSoonContracts] =
+    await Promise.all([
+      listAllContracts().catch((_) => []),
+      getRecentComments().catch(() => []),
+      getHotContracts().catch(() => []),
+      getClosingSoonContracts().catch(() => []),
+    ])
 
   const activeContracts = findActiveContracts(contracts, recentComments)
   const activeContractBets = await Promise.all(
@@ -41,6 +45,7 @@ export async function getStaticProps() {
       activeContractBets,
       activeContractComments,
       hotContracts,
+      closingSoonContracts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -52,8 +57,14 @@ const Home = (props: {
   activeContractBets: Bet[][]
   activeContractComments: Comment[][]
   hotContracts: Contract[]
+  closingSoonContracts: Contract[]
 }) => {
-  const { activeContractBets, activeContractComments, hotContracts } = props
+  const {
+    activeContractBets,
+    activeContractComments,
+    hotContracts,
+    closingSoonContracts,
+  } = props
 
   const contracts = useContracts() ?? props.activeContracts
   const recentComments = useRecentComments()
@@ -69,16 +80,24 @@ const Home = (props: {
         <Col className="max-w-3xl">
           <div className="-mx-2 sm:mx-0">
             {user ? (
-              <FeedCreate user={user} />
+              <>
+                <FeedCreate user={user} />
+                <Spacer h={4} />
+                <HotMarkets contracts={hotContracts.slice(0, 4)} />
+                <Spacer h={4} />
+                <ClosingSoonMarkets contracts={closingSoonContracts} />
+                <Spacer h={10} />
+                <ActivityFeed
+                  contracts={activeContracts}
+                  contractBets={activeContractBets}
+                  contractComments={activeContractComments}
+                />
+              </>
             ) : (
-              <FeedPromo hotContracts={hotContracts} />
+              <>
+                <FeedPromo hotContracts={hotContracts} />
+              </>
             )}
-            <Spacer h={4} />
-            <ActivityFeed
-              contracts={activeContracts}
-              contractBets={activeContractBets}
-              contractComments={activeContractComments}
-            />
           </div>
         </Col>
       </Col>
