@@ -10,9 +10,9 @@ export function parseTags(text: string) {
 }
 
 export function parseWordsAsTags(text: string) {
-  const regex = /(?:^|\s)(?:[a-z0-9_]+)/gi
+  const regex = /(?:^|\s)(?:#?[a-z0-9_]+)/gi
   const matches = (text.match(regex) || [])
-    .map((match) => match.trim())
+    .map((match) => match.replace('#', '').trim())
     .filter((tag) => tag)
   const tagSet = new Set(matches)
   const uniqueTags: string[] = []
