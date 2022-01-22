@@ -15,6 +15,7 @@ import {
 } from '../../../lib/firebase/folds'
 import Custom404 from '../../404'
 import { SiteLink } from '../../../components/site-link'
+import { toCamelCase } from '../../../lib/util/format'
 
 export async function getStaticProps(props: { params: { foldSlug: string } }) {
   const { foldSlug } = props.params
@@ -36,20 +37,27 @@ export default function EditFoldPage(props: { fold: Fold | null }) {
   const { fold } = props
 
   const [name, setName] = useState(fold?.name ?? '')
-  const [tags, setTags] = useState(fold?.tags.join(', ') ?? '')
+
+  const initialOtherTags =
+    fold?.tags.filter((tag) => tag !== toCamelCase(name)).join(', ') ?? ''
+
+  const [otherTags, setOtherTags] = useState(initialOtherTags)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!fold) return <Custom404 />
 
+  const tags = parseWordsAsTags(toCamelCase(name) + ' ' + otherTags)
+
   const saveDisabled =
-    !name ||
-    !tags ||
-    (name === fold.name && _.isEqual(parseWordsAsTags(tags), fold.tags))
+    !name || (name === fold.name && _.isEqual(tags, fold.tags))
 
   const onSubmit = async () => {
     setIsSubmitting(true)
 
-    await updateFold(fold, { name, tags: parseWordsAsTags(tags) })
+    await updateFold(fold, {
+      name,
+      tags,
+    })
 
     setIsSubmitting(false)
   }
@@ -90,16 +98,13 @@ export default function EditFoldPage(props: { fold: Fold | null }) {
               placeholder="Politics, Economics, Rationality"
               className="input input-bordered resize-none"
               disabled={isSubmitting}
-              value={tags}
-              onChange={(e) => setTags(e.target.value || '')}
+              value={otherTags}
+              onChange={(e) => setOtherTags(e.target.value || '')}
             />
           </div>
 
           <Spacer h={4} />
-          <TagsList
-            tags={parseWordsAsTags(tags).map((tag) => `#${tag}`)}
-            noLink
-          />
+          <TagsList tags={tags.map((tag) => `#${tag}`)} noLink />
           <Spacer h={4} />
 
           <button
