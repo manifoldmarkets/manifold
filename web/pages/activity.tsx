@@ -1,7 +1,6 @@
 import _ from 'lodash'
 import { ContractFeed } from '../components/contract-feed'
 import { Page } from '../components/page'
-import { Title } from '../components/title'
 import { Contract } from '../lib/firebase/contracts'
 import { Comment } from '../lib/firebase/comments'
 import { Col } from '../components/layout/col'
