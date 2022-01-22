@@ -90,14 +90,10 @@ export default function FoldPage(props: {
           <Title text={fold.name} />
 
           <Row className="items-center gap-2 mb-2 flex-wrap">
-            {isCurator && (
-              <>
-                <SiteLink className="text-sm " href={foldPath(fold, 'edit')}>
-                  Edit
-                </SiteLink>
-                <div className="text-gray-500">•</div>
-              </>
-            )}
+            <SiteLink className="text-sm" href={foldPath(fold, 'markets')}>
+              Markets
+            </SiteLink>
+            <div className="text-gray-500">•</div>
             <SiteLink className="text-sm" href={foldPath(fold, 'leaderboards')}>
               Leaderboards
             </SiteLink>
@@ -110,6 +106,14 @@ export default function FoldPage(props: {
                 username={curator.username}
               />
             </Row>
+            {isCurator && (
+              <>
+                <div className="text-gray-500">•</div>
+                <SiteLink className="text-sm " href={foldPath(fold, 'edit')}>
+                  Edit
+                </SiteLink>
+              </>
+            )}
           </Row>
 
           <TagsList tags={tags.map((tag) => `#${tag}`)} />
