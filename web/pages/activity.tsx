@@ -26,7 +26,8 @@ function lastActivityTime(contract: Contract) {
 // - Market resolved
 export function findActiveContracts(
   allContracts: Contract[],
-  recentComments: Comment[]
+  recentComments: Comment[],
+  daysAgo = 3
 ) {
   const idToActivityTime = new Map<string, number>()
   function record(contractId: string, time: number) {
@@ -40,7 +41,7 @@ export function findActiveContracts(
   // Find contracts with activity in the last 3 days
   const DAY_IN_MS = 24 * 60 * 60 * 1000
   for (const contract of allContracts || []) {
-    if (lastActivityTime(contract) > Date.now() - 3 * DAY_IN_MS) {
+    if (lastActivityTime(contract) > Date.now() - daysAgo * DAY_IN_MS) {
       contracts.push(contract)
       record(contract.id, lastActivityTime(contract))
     }
