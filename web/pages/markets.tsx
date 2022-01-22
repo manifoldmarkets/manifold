@@ -48,10 +48,10 @@ export default function Markets(props: {
         description="Discover what's new, trending, or soon-to-close. Or search among our hundreds of markets."
         url="/markets"
       />
-      <HotMarkets contracts={hotContracts} />
+      {/* <HotMarkets contracts={hotContracts} />
       <Spacer h={10} />
       <ClosingSoonMarkets contracts={closingSoonContracts} />
-      <Spacer h={10} />
+      <Spacer h={10} /> */}
 
       <SearchableGrid
         contracts={contracts}
