@@ -39,7 +39,9 @@ export default function Markets(props: {
 }) {
   const contracts = useContracts() ?? props.contracts
   const { hotContracts, closingSoonContracts } = props
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
+  const { query, setQuery, sort, setSort } = useQueryAndSortParams({
+    defaultSort: 'most-traded',
+  })
 
   return (
     <Page>
