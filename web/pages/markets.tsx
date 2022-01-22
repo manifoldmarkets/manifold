@@ -64,7 +64,7 @@ export default function Markets(props: {
   )
 }
 
-const HotMarkets = (props: { contracts: Contract[] }) => {
+export const HotMarkets = (props: { contracts: Contract[] }) => {
   const { contracts } = props
   if (contracts.length === 0) return <></>
 
@@ -76,7 +76,7 @@ const HotMarkets = (props: { contracts: Contract[] }) => {
   )
 }
 
-const ClosingSoonMarkets = (props: { contracts: Contract[] }) => {
+export const ClosingSoonMarkets = (props: { contracts: Contract[] }) => {
   const { contracts } = props
   if (contracts.length === 0) return <></>
 
