@@ -27,9 +27,9 @@ export async function getStaticProps(props: { params: { foldSlug: string } }) {
   const fold = await getFoldBySlug(foldSlug)
   const curatorPromise = fold ? getUser(fold.curatorId) : null
 
-  const contracts = fold ? await getFoldContracts(fold) : []
+  const contracts = fold ? await getFoldContracts(fold).catch((_) => []) : []
   const contractComments = await Promise.all(
-    contracts.map((contract) => listAllComments(contract.id))
+    contracts.map((contract) => listAllComments(contract.id).catch((_) => []))
   )
 
   const activeContracts = findActiveContracts(
@@ -38,7 +38,7 @@ export async function getStaticProps(props: { params: { foldSlug: string } }) {
     365
   )
   const activeContractBets = await Promise.all(
-    activeContracts.map((contract) => listAllBets(contract.id))
+    activeContracts.map((contract) => listAllBets(contract.id).catch((_) => []))
   )
   const activeContractComments = activeContracts.map(
     (contract) =>

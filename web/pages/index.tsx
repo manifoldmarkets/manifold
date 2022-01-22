@@ -33,10 +33,12 @@ export async function getStaticProps() {
 
   const activeContracts = findActiveContracts(contracts, recentComments)
   const activeContractBets = await Promise.all(
-    activeContracts.map((contract) => listAllBets(contract.id))
+    activeContracts.map((contract) => listAllBets(contract.id).catch((_) => []))
   )
   const activeContractComments = await Promise.all(
-    activeContracts.map((contract) => listAllComments(contract.id))
+    activeContracts.map((contract) =>
+      listAllComments(contract.id).catch((_) => [])
+    )
   )
 
   return {
