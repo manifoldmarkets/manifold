@@ -52,10 +52,11 @@ export function listenForUserBets(
   })
 }
 
-export function withoutAnteBets(contract: Contract, bets: Bet[]) {
+export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
   const { createdTime } = contract
 
   if (
+    bets &&
     bets.length >= 2 &&
     bets[0].createdTime === createdTime &&
     bets[1].createdTime === createdTime
@@ -63,5 +64,5 @@ export function withoutAnteBets(contract: Contract, bets: Bet[]) {
     return bets.slice(2)
   }
 
-  return bets
+  return bets ?? []
 }

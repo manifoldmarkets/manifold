@@ -77,7 +77,7 @@ export function ActivityFeed(props: {
             <div key={contract.id} className="py-6 px-2 sm:px-4">
               <ContractFeed
                 contract={contract}
-                bets={contractBets[i]}
+                bets={contractBets[i] ?? []}
                 comments={contractComments[i]}
                 feedType="activity"
               />
