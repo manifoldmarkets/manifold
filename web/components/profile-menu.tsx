@@ -37,10 +37,6 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
             name: 'All markets',
             href: '/markets',
           },
-          {
-            name: 'Create a market',
-            href: '/create',
-          },
         ]
       : []),
     {
