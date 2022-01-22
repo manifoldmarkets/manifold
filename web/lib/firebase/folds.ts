@@ -6,7 +6,10 @@ import { getValues } from './utils'
 
 const foldCollection = collection(db, 'folds')
 
-export function foldPath(fold: Fold, subpath?: 'edit' | 'leaderboards') {
+export function foldPath(
+  fold: Fold,
+  subpath?: 'edit' | 'markets' | 'leaderboards'
+) {
   return `/fold/${fold.slug}${subpath ? `/${subpath}` : ''}`
 }
 
