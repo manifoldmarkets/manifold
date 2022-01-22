@@ -1,22 +1,23 @@
 import { Bet } from './bet'
 import { getProbability } from './calculate'
-import { Contract } from './contract'
+import { Contract, outcome } from './contract'
 import { CREATOR_FEE, FEES } from './fees'
 
-export const getCancelPayouts = (truePool: number, bets: Bet[]) => {
-  console.log('resolved N/A, pool M$', truePool)
+export const getCancelPayouts = (contract: Contract, bets: Bet[]) => {
+  const { pool } = contract
+  const poolTotal = pool.YES + pool.NO
+  console.log('resolved N/A, pool M$', poolTotal)
 
   const betSum = sumBy(bets, (b) => b.amount)
 
   return bets.map((bet) => ({
     userId: bet.userId,
-    payout: (bet.amount / betSum) * truePool,
+    payout: (bet.amount / betSum) * poolTotal,
   }))
 }
 
 export const getStandardPayouts = (
-  outcome: string,
-  truePool: number,
+  outcome: 'YES' | 'NO',
   contract: Contract,
   bets: Bet[]
 ) => {
@@ -25,11 +26,13 @@ export const getStandardPayouts = (
 
   const betSum = sumBy(winningBets, (b) => b.amount)
 
-  if (betSum >= truePool) return getCancelPayouts(truePool, winningBets)
+  const poolTotal = contract.pool.YES + contract.pool.NO
+
+  if (betSum >= poolTotal) return getCancelPayouts(contract, winningBets)
 
   const shareDifferenceSum = sumBy(winningBets, (b) => b.shares - b.amount)
 
-  const winningsPool = truePool - betSum
+  const winningsPool = poolTotal - betSum
 
   const winnerPayouts = winningBets.map((bet) => ({
     userId: bet.userId,
@@ -46,7 +49,7 @@ export const getStandardPayouts = (
     'resolved',
     outcome,
     'pool: M$',
-    truePool,
+    poolTotal,
     'creator fee: M$',
     creatorPayout
   )
@@ -56,13 +59,10 @@ export const getStandardPayouts = (
   ]) // add creator fee
 }
 
-export const getMktPayouts = (
-  truePool: number,
-  contract: Contract,
-  bets: Bet[]
-) => {
+export const getMktPayouts = (contract: Contract, bets: Bet[]) => {
   const p = getProbability(contract.totalShares)
-  console.log('Resolved MKT at p=', p, 'pool: $M', truePool)
+  const poolTotal = contract.pool.YES + contract.pool.NO
+  console.log('Resolved MKT at p=', p, 'pool: $M', poolTotal)
 
   const [yesBets, noBets] = partition(bets, (bet) => bet.outcome === 'YES')
 
@@ -70,17 +70,17 @@ export const getMktPayouts = (
     p * sumBy(yesBets, (b) => b.amount) +
     (1 - p) * sumBy(noBets, (b) => b.amount)
 
-  if (weightedBetTotal >= truePool) {
+  if (weightedBetTotal >= poolTotal) {
     return bets.map((bet) => ({
       userId: bet.userId,
       payout:
         (((bet.outcome === 'YES' ? p : 1 - p) * bet.amount) /
           weightedBetTotal) *
-        truePool,
+        poolTotal,
     }))
   }
 
-  const winningsPool = truePool - weightedBetTotal
+  const winningsPool = poolTotal - weightedBetTotal
 
   const weightedShareTotal =
     p * sumBy(yesBets, (b) => b.shares - b.amount) +
@@ -111,6 +111,22 @@ export const getMktPayouts = (
     ...noPayouts,
     { userId: contract.creatorId, payout: creatorPayout },
   ]
+}
+
+export const getPayouts = (
+  outcome: outcome,
+  contract: Contract,
+  bets: Bet[]
+) => {
+  switch (outcome) {
+    case 'YES':
+    case 'NO':
+      return getStandardPayouts(outcome, contract, bets)
+    case 'MKT':
+      return getMktPayouts(contract, bets)
+    case 'CANCEL':
+      return getCancelPayouts(contract, bets)
+  }
 }
 
 const partition = <T>(array: T[], f: (t: T) => boolean) => {

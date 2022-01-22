@@ -7,11 +7,7 @@ import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
-import {
-  getCancelPayouts,
-  getMktPayouts,
-  getStandardPayouts,
-} from '../../common/payouts'
+import { getPayouts } from '../../common/payouts'
 
 export const resolveMarket = functions
   .runWith({ minInstances: 1 })
@@ -61,14 +57,7 @@ export const resolveMarket = functions
       const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
       const openBets = bets.filter((b) => !b.isSold && !b.sale)
 
-      const truePool = contract.pool.YES + contract.pool.NO
-
-      const payouts =
-        outcome === 'CANCEL'
-          ? getCancelPayouts(truePool, openBets)
-          : outcome === 'MKT'
-          ? getMktPayouts(truePool, contract, openBets)
-          : getStandardPayouts(outcome, truePool, contract, openBets)
+      const payouts = getPayouts(outcome, contract, openBets)
 
       console.log('payouts:', payouts)
 
