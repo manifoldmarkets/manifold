@@ -24,7 +24,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
           favorite creators.
           <br />
           <button
-            className="bg-gradient-to-r gradient-to-r from-teal-500 to-green-500 text-transparent bg-clip-text hover:underline hover:decoration-gray-300 hover:decoration-2"
+            className="text-green-500 hover:underline hover:decoration-gray-300 hover:decoration-2"
             onClick={firebaseLogin}
           >
             Sign up to get M$ 1000 for free
@@ -34,7 +34,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
         </div>
 
         <div className="flex flex-wrap mt-2 gap-2">
-          {['#politics', '#covid', '#gaming', '#sports', '#meta'].map((tag) => (
+          {['#politics', '#crypto', '#covid', '#sports', '#meta'].map((tag) => (
             <Hashtag tag={tag} />
           ))}
         </div>
