@@ -17,6 +17,7 @@ import { useUser } from '../hooks/use-user'
 import { createFold } from '../lib/firebase/api-call'
 import { foldPath, listAllFolds } from '../lib/firebase/folds'
 import { getUser, User } from '../lib/firebase/users'
+import { toCamelCase } from '../lib/util/format'
 
 export async function getStaticProps() {
   const folds = await listAllFolds().catch((_) => [])
@@ -80,6 +81,11 @@ function CreateFoldButton() {
 
   const router = useRouter()
 
+  const updateName = (newName: string) => {
+    setName(newName)
+    setTags(toCamelCase(newName))
+  }
+
   const onSubmit = async () => {
     setIsSubmitting(true)
 
@@ -113,8 +119,8 @@ function CreateFoldButton() {
       <Title className="!mt-0" text="Create a fold" />
 
       <Col className="text-gray-500 gap-1">
-        <div>A fold is a view of markets that match selected tags.</div>
-        <div>You can further include or exclude individual markets.</div>
+        <div>A fold is a view of markets that match one or more tags.</div>
+        <div>You can further exclude individual markets.</div>
       </Col>
 
       <Spacer h={4} />
@@ -130,13 +136,13 @@ function CreateFoldButton() {
             className="input input-bordered resize-none"
             disabled={isSubmitting}
             value={name}
-            onChange={(e) => setName(e.target.value || '')}
+            onChange={(e) => updateName(e.target.value || '')}
           />
         </div>
 
         <Spacer h={4} />
 
-        <div className="form-control w-full">
+        {/* <div className="form-control w-full">
           <label className="label">
             <span className="mb-1">Tags</span>
           </label>
@@ -148,13 +154,19 @@ function CreateFoldButton() {
             value={tags}
             onChange={(e) => setTags(e.target.value || '')}
           />
-        </div>
+        </div> */}
 
-        <Spacer h={4} />
-        <TagsList
-          tags={parseWordsAsTags(tags).map((tag) => `#${tag}`)}
-          noLink
-        />
+        {tags && (
+          <>
+            <label className="label">
+              <span className="mb-1">Primary tag</span>
+            </label>
+            <TagsList
+              tags={parseWordsAsTags(tags).map((tag) => `#${tag}`)}
+              noLink
+            />
+          </>
+        )}
       </form>
     </ConfirmationButton>
   )
