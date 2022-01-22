@@ -151,7 +151,10 @@ function CreateFoldButton() {
         </div>
 
         <Spacer h={4} />
-        <TagsList tags={parseWordsAsTags(tags)} />
+        <TagsList
+          tags={parseWordsAsTags(tags).map((tag) => `#${tag}`)}
+          noLink
+        />
       </form>
     </ConfirmationButton>
   )

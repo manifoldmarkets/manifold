@@ -13,7 +13,7 @@ import { parseTags } from '../../common/util/parse'
 import dayjs from 'dayjs'
 import { TrendingUpIcon, ClockIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from './datetime-tooltip'
-import { TagsList } from './tags-list'
+import { CompactTagsList } from './tags-list'
 
 export function ContractCard(props: {
   contract: Contract
@@ -196,7 +196,7 @@ export function ContractDetails(props: { contract: Contract }) {
       {tags.length > 0 && (
         <>
           <div className="hidden sm:block">•</div>
-          <TagsList tags={tags} />
+          <CompactTagsList tags={tags} />
         </>
       )}
     </Col>

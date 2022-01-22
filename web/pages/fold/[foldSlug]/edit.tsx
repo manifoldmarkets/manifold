@@ -96,7 +96,10 @@ export default function EditFoldPage(props: { fold: Fold | null }) {
           </div>
 
           <Spacer h={4} />
-          <TagsList tags={parseWordsAsTags(tags)} />
+          <TagsList
+            tags={parseWordsAsTags(tags).map((tag) => `#${tag}`)}
+            noLink
+          />
           <Spacer h={4} />
 
           <button

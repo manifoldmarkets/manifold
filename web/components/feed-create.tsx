@@ -6,8 +6,8 @@ import { Spacer } from './layout/spacer'
 import { NewContract } from '../pages/create'
 import { firebaseLogin, User } from '../lib/firebase/users'
 import { ContractsGrid } from './contracts-list'
-import { SiteLink } from './site-link'
 import { Contract } from '../../common/contract'
+import { TagsList } from './tags-list'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
@@ -33,11 +33,11 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
           <br />
         </div>
 
-        <div className="flex flex-wrap mt-2 gap-2">
-          {['#politics', '#crypto', '#covid', '#sports', '#meta'].map((tag) => (
-            <Hashtag tag={tag} />
-          ))}
-        </div>
+        <TagsList
+          className="mt-2"
+          tags={['#politics', '#crypto', '#covid', '#sports', '#meta']}
+        />
+
         <Spacer h={4} />
 
         <ContractsGrid
@@ -46,17 +46,6 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
         />
       </div>
     </>
-  )
-}
-
-function Hashtag(props: { tag: string }) {
-  const { tag } = props
-  return (
-    <SiteLink href={`/tag/${tag.substring(1)}`} className="flex items-center">
-      <div className="bg-white hover:bg-gray-100 cursor-pointer px-4 py-2 rounded-full shadow-md">
-        <span className="text-gray-500">{tag}</span>
-      </div>
-    </SiteLink>
   )
 }
 

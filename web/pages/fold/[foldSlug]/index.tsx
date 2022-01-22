@@ -88,7 +88,7 @@ export default function FoldPage(props: {
     <Page>
       <Col className="items-center">
         <Col className="max-w-3xl w-full">
-          <Title text={fold.name} />
+          <Title className="!mt-0" text={fold.name} />
 
           <Row className="items-center gap-2 mb-2 flex-wrap">
             <SiteLink className="text-sm" href={foldPath(fold, 'markets')}>
@@ -117,9 +117,11 @@ export default function FoldPage(props: {
             )}
           </Row>
 
+          <Spacer h={2} />
+
           <TagsList tags={tags.map((tag) => `#${tag}`)} />
 
-          <Spacer h={4} />
+          <Spacer h={8} />
 
           <ActivityFeed
             contracts={activeContracts}
