@@ -34,7 +34,8 @@ export async function getStaticProps(props: { params: { foldSlug: string } }) {
 
   const activeContracts = findActiveContracts(
     contracts,
-    _.flatten(contractComments)
+    _.flatten(contractComments),
+    365
   )
   const activeContractBets = await Promise.all(
     activeContracts.map((contract) => listAllBets(contract.id))
