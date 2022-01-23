@@ -219,8 +219,13 @@ export function SearchableGrid(props: {
       check(c.creatorUsername)
   )
 
-  if (sort === 'newest' || sort === 'resolved' || sort === 'all') {
+  if (sort === 'newest' || sort === 'all') {
     matches.sort((a, b) => b.createdTime - a.createdTime)
+  } else if (sort === 'resolved') {
+    matches = _.sortBy(
+      matches,
+      (contract) => -1 * (contract.resolutionTime ?? 0)
+    )
   } else if (sort === 'most-traded') {
     matches.sort(
       (a, b) => contractMetrics(b).truePool - contractMetrics(a).truePool
@@ -266,7 +271,7 @@ export function SearchableGrid(props: {
 
       {sort === 'tag' ? (
         <TagContractsGrid contracts={matches} />
-      ) : !byOneCreator && (sort === 'creator' || sort === 'resolved') ? (
+      ) : !byOneCreator && sort === 'creator' ? (
         <CreatorContractsGrid contracts={matches} />
       ) : (
         <ContractsGrid contracts={matches} />
