@@ -40,6 +40,7 @@ import { Bet, withoutAnteBets } from '../lib/firebase/bets'
 import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
 import Textarea from 'react-expanding-textarea'
+import { outcome } from '../../common/contract'
 
 export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
   const { username, avatarUrl } = props
@@ -355,7 +356,7 @@ function FeedDescription(props: { contract: Contract }) {
   )
 }
 
-function OutcomeIcon(props: { outcome?: 'YES' | 'NO' | 'CANCEL' }) {
+function OutcomeIcon(props: { outcome?: outcome }) {
   const { outcome } = props
   switch (outcome) {
     case 'YES':
