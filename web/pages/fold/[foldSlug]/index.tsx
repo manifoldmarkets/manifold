@@ -20,6 +20,7 @@ import { Spacer } from '../../../components/layout/spacer'
 import { Col } from '../../../components/layout/col'
 import { SiteLink } from '../../../components/site-link'
 import { useUser } from '../../../hooks/use-user'
+import { useFold } from '../../../hooks/use-fold'
 
 export async function getStaticProps(props: { params: { foldSlug: string } }) {
   const { foldSlug } = props.params
@@ -72,13 +73,13 @@ export default function FoldPage(props: {
   activeContractComments: Comment[][]
 }) {
   const {
-    fold,
     curator,
     activeContracts,
     activeContractBets,
     activeContractComments,
   } = props
 
+  const fold = useFold(props.fold.id) ?? props.fold
   const { tags, curatorId } = fold
 
   const user = useUser()
