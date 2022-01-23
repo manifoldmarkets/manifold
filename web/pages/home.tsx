@@ -71,11 +71,15 @@ const Home = (props: {
 
   const user = useUser()
 
-  const contracts = useContracts() ?? props.activeContracts
+  const initialActiveContracts = props.activeContracts ?? []
+
+  const contracts = useContracts()
   const recentComments = useRecentComments()
-  const activeContracts = recentComments
-    ? findActiveContracts(contracts, recentComments)
-    : props.activeContracts
+
+  const activeContracts =
+    recentComments && contracts
+      ? findActiveContracts(contracts, recentComments)
+      : initialActiveContracts
 
   if (user === null) {
     Router.replace('/')
