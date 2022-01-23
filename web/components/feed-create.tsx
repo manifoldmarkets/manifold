@@ -49,7 +49,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
   )
 }
 
-export default function FeedCreate(props: { user: User }) {
+export default function FeedCreate(props: { user?: User }) {
   const { user } = props
   const [question, setQuestion] = useState('')
 
@@ -70,9 +70,10 @@ export default function FeedCreate(props: { user: User }) {
     <div className="w-full bg-indigo-50 sm:rounded-md p-4">
       <div className="relative flex items-start space-x-3">
         <AvatarWithIcon
-          username={user.username}
-          avatarUrl={user.avatarUrl || ''}
+          username={user?.username || ''}
+          avatarUrl={user?.avatarUrl || ''}
         />
+
         <div className="min-w-0 flex-1">
           {/* TODO: Show focus, for accessibility */}
           <div>
@@ -88,10 +89,12 @@ export default function FeedCreate(props: { user: User }) {
           <Spacer h={4} />
         </div>
       </div>
+
       {/* Hide component instead of deleting, so edits to NewContract don't get lost */}
       <div className={question ? '' : 'hidden'}>
         <NewContract question={question} />
       </div>
+
       {/* Show a fake "Create Market" button, which gets replaced with the NewContract one*/}
       {!question && (
         <div className="flex justify-end">
