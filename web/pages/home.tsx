@@ -20,6 +20,8 @@ import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
 import { ClosingSoonMarkets, HotMarkets } from './markets'
+import { useContracts } from '../hooks/use-contracts'
+import { useRecentComments } from '../hooks/use-comments'
 
 export async function getStaticProps() {
   const [contracts, recentComments, hotContracts, closingSoonContracts] =
@@ -61,7 +63,6 @@ const Home = (props: {
   closingSoonContracts: Contract[]
 }) => {
   const {
-    activeContracts,
     activeContractBets,
     activeContractComments,
     hotContracts,
@@ -69,6 +70,12 @@ const Home = (props: {
   } = props
 
   const user = useUser()
+
+  const contracts = useContracts() ?? props.activeContracts
+  const recentComments = useRecentComments()
+  const activeContracts = recentComments
+    ? findActiveContracts(contracts, recentComments)
+    : props.activeContracts
 
   if (user === null) {
     Router.replace('/')

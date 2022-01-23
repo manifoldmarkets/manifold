@@ -47,8 +47,10 @@ export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
   return (
     <SiteLink className="relative" href={`/${username}`}>
       <img
-        className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center"
+        className="rounded-full bg-gray-400 flex items-center justify-center"
         src={avatarUrl}
+        width={40}
+        height={40}
         alt=""
       />
     </SiteLink>
