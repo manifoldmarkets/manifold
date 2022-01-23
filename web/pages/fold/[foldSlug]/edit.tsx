@@ -16,6 +16,7 @@ import {
 import Custom404 from '../../404'
 import { SiteLink } from '../../../components/site-link'
 import { toCamelCase } from '../../../lib/util/format'
+import { useFold } from '../../../hooks/use-fold'
 
 export async function getStaticProps(props: { params: { foldSlug: string } }) {
   const { foldSlug } = props.params
@@ -34,8 +35,7 @@ export async function getStaticPaths() {
 }
 
 export default function EditFoldPage(props: { fold: Fold | null }) {
-  const { fold } = props
-
+  const fold = useFold(props.fold?.id ?? '') ?? props.fold
   const [name, setName] = useState(fold?.name ?? '')
 
   const initialOtherTags =

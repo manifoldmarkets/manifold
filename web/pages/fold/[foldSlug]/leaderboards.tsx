@@ -35,7 +35,7 @@ export async function getStaticProps(props: { params: { foldSlug: string } }) {
   return {
     props: { fold, topTraders, topTraderScores, topCreators, topCreatorScores },
 
-    revalidate: 15 * 60, // regenerate after 15 minutes
+    revalidate: 60, // regenerate after 60 seconds
   }
 }
 
