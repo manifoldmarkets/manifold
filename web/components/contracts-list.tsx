@@ -226,6 +226,8 @@ export function SearchableGrid(props: {
       matches,
       (contract) => -1 * (contract.resolutionTime ?? 0)
     )
+  } else if (sort === 'close-date') {
+    matches = _.sortBy(matches, (contract) => contract.closeTime)
   } else if (sort === 'most-traded') {
     matches.sort(
       (a, b) => contractMetrics(b).truePool - contractMetrics(a).truePool
@@ -266,6 +268,7 @@ export function SearchableGrid(props: {
           <option value="most-traded">Most traded</option>
           <option value="newest">Newest</option>
           <option value="resolved">Resolved</option>
+          <option value="close-date">Close date</option>
         </select>
       </div>
 
