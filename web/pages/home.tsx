@@ -63,6 +63,7 @@ const Home = (props: {
   closingSoonContracts: Contract[]
 }) => {
   const {
+    activeContracts,
     activeContractBets,
     activeContractComments,
     hotContracts,
@@ -71,15 +72,14 @@ const Home = (props: {
 
   const user = useUser()
 
-  const initialActiveContracts = props.activeContracts ?? []
-
-  const contracts = useContracts()
-  const recentComments = useRecentComments()
-
-  const activeContracts =
-    recentComments && contracts
-      ? findActiveContracts(contracts, recentComments)
-      : initialActiveContracts
+  // const initialActiveContracts = props.activeContracts ?? []
+  // const contracts = useContracts()
+  // const recentComments = useRecentComments()
+  // const activeContracts =
+  //   recentComments && contracts
+  //     ? findActiveContracts(contracts, recentComments)
+  //     : initialActiveContracts
+  // TODO: get activeContractBets, activeContractComments associated with activeContracts
 
   if (user === null) {
     Router.replace('/')
