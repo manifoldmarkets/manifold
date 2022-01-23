@@ -119,7 +119,7 @@ export function NewContract(props: { question: string }) {
   if (!creator) return <></>
 
   return (
-    <form>
+    <div>
       <Spacer h={4} />
 
       <div className="form-control">
@@ -226,7 +226,7 @@ export function NewContract(props: { question: string }) {
           {isSubmitting ? 'Creating...' : 'Create market'}
         </button>
       </div>
-    </form>
+    </div>
   )
 }
 
