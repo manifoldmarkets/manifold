@@ -11,7 +11,6 @@ export type Contract = {
   description: string // More info about what the contract is about
   tags: string[]
   outcomeType: 'BINARY' // | 'MULTI' | 'interval' | 'date'
-  // outcomes: ['YES', 'NO']
   visibility: 'public' | 'unlisted'
 
   mechanism: 'dpm-2'
@@ -26,8 +25,10 @@ export type Contract = {
 
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
-  resolution?: 'YES' | 'NO' | 'CANCEL' // Chosen by creator; must be one of outcomes
+  resolution?: outcome // Chosen by creator; must be one of outcomes
 
   volume24Hours: number
   volume7Days: number
 }
+
+export type outcome = 'YES' | 'NO' | 'CANCEL' | 'MKT'

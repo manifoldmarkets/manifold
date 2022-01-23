@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { User } from '../../common/user'
 import { Row } from './layout/row'
 import { SiteLink } from './site-link'
@@ -34,7 +33,7 @@ export function Leaderboard(props: {
                 <td>
                   <SiteLink className="relative" href={`/${user.username}`}>
                     <Row className="items-center gap-4">
-                      <Image
+                      <img
                         className="rounded-full bg-gray-400 flex-shrink-0 ring-8 ring-gray-50"
                         src={user.avatarUrl || ''}
                         alt=""
