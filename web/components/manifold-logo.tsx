@@ -2,14 +2,18 @@ import Link from 'next/link'
 import Image from 'next/image'
 import clsx from 'clsx'
 
+import { useUser } from '../hooks/use-user'
+
 export function ManifoldLogo(props: {
   className?: string
   darkBackground?: boolean
 }) {
   const { darkBackground, className } = props
 
+  const user = useUser()
+
   return (
-    <Link href="/">
+    <Link href={user ? '/home' : '/'}>
       <a className={clsx('flex flex-row gap-4 flex-shrink-0', className)}>
         <Image
           className="hover:rotate-12 transition-all"
