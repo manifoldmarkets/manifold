@@ -38,6 +38,7 @@ import { JoinSpans } from './join-spans'
 import Textarea from 'react-expanding-textarea'
 import { outcome } from '../../common/contract'
 import { fromNow } from '../lib/util/time'
+import BetRow from './bet-row'
 
 export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
   const { username, avatarUrl } = props
@@ -648,7 +649,7 @@ export function ContractFeed(props: {
 
   return (
     <div className="flow-root">
-      <ul role="list" className="-mb-8">
+      <ul role="list" className="">
         {items.map((activityItem, activityItemIdx) => (
           <li key={activityItem.id}>
             <div className="relative pb-8">
@@ -687,6 +688,7 @@ export function ContractFeed(props: {
           </li>
         ))}
       </ul>
+      <BetRow contract={contract} />
     </div>
   )
 }

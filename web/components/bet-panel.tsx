@@ -26,13 +26,17 @@ import { AmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { OutcomeLabel } from './outcome-label'
 
-export function BetPanel(props: { contract: Contract; className?: string }) {
+export function BetPanel(props: {
+  contract: Contract
+  className?: string
+  title?: string
+}) {
   useEffect(() => {
     // warm up cloud function
     placeBet({}).catch()
   }, [])
 
-  const { contract, className } = props
+  const { contract, className, title } = props
 
   const user = useUser()
 
@@ -113,10 +117,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
     <Col
       className={clsx('bg-gray-100 shadow-md px-8 py-6 rounded-md', className)}
     >
-      <Title
-        className="mt-0 whitespace-nowrap text-neutral"
-        text={`Buy ${betChoice}`}
-      />
+      <Title className="mt-0 text-neutral" text={title ?? `Buy ${betChoice}`} />
 
       <div className="mt-2 mb-1 text-sm text-gray-500">Outcome</div>
       <YesNoSelector
