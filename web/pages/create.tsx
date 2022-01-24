@@ -77,7 +77,7 @@ export function NewContract(props: { question: string }) {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const closeTime = dateToMillis(closeDate) || undefined
+  const closeTime = dateToMillis(closeDate)
 
   const balance = creator?.balance || 0
 
@@ -88,7 +88,7 @@ export function NewContract(props: { question: string }) {
     ante !== undefined &&
     ante >= MINIMUM_ANTE &&
     ante <= balance &&
-    // If set, closeTime must be in the future
+    // closeTime must be in the future
     closeTime &&
     closeTime > Date.now()
 
@@ -103,7 +103,7 @@ export function NewContract(props: { question: string }) {
       description,
       initialProb,
       ante,
-      closeTime: closeTime || undefined,
+      closeTime,
     }).then((r) => r.data || {})
 
     if (result.status !== 'success') {

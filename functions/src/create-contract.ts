@@ -16,8 +16,8 @@ export const createContract = functions
         question: string
         description: string
         initialProb: number
-        ante?: number
-        closeTime?: number
+        ante: number
+        closeTime: number
       },
       context
     ) => {

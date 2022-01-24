@@ -30,6 +30,7 @@ async function updateContractTags() {
       ...parseTags(contract.question + contract.description),
       ...(contract.tags ?? []),
     ])
+    const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
     console.log(
       'Updating tags',
@@ -42,6 +43,7 @@ async function updateContractTags() {
 
     await contractRef.update({
       tags,
+      lowercaseTags,
     } as Partial<Contract>)
   }
 }

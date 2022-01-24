@@ -11,11 +11,14 @@ export function getNewContract(
   question: string,
   description: string,
   initialProb: number,
-  ante?: number,
-  closeTime?: number
+  ante: number,
+  closeTime: number
 ) {
   const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
     calcStartPool(initialProb, ante)
+
+  const tags = parseTags(`${question} ${description}`)
+  const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
   const contract: Contract = {
     id,
@@ -29,7 +32,8 @@ export function getNewContract(
 
     question: question.trim(),
     description: description.trim(),
-    tags: parseTags(`${question} ${description}`),
+    tags,
+    lowercaseTags,
     visibility: 'public',
 
     mechanism: 'dpm-2',
