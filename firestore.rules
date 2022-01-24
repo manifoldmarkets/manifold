@@ -1,14 +1,22 @@
 rules_version = '2';
 
+// To deploy: `firebase deploy --only firestore:rules`
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth.uid == 'igi2zGXsfxYPgB0DJTXVJVmwCOr2' // Austin
+        || request.auth.uid == '5LZ4LgYuySdL1huCWe7bti02ghx2' // James
+        || request.auth.uid == 'tlmGNz9kjXc2EteizMORes4qvWl2' // Stephen
+        || request.auth.uid == 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // Manifold
+    }
 
     match /users/{userId} {
       allow read;
     }
 
     match /private-users/{userId} {
-      allow read: if resource.data.creatorId == request.auth.uid;
+      allow read: if resource.data.creatorId == request.auth.uid || isAdmin();
     }
 
     match /contracts/{contractId} {
