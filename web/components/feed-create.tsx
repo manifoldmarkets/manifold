@@ -80,7 +80,7 @@ export default function FeedCreate(props: { user?: User }) {
             <p className="my-0.5 text-sm">Ask a question... </p>
           </div>
           <Textarea
-            className="text-lg sm:text-xl text-indigo-700 w-full border-transparent focus:border-transparent bg-transparent p-0 appearance-none resize-none focus:ring-transparent"
+            className="text-lg sm:text-xl text-indigo-700 w-full border-transparent focus:border-transparent bg-transparent p-0 appearance-none resize-none focus:ring-transparent placeholder:text-gray-400"
             placeholder={`e.g. ${placeholder}`}
             value={question}
             onClick={(e) => e.stopPropagation()}
