@@ -20,7 +20,7 @@ import {
 } from 'firebase/auth'
 
 import { app } from './init'
-import { User } from '../../../common/user'
+import { PrivateUser, User } from '../../../common/user'
 import { createUser } from './api-call'
 import { getValues, listenForValues } from './utils'
 export type { User }
@@ -121,6 +121,14 @@ export async function listAllUsers() {
 
 export function listenForAllUsers(setUsers: (users: User[]) => void) {
   const userCollection = collection(db, 'users')
+  const q = query(userCollection)
+  listenForValues(q, setUsers)
+}
+
+export function listenForPrivateUsers(
+  setUsers: (users: PrivateUser[]) => void
+) {
+  const userCollection = collection(db, 'private-users')
   const q = query(userCollection)
   listenForValues(q, setUsers)
 }
