@@ -5,6 +5,7 @@ export type Sort =
   | 'tag'
   | 'newest'
   | 'most-traded'
+  | '24-hour-vol'
   | 'close-date'
   | 'resolved'
   | 'all'
