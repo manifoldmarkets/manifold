@@ -3,10 +3,11 @@ import { Grid } from 'gridjs-react'
 import 'gridjs/dist/theme/mermaid.css'
 import { html } from 'gridjs'
 import dayjs from 'dayjs'
-import { useUsers } from '../hooks/use-users'
+import { usePrivateUsers, useUsers } from '../hooks/use-users'
 import { useUser } from '../hooks/use-user'
 import Custom404 from './404'
 import { useContracts } from '../hooks/use-contracts'
+import _ from 'lodash'
 
 function avatarHtml(avatarUrl: string) {
   return `<img
@@ -18,6 +19,19 @@ function avatarHtml(avatarUrl: string) {
 
 function UsersTable() {
   let users = useUsers()
+  let privateUsers = usePrivateUsers()
+
+  // Map private users by user id
+  const privateUsersById = _.mapKeys(privateUsers, 'id')
+  console.log('private users by id', privateUsersById)
+
+  // For each user, set their email from the PrivateUser
+  users = users.map((user) => {
+    // @ts-ignore
+    user.email = privateUsersById[user.id]?.email
+    return user
+  })
+
   // Sort users by createdTime descending, by default
   users = users.sort((a, b) => b.createdTime - a.createdTime)
 
@@ -162,6 +176,7 @@ export default function Admin() {
     'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
     '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
     'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
+    'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
   ]
   const isAdmin = adminIds.includes(user?.id || '')
   return isAdmin ? (
