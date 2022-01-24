@@ -69,9 +69,13 @@ export default function Folds(props: {
       <Col className="items-center">
         <Col className="max-w-2xl w-full px-2 sm:px-0">
           <Row className="justify-between items-center">
-            <Title text="Folds" />
+            <Title text="Manifold communities: Folds" />
             {user && <CreateFoldButton />}
           </Row>
+
+          <div className="text-gray-500 mb-6">
+            Browse folds on topics that interest you.
+          </div>
 
           <Col className="gap-4">
             {folds.map((fold) => (
@@ -99,14 +103,15 @@ export default function Folds(props: {
 
 function CreateFoldButton() {
   const [name, setName] = useState('')
-  const [tags, setTags] = useState('')
+  const [otherTags, setOtherTags] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const router = useRouter()
 
+  const tags = parseWordsAsTags(toCamelCase(name) + ' ' + otherTags)
+
   const updateName = (newName: string) => {
     setName(newName)
-    setTags(toCamelCase(newName))
   }
 
   const onSubmit = async () => {
@@ -114,7 +119,7 @@ function CreateFoldButton() {
 
     const result = await createFold({
       name,
-      tags: parseWordsAsTags(tags),
+      tags,
     }).then((r) => r.data || {})
 
     if (result.fold) {
@@ -140,15 +145,15 @@ function CreateFoldButton() {
       }}
       submitBtn={{
         label: 'Create',
-        className: clsx(name && tags ? 'btn-primary' : 'btn-disabled'),
+        className: clsx(name ? 'btn-primary' : 'btn-disabled'),
       }}
       onSubmit={onSubmit}
     >
       <Title className="!mt-0" text="Create a fold" />
 
       <Col className="text-gray-500 gap-1">
-        <div>A fold is a view of markets that match one or more tags.</div>
-        <div>You can further exclude individual markets.</div>
+        <div>A fold is a sub-community of markets organized on a topic.</div>
+        <div>Markets are included if they match one or more tags.</div>
       </Col>
 
       <Spacer h={4} />
@@ -170,27 +175,33 @@ function CreateFoldButton() {
 
         <Spacer h={4} />
 
-        {/* <div className="form-control w-full">
-          <label className="label">
-            <span className="mb-1">Tags</span>
-          </label>
-
-          <input
-            placeholder="Politics, Economics, Rationality"
-            className="input input-bordered resize-none"
-            disabled={isSubmitting}
-            value={tags}
-            onChange={(e) => setTags(e.target.value || '')}
-          />
-        </div> */}
-
-        {tags && (
+        {name && (
           <>
             <label className="label">
               <span className="mb-1">Primary tag</span>
             </label>
+            <TagsList noLink tags={[`#${toCamelCase(name)}`]} />
+
+            <Spacer h={4} />
+
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="mb-1">Additional tags</span>
+              </label>
+
+              <input
+                placeholder="Politics, Economics, Rationality"
+                className="input input-bordered resize-none"
+                disabled={isSubmitting}
+                value={otherTags}
+                onChange={(e) => setOtherTags(e.target.value || '')}
+              />
+            </div>
+
+            <Spacer h={4} />
+
             <TagsList
-              tags={parseWordsAsTags(tags).map((tag) => `#${tag}`)}
+              tags={parseWordsAsTags(otherTags).map((tag) => `#${tag}`)}
               noLink
             />
           </>
