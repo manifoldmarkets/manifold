@@ -52,7 +52,7 @@ export function ContractsGrid(props: {
           contract={contract}
           key={contract.id}
           // showHotVolume={showHotVolume}
-          // showCloseTime={showCloseTime}
+          showCloseTime={showCloseTime}
         />
       ))}
     </ul>
@@ -229,6 +229,8 @@ export function SearchableGrid(props: {
   } else if (sort === 'close-date') {
     matches = _.sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
     matches = _.sortBy(matches, (contract) => contract.closeTime)
+    // Hide contracts that have already closed
+    matches = matches.filter(({ closeTime }) => (closeTime || 0) > Date.now())
   } else if (sort === 'most-traded') {
     matches.sort(
       (a, b) => contractMetrics(b).truePool - contractMetrics(a).truePool
@@ -281,7 +283,10 @@ export function SearchableGrid(props: {
       ) : !byOneCreator && sort === 'creator' ? (
         <CreatorContractsGrid contracts={matches} />
       ) : (
-        <ContractsGrid contracts={matches} />
+        <ContractsGrid
+          contracts={matches}
+          showCloseTime={sort == 'close-date'}
+        />
       )}
     </div>
   )

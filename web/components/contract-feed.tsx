@@ -1,9 +1,8 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import { ReactChild, useState } from 'react'
+import { useState } from 'react'
 import _ from 'lodash'
 import {
   BanIcon,
-  ChatAltIcon,
   CheckIcon,
   DotsVerticalIcon,
   LockClosedIcon,
@@ -14,9 +13,6 @@ import {
 } from '@heroicons/react/solid'
 
 import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-dayjs.extend(relativeTime)
-
 import { OutcomeLabel } from './outcome-label'
 import {
   contractMetrics,
@@ -41,6 +37,7 @@ import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
 import Textarea from 'react-expanding-textarea'
 import { outcome } from '../../common/contract'
+import { fromNow } from '../lib/util/time'
 
 export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
   const { username, avatarUrl } = props
@@ -98,7 +95,7 @@ function Timestamp(props: { time: number }) {
   return (
     <DateTimeTooltip time={time}>
       <span className="whitespace-nowrap text-gray-400 ml-1">
-        {dayjs(time).fromNow()}
+        {fromNow(time)}
       </span>
     </DateTimeTooltip>
   )
@@ -434,7 +431,7 @@ function toFeedBet(bet: Bet) {
     amount: bet.sale ? -bet.sale.amount : bet.amount,
     outcome: bet.outcome,
     createdTime: bet.createdTime,
-    date: dayjs(bet.createdTime).fromNow(),
+    date: fromNow(bet.createdTime),
   }
 }
 
@@ -447,7 +444,7 @@ function toFeedComment(bet: Bet, comment: Comment) {
     amount: bet.sale ? -bet.sale.amount : bet.amount,
     outcome: bet.outcome,
     createdTime: bet.createdTime,
-    date: dayjs(bet.createdTime).fromNow(),
+    date: fromNow(bet.createdTime),
 
     // Invariant: bet.comment exists
     text: comment.text,

@@ -11,9 +11,11 @@ import {
 import { Col } from './layout/col'
 import { parseTags } from '../../common/util/parse'
 import dayjs from 'dayjs'
-import { TrendingUpIcon, ClockIcon } from '@heroicons/react/solid'
+import { TrendingUpIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from './datetime-tooltip'
 import { CompactTagsList } from './tags-list'
+import { ClockIcon } from '@heroicons/react/outline'
+import { fromNow } from '../lib/util/time'
 
 export function ContractCard(props: {
   contract: Contract
@@ -128,8 +130,8 @@ export function AbbrContractDetails(props: {
           </div>
         ) : showCloseTime ? (
           <div className="whitespace-nowrap">
-            <ClockIcon className="h-5 w-5 text-gray-400 inline" />{' '}
-            {dayjs(closeTime).format('MMM D')}
+            <ClockIcon className="h-5 w-5 -my-1 text-gray-500 inline" /> Closes{' '}
+            {fromNow(closeTime || 0)}
           </div>
         ) : (
           <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
