@@ -227,11 +227,16 @@ export function SearchableGrid(props: {
       (contract) => -1 * (contract.resolutionTime ?? 0)
     )
   } else if (sort === 'close-date') {
+    matches = _.sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
     matches = _.sortBy(matches, (contract) => contract.closeTime)
   } else if (sort === 'most-traded') {
     matches.sort(
       (a, b) => contractMetrics(b).truePool - contractMetrics(a).truePool
     )
+  } else if (sort === '24-hour-vol') {
+    // Use lodash for stable sort, so previous sort breaks all ties.
+    matches = _.sortBy(matches, ({ volume7Days }) => -1 * volume7Days)
+    matches = _.sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
   } else if (sort === 'creator' || sort === 'tag') {
     matches.sort((a, b) => b.volume7Days - a.volume7Days)
   }
@@ -259,16 +264,15 @@ export function SearchableGrid(props: {
           value={sort}
           onChange={(e) => setSort(e.target.value as Sort)}
         >
-          {byOneCreator ? (
-            <option value="all">All markets</option>
-          ) : (
-            <option value="creator">By creator</option>
-          )}
-          <option value="tag">By tag</option>
           <option value="most-traded">Most traded</option>
+          <option value="24-hour-vol">24 hour volume</option>
+          <option value="close-date">Closing soon</option>
           <option value="newest">Newest</option>
+
+          <option value="tag">By tag</option>
+          {!byOneCreator && <option value="creator">By creator</option>}
           <option value="resolved">Resolved</option>
-          <option value="close-date">Close date</option>
+          {byOneCreator && <option value="all">All markets</option>}
         </select>
       </div>
 
