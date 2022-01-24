@@ -2,7 +2,7 @@ import { collection, doc, query, updateDoc, where } from 'firebase/firestore'
 import { Fold } from '../../../common/fold'
 import { Contract, contractCollection } from './contracts'
 import { db } from './init'
-import { getValues, listenForValue } from './utils'
+import { getValues, listenForValue, listenForValues } from './utils'
 
 const foldCollection = collection(db, 'folds')
 
@@ -19,6 +19,10 @@ export function updateFold(fold: Fold, updates: Partial<Fold>) {
 
 export async function listAllFolds() {
   return getValues<Fold>(foldCollection)
+}
+
+export function listenForFolds(setFolds: (folds: Fold[]) => void) {
+  return listenForValues(foldCollection, setFolds)
 }
 
 export async function getFoldBySlug(slug: string) {

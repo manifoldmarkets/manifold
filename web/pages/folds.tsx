@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import _ from 'lodash'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Fold } from '../../common/fold'
 import { parseWordsAsTags } from '../../common/util/parse'
 import { ConfirmationButton } from '../components/confirmation-button'
@@ -13,6 +13,7 @@ import { SiteLink } from '../components/site-link'
 import { TagsList } from '../components/tags-list'
 import { Title } from '../components/title'
 import { UserLink } from '../components/user-page'
+import { useFolds } from '../hooks/use-fold'
 import { useUser } from '../hooks/use-user'
 import { createFold } from '../lib/firebase/api-call'
 import { foldPath, listAllFolds } from '../lib/firebase/folds'
@@ -25,21 +26,43 @@ export async function getStaticProps() {
   const curators = await Promise.all(
     folds.map((fold) => getUser(fold.curatorId))
   )
+  const curatorsDict = _.fromPairs(
+    curators.map((curator) => [curator.id, curator])
+  )
 
   return {
     props: {
       folds,
-      curators,
+      curatorsDict,
     },
 
     revalidate: 60, // regenerate after a minute
   }
 }
 
-export default function Folds(props: { folds: Fold[]; curators: User[] }) {
-  const { folds, curators } = props
+export default function Folds(props: {
+  folds: Fold[]
+  curatorsDict: _.Dictionary<User>
+}) {
+  const [curatorsDict, setCuratorsDict] = useState(props.curatorsDict)
 
+  const folds = useFolds() ?? props.folds
   const user = useUser()
+
+  useEffect(() => {
+    // Load User object for curator of new Folds.
+    const newFolds = folds.filter(({ curatorId }) => !curatorsDict[curatorId])
+    if (newFolds.length > 0) {
+      Promise.all(newFolds.map(({ curatorId }) => getUser(curatorId))).then(
+        (newUsers) => {
+          const newUsersDict = _.fromPairs(
+            newUsers.map((user) => [user.id, user])
+          )
+          setCuratorsDict({ ...curatorsDict, ...newUsersDict })
+        }
+      )
+    }
+  })
 
   return (
     <Page>
@@ -51,7 +74,7 @@ export default function Folds(props: { folds: Fold[]; curators: User[] }) {
           </Row>
 
           <Col className="gap-4">
-            {folds.map((fold, index) => (
+            {folds.map((fold) => (
               <Row key={fold.id} className="items-center gap-2">
                 <SiteLink href={foldPath(fold)}>{fold.name}</SiteLink>
                 <div />
@@ -61,8 +84,8 @@ export default function Folds(props: { folds: Fold[]; curators: User[] }) {
                   <div className="text-sm text-gray-500 mr-1">Curated by</div>
                   <UserLink
                     className="text-sm text-neutral"
-                    name={curators[index].name}
-                    username={curators[index].username}
+                    name={curatorsDict[fold.curatorId]?.name ?? ''}
+                    username={curatorsDict[fold.curatorId]?.username ?? ''}
                   />
                 </Row>
               </Row>
@@ -94,10 +117,15 @@ function CreateFoldButton() {
       tags: parseWordsAsTags(tags),
     }).then((r) => r.data || {})
 
-    if (result.fold) await router.push(foldPath(result.fold))
-    else console.log(result.status, result.message)
-
-    setIsSubmitting(false)
+    if (result.fold) {
+      await router.push(foldPath(result.fold)).catch((e) => {
+        console.log(e)
+        setIsSubmitting(false)
+      })
+    } else {
+      console.log(result.status, result.message)
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -125,7 +153,7 @@ function CreateFoldButton() {
 
       <Spacer h={4} />
 
-      <form>
+      <div>
         <div className="form-control w-full">
           <label className="label">
             <span className="mb-1">Fold name</span>
@@ -167,7 +195,7 @@ function CreateFoldButton() {
             />
           </>
         )}
-      </form>
+      </div>
     </ConfirmationButton>
   )
 }
