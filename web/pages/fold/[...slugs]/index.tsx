@@ -120,7 +120,6 @@ export default function FoldPage(props: {
   topTraderScores: number[]
   topCreators: User[]
   topCreatorScores: number[]
-  params: { tab: string }
 }) {
   const {
     curator,
