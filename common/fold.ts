@@ -2,6 +2,7 @@ export type Fold = {
   id: string
   slug: string
   name: string
+  about: string
   curatorId: string // User id
   createdTime: number
 

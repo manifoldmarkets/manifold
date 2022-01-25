@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { User } from '../../common/user'
 import { Row } from './layout/row'
 import { SiteLink } from './site-link'
@@ -10,10 +11,11 @@ export function Leaderboard(props: {
     header: string
     renderCell: (user: User) => any
   }[]
+  className?: string
 }) {
-  const { title, users, columns } = props
+  const { title, users, columns, className } = props
   return (
-    <div className="max-w-xl w-full px-1">
+    <div className={clsx('w-full px-1', className)}>
       <Title text={title} />
       <div className="overflow-x-auto">
         <table className="table table-zebra table-compact text-gray-500 w-full">
@@ -40,7 +42,7 @@ export function Leaderboard(props: {
                         width={32}
                         height={32}
                       />
-                      <div>{user.name}</div>
+                      <div className="truncate">{user.name}</div>
                     </Row>
                   </SiteLink>
                 </td>
