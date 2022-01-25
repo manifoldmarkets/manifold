@@ -45,7 +45,14 @@ export async function getFoldContracts(fold: Fold) {
     // TODO: if tags.length > 10, execute multiple parallel queries
     tags.length > 0
       ? getValues<Contract>(
-          query(contractCollection, where('tags', 'array-contains-any', tags))
+          query(
+            contractCollection,
+            where(
+              'lowercaseTags',
+              'array-contains-any',
+              tags.map((tag) => tag.toLowerCase())
+            )
+          )
         )
       : [],
 
