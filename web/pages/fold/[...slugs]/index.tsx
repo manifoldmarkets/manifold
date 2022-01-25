@@ -30,6 +30,7 @@ import { scoreCreators, scoreTraders } from '../../../lib/firebase/scoring'
 import { Leaderboard } from '../../../components/leaderboard'
 import { formatMoney } from '../../../lib/util/format'
 import { EditFoldButton } from '../../../components/edit-fold-button'
+import Custom404 from '../../404'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -106,9 +107,10 @@ async function toUserScores(userScores: { [userId: string]: number }) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
+const foldSubpages = [undefined, 'activity', 'markets', 'leaderboards'] as const
 
 export default function FoldPage(props: {
-  fold: Fold
+  fold: Fold | null
   curator: User
   contracts: Contract[]
   activeContracts: Contract[]
@@ -134,18 +136,21 @@ export default function FoldPage(props: {
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
-  const page =
-    (slugs[1] as 'markets' | 'leaderboards' | undefined) ?? 'activity'
 
-  const fold = useFold(props.fold.id) ?? props.fold
-  const { curatorId } = fold
+  const page = (slugs[1] ?? 'activity') as typeof foldSubpages[number]
+
+  const fold = useFold(props.fold?.id ?? '') ?? props.fold
 
   const { query, setQuery, sort, setSort } = useQueryAndSortParams({
     defaultSort: 'most-traded',
   })
 
   const user = useUser()
-  const isCurator = user?.id === curatorId
+  const isCurator = user && fold && user.id === fold.curatorId
+
+  if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
+    return <Custom404 />
+  }
 
   return (
     <Page wide>
@@ -225,7 +230,7 @@ export default function FoldPage(props: {
           )}
 
           {page === 'leaderboards' && (
-            <Col className="gap-8">
+            <Col className="gap-8 lg:flex-row">
               <FoldLeaderboards
                 topTraders={topTraders}
                 topTraderScores={topTraderScores}
