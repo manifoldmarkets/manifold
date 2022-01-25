@@ -103,6 +103,7 @@ export default function Folds(props: {
 
 function CreateFoldButton() {
   const [name, setName] = useState('')
+  const [about, setAbout] = useState('')
   const [otherTags, setOtherTags] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -120,6 +121,7 @@ function CreateFoldButton() {
     const result = await createFold({
       name,
       tags,
+      about,
     }).then((r) => r.data || {})
 
     if (result.fold) {
@@ -145,7 +147,7 @@ function CreateFoldButton() {
       }}
       submitBtn={{
         label: 'Create',
-        className: clsx(name ? 'btn-primary' : 'btn-disabled'),
+        className: clsx(name && about ? 'btn-primary' : 'btn-disabled'),
       }}
       onSubmit={onSubmit}
     >
@@ -175,37 +177,50 @@ function CreateFoldButton() {
 
         <Spacer h={4} />
 
-        {name && (
-          <>
-            <label className="label">
-              <span className="mb-1">Primary tag</span>
-            </label>
-            <TagsList noLink tags={[`#${toCamelCase(name)}`]} />
+        <div className="form-control w-full">
+          <label className="label">
+            <span className="mb-1">About</span>
+          </label>
 
-            <Spacer h={4} />
+          <input
+            placeholder="Short description (140 characters max)"
+            className="input input-bordered resize-none"
+            disabled={isSubmitting}
+            value={about}
+            maxLength={140}
+            onChange={(e) => setAbout(e.target.value || '')}
+          />
+        </div>
 
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="mb-1">Additional tags</span>
-              </label>
+        <Spacer h={4} />
 
-              <input
-                placeholder="Politics, Economics, Rationality"
-                className="input input-bordered resize-none"
-                disabled={isSubmitting}
-                value={otherTags}
-                onChange={(e) => setOtherTags(e.target.value || '')}
-              />
-            </div>
+        <label className="label">
+          <span className="mb-1">Primary tag</span>
+        </label>
+        <TagsList noLink tags={[`#${toCamelCase(name)}`]} />
 
-            <Spacer h={4} />
+        <Spacer h={4} />
 
-            <TagsList
-              tags={parseWordsAsTags(otherTags).map((tag) => `#${tag}`)}
-              noLink
-            />
-          </>
-        )}
+        <div className="form-control w-full">
+          <label className="label">
+            <span className="mb-1">Additional tags</span>
+          </label>
+
+          <input
+            placeholder="Politics, Economics, Rationality (Optional)"
+            className="input input-bordered resize-none"
+            disabled={isSubmitting}
+            value={otherTags}
+            onChange={(e) => setOtherTags(e.target.value || '')}
+          />
+        </div>
+
+        <Spacer h={4} />
+
+        <TagsList
+          tags={parseWordsAsTags(otherTags).map((tag) => `#${tag}`)}
+          noLink
+        />
       </div>
     </ConfirmationButton>
   )
