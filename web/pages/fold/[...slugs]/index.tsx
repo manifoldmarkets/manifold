@@ -242,7 +242,7 @@ export default function FoldPage(props: {
 
 function FoldOverview(props: { fold: Fold; curator: User }) {
   const { fold, curator } = props
-  const { tags } = fold
+  const { about, tags } = fold
 
   return (
     <Col className="max-w-sm">
@@ -259,10 +259,12 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
           />
         </Row>
 
-        <Spacer h={2} />
-        <div className="text-gray-500">
-          This is a community for predicting asdf asd fasdf asdf asdf .
-        </div>
+        {about && (
+          <>
+            <Spacer h={2} />
+            <div className="text-gray-500">{about}</div>
+          </>
+        )}
 
         <Spacer h={2} />
 

@@ -12,7 +12,8 @@ import { TagsList } from './tags-list'
 
 export function EditFoldButton(props: { fold: Fold }) {
   const { fold } = props
-  const [name, setName] = useState(fold?.name ?? '')
+  const [name, setName] = useState(fold.name)
+  const [about, setAbout] = useState(fold.about ?? '')
 
   const initialOtherTags =
     fold?.tags.filter((tag) => tag !== toCamelCase(name)).join(', ') ?? ''
@@ -23,13 +24,16 @@ export function EditFoldButton(props: { fold: Fold }) {
   const tags = parseWordsAsTags(toCamelCase(name) + ' ' + otherTags)
 
   const saveDisabled =
-    !name || (name === fold.name && _.isEqual(tags, fold.tags))
+    name === fold.name &&
+    _.isEqual(tags, fold.tags) &&
+    about === (fold.about ?? '')
 
   const onSubmit = async () => {
     setIsSubmitting(true)
 
     await updateFold(fold, {
       name,
+      about,
       tags,
     })
 
@@ -61,6 +65,23 @@ export function EditFoldButton(props: { fold: Fold }) {
               disabled={isSubmitting}
               value={name}
               onChange={(e) => setName(e.target.value || '')}
+            />
+          </div>
+
+          <Spacer h={4} />
+
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="mb-1">About</span>
+            </label>
+
+            <input
+              placeholder="Short description (140 characters max)"
+              className="input input-bordered resize-none"
+              disabled={isSubmitting}
+              value={about}
+              maxLength={140}
+              onChange={(e) => setAbout(e.target.value || '')}
             />
           </div>
 

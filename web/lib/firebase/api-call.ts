@@ -11,7 +11,7 @@ export const cloudFunction = <RequestData, ResponseData>(name: string) =>
 export const createContract = cloudFunction('createContract')
 
 export const createFold = cloudFunction<
-  { name: string; tags: string[] },
+  { name: string; about: string; tags: string[] },
   { status: 'error' | 'success'; message?: string; fold?: Fold }
 >('createFold')
 

@@ -12,6 +12,7 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
     data: {
       name: string
+      about: string
       tags: string[]
     },
     context
@@ -22,7 +23,7 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
     const creator = await getUser(userId)
     if (!creator) return { status: 'error', message: 'User not found' }
 
-    const { name, tags } = data
+    const { name, about, tags } = data
 
     if (!name || typeof name !== 'string')
       return { status: 'error', message: 'Name must be a non-empty string' }
@@ -35,7 +36,9 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
       creator.username,
       'named',
       name,
-      'on',
+      'about',
+      about,
+      'tags',
       tags
     )
 
@@ -48,6 +51,7 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
       curatorId: userId,
       slug,
       name,
+      about,
       tags,
       createdTime: Date.now(),
       contractIds: [],
