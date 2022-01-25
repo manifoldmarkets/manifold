@@ -260,12 +260,14 @@ function FeedQuestion(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername, createdTime, question, resolution } =
     contract
-  const { probPercent } = contractMetrics(contract)
+  const { probPercent, truePool } = contractMetrics(contract)
 
   // Currently hidden on mobile; ideally we'd fit this in somewhere.
   const closeMessage =
     contract.isResolved || !contract.closeTime ? null : (
       <span className="float-right text-gray-400 hidden sm:inline">
+        {formatMoney(truePool)} pool
+        <span className="mx-2">•</span>
         {contract.closeTime > Date.now() ? 'Closes' : 'Closed'}
         <Timestamp time={contract.closeTime || 0} />
       </span>
