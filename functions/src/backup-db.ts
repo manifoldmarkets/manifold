@@ -1,4 +1,5 @@
-// Export script from https://firebase.google.com/docs/firestore/solutions/schedule-export
+// This code is copied from https://firebase.google.com/docs/firestore/solutions/schedule-export
+// To deploy after any changes: `yarn deploy`
 // To import the data into dev Firestore: https://firebase.google.com/docs/firestore/manage-data/move-data
 
 import * as functions from 'firebase-functions'
@@ -20,12 +21,15 @@ export const backupDb = functions.pubsub
         // Leave collectionIds empty to export all collections
         // or set to a list of collection IDs to export,
         // collectionIds: ['users', 'posts']
+        // NOTE: Subcollections are not backed up by default
         collectionIds: [
           'contracts',
           'folds',
           'private-users',
           'stripe-transactions',
           'users',
+          'bets',
+          'comments',
         ],
       })
       .then((responses) => {
