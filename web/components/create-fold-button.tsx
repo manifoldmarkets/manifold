@@ -81,6 +81,7 @@ export function CreateFoldButton() {
             className="input input-bordered resize-none"
             disabled={isSubmitting}
             value={name}
+            maxLength={140}
             onChange={(e) => updateName(e.target.value || '')}
           />
         </div>
