@@ -41,7 +41,8 @@ export default function Folds(props: {
 }) {
   const [curatorsDict, setCuratorsDict] = useState(props.curatorsDict)
 
-  const folds = useFolds() ?? props.folds
+  let folds = useFolds() ?? props.folds
+  folds = _.sortBy(folds, (fold) => -1 * fold.followCount)
   const user = useUser()
 
   useEffect(() => {
@@ -74,35 +75,46 @@ export default function Folds(props: {
 
           <Col className="gap-2">
             {folds.map((fold) => (
-              <Col
+              <FoldCard
                 key={fold.id}
-                className="bg-white p-4 rounded-xl gap-1 relative"
-              >
-                <Link href={foldPath(fold)}>
-                  <a className="absolute left-0 right-0 top-0 bottom-0" />
-                </Link>
-                <Row className="justify-between items-center gap-2">
-                  <SiteLink href={foldPath(fold)}>{fold.name}</SiteLink>
-                  <FollowFoldButton className="z-10 mb-1" fold={fold} />
-                </Row>
-                <Row className="items-center gap-2 text-gray-500 text-sm">
-                  <div>12 followers</div>
-                  <div>•</div>
-                  <Row>
-                    <div className="mr-1">Curated by</div>
-                    <UserLink
-                      className="text-neutral"
-                      name={curatorsDict[fold.curatorId]?.name ?? ''}
-                      username={curatorsDict[fold.curatorId]?.username ?? ''}
-                    />
-                  </Row>
-                </Row>
-                <div className="text-gray-500 text-sm">{fold.about}</div>
-              </Col>
+                fold={fold}
+                curator={curatorsDict[fold.curatorId]}
+              />
             ))}
           </Col>
         </Col>
       </Col>
     </Page>
+  )
+}
+
+function FoldCard(props: { fold: Fold; curator: User | undefined }) {
+  const { fold, curator } = props
+  return (
+    <Col
+      key={fold.id}
+      className="bg-white p-4 rounded-xl gap-1 shadow-md relative"
+    >
+      <Link href={foldPath(fold)}>
+        <a className="absolute left-0 right-0 top-0 bottom-0" />
+      </Link>
+      <Row className="justify-between items-center gap-2">
+        <SiteLink href={foldPath(fold)}>{fold.name}</SiteLink>
+        <FollowFoldButton className="z-10 mb-1" fold={fold} />
+      </Row>
+      <Row className="items-center gap-2 text-gray-500 text-sm">
+        <div>{fold.followCount} followers</div>
+        <div>•</div>
+        <Row>
+          <div className="mr-1">Curated by</div>
+          <UserLink
+            className="text-neutral"
+            name={curator?.name ?? ''}
+            username={curator?.username ?? ''}
+          />
+        </Row>
+      </Row>
+      <div className="text-gray-500 text-sm">{fold.about}</div>
+    </Col>
   )
 }
