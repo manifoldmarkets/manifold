@@ -30,17 +30,18 @@ export function BetPanel(props: {
   contract: Contract
   className?: string
   title?: string
+  selected?: 'YES' | 'NO'
 }) {
   useEffect(() => {
     // warm up cloud function
     placeBet({}).catch()
   }, [])
 
-  const { contract, className, title } = props
+  const { contract, className, title, selected } = props
 
   const user = useUser()
 
-  const [betChoice, setBetChoice] = useState<'YES' | 'NO'>('YES')
+  const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
 
   const [error, setError] = useState<string | undefined>()
@@ -92,14 +93,14 @@ export function BetPanel(props: {
 
   const resultProb = getProbabilityAfterBet(
     contract.totalShares,
-    betChoice,
+    betChoice || 'YES',
     betAmount ?? 0
   )
 
   const shares = calculateShares(
     contract.totalShares,
     betAmount ?? 0,
-    betChoice
+    betChoice || 'YES'
   )
 
   const currentPayout = betAmount
@@ -112,12 +113,16 @@ export function BetPanel(props: {
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
+  const panelTitle = title ?? `Buy ${betChoice || 'shares'}`
 
   return (
     <Col
       className={clsx('bg-gray-100 shadow-md px-8 py-6 rounded-md', className)}
     >
-      <Title className="mt-0 text-neutral" text={title ?? `Buy ${betChoice}`} />
+      <Title
+        className={clsx('!mt-0 text-neutral', title ? '!text-xl' : '')}
+        text={panelTitle}
+      />
 
       <div className="mt-2 mb-1 text-sm text-gray-500">Outcome</div>
       <YesNoSelector
@@ -145,22 +150,27 @@ export function BetPanel(props: {
         <div>{formatPercent(resultProb)}</div>
       </Row>
 
-      <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
-        Payout if <OutcomeLabel outcome={betChoice} />
-        <InfoTooltip
-          text={`Current payout for ${formatWithCommas(
-            shares
-          )} / ${formatWithCommas(
-            shares +
-              contract.totalShares[betChoice] -
-              contract.phantomShares[betChoice]
-          )} ${betChoice} shares`}
-        />
-      </Row>
-      <div>
-        {formatMoney(currentPayout)}
-        &nbsp; <span>(+{currentReturnPercent})</span>
-      </div>
+      {betChoice && (
+        <>
+          <Spacer h={4} />
+          <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
+            Payout if <OutcomeLabel outcome={betChoice} />
+            <InfoTooltip
+              text={`Current payout for ${formatWithCommas(
+                shares
+              )} / ${formatWithCommas(
+                shares +
+                  contract.totalShares[betChoice] -
+                  contract.phantomShares[betChoice]
+              )} ${betChoice} shares`}
+            />
+          </Row>
+          <div>
+            {formatMoney(currentPayout)}
+            &nbsp; <span>(+{currentReturnPercent})</span>
+          </div>
+        </>
+      )}
 
       <Spacer h={6} />
 

@@ -1,30 +1,46 @@
 /* This example requires Tailwind CSS v2.0+ */
 import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { CheckIcon } from '@heroicons/react/outline'
 import { Contract } from '../lib/firebase/contracts'
 import { BetPanel } from './bet-panel'
+import { Row } from './layout/row'
+import { YesNoSelector } from './yes-no-selector'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
+// TODO: Hide when not appropriate
+// TODO: Autofocus the bet amount input
 export default function BetRow(props: { contract: Contract }) {
-  // Button to open the modal
   const [open, setOpen] = useState(false)
+  const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
+    undefined
+  )
 
   return (
     <>
-      <button
-        className="flex items-center justify-center w-full h-full p-2 text-white bg-blue-500 hover:bg-blue-700 rounded-lg"
-        onClick={() => setOpen(true)}
-      >
-        Trade
-      </button>
-      <Modal open={open} setOpen={setOpen}>
-        <BetPanel contract={props.contract} title={props.contract.question} />
-      </Modal>
+      <div className="-mt-4 text-xl pb-6 -mx-4 -mb-6">
+        <Row className="items-center gap-2 justify-center">
+          Buy
+          <YesNoSelector
+            className="w-72"
+            onSelect={(choice) => {
+              setOpen(true)
+              setBetChoice(choice)
+            }}
+          />
+        </Row>
+        <Modal open={open} setOpen={setOpen}>
+          <BetPanel
+            contract={props.contract}
+            title={props.contract.question}
+            selected={betChoice}
+          />
+        </Modal>
+      </div>
     </>
   )
 }
 
+// From https://tailwindui.com/components/application-ui/overlays/modals
 export function Modal(props: {
   children: React.ReactNode
   open: boolean
