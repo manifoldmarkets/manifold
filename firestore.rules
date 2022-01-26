@@ -16,7 +16,7 @@ service cloud.firestore {
     }
 
     match /private-users/{userId} {
-      allow read: if resource.data.creatorId == request.auth.uid || isAdmin();
+      allow read: if resource.data.id == request.auth.uid || isAdmin();
     }
 
     match /contracts/{contractId} {
