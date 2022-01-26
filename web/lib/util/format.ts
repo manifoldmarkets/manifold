@@ -18,7 +18,7 @@ export function formatPercent(zeroToOne: number) {
 }
 
 export function toCamelCase(words: string) {
-  return words
+  const camelCase = words
     .split(' ')
     .map((word) => word.trim())
     .filter((word) => word)
@@ -26,4 +26,8 @@ export function toCamelCase(words: string) {
       index === 0 ? word : word[0].toLocaleUpperCase() + word.substring(1)
     )
     .join('')
+
+  // Remove non-alpha-numeric-underscore chars.
+  const regex = /(?:^|\s)(?:[a-z0-9_]+)/gi
+  return (camelCase.match(regex) || [])[0] ?? ''
 }
