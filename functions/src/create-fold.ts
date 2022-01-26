@@ -62,9 +62,12 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
       contractIds: [],
       excludedContractIds: [],
       excludedCreatorIds: [],
+      followCount: 0,
     }
 
     await foldRef.create(fold)
+
+    await foldRef.collection('followers').doc(userId).set({ userId })
 
     return { status: 'success', fold }
   }

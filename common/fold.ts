@@ -15,4 +15,6 @@ export type Fold = {
   // Default: creatorIds: undefined, excludedCreatorIds: []
   creatorIds?: string[]
   excludedCreatorIds?: string[]
+
+  followCount: number
 }
