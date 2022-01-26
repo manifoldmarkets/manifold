@@ -52,6 +52,13 @@ export function contractMetrics(contract: Contract) {
   return { truePool, probPercent, startProb, createdDate, resolvedDate }
 }
 
+export function tradingAllowed(contract: Contract) {
+  return (
+    !contract.isResolved &&
+    (!contract.closeTime || contract.closeTime > Date.now())
+  )
+}
+
 const db = getFirestore(app)
 export const contractCollection = collection(db, 'contracts')
 

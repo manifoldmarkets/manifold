@@ -15,6 +15,7 @@ import {
   contractMetrics,
   Contract,
   getContractFromSlug,
+  tradingAllowed,
 } from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
@@ -70,8 +71,7 @@ export default function ContractPage(props: {
 
   const { creatorId, isResolved, resolution, question } = contract
   const isCreator = user?.id === creatorId
-  const allowTrade =
-    !isResolved && (!contract.closeTime || contract.closeTime > Date.now())
+  const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
 
   const { probPercent } = contractMetrics(contract)
