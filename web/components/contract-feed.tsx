@@ -19,6 +19,7 @@ import {
   Contract,
   contractPath,
   updateContract,
+  tradingAllowed,
 } from '../lib/firebase/contracts'
 import { useUser } from '../hooks/use-user'
 import { Linkify } from './linkify'
@@ -39,6 +40,7 @@ import Textarea from 'react-expanding-textarea'
 import { outcome } from '../../common/contract'
 import { fromNow } from '../lib/util/time'
 import BetRow from './bet-row'
+import clsx from 'clsx'
 
 export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
   const { username, avatarUrl } = props
@@ -649,7 +651,7 @@ export function ContractFeed(props: {
 
   return (
     <div className="flow-root">
-      <ul role="list" className="">
+      <ul role="list" className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
         {items.map((activityItem, activityItemIdx) => (
           <li key={activityItem.id}>
             <div className="relative pb-8">
@@ -688,7 +690,7 @@ export function ContractFeed(props: {
           </li>
         ))}
       </ul>
-      <BetRow contract={contract} />
+      {tradingAllowed(contract) && <BetRow contract={contract} />}
     </div>
   )
 }

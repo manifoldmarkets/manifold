@@ -7,7 +7,6 @@ import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
-// TODO: Hide when not appropriate
 export default function BetRow(props: { contract: Contract }) {
   const [open, setOpen] = useState(false)
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
@@ -16,7 +15,7 @@ export default function BetRow(props: { contract: Contract }) {
 
   return (
     <>
-      <div className="-mt-4 text-xl pb-6 -mx-4 -mb-6">
+      <div className="-mt-2 text-xl -mx-4">
         <Row className="items-center gap-2 justify-center">
           Buy
           <YesNoSelector
