@@ -45,7 +45,7 @@ service cloud.firestore {
 
     match /folds/{foldId} {
       allow read;
-      allow update: if request.auth.uid == resource.data.curatorId;
+      allow update, delete: if request.auth.uid == resource.data.curatorId;
     }
 
     match /folds/{foldId}/followers/{userId} {

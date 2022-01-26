@@ -26,6 +26,10 @@ export function updateFold(fold: Fold, updates: Partial<Fold>) {
   return updateDoc(doc(foldCollection, fold.id), updates)
 }
 
+export function deleteFold(fold: Fold) {
+  return deleteDoc(doc(foldCollection, fold.id))
+}
+
 export async function listAllFolds() {
   return getValues<Fold>(foldCollection)
 }
