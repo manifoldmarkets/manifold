@@ -5,13 +5,16 @@ import { PencilIcon } from '@heroicons/react/outline'
 
 import { Fold } from '../../common/fold'
 import { parseWordsAsTags } from '../../common/util/parse'
-import { updateFold } from '../lib/firebase/folds'
+import { deleteFold, updateFold } from '../lib/firebase/folds'
 import { toCamelCase } from '../lib/util/format'
 import { Spacer } from './layout/spacer'
 import { TagsList } from './tags-list'
+import { useRouter } from 'next/router'
 
 export function EditFoldButton(props: { fold: Fold; className?: string }) {
   const { fold, className } = props
+  const router = useRouter()
+
   const [name, setName] = useState(fold.name)
   const [about, setAbout] = useState(fold.about ?? '')
 
@@ -106,6 +109,20 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
           <Spacer h={4} />
 
           <div className="modal-action">
+            <label
+              htmlFor="edit"
+              onClick={() => {
+                if (confirm('Are you sure you want to delete this fold?')) {
+                  deleteFold(fold)
+                  router.replace('/folds')
+                }
+              }}
+              className={clsx(
+                'btn btn-sm btn-outline hover:bg-red-500 hover:border-red-500 mr-auto self-center'
+              )}
+            >
+              Delete
+            </label>
             <label htmlFor="edit" className={clsx('btn')}>
               Cancel
             </label>
