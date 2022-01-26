@@ -1,7 +1,16 @@
-import { collection, doc, query, updateDoc, where } from 'firebase/firestore'
+import {
+  collection,
+  deleteDoc,
+  doc,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+} from 'firebase/firestore'
 import { Fold } from '../../../common/fold'
 import { Contract, contractCollection } from './contracts'
 import { db } from './init'
+import { User } from './users'
 import { getValues, listenForValue, listenForValues } from './utils'
 
 const foldCollection = collection(db, 'folds')
@@ -89,4 +98,25 @@ export function listenForFold(
   setFold: (fold: Fold | null) => void
 ) {
   return listenForValue(doc(foldCollection, foldId), setFold)
+}
+
+export function followFold(fold: Fold, user: User) {
+  const followDoc = doc(foldCollection, fold.id, 'followers', user.id)
+  return setDoc(followDoc, { userId: user.id })
+}
+
+export function unfollowFold(fold: Fold, user: User) {
+  const followDoc = doc(foldCollection, fold.id, 'followers', user.id)
+  return deleteDoc(followDoc)
+}
+
+export function listenForFollow(
+  fold: Fold,
+  user: User,
+  setFollow: (following: boolean) => void
+) {
+  const followDoc = doc(foldCollection, fold.id, 'followers', user.id)
+  return listenForValue(followDoc, (value) => {
+    setFollow(!!value)
+  })
 }

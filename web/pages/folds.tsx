@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Fold } from '../../common/fold'
 import { CreateFoldButton } from '../components/create-fold-button'
+import { FollowFoldButton } from '../components/follow-fold-button'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { Page } from '../components/page'
@@ -82,9 +83,7 @@ export default function Folds(props: {
                 </Link>
                 <Row className="justify-between items-center gap-2">
                   <SiteLink href={foldPath(fold)}>{fold.name}</SiteLink>
-                  <button className="btn btn-secondary btn-sm z-10 mb-1">
-                    Follow
-                  </button>
+                  <FollowFoldButton className="z-10 mb-1" fold={fold} />
                 </Row>
                 <Row className="items-center gap-2 text-gray-500 text-sm">
                   <div>12 followers</div>
