@@ -697,7 +697,9 @@ export function ContractFeed(props: {
           </li>
         ))}
       </ul>
-      {tradingAllowed(contract) && <BetRow contract={contract} />}
+      {tradingAllowed(contract) && (
+        <BetRow contract={contract} className="-mt-2 -mx-4" />
+      )}
     </div>
   )
 }

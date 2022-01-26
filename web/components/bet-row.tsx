@@ -5,9 +5,13 @@ import { Contract } from '../lib/firebase/contracts'
 import { BetPanel } from './bet-panel'
 import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
+import clsx from 'clsx'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
-export default function BetRow(props: { contract: Contract }) {
+export default function BetRow(props: {
+  contract: Contract
+  className?: string
+}) {
   const [open, setOpen] = useState(false)
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
     undefined
@@ -15,11 +19,10 @@ export default function BetRow(props: { contract: Contract }) {
 
   return (
     <>
-      <div className="-mt-2 text-xl -mx-4">
+      <div className={clsx(props.className)}>
         <Row className="items-center gap-2 justify-center">
-          Buy
           <YesNoSelector
-            className="w-72"
+            className="w-60"
             onSelect={(choice) => {
               setOpen(true)
               setBetChoice(choice)
@@ -50,7 +53,7 @@ export function Modal(props: {
     <Transition.Root show={open} as={Fragment}>
       <Dialog
         as="div"
-        className="fixed z-10 inset-0 overflow-y-auto"
+        className="fixed z-40 inset-0 overflow-y-auto"
         onClose={setOpen}
       >
         <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">

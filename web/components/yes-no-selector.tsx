@@ -22,7 +22,7 @@ export function YesNoSelector(props: {
         )}
         onClick={() => onSelect('YES')}
       >
-        YES
+        Buy YES
       </button>
       <button
         className={clsx(
@@ -33,7 +33,7 @@ export function YesNoSelector(props: {
         )}
         onClick={() => onSelect('NO')}
       >
-        NO
+        Buy NO
       </button>
     </Row>
   )
