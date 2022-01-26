@@ -17,6 +17,7 @@ import { ContractFeed } from './contract-feed'
 import { TweetButton } from './tweet-button'
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
+import { TagsInput } from './tags-input'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -58,7 +59,6 @@ export const ContractOverview = (props: {
           />
 
           <ContractDetails contract={contract} />
-          <TweetButton className="self-end md:hidden" tweetText={tweetText} />
         </Col>
 
         <Col className="hidden md:flex justify-between items-end">
@@ -68,13 +68,17 @@ export const ContractOverview = (props: {
             probPercent={probPercent}
             large
           />
-          <TweetButton className="mt-6" tweetText={tweetText} />
         </Col>
       </Row>
 
       <Spacer h={4} />
 
       <ContractProbGraph contract={contract} />
+
+      <Row className="justify-between mt-6 ml-4 gap-4">
+        <TagsInput contract={contract} />
+        <TweetButton tweetText={tweetText} />
+      </Row>
 
       <Spacer h={12} />
 

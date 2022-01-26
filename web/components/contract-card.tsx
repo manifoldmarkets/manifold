@@ -194,13 +194,6 @@ export function ContractDetails(props: { contract: Contract }) {
         <div className="">•</div>
         <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
       </Row>
-
-      {tags.length > 0 && (
-        <>
-          <div className="hidden sm:block">•</div>
-          <CompactTagsList tags={tags} />
-        </>
-      )}
     </Col>
   )
 }
