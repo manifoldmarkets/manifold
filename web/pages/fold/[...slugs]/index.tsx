@@ -214,11 +214,19 @@ export default function FoldPage(props: {
         <Row className={clsx(page === 'activity' ? 'gap-16' : 'gap-8')}>
           <Col className="flex-1">
             {page === 'activity' ? (
-              <ActivityFeed
-                contracts={activeContracts}
-                contractBets={activeContractBets}
-                contractComments={activeContractComments}
-              />
+              <>
+                <ActivityFeed
+                  contracts={activeContracts}
+                  contractBets={activeContractBets}
+                  contractComments={activeContractComments}
+                />
+                {activeContracts.length === 0 && (
+                  <div className="text-gray-500 mt-4">
+                    No activity from matching markets.{' '}
+                    {isCurator && 'Try editing to add more tags!'}
+                  </div>
+                )}
+              </>
             ) : (
               <SearchableGrid
                 contracts={contracts}
