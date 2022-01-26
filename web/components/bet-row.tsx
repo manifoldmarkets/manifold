@@ -8,7 +8,6 @@ import { YesNoSelector } from './yes-no-selector'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
 // TODO: Hide when not appropriate
-// TODO: Autofocus the bet amount input
 export default function BetRow(props: { contract: Contract }) {
   const [open, setOpen] = useState(false)
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(

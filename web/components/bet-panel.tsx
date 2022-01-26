@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 import { useUser } from '../hooks/use-user'
 import { Contract } from '../../common/contract'
@@ -26,10 +26,20 @@ import { AmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { OutcomeLabel } from './outcome-label'
 
+// Focus helper from https://stackoverflow.com/a/54159564/1222351
+function useFocus(): [React.RefObject<HTMLElement>, () => void] {
+  const htmlElRef = useRef<HTMLElement>(null)
+  const setFocus = () => {
+    htmlElRef.current && htmlElRef.current.focus()
+  }
+
+  return [htmlElRef, setFocus]
+}
+
 export function BetPanel(props: {
   contract: Contract
   className?: string
-  title?: string
+  title?: string // Set if BetPanel is on a feed modal
   selected?: 'YES' | 'NO'
 }) {
   useEffect(() => {
@@ -43,6 +53,7 @@ export function BetPanel(props: {
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const [inputRef, focusAmountInput] = useFocus()
 
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -51,6 +62,7 @@ export function BetPanel(props: {
   function onBetChoice(choice: 'YES' | 'NO') {
     setBetChoice(choice)
     setWasSubmitted(false)
+    focusAmountInput()
   }
 
   function onBetChange(newAmount: number | undefined) {
@@ -114,6 +126,9 @@ export function BetPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
   const panelTitle = title ?? `Buy ${betChoice || 'shares'}`
+  if (title) {
+    focusAmountInput()
+  }
 
   return (
     <Col
@@ -139,6 +154,7 @@ export function BetPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
+        inputRef={inputRef}
       />
 
       <Spacer h={4} />
