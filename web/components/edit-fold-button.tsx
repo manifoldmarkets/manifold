@@ -10,8 +10,8 @@ import { toCamelCase } from '../lib/util/format'
 import { Spacer } from './layout/spacer'
 import { TagsList } from './tags-list'
 
-export function EditFoldButton(props: { fold: Fold }) {
-  const { fold } = props
+export function EditFoldButton(props: { fold: Fold; className?: string }) {
+  const { fold, className } = props
   const [name, setName] = useState(fold.name)
   const [about, setAbout] = useState(fold.about ?? '')
 
@@ -41,7 +41,7 @@ export function EditFoldButton(props: { fold: Fold }) {
   }
 
   return (
-    <div>
+    <div className={clsx('p-1', className)}>
       <label
         htmlFor="edit"
         className={clsx(

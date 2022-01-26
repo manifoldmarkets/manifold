@@ -153,71 +153,68 @@ export default function FoldPage(props: {
 
   return (
     <Page wide>
-      <Col className="items-center">
-        <Col className="max-w-5xl w-full">
-          <Col className="sm:flex-row sm:justify-between sm:items-end gap-4 mb-6">
-            <Title className="!m-0" text={fold.name} />
-            {isCurator && <EditFoldButton fold={fold} />}
-          </Col>
+      <Row className="justify-between mb-6 px-1">
+        <Title className="!m-0" text={fold.name} />
+        {isCurator && <EditFoldButton className="ml-1" fold={fold} />}
+      </Row>
 
-          <div className="tabs mb-4">
-            <Link href={foldPath(fold)} shallow>
-              <a
-                className={clsx(
-                  'tab tab-bordered',
-                  page === 'activity' && 'tab-active'
-                )}
-              >
-                Activity
-              </a>
-            </Link>
+      <Col className="md:hidden text-gray-500 gap-2 mb-6 px-1">
+        <Row>
+          <div className="mr-1">Curated by</div>
+          <UserLink
+            className="text-neutral"
+            name={curator.name}
+            username={curator.username}
+          />
+        </Row>
+        <div>{fold.about}</div>
+      </Col>
 
-            <Link href={foldPath(fold, 'markets')} shallow>
-              <a
-                className={clsx(
-                  'tab tab-bordered',
-                  page === 'markets' && 'tab-active'
-                )}
-              >
-                Markets
-              </a>
-            </Link>
-            <Link href={foldPath(fold, 'leaderboards')} shallow>
-              <a
-                className={clsx(
-                  'tab tab-bordered',
-                  page === 'leaderboards' && 'tab-active',
-                  page !== 'leaderboards' && 'md:hidden'
-                )}
-              >
-                Leaderboards
-              </a>
-            </Link>
-          </div>
+      <div className="tabs mb-2">
+        <Link href={foldPath(fold)} shallow>
+          <a
+            className={clsx(
+              'tab tab-bordered',
+              page === 'activity' && 'tab-active'
+            )}
+          >
+            Activity
+          </a>
+        </Link>
 
-          {page === 'activity' && (
-            <Row className="gap-8">
-              <Col>
-                <ActivityFeed
-                  contracts={activeContracts}
-                  contractBets={activeContractBets}
-                  contractComments={activeContractComments}
-                />
-              </Col>
-              <Col className="hidden md:flex max-w-xs gap-10">
-                <FoldOverview fold={fold} curator={curator} />
-                <FoldLeaderboards
-                  topTraders={topTraders}
-                  topTraderScores={topTraderScores}
-                  topCreators={topCreators}
-                  topCreatorScores={topCreatorScores}
-                />
-              </Col>
-            </Row>
-          )}
+        <Link href={foldPath(fold, 'markets')} shallow>
+          <a
+            className={clsx(
+              'tab tab-bordered',
+              page === 'markets' && 'tab-active'
+            )}
+          >
+            Markets
+          </a>
+        </Link>
+        <Link href={foldPath(fold, 'leaderboards')} shallow>
+          <a
+            className={clsx(
+              'tab tab-bordered',
+              page === 'leaderboards' && 'tab-active',
+              page !== 'leaderboards' && 'md:hidden'
+            )}
+          >
+            Leaderboards
+          </a>
+        </Link>
+      </div>
 
-          {page === 'markets' && (
-            <div className="w-full">
+      {(page === 'activity' || page === 'markets') && (
+        <Row className={clsx(page === 'activity' ? 'gap-16' : 'gap-8')}>
+          <Col className="flex-1">
+            {page === 'activity' ? (
+              <ActivityFeed
+                contracts={activeContracts}
+                contractBets={activeContractBets}
+                contractComments={activeContractComments}
+              />
+            ) : (
               <SearchableGrid
                 contracts={contracts}
                 query={query}
@@ -225,21 +222,30 @@ export default function FoldPage(props: {
                 sort={sort}
                 setSort={setSort}
               />
-            </div>
-          )}
+            )}
+          </Col>
+          <Col className="hidden md:flex max-w-xs gap-10">
+            <FoldOverview fold={fold} curator={curator} />
+            <FoldLeaderboards
+              topTraders={topTraders}
+              topTraderScores={topTraderScores}
+              topCreators={topCreators}
+              topCreatorScores={topCreatorScores}
+            />
+          </Col>
+        </Row>
+      )}
 
-          {page === 'leaderboards' && (
-            <Col className="gap-8 lg:flex-row">
-              <FoldLeaderboards
-                topTraders={topTraders}
-                topTraderScores={topTraderScores}
-                topCreators={topCreators}
-                topCreatorScores={topCreatorScores}
-              />
-            </Col>
-          )}
+      {page === 'leaderboards' && (
+        <Col className="gap-8 lg:flex-row">
+          <FoldLeaderboards
+            topTraders={topTraders}
+            topTraderScores={topTraderScores}
+            topCreators={topCreators}
+            topCreatorScores={topCreatorScores}
+          />
         </Col>
-      </Col>
+      )}
     </Page>
   )
 }
@@ -250,10 +256,10 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
 
   return (
     <Col className="max-w-sm">
-      <div className="px-4 py-3 bg-indigo-700 text-white text-sm rounded-t">
+      <div className="px-4 py-3 bg-indigo-500 text-white text-sm rounded-t">
         About community
       </div>
-      <Col className="p-4 bg-white self-start gap-2 rounded-b">
+      <Col className="p-4 bg-white gap-2 rounded-b">
         <Row>
           <div className="text-gray-500 mr-1">Curated by</div>
           <UserLink
