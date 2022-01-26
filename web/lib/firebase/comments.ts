@@ -8,6 +8,7 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore'
+
 import { getValues, listenForValues } from './utils'
 import { db } from './init'
 import { User } from '../../../common/user'
@@ -21,15 +22,20 @@ export async function createComment(
   commenter: User
 ) {
   const ref = doc(getCommentsCollection(contractId), betId)
-  return await setDoc(ref, {
+
+  const comment: Comment = {
+    id: ref.id,
     contractId,
     betId,
+    userId: commenter.id,
     text,
     createdTime: Date.now(),
     userName: commenter.name,
     userUsername: commenter.username,
     userAvatarUrl: commenter.avatarUrl,
-  })
+  }
+
+  return await setDoc(ref, comment)
 }
 
 function getCommentsCollection(contractId: string) {
