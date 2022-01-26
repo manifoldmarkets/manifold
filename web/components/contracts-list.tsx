@@ -33,7 +33,7 @@ export function ContractsGrid(props: {
 
   if (contracts.length === 0) {
     return (
-      <p className="mx-4">
+      <p className="text-gray-500 mx-4">
         No markets found. Would you like to{' '}
         <Link href="/create">
           <a className="text-green-500 hover:underline hover:decoration-2">
