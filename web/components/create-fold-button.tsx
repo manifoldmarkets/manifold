@@ -64,7 +64,7 @@ export function CreateFoldButton() {
       <Title className="!mt-0" text="Create a fold" />
 
       <Col className="text-gray-500 gap-1">
-        <div>A fold is a sub-community of markets organized on a topic.</div>
+        <div>A fold is a Manifold community with selected markets.</div>
         <div>Markets are included if they match one or more tags.</div>
       </Col>
 

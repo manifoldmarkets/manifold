@@ -12,7 +12,7 @@ export const SiteLink = (props: {
     <a
       href={href}
       className={clsx(
-        'hover:underline hover:decoration-indigo-400 hover:decoration-2',
+        'hover:underline hover:decoration-indigo-400 hover:decoration-2 z-10',
         className
       )}
       onClick={(e) => e.stopPropagation()}
@@ -23,7 +23,7 @@ export const SiteLink = (props: {
     <Link href={href}>
       <a
         className={clsx(
-          'hover:underline hover:decoration-indigo-400 hover:decoration-2',
+          'hover:underline hover:decoration-indigo-400 hover:decoration-2 z-10',
           className
         )}
         onClick={(e) => e.stopPropagation()}
