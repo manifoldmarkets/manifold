@@ -112,7 +112,9 @@ export default function ContractPage(props: {
             <div className="md:ml-8" />
 
             <Col className="flex-1">
-              {allowTrade && <BetPanel contract={contract} />}
+              {allowTrade && (
+                <BetPanel className="hidden lg:inline" contract={contract} />
+              )}
               {allowResolve && (
                 <ResolutionPanel creator={user} contract={contract} />
               )}
