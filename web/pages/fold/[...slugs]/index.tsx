@@ -31,6 +31,7 @@ import { Leaderboard } from '../../../components/leaderboard'
 import { formatMoney } from '../../../lib/util/format'
 import { EditFoldButton } from '../../../components/edit-fold-button'
 import Custom404 from '../../404'
+import { FollowFoldButton } from '../../../components/follow-fold-button'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -155,7 +156,11 @@ export default function FoldPage(props: {
     <Page wide>
       <Row className="justify-between mb-6 px-1">
         <Title className="!m-0" text={fold.name} />
-        {isCurator && <EditFoldButton className="ml-1" fold={fold} />}
+        {isCurator ? (
+          <EditFoldButton className="ml-1" fold={fold} />
+        ) : (
+          <FollowFoldButton className="ml-1" fold={fold} />
+        )}
       </Row>
 
       <Col className="md:hidden text-gray-500 gap-2 mb-6 px-1">
