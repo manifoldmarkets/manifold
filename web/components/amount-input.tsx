@@ -14,6 +14,8 @@ export function AmountInput(props: {
   disabled?: boolean
   className?: string
   inputClassName?: string
+  // Needed to focus the amount input
+  inputRef?: React.MutableRefObject<any>
 }) {
   const {
     amount,
@@ -24,6 +26,7 @@ export function AmountInput(props: {
     className,
     inputClassName,
     minimumAmount,
+    inputRef,
   } = props
 
   const user = useUser()
@@ -56,6 +59,7 @@ export function AmountInput(props: {
             error && 'input-error',
             inputClassName
           )}
+          ref={inputRef}
           type="text"
           placeholder="0"
           maxLength={9}
