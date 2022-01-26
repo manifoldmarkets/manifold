@@ -68,6 +68,9 @@ export function BetPanel(props: {
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
+    if (!betChoice) {
+      setBetChoice('YES')
+    }
   }
 
   async function submitBet() {
