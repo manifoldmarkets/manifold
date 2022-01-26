@@ -18,6 +18,7 @@ import { TweetButton } from './tweet-button'
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
 import { TagsInput } from './tags-input'
+import BetRow from './bet-row'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -51,12 +52,16 @@ export const ContractOverview = (props: {
             <Linkify text={contract.question} />
           </div>
 
-          <ResolutionOrChance
-            className="md:hidden"
-            resolution={resolution}
-            probPercent={probPercent}
-            large
-          />
+          <Row className="justify-between gap-4">
+            <ResolutionOrChance
+              className="md:hidden"
+              resolution={resolution}
+              probPercent={probPercent}
+              large
+            />
+
+            <BetRow contract={contract} className="md:hidden" />
+          </Row>
 
           <ContractDetails contract={contract} />
         </Col>
