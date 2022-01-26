@@ -4,7 +4,8 @@ import * as _ from 'lodash'
 // Generate your own private key, and set the path below:
 // https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
 
-const serviceAccount = require('../../../../../../Downloads/dev-mantic-markets-firebase-adminsdk-sir5m-b2d27f8970.json')
+// const serviceAccount = require('../../../../../../Downloads/dev-mantic-markets-firebase-adminsdk-sir5m-b2d27f8970.json')
+const serviceAccount = require('../../../../../../Downloads/mantic-markets-firebase-adminsdk-1ep46-351a65eca3.json')
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -16,12 +17,12 @@ import { changeUser } from '../change-user-info'
 async function main() {
   const username = process.argv[2]
   const name = process.argv[3]
-  const avatarUrl = process.argv[4]
-  const newUsername = process.argv[5]
+  const newUsername = process.argv[4]
+  const avatarUrl = process.argv[5]
 
   if (process.argv.length < 4) {
     console.log(
-      'syntax: node change-user-info.js [current username] [new name] [new avatar] [new username]'
+      'syntax: node change-user-info.js [current username] [new name] [new username] [new avatar]'
     )
     return
   }
@@ -32,7 +33,7 @@ async function main() {
     return
   }
 
-  await changeUser(user, { username, name, avatarUrl })
+  await changeUser(user, { username: newUsername, name, avatarUrl })
     .then(() =>
       console.log(
         'succesfully changed',
