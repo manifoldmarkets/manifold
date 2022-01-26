@@ -2,6 +2,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions'
 import { Fold } from '../../../common/fold'
 import { User } from '../../../common/user'
 import { randomString } from '../../../common/util/random'
+import './init'
 
 const functions = getFunctions()
 

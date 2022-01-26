@@ -41,6 +41,7 @@ import { outcome } from '../../common/contract'
 import { fromNow } from '../lib/util/time'
 import BetRow from './bet-row'
 import clsx from 'clsx'
+import { parseTags } from '../../common/util/parse'
 
 export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
   const { username, avatarUrl } = props
@@ -173,7 +174,13 @@ export function ContractDescription(props: {
     setEditing(false)
 
     const newDescription = `${contract.description}\n\n${description}`.trim()
-    await updateContract(contract.id, { description: newDescription })
+    const tags = parseTags(`${contract.tags.join(' ')} ${newDescription}`)
+    const lowercaseTags = tags.map((tag) => tag.toLowerCase())
+    await updateContract(contract.id, {
+      description: newDescription,
+      tags,
+      lowercaseTags,
+    })
 
     setDescription(editStatement())
   }

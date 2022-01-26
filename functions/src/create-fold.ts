@@ -23,10 +23,15 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
     const creator = await getUser(userId)
     if (!creator) return { status: 'error', message: 'User not found' }
 
-    const { name, about, tags } = data
+    let { name, about, tags } = data
 
     if (!name || typeof name !== 'string')
       return { status: 'error', message: 'Name must be a non-empty string' }
+
+    if (!about || typeof about !== 'string')
+      return { status: 'error', message: 'About must be a non-empty string' }
+
+    about = about.slice(0, 140)
 
     if (!_.isArray(tags))
       return { status: 'error', message: 'Tags must be an array of strings' }
