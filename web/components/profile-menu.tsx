@@ -1,6 +1,6 @@
 import { firebaseLogout, User } from '../lib/firebase/users'
 import { formatMoney } from '../lib/util/format'
-import { AvatarPlaceholder } from './contract-feed'
+import { Avatar } from './avatar'
 import { Col } from './layout/col'
 import { MenuButton } from './menu'
 
@@ -77,15 +77,10 @@ function getNavigationOptions(
 function ProfileSummary(props: { user: User | undefined }) {
   const { user } = props
   return (
-    <Col className="avatar items-center sm:flex-row gap-2 sm:gap-0">
-      <div className="rounded-full w-10 h-10 sm:mr-4">
-        {user?.avatarUrl ? (
-          <img src={user?.avatarUrl} width={40} height={40} />
-        ) : (
-          <AvatarPlaceholder />
-        )}
-      </div>
-      <div className="truncate text-left" style={{ width: 170 }}>
+    <Col className="avatar items-center sm:flex-row gap-2 sm:gap-4  sm:w-52">
+      <Avatar avatarUrl={user?.avatarUrl} username={user?.username} noLink />
+
+      <div className="truncate text-left">
         <div className="hidden sm:flex">{user?.name}</div>
         <div className="text-gray-700 text-sm">
           {user ? formatMoney(Math.floor(user.balance)) : ' '}
