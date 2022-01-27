@@ -30,9 +30,8 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
 
     name = name.trim().slice(0, 140)
 
-    if (!about || typeof about !== 'string')
-      return { status: 'error', message: 'About must be a non-empty string' }
-
+    if (typeof about !== 'string')
+      return { status: 'error', message: 'About must be a string' }
     about = about.trim().slice(0, 140)
 
     if (!_.isArray(tags))
