@@ -58,6 +58,10 @@ export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
   )
 }
 
+export function AvatarPlaceholder() {
+  return <div className="rounded-full bg-gray-400 w-10 h-10" />
+}
+
 function FeedComment(props: {
   activityItem: any
   moreHref: string
