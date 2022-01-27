@@ -28,10 +28,11 @@ import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { scoreCreators, scoreTraders } from '../../../lib/firebase/scoring'
 import { Leaderboard } from '../../../components/leaderboard'
-import { formatMoney } from '../../../lib/util/format'
+import { formatMoney, toCamelCase } from '../../../lib/util/format'
 import { EditFoldButton } from '../../../components/edit-fold-button'
 import Custom404 from '../../404'
 import { FollowFoldButton } from '../../../components/follow-fold-button'
+import FeedCreate from '../../../components/feed-create'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -213,6 +214,13 @@ export default function FoldPage(props: {
       {(page === 'activity' || page === 'markets') && (
         <Row className={clsx(page === 'activity' ? 'gap-16' : 'gap-8')}>
           <Col className="flex-1">
+            {user !== null && (
+              <FeedCreate
+                user={user}
+                tag={toCamelCase(fold.name)}
+                className={clsx(page !== 'activity' && 'hidden')}
+              />
+            )}
             {page === 'activity' ? (
               <>
                 <ActivityFeed
