@@ -85,7 +85,7 @@ function ProfileSummary(props: { user: User | undefined }) {
           <AvatarPlaceholder />
         )}
       </div>
-      <div className="truncate text-left" style={{ maxWidth: 170 }}>
+      <div className="truncate text-left" style={{ width: 170 }}>
         <div className="hidden sm:flex">{user?.name}</div>
         <div className="text-gray-700 text-sm">
           {user ? formatMoney(Math.floor(user.balance)) : ' '}
