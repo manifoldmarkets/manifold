@@ -63,16 +63,18 @@ export default function Folds(props: {
   return (
     <Page>
       <Col className="items-center">
-        <Col className="max-w-lg w-full px-2 sm:px-0">
-          <Row className="justify-between items-center">
-            <Title text="Explore folds" />
-            {user && <CreateFoldButton />}
-          </Row>
+        <Col className="max-w-lg w-full">
+          <Col className="px-4 sm:px-0">
+            <Row className="justify-between items-center">
+              <Title text="Explore folds" />
+              {user && <CreateFoldButton />}
+            </Row>
 
-          <div className="text-gray-500 mb-6">
-            Folds are communities on Manifold centered around a collection of
-            markets.
-          </div>
+            <div className="text-gray-500 mb-6">
+              Folds are communities on Manifold centered around a collection of
+              markets.
+            </div>
+          </Col>
 
           <Col className="gap-2">
             {folds.map((fold) => (

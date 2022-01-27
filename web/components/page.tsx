@@ -1,8 +1,12 @@
 import clsx from 'clsx'
 import { NavBar } from './nav-bar'
 
-export function Page(props: { wide?: boolean; children?: any }) {
-  const { wide, children } = props
+export function Page(props: {
+  wide?: boolean
+  margin?: boolean
+  children?: any
+}) {
+  const { wide, margin, children } = props
 
   return (
     <div>
@@ -10,8 +14,9 @@ export function Page(props: { wide?: boolean; children?: any }) {
 
       <div
         className={clsx(
-          'w-full px-2 pb-8 mx-auto',
-          wide ? 'max-w-6xl' : 'max-w-4xl'
+          'w-full mx-auto',
+          wide ? 'max-w-6xl' : 'max-w-4xl',
+          margin && 'px-4'
         )}
       >
         {children}

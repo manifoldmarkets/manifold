@@ -673,7 +673,7 @@ export function ContractFeed(props: {
   }
 
   return (
-    <div className="flow-root">
+    <div className="flow-root pr-2 md:pr-0">
       <ul role="list" className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
         {items.map((activityItem, activityItemIdx) => (
           <li key={activityItem.id}>
