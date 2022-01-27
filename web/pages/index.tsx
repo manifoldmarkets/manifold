@@ -30,9 +30,7 @@ const Home = (props: { hotContracts: Contract[] }) => {
     <Page>
       <Col className="items-center">
         <Col className="max-w-3xl">
-          <div className="-mx-2 sm:mx-0">
-            <FeedPromo hotContracts={hotContracts ?? []} />
-          </div>
+          <FeedPromo hotContracts={hotContracts ?? []} />
         </Col>
       </Col>
     </Page>

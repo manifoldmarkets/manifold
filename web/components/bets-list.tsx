@@ -94,7 +94,7 @@ export function BetsList(props: { user: User }) {
 
   return (
     <Col className="mt-6 gap-6">
-      <Row className="gap-8">
+      <Row className="mx-4 md:mx-0 gap-8">
         <Col>
           <div className="text-sm text-gray-500">Currently invested</div>
           <div>{formatMoney(currentBets)}</div>

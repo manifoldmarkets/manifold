@@ -37,7 +37,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         url={`/@${user.username}`}
       />
 
-      <Title text={possesive + 'markets'} />
+      <Title className="mx-4 md:mx-0" text={possesive + 'markets'} />
 
       <CreatorContractsList creator={user} />
     </Page>

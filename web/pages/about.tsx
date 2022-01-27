@@ -5,7 +5,7 @@ import styles from './about.module.css'
 
 export default function About() {
   return (
-    <Page>
+    <Page margin>
       <SEO title="About" description="About" url="/about" />
       <Contents />
     </Page>

@@ -87,22 +87,20 @@ const Home = (props: {
     <Page>
       <Col className="items-center">
         <Col className="max-w-3xl">
-          <div className="-mx-2 sm:mx-0">
-            <FeedCreate user={user ?? undefined} />
-            <Spacer h={4} />
+          <FeedCreate user={user ?? undefined} />
+          <Spacer h={4} />
 
-            {/* <HotMarkets contracts={hotContracts?.slice(0, 4) ?? []} />
+          {/* <HotMarkets contracts={hotContracts?.slice(0, 4) ?? []} />
             <Spacer h={4} />
 
             <ClosingSoonMarkets contracts={closingSoonContracts ?? []} />
             <Spacer h={10} /> */}
 
-            <ActivityFeed
-              contracts={activeContracts ?? []}
-              contractBets={activeContractBets ?? []}
-              contractComments={activeContractComments ?? []}
-            />
-          </div>
+          <ActivityFeed
+            contracts={activeContracts ?? []}
+            contractBets={activeContractBets ?? []}
+            contractComments={activeContractComments ?? []}
+          />
         </Col>
       </Col>
     </Page>

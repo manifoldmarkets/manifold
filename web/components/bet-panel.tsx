@@ -134,11 +134,9 @@ export function BetPanel(props: {
   }
 
   return (
-    <Col
-      className={clsx('bg-gray-100 shadow-md px-8 py-6 rounded-md', className)}
-    >
+    <Col className={clsx('bg-white px-8 py-6 rounded-md', className)}>
       <Title
-        className={clsx('!mt-0', title ? '!text-xl' : '!text-neutral')}
+        className={clsx('!mt-0', title ? '!text-xl' : '')}
         text={panelTitle}
       />
 
