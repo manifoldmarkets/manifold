@@ -70,17 +70,6 @@ function NavOptions(props: {
         </Link>
       )}
 
-      <Link href="/markets">
-        <a
-          className={clsx(
-            'text-base hidden md:block whitespace-nowrap',
-            themeClasses
-          )}
-        >
-          Markets
-        </a>
-      </Link>
-
       <Link href="/folds">
         <a
           className={clsx(
@@ -89,6 +78,17 @@ function NavOptions(props: {
           )}
         >
           Folds
+        </a>
+      </Link>
+
+      <Link href="/markets">
+        <a
+          className={clsx(
+            'text-base hidden md:block whitespace-nowrap',
+            themeClasses
+          )}
+        >
+          Markets
         </a>
       </Link>
 
