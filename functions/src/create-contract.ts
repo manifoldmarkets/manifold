@@ -18,6 +18,7 @@ export const createContract = functions
         initialProb: number
         ante: number
         closeTime: number
+        tags?: string[]
       },
       context
     ) => {
@@ -27,7 +28,7 @@ export const createContract = functions
       const creator = await getUser(userId)
       if (!creator) return { status: 'error', message: 'User not found' }
 
-      const { question, description, initialProb, ante, closeTime } = data
+      const { question, description, initialProb, ante, closeTime, tags } = data
 
       if (!question || !initialProb)
         return { status: 'error', message: 'Missing contract attributes' }
@@ -65,7 +66,8 @@ export const createContract = functions
         description,
         initialProb,
         ante,
-        closeTime
+        closeTime,
+        tags ?? []
       )
 
       if (ante) await chargeUser(creator.id, ante)

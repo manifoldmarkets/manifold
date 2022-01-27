@@ -9,6 +9,7 @@ import { ContractsGrid } from './contracts-list'
 import { Contract } from '../../common/contract'
 import { TagsList } from './tags-list'
 import { Col } from './layout/col'
+import clsx from 'clsx'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
@@ -54,8 +55,12 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
   )
 }
 
-export default function FeedCreate(props: { user?: User }) {
-  const { user } = props
+export default function FeedCreate(props: {
+  user?: User
+  tag?: string
+  className?: string
+}) {
+  const { user, tag, className } = props
   const [question, setQuestion] = useState('')
 
   const placeholders = [
@@ -72,7 +77,7 @@ export default function FeedCreate(props: { user?: User }) {
   const placeholder = placeholders[daysSinceEpoch % placeholders.length]
 
   return (
-    <div className="w-full bg-indigo-50 sm:rounded-md p-4">
+    <div className={clsx('w-full bg-indigo-50 sm:rounded-md p-4', className)}>
       <div className="relative flex items-start space-x-3">
         {user?.avatarUrl ? (
           <AvatarWithIcon username={user.username} avatarUrl={user.avatarUrl} />
@@ -92,13 +97,13 @@ export default function FeedCreate(props: { user?: User }) {
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setQuestion(e.target.value || '')}
           />
-          <Spacer h={4} />
+          <Spacer h={2} />
         </div>
       </div>
 
       {/* Hide component instead of deleting, so edits to NewContract don't get lost */}
       <div className={question ? '' : 'hidden'}>
-        <NewContract question={question} />
+        <NewContract question={question} tag={tag} />
       </div>
 
       {/* Show a fake "Create Market" button, which gets replaced with the NewContract one*/}

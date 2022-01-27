@@ -47,8 +47,8 @@ export default function Create() {
 }
 
 // Allow user to create a new contract
-export function NewContract(props: { question: string }) {
-  const question = props.question
+export function NewContract(props: { question: string; tag?: string }) {
+  const { question, tag } = props
   const creator = useUser()
 
   useEffect(() => {
@@ -104,6 +104,7 @@ export function NewContract(props: { question: string }) {
       initialProb,
       ante,
       closeTime,
+      tags: tag ? [tag] : [],
     }).then((r) => r.data || {})
 
     if (result.status !== 'success') {
