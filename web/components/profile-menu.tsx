@@ -34,8 +34,12 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
     ...(mobile
       ? [
           {
-            name: 'All markets',
+            name: 'Markets',
             href: '/markets',
+          },
+          {
+            name: 'Folds',
+            href: '/folds',
           },
         ]
       : []),
