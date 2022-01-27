@@ -32,7 +32,7 @@ function getNavigationOptions(
   return [
     {
       name: 'Home',
-      href: '/',
+      href: user ? '/home' : '/',
     },
     ...(mobile
       ? [
