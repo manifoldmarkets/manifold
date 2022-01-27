@@ -82,7 +82,7 @@ function NavOptions(props: { user: User | null; themeClasses: string }) {
       {user === null ? (
         <>
           <button
-            className="btn border-none normal-case text-base font-medium px-6 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
+            className="btn btn-sm btn-outline normal-case text-base font-medium px-6 bg-gradient-to-r"
             onClick={firebaseLogin}
           >
             Sign in
