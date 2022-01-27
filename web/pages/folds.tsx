@@ -65,12 +65,13 @@ export default function Folds(props: {
       <Col className="items-center">
         <Col className="max-w-lg w-full px-2 sm:px-0">
           <Row className="justify-between items-center">
-            <Title text="Folds" />
+            <Title text="Explore folds" />
             {user && <CreateFoldButton />}
           </Row>
 
           <div className="text-gray-500 mb-6">
-            Browse Manifold communities, called folds.
+            Folds are communities on Manifold centered around a collection of
+            markets.
           </div>
 
           <Col className="gap-2">

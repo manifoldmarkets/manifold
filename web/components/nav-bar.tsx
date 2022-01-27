@@ -57,17 +57,6 @@ function NavOptions(props: { user: User | null; themeClasses: string }) {
         </Link>
       )}
 
-      {/* <Link href="/folds">
-        <a
-          className={clsx(
-            'text-base hidden md:block whitespace-nowrap',
-            themeClasses
-          )}
-        >
-          Folds
-        </a>
-      </Link> */}
-
       <Link href="/markets">
         <a
           className={clsx(
@@ -75,7 +64,18 @@ function NavOptions(props: { user: User | null; themeClasses: string }) {
             themeClasses
           )}
         >
-          All markets
+          Markets
+        </a>
+      </Link>
+
+      <Link href="/folds">
+        <a
+          className={clsx(
+            'text-base hidden md:block whitespace-nowrap',
+            themeClasses
+          )}
+        >
+          Folds
         </a>
       </Link>
 
@@ -89,20 +89,7 @@ function NavOptions(props: { user: User | null; themeClasses: string }) {
           </button>
         </>
       ) : (
-        <>
-          <Link href="/leaderboards">
-            <a
-              className={clsx(
-                'text-base hidden md:block whitespace-nowrap',
-                themeClasses
-              )}
-            >
-              Leaderboards
-            </a>
-          </Link>
-
-          <ProfileMenu user={user} />
-        </>
+        <ProfileMenu user={user} />
       )}
     </>
   )
