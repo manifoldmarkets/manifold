@@ -72,12 +72,12 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [anteError, setAnteError] = useState<string | undefined>()
   // By default, close the market a week from today
-  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
-  const [closeDate, setCloseDate] = useState(weekFromToday)
+  // const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
+  const [closeDate, setCloseDate] = useState<undefined | string>(undefined)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const closeTime = dateToMillis(closeDate)
+  const closeTime = closeDate ? dateToMillis(closeDate) : undefined
 
   const balance = creator?.balance || 0
 
