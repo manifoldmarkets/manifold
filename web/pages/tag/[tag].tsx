@@ -27,10 +27,8 @@ export default function TagPage(props: { contracts: Contract[] }) {
 
   const contracts = useContracts()
 
-  const taggedContracts = (contracts ?? props.contracts).filter(
-    (contract) =>
-      contract.description.toLowerCase().includes(`#${tag.toLowerCase()}`) ||
-      contract.question.toLowerCase().includes(`#${tag.toLowerCase()}`)
+  const taggedContracts = (contracts ?? props.contracts).filter((contract) =>
+    contract.lowercaseTags.includes(tag.toLowerCase())
   )
 
   const { query, setQuery, sort, setSort } = useQueryAndSortParams({
