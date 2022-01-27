@@ -1,4 +1,4 @@
-import { AvatarWithIcon } from './contract-feed'
+import { AvatarPlaceholder, AvatarWithIcon } from './contract-feed'
 import { Title } from './title'
 import Textarea from 'react-expanding-textarea'
 import { useState } from 'react'
@@ -74,10 +74,11 @@ export default function FeedCreate(props: { user?: User }) {
   return (
     <div className="w-full bg-indigo-50 sm:rounded-md p-4">
       <div className="relative flex items-start space-x-3">
-        <AvatarWithIcon
-          username={user?.username || ''}
-          avatarUrl={user?.avatarUrl || ''}
-        />
+        {user?.avatarUrl ? (
+          <AvatarWithIcon username={user.username} avatarUrl={user.avatarUrl} />
+        ) : (
+          <AvatarPlaceholder />
+        )}
 
         <div className="min-w-0 flex-1">
           {/* TODO: Show focus, for accessibility */}
