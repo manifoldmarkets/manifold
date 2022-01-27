@@ -77,10 +77,10 @@ function getNavigationOptions(
 function ProfileSummary(props: { user: User | undefined }) {
   const { user } = props
   return (
-    <Col className="avatar items-center sm:flex-row gap-2 sm:gap-4  sm:w-52">
+    <Col className="avatar items-center sm:flex-row gap-2 sm:gap-4">
       <Avatar avatarUrl={user?.avatarUrl} username={user?.username} noLink />
 
-      <div className="truncate text-left">
+      <div className="truncate text-left sm:w-32">
         <div className="hidden sm:flex">{user?.name}</div>
         <div className="text-gray-700 text-sm">
           {user ? formatMoney(Math.floor(user.balance)) : ' '}
