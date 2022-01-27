@@ -1,7 +1,6 @@
 import { AvatarPlaceholder, AvatarWithIcon } from './contract-feed'
-import { Title } from './title'
 import Textarea from 'react-expanding-textarea'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { NewContract } from '../pages/create'
 import { firebaseLogin, User } from '../lib/firebase/users'
@@ -79,13 +78,20 @@ export default function FeedCreate(props: {
   )
   const placeholder = props.placeholder ?? `e.g. ${placeholders[randIndex]}`
 
+  const inputRef = useRef<HTMLInputElement | null>()
+
   return (
     <div
       className={clsx('w-full bg-white border-2 sm:rounded-md p-4', className)}
+      onClick={() => inputRef.current?.focus()}
     >
       <div className="relative flex items-start space-x-3">
         {user?.avatarUrl ? (
-          <AvatarWithIcon username={user.username} avatarUrl={user.avatarUrl} />
+          <AvatarWithIcon
+            username={user.username}
+            avatarUrl={user.avatarUrl}
+            noLink
+          />
         ) : (
           <AvatarPlaceholder />
         )}
@@ -101,6 +107,7 @@ export default function FeedCreate(props: {
             value={question}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setQuestion(e.target.value || '')}
+            ref={inputRef}
           />
           <Spacer h={2} />
         </div>
@@ -114,7 +121,7 @@ export default function FeedCreate(props: {
       {/* Show a fake "Create Market" button, which gets replaced with the NewContract one*/}
       {!question && (
         <div className="flex justify-end">
-          <button className="btn" disabled>
+          <button className="btn btn-sm" disabled>
             Create Market
           </button>
         </div>
