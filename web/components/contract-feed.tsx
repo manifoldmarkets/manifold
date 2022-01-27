@@ -11,8 +11,9 @@ import {
   UsersIcon,
   XIcon,
 } from '@heroicons/react/solid'
-
 import dayjs from 'dayjs'
+import clsx from 'clsx'
+
 import { OutcomeLabel } from './outcome-label'
 import {
   contractMetrics,
@@ -40,38 +41,8 @@ import Textarea from 'react-expanding-textarea'
 import { outcome } from '../../common/contract'
 import { fromNow } from '../lib/util/time'
 import BetRow from './bet-row'
-import clsx from 'clsx'
 import { parseTags } from '../../common/util/parse'
-
-export function AvatarWithIcon(props: {
-  username: string
-  avatarUrl: string
-  noLink?: boolean
-}) {
-  const { username, avatarUrl, noLink } = props
-
-  const image = (
-    <img
-      className="rounded-full bg-gray-400 flex items-center justify-center"
-      src={avatarUrl}
-      width={40}
-      height={40}
-      alt=""
-    />
-  )
-
-  if (noLink) return image
-
-  return (
-    <SiteLink className="relative" href={`/${username}`}>
-      {image}
-    </SiteLink>
-  )
-}
-
-export function AvatarPlaceholder() {
-  return <div className="rounded-full bg-gray-400 w-10 h-10" />
-}
+import { Avatar } from './avatar'
 
 function FeedComment(props: {
   activityItem: any
@@ -86,7 +57,7 @@ function FeedComment(props: {
 
   return (
     <>
-      <AvatarWithIcon username={person.username} avatarUrl={person.avatarUrl} />
+      <Avatar username={person.username} avatarUrl={person.avatarUrl} />
       <div className="min-w-0 flex-1">
         <div>
           <p className="mt-0.5 text-sm text-gray-500">
@@ -301,7 +272,7 @@ function FeedQuestion(props: { contract: Contract }) {
   return (
     <>
       {contract.creatorAvatarUrl ? (
-        <AvatarWithIcon
+        <Avatar
           username={contract.creatorUsername}
           avatarUrl={contract.creatorAvatarUrl}
         />
@@ -355,7 +326,7 @@ function FeedDescription(props: { contract: Contract }) {
   return (
     <>
       {contract.creatorAvatarUrl ? (
-        <AvatarWithIcon
+        <Avatar
           username={contract.creatorUsername}
           avatarUrl={contract.creatorAvatarUrl}
         />

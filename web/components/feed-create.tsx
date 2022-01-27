@@ -1,4 +1,4 @@
-import { AvatarPlaceholder, AvatarWithIcon } from './contract-feed'
+import { Avatar } from './avatar'
 import Textarea from 'react-expanding-textarea'
 import { useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
@@ -86,15 +86,7 @@ export default function FeedCreate(props: {
       onClick={() => inputRef.current?.focus()}
     >
       <div className="relative flex items-start space-x-3">
-        {user?.avatarUrl ? (
-          <AvatarWithIcon
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-            noLink
-          />
-        ) : (
-          <AvatarPlaceholder />
-        )}
+        <Avatar username={user?.username} avatarUrl={user?.avatarUrl} noLink />
 
         <div className="min-w-0 flex-1">
           {/* TODO: Show focus, for accessibility */}
