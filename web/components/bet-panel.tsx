@@ -128,7 +128,7 @@ export function BetPanel(props: {
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
-  const panelTitle = title ?? `Buy ${betChoice || 'shares'}`
+  const panelTitle = title ?? 'Place a trade'
   if (title) {
     focusAmountInput()
   }
@@ -138,13 +138,13 @@ export function BetPanel(props: {
       className={clsx('bg-gray-100 shadow-md px-8 py-6 rounded-md', className)}
     >
       <Title
-        className={clsx('!mt-0 text-neutral', title ? '!text-xl' : '')}
+        className={clsx('!mt-0', title ? '!text-xl' : '!text-neutral')}
         text={panelTitle}
       />
 
-      <div className="mt-2 mb-1 text-sm text-gray-500">Outcome</div>
+      {/* <div className="mt-2 mb-1 text-sm text-gray-500">Outcome</div> */}
       <YesNoSelector
-        className="my-2"
+        className="mb-4"
         selected={betChoice}
         onSelect={(choice) => onBetChoice(choice)}
       />

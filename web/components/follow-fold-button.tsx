@@ -28,10 +28,7 @@ export function FollowFoldButton(props: { fold: Fold; className?: string }) {
   if (following) {
     return (
       <button
-        className={clsx(
-          'btn btn-primary btn-sm hover:bg-red-500 hover:border-red-500',
-          className
-        )}
+        className={clsx('btn btn-outline btn-sm', className)}
         onClick={onUnfollow}
       >
         Following
