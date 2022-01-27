@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { firebaseLogout, User } from '../lib/firebase/users'
 import { formatMoney } from '../lib/util/format'
 import { AvatarPlaceholder } from './contract-feed'
@@ -81,7 +80,7 @@ function ProfileSummary(props: { user: User | undefined }) {
     <Col className="avatar items-center sm:flex-row gap-2 sm:gap-0">
       <div className="rounded-full w-10 h-10 sm:mr-4">
         {user?.avatarUrl ? (
-          <Image src={user.avatarUrl} width={40} height={40} />
+          <img src={user?.avatarUrl} width={40} height={40} />
         ) : (
           <AvatarPlaceholder />
         )}
