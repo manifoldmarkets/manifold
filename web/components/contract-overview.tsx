@@ -52,7 +52,7 @@ export const ContractOverview = (props: {
             <Linkify text={contract.question} />
           </div>
 
-          <Row className="justify-between gap-4">
+          <Row className="justify-between items-center gap-4">
             <ResolutionOrChance
               className="md:hidden"
               resolution={resolution}
@@ -60,7 +60,11 @@ export const ContractOverview = (props: {
               large
             />
 
-            <BetRow contract={contract} className="md:hidden" />
+            <BetRow
+              contract={contract}
+              className="md:hidden"
+              labelClassName="hidden"
+            />
           </Row>
 
           <ContractDetails contract={contract} />
@@ -109,6 +113,7 @@ export const ContractOverview = (props: {
         bets={bets}
         comments={comments}
         feedType="market"
+        betRowClassName="md:hidden !mt-0"
       />
     </Col>
   )

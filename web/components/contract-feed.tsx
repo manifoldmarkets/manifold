@@ -626,8 +626,9 @@ export function ContractFeed(props: {
   comments: Comment[]
   // Feed types: 'activity' = Activity feed, 'market' = Comments feed on a market
   feedType: 'activity' | 'market'
+  betRowClassName?: string
 }) {
-  const { contract, feedType } = props
+  const { contract, feedType, betRowClassName } = props
   const { id } = contract
   const [expanded, setExpanded] = useState(false)
   const user = useUser()
@@ -702,7 +703,10 @@ export function ContractFeed(props: {
         ))}
       </ul>
       {tradingAllowed(contract) && (
-        <BetRow contract={contract} className="-mt-4" />
+        <BetRow
+          contract={contract}
+          className={clsx('-mt-4', betRowClassName)}
+        />
       )}
     </div>
   )

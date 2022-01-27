@@ -1,4 +1,4 @@
-/* This example requires Tailwind CSS v2.0+ */
+import clsx from 'clsx'
 import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { Contract } from '../lib/firebase/contracts'
@@ -10,7 +10,9 @@ import { YesNoSelector } from './yes-no-selector'
 export default function BetRow(props: {
   contract: Contract
   className?: string
+  labelClassName?: string
 }) {
+  const { className, labelClassName } = props
   const [open, setOpen] = useState(false)
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
     undefined
@@ -18,23 +20,27 @@ export default function BetRow(props: {
 
   return (
     <>
-      <Row className="items-center gap-2 justify-end">
-        <div className=" text-gray-400 mr-2">Place a trade</div>
-        <YesNoSelector
-          btnClassName="btn-sm w-20"
-          onSelect={(choice) => {
-            setOpen(true)
-            setBetChoice(choice)
-          }}
-        />
-      </Row>
-      <Modal open={open} setOpen={setOpen}>
-        <BetPanel
-          contract={props.contract}
-          title={props.contract.question}
-          selected={betChoice}
-        />
-      </Modal>
+      <div className={className}>
+        <Row className="items-center gap-2 justify-end">
+          <div className={clsx('text-gray-400 mr-2', labelClassName)}>
+            Place a trade
+          </div>
+          <YesNoSelector
+            btnClassName="btn-sm w-20"
+            onSelect={(choice) => {
+              setOpen(true)
+              setBetChoice(choice)
+            }}
+          />
+        </Row>
+        <Modal open={open} setOpen={setOpen}>
+          <BetPanel
+            contract={props.contract}
+            title={props.contract.question}
+            selected={betChoice}
+          />
+        </Modal>
+      </div>
     </>
   )
 }
