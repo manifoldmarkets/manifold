@@ -58,6 +58,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
 export default function FeedCreate(props: {
   user?: User
   tag?: string
+  placeholder?: string
   className?: string
 }) {
   const { user, tag, className } = props
@@ -74,7 +75,9 @@ export default function FeedCreate(props: {
   // Rotate through a new placeholder each day
   // Easter egg idea: click your own name to shuffle the placeholder
   const daysSinceEpoch = Math.floor(Date.now() / 1000 / 60 / 60 / 24)
-  const placeholder = placeholders[daysSinceEpoch % placeholders.length]
+  const placeholder =
+    props.placeholder ??
+    `e.g. ${placeholders[daysSinceEpoch % placeholders.length]}`
 
   return (
     <div className={clsx('w-full bg-indigo-50 sm:rounded-md p-4', className)}>
@@ -92,7 +95,7 @@ export default function FeedCreate(props: {
           </div>
           <Textarea
             className="text-lg sm:text-xl text-indigo-700 w-full border-transparent focus:border-transparent bg-transparent p-0 appearance-none resize-none focus:ring-transparent placeholder:text-gray-400"
-            placeholder={`e.g. ${placeholder}`}
+            placeholder={placeholder}
             value={question}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setQuestion(e.target.value || '')}
