@@ -57,7 +57,7 @@ export function CreateFoldButton() {
       }}
       submitBtn={{
         label: 'Create',
-        className: clsx(name && about ? 'btn-primary' : 'btn-disabled'),
+        className: clsx(name ? 'btn-primary' : 'btn-disabled'),
       }}
       onSubmit={onSubmit}
     >
@@ -95,7 +95,7 @@ export function CreateFoldButton() {
           </label>
 
           <input
-            placeholder="Short description (140 characters max)"
+            placeholder="Short description (140 characters max, optional)"
             className="input input-bordered resize-none"
             disabled={isSubmitting}
             value={about}
