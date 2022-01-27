@@ -65,19 +65,17 @@ export default function FeedCreate(props: {
   const [question, setQuestion] = useState('')
 
   const placeholders = [
-    'Will I make a new friend this week?',
-    'Will we discover that the world is a simulation?',
     'Will anyone I know get engaged this year?',
     'Will humans set foot on Mars by the end of 2030?',
-    'If I switch jobs, will I have more free time in 6 months than I do now?',
-    'Will any cryptocurrency eclipse Bitcoin by market cap?',
+    'Will any cryptocurrency eclipse Bitcoin by market cap this year?',
+    'Will the Democrats win the 2024 presidential election?',
   ]
   // Rotate through a new placeholder each day
   // Easter egg idea: click your own name to shuffle the placeholder
-  const daysSinceEpoch = Math.floor(Date.now() / 1000 / 60 / 60 / 24)
-  const placeholder =
-    props.placeholder ??
-    `e.g. ${placeholders[daysSinceEpoch % placeholders.length]}`
+  // const daysSinceEpoch = Math.floor(Date.now() / 1000 / 60 / 60 / 24)
+
+  const randIndex = Math.floor(Math.random() * 1e10) % placeholders.length
+  const placeholder = props.placeholder ?? `e.g. ${placeholders[randIndex]}`
 
   return (
     <div className={clsx('w-full bg-indigo-50 sm:rounded-md p-4', className)}>
