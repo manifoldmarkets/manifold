@@ -19,9 +19,6 @@ import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
-import { ClosingSoonMarkets, HotMarkets } from './markets'
-import { useContracts } from '../hooks/use-contracts'
-import { useRecentComments } from '../hooks/use-comments'
 
 export async function getStaticProps() {
   const [contracts, recentComments, hotContracts, closingSoonContracts] =
@@ -66,8 +63,8 @@ const Home = (props: {
     activeContracts,
     activeContractBets,
     activeContractComments,
-    hotContracts,
-    closingSoonContracts,
+    // hotContracts,
+    // closingSoonContracts,
   } = props
 
   const user = useUser()
@@ -94,11 +91,11 @@ const Home = (props: {
             <FeedCreate user={user ?? undefined} />
             <Spacer h={4} />
 
-            <HotMarkets contracts={hotContracts?.slice(0, 4) ?? []} />
+            {/* <HotMarkets contracts={hotContracts?.slice(0, 4) ?? []} />
             <Spacer h={4} />
 
             <ClosingSoonMarkets contracts={closingSoonContracts ?? []} />
-            <Spacer h={10} />
+            <Spacer h={10} /> */}
 
             <ActivityFeed
               contracts={activeContracts ?? []}
