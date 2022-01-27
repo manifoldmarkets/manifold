@@ -4,13 +4,14 @@ import { NavBar } from './nav-bar'
 export function Page(props: {
   wide?: boolean
   margin?: boolean
+  assertUser?: 'signed-in' | 'signed-out'
   children?: any
 }) {
-  const { wide, margin, children } = props
+  const { wide, margin, assertUser, children } = props
 
   return (
     <div>
-      <NavBar wide={wide} />
+      <NavBar wide={wide} assertUser={assertUser} />
 
       <div
         className={clsx(
