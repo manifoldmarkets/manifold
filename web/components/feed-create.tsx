@@ -8,43 +8,47 @@ import { firebaseLogin, User } from '../lib/firebase/users'
 import { ContractsGrid } from './contracts-list'
 import { Contract } from '../../common/contract'
 import { TagsList } from './tags-list'
+import { Col } from './layout/col'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
 
   return (
     <>
-      <div className="w-full bg-indigo-50 p-6 sm:border-2 sm:border-indigo-100 sm:rounded-lg">
-        <Title
-          text="Bet on the future"
-          className="!mt-2 text-gray-800 !text-4xl"
-        />
+      <Col className="w-full bg-white p-6 sm:border-2 sm:border-indigo-100 sm:rounded-lg">
+        <h1 className="mt-4 text-4xl sm:mt-5 sm:text-6xl lg:mt-6 xl:text-6xl">
+          <div className="mb-2">Create your own</div>
+          <div className="font-bold bg-clip-text text-transparent bg-gradient-to-r  from-teal-400 to-green-400">
+            prediction markets
+          </div>
+        </h1>
+        <Spacer h={6} />
         <div className="text-gray-500 mb-4">
-          On Manifold Markets, you can find prediction markets run by your
-          favorite creators.
+          Find prediction markets run by your favorite creators, or make your
+          own.
           <br />
-          <button
-            className="text-green-500 hover:underline hover:decoration-gray-300 hover:decoration-2"
-            onClick={firebaseLogin}
-          >
-            Sign up to get M$ 1000 for free
-          </button>{' '}
-          and start trading!
+          Sign up to get M$ 1000 for free and start trading!
           <br />
         </div>
-
-        <TagsList
+        {/* <TagsList
           className="mt-2"
           tags={['#politics', '#crypto', '#covid', '#sports', '#meta']}
-        />
+        /> */}
+        <Spacer h={6} />
+        <button
+          className="btn btn-lg self-center border-none bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
+          onClick={firebaseLogin}
+        >
+          Sign up now
+        </button>{' '}
+      </Col>
 
-        <Spacer h={4} />
+      <Spacer h={6} />
 
-        <ContractsGrid
-          contracts={hotContracts?.slice(0, 6) || []}
-          showHotVolume
-        />
-      </div>
+      <ContractsGrid
+        contracts={hotContracts?.slice(0, 10) || []}
+        showHotVolume
+      />
     </>
   )
 }

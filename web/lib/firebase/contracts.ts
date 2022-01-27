@@ -160,7 +160,7 @@ export function listenForHotContracts(
 export async function getHotContracts() {
   const contracts = await getValues<Contract>(hotContractsQuery)
   return _.sortBy(
-    chooseRandomSubset(contracts, 6),
+    chooseRandomSubset(contracts, 10),
     (contract) => -1 * contract.volume24Hours
   )
 }
