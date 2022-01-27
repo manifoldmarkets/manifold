@@ -84,7 +84,7 @@ const Home = (props: {
   }
 
   return (
-    <Page>
+    <Page assertUser="signed-in">
       <Col className="items-center">
         <Col className="max-w-3xl">
           <FeedCreate user={user ?? undefined} />
