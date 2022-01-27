@@ -7,7 +7,6 @@ import { NewContract } from '../pages/create'
 import { firebaseLogin, User } from '../lib/firebase/users'
 import { ContractsGrid } from './contracts-list'
 import { Contract } from '../../common/contract'
-import { TagsList } from './tags-list'
 import { Col } from './layout/col'
 import clsx from 'clsx'
 
@@ -16,7 +15,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
 
   return (
     <>
-      <Col className="w-full bg-white p-6 sm:rounded-lg shadow-md">
+      <Col className="w-full bg-white p-6 sm:rounded-lg">
         <h1 className="mt-4 text-4xl sm:mt-5 sm:text-6xl lg:mt-6 xl:text-6xl">
           <div className="mb-2">Create your own</div>
           <div className="font-bold bg-clip-text text-transparent bg-gradient-to-r  from-teal-400 to-green-400">
@@ -41,12 +40,13 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
       </Col>
 
       <Spacer h={6} />
-
+      {/* 
       <TagsList
         className="mt-2"
         tags={['#politics', '#crypto', '#covid', '#sports', '#meta']}
       />
-      <Spacer h={6} />
+      <Spacer h={6} /> */}
+
       <ContractsGrid
         contracts={hotContracts?.slice(0, 10) || []}
         showHotVolume
@@ -80,7 +80,9 @@ export default function FeedCreate(props: {
   const placeholder = props.placeholder ?? `e.g. ${placeholders[randIndex]}`
 
   return (
-    <div className={clsx('w-full bg-indigo-50 sm:rounded-md p-4', className)}>
+    <div
+      className={clsx('w-full bg-white border-2 sm:rounded-md p-4', className)}
+    >
       <div className="relative flex items-start space-x-3">
         {user?.avatarUrl ? (
           <AvatarWithIcon username={user.username} avatarUrl={user.avatarUrl} />
