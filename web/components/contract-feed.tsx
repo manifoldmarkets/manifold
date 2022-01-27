@@ -43,17 +43,28 @@ import BetRow from './bet-row'
 import clsx from 'clsx'
 import { parseTags } from '../../common/util/parse'
 
-export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
-  const { username, avatarUrl } = props
+export function AvatarWithIcon(props: {
+  username: string
+  avatarUrl: string
+  noLink?: boolean
+}) {
+  const { username, avatarUrl, noLink } = props
+
+  const image = (
+    <img
+      className="rounded-full bg-gray-400 flex items-center justify-center"
+      src={avatarUrl}
+      width={40}
+      height={40}
+      alt=""
+    />
+  )
+
+  if (noLink) return image
+
   return (
     <SiteLink className="relative" href={`/${username}`}>
-      <img
-        className="rounded-full bg-gray-400 flex items-center justify-center"
-        src={avatarUrl}
-        width={40}
-        height={40}
-        alt=""
-      />
+      {image}
     </SiteLink>
   )
 }
