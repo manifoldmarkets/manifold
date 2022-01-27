@@ -139,7 +139,7 @@ export default function FoldPage(props: {
 
   const page = (slugs[1] ?? 'activity') as typeof foldSubpages[number]
 
-  const fold = useFold(props.fold?.id ?? '') ?? props.fold
+  const fold = useFold(props.fold?.id) ?? props.fold
 
   const { query, setQuery, sort, setSort } = useQueryAndSortParams({
     defaultSort: 'most-traded',
@@ -237,7 +237,7 @@ export default function FoldPage(props: {
               />
             )}
           </Col>
-          <Col className="hidden md:flex max-w-xs gap-10">
+          <Col className="hidden md:flex max-w-xs w-full gap-10">
             <FoldOverview fold={fold} curator={curator} />
             <FoldLeaderboards
               topTraders={topTraders}
@@ -268,7 +268,7 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
   const { about, tags } = fold
 
   return (
-    <Col className="max-w-sm">
+    <Col>
       <div className="px-4 py-3 bg-indigo-500 text-white text-sm rounded-t">
         About community
       </div>

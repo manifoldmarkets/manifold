@@ -13,7 +13,6 @@ import { parseTags } from '../../common/util/parse'
 import dayjs from 'dayjs'
 import { TrendingUpIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from './datetime-tooltip'
-import { CompactTagsList } from './tags-list'
 import { ClockIcon } from '@heroicons/react/outline'
 import { fromNow } from '../lib/util/time'
 
