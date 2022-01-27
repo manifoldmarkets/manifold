@@ -15,7 +15,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
 
   return (
     <>
-      <Col className="w-full bg-white p-6 sm:border-2 sm:border-indigo-100 sm:rounded-lg">
+      <Col className="w-full bg-white p-6 sm:rounded-lg shadow-md">
         <h1 className="mt-4 text-4xl sm:mt-5 sm:text-6xl lg:mt-6 xl:text-6xl">
           <div className="mb-2">Create your own</div>
           <div className="font-bold bg-clip-text text-transparent bg-gradient-to-r  from-teal-400 to-green-400">
@@ -27,13 +27,9 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
           Find prediction markets run by your favorite creators, or make your
           own.
           <br />
-          Sign up to get M$ 1000 for free and start trading!
+          Sign up to get M$ 1,000 for free and start trading!
           <br />
         </div>
-        {/* <TagsList
-          className="mt-2"
-          tags={['#politics', '#crypto', '#covid', '#sports', '#meta']}
-        /> */}
         <Spacer h={6} />
         <button
           className="btn btn-lg self-center border-none bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
@@ -45,6 +41,11 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
 
       <Spacer h={6} />
 
+      <TagsList
+        className="mt-2"
+        tags={['#politics', '#crypto', '#covid', '#sports', '#meta']}
+      />
+      <Spacer h={6} />
       <ContractsGrid
         contracts={hotContracts?.slice(0, 10) || []}
         showHotVolume
