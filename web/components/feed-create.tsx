@@ -1,5 +1,4 @@
 import { Avatar } from './avatar'
-import Textarea from 'react-expanding-textarea'
 import { useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { NewContract } from '../pages/create'
@@ -78,7 +77,7 @@ export default function FeedCreate(props: {
   )
   const placeholder = props.placeholder ?? `e.g. ${placeholders[randIndex]}`
 
-  const inputRef = useRef<HTMLInputElement | null>()
+  const inputRef = useRef<HTMLTextAreaElement | null>()
 
   return (
     <div
@@ -93,15 +92,15 @@ export default function FeedCreate(props: {
           <div>
             <p className="my-0.5 text-sm">Ask a question... </p>
           </div>
-          <Textarea
+          <textarea
+            ref={inputRef as any}
             className="text-lg sm:text-xl text-indigo-700 w-full border-transparent focus:border-transparent bg-transparent p-0 appearance-none resize-none focus:ring-transparent placeholder:text-gray-400"
             placeholder={placeholder}
             value={question}
             onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setQuestion(e.target.value || '')}
-            ref={inputRef}
+            onChange={(e) => setQuestion(e.target.value.replace('\n', ''))}
           />
-          <Spacer h={2} />
+          <Spacer h={3} />
         </div>
       </div>
 
