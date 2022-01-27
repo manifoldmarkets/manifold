@@ -74,7 +74,9 @@ export default function FeedCreate(props: {
   // Easter egg idea: click your own name to shuffle the placeholder
   // const daysSinceEpoch = Math.floor(Date.now() / 1000 / 60 / 60 / 24)
 
-  const randIndex = Math.floor(Math.random() * 1e10) % placeholders.length
+  const [randIndex] = useState(
+    Math.floor(Math.random() * 1e10) % placeholders.length
+  )
   const placeholder = props.placeholder ?? `e.g. ${placeholders[randIndex]}`
 
   return (
