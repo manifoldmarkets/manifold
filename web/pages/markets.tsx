@@ -1,30 +1,16 @@
-import _ from 'lodash'
 import { ContractsGrid, SearchableGrid } from '../components/contracts-list'
-import { Spacer } from '../components/layout/spacer'
 import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
 import { useContracts } from '../hooks/use-contracts'
 import { useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
-import {
-  Contract,
-  getClosingSoonContracts,
-  getHotContracts,
-  listAllContracts,
-} from '../lib/firebase/contracts'
+import { Contract, listAllContracts } from '../lib/firebase/contracts'
 
 export async function getStaticProps() {
-  const [contracts, hotContracts, closingSoonContracts] = await Promise.all([
-    listAllContracts().catch((_) => []),
-    getHotContracts().catch(() => []),
-    getClosingSoonContracts().catch(() => []),
-  ])
-
+  const contracts = await listAllContracts().catch((_) => [])
   return {
     props: {
       contracts,
-      hotContracts,
-      closingSoonContracts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -32,15 +18,11 @@ export async function getStaticProps() {
 }
 
 // TODO: Rename endpoint to "Explore"
-export default function Markets(props: {
-  contracts: Contract[]
-  hotContracts: Contract[]
-  closingSoonContracts: Contract[]
-}) {
-  const contracts = useContracts() ?? props.contracts
-  const { hotContracts, closingSoonContracts } = props
+export default function Markets(props: { contracts: Contract[] }) {
+  const contracts = useContracts() ?? props.contracts ?? []
+
   const { query, setQuery, sort, setSort } = useQueryAndSortParams({
-    defaultSort: 'most-traded',
+    defaultSort: '24-hour-vol',
   })
 
   return (
