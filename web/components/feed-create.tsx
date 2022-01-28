@@ -100,7 +100,6 @@ export default function FeedCreate(props: {
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setQuestion(e.target.value.replace('\n', ''))}
           />
-          <Spacer h={3} />
         </div>
       </div>
 
