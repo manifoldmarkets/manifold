@@ -236,7 +236,7 @@ export default function FoldPage(props: {
                   contractComments={activeContractComments}
                 />
                 {activeContracts.length === 0 && (
-                  <div className="text-gray-500 mt-4">
+                  <div className="text-gray-500 mt-4 mx-2 lg:mx-0">
                     No activity from matching markets.{' '}
                     {isCurator && 'Try editing to add more tags!'}
                   </div>
