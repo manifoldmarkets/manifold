@@ -222,7 +222,7 @@ export default function FoldPage(props: {
           <Col className="flex-1">
             {user !== null && (
               <FeedCreate
-                className={clsx('border-b-2', page !== 'activity' && 'hidden')}
+                className={clsx(page !== 'activity' && 'hidden')}
                 user={user}
                 tag={toCamelCase(fold.name)}
                 placeholder={`Type your question about ${fold.name}`}
