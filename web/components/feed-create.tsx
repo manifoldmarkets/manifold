@@ -81,7 +81,7 @@ export default function FeedCreate(props: {
 
   return (
     <div
-      className={clsx('w-full bg-white border-2 sm:rounded-md p-4', className)}
+      className={clsx('w-full bg-white p-4', className)}
       onClick={() => inputRef.current?.focus()}
     >
       <div className="relative flex items-start space-x-3">
