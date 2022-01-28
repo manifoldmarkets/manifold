@@ -157,7 +157,11 @@ export default function FoldPage(props: {
 
   return (
     <Page wide>
-      <SEO title={fold.name} description={fold.about} url={foldPath(fold)} />
+      <SEO
+        title={fold.name}
+        description={`Curated by ${curator.name}. ${fold.about}`}
+        url={foldPath(fold)}
+      />
 
       <div className="px-3 lg:px-1">
         <Row className="justify-between mb-6">
