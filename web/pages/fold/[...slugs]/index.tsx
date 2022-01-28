@@ -33,6 +33,7 @@ import { EditFoldButton } from '../../../components/edit-fold-button'
 import Custom404 from '../../404'
 import { FollowFoldButton } from '../../../components/follow-fold-button'
 import FeedCreate from '../../../components/feed-create'
+import { SEO } from '../../../components/SEO'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -155,6 +156,8 @@ export default function FoldPage(props: {
 
   return (
     <Page wide>
+      <SEO title={fold.name} description={fold.about} url={foldPath(fold)} />
+
       <div className="px-3 lg:px-1">
         <Row className="justify-between mb-6">
           <Title className="!m-0" text={fold.name} />
