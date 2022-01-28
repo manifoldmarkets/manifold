@@ -99,7 +99,8 @@ async function toUserScores(userScores: { [userId: string]: number }) {
   const topUserPairs = _.take(
     _.sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
     10
-  )
+  ).filter(([_, score]) => score > 0)
+
   const topUsers = await Promise.all(
     topUserPairs.map(([userId]) => getUser(userId))
   )
