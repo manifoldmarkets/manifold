@@ -155,26 +155,28 @@ export default function FoldPage(props: {
 
   return (
     <Page wide>
-      <Row className="justify-between mb-6 px-1">
-        <Title className="!m-0" text={fold.name} />
-        {isCurator ? (
-          <EditFoldButton className="ml-1" fold={fold} />
-        ) : (
-          <FollowFoldButton className="ml-1" fold={fold} />
-        )}
-      </Row>
-
-      <Col className="md:hidden text-gray-500 gap-2 mb-6 px-1">
-        <Row>
-          <div className="mr-1">Curated by</div>
-          <UserLink
-            className="text-neutral"
-            name={curator.name}
-            username={curator.username}
-          />
+      <div className="px-3 lg:px-1">
+        <Row className="justify-between mb-6">
+          <Title className="!m-0" text={fold.name} />
+          {isCurator ? (
+            <EditFoldButton className="ml-1" fold={fold} />
+          ) : (
+            <FollowFoldButton className="ml-1" fold={fold} />
+          )}
         </Row>
-        <div>{fold.about}</div>
-      </Col>
+
+        <Col className="md:hidden text-gray-500 gap-2 mb-6">
+          <Row>
+            <div className="mr-1">Curated by</div>
+            <UserLink
+              className="text-neutral"
+              name={curator.name}
+              username={curator.username}
+            />
+          </Row>
+          <div>{fold.about}</div>
+        </Col>
+      </div>
 
       <div className="tabs mb-2">
         <Link href={foldPath(fold)} shallow>
@@ -216,7 +218,7 @@ export default function FoldPage(props: {
           <Col className="flex-1">
             {user !== null && (
               <FeedCreate
-                className={clsx(page !== 'activity' && 'hidden')}
+                className={clsx('border-b-2', page !== 'activity' && 'hidden')}
                 user={user}
                 tag={toCamelCase(fold.name)}
                 placeholder={`Type your question about ${fold.name}`}
