@@ -37,9 +37,7 @@ export const ContractOverview = (props: {
     ? contract.question
     : `${creatorName}: ${contract.question}`
   const tweetDescription = resolution
-    ? isCreator
-      ? `Resolved ${resolution}!`
-      : `Resolved ${resolution} by ${creatorName}:`
+    ? `Resolved ${resolution}!`
     : `Currently ${probPercent} chance, place your bets here:`
   const url = `https://manifold.markets${contractPath(contract)}`
   const tweetText = `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
