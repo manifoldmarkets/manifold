@@ -5,27 +5,39 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 
 export function YesNoSelector(props: {
-  selected: 'YES' | 'NO'
+  selected?: 'YES' | 'NO'
   onSelect: (selected: 'YES' | 'NO') => void
   className?: string
+  btnClassName?: string
 }) {
-  const { selected, onSelect, className } = props
+  const { selected, onSelect, className, btnClassName } = props
 
   return (
     <Row className={clsx('space-x-3', className)}>
-      <Button
-        color={selected === 'YES' ? 'green' : 'gray'}
+      <button
+        className={clsx(
+          'flex-1 inline-flex justify-center items-center p-2  hover:bg-primary-focus hover:text-white rounded-lg border-primary hover:border-primary-focus border-2',
+          selected == 'YES'
+            ? 'bg-primary text-white'
+            : 'bg-transparent text-primary',
+          btnClassName
+        )}
         onClick={() => onSelect('YES')}
       >
-        YES
-      </Button>
-
-      <Button
-        color={selected === 'NO' ? 'red' : 'gray'}
+        Buy YES
+      </button>
+      <button
+        className={clsx(
+          'flex-1 inline-flex justify-center items-center p-2  hover:bg-red-500 hover:text-white rounded-lg border-red-400 hover:border-red-500 border-2',
+          selected == 'NO'
+            ? 'bg-red-400 text-white'
+            : 'bg-transparent text-red-400',
+          btnClassName
+        )}
         onClick={() => onSelect('NO')}
       >
-        NO
-      </Button>
+        Buy NO
+      </button>
     </Row>
   )
 }

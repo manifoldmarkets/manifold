@@ -1,10 +1,10 @@
-import Image from 'next/image'
 import { firebaseLogout, User } from '../lib/firebase/users'
 import { formatMoney } from '../lib/util/format'
+import { Avatar } from './avatar'
 import { Col } from './layout/col'
 import { MenuButton } from './menu'
 
-export function ProfileMenu(props: { user: User }) {
+export function ProfileMenu(props: { user: User | undefined }) {
   const { user } = props
 
   return (
@@ -24,12 +24,15 @@ export function ProfileMenu(props: { user: User }) {
   )
 }
 
-function getNavigationOptions(user: User, options: { mobile: boolean }) {
+function getNavigationOptions(
+  user: User | undefined,
+  options: { mobile: boolean }
+) {
   const { mobile } = options
   return [
     {
       name: 'Home',
-      href: '/',
+      href: user ? '/home' : '/',
     },
     {
       name: 'Profile',
@@ -38,8 +41,12 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
     ...(mobile
       ? [
           {
-            name: 'All markets',
+            name: 'Markets',
             href: '/markets',
+          },
+          {
+            name: 'Folds',
+            href: '/folds',
           },
         ]
       : []),
@@ -49,7 +56,11 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
     },
     {
       name: 'Your markets',
-      href: `/${user.username}`,
+      href: `/${user?.username ?? ''}`,
+    },
+    {
+      name: 'Leaderboards',
+      href: '/leaderboards',
     },
     {
       name: 'Discord',
@@ -67,17 +78,16 @@ function getNavigationOptions(user: User, options: { mobile: boolean }) {
   ]
 }
 
-function ProfileSummary(props: { user: User }) {
+function ProfileSummary(props: { user: User | undefined }) {
   const { user } = props
   return (
-    <Col className="avatar items-center sm:flex-row gap-2 sm:gap-0">
-      <div className="rounded-full w-10 h-10 sm:mr-4">
-        {user.avatarUrl && <img src={user.avatarUrl} width={40} height={40} />}
-      </div>
-      <div className="truncate text-left" style={{ maxWidth: 170 }}>
-        <div className="hidden sm:flex">{user.name}</div>
+    <Col className="avatar items-center sm:flex-row gap-2 sm:gap-4">
+      <Avatar avatarUrl={user?.avatarUrl} username={user?.username} noLink />
+
+      <div className="truncate text-left sm:w-32">
+        <div className="hidden sm:flex">{user?.name}</div>
         <div className="text-gray-700 text-sm">
-          {formatMoney(Math.floor(user.balance))}
+          {user ? formatMoney(Math.floor(user.balance)) : ' '}
         </div>
       </div>
     </Col>

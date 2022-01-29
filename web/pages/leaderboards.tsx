@@ -28,7 +28,7 @@ export default function Leaderboards(props: {
   const { topTraders, topCreators } = props
 
   return (
-    <Page>
+    <Page margin>
       <Col className="items-center lg:flex-row gap-10">
         <Leaderboard
           title="🏅 Top traders"

@@ -11,14 +11,16 @@ import {
   UsersIcon,
   XIcon,
 } from '@heroicons/react/solid'
-
 import dayjs from 'dayjs'
+import clsx from 'clsx'
+
 import { OutcomeLabel } from './outcome-label'
 import {
   contractMetrics,
   Contract,
   contractPath,
   updateContract,
+  tradingAllowed,
 } from '../lib/firebase/contracts'
 import { useUser } from '../hooks/use-user'
 import { Linkify } from './linkify'
@@ -38,22 +40,9 @@ import { JoinSpans } from './join-spans'
 import Textarea from 'react-expanding-textarea'
 import { outcome } from '../../common/contract'
 import { fromNow } from '../lib/util/time'
+import BetRow from './bet-row'
 import { parseTags } from '../../common/util/parse'
-
-export function AvatarWithIcon(props: { username: string; avatarUrl: string }) {
-  const { username, avatarUrl } = props
-  return (
-    <SiteLink className="relative" href={`/${username}`}>
-      <img
-        className="rounded-full bg-gray-400 flex items-center justify-center"
-        src={avatarUrl}
-        width={40}
-        height={40}
-        alt=""
-      />
-    </SiteLink>
-  )
-}
+import { Avatar } from './avatar'
 
 function FeedComment(props: {
   activityItem: any
@@ -68,7 +57,7 @@ function FeedComment(props: {
 
   return (
     <>
-      <AvatarWithIcon username={person.username} avatarUrl={person.avatarUrl} />
+      <Avatar username={person.username} avatarUrl={person.avatarUrl} />
       <div className="min-w-0 flex-1">
         <div>
           <p className="mt-0.5 text-sm text-gray-500">
@@ -283,7 +272,7 @@ function FeedQuestion(props: { contract: Contract }) {
   return (
     <>
       {contract.creatorAvatarUrl ? (
-        <AvatarWithIcon
+        <Avatar
           username={contract.creatorUsername}
           avatarUrl={contract.creatorAvatarUrl}
         />
@@ -337,7 +326,7 @@ function FeedDescription(props: { contract: Contract }) {
   return (
     <>
       {contract.creatorAvatarUrl ? (
-        <AvatarWithIcon
+        <Avatar
           username={contract.creatorUsername}
           avatarUrl={contract.creatorAvatarUrl}
         />
@@ -619,8 +608,9 @@ export function ContractFeed(props: {
   comments: Comment[]
   // Feed types: 'activity' = Activity feed, 'market' = Comments feed on a market
   feedType: 'activity' | 'market'
+  betRowClassName?: string
 }) {
-  const { contract, feedType } = props
+  const { contract, feedType, betRowClassName } = props
   const { id } = contract
   const [expanded, setExpanded] = useState(false)
   const user = useUser()
@@ -654,8 +644,8 @@ export function ContractFeed(props: {
   }
 
   return (
-    <div className="flow-root">
-      <ul role="list" className="-mb-8">
+    <div className="flow-root pr-2 md:pr-0">
+      <ul role="list" className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
         {items.map((activityItem, activityItemIdx) => (
           <li key={activityItem.id}>
             <div className="relative pb-8">
@@ -694,6 +684,12 @@ export function ContractFeed(props: {
           </li>
         ))}
       </ul>
+      {tradingAllowed(contract) && (
+        <BetRow
+          contract={contract}
+          className={clsx('-mt-4', betRowClassName)}
+        />
+      )}
     </div>
   )
 }

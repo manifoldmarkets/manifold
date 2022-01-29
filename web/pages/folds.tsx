@@ -1,7 +1,9 @@
 import _ from 'lodash'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Fold } from '../../common/fold'
 import { CreateFoldButton } from '../components/create-fold-button'
+import { FollowFoldButton } from '../components/follow-fold-button'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { Page } from '../components/page'
@@ -39,7 +41,8 @@ export default function Folds(props: {
 }) {
   const [curatorsDict, setCuratorsDict] = useState(props.curatorsDict)
 
-  const folds = useFolds() ?? props.folds
+  let folds = useFolds() ?? props.folds
+  folds = _.sortBy(folds, (fold) => -1 * fold.followCount)
   const user = useUser()
 
   useEffect(() => {
@@ -60,40 +63,61 @@ export default function Folds(props: {
   return (
     <Page>
       <Col className="items-center">
-        <Col className="max-w-2xl w-full px-2 sm:px-0">
-          <Row className="justify-between items-center">
-            <Title text="Manifold communities: Folds" />
-            {user && <CreateFoldButton />}
-          </Row>
+        <Col className="max-w-lg w-full">
+          <Col className="px-4 sm:px-0">
+            <Row className="justify-between items-center">
+              <Title text="Explore folds" />
+              {user && <CreateFoldButton />}
+            </Row>
 
-          <div className="text-gray-500 mb-6">
-            Browse folds on topics that interest you.
-          </div>
+            <div className="text-gray-500 mb-6">
+              Folds are communities on Manifold centered around a collection of
+              markets.
+            </div>
+          </Col>
 
-          <Col className="gap-4">
+          <Col className="gap-2">
             {folds.map((fold) => (
-              <Col key={fold.id} className="gap-2">
-                <Row className="items-center flex-wrap gap-2">
-                  <SiteLink href={foldPath(fold)}>{fold.name}</SiteLink>
-                  <div />
-                  <div className="text-sm text-gray-500">12 followers</div>
-                  <div className="text-gray-500">•</div>
-                  <Row>
-                    <div className="text-sm text-gray-500 mr-1">Curated by</div>
-                    <UserLink
-                      className="text-sm text-neutral"
-                      name={curatorsDict[fold.curatorId]?.name ?? ''}
-                      username={curatorsDict[fold.curatorId]?.username ?? ''}
-                    />
-                  </Row>
-                </Row>
-                <div className="text-gray-500 text-sm">{fold.about}</div>
-                <div />
-              </Col>
+              <FoldCard
+                key={fold.id}
+                fold={fold}
+                curator={curatorsDict[fold.curatorId]}
+              />
             ))}
           </Col>
         </Col>
       </Col>
     </Page>
+  )
+}
+
+function FoldCard(props: { fold: Fold; curator: User | undefined }) {
+  const { fold, curator } = props
+  return (
+    <Col
+      key={fold.id}
+      className="bg-white hover:bg-gray-100 p-4 rounded-xl gap-1 shadow-md relative"
+    >
+      <Link href={foldPath(fold)}>
+        <a className="absolute left-0 right-0 top-0 bottom-0" />
+      </Link>
+      <Row className="justify-between items-center gap-2">
+        <SiteLink href={foldPath(fold)}>{fold.name}</SiteLink>
+        <FollowFoldButton className="z-10 mb-1" fold={fold} />
+      </Row>
+      <Row className="items-center gap-2 text-gray-500 text-sm">
+        <div>{fold.followCount} followers</div>
+        <div>•</div>
+        <Row>
+          <div className="mr-1">Curated by</div>
+          <UserLink
+            className="text-neutral"
+            name={curator?.name ?? ''}
+            username={curator?.username ?? ''}
+          />
+        </Row>
+      </Row>
+      <div className="text-gray-500 text-sm">{fold.about}</div>
+    </Col>
   )
 }

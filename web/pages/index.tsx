@@ -27,12 +27,10 @@ const Home = (props: { hotContracts: Contract[] }) => {
   }
 
   return (
-    <Page>
+    <Page assertUser="signed-out">
       <Col className="items-center">
         <Col className="max-w-3xl">
-          <div className="-mx-2 sm:mx-0">
-            <FeedPromo hotContracts={hotContracts ?? []} />
-          </div>
+          <FeedPromo hotContracts={hotContracts ?? []} />
         </Col>
       </Col>
     </Page>

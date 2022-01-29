@@ -17,6 +17,8 @@ import { ContractFeed } from './contract-feed'
 import { TweetButton } from './tweet-button'
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
+import { TagsInput } from './tags-input'
+import BetRow from './bet-row'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -35,9 +37,7 @@ export const ContractOverview = (props: {
     ? contract.question
     : `${creatorName}: ${contract.question}`
   const tweetDescription = resolution
-    ? isCreator
-      ? `Resolved ${resolution}!`
-      : `Resolved ${resolution} by ${creatorName}:`
+    ? `Resolved ${resolution}!`
     : `Currently ${probPercent} chance, place your bets here:`
   const url = `https://manifold.markets${contractPath(contract)}`
   const tweetText = `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
@@ -50,15 +50,22 @@ export const ContractOverview = (props: {
             <Linkify text={contract.question} />
           </div>
 
-          <ResolutionOrChance
-            className="md:hidden"
-            resolution={resolution}
-            probPercent={probPercent}
-            large
-          />
+          <Row className="justify-between items-center gap-4">
+            <ResolutionOrChance
+              className="md:hidden"
+              resolution={resolution}
+              probPercent={probPercent}
+              large
+            />
+
+            <BetRow
+              contract={contract}
+              className="md:hidden"
+              labelClassName="hidden"
+            />
+          </Row>
 
           <ContractDetails contract={contract} />
-          <TweetButton className="self-end md:hidden" tweetText={tweetText} />
         </Col>
 
         <Col className="hidden md:flex justify-between items-end">
@@ -68,13 +75,17 @@ export const ContractOverview = (props: {
             probPercent={probPercent}
             large
           />
-          <TweetButton className="mt-6" tweetText={tweetText} />
         </Col>
       </Row>
 
       <Spacer h={4} />
 
       <ContractProbGraph contract={contract} />
+
+      <Row className="justify-between mt-6 ml-4 gap-4">
+        <TagsInput contract={contract} />
+        <TweetButton tweetText={tweetText} />
+      </Row>
 
       <Spacer h={12} />
 
@@ -100,6 +111,7 @@ export const ContractOverview = (props: {
         bets={bets}
         comments={comments}
         feedType="market"
+        betRowClassName="md:hidden !mt-0"
       />
     </Col>
   )

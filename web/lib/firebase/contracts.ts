@@ -52,6 +52,13 @@ export function contractMetrics(contract: Contract) {
   return { truePool, probPercent, startProb, createdDate, resolvedDate }
 }
 
+export function tradingAllowed(contract: Contract) {
+  return (
+    !contract.isResolved &&
+    (!contract.closeTime || contract.closeTime > Date.now())
+  )
+}
+
 const db = getFirestore(app)
 export const contractCollection = collection(db, 'contracts')
 
@@ -153,7 +160,7 @@ export function listenForHotContracts(
 export async function getHotContracts() {
   const contracts = await getValues<Contract>(hotContractsQuery)
   return _.sortBy(
-    chooseRandomSubset(contracts, 6),
+    chooseRandomSubset(contracts, 10),
     (contract) => -1 * contract.volume24Hours
   )
 }

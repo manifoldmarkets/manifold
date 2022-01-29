@@ -13,7 +13,6 @@ import { parseTags } from '../../common/util/parse'
 import dayjs from 'dayjs'
 import { TrendingUpIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from './datetime-tooltip'
-import { CompactTagsList } from './tags-list'
 import { ClockIcon } from '@heroicons/react/outline'
 import { fromNow } from '../lib/util/time'
 
@@ -194,13 +193,6 @@ export function ContractDetails(props: { contract: Contract }) {
         <div className="">•</div>
         <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
       </Row>
-
-      {tags.length > 0 && (
-        <>
-          <div className="hidden sm:block">•</div>
-          <CompactTagsList tags={tags} />
-        </>
-      )}
     </Col>
   )
 }

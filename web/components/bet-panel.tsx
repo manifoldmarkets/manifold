@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 import { useUser } from '../hooks/use-user'
 import { Contract } from '../../common/contract'
@@ -26,18 +26,34 @@ import { AmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { OutcomeLabel } from './outcome-label'
 
-export function BetPanel(props: { contract: Contract; className?: string }) {
+// Focus helper from https://stackoverflow.com/a/54159564/1222351
+function useFocus(): [React.RefObject<HTMLElement>, () => void] {
+  const htmlElRef = useRef<HTMLElement>(null)
+  const setFocus = () => {
+    htmlElRef.current && htmlElRef.current.focus()
+  }
+
+  return [htmlElRef, setFocus]
+}
+
+export function BetPanel(props: {
+  contract: Contract
+  className?: string
+  title?: string // Set if BetPanel is on a feed modal
+  selected?: 'YES' | 'NO'
+}) {
   useEffect(() => {
     // warm up cloud function
     placeBet({}).catch()
   }, [])
 
-  const { contract, className } = props
+  const { contract, className, title, selected } = props
 
   const user = useUser()
 
-  const [betChoice, setBetChoice] = useState<'YES' | 'NO'>('YES')
+  const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const [inputRef, focusAmountInput] = useFocus()
 
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -46,11 +62,15 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
   function onBetChoice(choice: 'YES' | 'NO') {
     setBetChoice(choice)
     setWasSubmitted(false)
+    focusAmountInput()
   }
 
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
+    if (!betChoice) {
+      setBetChoice('YES')
+    }
   }
 
   async function submitBet() {
@@ -88,14 +108,14 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
   const resultProb = getProbabilityAfterBet(
     contract.totalShares,
-    betChoice,
+    betChoice || 'YES',
     betAmount ?? 0
   )
 
   const shares = calculateShares(
     contract.totalShares,
     betAmount ?? 0,
-    betChoice
+    betChoice || 'YES'
   )
 
   const currentPayout = betAmount
@@ -108,19 +128,21 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
+  const panelTitle = title ?? 'Place a trade'
+  if (title) {
+    focusAmountInput()
+  }
 
   return (
-    <Col
-      className={clsx('bg-gray-100 shadow-md px-8 py-6 rounded-md', className)}
-    >
+    <Col className={clsx('bg-white px-8 py-6 rounded-md', className)}>
       <Title
-        className="mt-0 whitespace-nowrap text-neutral"
-        text={`Buy ${betChoice}`}
+        className={clsx('!mt-0', title ? '!text-xl' : '')}
+        text={panelTitle}
       />
 
-      <div className="mt-2 mb-1 text-sm text-gray-500">Outcome</div>
+      {/* <div className="mt-2 mb-1 text-sm text-gray-500">Outcome</div> */}
       <YesNoSelector
-        className="my-2"
+        className="mb-4"
         selected={betChoice}
         onSelect={(choice) => onBetChoice(choice)}
       />
@@ -133,6 +155,7 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         error={error}
         setError={setError}
         disabled={isSubmitting}
+        inputRef={inputRef}
       />
 
       <Spacer h={4} />
@@ -144,22 +167,27 @@ export function BetPanel(props: { contract: Contract; className?: string }) {
         <div>{formatPercent(resultProb)}</div>
       </Row>
 
-      <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
-        Payout if <OutcomeLabel outcome={betChoice} />
-        <InfoTooltip
-          text={`Current payout for ${formatWithCommas(
-            shares
-          )} / ${formatWithCommas(
-            shares +
-              contract.totalShares[betChoice] -
-              contract.phantomShares[betChoice]
-          )} ${betChoice} shares`}
-        />
-      </Row>
-      <div>
-        {formatMoney(currentPayout)}
-        &nbsp; <span>(+{currentReturnPercent})</span>
-      </div>
+      {betChoice && (
+        <>
+          <Spacer h={4} />
+          <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
+            Payout if <OutcomeLabel outcome={betChoice} />
+            <InfoTooltip
+              text={`Current payout for ${formatWithCommas(
+                shares
+              )} / ${formatWithCommas(
+                shares +
+                  contract.totalShares[betChoice] -
+                  contract.phantomShares[betChoice]
+              )} ${betChoice} shares`}
+            />
+          </Row>
+          <div>
+            {formatMoney(currentPayout)}
+            &nbsp; <span>(+{currentReturnPercent})</span>
+          </div>
+        </>
+      )}
 
       <Spacer h={6} />
 

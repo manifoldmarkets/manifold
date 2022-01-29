@@ -12,12 +12,15 @@ export function getNewContract(
   description: string,
   initialProb: number,
   ante: number,
-  closeTime: number
+  closeTime: number,
+  extraTags: string[]
 ) {
   const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
     calcStartPool(initialProb, ante)
 
-  const tags = parseTags(`${question} ${description}`)
+  const tags = parseTags(
+    `${extraTags.map((tag) => `#${tag}`).join(' ')} ${question} ${description}`
+  )
   const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
   const contract: Contract = {

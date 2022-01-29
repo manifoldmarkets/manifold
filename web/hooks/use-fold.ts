@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Fold } from '../../common/fold'
-import { listenForFold, listenForFolds } from '../lib/firebase/folds'
+import { User } from '../../common/user'
+import {
+  listenForFold,
+  listenForFolds,
+  listenForFollow,
+} from '../lib/firebase/folds'
 
-export const useFold = (foldId: string) => {
+export const useFold = (foldId: string | undefined) => {
   const [fold, setFold] = useState<Fold | null | undefined>()
 
   useEffect(() => {
-    return listenForFold(foldId, setFold)
+    if (foldId) return listenForFold(foldId, setFold)
   }, [foldId])
 
   return fold
@@ -20,4 +25,14 @@ export const useFolds = () => {
   }, [])
 
   return folds
+}
+
+export const useFollowingFold = (fold: Fold, user: User | null | undefined) => {
+  const [following, setFollowing] = useState<boolean | undefined>()
+
+  useEffect(() => {
+    if (user) return listenForFollow(fold, user, setFollowing)
+  }, [fold, user])
+
+  return following
 }

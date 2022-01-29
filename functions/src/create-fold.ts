@@ -23,10 +23,16 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
     const creator = await getUser(userId)
     if (!creator) return { status: 'error', message: 'User not found' }
 
-    const { name, about, tags } = data
+    let { name, about, tags } = data
 
     if (!name || typeof name !== 'string')
       return { status: 'error', message: 'Name must be a non-empty string' }
+
+    name = name.trim().slice(0, 140)
+
+    if (typeof about !== 'string')
+      return { status: 'error', message: 'About must be a string' }
+    about = about.trim().slice(0, 140)
 
     if (!_.isArray(tags))
       return { status: 'error', message: 'Tags must be an array of strings' }
@@ -57,9 +63,12 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
       contractIds: [],
       excludedContractIds: [],
       excludedCreatorIds: [],
+      followCount: 0,
     }
 
     await foldRef.create(fold)
+
+    await foldRef.collection('followers').doc(userId).set({ userId })
 
     return { status: 'success', fold }
   }

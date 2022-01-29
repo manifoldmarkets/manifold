@@ -27,7 +27,7 @@ export function ContractProbGraph(props: { contract: Contract }) {
   if (!resolutionTime) {
     // Add a fake datapoint in future so the line continues horizontally
     // to the right.
-    times.push(latestTime.add(1, 'day').toDate())
+    times.push(latestTime.add(1, 'month').toDate())
     probs.push(probs[probs.length - 1])
   }
 

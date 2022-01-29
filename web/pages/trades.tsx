@@ -10,7 +10,7 @@ export default function TradesPage() {
   return (
     <Page>
       <SEO title="Your trades" description="Your trades" url="/trades" />
-      <Title text="Your trades" />
+      <Title className="mx-4 md:mx-0" text="Your trades" />
       {user && <BetsList user={user} />}
     </Page>
   )

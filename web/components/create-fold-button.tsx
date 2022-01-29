@@ -57,15 +57,16 @@ export function CreateFoldButton() {
       }}
       submitBtn={{
         label: 'Create',
-        className: clsx(name && about ? 'btn-primary' : 'btn-disabled'),
+        className: clsx(name ? 'btn-primary' : 'btn-disabled'),
       }}
       onSubmit={onSubmit}
     >
       <Title className="!mt-0" text="Create a fold" />
 
       <Col className="text-gray-500 gap-1">
-        <div>A fold is a sub-community of markets organized on a topic.</div>
-        <div>Markets are included if they match one or more tags.</div>
+        <div>
+          Markets are included in a fold if they match one or more tags.
+        </div>
       </Col>
 
       <Spacer h={4} />
@@ -81,6 +82,7 @@ export function CreateFoldButton() {
             className="input input-bordered resize-none"
             disabled={isSubmitting}
             value={name}
+            maxLength={140}
             onChange={(e) => updateName(e.target.value || '')}
           />
         </div>
@@ -93,7 +95,7 @@ export function CreateFoldButton() {
           </label>
 
           <input
-            placeholder="Short description (140 characters max)"
+            placeholder="Short description (140 characters max, optional)"
             className="input input-bordered resize-none"
             disabled={isSubmitting}
             value={about}

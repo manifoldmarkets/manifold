@@ -5,8 +5,6 @@ import { Title } from '../components/title'
 import { FundsSelector } from '../components/yes-no-selector'
 import { useUser } from '../hooks/use-user'
 import { checkoutURL } from '../lib/service/stripe'
-import Image from 'next/image'
-import { Spacer } from '../components/layout/spacer'
 import { Page } from '../components/page'
 
 export default function AddFundsPage() {
@@ -23,7 +21,7 @@ export default function AddFundsPage() {
       <Col className="items-center">
         <Col>
           <Title text="Get Manifold Dollars" />
-          <Image
+          <img
             className="block mt-6"
             src="/praying-mantis-light.svg"
             width={200}
