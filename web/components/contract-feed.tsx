@@ -685,10 +685,7 @@ export function ContractFeed(props: {
         ))}
       </ul>
       {tradingAllowed(contract) && (
-        <BetRow
-          contract={contract}
-          className={clsx('-mt-4', betRowClassName)}
-        />
+        <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
       )}
     </div>
   )
