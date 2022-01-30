@@ -59,8 +59,16 @@ export const getStandardPayouts = (
   ]) // add creator fee
 }
 
-export const getMktPayouts = (contract: Contract, bets: Bet[]) => {
-  const p = getProbability(contract.totalShares)
+export const getMktPayouts = (
+  contract: Contract,
+  bets: Bet[],
+  resolutionProbability?: number
+) => {
+  const p =
+    resolutionProbability === undefined
+      ? getProbability(contract.totalShares)
+      : resolutionProbability
+
   const poolTotal = contract.pool.YES + contract.pool.NO
   console.log('Resolved MKT at p=', p, 'pool: $M', poolTotal)
 
@@ -116,14 +124,15 @@ export const getMktPayouts = (contract: Contract, bets: Bet[]) => {
 export const getPayouts = (
   outcome: outcome,
   contract: Contract,
-  bets: Bet[]
+  bets: Bet[],
+  resolutionProbability?: number
 ) => {
   switch (outcome) {
     case 'YES':
     case 'NO':
       return getStandardPayouts(outcome, contract, bets)
     case 'MKT':
-      return getMktPayouts(contract, bets)
+      return getMktPayouts(contract, bets, resolutionProbability)
     case 'CANCEL':
       return getCancelPayouts(contract, bets)
   }

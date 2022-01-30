@@ -174,7 +174,10 @@ export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
 }
 
 function calculateMktPayout(contract: Contract, bet: Bet) {
-  const p = getProbability(contract.totalShares)
+  const p =
+    contract.resolutionProbability !== undefined
+      ? contract.resolutionProbability
+      : getProbability(contract.totalShares)
 
   const weightedTotal =
     p * contract.totalBets.YES + (1 - p) * contract.totalBets.NO
