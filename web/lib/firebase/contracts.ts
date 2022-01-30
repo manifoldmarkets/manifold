@@ -35,10 +35,11 @@ export function contractMetrics(contract: Contract) {
     createdTime,
     resolutionTime,
     isResolved,
+    resolutionProbability,
   } = contract
 
   const truePool = pool.YES + pool.NO
-  const prob = getProbability(totalShares)
+  const prob = resolutionProbability ?? getProbability(totalShares)
   const probPercent = Math.round(prob * 100) + '%'
 
   const startProb = getProbability(phantomShares)

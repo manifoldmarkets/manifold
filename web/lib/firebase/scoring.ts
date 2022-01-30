@@ -27,13 +27,18 @@ export function scoreTraders(contracts: Contract[], bets: Bet[][]) {
 }
 
 function scoreUsersByContract(contract: Contract, bets: Bet[]) {
-  const { resolution } = contract
+  const { resolution, resolutionProbability } = contract
 
   const [closedBets, openBets] = _.partition(
     bets,
     (bet) => bet.isSold || bet.sale
   )
-  const resolvePayouts = getPayouts(resolution ?? 'MKT', contract, openBets)
+  const resolvePayouts = getPayouts(
+    resolution ?? 'MKT',
+    contract,
+    openBets,
+    resolutionProbability
+  )
 
   const salePayouts = closedBets.map((bet) => {
     const { userId, sale } = bet

@@ -15,6 +15,7 @@ import { InfoTooltip } from '../components/info-tooltip'
 import { CREATOR_FEE } from '../../common/fees'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
+import { ProbabilitySelector } from '../components/probability-selector'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -127,30 +128,11 @@ export function NewContract(props: { question: string; tag?: string }) {
         <label className="label">
           <span className="mb-1">Initial probability</span>
         </label>
-        <Row className="items-center gap-2">
-          <label className="input-group input-group-lg w-fit text-lg">
-            <input
-              type="number"
-              value={initialProb}
-              className="input input-bordered input-md text-lg"
-              disabled={isSubmitting}
-              min={1}
-              max={99}
-              onChange={(e) =>
-                setInitialProb(parseInt(e.target.value.substring(0, 2)))
-              }
-            />
-            <span>%</span>
-          </label>
-          <input
-            type="range"
-            className="range range-primary"
-            min={1}
-            max={99}
-            value={initialProb}
-            onChange={(e) => setInitialProb(parseInt(e.target.value))}
-          />
-        </Row>
+
+        <ProbabilitySelector
+          probabilityInt={initialProb}
+          setProbabilityInt={setInitialProb}
+        />
       </div>
 
       <Spacer h={4} />
