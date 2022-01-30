@@ -1,5 +1,7 @@
+import { getProbability } from '../../common/calculate'
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
+import { formatPercent } from '../../common/util/format'
 import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 
@@ -31,7 +33,8 @@ export const sendMarketResolutionEmail = async (
   const user = await getUser(userId)
   if (!user) return
 
-  const outcome = toDisplayResolution[resolution]
+  const prob = formatPercent(getProbability(contract.totalShares))
+  const outcome = toDisplayResolution[resolution].replace('PROB', prob)
 
   const subject = `Resolved ${outcome}: ${contract.question}`
 
@@ -57,4 +60,4 @@ export const sendMarketResolutionEmail = async (
   )
 }
 
-const toDisplayResolution = { YES: 'YES', NO: 'NO', CANCEL: 'N/A', MKT: 'MKT' }
+const toDisplayResolution = { YES: 'YES', NO: 'NO', CANCEL: 'N/A', MKT: 'PROB' }

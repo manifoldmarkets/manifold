@@ -82,8 +82,8 @@ export function ResolutionPanel(props: {
           <>The pool will be returned to traders with no fees.</>
         ) : outcome === 'MKT' ? (
           <>
-            Traders will be paid out at the current implied probability. You
-            earn 1% of the pool.
+            Traders will be paid out at the probability you specify. You earn 1%
+            of the pool.
           </>
         ) : (
           <>Resolving this market will immediately pay out traders.</>

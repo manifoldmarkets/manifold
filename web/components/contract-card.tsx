@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../components/layout/row'
-import { formatMoney } from '../lib/util/format'
+import { formatMoney } from '../../common/util/format'
 import { UserLink } from './user-page'
 import {
   Contract,
@@ -74,7 +74,7 @@ export function ResolutionOrChance(props: {
   const resolutionText = {
     YES: 'YES',
     NO: 'NO',
-    MKT: 'MKT',
+    MKT: probPercent,
     CANCEL: 'N/A',
     '': '',
   }[resolution || '']

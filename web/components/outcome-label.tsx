@@ -22,5 +22,5 @@ export function CancelLabel() {
 }
 
 export function MarketLabel() {
-  return <span className="text-blue-400">MKT</span>
+  return <span className="text-blue-400">PROB</span>
 }
