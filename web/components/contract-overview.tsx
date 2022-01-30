@@ -3,6 +3,7 @@ import {
   Contract,
   deleteContract,
   contractPath,
+  tradingAllowed,
 } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
@@ -58,11 +59,13 @@ export const ContractOverview = (props: {
               large
             />
 
-            <BetRow
-              contract={contract}
-              className="md:hidden"
-              labelClassName="hidden"
-            />
+            {tradingAllowed(contract) && (
+              <BetRow
+                contract={contract}
+                className="md:hidden"
+                labelClassName="hidden"
+              />
+            )}
           </Row>
 
           <ContractDetails contract={contract} />
