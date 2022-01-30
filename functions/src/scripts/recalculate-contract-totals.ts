@@ -1,19 +1,14 @@
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
+import { initAdmin } from './script-init'
+initAdmin('james')
+
 import { Bet } from '../../../common/bet'
 import { Contract } from '../../../common/contract'
 
 type DocRef = admin.firestore.DocumentReference
 
-// Generate your own private key, and set the path below:
-// https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
-// const serviceAccount = require('../../../../Downloads/dev-mantic-markets-firebase-adminsdk-sir5m-b2d27f8970.json')
-const serviceAccount = require('../../../../Downloads/mantic-markets-firebase-adminsdk-1ep46-820891bb87.json')
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-})
 const firestore = admin.firestore()
 
 async function recalculateContract(contractRef: DocRef, contract: Contract) {
