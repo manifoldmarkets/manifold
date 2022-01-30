@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import React from 'react'
-import { formatMoney } from '../lib/util/format'
+import { formatMoney } from '../../common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 
@@ -78,7 +78,7 @@ export function YesNoCancelSelector(props: {
           onClick={() => onSelect('MKT')}
           className={clsx(btnClassName, 'btn-sm')}
         >
-          MKT
+          PROB
         </Button>
 
         <Button

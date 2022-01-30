@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useUser } from '../hooks/use-user'
-import { formatMoney } from '../lib/util/format'
+import { formatMoney } from '../../common/util/format'
 import { AddFundsButton } from './add-funds-button'
 import { Col } from './layout/col'
 import { Row } from './layout/row'

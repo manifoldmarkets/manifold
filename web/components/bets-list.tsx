@@ -11,7 +11,7 @@ import {
   formatMoney,
   formatPercent,
   formatWithCommas,
-} from '../lib/util/format'
+} from '../../common/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import {
