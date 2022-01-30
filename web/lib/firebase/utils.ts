@@ -23,6 +23,8 @@ export function listenForValue<T>(
   setValue: (value: T | null) => void
 ) {
   return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.metadata.fromCache) return
+
     const value = snapshot.exists() ? (snapshot.data() as T) : null
     setValue(value)
   })
