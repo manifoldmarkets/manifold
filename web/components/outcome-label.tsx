@@ -5,7 +5,7 @@ export function OutcomeLabel(props: {
 
   if (outcome === 'YES') return <YesLabel />
   if (outcome === 'NO') return <NoLabel />
-  if (outcome === 'MKT') return <MarketLabel />
+  if (outcome === 'MKT') return <ProbLabel />
   return <CancelLabel />
 }
 
@@ -22,5 +22,9 @@ export function CancelLabel() {
 }
 
 export function MarketLabel() {
+  return <span className="text-blue-400">MKT</span>
+}
+
+export function ProbLabel() {
   return <span className="text-blue-400">PROB</span>
 }
