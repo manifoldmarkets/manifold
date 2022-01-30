@@ -6,6 +6,12 @@ import { Row } from './layout/row'
 import { firebaseLogin, User } from '../lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileMenu } from './profile-menu'
+import {
+  BellIcon,
+  HomeIcon,
+  SearchIcon,
+  UserGroupIcon,
+} from '@heroicons/react/outline'
 
 export function NavBar(props: {
   darkBackground?: boolean
@@ -22,6 +28,7 @@ export function NavBar(props: {
   const themeClasses = clsx(darkBackground && 'text-white', hoverClasses)
 
   return (
+    // <>
     <nav className={clsx('w-full p-4 mb-4', className)} aria-label="Global">
       <Row
         className={clsx(
@@ -41,6 +48,57 @@ export function NavBar(props: {
           )}
         </Row>
       </Row>
+    </nav>
+    // {/* <BottomNavBar /> */}
+    // </>
+  )
+}
+
+// From https://codepen.io/chris__sev/pen/QWGvYbL
+// TODO: Show a line above the navbar
+// TODO: Don't show when logged out
+function BottomNavBar() {
+  return (
+    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white z-20 flex justify-between text-xs text-gray-700">
+      <Link href="/home">
+        <a
+          href="#"
+          className="w-full block py-2 px-3 text-center hover:bg-blue-200 hover:text-blue-800 transition duration-300"
+        >
+          <HomeIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          {/* Home */}
+        </a>
+      </Link>
+
+      <Link href="/markets">
+        <a
+          href="#"
+          className="w-full block py-2 px-3 text-center hover:bg-blue-200 hover:text-blue-800"
+        >
+          <SearchIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          {/* Explore */}
+        </a>
+      </Link>
+
+      <Link href="/folds">
+        <a
+          href="#"
+          className="w-full block py-2 px-3 text-center hover:bg-blue-200 hover:text-blue-800"
+        >
+          <UserGroupIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          {/* Folds */}
+        </a>
+      </Link>
+
+      <Link href="/home">
+        <a
+          href="#"
+          className="w-full block py-2 px-3 text-center hover:bg-blue-200 hover:text-blue-800"
+        >
+          <BellIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          {/* Notifs */}
+        </a>
+      </Link>
     </nav>
   )
 }

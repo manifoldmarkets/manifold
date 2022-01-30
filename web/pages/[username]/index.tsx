@@ -6,6 +6,8 @@ import { UserPage } from '../../components/user-page'
 import { useUser } from '../../hooks/use-user'
 import Custom404 from '../404'
 
+// TODO: SEO component for hyperlinking to this page
+
 export default function UserProfile() {
   const router = useRouter()
   const [user, setUser] = useState<User | null | 'loading'>('loading')
