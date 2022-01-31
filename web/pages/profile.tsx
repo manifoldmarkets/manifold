@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { AddFundsButton } from '../components/add-funds-button'
 
@@ -6,7 +5,7 @@ import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
 import { usePrivateUser, useUser } from '../hooks/use-user'
-import { formatMoney } from '../lib/util/format'
+import { formatMoney } from '../../common/util/format'
 
 export default function ProfilePage() {
   const user = useUser()
