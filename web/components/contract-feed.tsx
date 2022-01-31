@@ -27,7 +27,7 @@ import { Linkify } from './linkify'
 import { Row } from './layout/row'
 import { createComment } from '../lib/firebase/comments'
 import { useComments } from '../hooks/use-comments'
-import { formatMoney } from '../lib/util/format'
+import { formatMoney } from '../../common/util/format'
 import { ResolutionOrChance } from './contract-card'
 import { SiteLink } from './site-link'
 import { Col } from './layout/col'
@@ -160,7 +160,9 @@ export function ContractDescription(props: {
     setEditing(false)
 
     const newDescription = `${contract.description}\n\n${description}`.trim()
-    const tags = parseTags(`${contract.tags.join(' ')} ${newDescription}`)
+    const tags = parseTags(
+      `${newDescription} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
+    )
     const lowercaseTags = tags.map((tag) => tag.toLowerCase())
     await updateContract(contract.id, {
       description: newDescription,
@@ -685,10 +687,7 @@ export function ContractFeed(props: {
         ))}
       </ul>
       {tradingAllowed(contract) && (
-        <BetRow
-          contract={contract}
-          className={clsx('-mt-4', betRowClassName)}
-        />
+        <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
       )}
     </div>
   )

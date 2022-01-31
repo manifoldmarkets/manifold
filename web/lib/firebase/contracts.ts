@@ -17,7 +17,7 @@ import {
 import _ from 'lodash'
 
 import { app } from './init'
-import { getValues, listenForValues } from './utils'
+import { getValues, listenForValue, listenForValues } from './utils'
 import { Contract } from '../../../common/contract'
 import { getProbability } from '../../../common/calculate'
 import { createRNG, shuffle } from '../../../common/util/random'
@@ -35,10 +35,11 @@ export function contractMetrics(contract: Contract) {
     createdTime,
     resolutionTime,
     isResolved,
+    resolutionProbability,
   } = contract
 
   const truePool = pool.YES + pool.NO
-  const prob = getProbability(totalShares)
+  const prob = resolutionProbability ?? getProbability(totalShares)
   const probPercent = Math.round(prob * 100) + '%'
 
   const startProb = getProbability(phantomShares)
@@ -125,9 +126,7 @@ export function listenForContract(
   setContract: (contract: Contract | null) => void
 ) {
   const contractRef = doc(contractCollection, contractId)
-  return onSnapshot(contractRef, (contractSnap) => {
-    setContract((contractSnap.data() ?? null) as Contract | null)
-  })
+  return listenForValue<Contract>(contractRef, setContract)
 }
 
 function chooseRandomSubset(contracts: Contract[], count: number) {

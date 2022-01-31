@@ -1,9 +1,10 @@
 import _ from 'lodash'
+
 import { Col } from '../components/layout/col'
 import { Leaderboard } from '../components/leaderboard'
 import { Page } from '../components/page'
 import { getTopCreators, getTopTraders, User } from '../lib/firebase/users'
-import { formatMoney } from '../lib/util/format'
+import { formatMoney } from '../../common/util/format'
 
 export async function getStaticProps() {
   const [topTraders, topCreators] = await Promise.all([

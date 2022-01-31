@@ -1,5 +1,5 @@
 import { firebaseLogout, User } from '../lib/firebase/users'
-import { formatMoney } from '../lib/util/format'
+import { formatMoney } from '../../common/util/format'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
 import { MenuButton } from './menu'

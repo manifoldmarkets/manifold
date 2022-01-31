@@ -45,6 +45,17 @@ export async function getFoldBySlug(slug: string) {
   return folds.length === 0 ? null : folds[0]
 }
 
+function contractsByTagsQuery(tags: string[]) {
+  return query(
+    contractCollection,
+    where(
+      'lowercaseTags',
+      'array-contains-any',
+      tags.map((tag) => tag.toLowerCase())
+    )
+  )
+}
+
 export async function getFoldContracts(fold: Fold) {
   const {
     tags,
@@ -56,18 +67,7 @@ export async function getFoldContracts(fold: Fold) {
 
   const [tagsContracts, includedContracts] = await Promise.all([
     // TODO: if tags.length > 10, execute multiple parallel queries
-    tags.length > 0
-      ? getValues<Contract>(
-          query(
-            contractCollection,
-            where(
-              'lowercaseTags',
-              'array-contains-any',
-              tags.map((tag) => tag.toLowerCase())
-            )
-          )
-        )
-      : [],
+    tags.length > 0 ? getValues<Contract>(contractsByTagsQuery(tags)) : [],
 
     // TODO: if contractIds.length > 10, execute multiple parallel queries
     contractIds.length > 0
@@ -95,6 +95,13 @@ export async function getFoldContracts(fold: Fold) {
   })
 
   return [...approvedContracts, ...includedContracts]
+}
+
+export function listenForTaggedContracts(
+  tags: string[],
+  setContracts: (contracts: Contract[]) => void
+) {
+  return listenForValues<Contract>(contractsByTagsQuery(tags), setContracts)
 }
 
 export function listenForFold(

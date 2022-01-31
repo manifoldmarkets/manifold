@@ -9,6 +9,8 @@ import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ConfirmationButton as ConfirmationButton } from './confirmation-button'
 import { resolveMarket } from '../lib/firebase/api-call'
+import { ProbabilitySelector } from './probability-selector'
+import { getProbability } from '../../common/calculate'
 
 export function ResolutionPanel(props: {
   creator: User
@@ -26,6 +28,8 @@ export function ResolutionPanel(props: {
     'YES' | 'NO' | 'MKT' | 'CANCEL' | undefined
   >()
 
+  const [prob, setProb] = useState(getProbability(contract.totalShares) * 100)
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
 
@@ -35,6 +39,7 @@ export function ResolutionPanel(props: {
     const result = await resolveMarket({
       outcome,
       contractId: contract.id,
+      probabilityInt: prob,
     }).then((r) => r.data as any)
 
     console.log('resolved', outcome, 'result:', result)
@@ -82,8 +87,8 @@ export function ResolutionPanel(props: {
           <>The pool will be returned to traders with no fees.</>
         ) : outcome === 'MKT' ? (
           <>
-            Traders will be paid out at the current implied probability. You
-            earn 1% of the pool.
+            Traders will be paid out at the probability you specify. You earn 1%
+            of the pool.
           </>
         ) : (
           <>Resolving this market will immediately pay out traders.</>
@@ -113,7 +118,20 @@ export function ResolutionPanel(props: {
         }}
         onSubmit={resolve}
       >
-        <p>Are you sure you want to resolve this market?</p>
+        {outcome === 'MKT' ? (
+          <>
+            <p className="mb-4">
+              What probability would you like to resolve the market to?
+            </p>
+
+            <ProbabilitySelector
+              probabilityInt={Math.round(prob)}
+              setProbabilityInt={setProb}
+            />
+          </>
+        ) : (
+          <p>Are you sure you want to resolve this market?</p>
+        )}
       </ConfirmationButton>
     </Col>
   )

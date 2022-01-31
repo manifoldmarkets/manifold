@@ -11,7 +11,6 @@ import {
 import { User } from '../lib/firebase/users'
 import { Col } from './layout/col'
 import { SiteLink } from './site-link'
-import { parseTags } from '../../common/util/parse'
 import { ContractCard } from './contract-card'
 import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 
@@ -122,12 +121,13 @@ function CreatorContractsGrid(props: { contracts: Contract[] }) {
 function TagContractsGrid(props: { contracts: Contract[] }) {
   const { contracts } = props
 
-  const contractTags = _.flatMap(contracts, (contract) =>
-    parseTags(contract.question + ' ' + contract.description).map((tag) => ({
+  const contractTags = _.flatMap(contracts, (contract) => {
+    const { tags } = contract
+    return tags.map((tag) => ({
       tag,
       contract,
     }))
-  )
+  })
   const groupedByTag = _.groupBy(contractTags, ({ tag }) => tag)
   const byTag = _.mapValues(groupedByTag, (contractTags) =>
     contractTags.map(({ contract }) => contract)
@@ -210,7 +210,8 @@ export function SearchableGrid(props: {
       check(c.question) ||
       check(c.description) ||
       check(c.creatorName) ||
-      check(c.creatorUsername)
+      check(c.creatorUsername) ||
+      check(c.lowercaseTags.map((tag) => `#${tag}`).join(' '))
   )
 
   if (sort === 'newest' || sort === 'all') {

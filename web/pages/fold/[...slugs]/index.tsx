@@ -28,12 +28,13 @@ import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { scoreCreators, scoreTraders } from '../../../lib/firebase/scoring'
 import { Leaderboard } from '../../../components/leaderboard'
-import { formatMoney, toCamelCase } from '../../../lib/util/format'
+import { formatMoney, toCamelCase } from '../../../../common/util/format'
 import { EditFoldButton } from '../../../components/edit-fold-button'
 import Custom404 from '../../404'
 import { FollowFoldButton } from '../../../components/follow-fold-button'
 import FeedCreate from '../../../components/feed-create'
 import { SEO } from '../../../components/SEO'
+import { useTaggedContracts } from '../../../hooks/use-contracts'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -104,8 +105,14 @@ async function toUserScores(userScores: { [userId: string]: number }) {
   const topUsers = await Promise.all(
     topUserPairs.map(([userId]) => getUser(userId))
   )
-  const topUserScores = topUserPairs.map(([_, score]) => score)
-  return [topUsers, topUserScores] as const
+  const existingPairs = topUserPairs.filter(([id, _]) =>
+    topUsers.find((user) => user?.id === id)
+  )
+  const topExistingUsers = existingPairs.map(
+    ([id]) => topUsers.find((user) => user?.id === id) as User
+  )
+  const topUserScores = existingPairs.map(([_, score]) => score)
+  return [topExistingUsers, topUserScores] as const
 }
 
 export async function getStaticPaths() {
@@ -127,8 +134,6 @@ export default function FoldPage(props: {
 }) {
   const {
     curator,
-    contracts,
-    activeContracts,
     activeContractBets,
     activeContractComments,
     topTraders,
@@ -150,6 +155,16 @@ export default function FoldPage(props: {
 
   const user = useUser()
   const isCurator = user && fold && user.id === fold.curatorId
+
+  const taggedContracts = useTaggedContracts(fold?.tags) ?? props.contracts
+  const contractsMap = _.fromPairs(
+    taggedContracts.map((contract) => [contract.id, contract])
+  )
+
+  const contracts = props.contracts.map((contract) => contractsMap[contract.id])
+  const activeContracts = props.activeContracts.map(
+    (contract) => contractsMap[contract.id]
+  )
 
   if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
     return <Custom404 />

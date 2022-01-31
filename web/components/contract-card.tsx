@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../components/layout/row'
-import { formatMoney } from '../lib/util/format'
+import { formatMoney } from '../../common/util/format'
 import { UserLink } from './user-page'
 import {
   Contract,
@@ -74,7 +74,7 @@ export function ResolutionOrChance(props: {
   const resolutionText = {
     YES: 'YES',
     NO: 'NO',
-    MKT: 'MKT',
+    MKT: probPercent,
     CANCEL: 'N/A',
     '': '',
   }[resolution || '']
@@ -142,11 +142,8 @@ export function AbbrContractDetails(props: {
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
-  const { question, description, closeTime, creatorName, creatorUsername } =
-    contract
+  const { closeTime, creatorName, creatorUsername } = contract
   const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
-
-  const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
 
   return (
     <Col className="text-sm text-gray-500 gap-2 sm:flex-row sm:flex-wrap">
@@ -199,10 +196,10 @@ export function ContractDetails(props: { contract: Contract }) {
 
 // String version of the above, to send to the OpenGraph image generator
 export function contractTextDetails(contract: Contract) {
-  const { question, description, closeTime } = contract
+  const { closeTime, tags } = contract
   const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
 
-  const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
+  const hashtags = tags.map((tag) => `#${tag}`)
 
   return (
     `${resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}` +
@@ -212,6 +209,6 @@ export function contractTextDetails(contract: Contract) {
         ).format('MMM D, h:mma')}`
       : '') +
     ` • ${formatMoney(truePool)} pool` +
-    (tags.length > 0 ? ` • ${tags.join(' ')}` : '')
+    (hashtags.length > 0 ? ` • ${hashtags.join(' ')}` : '')
   )
 }

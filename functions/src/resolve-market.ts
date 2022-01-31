@@ -16,16 +16,23 @@ export const resolveMarket = functions
       data: {
         outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
         contractId: string
+        probabilityInt?: number
       },
       context
     ) => {
       const userId = context?.auth?.uid
       if (!userId) return { status: 'error', message: 'Not authorized' }
 
-      const { outcome, contractId } = data
+      const { outcome, contractId, probabilityInt } = data
 
       if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
         return { status: 'error', message: 'Invalid outcome' }
+
+      if (
+        probabilityInt !== undefined &&
+        (probabilityInt < 1 || probabilityInt > 99 || !isFinite(probabilityInt))
+      )
+        return { status: 'error', message: 'Invalid probability' }
 
       const contractDoc = firestore.doc(`contracts/${contractId}`)
       const contractSnap = await contractDoc.get()
@@ -42,10 +49,16 @@ export const resolveMarket = functions
       const creator = await getUser(contract.creatorId)
       if (!creator) return { status: 'error', message: 'Creator not found' }
 
+      const resolutionProbability =
+        probabilityInt !== undefined ? probabilityInt / 100 : undefined
+
       await contractDoc.update({
         isResolved: true,
         resolution: outcome,
         resolutionTime: Date.now(),
+        ...(resolutionProbability === undefined
+          ? {}
+          : { resolutionProbability }),
       })
 
       console.log('contract ', contractId, 'resolved to:', outcome)
@@ -57,7 +70,12 @@ export const resolveMarket = functions
       const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
       const openBets = bets.filter((b) => !b.isSold && !b.sale)
 
-      const payouts = getPayouts(outcome, contract, openBets)
+      const payouts = getPayouts(
+        outcome,
+        contract,
+        openBets,
+        resolutionProbability
+      )
 
       console.log('payouts:', payouts)
 
@@ -79,7 +97,8 @@ export const resolveMarket = functions
         userPayouts,
         creator,
         contract,
-        outcome
+        outcome,
+        resolutionProbability
       )
 
       return result
@@ -91,7 +110,8 @@ const sendResolutionEmails = async (
   userPayouts: { [userId: string]: number },
   creator: User,
   contract: Contract,
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
+  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT',
+  resolutionProbability?: number
 ) => {
   const nonWinners = _.difference(
     _.uniq(openBets.map(({ userId }) => userId)),
@@ -103,7 +123,14 @@ const sendResolutionEmails = async (
   ]
   await Promise.all(
     emailPayouts.map(([userId, payout]) =>
-      sendMarketResolutionEmail(userId, payout, creator, contract, outcome)
+      sendMarketResolutionEmail(
+        userId,
+        payout,
+        creator,
+        contract,
+        outcome,
+        resolutionProbability
+      )
     )
   )
 }

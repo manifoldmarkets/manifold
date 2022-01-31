@@ -8,13 +8,13 @@ import { Spacer } from '../components/layout/spacer'
 import { useUser } from '../hooks/use-user'
 import { Contract, contractPath } from '../lib/firebase/contracts'
 import { createContract } from '../lib/firebase/api-call'
-import { Row } from '../components/layout/row'
 import { AmountInput } from '../components/amount-input'
 import { MINIMUM_ANTE } from '../../common/antes'
 import { InfoTooltip } from '../components/info-tooltip'
 import { CREATOR_FEE } from '../../common/fees'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
+import { ProbabilitySelector } from '../components/probability-selector'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -72,8 +72,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [anteError, setAnteError] = useState<string | undefined>()
   // By default, close the market a week from today
-  // const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
-  const [closeDate, setCloseDate] = useState<undefined | string>(undefined)
+  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DDT23:59')
+  const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -127,30 +127,11 @@ export function NewContract(props: { question: string; tag?: string }) {
         <label className="label">
           <span className="mb-1">Initial probability</span>
         </label>
-        <Row className="items-center gap-2">
-          <label className="input-group input-group-lg w-fit text-lg">
-            <input
-              type="number"
-              value={initialProb}
-              className="input input-bordered input-md text-lg"
-              disabled={isSubmitting}
-              min={1}
-              max={99}
-              onChange={(e) =>
-                setInitialProb(parseInt(e.target.value.substring(0, 2)))
-              }
-            />
-            <span>%</span>
-          </label>
-          <input
-            type="range"
-            className="range range-primary"
-            min={1}
-            max={99}
-            value={initialProb}
-            onChange={(e) => setInitialProb(parseInt(e.target.value))}
-          />
-        </Row>
+
+        <ProbabilitySelector
+          probabilityInt={initialProb}
+          setProbabilityInt={setInitialProb}
+        />
       </div>
 
       <Spacer h={4} />
@@ -175,15 +156,15 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <div className="form-control items-start mb-1">
         <label className="label gap-2 mb-1">
-          <span>Last trading day</span>
-          <InfoTooltip text="Trading allowed through 11:59 pm local time on this date." />
+          <span>Market close</span>
+          <InfoTooltip text="Trading will be halted after this time (local timezone)." />
         </label>
         <input
-          type="date"
+          type="datetime-local"
           className="input input-bordered"
           onClick={(e) => e.stopPropagation()}
           onChange={(e) => setCloseDate(e.target.value || '')}
-          min={new Date().toISOString().split('T')[0]}
+          min={Date.now()}
           disabled={isSubmitting}
           value={closeDate}
         />

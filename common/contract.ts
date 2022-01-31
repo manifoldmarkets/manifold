@@ -27,6 +27,7 @@ export type Contract = {
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
   resolution?: outcome // Chosen by creator; must be one of outcomes
+  resolutionProbability?: number
 
   volume24Hours: number
   volume7Days: number

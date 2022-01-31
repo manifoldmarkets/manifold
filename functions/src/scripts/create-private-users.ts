@@ -1,16 +1,10 @@
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
+import { initAdmin } from './script-init'
+initAdmin('stephen')
+
 import { PrivateUser, STARTING_BALANCE, User } from '../../../common/user'
-
-// Generate your own private key, and set the path below:
-// https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
-
-const serviceAccount = require('../../../../../../Downloads/dev-mantic-markets-firebase-adminsdk-sir5m-b2d27f8970.json')
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-})
 
 const firestore = admin.firestore()
 
