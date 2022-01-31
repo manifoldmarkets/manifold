@@ -142,11 +142,8 @@ export function AbbrContractDetails(props: {
 
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
-  const { question, description, closeTime, creatorName, creatorUsername } =
-    contract
+  const { closeTime, creatorName, creatorUsername } = contract
   const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
-
-  const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
 
   return (
     <Col className="text-sm text-gray-500 gap-2 sm:flex-row sm:flex-wrap">
@@ -199,10 +196,10 @@ export function ContractDetails(props: { contract: Contract }) {
 
 // String version of the above, to send to the OpenGraph image generator
 export function contractTextDetails(contract: Contract) {
-  const { question, description, closeTime } = contract
+  const { closeTime, tags } = contract
   const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
 
-  const tags = parseTags(`${question} ${description}`).map((tag) => `#${tag}`)
+  const hashtags = tags.map((tag) => `#${tag}`)
 
   return (
     `${resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}` +
@@ -212,6 +209,6 @@ export function contractTextDetails(contract: Contract) {
         ).format('MMM D, h:mma')}`
       : '') +
     ` • ${formatMoney(truePool)} pool` +
-    (tags.length > 0 ? ` • ${tags.join(' ')}` : '')
+    (hashtags.length > 0 ? ` • ${hashtags.join(' ')}` : '')
   )
 }

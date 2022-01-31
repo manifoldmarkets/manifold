@@ -11,7 +11,6 @@ import {
 import { User } from '../lib/firebase/users'
 import { Col } from './layout/col'
 import { SiteLink } from './site-link'
-import { parseTags } from '../../common/util/parse'
 import { ContractCard } from './contract-card'
 import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 
