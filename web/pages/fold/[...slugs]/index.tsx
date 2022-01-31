@@ -104,8 +104,14 @@ async function toUserScores(userScores: { [userId: string]: number }) {
   const topUsers = await Promise.all(
     topUserPairs.map(([userId]) => getUser(userId))
   )
-  const topUserScores = topUserPairs.map(([_, score]) => score)
-  return [topUsers, topUserScores] as const
+  const existingPairs = topUserPairs.filter(([id, _]) =>
+    topUsers.find((user) => user?.id === id)
+  )
+  const topExistingUsers = existingPairs.map(
+    ([id]) => topUsers.find((user) => user?.id === id) as User
+  )
+  const topUserScores = existingPairs.map(([_, score]) => score)
+  return [topExistingUsers, topUserScores] as const
 }
 
 export async function getStaticPaths() {
