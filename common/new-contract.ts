@@ -19,7 +19,7 @@ export function getNewContract(
     calcStartPool(initialProb, ante)
 
   const tags = parseTags(
-    `${extraTags.map((tag) => `#${tag}`).join(' ')} ${question} ${description}`
+    `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
   )
   const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 

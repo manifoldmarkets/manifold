@@ -160,7 +160,9 @@ export function ContractDescription(props: {
     setEditing(false)
 
     const newDescription = `${contract.description}\n\n${description}`.trim()
-    const tags = parseTags(`${contract.tags.join(' ')} ${newDescription}`)
+    const tags = parseTags(
+      `${newDescription} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
+    )
     const lowercaseTags = tags.map((tag) => tag.toLowerCase())
     await updateContract(contract.id, {
       description: newDescription,
