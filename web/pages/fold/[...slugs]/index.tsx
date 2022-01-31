@@ -34,6 +34,7 @@ import Custom404 from '../../404'
 import { FollowFoldButton } from '../../../components/follow-fold-button'
 import FeedCreate from '../../../components/feed-create'
 import { SEO } from '../../../components/SEO'
+import { useTaggedContracts } from '../../../hooks/use-contracts'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -133,8 +134,6 @@ export default function FoldPage(props: {
 }) {
   const {
     curator,
-    contracts,
-    activeContracts,
     activeContractBets,
     activeContractComments,
     topTraders,
@@ -156,6 +155,16 @@ export default function FoldPage(props: {
 
   const user = useUser()
   const isCurator = user && fold && user.id === fold.curatorId
+
+  const taggedContracts = useTaggedContracts(fold?.tags) ?? props.contracts
+  const contractsMap = _.fromPairs(
+    taggedContracts.map((contract) => [contract.id, contract])
+  )
+
+  const contracts = props.contracts.map((contract) => contractsMap[contract.id])
+  const activeContracts = props.activeContracts.map(
+    (contract) => contractsMap[contract.id]
+  )
 
   if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
