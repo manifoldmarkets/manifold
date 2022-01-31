@@ -1,12 +1,8 @@
 import React from 'react'
 import Router from 'next/router'
+import _ from 'lodash'
 
-import {
-  Contract,
-  getClosingSoonContracts,
-  getHotContracts,
-  listAllContracts,
-} from '../lib/firebase/contracts'
+import { Contract, listAllContracts } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
 import { ActivityFeed, findActiveContracts } from './activity'
 import {
@@ -19,15 +15,13 @@ import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
+import { useContracts } from '../hooks/use-contracts'
 
 export async function getStaticProps() {
-  const [contracts, recentComments, hotContracts, closingSoonContracts] =
-    await Promise.all([
-      listAllContracts().catch((_) => []),
-      getRecentComments().catch(() => []),
-      getHotContracts().catch(() => []),
-      getClosingSoonContracts().catch(() => []),
-    ])
+  const [contracts, recentComments] = await Promise.all([
+    listAllContracts().catch((_) => []),
+    getRecentComments().catch(() => []),
+  ])
 
   const activeContracts = findActiveContracts(contracts, recentComments)
   const activeContractBets = await Promise.all(
@@ -44,8 +38,6 @@ export async function getStaticProps() {
       activeContracts,
       activeContractBets,
       activeContractComments,
-      hotContracts,
-      closingSoonContracts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -56,27 +48,18 @@ const Home = (props: {
   activeContracts: Contract[]
   activeContractBets: Bet[][]
   activeContractComments: Comment[][]
-  hotContracts: Contract[]
-  closingSoonContracts: Contract[]
 }) => {
-  const {
-    activeContracts,
-    activeContractBets,
-    activeContractComments,
-    // hotContracts,
-    // closingSoonContracts,
-  } = props
+  const { activeContracts, activeContractBets, activeContractComments } = props
 
   const user = useUser()
 
-  // const initialActiveContracts = props.activeContracts ?? []
-  // const contracts = useContracts()
-  // const recentComments = useRecentComments()
-  // const activeContracts =
-  //   recentComments && contracts
-  //     ? findActiveContracts(contracts, recentComments)
-  //     : initialActiveContracts
-  // TODO: get activeContractBets, activeContractComments associated with activeContracts
+  const contracts = useContracts() ?? activeContracts
+  const contractsMap = _.fromPairs(
+    contracts.map((contract) => [contract.id, contract])
+  )
+  const updatedContracts = activeContracts.map(
+    (contract) => contractsMap[contract.id]
+  )
 
   if (user === null) {
     Router.replace('/')
@@ -89,17 +72,10 @@ const Home = (props: {
         <Col className="max-w-3xl">
           <FeedCreate user={user ?? undefined} />
           <Spacer h={4} />
-
-          {/* <HotMarkets contracts={hotContracts?.slice(0, 4) ?? []} />
-            <Spacer h={4} />
-
-            <ClosingSoonMarkets contracts={closingSoonContracts ?? []} />
-            <Spacer h={10} /> */}
-
           <ActivityFeed
-            contracts={activeContracts ?? []}
-            contractBets={activeContractBets ?? []}
-            contractComments={activeContractComments ?? []}
+            contracts={updatedContracts}
+            contractBets={activeContractBets}
+            contractComments={activeContractComments}
           />
         </Col>
       </Col>
