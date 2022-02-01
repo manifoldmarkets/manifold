@@ -192,8 +192,7 @@ ${TEST_VALUE}
             <span className="label-text">Description</span>
           </label>
 
-          <input
-            type="text"
+          <textarea
             placeholder="e.g. This market is part of the ACX predictions for 2022..."
             className="input"
             value={description}
