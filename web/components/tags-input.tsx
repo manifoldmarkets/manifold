@@ -4,7 +4,7 @@ import { parseWordsAsTags } from '../../common/util/parse'
 import { Contract, updateContract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { CompactTagsList } from './tags-list'
+import { TagsList } from './tags-list'
 
 export function TagsInput(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -27,7 +27,7 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
 
   return (
     <Col className={clsx('gap-4', className)}>
-      <CompactTagsList tags={newTags.map((tag) => `#${tag}`)} />
+      <TagsList tags={newTags.map((tag) => `#${tag}`)} />
 
       <Row className="items-center gap-4">
         <input

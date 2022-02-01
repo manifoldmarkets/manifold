@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { Row } from './layout/row'
-import { Linkify } from './linkify'
 import { SiteLink } from './site-link'
 import { Fold } from '../../common/fold'
 
@@ -9,11 +8,11 @@ export function Hashtag(props: { tag: string; noLink?: boolean }) {
   const body = (
     <div
       className={clsx(
-        'bg-white hover:bg-gray-100 px-4 py-2 rounded-full shadow-md',
+        'bg-gray-100 border-2 px-3 py-1 rounded-full shadow-md',
         !noLink && 'cursor-pointer'
       )}
     >
-      <span className="text-gray-500">{tag}</span>
+      <span className="text-gray-600 text-sm">{tag}</span>
     </div>
   )
 
@@ -29,25 +28,14 @@ export function TagsList(props: {
   tags: string[]
   className?: string
   noLink?: boolean
+  noLabel?: boolean
 }) {
-  const { tags, className, noLink } = props
+  const { tags, className, noLink, noLabel } = props
   return (
-    <Row className={clsx('flex-wrap gap-2', className)}>
+    <Row className={clsx('items-center flex-wrap gap-2', className)}>
+      {!noLabel && <div className="text-gray-500 mr-1">Tags</div>}
       {tags.map((tag) => (
         <Hashtag key={tag} tag={tag} noLink={noLink} />
-      ))}
-    </Row>
-  )
-}
-
-export function CompactTagsList(props: { tags: string[] }) {
-  const { tags } = props
-  return (
-    <Row className="gap-2 flex-wrap text-sm text-gray-500">
-      {tags.map((tag) => (
-        <div key={tag} className="bg-gray-100 px-1">
-          <Linkify text={tag} gray />
-        </div>
       ))}
     </Row>
   )
@@ -60,7 +48,7 @@ export function FoldTag(props: { fold: Fold }) {
     <SiteLink href={`/fold/${fold.slug}`} className="flex items-center">
       <div
         className={clsx(
-          'bg-indigo-50 px-4 py-2 rounded-full shadow-md',
+          'bg-white border-2 px-4 py-1 rounded-full shadow-md',
           'cursor-pointer'
         )}
       >
