@@ -21,7 +21,7 @@ export function parseTags(text: string) {
 export function parseWordsAsTags(text: string) {
   const taggedText = text
     .split(/\s+/)
-    .map((tag) => `#${tag}`)
+    .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`))
     .join(' ')
   return parseTags(taggedText)
 }
