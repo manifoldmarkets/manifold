@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { PlusCircleIcon } from '@heroicons/react/solid'
 import { parseWordsAsTags } from '../../common/util/parse'
 import { createFold } from '../lib/firebase/api-call'
 import { foldPath } from '../lib/firebase/folds'
@@ -49,7 +50,8 @@ export function CreateFoldButton() {
     <ConfirmationButton
       id="create-fold"
       openModelBtn={{
-        label: 'New community',
+        label: 'New',
+        icon: <PlusCircleIcon className="w-5 h-5 mr-2" />,
         className: clsx(
           isSubmitting ? 'loading btn-disabled' : 'btn-primary',
           'btn-sm'
