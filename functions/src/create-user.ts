@@ -9,7 +9,10 @@ import {
 } from '../../common/user'
 import { getUser, getUserByUsername } from './utils'
 import { randomString } from '../../common/util/random'
-import { cleanUsername } from '../../common/util/clean-username'
+import {
+  cleanDisplayName,
+  cleanUsername,
+} from '../../common/util/clean-username'
 
 export const createUser = functions
   .runWith({ minInstances: 1 })
@@ -30,7 +33,8 @@ export const createUser = functions
     const email = fbUser.email
     const emailName = email?.replace(/@.*$/, '')
 
-    const name = fbUser.displayName || emailName || 'User' + randomString(4)
+    const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
+    const name = cleanDisplayName(rawName)
     let username = cleanUsername(name)
 
     const sameNameUser = await getUserByUsername(username)
