@@ -59,6 +59,7 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
       name,
       about,
       tags,
+      lowercaseTags: tags.map((tag) => tag.toLowerCase()),
       createdTime: Date.now(),
       contractIds: [],
       excludedContractIds: [],
