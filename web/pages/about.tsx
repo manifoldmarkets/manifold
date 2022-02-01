@@ -1,6 +1,7 @@
 import { cloneElement } from 'react'
 import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
+import { useContracts } from '../hooks/use-contracts'
 import styles from './about.module.css'
 
 export default function About() {
@@ -244,7 +245,18 @@ function Contents() {
         </li>
         <li>
           Office hours:{' '}
-          <a href="https://calendly.com/austinchen/manifold">Calendly</a>
+          <ul>
+            <li>
+              <a href="https://calendly.com/austinchen/manifold">
+                Calendly — Austin
+              </a>
+            </li>
+            <li>
+              <a href="https://calendly.com/jamesgrugett/manifold">
+                Calendly — James
+              </a>
+            </li>
+          </ul>
         </li>
         <li>
           Chat:{' '}
