@@ -6,6 +6,12 @@ import { Row } from './layout/row'
 import { firebaseLogin, User } from '../lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileMenu } from './profile-menu'
+import {
+  CollectionIcon,
+  HomeIcon,
+  SearchIcon,
+  UserGroupIcon,
+} from '@heroicons/react/outline'
 
 export function NavBar(props: {
   darkBackground?: boolean
@@ -22,25 +28,76 @@ export function NavBar(props: {
   const themeClasses = clsx(darkBackground && 'text-white', hoverClasses)
 
   return (
-    <nav className={clsx('w-full p-4 mb-4', className)} aria-label="Global">
-      <Row
-        className={clsx(
-          'justify-between items-center mx-auto sm:px-4',
-          wide ? 'max-w-6xl' : 'max-w-4xl'
-        )}
-      >
-        <ManifoldLogo className="my-1" darkBackground={darkBackground} />
-
-        <Row className="items-center gap-6 sm:gap-8 ml-6">
-          {(user || user === null || assertUser) && (
-            <NavOptions
-              user={user}
-              assertUser={assertUser}
-              themeClasses={themeClasses}
-            />
+    <>
+      <nav className={clsx('w-full p-4 mb-4', className)} aria-label="Global">
+        <Row
+          className={clsx(
+            'justify-between items-center mx-auto sm:px-4',
+            wide ? 'max-w-6xl' : 'max-w-4xl'
           )}
+        >
+          <ManifoldLogo className="my-1" darkBackground={darkBackground} />
+
+          <Row className="items-center gap-6 sm:gap-8 ml-6">
+            {(user || user === null || assertUser) && (
+              <NavOptions
+                user={user}
+                assertUser={assertUser}
+                themeClasses={themeClasses}
+              />
+            )}
+          </Row>
         </Row>
-      </Row>
+      </nav>
+      {user && <BottomNavBar user={user} />}
+    </>
+  )
+}
+
+// From https://codepen.io/chris__sev/pen/QWGvYbL
+function BottomNavBar(props: { user: User }) {
+  const { user } = props
+  return (
+    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white z-20 flex justify-between text-xs text-gray-700 border-t-2">
+      <Link href="/home">
+        <a
+          href="#"
+          className="w-full block py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700 transition duration-300"
+        >
+          <HomeIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          {/* Home */}
+        </a>
+      </Link>
+
+      <Link href="/markets">
+        <a
+          href="#"
+          className="w-full block py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
+        >
+          <SearchIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          {/* Explore */}
+        </a>
+      </Link>
+
+      <Link href="/folds">
+        <a
+          href="#"
+          className="w-full block py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
+        >
+          <UserGroupIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          {/* Folds */}
+        </a>
+      </Link>
+
+      <Link href={`/${user.username}`}>
+        <a
+          href="#"
+          className="w-full block py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
+        >
+          <CollectionIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          {/* {user.username} */}
+        </a>
+      </Link>
     </nav>
   )
 }

@@ -15,7 +15,7 @@ export function Page(props: {
 
       <div
         className={clsx(
-          'w-full mx-auto',
+          'w-full mx-auto pb-16',
           wide ? 'max-w-6xl' : 'max-w-4xl',
           margin && 'px-4'
         )}
