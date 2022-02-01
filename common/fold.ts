@@ -17,4 +17,6 @@ export type Fold = {
   excludedCreatorIds?: string[]
 
   followCount: number
+
+  disallowMarketCreation?: boolean
 }
