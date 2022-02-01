@@ -1,5 +1,5 @@
 {
-  "name": "mantic-common",
+  "name": "common",
   "private": true,
   "scripts": {},
   "dependencies": {

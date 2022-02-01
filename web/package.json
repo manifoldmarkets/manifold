@@ -1,5 +1,5 @@
 {
-  "name": "mantic",
+  "name": "web",
   "private": true,
   "scripts": {
     "dev": "concurrently -n NEXT,TS -c magenta,cyan \"next dev -p 3000\" \"yarn ts --watch\"",
