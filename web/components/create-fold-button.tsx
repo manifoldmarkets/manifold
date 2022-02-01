@@ -49,7 +49,7 @@ export function CreateFoldButton() {
     <ConfirmationButton
       id="create-fold"
       openModelBtn={{
-        label: 'Create a fold',
+        label: 'New community',
         className: clsx(
           isSubmitting ? 'loading btn-disabled' : 'btn-primary',
           'btn-sm'
@@ -61,11 +61,11 @@ export function CreateFoldButton() {
       }}
       onSubmit={onSubmit}
     >
-      <Title className="!mt-0" text="Create a fold" />
+      <Title className="!mt-0" text="Create a community" />
 
       <Col className="text-gray-500 gap-1">
         <div>
-          Markets are included in a fold if they match one or more tags.
+          Markets are included in a community if they match one or more tags.
         </div>
       </Col>
 
@@ -74,11 +74,11 @@ export function CreateFoldButton() {
       <div>
         <div className="form-control w-full">
           <label className="label">
-            <span className="mb-1">Fold name</span>
+            <span className="mb-1">Community name</span>
           </label>
 
           <input
-            placeholder="Your fold name"
+            placeholder="Name"
             className="input input-bordered resize-none"
             disabled={isSubmitting}
             value={name}

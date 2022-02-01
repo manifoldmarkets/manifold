@@ -59,7 +59,7 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
         <div className="modal-box">
           <div className="form-control w-full">
             <label className="label">
-              <span className="mb-1">Fold name</span>
+              <span className="mb-1">Community name</span>
             </label>
 
             <input

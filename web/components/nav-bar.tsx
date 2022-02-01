@@ -134,7 +134,7 @@ function NavOptions(props: {
             themeClasses
           )}
         >
-          Folds
+          Communities
         </a>
       </Link>
 
