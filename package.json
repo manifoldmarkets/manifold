@@ -1,0 +1,12 @@
+{
+  "name": "mantic",
+  "private": true,
+  "workspaces": [
+    "common",
+    "functions",
+    "web"
+  ],
+  "scripts": {},
+  "dependencies": {},
+  "devDependencies": {}
+}
