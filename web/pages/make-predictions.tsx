@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useState } from 'react'
+import { parseTags, parseWordsAsTags } from '../../common/util/parse'
 import { AmountInput } from '../components/amount-input'
 import { InfoTooltip } from '../components/info-tooltip'
 
@@ -100,6 +101,7 @@ export default function MakePredictions() {
   const user = useUser()
   const [predictionsString, setPredictionsString] = useState('')
   const [description, setDescription] = useState('')
+  const [tags, setTags] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [createdContracts, setCreatedContracts] = useState<Contract[]>([])
 
@@ -151,6 +153,7 @@ ${TEST_VALUE}
         initialProb: prediction.initialProb,
         ante,
         closeTime,
+        tags: parseWordsAsTags(tags),
       }).then((r) => (r.data as any).contract)
 
       setCreatedContracts((prev) => [...prev, contract])
@@ -191,10 +194,24 @@ ${TEST_VALUE}
 
           <input
             type="text"
-            placeholder="e.g. #ACX2021 #World"
+            placeholder="e.g. This market is part of the ACX predictions for 2022..."
             className="input"
             value={description}
             onChange={(e) => setDescription(e.target.value || '')}
+          />
+        </div>
+
+        <div className="form-control w-full">
+          <label className="label">
+            <span className="label-text">Tags</span>
+          </label>
+
+          <input
+            type="text"
+            placeholder="e.g. ACX2021 World"
+            className="input"
+            value={tags}
+            onChange={(e) => setTags(e.target.value || '')}
           />
         </div>
 
