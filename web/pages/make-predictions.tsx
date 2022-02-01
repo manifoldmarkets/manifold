@@ -1,6 +1,9 @@
 import clsx from 'clsx'
+import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useState } from 'react'
+import { AmountInput } from '../components/amount-input'
+import { InfoTooltip } from '../components/info-tooltip'
 
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
@@ -100,6 +103,14 @@ export default function MakePredictions() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [createdContracts, setCreatedContracts] = useState<Contract[]>([])
 
+  const [ante, setAnte] = useState<number | undefined>(100)
+  const [anteError, setAnteError] = useState<string | undefined>()
+  // By default, close the market a week from today
+  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DDT23:59')
+  const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
+
+  const closeTime = closeDate ? dayjs(closeDate).valueOf() : undefined
+
   const bulkPlaceholder = `e.g.
 ${TEST_VALUE}
 ...
@@ -138,6 +149,8 @@ ${TEST_VALUE}
         question: prediction.question,
         description: prediction.description,
         initialProb: prediction.initialProb,
+        ante,
+        closeTime,
       }).then((r) => (r.data as any).contract)
 
       setCreatedContracts((prev) => [...prev, contract])
@@ -173,7 +186,7 @@ ${TEST_VALUE}
 
         <div className="form-control w-full">
           <label className="label">
-            <span className="label-text">Tags</span>
+            <span className="label-text">Description</span>
           </label>
 
           <input
@@ -182,6 +195,42 @@ ${TEST_VALUE}
             className="input"
             value={description}
             onChange={(e) => setDescription(e.target.value || '')}
+          />
+        </div>
+
+        <div className="form-control items-start mb-1">
+          <label className="label gap-2 mb-1">
+            <span>Market close</span>
+            <InfoTooltip text="Trading will be halted after this time (local timezone)." />
+          </label>
+          <input
+            type="datetime-local"
+            className="input input-bordered"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setCloseDate(e.target.value || '')}
+            min={Date.now()}
+            disabled={isSubmitting}
+            value={closeDate}
+          />
+        </div>
+
+        <Spacer h={4} />
+
+        <div className="form-control items-start mb-1">
+          <label className="label gap-2 mb-1">
+            <span>Market ante</span>
+            <InfoTooltip
+              text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
+              You earn ${0.01 * 100}% of trading volume.`}
+            />
+          </label>
+          <AmountInput
+            amount={ante}
+            minimumAmount={10}
+            onChange={setAnte}
+            error={anteError}
+            setError={setAnteError}
+            disabled={isSubmitting}
           />
         </div>
 
@@ -225,4 +274,14 @@ ${TEST_VALUE}
       )}
     </Page>
   )
+}
+
+// Given a date string like '2022-04-02',
+// return the time just before midnight on that date (in the user's local time), as millis since epoch
+function dateToMillis(date: string) {
+  return dayjs(date)
+    .set('hour', 23)
+    .set('minute', 59)
+    .set('second', 59)
+    .valueOf()
 }
