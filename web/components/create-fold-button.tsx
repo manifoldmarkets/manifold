@@ -111,7 +111,7 @@ export function CreateFoldButton() {
         <label className="label">
           <span className="mb-1">Primary tag</span>
         </label>
-        <TagsList noLink tags={[`#${toCamelCase(name)}`]} />
+        <TagsList noLink noLabel tags={[`#${toCamelCase(name)}`]} />
 
         <Spacer h={4} />
 
@@ -134,6 +134,7 @@ export function CreateFoldButton() {
         <TagsList
           tags={parseWordsAsTags(otherTags).map((tag) => `#${tag}`)}
           noLink
+          noLabel
         />
       </div>
     </ConfirmationButton>

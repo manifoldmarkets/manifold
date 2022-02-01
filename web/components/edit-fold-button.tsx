@@ -105,7 +105,7 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
           </div>
 
           <Spacer h={4} />
-          <TagsList tags={tags.map((tag) => `#${tag}`)} noLink />
+          <TagsList tags={tags.map((tag) => `#${tag}`)} noLink noLabel />
           <Spacer h={4} />
 
           <div className="modal-action">
