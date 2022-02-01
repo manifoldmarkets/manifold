@@ -1,7 +1,7 @@
 import _ from 'lodash'
-import { Contract } from '../../../common/contract'
-import { getPayouts } from '../../../common/payouts'
-import { Bet } from './bets'
+import { Contract } from './contract'
+import { getPayouts } from './payouts'
+import { Bet } from '../web/lib/firebase/bets'
 
 export function scoreCreators(contracts: Contract[], bets: Bet[][]) {
   const creatorScore = _.mapValues(
