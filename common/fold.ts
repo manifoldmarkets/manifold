@@ -7,6 +7,7 @@ export type Fold = {
   createdTime: number
 
   tags: string[]
+  lowercaseTags: string[]
 
   contractIds: string[]
   excludedContractIds: string[]

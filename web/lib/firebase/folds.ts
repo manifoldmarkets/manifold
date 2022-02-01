@@ -135,9 +135,12 @@ export function listenForFollow(
 export function getFoldsByTags(tags: string[]) {
   if (tags.length === 0) return []
 
-  const lowercaseTags = tags.map((tag) => tag)
+  const lowercaseTags = tags.map((tag) => tag.toLowerCase())
   return getValues<Fold>(
     // TODO: split into multiple queries if tags.length > 10.
-    query(foldCollection, where('tags', 'array-contains-any', lowercaseTags))
+    query(
+      foldCollection,
+      where('lowercaseTags', 'array-contains-any', lowercaseTags)
+    )
   )
 }
