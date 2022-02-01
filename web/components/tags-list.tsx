@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { Row } from './layout/row'
 import { Linkify } from './linkify'
 import { SiteLink } from './site-link'
+import { Fold } from '../../common/fold'
 
 export function Hashtag(props: { tag: string; noLink?: boolean }) {
   const { tag, noLink } = props
@@ -48,6 +49,39 @@ export function CompactTagsList(props: { tags: string[] }) {
           <Linkify text={tag} gray />
         </div>
       ))}
+    </Row>
+  )
+}
+
+export function FoldTag(props: { fold: Fold }) {
+  const { fold } = props
+  const { name } = fold
+  return (
+    <SiteLink href={`/fold/${fold.slug}`} className="flex items-center">
+      <div
+        className={clsx(
+          'bg-indigo-50 px-4 py-2 rounded-full shadow-md',
+          'cursor-pointer'
+        )}
+      >
+        <span className="text-gray-500 text-sm">{name}</span>
+      </div>
+    </SiteLink>
+  )
+}
+
+export function FoldTagList(props: { folds: Fold[]; className?: string }) {
+  const { folds, className } = props
+  return (
+    <Row className={clsx('flex-wrap gap-2 items-center', className)}>
+      {folds.length > 0 && (
+        <>
+          <div className="text-gray-500 mr-1">Communities</div>
+          {folds.map((fold) => (
+            <FoldTag key={fold.id} fold={fold} />
+          ))}
+        </>
+      )}
     </Row>
   )
 }

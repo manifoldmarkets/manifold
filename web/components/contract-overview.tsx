@@ -18,16 +18,19 @@ import { ContractFeed } from './contract-feed'
 import { TweetButton } from './tweet-button'
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
-import { TagsInput } from './tags-input'
+import { RevealableTagsInput } from './tags-input'
 import BetRow from './bet-row'
+import { Fold } from '../../common/fold'
+import { FoldTagList } from './tags-list'
 
 export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
   comments: Comment[]
+  folds: Fold[]
   className?: string
 }) => {
-  const { contract, bets, comments, className } = props
+  const { contract, bets, comments, folds, className } = props
   const { resolution, creatorId, creatorName } = contract
   const { probPercent, truePool } = contractMetrics(contract)
 
@@ -85,10 +88,20 @@ export const ContractOverview = (props: {
 
       <ContractProbGraph contract={contract} />
 
-      <Row className="justify-between mt-6 ml-4 gap-4">
-        <TagsInput contract={contract} />
+      <Row className="hidden sm:flex justify-between items-center mt-6 ml-4 gap-4">
+        <FoldTagList folds={folds} />
         <TweetButton tweetText={tweetText} />
       </Row>
+
+      <Col className="sm:hidden mt-6 ml-4 gap-4">
+        <TweetButton className="self-end" tweetText={tweetText} />
+        <FoldTagList folds={folds} />
+      </Col>
+
+      <RevealableTagsInput
+        className={clsx('mx-4', folds.length > 0 && 'mt-4')}
+        contract={contract}
+      />
 
       <Spacer h={12} />
 
