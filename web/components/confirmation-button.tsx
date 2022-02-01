@@ -4,6 +4,7 @@ export function ConfirmationButton(props: {
   id: string
   openModelBtn: {
     label: string
+    icon?: any
     className?: string
   }
   cancelBtn?: {
@@ -25,7 +26,7 @@ export function ConfirmationButton(props: {
         htmlFor={id}
         className={clsx('btn modal-button', openModelBtn.className)}
       >
-        {openModelBtn.label}
+        {openModelBtn.icon} {openModelBtn.label}
       </label>
       <input type="checkbox" id={id} className="modal-toggle" />
 
