@@ -2,7 +2,8 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useState } from 'react'
-import { parseTags, parseWordsAsTags } from '../../common/util/parse'
+import Textarea from 'react-expanding-textarea'
+import { parseWordsAsTags } from '../../common/util/parse'
 import { AmountInput } from '../components/amount-input'
 import { InfoTooltip } from '../components/info-tooltip'
 
@@ -192,7 +193,7 @@ ${TEST_VALUE}
             <span className="label-text">Description</span>
           </label>
 
-          <textarea
+          <Textarea
             placeholder="e.g. This market is part of the ACX predictions for 2022..."
             className="input"
             value={description}
