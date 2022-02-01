@@ -239,7 +239,7 @@ export default function FoldPage(props: {
       {(page === 'activity' || page === 'markets') && (
         <Row className={clsx(page === 'activity' ? 'gap-16' : 'gap-8')}>
           <Col className="flex-1">
-            {user !== null && (
+            {user !== null && !fold.disallowMarketCreation && (
               <FeedCreate
                 className={clsx('border-b-2', page !== 'activity' && 'hidden')}
                 user={user}
