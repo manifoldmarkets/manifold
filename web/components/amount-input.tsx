@@ -60,7 +60,7 @@ export function AmountInput(props: {
             inputClassName
           )}
           ref={inputRef}
-          type="text"
+          type="number"
           placeholder="0"
           maxLength={9}
           value={amount ?? ''}
