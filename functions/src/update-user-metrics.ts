@@ -24,24 +24,18 @@ export const updateUserMetrics = functions.pubsub
 
     await Promise.all(
       users.map(async (user) => {
-        // const investmentValue = await computeInvestmentValue(
-        //   user,
-        //   contractsDict
-        // )
-        // const deposits = await getValues<StripeTransaction>(
-        //   firestore
-        //     .collection('stripe-transactions')
-        //     .where('userId', '==', user.id)
-        // )
-        // const totalDeposits =
-        //   1000 + _.sumBy(deposits, (deposit) => deposit.manticDollarQuantity)
-        // const totalValue = user.balance + investmentValue
+        const investmentValue = await computeInvestmentValue(
+          user,
+          contractsDict
+        )
+        const totalValue = user.balance + investmentValue
 
-        // const totalPnL = totalValue - totalDeposits
+        const totalPnL = totalValue - user.totalDeposits
 
         const creatorVolume = await computeTotalVolume(user, contractsDict)
 
         return firestore.collection('users').doc(user.id).update({
+          totalPnLCached: totalPnL,
           creatorVolumeCached: creatorVolume,
         })
       })
