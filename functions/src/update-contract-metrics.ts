@@ -5,6 +5,7 @@ import * as _ from 'lodash'
 import { getValues } from './utils'
 import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
+import { addUserScores, scoreUsersByContract } from '../../common/scoring'
 
 const firestore = admin.firestore()
 
@@ -16,8 +17,16 @@ export const updateContractMetrics = functions.pubsub
     const contracts = await getValues<Contract>(
       firestore.collection('contracts')
     )
+    const userScores: { [userId: string]: number } = {}
+
     await Promise.all(
       contracts.map(async (contract) => {
+        const bets = await getValues<Bet>(
+          firestore.collection(`contracts/${contract.id}/bets`)
+        )
+        const contractUserScores = scoreUsersByContract(contract, bets)
+        addUserScores(contractUserScores, userScores)
+
         const volume24Hours = await computeVolumeFrom(contract, oneDay)
         const volume7Days = await computeVolumeFrom(contract, oneDay * 7)
 
@@ -28,6 +37,12 @@ export const updateContractMetrics = functions.pubsub
         })
       })
     )
+
+    for (const [userId, score] of Object.entries(userScores)) {
+      await firestore.collection('users').doc(userId).update({
+        totalPnLCached: score,
+      })
+    }
   })
 
 const computeVolumeFrom = async (contract: Contract, timeAgoMs: number) => {
