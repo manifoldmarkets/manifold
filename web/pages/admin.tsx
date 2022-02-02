@@ -35,55 +35,74 @@ function UsersTable() {
   // Sort users by createdTime descending, by default
   users = users.sort((a, b) => b.createdTime - a.createdTime)
 
+  function exportCsv() {
+    const csv = users
+      // @ts-ignore
+      .map((u) => [u.email, u.name].join(', '))
+      .join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'manifold-users.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
-    <Grid
-      data={users}
-      columns={[
-        {
-          id: 'avatarUrl',
-          name: 'Avatar',
-          formatter: (cell) => html(avatarHtml(cell as string)),
-        },
-        {
-          id: 'username',
-          name: 'Username',
-          formatter: (cell) =>
-            html(`<a 
+    <>
+      <Grid
+        data={users}
+        columns={[
+          {
+            id: 'avatarUrl',
+            name: 'Avatar',
+            formatter: (cell) => html(avatarHtml(cell as string)),
+          },
+          {
+            id: 'username',
+            name: 'Username',
+            formatter: (cell) =>
+              html(`<a 
               class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
               href="/${cell}">@${cell}</a>`),
-        },
-        'Email',
-        {
-          id: 'createdTime',
-          name: 'Created Time',
-          formatter: (cell) =>
-            html(
-              `<span class="whitespace-nowrap">${dayjs(cell as number).format(
-                'MMM D, h:mma'
-              )}</span>`
-            ),
-        },
-        {
-          id: 'balance',
-          name: 'Balance',
-          formatter: (cell) => (cell as number).toFixed(0),
-        },
-        {
-          id: 'id',
-          name: 'ID',
-          formatter: (cell) =>
-            html(`<a
+          },
+          'Email',
+          {
+            id: 'createdTime',
+            name: 'Created Time',
+            formatter: (cell) =>
+              html(
+                `<span class="whitespace-nowrap">${dayjs(cell as number).format(
+                  'MMM D, h:mma'
+                )}</span>`
+              ),
+          },
+          {
+            id: 'balance',
+            name: 'Balance',
+            formatter: (cell) => (cell as number).toFixed(0),
+          },
+          {
+            id: 'id',
+            name: 'ID',
+            formatter: (cell) =>
+              html(`<a
               class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
               href="https://console.firebase.google.com/project/mantic-markets/firestore/data/~2Fusers~2F${cell}">${cell}</a>`),
-        },
-      ]}
-      search={true}
-      sort={true}
-      pagination={{
-        enabled: true,
-        limit: 25,
-      }}
-    />
+          },
+        ]}
+        search={true}
+        sort={true}
+        pagination={{
+          enabled: true,
+          limit: 25,
+        }}
+      />
+      <button className="btn" onClick={exportCsv}>
+        Export emails to CSV
+      </button>
+    </>
   )
 }
 
