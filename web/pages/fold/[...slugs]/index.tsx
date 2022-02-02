@@ -324,9 +324,13 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
           </>
         )}
 
-        <Spacer h={2} />
+        <div className="divider" />
 
-        <TagsList tags={tags.map((tag) => `#${tag}`)} />
+        <div className="text-gray-500 mb-2">
+          Includes markets matching any of these tags:
+        </div>
+
+        <TagsList tags={tags.map((tag) => `#${tag}`)} noLabel />
       </Col>
     </Col>
   )
