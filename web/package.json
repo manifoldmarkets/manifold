@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -n NEXT,TS -c magenta,cyan \"next dev -p 3000\" \"yarn ts --watch\"",
+    "devdev": "NEXT_PUBLIC_FIREBASE_ENV=DEV concurrently -n NEXT,TS -c magenta,cyan \"FIREBASE_ENV=DEV next dev -p 3000\" \"FIREBASE_ENV=DEV yarn ts --watch\"",
     "ts": "tsc --noEmit --incremental --preserveWatchOutput --pretty",
     "build": "next build",
     "start": "next start",
