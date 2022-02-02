@@ -39,9 +39,13 @@ export const updateContractMetrics = functions.pubsub
     )
 
     for (const [userId, score] of Object.entries(userScores)) {
-      await firestore.collection('users').doc(userId).update({
-        totalPnLCached: score,
-      })
+      await firestore
+        .collection('users')
+        .doc(userId)
+        .update({
+          totalPnLCached: score,
+        })
+        .catch((e) => console.log('failed to update user', userId, e))
     }
   })
 
