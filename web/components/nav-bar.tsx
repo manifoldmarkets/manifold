@@ -89,13 +89,13 @@ function BottomNavBar(props: { user: User }) {
         </a>
       </Link>
 
-      <Link href={`/${user.username}`}>
+      <Link href="/trades">
         <a
           href="#"
           className="w-full block py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
         >
           <CollectionIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
-          {/* {user.username} */}
+          {/* Your Trades */}
         </a>
       </Link>
     </nav>
