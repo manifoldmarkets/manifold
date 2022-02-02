@@ -7,6 +7,7 @@ import { Col } from '../components/layout/col'
 import { Bet } from '../../common/bet'
 
 const MAX_ACTIVE_CONTRACTS = 75
+const MAX_HOT_MARKETS = 10
 
 // This does NOT include comment times, since those aren't part of the contract atm.
 // TODO: Maybe store last activity time directly in the contract?
@@ -23,9 +24,11 @@ function lastActivityTime(contract: Contract) {
 // - Comment on a market
 // - New market created
 // - Market resolved
+// - Markets with most betting in last 24 hours
 export function findActiveContracts(
   allContracts: Contract[],
   recentComments: Comment[],
+  recentBets: Bet[],
   daysAgo = 3
 ) {
   const idToActivityTime = new Map<string, number>()
@@ -53,6 +56,26 @@ export function findActiveContracts(
     if (contract) {
       contracts.push(contract)
       record(contract.id, comment.createdTime)
+    }
+  }
+
+  // Add recent top-trading contracts, ordered by last bet.
+  const contractBets = _.groupBy(recentBets, (bet) => bet.contractId)
+  const contractTotalBets = _.mapValues(contractBets, (bets) =>
+    _.sumBy(bets, (bet) => bet.amount)
+  )
+  const topTradedContracts = _.sortBy(
+    _.toPairs(contractTotalBets),
+    ([_, total]) => -1 * total
+  )
+    .map(([id]) => contractsById.get(id) as Contract)
+    .slice(0, MAX_HOT_MARKETS)
+
+  for (const contract of topTradedContracts) {
+    const bet = recentBets.find((bet) => bet.contractId === contract.id)
+    if (bet) {
+      contracts.push(contract)
+      record(contract.id, bet.createdTime)
     }
   }
 

@@ -10,7 +10,7 @@ import {
   Comment,
   listAllComments,
 } from '../lib/firebase/comments'
-import { Bet, listAllBets } from '../lib/firebase/bets'
+import { Bet, getRecentBets, listAllBets } from '../lib/firebase/bets'
 import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
@@ -18,12 +18,17 @@ import { useUser } from '../hooks/use-user'
 import { useContracts } from '../hooks/use-contracts'
 
 export async function getStaticProps() {
-  const [contracts, recentComments] = await Promise.all([
+  const [contracts, recentComments, recentBets] = await Promise.all([
     listAllContracts().catch((_) => []),
     getRecentComments().catch(() => []),
+    getRecentBets().catch(() => []),
   ])
 
-  const activeContracts = findActiveContracts(contracts, recentComments)
+  const activeContracts = findActiveContracts(
+    contracts,
+    recentComments,
+    recentBets
+  )
   const activeContractBets = await Promise.all(
     activeContracts.map((contract) => listAllBets(contract.id).catch((_) => []))
   )
