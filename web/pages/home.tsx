@@ -16,6 +16,8 @@ import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
 import { useContracts } from '../hooks/use-contracts'
+import { FoldTag, TagsList } from '../components/tags-list'
+import { Row } from '../components/layout/row'
 
 export async function getStaticProps() {
   const [contracts, recentComments, recentBets] = await Promise.all([
@@ -77,6 +79,20 @@ const Home = (props: {
         <Col className="max-w-3xl">
           <FeedCreate user={user ?? undefined} />
           <Spacer h={4} />
+
+          <TagsList
+            className="mx-2"
+            tags={[
+              '#politics',
+              '#crypto',
+              '#covid',
+              '#sports',
+              '#meta',
+              '#science',
+            ]}
+          />
+          <Spacer h={4} />
+
           <ActivityFeed
             contracts={updatedContracts}
             contractBets={activeContractBets}
