@@ -31,6 +31,7 @@ export default function Document() {
           `,
           }}
         />
+        <script src="./node_modules/tw-elements/dist/js/index.min.js"></script>
       </Head>
 
       <body className="min-h-screen font-readex-pro bg-base-200">
