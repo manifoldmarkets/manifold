@@ -1,7 +1,9 @@
 import {
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
+  getDocs,
   query,
   setDoc,
   updateDoc,
@@ -12,7 +14,7 @@ import { Fold } from '../../../common/fold'
 import { Contract, contractCollection } from './contracts'
 import { db } from './init'
 import { User } from './users'
-import { getValues, listenForValue, listenForValues } from './utils'
+import { getValue, getValues, listenForValue, listenForValues } from './utils'
 
 const foldCollection = collection(db, 'folds')
 
@@ -37,6 +39,10 @@ export async function listAllFolds() {
 
 export function listenForFolds(setFolds: (folds: Fold[]) => void) {
   return listenForValues(foldCollection, setFolds)
+}
+
+export function getFold(foldId: string) {
+  return getValue<Fold>(doc(foldCollection, foldId))
 }
 
 export async function getFoldBySlug(slug: string) {
@@ -146,4 +152,14 @@ export async function getFoldsByTags(tags: string[]) {
   )
 
   return _.sortBy(folds, (fold) => -1 * fold.followCount)
+}
+
+export async function getFollowedFolds(userId: string) {
+  const snapshot = await getDocs(
+    query(collectionGroup(db, 'followers'), where('userId', '==', userId))
+  )
+  const foldIds = snapshot.docs.map(
+    (doc) => doc.ref.parent.parent?.id as string
+  )
+  return foldIds
 }
