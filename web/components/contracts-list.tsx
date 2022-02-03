@@ -262,7 +262,7 @@ export function SearchableGrid(props: {
           onChange={(e) => setSort(e.target.value as Sort)}
         >
           <option value="most-traded">Most traded</option>
-          <option value="24-hour-vol">24 hour volume</option>
+          <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
           <option value="newest">Newest</option>
 
