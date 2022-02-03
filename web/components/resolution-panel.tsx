@@ -11,6 +11,7 @@ import { ConfirmationButton as ConfirmationButton } from './confirmation-button'
 import { resolveMarket } from '../lib/firebase/api-call'
 import { ProbabilitySelector } from './probability-selector'
 import { getProbability } from '../../common/calculate'
+import { CREATOR_FEE } from '../../common/fees'
 
 export function ResolutionPanel(props: {
   creator: User
@@ -79,16 +80,20 @@ export function ResolutionPanel(props: {
       <div>
         {outcome === 'YES' ? (
           <>
-            Winnings will be paid out to YES bettors. You earn 1% of the pool.
+            Winnings will be paid out to YES bettors. You earn{' '}
+            {CREATOR_FEE * 100}%.
           </>
         ) : outcome === 'NO' ? (
-          <>Winnings will be paid out to NO bettors. You earn 1% of the pool.</>
+          <>
+            Winnings will be paid out to NO bettors. You earn{' '}
+            {CREATOR_FEE * 100}%.
+          </>
         ) : outcome === 'CANCEL' ? (
           <>The pool will be returned to traders with no fees.</>
         ) : outcome === 'MKT' ? (
           <>
-            Traders will be paid out at the probability you specify. You earn 1%
-            of the pool.
+            Traders will be paid out at the probability you specify. You earn{' '}
+            {CREATOR_FEE * 100}%.
           </>
         ) : (
           <>Resolving this market will immediately pay out traders.</>

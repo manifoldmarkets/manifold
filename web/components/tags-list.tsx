@@ -3,7 +3,7 @@ import { Row } from './layout/row'
 import { SiteLink } from './site-link'
 import { Fold } from '../../common/fold'
 
-export function Hashtag(props: { tag: string; noLink?: boolean }) {
+function Hashtag(props: { tag: string; noLink?: boolean }) {
   const { tag, noLink } = props
   const body = (
     <div
@@ -35,7 +35,11 @@ export function TagsList(props: {
     <Row className={clsx('items-center flex-wrap gap-2', className)}>
       {!noLabel && <div className="text-gray-500 mr-1">Tags</div>}
       {tags.map((tag) => (
-        <Hashtag key={tag} tag={tag} noLink={noLink} />
+        <Hashtag
+          key={tag}
+          tag={tag.startsWith('#') ? tag : `#${tag}`}
+          noLink={noLink}
+        />
       ))}
     </Row>
   )

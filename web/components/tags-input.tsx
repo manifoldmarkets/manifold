@@ -27,7 +27,7 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
 
   return (
     <Col className={clsx('gap-4', className)}>
-      <TagsList tags={newTags.map((tag) => `#${tag}`)} />
+      <TagsList tags={newTags} />
 
       <Row className="items-center gap-4">
         <input

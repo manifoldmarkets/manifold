@@ -1,7 +1,7 @@
 import { cloneElement } from 'react'
+import { CREATOR_FEE } from '../../common/fees'
 import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
-import { useContracts } from '../hooks/use-contracts'
 import styles from './about.module.css'
 
 export default function About() {
@@ -132,8 +132,9 @@ function Contents() {
       </p>
       <h3 id="how-are-markets-resolved-">How are markets resolved?</h3>
       <p>
-        The creator of the prediction market decides the outcome and earns 1% of
-        the betting pool for their effort.
+        The creator of the prediction market decides the outcome and earns{' '}
+        {CREATOR_FEE * 100}% of the winnings as a commission for creating and
+        resolving the market.
       </p>
       <p>
         This simple resolution mechanism has surprising benefits in allowing a
