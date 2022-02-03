@@ -540,7 +540,8 @@ function FeedBetGroup(props: { activityItem: any }) {
 
   const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
 
-  const createdTime = bets[0].createdTime
+  // Use the time of the last bet for the entire group
+  const createdTime = bets[bets.length - 1].createdTime
 
   return (
     <>
