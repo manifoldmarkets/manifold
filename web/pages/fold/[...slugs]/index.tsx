@@ -48,6 +48,10 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
 
   const contracts = fold ? await getFoldContracts(fold).catch((_) => []) : []
 
+  const betsPromise = Promise.all(
+    contracts.map((contract) => listAllBets(contract.id))
+  )
+
   const [contractComments, contractRecentBets] = await Promise.all([
     Promise.all(
       contracts.map((contract) => listAllComments(contract.id).catch((_) => []))
@@ -79,17 +83,16 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
       contractComments[contracts.findIndex((c) => c.id === contract.id)]
   )
 
-  const curator = await curatorPromise
-
-  const bets = await Promise.all(
-    contracts.map((contract) => listAllBets(contract.id))
-  )
+  const bets = await betsPromise
 
   const creatorScores = scoreCreators(contracts, bets)
-  const topCreators = await toTopUsers(creatorScores)
-
   const traderScores = scoreTraders(contracts, bets)
-  const topTraders = await toTopUsers(traderScores)
+  const [topCreators, topTraders] = await Promise.all([
+    toTopUsers(creatorScores),
+    toTopUsers(traderScores),
+  ])
+
+  const curator = await curatorPromise
 
   return {
     props: {
@@ -338,7 +341,7 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
           Includes markets matching any of these tags:
         </div>
 
-        <TagsList tags={tags.map((tag) => `#${tag}`)} noLabel />
+        <TagsList tags={tags} noLabel />
       </Col>
     </Col>
   )

@@ -130,6 +130,11 @@ function FeedBet(props: { activityItem: any }) {
                 className="textarea textarea-bordered w-full"
                 placeholder="Add a comment..."
                 rows={3}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
+                    submitComment()
+                  }
+                }}
               />
               <button
                 className="btn btn-outline btn-sm mt-1"
@@ -195,6 +200,11 @@ export function ContractDescription(props: {
                   description.length
                 )
               }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                  saveDescription(e)
+                }
+              }}
             />
             <Row className="gap-2">
               <button
@@ -540,7 +550,8 @@ function FeedBetGroup(props: { activityItem: any }) {
 
   const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
 
-  const createdTime = bets[0].createdTime
+  // Use the time of the last bet for the entire group
+  const createdTime = bets[bets.length - 1].createdTime
 
   return (
     <>

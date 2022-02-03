@@ -104,7 +104,7 @@ export function calculateShareValue(contract: Contract, bet: Bet) {
 }
 
 export function calculateSaleAmount(contract: Contract, bet: Bet) {
-  return (1 - 2 * FEES) * calculateShareValue(contract, bet)
+  return (1 - FEES) * calculateShareValue(contract, bet)
 }
 
 export function calculatePayout(
@@ -145,7 +145,7 @@ export function calculateStandardPayout(
     totalShares[outcome] - phantomShares[outcome] - totalBets[outcome]
   const winningsPool = truePool - totalBets[outcome]
 
-  return amount + (1 - 2 * FEES) * ((shares - amount) / total) * winningsPool
+  return amount + (1 - FEES) * ((shares - amount) / total) * winningsPool
 }
 
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
@@ -204,7 +204,7 @@ function calculateMktPayout(contract: Contract, bet: Bet) {
 
   return (
     betP * bet.amount +
-    (1 - 2 * FEES) *
+    (1 - FEES) *
       ((betP * (bet.shares - bet.amount)) / weightedShareTotal) *
       winningsPool
   )

@@ -177,7 +177,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           <span>Market ante</span>
           <InfoTooltip
             text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
-              You earn ${CREATOR_FEE * 100}% of trading volume.`}
+              You earn ${CREATOR_FEE * 100}% of the winnings.`}
           />
         </label>
         <AmountInput

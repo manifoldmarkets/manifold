@@ -38,12 +38,12 @@ export const getStandardPayouts = (
     userId: bet.userId,
     payout:
       bet.amount +
-      (1 - 2 * FEES) *
+      (1 - FEES) *
         ((bet.shares - bet.amount) / shareDifferenceSum) *
         winningsPool,
   }))
 
-  const creatorPayout = 2 * CREATOR_FEE * winningsPool
+  const creatorPayout = CREATOR_FEE * winningsPool
 
   console.log(
     'resolved',
@@ -98,7 +98,7 @@ export const getMktPayouts = (
     userId: bet.userId,
     payout:
       p * bet.amount +
-      (1 - 2 * FEES) *
+      (1 - FEES) *
         ((p * (bet.shares - bet.amount)) / weightedShareTotal) *
         winningsPool,
   }))
@@ -107,12 +107,12 @@ export const getMktPayouts = (
     userId: bet.userId,
     payout:
       (1 - p) * bet.amount +
-      (1 - 2 * FEES) *
+      (1 - FEES) *
         (((1 - p) * (bet.shares - bet.amount)) / weightedShareTotal) *
         winningsPool,
   }))
 
-  const creatorPayout = 2 * CREATOR_FEE * winningsPool
+  const creatorPayout = CREATOR_FEE * winningsPool
 
   return [
     ...yesPayouts,

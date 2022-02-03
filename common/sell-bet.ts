@@ -36,8 +36,8 @@ export const getSellBetInfo = (
   const probBefore = getProbability(contract.totalShares)
   const probAfter = getProbability(newTotalShares)
 
-  const creatorFee = 2 * CREATOR_FEE * adjShareValue
-  const saleAmount = (1 - 2 * FEES) * adjShareValue
+  const creatorFee = CREATOR_FEE * adjShareValue
+  const saleAmount = (1 - FEES) * adjShareValue
 
   console.log(
     'SELL M$',

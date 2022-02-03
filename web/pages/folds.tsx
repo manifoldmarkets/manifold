@@ -8,6 +8,7 @@ import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { Page } from '../components/page'
 import { SiteLink } from '../components/site-link'
+import { TagsList } from '../components/tags-list'
 import { Title } from '../components/title'
 import { UserLink } from '../components/user-page'
 import { useFolds } from '../hooks/use-fold'
@@ -63,7 +64,7 @@ export default function Folds(props: {
   return (
     <Page>
       <Col className="items-center">
-        <Col className="max-w-lg w-full">
+        <Col className="max-w-xl w-full">
           <Col className="px-4 sm:px-0">
             <Row className="justify-between items-center">
               <Title text="Explore communities" />
@@ -76,7 +77,7 @@ export default function Folds(props: {
             </div>
           </Col>
 
-          <Col className="gap-2">
+          <Col className="gap-4">
             {folds.map((fold) => (
               <FoldCard
                 key={fold.id}
@@ -93,16 +94,17 @@ export default function Folds(props: {
 
 function FoldCard(props: { fold: Fold; curator: User | undefined }) {
   const { fold, curator } = props
+  const tags = fold.tags.slice(1)
   return (
     <Col
       key={fold.id}
-      className="bg-white hover:bg-gray-100 p-4 rounded-xl gap-1 shadow-md relative"
+      className="bg-white hover:bg-gray-100 p-8 rounded-xl gap-1 shadow-md relative"
     >
       <Link href={foldPath(fold)}>
         <a className="absolute left-0 right-0 top-0 bottom-0" />
       </Link>
       <Row className="justify-between items-center gap-2">
-        <SiteLink href={foldPath(fold)}>{fold.name}</SiteLink>
+        <span className="text-xl">{fold.name}</span>
         <FollowFoldButton className="z-10 mb-1" fold={fold} />
       </Row>
       <Row className="items-center gap-2 text-gray-500 text-sm">
@@ -118,6 +120,9 @@ function FoldCard(props: { fold: Fold; curator: User | undefined }) {
         </Row>
       </Row>
       <div className="text-gray-500 text-sm">{fold.about}</div>
+      {tags.length > 0 && (
+        <TagsList className="mt-4" tags={tags} noLink noLabel />
+      )}
     </Col>
   )
 }
