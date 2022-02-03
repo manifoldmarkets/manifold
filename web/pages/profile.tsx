@@ -11,12 +11,14 @@ import {
   cleanUsername,
 } from '../../common/util/clean-username'
 import { changeUserInfo } from '../lib/firebase/api-call'
+import { uploadImage } from '../lib/firebase/storage'
 
 export default function ProfilePage() {
   const user = useUser()
   const privateUser = usePrivateUser(user?.id)
 
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '')
+  const [avatarLoading, setAvatarLoading] = useState(false)
   const [name, setName] = useState(user?.name || '')
   const [username, setUsername] = useState(user?.username || '')
 
@@ -59,32 +61,20 @@ export default function ProfilePage() {
     }
   }
 
-  const [selectedFile, setSelectedFile] = useState<undefined | Blob>()
+  const fileHandler = async (event: any) => {
+    const file = event.target.files[0]
 
-  const changeHandler = (event: any) => {
-    setSelectedFile(event.target.files[0])
-    //   handleSubmission()
-    // }
+    setAvatarLoading(true)
 
-    // const handleSubmission = () => {
-    //   if (!selectedFile) return
-    const formData = new FormData()
-
-    formData.append('File', event.target.files[0])
-
-    fetch(
-      'https://freeimage.host/api/1/upload?key=6d207e02198a847aa98d0a2a901485a5',
-      {
-        method: 'POST',
-        body: formData,
-      }
-    )
-      .then((response) => response.json())
-      .then((result) => {
-        console.log('Success:', result)
+    await uploadImage(user?.username || 'default', file)
+      .then(async (url) => {
+        await changeUserInfo({ avatarUrl: url })
+        setAvatarUrl(url)
+        setAvatarLoading(false)
       })
-      .catch((error) => {
-        console.error('Error:', error)
+      .catch(() => {
+        setAvatarLoading(false)
+        setAvatarUrl(user?.avatarUrl || '')
       })
   }
 
@@ -94,13 +84,19 @@ export default function ProfilePage() {
       <Title text="Profile" />
 
       <p>
-        <img
-          src={avatarUrl}
-          width={80}
-          height={80}
-          className="rounded-full bg-gray-400 flex items-center justify-center"
-        />
-        <input type="file" name="file" onChange={changeHandler} />
+        {avatarLoading ? (
+          <button className="btn btn-ghost btn-lg btn-circle loading"></button>
+        ) : (
+          <>
+            <img
+              src={avatarUrl}
+              width={80}
+              height={80}
+              className="rounded-full bg-gray-400 flex items-center justify-center"
+            />
+            <input type="file" name="file" onChange={fileHandler} />
+          </>
+        )}
       </p>
 
       <label className="label">
