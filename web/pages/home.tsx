@@ -16,6 +16,7 @@ import { getFollowedFolds, listAllFolds } from '../lib/firebase/folds'
 import { Fold } from '../../common/fold'
 import { filterDefined } from '../../common/util/array'
 import { useUserBets } from '../hooks/use-user-bets'
+import { LoadingIndicator } from '../components/loading-indicator'
 
 export async function getStaticProps() {
   const [contracts, folds] = await Promise.all([
@@ -136,7 +137,9 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
               contractBets={contractBets}
               contractComments={contractComments}
             />
-          ) : null}
+          ) : (
+            <LoadingIndicator className="mt-4" />
+          )}
         </Col>
       </Col>
     </Page>
