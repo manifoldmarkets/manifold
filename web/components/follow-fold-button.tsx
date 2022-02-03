@@ -37,10 +37,7 @@ export function FollowFoldButton(props: { fold: Fold; className?: string }) {
   }
 
   return (
-    <button
-      className={clsx('btn btn-secondary bg-indigo-500 btn-sm', className)}
-      onClick={onFollow}
-    >
+    <button className={clsx('btn btn-sm', className)} onClick={onFollow}>
       Follow
     </button>
   )
