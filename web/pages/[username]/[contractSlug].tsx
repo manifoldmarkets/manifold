@@ -23,6 +23,8 @@ import { contractTextDetails } from '../../components/contract-card'
 import { Bet, listAllBets } from '../../lib/firebase/bets'
 import { Comment, listAllComments } from '../../lib/firebase/comments'
 import Custom404 from '../404'
+import { getFoldsByTags } from '../../lib/firebase/folds'
+import { Fold } from '../../../common/fold'
 
 export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
@@ -31,18 +33,23 @@ export async function getStaticProps(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
 
+  const foldsPromise = getFoldsByTags(contract?.tags ?? [])
+
   const [bets, comments] = await Promise.all([
-    contractId ? listAllBets(contractId) : null,
-    contractId ? listAllComments(contractId) : null,
+    contractId ? listAllBets(contractId) : [],
+    contractId ? listAllComments(contractId) : [],
   ])
+
+  const folds = await foldsPromise
 
   return {
     props: {
+      contract,
       username,
       slug: contractSlug,
-      contract,
       bets,
       comments,
+      folds,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -55,15 +62,16 @@ export async function getStaticPaths() {
 
 export default function ContractPage(props: {
   contract: Contract | null
-  bets: Bet[] | null
-  comments: Comment[] | null
-  slug: string
   username: string
+  bets: Bet[]
+  comments: Comment[]
+  slug: string
+  folds: Fold[]
 }) {
   const user = useUser()
 
   const contract = useContractWithPreload(props.slug, props.contract)
-  const { bets, comments } = props
+  const { bets, comments, folds } = props
 
   if (!contract) {
     return <Custom404 />
@@ -103,6 +111,7 @@ export default function ContractPage(props: {
             contract={contract}
             bets={bets ?? []}
             comments={comments ?? []}
+            folds={folds}
           />
           <BetsSection contract={contract} user={user ?? null} />
         </div>

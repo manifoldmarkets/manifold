@@ -1,7 +1,7 @@
-import _ from 'lodash'
-import { Contract } from '../../../common/contract'
-import { getPayouts } from '../../../common/payouts'
-import { Bet } from './bets'
+import * as _ from 'lodash'
+import { Bet } from './bet'
+import { Contract } from './contract'
+import { getPayouts } from './payouts'
 
 export function scoreCreators(contracts: Contract[], bets: Bet[][]) {
   const creatorScore = _.mapValues(
@@ -18,15 +18,12 @@ export function scoreTraders(contracts: Contract[], bets: Bet[][]) {
   )
   const userScores: { [userId: string]: number } = {}
   for (const scores of userScoresByContract) {
-    for (const [userId, score] of Object.entries(scores)) {
-      if (userScores[userId] === undefined) userScores[userId] = 0
-      userScores[userId] += score
-    }
+    addUserScores(scores, userScores)
   }
   return userScores
 }
 
-function scoreUsersByContract(contract: Contract, bets: Bet[]) {
+export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
   const { resolution, resolutionProbability } = contract
 
   const [closedBets, openBets] = _.partition(
@@ -60,4 +57,14 @@ function scoreUsersByContract(contract: Contract, bets: Bet[]) {
   )
 
   return userScore
+}
+
+export function addUserScores(
+  src: { [userId: string]: number },
+  dest: { [userId: string]: number }
+) {
+  for (const [userId, score] of Object.entries(src)) {
+    if (dest[userId] === undefined) dest[userId] = 0
+    dest[userId] += score
+  }
 }

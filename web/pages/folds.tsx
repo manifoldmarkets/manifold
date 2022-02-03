@@ -66,12 +66,12 @@ export default function Folds(props: {
         <Col className="max-w-lg w-full">
           <Col className="px-4 sm:px-0">
             <Row className="justify-between items-center">
-              <Title text="Explore folds" />
+              <Title text="Explore communities" />
               {user && <CreateFoldButton />}
             </Row>
 
             <div className="text-gray-500 mb-6">
-              Folds are communities on Manifold centered around a collection of
+              Communities on Manifold are centered around a collection of
               markets.
             </div>
           </Col>

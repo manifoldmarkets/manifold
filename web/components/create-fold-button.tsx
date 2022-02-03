@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { PlusCircleIcon } from '@heroicons/react/solid'
 import { parseWordsAsTags } from '../../common/util/parse'
 import { createFold } from '../lib/firebase/api-call'
 import { foldPath } from '../lib/firebase/folds'
@@ -49,7 +50,8 @@ export function CreateFoldButton() {
     <ConfirmationButton
       id="create-fold"
       openModelBtn={{
-        label: 'Create a fold',
+        label: 'New',
+        icon: <PlusCircleIcon className="w-5 h-5 mr-2" />,
         className: clsx(
           isSubmitting ? 'loading btn-disabled' : 'btn-primary',
           'btn-sm'
@@ -61,11 +63,11 @@ export function CreateFoldButton() {
       }}
       onSubmit={onSubmit}
     >
-      <Title className="!mt-0" text="Create a fold" />
+      <Title className="!mt-0" text="Create a community" />
 
       <Col className="text-gray-500 gap-1">
         <div>
-          Markets are included in a fold if they match one or more tags.
+          Markets are included in a community if they match one or more tags.
         </div>
       </Col>
 
@@ -74,11 +76,11 @@ export function CreateFoldButton() {
       <div>
         <div className="form-control w-full">
           <label className="label">
-            <span className="mb-1">Fold name</span>
+            <span className="mb-1">Community name</span>
           </label>
 
           <input
-            placeholder="Your fold name"
+            placeholder="Name"
             className="input input-bordered resize-none"
             disabled={isSubmitting}
             value={name}
@@ -109,7 +111,7 @@ export function CreateFoldButton() {
         <label className="label">
           <span className="mb-1">Primary tag</span>
         </label>
-        <TagsList noLink tags={[`#${toCamelCase(name)}`]} />
+        <TagsList noLink noLabel tags={[`#${toCamelCase(name)}`]} />
 
         <Spacer h={4} />
 
@@ -132,6 +134,7 @@ export function CreateFoldButton() {
         <TagsList
           tags={parseWordsAsTags(otherTags).map((tag) => `#${tag}`)}
           noLink
+          noLabel
         />
       </div>
     </ConfirmationButton>

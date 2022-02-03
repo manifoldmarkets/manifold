@@ -7,6 +7,7 @@ export type Fold = {
   createdTime: number
 
   tags: string[]
+  lowercaseTags: string[]
 
   contractIds: string[]
   excludedContractIds: string[]
@@ -17,4 +18,6 @@ export type Fold = {
   excludedCreatorIds?: string[]
 
   followCount: number
+
+  disallowMarketCreation?: boolean
 }

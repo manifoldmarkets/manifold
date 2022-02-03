@@ -16,6 +16,7 @@ export const updateContractMetrics = functions.pubsub
     const contracts = await getValues<Contract>(
       firestore.collection('contracts')
     )
+
     await Promise.all(
       contracts.map(async (contract) => {
         const volume24Hours = await computeVolumeFrom(contract, oneDay)

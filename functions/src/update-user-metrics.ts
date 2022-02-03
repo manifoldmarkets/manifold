@@ -7,7 +7,6 @@ import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import { User } from '../../common/user'
 import { calculatePayout } from '../../common/calculate'
-import { StripeTransaction } from '.'
 
 const firestore = admin.firestore()
 
@@ -29,16 +28,9 @@ export const updateUserMetrics = functions.pubsub
           user,
           contractsDict
         )
-        const deposits = await getValues<StripeTransaction>(
-          firestore
-            .collection('stripe-transactions')
-            .where('userId', '==', user.id)
-        )
-        const totalDeposits =
-          1000 + _.sumBy(deposits, (deposit) => deposit.manticDollarQuantity)
         const totalValue = user.balance + investmentValue
 
-        const totalPnL = totalValue - totalDeposits
+        const totalPnL = totalValue - user.totalDeposits
 
         const creatorVolume = await computeTotalVolume(user, contractsDict)
 

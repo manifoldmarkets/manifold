@@ -7,6 +7,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
+import _ from 'lodash'
 import { Fold } from '../../../common/fold'
 import { Contract, contractCollection } from './contracts'
 import { db } from './init'
@@ -130,4 +131,19 @@ export function listenForFollow(
   return listenForValue(followDoc, (value) => {
     setFollow(!!value)
   })
+}
+
+export async function getFoldsByTags(tags: string[]) {
+  if (tags.length === 0) return []
+
+  const lowercaseTags = tags.map((tag) => tag.toLowerCase())
+  const folds = await getValues<Fold>(
+    // TODO: split into multiple queries if tags.length > 10.
+    query(
+      foldCollection,
+      where('lowercaseTags', 'array-contains-any', lowercaseTags)
+    )
+  )
+
+  return _.sortBy(folds, (fold) => -1 * fold.followCount)
 }
