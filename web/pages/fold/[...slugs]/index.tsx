@@ -341,7 +341,7 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
           Includes markets matching any of these tags:
         </div>
 
-        <TagsList tags={tags.map((tag) => `#${tag}`)} noLabel />
+        <TagsList tags={tags} noLabel />
       </Col>
     </Col>
   )

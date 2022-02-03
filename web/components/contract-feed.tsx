@@ -130,6 +130,11 @@ function FeedBet(props: { activityItem: any }) {
                 className="textarea textarea-bordered w-full"
                 placeholder="Add a comment..."
                 rows={3}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
+                    submitComment()
+                  }
+                }}
               />
               <button
                 className="btn btn-outline btn-sm mt-1"
@@ -195,6 +200,11 @@ export function ContractDescription(props: {
                   description.length
                 )
               }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                  saveDescription(e)
+                }
+              }}
             />
             <Row className="gap-2">
               <button
