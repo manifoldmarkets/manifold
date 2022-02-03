@@ -74,10 +74,10 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
   )
 
   const creatorScores = scoreCreators(contracts, bets)
-  const [topCreators, topCreatorScores] = await toUserScores(creatorScores)
+  const topCreators = await toTopUsers(creatorScores)
 
   const traderScores = scoreTraders(contracts, bets)
-  const [topTraders, topTraderScores] = await toUserScores(traderScores)
+  const topTraders = await toTopUsers(traderScores)
 
   return {
     props: {
@@ -87,17 +87,17 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
       activeContracts,
       activeContractBets,
       activeContractComments,
+      traderScores,
       topTraders,
-      topTraderScores,
+      creatorScores,
       topCreators,
-      topCreatorScores,
     },
 
     revalidate: 60, // regenerate after a minute
   }
 }
 
-async function toUserScores(userScores: { [userId: string]: number }) {
+async function toTopUsers(userScores: { [userId: string]: number }) {
   const topUserPairs = _.take(
     _.sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
     10
@@ -106,14 +106,7 @@ async function toUserScores(userScores: { [userId: string]: number }) {
   const topUsers = await Promise.all(
     topUserPairs.map(([userId]) => getUser(userId))
   )
-  const existingPairs = topUserPairs.filter(([id, _]) =>
-    topUsers.find((user) => user?.id === id)
-  )
-  const topExistingUsers = existingPairs.map(
-    ([id]) => topUsers.find((user) => user?.id === id) as User
-  )
-  const topUserScores = existingPairs.map(([_, score]) => score)
-  return [topExistingUsers, topUserScores] as const
+  return topUsers.filter((user) => user)
 }
 
 export async function getStaticPaths() {
@@ -128,19 +121,19 @@ export default function FoldPage(props: {
   activeContracts: Contract[]
   activeContractBets: Bet[][]
   activeContractComments: Comment[][]
+  traderScores: { [userId: string]: number }
   topTraders: User[]
-  topTraderScores: number[]
+  creatorScores: { [userId: string]: number }
   topCreators: User[]
-  topCreatorScores: number[]
 }) {
   const {
     curator,
     activeContractBets,
     activeContractComments,
+    traderScores,
     topTraders,
-    topTraderScores,
+    creatorScores,
     topCreators,
-    topCreatorScores,
   } = props
 
   const router = useRouter()
@@ -272,25 +265,28 @@ export default function FoldPage(props: {
               />
             )}
           </Col>
-          <Col className="hidden md:flex max-w-xs w-full gap-10">
+          <Col className="hidden md:flex max-w-xs w-full gap-12">
             <FoldOverview fold={fold} curator={curator} />
             <FoldLeaderboards
+              traderScores={traderScores}
+              creatorScores={creatorScores}
               topTraders={topTraders}
-              topTraderScores={topTraderScores}
               topCreators={topCreators}
-              topCreatorScores={topCreatorScores}
+              user={user}
             />
           </Col>
         </Row>
       )}
 
       {page === 'leaderboards' && (
-        <Col className="gap-8 lg:flex-row">
+        <Col className="gap-8 lg:flex-row px-4">
           <FoldLeaderboards
+            traderScores={traderScores}
+            creatorScores={creatorScores}
             topTraders={topTraders}
-            topTraderScores={topTraderScores}
             topCreators={topCreators}
-            topCreatorScores={topCreatorScores}
+            user={user}
+            yourPerformanceClassName="lg:hidden"
           />
         </Col>
       )}
@@ -337,14 +333,54 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
 }
 
 function FoldLeaderboards(props: {
+  traderScores: { [userId: string]: number }
+  creatorScores: { [userId: string]: number }
   topTraders: User[]
-  topTraderScores: number[]
   topCreators: User[]
-  topCreatorScores: number[]
+  user: User | null | undefined
+  yourPerformanceClassName?: string
 }) {
-  const { topTraders, topTraderScores, topCreators, topCreatorScores } = props
+  const {
+    traderScores,
+    creatorScores,
+    topTraders,
+    topCreators,
+    user,
+    yourPerformanceClassName,
+  } = props
+
+  const yourTraderScore = user ? traderScores[user.id] : undefined
+  const yourCreatorScore = user ? creatorScores[user.id] : undefined
+
+  const topTraderScores = topTraders.map((user) => traderScores[user.id])
+  const topCreatorScores = topCreators.map((user) => creatorScores[user.id])
+
   return (
     <>
+      {user && (
+        <Col className={yourPerformanceClassName}>
+          <div className="bg-indigo-500 text-white text-sm px-4 py-3 rounded">
+            Your performance
+          </div>
+          <div className="bg-white p-2">
+            <table className="table table-compact text-gray-500 w-full">
+              <tbody>
+                <tr>
+                  <td>Trading profit</td>
+                  <td>{formatMoney(yourTraderScore ?? 0)}</td>
+                </tr>
+                {yourCreatorScore && (
+                  <tr>
+                    <td>Created market vol</td>
+                    <td>{formatMoney(yourCreatorScore)}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Col>
+      )}
+
       <Leaderboard
         className="max-w-xl"
         title="🏅 Top traders"
@@ -357,13 +393,14 @@ function FoldLeaderboards(props: {
           },
         ]}
       />
+
       <Leaderboard
         className="max-w-xl"
         title="🏅 Top creators"
         users={topCreators}
         columns={[
           {
-            header: 'Market pool',
+            header: 'Market vol',
             renderCell: (user) =>
               formatMoney(topCreatorScores[topCreators.indexOf(user)]),
           },

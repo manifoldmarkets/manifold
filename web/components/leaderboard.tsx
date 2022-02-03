@@ -16,7 +16,7 @@ export function Leaderboard(props: {
   const { title, users, columns, className } = props
   return (
     <div className={clsx('w-full px-1', className)}>
-      <Title text={title} />
+      <Title text={title} className="!mt-0" />
       {users.length === 0 ? (
         <div className="text-gray-500 ml-2">None yet</div>
       ) : (
