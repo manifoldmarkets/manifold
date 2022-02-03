@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { Row } from './layout/row'
 import { SiteLink } from './site-link'
-import { Fold } from '../../common/fold'
 
 function Hashtag(props: { tag: string; noLink?: boolean }) {
   const { tag, noLink } = props
@@ -45,11 +44,11 @@ export function TagsList(props: {
   )
 }
 
-export function FoldTag(props: { fold: Fold }) {
+export function FoldTag(props: { fold: { slug: string; name: string } }) {
   const { fold } = props
-  const { name } = fold
+  const { slug, name } = fold
   return (
-    <SiteLink href={`/fold/${fold.slug}`} className="flex items-center">
+    <SiteLink href={`/fold/${slug}`} className="flex items-center">
       <div
         className={clsx(
           'bg-white border-2 px-4 py-1 rounded-full shadow-md',
@@ -62,7 +61,10 @@ export function FoldTag(props: { fold: Fold }) {
   )
 }
 
-export function FoldTagList(props: { folds: Fold[]; className?: string }) {
+export function FoldTagList(props: {
+  folds: { slug: string; name: string }[]
+  className?: string
+}) {
   const { folds, className } = props
   return (
     <Row className={clsx('flex-wrap gap-2 items-center', className)}>
@@ -70,7 +72,7 @@ export function FoldTagList(props: { folds: Fold[]; className?: string }) {
         <>
           <div className="text-gray-500 mr-1">Communities</div>
           {folds.map((fold) => (
-            <FoldTag key={fold.id} fold={fold} />
+            <FoldTag key={fold.slug} fold={fold} />
           ))}
         </>
       )}
