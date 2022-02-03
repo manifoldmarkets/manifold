@@ -17,7 +17,7 @@ import { Fold } from '../../common/fold'
 import { filterDefined } from '../../common/util/array'
 import { useUserBets } from '../hooks/use-user-bets'
 import { LoadingIndicator } from '../components/loading-indicator'
-import { TagsList } from '../components/tags-list'
+import { FoldTagList } from '../components/tags-list'
 
 export async function getStaticProps() {
   const [contracts, folds] = await Promise.all([
@@ -131,19 +131,21 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
       <Col className="items-center">
         <Col className="max-w-3xl w-full">
           <FeedCreate user={user ?? undefined} />
-          <Spacer h={4} />
-          <TagsList
+          <Spacer h={6} />
+          <FoldTagList
             className="mx-2"
-            tags={[
-              '#politics',
-              '#crypto',
-              '#covid',
-              '#sports',
-              '#meta',
-              '#science',
+            folds={[
+              { name: 'Politics', slug: 'politics' },
+              { name: 'Crypto', slug: 'crypto' },
+              { name: 'Sports', slug: 'sports' },
+              { name: 'Science', slug: 'science' },
+              {
+                name: 'Manifold Markets',
+                slug: 'manifold-markets',
+              },
             ]}
           />
-          <Spacer h={4} />
+          <Spacer h={6} />
           {activeContracts ? (
             <ActivityFeed
               contracts={activeContracts}
