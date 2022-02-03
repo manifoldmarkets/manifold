@@ -37,6 +37,16 @@ export async function getRecentBets() {
   return getValues<Bet>(recentBetsQuery)
 }
 
+export async function getRecentContractBets(contractId: string) {
+  const q = query(
+    getBetsCollection(contractId),
+    where('createdTime', '>', Date.now() - DAY_IN_MS),
+    orderBy('createdTime', 'desc')
+  )
+
+  return getValues<Bet>(q)
+}
+
 export function listenForBets(
   contractId: string,
   setBets: (bets: Bet[]) => void

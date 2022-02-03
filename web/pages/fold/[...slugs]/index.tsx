@@ -5,7 +5,11 @@ import { Fold } from '../../../../common/fold'
 import { Comment } from '../../../../common/comment'
 import { Page } from '../../../components/page'
 import { Title } from '../../../components/title'
-import { Bet, listAllBets } from '../../../lib/firebase/bets'
+import {
+  Bet,
+  getRecentContractBets,
+  listAllBets,
+} from '../../../lib/firebase/bets'
 import { listAllComments } from '../../../lib/firebase/comments'
 import { Contract } from '../../../lib/firebase/contracts'
 import {
@@ -43,14 +47,22 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const curatorPromise = fold ? getUser(fold.curatorId) : null
 
   const contracts = fold ? await getFoldContracts(fold).catch((_) => []) : []
-  const contractComments = await Promise.all(
-    contracts.map((contract) => listAllComments(contract.id).catch((_) => []))
-  )
+
+  const [contractComments, contractRecentBets] = await Promise.all([
+    Promise.all(
+      contracts.map((contract) => listAllComments(contract.id).catch((_) => []))
+    ),
+    Promise.all(
+      contracts.map((contract) =>
+        getRecentContractBets(contract.id).catch((_) => [])
+      )
+    ),
+  ])
 
   let activeContracts = findActiveContracts(
     contracts,
     _.flatten(contractComments),
-    [],
+    _.flatten(contractRecentBets),
     365
   )
   const [resolved, unresolved] = _.partition(
