@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { AddFundsButton } from '../components/add-funds-button'
+import { PencilIcon } from '@heroicons/react/outline'
 
+import { AddFundsButton } from '../components/add-funds-button'
 import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
@@ -23,6 +24,8 @@ export default function ProfilePage() {
   const [avatarLoading, setAvatarLoading] = useState(false)
   const [name, setName] = useState(user?.name || '')
   const [username, setUsername] = useState(user?.username || '')
+
+  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -85,7 +88,25 @@ export default function ProfilePage() {
       <SEO title="Profile" description="User profile settings" url="/profile" />
 
       <Col className="max-w-lg p-6 sm:mx-auto bg-white rounded shadow-md">
-        <Title className="!mt-0" text="Profile" />
+        <Row className="justify-between">
+          <Title className="!mt-0" text="Profile" />
+          {isEditing ? (
+            <button
+              className="btn btn-primary"
+              onClick={() => setIsEditing(false)}
+            >
+              Done
+            </button>
+          ) : (
+            <button
+              className="btn btn-ghost"
+              onClick={() => setIsEditing(true)}
+            >
+              <PencilIcon className="w-5 h-5" />{' '}
+              <div className="ml-2">Edit</div>
+            </button>
+          )}
+        </Row>
         <Col className="gap-4">
           <Row className="items-center gap-4">
             {avatarLoading ? (
@@ -98,53 +119,57 @@ export default function ProfilePage() {
                   height={80}
                   className="rounded-full bg-gray-400 flex items-center justify-center"
                 />
-                <input type="file" name="file" onChange={fileHandler} />
+                {isEditing && (
+                  <input type="file" name="file" onChange={fileHandler} />
+                )}
               </>
             )}
           </Row>
 
           <div>
-            <label className="label">
-              <span className="">Display name</span>
-            </label>
+            <label className="label">Display name</label>
 
-            <input
-              type="text"
-              placeholder="Display name"
-              className="input input-bordered"
-              value={name}
-              onChange={(e) => setName(e.target.value || '')}
-              onBlur={updateDisplayName}
-            />
+            {isEditing ? (
+              <input
+                type="text"
+                placeholder="Display name"
+                className="input input-bordered"
+                value={name}
+                onChange={(e) => setName(e.target.value || '')}
+                onBlur={updateDisplayName}
+              />
+            ) : (
+              <div className="ml-1 text-gray-500">{name}</div>
+            )}
           </div>
 
           <div>
-            <label className="label">
-              <span className="">Username</span>
-            </label>
+            <label className="label">Username</label>
 
-            <input
-              type="text"
-              placeholder="Username"
-              className="input input-bordered"
-              value={username}
-              onChange={(e) => setUsername(e.target.value || '')}
-              onBlur={updateUsername}
-            />
+            {isEditing ? (
+              <input
+                type="text"
+                placeholder="Username"
+                className="input input-bordered"
+                value={username}
+                onChange={(e) => setUsername(e.target.value || '')}
+                onBlur={updateUsername}
+              />
+            ) : (
+              <div className="ml-1 text-gray-500">{username}</div>
+            )}
           </div>
 
           <div>
-            <label className="label">
-              <span className="">Email</span>
-            </label>
-            <div className="ml-2">{privateUser?.email}</div>
+            <label className="label">Email</label>
+            <div className="ml-1 text-gray-500">
+              {privateUser?.email ?? '\u00a0'}
+            </div>
           </div>
 
           <div>
-            <label className="label">
-              <span className="">Balance</span>
-            </label>
-            <Row className="ml-2 gap-4 items-start">
+            <label className="label">Balance</label>
+            <Row className="ml-1 gap-4 items-start text-gray-500">
               {formatMoney(user?.balance || 0)}
               <AddFundsButton />
             </Row>
