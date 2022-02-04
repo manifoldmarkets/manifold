@@ -64,11 +64,11 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [ante, setAnte] = useState<number | undefined>(undefined)
   useEffect(() => {
-    if (creator) {
+    if (ante === undefined && creator) {
       const initialAnte = creator.balance < 100 ? 10 : 100
       setAnte(initialAnte)
     }
-  }, [creator])
+  }, [ante, creator])
 
   const [anteError, setAnteError] = useState<string | undefined>()
   // By default, close the market a week from today
