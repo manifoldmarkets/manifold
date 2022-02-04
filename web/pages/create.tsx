@@ -77,7 +77,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const closeTime = closeDate ? dateToMillis(closeDate) : undefined
+  const closeTime = closeDate ? dayjs(closeDate).valueOf() : undefined
 
   const balance = creator?.balance || 0
 
@@ -210,14 +210,4 @@ export function NewContract(props: { question: string; tag?: string }) {
       </div>
     </div>
   )
-}
-
-// Given a date string like '2022-04-02',
-// return the time just before midnight on that date (in the user's local time), as millis since epoch
-function dateToMillis(date: string) {
-  return dayjs(date)
-    .set('hour', 23)
-    .set('minute', 59)
-    .set('second', 59)
-    .valueOf()
 }
