@@ -52,5 +52,9 @@ service cloud.firestore {
       allow read;
       allow write: if request.auth.uid == userId;
     }
+
+    match /{somePath=**}/followers/{userId} {
+      allow read;
+    }
   }
 }
