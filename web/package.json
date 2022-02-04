@@ -27,8 +27,7 @@
     "next": "12.0.7",
     "react": "17.0.2",
     "react-dom": "17.0.2",
-    "react-expanding-textarea": "^2.3.4",
-    "tw-elements": "^1.0.0-alpha10"
+    "react-expanding-textarea": "^2.3.4"
   },
   "devDependencies": {
     "@tailwindcss/forms": "0.4.0",
