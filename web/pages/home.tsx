@@ -112,15 +112,6 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
       )
     : []
 
-  console.log({
-    followedFoldIds,
-    followedFolds,
-    yourBetContracts,
-    feedContracts,
-    feedBets,
-    feedComments,
-  })
-
   if (user === null) {
     Router.replace('/')
     return <></>
@@ -132,13 +123,17 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
         <Col className="max-w-3xl w-full">
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
+          <div className="text-lg text-gray-500 px-3 pb-4">Communities</div>
           <FoldTagList
             className="mx-2"
+            noLabel
             folds={[
               { name: 'Politics', slug: 'politics' },
               { name: 'Crypto', slug: 'crypto' },
               { name: 'Sports', slug: 'sports' },
               { name: 'Science', slug: 'science' },
+              { name: 'Covid', slug: 'covid' },
+              { name: 'AI', slug: 'ai' },
               {
                 name: 'Manifold Markets',
                 slug: 'manifold-markets',
