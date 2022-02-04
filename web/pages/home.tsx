@@ -12,15 +12,16 @@ import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
 import { useContracts } from '../hooks/use-contracts'
-import { getFollowedFolds, listAllFolds } from '../lib/firebase/folds'
+import { listAllFolds } from '../lib/firebase/folds'
 import { Fold } from '../../common/fold'
 import { filterDefined } from '../../common/util/array'
-import { useUserBets } from '../hooks/use-user-bets'
+import { useUserBetContracts } from '../hooks/use-user-bets'
 import { LoadingIndicator } from '../components/loading-indicator'
 import { FoldTagList } from '../components/tags-list'
 import { SearchIcon } from '@heroicons/react/outline'
 import { Row } from '../components/layout/row'
 import { SparklesIcon } from '@heroicons/react/solid'
+import { useFollowedFolds } from '../hooks/use-fold'
 
 export async function getStaticProps() {
   const [contracts, folds] = await Promise.all([
@@ -45,16 +46,7 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
 
   const contracts = useContracts() ?? props.contracts
 
-  const [followedFoldIds, setFollowedFoldIds] = useState<string[] | undefined>(
-    undefined
-  )
-
-  useEffect(() => {
-    if (user) {
-      getFollowedFolds(user.id).then((foldIds) => setFollowedFoldIds(foldIds))
-    }
-  }, [user])
-
+  const followedFoldIds = useFollowedFolds(user)
   const followedFolds = filterDefined(
     (followedFoldIds ?? []).map((id) => folds.find((fold) => fold.id === id))
   )
@@ -62,13 +54,13 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
     _.flatten(followedFolds.map((fold) => fold.lowercaseTags))
   )
 
-  const yourBets = useUserBets(user?.id)
-  const yourBetContracts = new Set(
-    (yourBets ?? []).map((bet) => bet.contractId)
-  )
+  const yourBetContractIds = useUserBetContracts(user?.id)
+  const yourBetContracts = yourBetContractIds
+    ? new Set(yourBetContractIds)
+    : undefined
 
   const feedContracts =
-    followedFoldIds && yourBets
+    followedFoldIds && yourBetContracts
       ? contracts.filter(
           (contract) =>
             contract.lowercaseTags.some((tag) => tagSet.has(tag)) ||
@@ -86,6 +78,7 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
       Promise.all(
         feedContracts.map((contract) => listAllBets(contract.id))
       ).then(setFeedBets)
+
       Promise.all(
         feedContracts.map((contract) => listAllComments(contract.id))
       ).then(setFeedComments)
