@@ -2,7 +2,6 @@ import {
   collection,
   collectionGroup,
   query,
-  onSnapshot,
   where,
   orderBy,
 } from 'firebase/firestore'
@@ -11,7 +10,7 @@ import _ from 'lodash'
 import { db } from './init'
 import { Bet } from '../../../common/bet'
 import { Contract } from '../../../common/contract'
-import { getValues } from './utils'
+import { getValues, listenForValues } from './utils'
 export type { Bet }
 
 function getBetsCollection(contractId: string) {
@@ -51,11 +50,8 @@ export function listenForBets(
   contractId: string,
   setBets: (bets: Bet[]) => void
 ) {
-  return onSnapshot(getBetsCollection(contractId), (snap) => {
-    const bets = snap.docs.map((doc) => doc.data() as Bet)
-
+  return listenForValues<Bet>(getBetsCollection(contractId), (bets) => {
     bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-
     setBets(bets)
   })
 }
@@ -68,9 +64,7 @@ export function listenForUserBets(
     collectionGroup(db, 'bets'),
     where('userId', '==', userId)
   )
-
-  return onSnapshot(userQuery, (snap) => {
-    const bets = snap.docs.map((doc) => doc.data() as Bet)
+  return listenForValues<Bet>(userQuery, (bets) => {
     bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
     setBets(bets)
   })
@@ -88,5 +82,5 @@ export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
     return bets.slice(2)
   }
 
-  return bets ?? []
+  return bets?.filter((bet) => !bet.isAnte) ?? []
 }

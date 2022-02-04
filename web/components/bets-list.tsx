@@ -32,12 +32,12 @@ import { OutcomeLabel, YesLabel, NoLabel, MarketLabel } from './outcome-label'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
-  const bets = useUserBets(user?.id ?? '')
+  const bets = useUserBets(user.id)
 
   const [contracts, setContracts] = useState<Contract[]>([])
 
   useEffect(() => {
-    const loadedBets = bets === 'loading' ? [] : bets
+    const loadedBets = bets ? bets : []
     const contractIds = _.uniq(loadedBets.map((bet) => bet.contractId))
 
     let disposed = false
@@ -52,7 +52,7 @@ export function BetsList(props: { user: User }) {
     }
   }, [bets])
 
-  if (bets === 'loading') {
+  if (!bets) {
     return <></>
   }
 
