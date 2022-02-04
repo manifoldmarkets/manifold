@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { PencilIcon } from '@heroicons/react/outline'
+import Router from 'next/router'
 
 import { AddFundsButton } from '../components/add-funds-button'
 import { Page } from '../components/page'
@@ -81,6 +82,11 @@ export default function ProfilePage() {
         setAvatarLoading(false)
         setAvatarUrl(user?.avatarUrl || '')
       })
+  }
+
+  if (user === null) {
+    Router.replace('/')
+    return <></>
   }
 
   return (
