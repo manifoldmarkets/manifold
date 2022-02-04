@@ -81,19 +81,19 @@ export function ResolutionPanel(props: {
         {outcome === 'YES' ? (
           <>
             Winnings will be paid out to YES bettors. You earn{' '}
-            {CREATOR_FEE * 100}%.
+            {CREATOR_FEE * 100}% of trader profits.
           </>
         ) : outcome === 'NO' ? (
           <>
             Winnings will be paid out to NO bettors. You earn{' '}
-            {CREATOR_FEE * 100}%.
+            {CREATOR_FEE * 100}% of trader profits.
           </>
         ) : outcome === 'CANCEL' ? (
           <>The pool will be returned to traders with no fees.</>
         ) : outcome === 'MKT' ? (
           <>
             Traders will be paid out at the probability you specify. You earn{' '}
-            {CREATOR_FEE * 100}%.
+            {CREATOR_FEE * 100}% of trader profits.
           </>
         ) : (
           <>Resolving this market will immediately pay out traders.</>
