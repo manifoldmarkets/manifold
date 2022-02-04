@@ -53,6 +53,16 @@ export function listenForUser(
   return listenForValue<User>(userRef, setUser)
 }
 
+export function listenForPrivateUser(
+  userId: string,
+  setPrivateUser: (privateUser: PrivateUser) => void
+) {
+  const userRef = doc(db, 'private-users', userId)
+  return onSnapshot(userRef, (userSnap) => {
+    setPrivateUser(userSnap.data() as PrivateUser)
+  })
+}
+
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
 
 // used to avoid weird race condition
