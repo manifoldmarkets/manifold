@@ -1,3 +1,5 @@
+import Router from 'next/router'
+
 import { BetsList } from '../components/bets-list'
 import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
@@ -6,6 +8,11 @@ import { useUser } from '../hooks/use-user'
 
 export default function TradesPage() {
   const user = useUser()
+
+  if (user === null) {
+    Router.replace('/')
+    return <></>
+  }
 
   return (
     <Page>
