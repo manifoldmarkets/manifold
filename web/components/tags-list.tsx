@@ -63,14 +63,15 @@ export function FoldTag(props: { fold: { slug: string; name: string } }) {
 
 export function FoldTagList(props: {
   folds: { slug: string; name: string }[]
+  noLabel?: boolean
   className?: string
 }) {
-  const { folds, className } = props
+  const { folds, noLabel, className } = props
   return (
     <Row className={clsx('flex-wrap gap-2 items-center', className)}>
       {folds.length > 0 && (
         <>
-          <div className="text-gray-500 mr-1">Communities</div>
+          {!noLabel && <div className="text-gray-500 mr-1">Communities</div>}
           {folds.map((fold) => (
             <FoldTag key={fold.slug} fold={fold} />
           ))}
