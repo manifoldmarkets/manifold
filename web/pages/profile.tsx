@@ -12,6 +12,8 @@ import {
 } from '../../common/util/clean-username'
 import { changeUserInfo } from '../lib/firebase/api-call'
 import { uploadImage } from '../lib/firebase/storage'
+import { Col } from '../components/layout/col'
+import { Row } from '../components/layout/row'
 
 export default function ProfilePage() {
   const user = useUser()
@@ -81,60 +83,74 @@ export default function ProfilePage() {
   return (
     <Page>
       <SEO title="Profile" description="User profile settings" url="/profile" />
-      <Title text="Profile" />
 
-      <p>
-        {avatarLoading ? (
-          <button className="btn btn-ghost btn-lg btn-circle loading"></button>
-        ) : (
-          <>
-            <img
-              src={avatarUrl}
-              width={80}
-              height={80}
-              className="rounded-full bg-gray-400 flex items-center justify-center"
+      <Col className="max-w-lg p-6 sm:mx-auto bg-white rounded shadow-md">
+        <Title className="!mt-0" text="Profile" />
+        <Col className="gap-4">
+          <Row className="items-center gap-4">
+            {avatarLoading ? (
+              <button className="btn btn-ghost btn-lg btn-circle loading"></button>
+            ) : (
+              <>
+                <img
+                  src={avatarUrl}
+                  width={80}
+                  height={80}
+                  className="rounded-full bg-gray-400 flex items-center justify-center"
+                />
+                <input type="file" name="file" onChange={fileHandler} />
+              </>
+            )}
+          </Row>
+
+          <div>
+            <label className="label">
+              <span className="">Display name</span>
+            </label>
+
+            <input
+              type="text"
+              placeholder="Display name"
+              className="input input-bordered"
+              value={name}
+              onChange={(e) => setName(e.target.value || '')}
+              onBlur={updateDisplayName}
             />
-            <input type="file" name="file" onChange={fileHandler} />
-          </>
-        )}
-      </p>
+          </div>
 
-      <label className="label">
-        <span className="label-text">Display name</span>
-      </label>
+          <div>
+            <label className="label">
+              <span className="">Username</span>
+            </label>
 
-      <input
-        type="text"
-        placeholder="Display name"
-        className="input input-bordered"
-        value={name}
-        onChange={(e) => setName(e.target.value || '')}
-        onBlur={updateDisplayName}
-      />
+            <input
+              type="text"
+              placeholder="Username"
+              className="input input-bordered"
+              value={username}
+              onChange={(e) => setUsername(e.target.value || '')}
+              onBlur={updateUsername}
+            />
+          </div>
 
-      <label className="label">
-        <span className="label-text">Username</span>
-      </label>
+          <div>
+            <label className="label">
+              <span className="">Email</span>
+            </label>
+            <div className="ml-2">{privateUser?.email}</div>
+          </div>
 
-      <input
-        type="text"
-        placeholder="Username"
-        className="input input-bordered"
-        value={username}
-        onChange={(e) => setUsername(e.target.value || '')}
-        onBlur={updateUsername}
-      />
-
-      <label className="label">
-        <span className="label-text">Email</span>
-      </label>
-      <p>{privateUser?.email}</p>
-
-      <label className="label">
-        <span className="label-text">Balance</span>
-      </label>
-      <p>{formatMoney(user?.balance || 0)}</p>
-      <AddFundsButton />
+          <div>
+            <label className="label">
+              <span className="">Balance</span>
+            </label>
+            <Row className="ml-2 gap-4 items-start">
+              {formatMoney(user?.balance || 0)}
+              <AddFundsButton />
+            </Row>
+          </div>
+        </Col>
+      </Col>
     </Page>
   )
 }
