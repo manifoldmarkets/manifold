@@ -3,7 +3,6 @@ import {
   doc,
   setDoc,
   getDoc,
-  onSnapshot,
   collection,
   query,
   where,
@@ -22,7 +21,7 @@ import {
 import { app } from './init'
 import { PrivateUser, User } from '../../../common/user'
 import { createUser } from './api-call'
-import { getValues, listenForValues } from './utils'
+import { getValues, listenForValue, listenForValues } from './utils'
 export type { User }
 
 const db = getFirestore(app)
@@ -46,11 +45,12 @@ export async function setUser(userId: string, user: User) {
   await setDoc(doc(db, 'users', userId), user)
 }
 
-export function listenForUser(userId: string, setUser: (user: User) => void) {
+export function listenForUser(
+  userId: string,
+  setUser: (user: User | null) => void
+) {
   const userRef = doc(db, 'users', userId)
-  return onSnapshot(userRef, (userSnap) => {
-    setUser(userSnap.data() as User)
-  })
+  return listenForValue<User>(userRef, setUser)
 }
 
 export function listenForPrivateUser(

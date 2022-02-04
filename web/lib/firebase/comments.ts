@@ -1,7 +1,6 @@
 import {
   doc,
   collection,
-  onSnapshot,
   setDoc,
   query,
   collectionGroup,
@@ -52,13 +51,13 @@ export function listenForComments(
   contractId: string,
   setComments: (comments: Comment[]) => void
 ) {
-  return onSnapshot(getCommentsCollection(contractId), (snap) => {
-    const comments = snap.docs.map((doc) => doc.data() as Comment)
-
-    comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-
-    setComments(comments)
-  })
+  return listenForValues<Comment>(
+    getCommentsCollection(contractId),
+    (comments) => {
+      comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+      setComments(comments)
+    }
+  )
 }
 
 // Return a map of betId -> comment

@@ -8,7 +8,6 @@ import {
   collection,
   query,
   getDocs,
-  onSnapshot,
   orderBy,
   getDoc,
   updateDoc,
@@ -116,9 +115,7 @@ export function listenForContracts(
   setContracts: (contracts: Contract[]) => void
 ) {
   const q = query(contractCollection, orderBy('createdTime', 'desc'))
-  return onSnapshot(q, (snap) => {
-    setContracts(snap.docs.map((doc) => doc.data() as Contract))
-  })
+  return listenForValues<Contract>(q, setContracts)
 }
 
 export function listenForContract(

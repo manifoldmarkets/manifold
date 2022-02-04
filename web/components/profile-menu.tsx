@@ -45,7 +45,7 @@ function getNavigationOptions(
             href: '/markets',
           },
           {
-            name: 'Folds',
+            name: 'Communities',
             href: '/folds',
           },
         ]
