@@ -9,12 +9,13 @@ import {
   contractPath,
 } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
-import { parseTags } from '../../common/util/parse'
 import dayjs from 'dayjs'
 import { TrendingUpIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from './datetime-tooltip'
 import { ClockIcon } from '@heroicons/react/outline'
 import { fromNow } from '../lib/util/time'
+import { Avatar } from './avatar'
+import { Spacer } from './layout/spacer'
 
 export function ContractCard(props: {
   contract: Contract
@@ -37,7 +38,15 @@ export function ContractCard(props: {
         <Link href={contractPath(contract)}>
           <a className="absolute left-0 right-0 top-0 bottom-0" />
         </Link>
-        <Row className="justify-between gap-4 mb-2">
+
+        <AbbrContractDetails
+          contract={contract}
+          showHotVolume={showHotVolume}
+          showCloseTime={showCloseTime}
+        />
+        <Spacer h={3} />
+
+        <Row className="justify-between gap-4">
           <p className="font-medium text-indigo-700">{question}</p>
           <ResolutionOrChance
             className="items-center"
@@ -45,11 +54,6 @@ export function ContractCard(props: {
             probPercent={probPercent}
           />
         </Row>
-        <AbbrContractDetails
-          contract={contract}
-          showHotVolume={showHotVolume}
-          showCloseTime={showCloseTime}
-        />
       </div>
     </div>
   )
@@ -104,7 +108,7 @@ export function ResolutionOrChance(props: {
   )
 }
 
-export function AbbrContractDetails(props: {
+function AbbrContractDetails(props: {
   contract: Contract
   showHotVolume?: boolean
   showCloseTime?: boolean
@@ -115,13 +119,20 @@ export function AbbrContractDetails(props: {
 
   return (
     <Col className={clsx('text-sm text-gray-500 gap-2')}>
-      <Row className="gap-2 flex-wrap">
-        <UserLink
-          className="whitespace-nowrap"
-          name={creatorName}
-          username={creatorUsername}
-        />
-        <div>•</div>
+      <Row className="justify-between items-center">
+        <Row className="gap-2 items-center">
+          <Avatar
+            username={creatorUsername}
+            avatarUrl={contract.creatorAvatarUrl}
+            size={6}
+          />
+          <UserLink
+            className="whitespace-nowrap"
+            name={creatorName}
+            username={creatorUsername}
+          />
+        </Row>
+
         {showHotVolume ? (
           <div className="whitespace-nowrap">
             <TrendingUpIcon className="h-5 w-5 text-gray-500 inline" />{' '}
