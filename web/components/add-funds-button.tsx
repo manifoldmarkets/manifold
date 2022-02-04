@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useUser } from '../hooks/use-user'
 import { checkoutURL } from '../lib/service/stripe'
@@ -12,6 +12,8 @@ export function AddFundsButton(props: { className?: string }) {
   const [amountSelected, setAmountSelected] = useState<
     500 | 1000 | 2500 | 10000
   >(500)
+
+  const location = useLocation()
 
   return (
     <>
@@ -54,11 +56,7 @@ export function AddFundsButton(props: { className?: string }) {
             </label>
 
             <form
-              action={checkoutURL(
-                user?.id || '',
-                amountSelected,
-                window.location.href
-              )}
+              action={checkoutURL(user?.id || '', amountSelected, location)}
               method="POST"
             >
               <button
@@ -73,4 +71,14 @@ export function AddFundsButton(props: { className?: string }) {
       </div>
     </>
   )
+}
+
+// needed in next js
+// window not loaded at runtime
+const useLocation = () => {
+  const [href, setHref] = useState('')
+  useEffect(() => {
+    setHref(window.location.href)
+  }, [])
+  return href
 }

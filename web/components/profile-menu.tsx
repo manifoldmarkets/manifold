@@ -34,6 +34,10 @@ function getNavigationOptions(
       name: 'Home',
       href: user ? '/home' : '/',
     },
+    {
+      name: 'Profile',
+      href: '/profile',
+    },
     ...(mobile
       ? [
           {

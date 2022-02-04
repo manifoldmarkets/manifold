@@ -9,6 +9,10 @@ import {
 } from '../../common/user'
 import { getUser, getUserByUsername } from './utils'
 import { randomString } from '../../common/util/random'
+import {
+  cleanDisplayName,
+  cleanUsername,
+} from '../../common/util/clean-username'
 
 export const createUser = functions
   .runWith({ minInstances: 1 })
@@ -29,7 +33,8 @@ export const createUser = functions
     const email = fbUser.email
     const emailName = email?.replace(/@.*$/, '')
 
-    const name = fbUser.displayName || emailName || 'User' + randomString(4)
+    const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
+    const name = cleanDisplayName(rawName)
     let username = cleanUsername(name)
 
     const sameNameUser = await getUserByUsername(username)
@@ -76,14 +81,6 @@ export const createUser = functions
 
     return { status: 'success', user }
   })
-
-const cleanUsername = (name: string) => {
-  return name
-    .replace(/\s+/g, '')
-    .normalize('NFD') // split an accented letter in the base letter and the acent
-    .replace(/[\u0300-\u036f]/g, '') // remove all previously split accents
-    .replace(/[^A-Za-z0-9_]/g, '') // remove all chars not letters, numbers and underscores
-}
 
 const firestore = admin.firestore()
 

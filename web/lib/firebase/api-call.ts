@@ -33,3 +33,13 @@ export const createUser: () => Promise<User | null> = () => {
     .then((r) => (r.data as any)?.user || null)
     .catch(() => null)
 }
+
+export const changeUserInfo = (data: {
+  username?: string
+  name?: string
+  avatarUrl?: string
+}) => {
+  return cloudFunction('changeUserInfo')(data)
+    .then((r) => r.data as { status: string; message?: string })
+    .catch((e) => ({ status: 'error', message: e.message }))
+}

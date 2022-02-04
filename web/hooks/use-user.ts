@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { listenForLogin, listenForUser, User } from '../lib/firebase/users'
+import { PrivateUser } from '../../common/user'
+import {
+  listenForLogin,
+  listenForPrivateUser,
+  listenForUser,
+  User,
+} from '../lib/firebase/users'
 
 export const useUser = () => {
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -13,4 +19,16 @@ export const useUser = () => {
   }, [userId])
 
   return user
+}
+
+export const usePrivateUser = (userId?: string) => {
+  const [privateUser, setPrivateUser] = useState<
+    PrivateUser | null | undefined
+  >(undefined)
+
+  useEffect(() => {
+    if (userId) return listenForPrivateUser(userId, setPrivateUser)
+  }, [userId])
+
+  return privateUser
 }
