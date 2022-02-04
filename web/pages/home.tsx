@@ -18,6 +18,9 @@ import { filterDefined } from '../../common/util/array'
 import { useUserBets } from '../hooks/use-user-bets'
 import { LoadingIndicator } from '../components/loading-indicator'
 import { FoldTagList } from '../components/tags-list'
+import { SearchIcon } from '@heroicons/react/outline'
+import { Row } from '../components/layout/row'
+import { SparklesIcon } from '@heroicons/react/solid'
 
 export async function getStaticProps() {
   const [contracts, folds] = await Promise.all([
@@ -123,7 +126,10 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
         <Col className="max-w-3xl w-full">
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
-          <div className="text-lg text-gray-500 px-3 pb-4">Communities</div>
+          <Row className="text-sm text-gray-800 mx-3 mb-3 gap-2 items-center">
+            <SearchIcon className="inline w-5 h-5" aria-hidden="true" />
+            Explore our communities
+          </Row>
           <FoldTagList
             className="mx-2"
             noLabel
@@ -140,7 +146,11 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
               },
             ]}
           />
-          <Spacer h={6} />
+          <Spacer h={10} />
+          <Row className="text-sm text-gray-800 mx-3 mb-3 gap-2 items-center">
+            <SparklesIcon className="inline w-5 h-5" aria-hidden="true" />
+            Recent activity
+          </Row>
           {activeContracts ? (
             <ActivityFeed
               contracts={activeContracts}
