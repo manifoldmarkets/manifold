@@ -221,6 +221,8 @@ export function SearchableGrid(props: {
       matches,
       (contract) => -1 * (contract.resolutionTime ?? 0)
     )
+  } else if (sort === 'oldest') {
+    matches.sort((a, b) => a.createdTime - b.createdTime)
   } else if (sort === 'close-date') {
     matches = _.sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
     matches = _.sortBy(matches, (contract) => contract.closeTime)
@@ -265,6 +267,7 @@ export function SearchableGrid(props: {
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
           <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
 
           <option value="tag">By tag</option>
           {!byOneCreator && <option value="creator">By creator</option>}
