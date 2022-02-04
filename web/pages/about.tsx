@@ -133,7 +133,7 @@ function Contents() {
       <h3 id="how-are-markets-resolved-">How are markets resolved?</h3>
       <p>
         The creator of the prediction market decides the outcome and earns{' '}
-        {CREATOR_FEE * 100}% of the winnings as a commission for creating and
+        {CREATOR_FEE * 100}% of trader profits. as a commission for creating and
         resolving the market.
       </p>
       <p>
