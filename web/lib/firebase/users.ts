@@ -21,7 +21,7 @@ import {
 import { app } from './init'
 import { PrivateUser, User } from '../../../common/user'
 import { createUser } from './api-call'
-import { getValues, listenForValue, listenForValues } from './utils'
+import { getValue, getValues, listenForValue, listenForValues } from './utils'
 export type { User }
 
 const db = getFirestore(app)
@@ -55,12 +55,10 @@ export function listenForUser(
 
 export function listenForPrivateUser(
   userId: string,
-  setPrivateUser: (privateUser: PrivateUser) => void
+  setPrivateUser: (privateUser: PrivateUser | null) => void
 ) {
   const userRef = doc(db, 'private-users', userId)
-  return onSnapshot(userRef, (userSnap) => {
-    setPrivateUser(userSnap.data() as PrivateUser)
-  })
+  return listenForValue<PrivateUser>(userRef, setPrivateUser)
 }
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
