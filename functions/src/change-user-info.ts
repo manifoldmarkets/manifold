@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { getUser, getUserByUsername, removeUndefinedProps } from './utils'
+import { getUser, removeUndefinedProps } from './utils'
 import { Contract } from '../../common/contract'
 import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
@@ -46,47 +46,56 @@ export const changeUser = async (
     avatarUrl?: string
   }
 ) => {
-  if (update.username) {
-    update.username = cleanUsername(update.username)
-    if (!update.username) {
-      throw new Error('Invalid username')
+  return await firestore.runTransaction(async (transaction) => {
+    if (update.username) {
+      update.username = cleanUsername(update.username)
+      if (!update.username) {
+        throw new Error('Invalid username')
+      }
+
+      const sameNameUser = await transaction.get(
+        firestore.collection('users').where('username', '==', update.username)
+      )
+      if (!sameNameUser.empty) {
+        throw new Error('Username already exists')
+      }
     }
 
-    const sameNameUser = await getUserByUsername(update.username)
-    if (sameNameUser) {
-      throw new Error('Username already exists')
-    }
-  }
+    const userRef = firestore.collection('users').doc(user.id)
+    const userUpdate: Partial<User> = removeUndefinedProps(update)
 
-  const userRef = firestore.collection('users').doc(user.id)
+    const contractsRef = firestore
+      .collection('contracts')
+      .where('creatorId', '==', user.id)
 
-  const userUpdate: Partial<User> = removeUndefinedProps(update)
-  await userRef.update(userUpdate)
+    const contracts = await transaction.get(contractsRef)
 
-  const contractSnap = await firestore
-    .collection('contracts')
-    .where('creatorId', '==', user.id)
-    .get()
+    const contractUpdate: Partial<Contract> = removeUndefinedProps({
+      creatorName: update.name,
+      creatorUsername: update.username,
+      creatorAvatarUrl: update.avatarUrl,
+    })
 
-  const contractUpdate: Partial<Contract> = removeUndefinedProps({
-    creatorName: update.name,
-    creatorUsername: update.username,
-    creatorAvatarUrl: update.avatarUrl,
+    const commentSnap = await transaction.get(
+      firestore
+        .collectionGroup('comments')
+        .where('userUsername', '==', user.username)
+    )
+
+    const commentUpdate: Partial<Comment> = removeUndefinedProps({
+      userName: update.name,
+      userUsername: update.username,
+      userAvatarUrl: update.avatarUrl,
+    })
+
+    await transaction.update(userRef, userUpdate)
+
+    await Promise.all(
+      commentSnap.docs.map((d) => transaction.update(d.ref, commentUpdate))
+    )
+
+    await contracts.docs.map((d) => transaction.update(d.ref, contractUpdate))
   })
-  await Promise.all(contractSnap.docs.map((d) => d.ref.update(contractUpdate)))
-
-  const commentSnap = await firestore
-    .collectionGroup('comments')
-    .where('userUsername', '==', user.username)
-    .get()
-
-  const commentUpdate: Partial<Comment> = removeUndefinedProps({
-    userName: update.name,
-    userUsername: update.username,
-    userAvatarUrl: update.avatarUrl,
-  })
-
-  await Promise.all(commentSnap.docs.map((d) => d.ref.update(commentUpdate)))
 }
 
 const firestore = admin.firestore()
