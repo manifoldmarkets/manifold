@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Fold } from '../../common/fold'
 import { User } from '../../common/user'
 import {
+  getFollowedFolds,
   listenForFold,
   listenForFolds,
   listenForFollow,
@@ -35,4 +36,27 @@ export const useFollowingFold = (fold: Fold, user: User | null | undefined) => {
   }, [fold, user])
 
   return following
+}
+
+export const useFollowedFolds = (user: User | null | undefined) => {
+  const [followedFoldIds, setFollowedFoldIds] = useState<string[] | undefined>(
+    undefined
+  )
+
+  useEffect(() => {
+    if (user) {
+      const key = `followed-folds-${user.id}`
+      const followedFoldJson = localStorage.getItem(key)
+      if (followedFoldJson) {
+        setFollowedFoldIds(JSON.parse(followedFoldJson))
+      }
+
+      getFollowedFolds(user.id).then((foldIds) => {
+        setFollowedFoldIds(foldIds)
+        localStorage.setItem(key, JSON.stringify(foldIds))
+      })
+    }
+  }, [user])
+
+  return followedFoldIds
 }
