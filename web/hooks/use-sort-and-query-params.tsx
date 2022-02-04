@@ -4,6 +4,7 @@ export type Sort =
   | 'creator'
   | 'tag'
   | 'newest'
+  | 'oldest'
   | 'most-traded'
   | '24-hour-vol'
   | 'close-date'
