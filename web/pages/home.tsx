@@ -11,7 +11,7 @@ import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
-import { useContracts } from '../hooks/use-contracts'
+import { useUpdatedContracts } from '../hooks/use-contracts'
 import { listAllFolds } from '../lib/firebase/folds'
 import { Fold } from '../../common/fold'
 import { filterDefined } from '../../common/util/array'
@@ -56,7 +56,7 @@ const Home = (props: {
 
   const user = useUser()
 
-  const contracts = useContracts() ?? props.contracts
+  const contracts = useUpdatedContracts(props.contracts)
   const contractIdToIndex = _.fromPairs(
     contracts.map((contract, index) => [contract.id, index])
   )

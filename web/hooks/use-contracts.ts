@@ -17,6 +17,19 @@ export const useContracts = () => {
   return contracts
 }
 
+export const useUpdatedContracts = (initialContracts: Contract[]) => {
+  const [contracts, setContracts] = useState(initialContracts)
+
+  useEffect(() => {
+    return listenForContracts((newContracts) => {
+      const contractMap = _.fromPairs(newContracts.map((c) => [c.id, c]))
+      setContracts(initialContracts.map((c) => contractMap[c.id]))
+    })
+  }, [initialContracts])
+
+  return contracts
+}
+
 export const useTaggedContracts = (tags: string[] | undefined) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>(
     tags && tags.length === 0 ? [] : undefined
