@@ -38,6 +38,7 @@ export default function BetRow(props: {
             contract={props.contract}
             title={props.contract.question}
             selected={betChoice}
+            onBetSuccess={() => setOpen(false)}
           />
         </Modal>
       </div>

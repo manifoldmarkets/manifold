@@ -41,13 +41,14 @@ export function BetPanel(props: {
   className?: string
   title?: string // Set if BetPanel is on a feed modal
   selected?: 'YES' | 'NO'
+  onBetSuccess?: () => void
 }) {
   useEffect(() => {
     // warm up cloud function
     placeBet({}).catch()
   }, [])
 
-  const { contract, className, title, selected } = props
+  const { contract, className, title, selected, onBetSuccess } = props
 
   const user = useUser()
 
@@ -96,6 +97,7 @@ export function BetPanel(props: {
       setIsSubmitting(false)
       setWasSubmitted(true)
       setBetAmount(undefined)
+      if (onBetSuccess) onBetSuccess()
     } else {
       setError(result?.error || 'Error placing bet')
       setIsSubmitting(false)
