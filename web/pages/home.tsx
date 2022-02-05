@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Router from 'next/router'
 import _ from 'lodash'
 
@@ -29,9 +29,16 @@ export async function getStaticProps() {
     listAllFolds().catch(() => []),
   ])
 
+  const [contractBets, contractComments] = await Promise.all([
+    Promise.all(contracts.map((contract) => listAllBets(contract.id))),
+    Promise.all(contracts.map((contract) => listAllComments(contract.id))),
+  ])
+
   return {
     props: {
       contracts,
+      contractBets,
+      contractComments,
       folds,
     },
 
@@ -39,12 +46,20 @@ export async function getStaticProps() {
   }
 }
 
-const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
-  const { folds } = props
+const Home = (props: {
+  contracts: Contract[]
+  contractBets: Bet[][]
+  contractComments: Comment[][]
+  folds: Fold[]
+}) => {
+  const { contractBets, contractComments, folds } = props
 
   const user = useUser()
 
   const contracts = useContracts() ?? props.contracts
+  const contractIdToIndex = _.fromPairs(
+    contracts.map((contract, index) => [contract.id, index])
+  )
 
   const followedFoldIds = useFollowedFolds(user)
   const followedFolds = filterDefined(
@@ -68,43 +83,27 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
         )
       : undefined
 
-  const feedContractsKey = feedContracts?.map(({ id }) => id).join(',')
-
-  const [feedBets, setFeedBets] = useState<Bet[][] | undefined>()
-  const [feedComments, setFeedComments] = useState<Comment[][] | undefined>()
-
-  useEffect(() => {
-    if (feedContracts) {
-      Promise.all(
-        feedContracts.map((contract) => listAllBets(contract.id))
-      ).then(setFeedBets)
-
-      Promise.all(
-        feedContracts.map((contract) => listAllComments(contract.id))
-      ).then(setFeedComments)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feedContractsKey])
-
   const oneDayMS = 24 * 60 * 60 * 1000
-  const recentBets =
-    feedBets &&
-    feedBets.flat().filter((bet) => bet.createdTime > Date.now() - oneDayMS)
+  const recentBets = (feedContracts ?? [])
+    .map((c) => contractBets[contractIdToIndex[c.id]])
+    .flat()
+    .filter((bet) => bet.createdTime > Date.now() - oneDayMS)
+  const feedComments = (feedContracts ?? [])
+    .map((c) => contractComments[contractIdToIndex[c.id]])
+    .flat()
 
   const activeContracts =
     feedContracts &&
-    feedComments &&
-    recentBets &&
-    findActiveContracts(feedContracts, feedComments.flat(), recentBets, 365)
+    findActiveContracts(feedContracts, feedComments, recentBets, 365)
 
-  const contractBets = activeContracts
+  const activeBets = activeContracts
     ? activeContracts.map(
-        (contract) => feedBets[feedContracts.indexOf(contract)]
+        (contract) => contractBets[contractIdToIndex[contract.id]]
       )
     : []
-  const contractComments = activeContracts
+  const activeComments = activeContracts
     ? activeContracts.map(
-        (contract) => feedComments[feedContracts.indexOf(contract)]
+        (contract) => contractComments[contractIdToIndex[contract.id]]
       )
     : []
 
@@ -147,8 +146,8 @@ const Home = (props: { contracts: Contract[]; folds: Fold[] }) => {
           {activeContracts ? (
             <ActivityFeed
               contracts={activeContracts}
-              contractBets={contractBets}
-              contractComments={contractComments}
+              contractBets={activeBets}
+              contractComments={activeComments}
             />
           ) : (
             <LoadingIndicator className="mt-4" />
