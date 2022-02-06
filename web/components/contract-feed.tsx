@@ -95,9 +95,9 @@ function FeedBet(props: { activityItem: any }) {
   const { activityItem } = props
   const { id, contractId, amount, outcome, createdTime } = activityItem
   const user = useUser()
-  const isCreator = user?.id == activityItem.userId
+  const isSelf = user?.id == activityItem.userId
   // The creator can comment if the bet was posted in the last hour
-  const canComment = isCreator && Date.now() - createdTime < 60 * 60 * 1000
+  const canComment = isSelf && Date.now() - createdTime < 60 * 60 * 1000
 
   const [comment, setComment] = useState('')
   async function submitComment() {
@@ -111,15 +111,19 @@ function FeedBet(props: { activityItem: any }) {
   return (
     <>
       <div>
-        <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-            <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+        {isSelf ? (
+          <Avatar avatarUrl={user?.avatarUrl} />
+        ) : (
+          <div className="relative px-1">
+            <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+              <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span>{isCreator ? 'You' : 'A trader'}</span> {bought} {money} of{' '}
+          <span>{isSelf ? 'You' : 'A trader'}</span> {bought} {money} of{' '}
           <OutcomeLabel outcome={outcome} /> <Timestamp time={createdTime} />
           {canComment && (
             // Allow user to comment in an textarea if they are the creator
