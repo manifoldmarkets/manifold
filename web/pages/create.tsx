@@ -62,9 +62,9 @@ export function NewContract(props: { question: string; tag?: string }) {
   const [initialProb, setInitialProb] = useState(50)
   const [description, setDescription] = useState('')
 
-  const [ante, setAnte] = useState<number | undefined>(undefined)
+  const [ante, setAnte] = useState<number | undefined | null>(null)
   useEffect(() => {
-    if (ante === undefined && creator) {
+    if (ante === null && creator) {
       const initialAnte = creator.balance < 100 ? 10 : 100
       setAnte(initialAnte)
     }
@@ -86,6 +86,7 @@ export function NewContract(props: { question: string; tag?: string }) {
     initialProb < 100 &&
     question.length > 0 &&
     ante !== undefined &&
+    ante !== null &&
     ante >= MINIMUM_ANTE &&
     ante <= balance &&
     // closeTime must be in the future
