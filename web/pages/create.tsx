@@ -15,6 +15,8 @@ import { CREATOR_FEE } from '../../common/fees'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { ProbabilitySelector } from '../components/probability-selector'
+import { parseWordsAsTags } from '../../common/util/parse'
+import { TagsList } from '../components/tags-list'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -61,6 +63,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [initialProb, setInitialProb] = useState(50)
   const [description, setDescription] = useState('')
+  const [tagText, setTagText] = useState<string>(tag ?? '')
+  const tags = parseWordsAsTags(tagText)
 
   const [ante, setAnte] = useState<number | undefined | null>(null)
   useEffect(() => {
@@ -105,7 +109,7 @@ export function NewContract(props: { question: string; tag?: string }) {
       initialProb,
       ante,
       closeTime,
-      tags: tag ? [tag] : [],
+      tags,
     }).then((r) => r.data || {})
 
     if (result.status !== 'success') {
@@ -116,7 +120,7 @@ export function NewContract(props: { question: string; tag?: string }) {
     await router.push(contractPath(result.contract as Contract))
   }
 
-  const descriptionPlaceholder = `e.g. This market resolves to "YES" if, two weeks after closing, the...\n#politics #world`
+  const descriptionPlaceholder = `e.g. This market resolves to "YES" if, two weeks after closing, the...`
 
   if (!creator) return <></>
 
@@ -153,6 +157,25 @@ export function NewContract(props: { question: string; tag?: string }) {
         />
       </div>
 
+      <Spacer h={4} />
+
+      <div className="form-control items-start max-w-sm">
+        <label className="label gap-2">
+          <span className="mb-1">Tags</span>
+          <InfoTooltip text="Optional. Help categorize your market with related tags." />
+        </label>
+
+        <input
+          placeholder="e.g. Politics, Economics..."
+          className="input input-bordered resize-none"
+          disabled={isSubmitting}
+          value={tagText}
+          onChange={(e) => setTagText(e.target.value || '')}
+        />
+      </div>
+
+      <Spacer h={4} />
+      <TagsList tags={tags} noLink noLabel />
       <Spacer h={4} />
 
       <div className="form-control items-start mb-1">
