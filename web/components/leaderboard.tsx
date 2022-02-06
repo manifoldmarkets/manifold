@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { User } from '../../common/user'
+import { Avatar } from './avatar'
 import { Row } from './layout/row'
 import { SiteLink } from './site-link'
 import { Title } from './title'
@@ -38,13 +39,7 @@ export function Leaderboard(props: {
                   <td>
                     <SiteLink className="relative" href={`/${user.username}`}>
                       <Row className="items-center gap-4">
-                        <img
-                          className="rounded-full bg-gray-400 flex-shrink-0 ring-8 ring-gray-50"
-                          src={user.avatarUrl || ''}
-                          alt=""
-                          width={32}
-                          height={32}
-                        />
+                        <Avatar avatarUrl={user.avatarUrl} size={8} />
                         <div className="truncate">{user.name}</div>
                       </Row>
                     </SiteLink>
