@@ -57,12 +57,19 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
         creatorFee,
       } = getSellBetInfo(user, bet, contract, newBetDoc.id)
 
-      const creatorDoc = firestore.doc(`users/${contract.creatorId}`)
-      const creatorSnap = await transaction.get(creatorDoc)
-      if (creatorSnap.exists) {
-        const creator = creatorSnap.data() as User
-        const creatorNewBalance = creator.balance + creatorFee
-        transaction.update(creatorDoc, { balance: creatorNewBalance })
+      if (contract.creatorId === userId) {
+        transaction.update(userDoc, { balance: newBalance + creatorFee })
+      } else {
+        const creatorDoc = firestore.doc(`users/${contract.creatorId}`)
+        const creatorSnap = await transaction.get(creatorDoc)
+
+        if (creatorSnap.exists) {
+          const creator = creatorSnap.data() as User
+          const creatorNewBalance = creator.balance + creatorFee
+          transaction.update(creatorDoc, { balance: creatorNewBalance })
+        }
+
+        transaction.update(userDoc, { balance: newBalance })
       }
 
       transaction.update(betDoc, { isSold: true })
@@ -72,7 +79,6 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
         totalShares: newTotalShares,
         totalBets: newTotalBets,
       })
-      transaction.update(userDoc, { balance: newBalance })
 
       return { status: 'success' }
     })
