@@ -154,6 +154,24 @@ export async function getFoldsByTags(tags: string[]) {
   return _.sortBy(folds, (fold) => -1 * fold.followCount)
 }
 
+export function listenForFoldsWithTags(
+  tags: string[],
+  setFolds: (folds: Fold[]) => void
+) {
+  const lowercaseTags = tags.map((tag) => tag.toLowerCase())
+  const q =
+    // TODO: split into multiple queries if tags.length > 10.
+    query(
+      foldCollection,
+      where('lowercaseTags', 'array-contains-any', lowercaseTags)
+    )
+
+  return listenForValues<Fold>(q, (folds) => {
+    const sorted = _.sortBy(folds, (fold) => -1 * fold.followCount)
+    setFolds(sorted)
+  })
+}
+
 export async function getFollowedFolds(userId: string) {
   const snapshot = await getDocs(
     query(collectionGroup(db, 'followers'), where('userId', '==', userId))
