@@ -25,6 +25,7 @@ import { Comment, listAllComments } from '../../lib/firebase/comments'
 import Custom404 from '../404'
 import { getFoldsByTags } from '../../lib/firebase/folds'
 import { Fold } from '../../../common/fold'
+import { useFoldsWithTags } from '../../hooks/use-fold'
 
 export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
@@ -71,7 +72,9 @@ export default function ContractPage(props: {
   const user = useUser()
 
   const contract = useContractWithPreload(props.slug, props.contract)
-  const { bets, comments, folds } = props
+  const { bets, comments } = props
+
+  const folds = useFoldsWithTags(contract?.tags) ?? props.folds
 
   if (!contract) {
     return <Custom404 />

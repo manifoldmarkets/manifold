@@ -5,6 +5,7 @@ import {
   getFollowedFolds,
   listenForFold,
   listenForFolds,
+  listenForFoldsWithTags,
   listenForFollow,
 } from '../lib/firebase/folds'
 
@@ -24,6 +25,16 @@ export const useFolds = () => {
   useEffect(() => {
     return listenForFolds(setFolds)
   }, [])
+
+  return folds
+}
+
+export const useFoldsWithTags = (tags: string[] | undefined) => {
+  const [folds, setFolds] = useState<Fold[] | undefined>()
+
+  useEffect(() => {
+    if (tags && tags.length > 0) return listenForFoldsWithTags(tags, setFolds)
+  }, [tags])
 
   return folds
 }
