@@ -8,7 +8,9 @@ export default function About() {
   return (
     <Page margin>
       <SEO title="About" description="About" url="/about" />
-      <Contents />
+      <div className="prose lg:prose-lg mx-auto text-gray-700">
+        <Contents />
+      </div>
     </Page>
   )
 }
@@ -41,17 +43,23 @@ function Contents() {
   return cloneWithStyle(
     <div>
       <h1 id="about">About</h1>
-      <hr />
       <p>
-        Manifold Markets is creating better forecasting through user-created
-        prediction markets.
-      </p>
-      <p>
-        Our mission is to expand humanity&#39;s collective knowledge by making
-        prediction markets accessible to all.
+        Manifold Markets lets anyone create a prediction market on any topic.
+        Win virtual money betting on what you know, from{' '}
+        <a href="https://manifold.markets/SG/will-magnus-carlsen-lose-any-regula">
+          chess tournaments
+        </a>{' '}
+        to{' '}
+        <a href="https://manifold.markets/Duncan/will-the-wayward-falcon-9-booster-h">
+          lunar collisions
+        </a>{' '}
+        to{' '}
+        <a href="https://manifold.markets/Nu%C3%B1oSempere/how-many-additional-subscribers-wil">
+          newsletter subscriber rates
+        </a>{' '}
+        - or learn about the future by creating your own market!
       </p>
       <h1 id="faq">FAQ</h1>
-      <hr />
       <h3 id="what-are-prediction-markets-">What are prediction markets?</h3>
       <p>
         <strong>
@@ -76,7 +84,8 @@ function Contents() {
         <a href="https://en.wikipedia.org/wiki/Efficient-market_hypothesis">
           market&#39;s best estimate
         </a>
-        . This is the power of prediction markets!
+        . Since these probabilities are public, anyone can use them to make
+        better decisions!
       </p>
       <h3 id="how-does-manifold-markets-work-">
         How does Manifold Markets work?
@@ -86,29 +95,30 @@ function Contents() {
           <strong>
             Anyone can create a market for any yes-or-no question.
           </strong>
+          <p>
+            You can ask questions about the future like &quot;Will Taiwan remove
+            its 14-day COVID quarantine by Jun 01, 2022?&quot; If the market
+            thinks this is very likely, you can plan more activities for your
+            trip.
+          </p>
+          <p>
+            You can also ask subjective, personal questions like &quot;Will I
+            enjoy my 2022 Taiwan trip?&quot;. Then share the market with your
+            family and friends and get their takes!
+          </p>
         </li>
-        <p>
-          You can ask questions about the future like &quot;Will Taiwan remove
-          its 14-day COVID quarantine by Jun 01, 2022?&quot; Then use the
-          information to plan your trip.
-        </p>
-        <p>
-          You can also ask subjective, personal questions like &quot;Will I
-          enjoy my 2022 Taiwan trip?&quot;. Then share the market with your
-          family and friends.
-        </p>
         <li>
           <strong>
             Anyone can bet on a market using Manifold Dollars (M$), our platform
             currency.
           </strong>
+          <p>
+            You get M$ 1,000 just for signing up, so you can start betting
+            immediately! When a market creator decides an outcome in your favor,
+            you&#39;ll win Manifold Dollars from people who bet against you.
+          </p>
         </li>
       </ol>
-      <p>
-        You get M$ 1,000 just for signing up, so you can start betting
-        immediately! When a market creator decides an outcome in your favor,
-        you&#39;ll win Manifold Dollars from people who bet against you.
-      </p>
       <h3 id="can-prediction-markets-work-without-real-money-">
         Can prediction markets work without real money?
       </h3>
@@ -223,6 +233,13 @@ function Contents() {
         The result is a market that can function well when trading volume is low
         without any risk to the market creator.
       </p>
+      <p>
+        Read{' '}
+        <a href="https://manifoldmarkets.notion.site/Technical-Guide-to-Manifold-Markets-b9b48a09ea1f45b88d991231171730c5">
+          our technical guide
+        </a>{' '}
+        to find out more!
+      </p>
 
       <h3 id="who-are-we-">Who are we?</h3>
       <p>Manifold Markets is currently a team of three:</p>
@@ -235,14 +252,14 @@ function Contents() {
         We&#39;ve previously launched consumer-facing startups (
         <a href="https://throne.live/">Throne</a>,{' '}
         <a href="http://oneword.games/platform">One Word</a>), and worked at top
-        tech and finance companies (Google, Susquehanna).
+        tech and trading firms (Google, Susquehanna).
       </p>
       <h1 id="talk-to-us-">Talk to us!</h1>
-      <hr />
       <p>Questions? Comments? Want to create a market? Talk to us!</p>
       <ul>
         <li>
-          Email: <code>info@manifold.markets</code>
+          Email:{' '}
+          <a href="mailto:info@manifold.markets">info@manifold.markets</a>
         </li>
         <li>
           Office hours:{' '}
@@ -269,7 +286,6 @@ function Contents() {
       <p></p>
 
       <h1 id="further-reading">Further Reading</h1>
-      <hr />
 
       <ul>
         <li>

@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@tailwindcss/forms": "0.4.0",
+    "@tailwindcss/typography": "^0.5.1",
     "@types/lodash": "4.14.178",
     "@types/node": "16.11.11",
     "@types/react": "17.0.37",
