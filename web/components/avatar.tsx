@@ -23,12 +23,11 @@ export function Avatar(props: {
       {avatarUrl ? (
         <img
           className={clsx(
-            'rounded-full bg-gray-400 flex items-center justify-center',
+            'rounded-full flex items-center justify-center object-cover',
+            `w-${s} h-${s}`,
             !noLink && 'cursor-pointer'
           )}
           src={avatarUrl}
-          width={40}
-          height={40}
           onClick={onClick}
           alt={username}
         />
