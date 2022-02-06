@@ -39,6 +39,7 @@ import { FollowFoldButton } from '../../../components/follow-fold-button'
 import FeedCreate from '../../../components/feed-create'
 import { SEO } from '../../../components/SEO'
 import { useTaggedContracts } from '../../../hooks/use-contracts'
+import { getContractFeedItems } from '../../../components/contract-feed'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -175,6 +176,16 @@ export default function FoldPage(props: {
     (contract) => contractsMap[contract.id]
   )
 
+  const contractActivityItems = activeContracts.map((contract, index) =>
+    getContractFeedItems(
+      contract,
+      activeContractBets[index],
+      activeContractComments[index],
+      user,
+      { feedType: 'activity', expanded: false }
+    )
+  )
+
   if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
   }
@@ -260,8 +271,7 @@ export default function FoldPage(props: {
               <>
                 <ActivityFeed
                   contracts={activeContracts}
-                  contractBets={activeContractBets}
-                  contractComments={activeContractComments}
+                  contractActivityItems={contractActivityItems}
                 />
                 {activeContracts.length === 0 && (
                   <div className="text-gray-500 mt-4 mx-2 lg:mx-0">

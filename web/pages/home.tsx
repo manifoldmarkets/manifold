@@ -4,9 +4,9 @@ import _ from 'lodash'
 
 import { Contract, listAllContracts } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
-import { ActivityFeed, findActiveContracts } from './activity'
-import { Comment, listAllComments } from '../lib/firebase/comments'
-import { Bet, listAllBets } from '../lib/firebase/bets'
+import { ActivityFeed, getActivity } from './activity'
+import { listAllComments } from '../lib/firebase/comments'
+import { listAllBets } from '../lib/firebase/bets'
 import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
@@ -22,6 +22,7 @@ import { SearchIcon } from '@heroicons/react/outline'
 import { Row } from '../components/layout/row'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { useFollowedFolds } from '../hooks/use-fold'
+import { ActivityItem } from '../components/contract-feed'
 
 export async function getStaticProps() {
   const [contracts, folds] = await Promise.all([
@@ -36,9 +37,7 @@ export async function getStaticProps() {
 
   return {
     props: {
-      contracts,
-      contractBets,
-      contractComments,
+      ...getActivity(contracts, contractBets, contractComments),
       folds,
     },
 
@@ -48,18 +47,14 @@ export async function getStaticProps() {
 
 const Home = (props: {
   contracts: Contract[]
-  contractBets: Bet[][]
-  contractComments: Comment[][]
+  contractActivityItems: ActivityItem[][]
   folds: Fold[]
 }) => {
-  const { contractBets, contractComments, folds } = props
+  const { contractActivityItems, folds } = props
 
   const user = useUser()
 
   const contracts = useUpdatedContracts(props.contracts)
-  const contractIdToIndex = _.fromPairs(
-    contracts.map((contract, index) => [contract.id, index])
-  )
 
   const followedFoldIds = useFollowedFolds(user)
   const followedFolds = filterDefined(
@@ -76,36 +71,20 @@ const Home = (props: {
 
   const feedContracts =
     followedFoldIds && yourBetContracts
-      ? contracts.filter(
-          (contract) =>
-            contract.lowercaseTags.some((tag) => tagSet.has(tag)) ||
-            yourBetContracts.has(contract.id)
-        )
+      ? contracts
+          .filter(
+            (contract) =>
+              contract.lowercaseTags.some((tag) => tagSet.has(tag)) ||
+              yourBetContracts.has(contract.id)
+          )
+          .slice(0, 75)
       : undefined
 
-  const oneDayMS = 24 * 60 * 60 * 1000
-  const recentBets = (feedContracts ?? [])
-    .map((c) => contractBets[contractIdToIndex[c.id]])
-    .flat()
-    .filter((bet) => bet.createdTime > Date.now() - oneDayMS)
-  const feedComments = (feedContracts ?? [])
-    .map((c) => contractComments[contractIdToIndex[c.id]])
-    .flat()
+  const feedContractSet = new Set(feedContracts?.map((contract) => contract.id))
 
-  const activeContracts =
-    feedContracts &&
-    findActiveContracts(feedContracts, feedComments, recentBets, 365)
-
-  const activeBets = activeContracts
-    ? activeContracts.map(
-        (contract) => contractBets[contractIdToIndex[contract.id]]
-      )
-    : []
-  const activeComments = activeContracts
-    ? activeContracts.map(
-        (contract) => contractComments[contractIdToIndex[contract.id]]
-      )
-    : []
+  const feedActivityItems = contractActivityItems.filter((_, index) =>
+    feedContractSet.has(contracts[index].id)
+  )
 
   if (user === null) {
     Router.replace('/')
@@ -143,11 +122,10 @@ const Home = (props: {
             <SparklesIcon className="inline w-5 h-5" aria-hidden="true" />
             Recent activity
           </Row>
-          {activeContracts ? (
+          {feedContracts ? (
             <ActivityFeed
-              contracts={activeContracts}
-              contractBets={activeBets}
-              contractComments={activeComments}
+              contracts={feedContracts}
+              contractActivityItems={feedActivityItems}
             />
           ) : (
             <LoadingIndicator className="mt-4" />

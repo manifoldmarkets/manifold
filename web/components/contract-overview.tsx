@@ -14,7 +14,7 @@ import { Row } from './layout/row'
 import { Linkify } from './linkify'
 import clsx from 'clsx'
 import { ContractDetails, ResolutionOrChance } from './contract-card'
-import { ContractFeed } from './contract-feed'
+import { ContractFeed, getContractFeedItems } from './contract-feed'
 import { TweetButton } from './tweet-button'
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
@@ -45,6 +45,11 @@ export const ContractOverview = (props: {
     : `Currently ${probPercent} chance, place your bets here:`
   const url = `https://manifold.markets${contractPath(contract)}`
   const tweetText = `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
+
+  const activityItems = getContractFeedItems(contract, bets, comments, user, {
+    feedType: 'market',
+    expanded: true,
+  })
 
   return (
     <Col className={clsx('mb-6', className)}>
@@ -131,8 +136,7 @@ export const ContractOverview = (props: {
 
       <ContractFeed
         contract={contract}
-        bets={bets}
-        comments={comments}
+        activityItems={activityItems}
         feedType="market"
         betRowClassName="md:hidden !mt-0"
       />

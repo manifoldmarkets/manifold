@@ -1,5 +1,9 @@
 import _ from 'lodash'
-import { ContractFeed } from '../components/contract-feed'
+import {
+  ActivityItem,
+  ContractFeed,
+  getContractFeedItems,
+} from '../components/contract-feed'
 import { Page } from '../components/page'
 import { Contract } from '../lib/firebase/contracts'
 import { Comment } from '../lib/firebase/comments'
@@ -85,27 +89,86 @@ export function findActiveContracts(
   return contracts.slice(0, MAX_ACTIVE_CONTRACTS)
 }
 
+export function getActivity(
+  contracts: Contract[],
+  contractBets: Bet[][],
+  contractComments: Comment[][]
+) {
+  const contractActivityItems = contracts.map((contract, i) => {
+    const bets = contractBets[i]
+    const comments = contractComments[i]
+    return getContractFeedItems(contract, bets, comments, undefined, {
+      expanded: false,
+      feedType: 'activity',
+    })
+  })
+
+  const hotMarketTimes: { [contractId: string]: number } = {}
+
+  // Add recent top-trading contracts, ordered by last bet.
+  const DAY_IN_MS = 24 * 60 * 60 * 1000
+  const contractTotalBets = _.map(contractBets, (bets) => {
+    const recentBets = bets.filter(
+      (bet) => bet.createdTime > Date.now() - DAY_IN_MS
+    )
+    return _.sumBy(recentBets, (bet) => bet.amount)
+  })
+  const topTradedContracts = _.sortBy(
+    contractTotalBets.map((total, index) => [total, index] as [number, number]),
+    ([total, _]) => -1 * total
+  ).slice(0, MAX_HOT_MARKETS)
+
+  for (const [_total, index] of topTradedContracts) {
+    const lastBet = _.last(contractBets[index])
+    if (lastBet) {
+      hotMarketTimes[contracts[index].id] = lastBet.createdTime
+    }
+  }
+
+  const orderedContracts = _.sortBy(
+    contracts.map((c, index) => [c, index] as const),
+    ([contract, index]) => {
+      const activeTypes = ['start', 'comment', 'close', 'resolve']
+      const { createdTime } = _.last(
+        contractActivityItems[index].filter((item) =>
+          activeTypes.includes(item.type)
+        )
+      ) as ActivityItem
+      const activeTime = createdTime ?? 0
+      const hotTime = hotMarketTimes[contract.id] ?? 0
+      return -1 * Math.max(activeTime, hotTime)
+    }
+  )
+
+  return {
+    contracts: orderedContracts.map(([_, index]) => contracts[index]),
+    contractActivityItems: orderedContracts.map(
+      ([_, index]) => contractActivityItems[index]
+    ),
+  }
+}
+
 export function ActivityFeed(props: {
   contracts: Contract[]
-  contractBets: Bet[][]
-  contractComments: Comment[][]
+  contractActivityItems: ActivityItem[][]
 }) {
-  const { contracts, contractBets, contractComments } = props
+  const { contracts, contractActivityItems } = props
 
   return contracts.length > 0 ? (
     <Col className="items-center">
       <Col className="w-full max-w-3xl">
         <Col className="w-full bg-white self-center divide-gray-300 divide-y">
-          {contracts.map((contract, i) => (
-            <div key={contract.id} className="py-6 px-2 sm:px-4">
-              <ContractFeed
-                contract={contract}
-                bets={contractBets[i]}
-                comments={contractComments[i]}
-                feedType="activity"
-              />
-            </div>
-          ))}
+          {contracts.map((contract, i) => {
+            return (
+              <div key={contract.id} className="py-6 px-2 sm:px-4">
+                <ContractFeed
+                  contract={contract}
+                  activityItems={contractActivityItems[i]}
+                  feedType="activity"
+                />
+              </div>
+            )
+          })}
         </Col>
       </Col>
     </Col>
@@ -117,7 +180,7 @@ export function ActivityFeed(props: {
 export default function ActivityPage() {
   return (
     <Page>
-      <ActivityFeed contracts={[]} contractBets={[]} contractComments={[]} />
+      <ActivityFeed contracts={[]} contractActivityItems={[]} />
     </Page>
   )
 }

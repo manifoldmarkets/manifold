@@ -6,7 +6,6 @@ import {
   CheckIcon,
   DotsVerticalIcon,
   LockClosedIcon,
-  StarIcon,
   UserIcon,
   UsersIcon,
   XIcon,
@@ -43,6 +42,7 @@ import { fromNow } from '../lib/util/time'
 import BetRow from './bet-row'
 import { parseTags } from '../../common/util/parse'
 import { Avatar } from './avatar'
+import { User } from '../../common/user'
 
 function FeedComment(props: {
   activityItem: any
@@ -470,7 +470,12 @@ function groupBets(
     if (group.length == 1) {
       items.push(toActivityItem(group[0]))
     } else if (group.length > 1) {
-      items.push({ type: 'betgroup', bets: [...group], id: group[0].id })
+      items.push({
+        type: 'betgroup',
+        bets: [...group],
+        id: group[0].id,
+        createdTime: group[group.length - 1].createdTime,
+      })
     }
     group = []
   }
@@ -502,6 +507,52 @@ function groupBets(
     pushGroup()
   }
   return items as ActivityItem[]
+}
+
+export function getContractFeedItems(
+  contract: Contract,
+  bets: Bet[],
+  comments: Comment[],
+  user: User | null | undefined,
+  options: { feedType: 'activity' | 'market'; expanded: boolean }
+) {
+  const { feedType, expanded } = options
+  const groupWindow = feedType == 'activity' ? 10 * DAY_IN_MS : DAY_IN_MS
+
+  const allItems: ActivityItem[] = [
+    { type: 'start', id: '0', createdTime: contract.createdTime },
+    ...groupBets(
+      bets.filter((bet) => !bet.isAnte),
+      comments,
+      groupWindow,
+      user?.id
+    ),
+  ]
+  if (contract.closeTime && contract.closeTime <= Date.now()) {
+    allItems.push({
+      type: 'close',
+      id: `${contract.closeTime}`,
+      createdTime: contract.closeTime,
+    })
+  }
+  if (contract.resolution) {
+    allItems.push({
+      type: 'resolve',
+      id: `${contract.resolutionTime}`,
+      createdTime: contract.resolutionTime,
+    })
+  }
+
+  // If there are more than 5 items, only show the first, an expand item, and last 3
+  let items = allItems
+  if (!expanded && allItems.length > 5 && feedType == 'activity') {
+    items = [
+      allItems[0],
+      { type: 'expand', id: 'expand' },
+      ...allItems.slice(-3),
+    ]
+  }
+  return items
 }
 
 function BetGroupSpan(props: { bets: Bet[]; outcome: 'YES' | 'NO' }) {
@@ -583,9 +634,7 @@ function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
   )
 }
 
-// Missing feed items:
-// - Bet sold?
-type ActivityItem = {
+export type ActivityItem = {
   id: string
   type:
     | 'bet'
@@ -595,48 +644,34 @@ type ActivityItem = {
     | 'close'
     | 'resolve'
     | 'expand'
+
+  createdTime?: number
 }
 
 export function ContractFeed(props: {
   contract: Contract
-  bets: Bet[]
-  comments: Comment[]
+  activityItems: ActivityItem[]
   // Feed types: 'activity' = Activity feed, 'market' = Comments feed on a market
   feedType: 'activity' | 'market'
   betRowClassName?: string
 }) {
-  const { contract, feedType, betRowClassName } = props
+  const { contract, activityItems, feedType, betRowClassName } = props
   const { id } = contract
   const [expanded, setExpanded] = useState(false)
   const user = useUser()
 
-  let bets = useBets(id) ?? props.bets
+  let bets = useBets(id)
   bets = withoutAnteBets(contract, bets)
 
-  const comments = useComments(id) ?? props.comments
+  const comments = useComments(id)
 
-  const groupWindow = feedType == 'activity' ? 10 * DAY_IN_MS : DAY_IN_MS
-
-  const allItems = [
-    { type: 'start', id: 0 },
-    ...groupBets(bets, comments, groupWindow, user?.id),
-  ]
-  if (contract.closeTime && contract.closeTime <= Date.now()) {
-    allItems.push({ type: 'close', id: `${contract.closeTime}` })
-  }
-  if (contract.resolution) {
-    allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
-  }
-
-  // If there are more than 5 items, only show the first, an expand item, and last 3
-  let items = allItems
-  if (!expanded && allItems.length > 5 && feedType == 'activity') {
-    items = [
-      allItems[0],
-      { type: 'expand', id: 'expand' },
-      ...allItems.slice(-3),
-    ]
-  }
+  const items =
+    bets && comments
+      ? getContractFeedItems(contract, bets, comments, user, {
+          feedType,
+          expanded,
+        })
+      : activityItems
 
   return (
     <div className="flow-root pr-2 md:pr-0">
