@@ -158,7 +158,12 @@ export function ContractDetails(props: { contract: Contract }) {
 
   return (
     <Col className="text-sm text-gray-500 gap-2 sm:flex-row sm:flex-wrap">
-      <Row className="gap-2 flex-wrap">
+      <Row className="gap-2 flex-wrap items-center">
+        <Avatar
+          username={creatorUsername}
+          avatarUrl={contract.creatorAvatarUrl}
+          size={6}
+        />
         <UserLink
           className="whitespace-nowrap"
           name={creatorName}
