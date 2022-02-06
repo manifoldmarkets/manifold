@@ -182,7 +182,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           />
         </label>
         <AmountInput
-          amount={ante}
+          amount={ante ?? undefined}
           minimumAmount={MINIMUM_ANTE}
           onChange={setAnte}
           error={anteError}
