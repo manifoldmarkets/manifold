@@ -22,6 +22,7 @@ import { SearchIcon } from '@heroicons/react/outline'
 import { Row } from '../components/layout/row'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { useFollowedFolds } from '../hooks/use-fold'
+import { SiteLink } from '../components/site-link'
 
 export async function getStaticProps() {
   const [contracts, folds] = await Promise.all([
@@ -61,9 +62,9 @@ const Home = (props: {
     contracts.map((contract, index) => [contract.id, index])
   )
 
-  const followedFoldIds = useFollowedFolds(user)
+  const followedFoldIds = useFollowedFolds(user) ?? []
   const followedFolds = filterDefined(
-    (followedFoldIds ?? []).map((id) => folds.find((fold) => fold.id === id))
+    followedFoldIds.map((id) => folds.find((fold) => fold.id === id))
   )
   const tagSet = new Set(
     _.flatten(followedFolds.map((fold) => fold.lowercaseTags))
@@ -74,14 +75,16 @@ const Home = (props: {
     ? new Set(yourBetContractIds)
     : undefined
 
-  const feedContracts =
-    followedFoldIds && yourBetContracts
-      ? contracts.filter(
-          (contract) =>
-            contract.lowercaseTags.some((tag) => tagSet.has(tag)) ||
-            yourBetContracts.has(contract.id)
-        )
-      : undefined
+  // By default, show all contracts
+  let feedContracts = contracts
+  // If the user is following any folds, then exclude all other contracts
+  if (yourBetContracts && followedFoldIds.length > 0) {
+    feedContracts = contracts.filter(
+      (contract) =>
+        contract.lowercaseTags.some((tag) => tagSet.has(tag)) ||
+        yourBetContracts.has(contract.id)
+    )
+  }
 
   const oneDayMS = 24 * 60 * 60 * 1000
   const recentBets = (feedContracts ?? [])
@@ -142,7 +145,19 @@ const Home = (props: {
           <Row className="text-sm text-gray-800 mx-3 mb-3 gap-2 items-center">
             <SparklesIcon className="inline w-5 h-5" aria-hidden="true" />
             Recent activity
+            {followedFoldIds.length === 0 ? (
+              <>
+                <span>—</span>
+                <span>
+                  <SiteLink href="/folds" className="font-semibold">
+                    follow a community
+                  </SiteLink>{' '}
+                  to personalize
+                </span>
+              </>
+            ) : null}
           </Row>
+
           {activeContracts ? (
             <ActivityFeed
               contracts={activeContracts}
