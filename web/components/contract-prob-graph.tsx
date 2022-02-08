@@ -22,13 +22,16 @@ export function ContractProbGraph(props: { contract: Contract }) {
   ].map((time) => new Date(time))
   const probs = [startProb, ...bets.map((bet) => bet.probAfter)]
 
+  const isClosed = !!closeTime && Date.now() > closeTime
   const latestTime = dayjs(
-    resolutionTime && closeTime
+    resolutionTime && isClosed
       ? Math.min(resolutionTime, closeTime)
-      : closeTime ?? resolutionTime ?? Date.now()
+      : isClosed
+      ? closeTime
+      : resolutionTime ?? Date.now()
   )
 
-  if (resolutionTime) {
+  if (resolutionTime || isClosed) {
     times.push(latestTime.toDate())
     probs.push(probs[probs.length - 1])
   } else {
