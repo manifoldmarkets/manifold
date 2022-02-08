@@ -42,7 +42,7 @@ const cloneWithStyle = (node: JSX.Element) => {
 function Contents() {
   return cloneWithStyle(
     <div>
-      <h1 id="about">About</h1>
+      <h2 id="about">About</h2>
       <p>
         Manifold Markets lets anyone create a prediction market on any topic.
         Win virtual money betting on what you know, from{' '}
@@ -59,7 +59,6 @@ function Contents() {
         </a>{' '}
         - or learn about the future by creating your own market!
       </p>
-      <h1 id="faq">FAQ</h1>
       <h3 id="what-are-prediction-markets-">What are prediction markets?</h3>
       <p>
         <strong>
@@ -254,7 +253,7 @@ function Contents() {
         <a href="http://oneword.games/platform">One Word</a>), and worked at top
         tech and trading firms (Google, Susquehanna).
       </p>
-      <h1 id="talk-to-us-">Talk to us!</h1>
+      <h2 id="talk-to-us-">Talk to us!</h2>
       <p>Questions? Comments? Want to create a market? Talk to us!</p>
       <ul>
         <li>
@@ -285,7 +284,7 @@ function Contents() {
       </ul>
       <p></p>
 
-      <h1 id="further-reading">Further Reading</h1>
+      <h2 id="further-reading">Further Reading</h2>
 
       <ul>
         <li>
