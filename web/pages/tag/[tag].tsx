@@ -31,9 +31,7 @@ export default function TagPage(props: { contracts: Contract[] }) {
     contract.lowercaseTags.includes(tag.toLowerCase())
   )
 
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams({
-    defaultSort: 'most-traded',
-  })
+  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
 
   return (
     <Page>

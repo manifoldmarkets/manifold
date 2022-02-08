@@ -21,9 +21,7 @@ export async function getStaticProps() {
 export default function Markets(props: { contracts: Contract[] }) {
   const contracts = useContracts() ?? props.contracts ?? []
 
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams({
-    defaultSort: '24-hour-vol',
-  })
+  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
 
   return (
     <Page>

@@ -35,7 +35,7 @@ export function useQueryAndSortParams(options?: { defaultSort: Sort }) {
   }
 
   return {
-    sort: sort ?? options?.defaultSort ?? 'creator',
+    sort: sort ?? options?.defaultSort ?? '24-hour-vol',
     query: query ?? '',
     setSort,
     setQuery,
