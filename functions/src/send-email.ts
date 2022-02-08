@@ -5,11 +5,13 @@ const DOMAIN = 'mg.manifold.markets'
 const mg = mailgun({ apiKey: functions.config().mailgun.key, domain: DOMAIN })
 
 export const sendTextEmail = (to: string, subject: string, text: string) => {
-  const data = {
-    from: 'Manifold Markets <no-reply@manifold.markets>',
+  const data: mailgun.messages.SendData = {
+    from: 'Manifold Markets <info@manifold.markets>',
     to,
     subject,
     text,
+    // Don't rewrite urls in plaintext emails
+    'o:tracking-clicks': 'htmlonly',
   }
 
   return mg.messages().send(data, (error) => {
@@ -25,7 +27,7 @@ export const sendTemplateEmail = (
   templateData: Record<string, string>
 ) => {
   const data = {
-    from: 'Manifold Markets <no-reply@manifold.markets>',
+    from: 'Manifold Markets <info@manifold.markets>',
     to,
     subject,
     template: templateId,

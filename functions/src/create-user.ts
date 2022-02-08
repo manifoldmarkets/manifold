@@ -13,6 +13,7 @@ import {
   cleanDisplayName,
   cleanUsername,
 } from '../../common/util/clean-username'
+import { sendWelcomeEmail } from './emails'
 
 export const createUser = functions
   .runWith({ minInstances: 1 })
@@ -78,6 +79,8 @@ export const createUser = functions
     }
 
     await firestore.collection('private-users').doc(userId).create(privateUser)
+
+    await sendWelcomeEmail(user, privateUser)
 
     return { status: 'success', user }
   })

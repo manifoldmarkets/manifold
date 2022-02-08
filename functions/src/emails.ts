@@ -1,8 +1,8 @@
 import { getProbability } from '../../common/calculate'
 import { Contract } from '../../common/contract'
-import { User } from '../../common/user'
+import { PrivateUser, User } from '../../common/user'
 import { formatPercent } from '../../common/util/format'
-import { sendTemplateEmail } from './send-email'
+import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 
 type market_resolved_template = {
@@ -65,5 +65,25 @@ export const sendMarketResolutionEmail = async (
     subject,
     'market-resolved',
     templateData
+  )
+}
+
+export const sendWelcomeEmail = async (
+  user: User,
+  privateUser: PrivateUser
+) => {
+  const firstName = user.name.split(' ')[0]
+
+  await sendTextEmail(
+    privateUser.email || '',
+    'Welcome to Manifold Markets!',
+    `Hi ${firstName},
+
+Thanks for joining us! We can't wait to see what markets you create.
+Questions? Feedback? I'd love to hear from you - just reply to this email!
+Or come chat with us on Discord: https://discord.gg/eHQBNBqXuh
+
+Best,
+Austin from Manifold`
   )
 }
