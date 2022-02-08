@@ -158,9 +158,7 @@ export default function FoldPage(props: {
 
   const fold = useFold(props.fold?.id) ?? props.fold
 
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams({
-    defaultSort: 'most-traded',
-  })
+  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
 
   const user = useUser()
   const isCurator = user && fold && user.id === fold.curatorId
