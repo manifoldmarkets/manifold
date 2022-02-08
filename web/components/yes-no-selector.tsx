@@ -132,11 +132,11 @@ function Button(props: {
     <button
       type="button"
       className={clsx(
-        'flex-1 inline-flex justify-center items-center px-8 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white',
-        color === 'green' && 'btn-primary',
-        color === 'red' && 'bg-red-400 hover:bg-red-500',
-        color === 'yellow' && 'bg-yellow-400 hover:bg-yellow-500',
-        color === 'blue' && 'bg-blue-400 hover:bg-blue-500',
+        'flex-1 inline-flex justify-center items-center px-8 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium',
+        color === 'green' && 'btn-primary text-white',
+        color === 'red' && 'bg-red-400 hover:bg-red-500 text-white',
+        color === 'yellow' && 'bg-yellow-400 hover:bg-yellow-500 text-white',
+        color === 'blue' && 'bg-blue-400 hover:bg-blue-500 text-white',
         color === 'gray' && 'text-gray-700 bg-gray-300 hover:bg-gray-400',
         className
       )}
