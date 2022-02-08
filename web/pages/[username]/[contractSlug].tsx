@@ -74,7 +74,9 @@ export default function ContractPage(props: {
   const contract = useContractWithPreload(props.slug, props.contract)
   const { bets, comments } = props
 
-  const folds = useFoldsWithTags(contract?.tags) ?? props.folds
+  const folds = (useFoldsWithTags(contract?.tags) ?? props.folds).filter(
+    (fold) => fold.followCount > 1 || user?.id === fold.curatorId
+  )
 
   if (!contract) {
     return <Custom404 />
