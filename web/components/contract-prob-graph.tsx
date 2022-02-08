@@ -9,7 +9,7 @@ import { Contract } from '../lib/firebase/contracts'
 
 export function ContractProbGraph(props: { contract: Contract }) {
   const { contract } = props
-  const { id, phantomShares, resolutionTime } = contract
+  const { id, phantomShares, resolutionTime, closeTime } = contract
 
   let bets = useBets(id) ?? []
   bets = withoutAnteBets(contract, bets)
@@ -22,9 +22,16 @@ export function ContractProbGraph(props: { contract: Contract }) {
   ].map((time) => new Date(time))
   const probs = [startProb, ...bets.map((bet) => bet.probAfter)]
 
-  const latestTime = dayjs(resolutionTime ? resolutionTime : Date.now())
+  const latestTime = dayjs(
+    resolutionTime && closeTime
+      ? Math.min(resolutionTime, closeTime)
+      : closeTime ?? resolutionTime ?? Date.now()
+  )
 
-  if (!resolutionTime) {
+  if (resolutionTime) {
+    times.push(latestTime.toDate())
+    probs.push(probs[probs.length - 1])
+  } else {
     // Add a fake datapoint in future so the line continues horizontally
     // to the right.
     times.push(latestTime.add(1, 'month').toDate())
