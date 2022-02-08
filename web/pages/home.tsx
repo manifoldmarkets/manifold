@@ -144,17 +144,19 @@ const Home = (props: {
             ]}
           />
           <Spacer h={10} />
-          <Row className="text-sm text-gray-800 mx-3 mb-3 gap-2 items-center">
-            <SparklesIcon className="inline w-5 h-5" aria-hidden="true" />
-            Recent activity
-            <span>—</span>
-            <span>
+          <Col className="sm:flex-row text-sm text-gray-800 mx-3 mb-3 gap-2">
+            <Row className="gap-2">
+              <SparklesIcon className="inline w-5 h-5" aria-hidden="true" />
+              <span className="whitespace-nowrap">Recent activity</span>
+              <span className="hidden sm:flex">—</span>
+            </Row>
+            <div className="text-gray-500 sm:text-gray-800">
               <SiteLink href="/folds" className="font-semibold">
-                follow a community
+                Follow a community
               </SiteLink>{' '}
               to personalize
-            </span>
-          </Row>
+            </div>
+          </Col>
 
           {activeContracts ? (
             <ActivityFeed
