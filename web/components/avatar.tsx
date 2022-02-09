@@ -19,7 +19,7 @@ export function Avatar(props: {
           Router.push(`/${username}`)
         }
   return (
-    <div className={`rounded-full bg-white w-${s} h-${s}`}>
+    <div className={`rounded-full bg-white flex-shrink-0 w-${s} h-${s}`}>
       {avatarUrl ? (
         <img
           className={clsx(
