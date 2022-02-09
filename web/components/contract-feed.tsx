@@ -43,6 +43,7 @@ import { fromNow } from '../lib/util/time'
 import BetRow from './bet-row'
 import { parseTags } from '../../common/util/parse'
 import { Avatar } from './avatar'
+import { useAdmin } from '../hooks/use-admin'
 
 function FeedComment(props: {
   activityItem: any
@@ -154,21 +155,75 @@ function FeedBet(props: { activityItem: any }) {
   )
 }
 
+function EditContract(props: {
+  text: string
+  onSave: (newText: string) => void
+  buttonText: string
+}) {
+  const [text, setText] = useState(props.text)
+  const [editing, setEditing] = useState(false)
+  const onSave = (newText: string) => {
+    setEditing(false)
+    setText(props.text) // Reset to original text
+    props.onSave(newText)
+  }
+
+  return editing ? (
+    <div className="mt-4">
+      <Textarea
+        className="textarea h-24 textarea-bordered w-full mb-1"
+        rows={3}
+        value={text}
+        onChange={(e) => setText(e.target.value || '')}
+        autoFocus
+        onFocus={(e) =>
+          // Focus starts at end of text.
+          e.target.setSelectionRange(text.length, text.length)
+        }
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && e.ctrlKey) {
+            onSave(text)
+          }
+        }}
+      />
+      <Row className="gap-2">
+        <button
+          className="btn btn-neutral btn-outline btn-sm"
+          onClick={() => onSave(text)}
+        >
+          Save
+        </button>
+        <button
+          className="btn btn-error btn-outline btn-sm"
+          onClick={() => setEditing(false)}
+        >
+          Cancel
+        </button>
+      </Row>
+    </div>
+  ) : (
+    <Row>
+      <button
+        className="btn btn-neutral btn-outline btn-sm mt-4"
+        onClick={() => setEditing(true)}
+      >
+        {props.buttonText}
+      </button>
+    </Row>
+  )
+}
+
 export function ContractDescription(props: {
   contract: Contract
   isCreator: boolean
 }) {
   const { contract, isCreator } = props
-  const [editing, setEditing] = useState(false)
-  const editStatement = () => `${dayjs().format('MMM D, h:mma')}: `
-  const [description, setDescription] = useState(editStatement())
+  const descriptionTimestamp = () => `${dayjs().format('MMM D, h:mma')}: `
+  const isAdmin = useAdmin()
 
   // Append the new description (after a newline)
-  async function saveDescription(e: any) {
-    e.preventDefault()
-    setEditing(false)
-
-    const newDescription = `${contract.description}\n\n${description}`.trim()
+  async function saveDescription(newText: string) {
+    const newDescription = `${contract.description}\n\n${newText}`.trim()
     const tags = parseTags(
       `${newDescription} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
     )
@@ -178,8 +233,6 @@ export function ContractDescription(props: {
       tags,
       lowercaseTags,
     })
-
-    setDescription(editStatement())
   }
 
   if (!isCreator && !contract.description.trim()) return null
@@ -188,53 +241,32 @@ export function ContractDescription(props: {
     <div className="whitespace-pre-line break-words mt-2 text-gray-700">
       <Linkify text={contract.description} />
       <br />
-      {isCreator &&
-        (editing ? (
-          <form className="mt-4">
-            <Textarea
-              className="textarea h-24 textarea-bordered w-full mb-1"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value || '')}
-              autoFocus
-              onFocus={(e) =>
-                // Focus starts at end of description.
-                e.target.setSelectionRange(
-                  description.length,
-                  description.length
-                )
-              }
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.ctrlKey) {
-                  saveDescription(e)
-                }
-              }}
-            />
-            <Row className="gap-2">
-              <button
-                className="btn btn-neutral btn-outline btn-sm"
-                onClick={saveDescription}
-              >
-                Save
-              </button>
-              <button
-                className="btn btn-error btn-outline btn-sm"
-                onClick={() => setEditing(false)}
-              >
-                Cancel
-              </button>
-            </Row>
-          </form>
-        ) : (
-          <Row>
-            <button
-              className="btn btn-neutral btn-outline btn-sm mt-4"
-              onClick={() => setEditing(true)}
-            >
-              Add to description
-            </button>
-          </Row>
-        ))}
+      {isCreator && (
+        <EditContract
+          // Note: Because descriptionTimestamp is called once, later edits use
+          // a stale timestamp. Ideally this is a function that gets called when
+          // isEditing is set to true.
+          text={descriptionTimestamp()}
+          onSave={saveDescription}
+          buttonText="Add to description"
+        />
+      )}
+      {isAdmin && (
+        <EditContract
+          text={contract.question}
+          onSave={(question) => updateContract(contract.id, { question })}
+          buttonText="ADMIN: Edit question"
+        />
+      )}
+      {/* {isAdmin && (
+        <EditContract
+          text={contract.createdTime.toString()}
+          onSave={(time) =>
+            updateContract(contract.id, { createdTime: Number(time) })
+          }
+          buttonText="ADMIN: Edit createdTime"
+        />
+      )} */}
     </div>
   )
 }
