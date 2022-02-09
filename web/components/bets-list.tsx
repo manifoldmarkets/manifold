@@ -18,6 +18,7 @@ import {
   Contract,
   getContractFromId,
   contractPath,
+  contractMetrics,
 } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
@@ -121,7 +122,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
   const { resolution } = contract
 
   const [collapsed, setCollapsed] = useState(true)
-
+  const { probPercent } = contractMetrics(contract)
   return (
     <div
       tabIndex={0}
@@ -150,19 +151,19 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
             />
           </Row>
 
-          <Row className="gap-2 text-gray-500 text-sm">
+          <Row className="gap-2 text-gray-500 text-sm items-center">
+            {resolution ? (
+              <div>
+                Resolved <OutcomeLabel outcome={resolution} />
+              </div>
+            ) : (
+              <div className="text-primary text-lg">{probPercent}</div>
+            )}
+            <div>•</div>
             <UserLink
               name={contract.creatorName}
               username={contract.creatorUsername}
             />
-            {resolution && (
-              <>
-                <div>•</div>
-                <div className="whitespace-nowrap">
-                  Resolved <OutcomeLabel outcome={resolution} />
-                </div>
-              </>
-            )}
           </Row>
         </Col>
 
