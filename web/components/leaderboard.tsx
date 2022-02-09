@@ -36,7 +36,7 @@ export function Leaderboard(props: {
               {users.map((user, index) => (
                 <tr key={user.id}>
                   <td>{index + 1}</td>
-                  <td>
+                  <td style={{ maxWidth: 190 }}>
                     <SiteLink className="relative" href={`/${user.username}`}>
                       <Row className="items-center gap-4">
                         <Avatar avatarUrl={user.avatarUrl} size={8} />
