@@ -31,11 +31,15 @@ import { sellBet } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel, MarketLabel } from './outcome-label'
 
+type BetSort = 'newest' | 'profit'
+
 export function BetsList(props: { user: User }) {
   const { user } = props
   const bets = useUserBets(user.id)
 
   const [contracts, setContracts] = useState<Contract[]>([])
+
+  const [sort, setSort] = useState<BetSort>('profit')
 
   useEffect(() => {
     const loadedBets = bets ? bets : []
@@ -74,37 +78,70 @@ export function BetsList(props: { user: User }) {
 
   const contractBets = _.groupBy(bets, 'contractId')
 
-  const [resolved, unresolved] = _.partition(
-    contracts,
-    (contract) => contract.isResolved
-  )
+  const contractsCurrentValue = _.mapValues(
+    contractBets,
+    (bets, contractId) => {
+      return _.sumBy(bets, (bet) => {
+        if (bet.isSold || bet.sale) return 0
 
-  const currentBets = _.sumBy(unresolved, (contract) =>
-    _.sumBy(contractBets[contract.id], (bet) => {
+        const contract = contracts.find((c) => c.id === contractId)
+        return contract ? calculatePayout(contract, bet, 'MKT') : 0
+      })
+    }
+  )
+  const contractsInvestment = _.mapValues(contractBets, (bets) => {
+    return _.sumBy(bets, (bet) => {
       if (bet.isSold || bet.sale) return 0
       return bet.amount
     })
+  })
+
+  let sortedContracts = contracts
+  if (sort === 'profit') {
+    sortedContracts = _.sortBy(
+      contracts,
+      (c) => -1 * (contractsCurrentValue[c.id] - contractsInvestment[c.id])
+    )
+  }
+
+  const [resolved, unresolved] = _.partition(
+    sortedContracts,
+    (c) => c.isResolved
   )
 
-  const currentBetsValue = _.sumBy(unresolved, (contract) =>
-    _.sumBy(contractBets[contract.id], (bet) => {
-      if (bet.isSold || bet.sale) return 0
-      return calculatePayout(contract, bet, 'MKT')
-    })
+  const currentInvestment = _.sumBy(
+    unresolved,
+    (c) => contractsInvestment[c.id]
+  )
+
+  const currentBetsValue = _.sumBy(
+    unresolved,
+    (c) => contractsCurrentValue[c.id]
   )
 
   return (
     <Col className="mt-6 gap-6">
-      <Row className="mx-4 md:mx-0 gap-8">
-        <Col>
-          <div className="text-sm text-gray-500">Currently invested</div>
-          <div>{formatMoney(currentBets)}</div>
-        </Col>
-        <Col>
-          <div className="text-sm text-gray-500">Current value</div>
-          <div>{formatMoney(currentBetsValue)}</div>
-        </Col>
-      </Row>
+      <Col className="mx-4 md:mx-0 sm:flex-row sm:justify-between gap-4">
+        <Row className="gap-8">
+          <Col>
+            <div className="text-sm text-gray-500">Currently invested</div>
+            <div>{formatMoney(currentInvestment)}</div>
+          </Col>
+          <Col>
+            <div className="text-sm text-gray-500">Current value</div>
+            <div>{formatMoney(currentBetsValue)}</div>
+          </Col>
+        </Row>
+
+        <select
+          className="select select-bordered self-start"
+          value={sort}
+          onChange={(e) => setSort(e.target.value as BetSort)}
+        >
+          <option value="profit">By profit</option>
+          <option value="newest">Newest</option>
+        </select>
+      </Col>
 
       {[...unresolved, ...resolved].map((contract) => (
         <MyContractBets
