@@ -8,6 +8,7 @@ import { useUser } from '../hooks/use-user'
 import Custom404 from './404'
 import { useContracts } from '../hooks/use-contracts'
 import _ from 'lodash'
+import { useAdmin } from '../hooks/use-admin'
 
 function avatarHtml(avatarUrl: string) {
   return `<img
@@ -190,15 +191,7 @@ function ContractsTable() {
 }
 
 export default function Admin() {
-  const user = useUser()
-  const adminIds = [
-    'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
-    '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
-    'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
-    'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
-  ]
-  const isAdmin = adminIds.includes(user?.id || '')
-  return isAdmin ? (
+  return useAdmin() ? (
     <Page wide>
       <UsersTable />
       <ContractsTable />

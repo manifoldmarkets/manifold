@@ -23,6 +23,7 @@ service cloud.firestore {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['description', 'tags', 'lowercaseTags']);
+      allow update: if isAdmin();
       allow delete: if resource.data.creatorId == request.auth.uid;
     }
 
