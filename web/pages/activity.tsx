@@ -5,6 +5,7 @@ import { Contract } from '../lib/firebase/contracts'
 import { Comment } from '../lib/firebase/comments'
 import { Col } from '../components/layout/col'
 import { Bet } from '../../common/bet'
+import { filterDefined } from '../../common/util/array'
 
 const MAX_ACTIVE_CONTRACTS = 75
 const MAX_HOT_MARKETS = 10
@@ -64,12 +65,13 @@ export function findActiveContracts(
   const contractTotalBets = _.mapValues(contractBets, (bets) =>
     _.sumBy(bets, (bet) => bet.amount)
   )
-  const topTradedContracts = _.sortBy(
+  const sortedPairs = _.sortBy(
     _.toPairs(contractTotalBets),
     ([_, total]) => -1 * total
   )
-    .map(([id]) => contractsById.get(id) as Contract)
-    .slice(0, MAX_HOT_MARKETS)
+  const topTradedContracts = filterDefined(
+    sortedPairs.map(([id]) => contractsById.get(id))
+  ).slice(0, MAX_HOT_MARKETS)
 
   for (const contract of topTradedContracts) {
     const bet = recentBets.find((bet) => bet.contractId === contract.id)
