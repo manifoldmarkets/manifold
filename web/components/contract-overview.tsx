@@ -86,7 +86,7 @@ export const ContractOverview = (props: {
 
       <Spacer h={4} />
 
-      <ContractProbGraph contract={contract} />
+      <ContractProbGraph contract={contract} bets={bets} />
 
       <Row className="hidden sm:flex justify-between items-center mt-6 ml-4 gap-4">
         {folds.length === 0 ? (
