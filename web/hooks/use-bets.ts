@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Bet, listenForBets } from '../lib/firebase/bets'
+import { Contract } from '../../common/contract'
+import { Bet, listenForBets, withoutAnteBets } from '../lib/firebase/bets'
 
 export const useBets = (contractId: string) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
@@ -7,6 +8,23 @@ export const useBets = (contractId: string) => {
   useEffect(() => {
     if (contractId) return listenForBets(contractId, setBets)
   }, [contractId])
+
+  return bets
+}
+
+export const useBetsWithoutAntes = (
+  contract: Contract,
+  initialBets?: Bet[]
+) => {
+  const [bets, setBets] = useState<Bet[] | undefined>(
+    withoutAnteBets(contract, initialBets)
+  )
+
+  useEffect(() => {
+    return listenForBets(contract.id, (bets) => {
+      setBets(withoutAnteBets(contract, bets))
+    })
+  }, [contract])
 
   return bets
 }

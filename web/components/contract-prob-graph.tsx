@@ -1,26 +1,26 @@
 import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
+import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
-import { useBets } from '../hooks/use-bets'
+import { useBetsWithoutAntes } from '../hooks/use-bets'
 import { useWindowSize } from '../hooks/use-window-size'
-import { withoutAnteBets } from '../lib/firebase/bets'
 import { Contract } from '../lib/firebase/contracts'
 
-export function ContractProbGraph(props: { contract: Contract }) {
+export function ContractProbGraph(props: { contract: Contract; bets: Bet[] }) {
   const { contract } = props
-  const { id, phantomShares, resolutionTime, closeTime } = contract
+  const { phantomShares, resolutionTime, closeTime } = contract
 
-  let bets = useBets(id) ?? []
-  bets = withoutAnteBets(contract, bets)
+  const bets = useBetsWithoutAntes(contract, props.bets)
 
   const startProb = getProbability(phantomShares)
 
-  const times = [
-    contract.createdTime,
-    ...bets.map((bet) => bet.createdTime),
-  ].map((time) => new Date(time))
-  const probs = [startProb, ...bets.map((bet) => bet.probAfter)]
+  const times = bets
+    ? [contract.createdTime, ...bets.map((bet) => bet.createdTime)].map(
+        (time) => new Date(time)
+      )
+    : []
+  const probs = bets ? [startProb, ...bets.map((bet) => bet.probAfter)] : []
 
   const isClosed = !!closeTime && Date.now() > closeTime
   const latestTime = dayjs(
