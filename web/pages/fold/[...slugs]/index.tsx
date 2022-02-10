@@ -39,6 +39,7 @@ import { FollowFoldButton } from '../../../components/follow-fold-button'
 import FeedCreate from '../../../components/feed-create'
 import { SEO } from '../../../components/SEO'
 import { useTaggedContracts } from '../../../hooks/use-contracts'
+import { Linkify } from '../../../components/linkify'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -204,7 +205,7 @@ export default function FoldPage(props: {
               username={curator.username}
             />
           </Row>
-          <div>{fold.about}</div>
+          <Linkify text={fold.about ?? ''} />
         </Col>
       </div>
 
@@ -329,7 +330,9 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
         {about && (
           <>
             <Spacer h={2} />
-            <div className="text-gray-500">{about}</div>
+            <div className="text-gray-500">
+              <Linkify text={about} />
+            </div>
           </>
         )}
 
