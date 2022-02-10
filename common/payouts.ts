@@ -1,14 +1,16 @@
+import * as _ from 'lodash'
+
 import { Bet } from './bet'
-import { getProbability } from './calculate'
+import { deductFees, getProbability } from './calculate'
 import { Contract, outcome } from './contract'
-import { CREATOR_FEE, FEES } from './fees'
+import { CREATOR_FEE } from './fees'
 
 export const getCancelPayouts = (contract: Contract, bets: Bet[]) => {
   const { pool } = contract
   const poolTotal = pool.YES + pool.NO
   console.log('resolved N/A, pool M$', poolTotal)
 
-  const betSum = sumBy(bets, (b) => b.amount)
+  const betSum = _.sumBy(bets, (b) => b.amount)
 
   return bets.map((bet) => ({
     userId: bet.userId,
@@ -21,35 +23,24 @@ export const getStandardPayouts = (
   contract: Contract,
   bets: Bet[]
 ) => {
-  const [yesBets, noBets] = partition(bets, (bet) => bet.outcome === 'YES')
+  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
   const winningBets = outcome === 'YES' ? yesBets : noBets
 
-  const betSum = sumBy(winningBets, (b) => b.amount)
-
-  const poolTotal = contract.pool.YES + contract.pool.NO
-
-  if (betSum >= poolTotal) return getCancelPayouts(contract, winningBets)
-
-  const shareDifferenceSum = sumBy(winningBets, (b) => b.shares - b.amount)
-
-  const winningsPool = poolTotal - betSum
+  const pool = contract.pool.YES + contract.pool.NO
+  const totalShares = _.sumBy(winningBets, (b) => b.shares)
 
   const winnerPayouts = winningBets.map((bet) => ({
     userId: bet.userId,
-    payout:
-      bet.amount +
-      (1 - FEES) *
-        ((bet.shares - bet.amount) / shareDifferenceSum) *
-        winningsPool,
+    payout: deductFees(bet.amount, (bet.shares / totalShares) * pool),
   }))
 
-  const creatorPayout = CREATOR_FEE * winningsPool
+  const creatorPayout = CREATOR_FEE * pool
 
   console.log(
     'resolved',
     outcome,
     'pool: M$',
-    poolTotal,
+    pool,
     'creator fee: M$',
     creatorPayout
   )
@@ -69,50 +60,32 @@ export const getMktPayouts = (
       ? getProbability(contract.totalShares)
       : resolutionProbability
 
-  const poolTotal = contract.pool.YES + contract.pool.NO
-  console.log('Resolved MKT at p=', p, 'pool: $M', poolTotal)
+  const pool = contract.pool.YES + contract.pool.NO
+  console.log('Resolved MKT at p=', p, 'pool: $M', pool)
 
-  const [yesBets, noBets] = partition(bets, (bet) => bet.outcome === 'YES')
-
-  const weightedBetTotal =
-    p * sumBy(yesBets, (b) => b.amount) +
-    (1 - p) * sumBy(noBets, (b) => b.amount)
-
-  if (weightedBetTotal >= poolTotal) {
-    return bets.map((bet) => ({
-      userId: bet.userId,
-      payout:
-        (((bet.outcome === 'YES' ? p : 1 - p) * bet.amount) /
-          weightedBetTotal) *
-        poolTotal,
-    }))
-  }
-
-  const winningsPool = poolTotal - weightedBetTotal
+  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
 
   const weightedShareTotal =
-    p * sumBy(yesBets, (b) => b.shares - b.amount) +
-    (1 - p) * sumBy(noBets, (b) => b.shares - b.amount)
+    p * _.sumBy(yesBets, (b) => b.shares) +
+    (1 - p) * _.sumBy(noBets, (b) => b.shares)
 
   const yesPayouts = yesBets.map((bet) => ({
     userId: bet.userId,
-    payout:
-      p * bet.amount +
-      (1 - FEES) *
-        ((p * (bet.shares - bet.amount)) / weightedShareTotal) *
-        winningsPool,
+    payout: deductFees(
+      bet.amount,
+      ((p * bet.shares) / weightedShareTotal) * pool
+    ),
   }))
 
   const noPayouts = noBets.map((bet) => ({
     userId: bet.userId,
-    payout:
-      (1 - p) * bet.amount +
-      (1 - FEES) *
-        (((1 - p) * (bet.shares - bet.amount)) / weightedShareTotal) *
-        winningsPool,
+    payout: deductFees(
+      bet.amount,
+      (((1 - p) * bet.shares) / weightedShareTotal) * pool
+    ),
   }))
 
-  const creatorPayout = CREATOR_FEE * winningsPool
+  const creatorPayout = CREATOR_FEE * pool
 
   return [
     ...yesPayouts,
@@ -136,21 +109,4 @@ export const getPayouts = (
     case 'CANCEL':
       return getCancelPayouts(contract, bets)
   }
-}
-
-const partition = <T>(array: T[], f: (t: T) => boolean) => {
-  const yes = []
-  const no = []
-
-  for (let t of array) {
-    if (f(t)) yes.push(t)
-    else no.push(t)
-  }
-
-  return [yes, no] as [T[], T[]]
-}
-
-const sumBy = <T>(array: T[], f: (t: T) => number) => {
-  const values = array.map(f)
-  return values.reduce((prev, cur) => prev + cur, 0)
 }
