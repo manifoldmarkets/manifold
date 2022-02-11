@@ -22,18 +22,18 @@ export default function AddFundsPage() {
         <Col>
           <Title text="Get Manifold Dollars" />
           <img
-            className="block mt-6"
+            className="mt-6 block"
             src="/praying-mantis-light.svg"
             width={200}
             height={200}
           />
 
-          <div className="text-gray-500 mb-6">
+          <div className="mb-6 text-gray-500">
             Use Manifold Dollars to trade in your favorite markets. <br /> (Not
             redeemable for cash.)
           </div>
 
-          <div className="text-gray-500 text-sm mb-2">Amount</div>
+          <div className="mb-2 text-sm text-gray-500">Amount</div>
           <FundsSelector
             className="max-w-md"
             selected={amountSelected}
@@ -41,7 +41,7 @@ export default function AddFundsPage() {
           />
 
           <div className="mt-6">
-            <div className="text-gray-500 text-sm mb-1">Price USD</div>
+            <div className="mb-1 text-sm text-gray-500">Price USD</div>
             <div className="text-xl">
               ${Math.round(amountSelected / 100)}.00
             </div>
@@ -54,7 +54,7 @@ export default function AddFundsPage() {
           >
             <button
               type="submit"
-              className="btn btn-primary w-full font-medium bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
+              className="btn btn-primary w-full bg-gradient-to-r from-teal-500 to-green-500 font-medium hover:from-teal-600 hover:to-green-600"
             >
               Checkout
             </button>

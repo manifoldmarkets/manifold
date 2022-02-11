@@ -5,7 +5,7 @@ export function Title(props: { text: string; className?: string }) {
   return (
     <h1
       className={clsx(
-        'sm:text-3xl text-2xl text-indigo-700 inline-block sm:my-6 my-4',
+        'my-4 inline-block text-2xl text-indigo-700 sm:my-6 sm:text-3xl',
         className
       )}
     >

@@ -13,16 +13,16 @@ export function ManifoldLogo(props: {
 
   return (
     <Link href={user ? '/home' : '/'}>
-      <a className={clsx('flex flex-row gap-4 flex-shrink-0', className)}>
+      <a className={clsx('flex flex-shrink-0 flex-row gap-4', className)}>
         <img
-          className="hover:rotate-12 transition-all"
+          className="transition-all hover:rotate-12"
           src={darkBackground ? '/logo-white.svg' : '/logo.svg'}
           width={45}
           height={45}
         />
         <div
           className={clsx(
-            'sm:hidden font-major-mono lowercase mt-1 text-lg',
+            'font-major-mono mt-1 text-lg lowercase sm:hidden',
             darkBackground && 'text-white'
           )}
         >
@@ -32,7 +32,7 @@ export function ManifoldLogo(props: {
         </div>
         <div
           className={clsx(
-            'hidden sm:flex font-major-mono lowercase mt-1 sm:text-2xl md:whitespace-nowrap',
+            'font-major-mono mt-1 hidden lowercase sm:flex sm:text-2xl md:whitespace-nowrap',
             darkBackground && 'text-white'
           )}
         >

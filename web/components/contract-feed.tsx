@@ -85,7 +85,7 @@ function Timestamp(props: { time: number }) {
   const { time } = props
   return (
     <DateTimeTooltip time={time}>
-      <span className="whitespace-nowrap text-gray-400 ml-1">
+      <span className="ml-1 whitespace-nowrap text-gray-400">
         {fromNow(time)}
       </span>
     </DateTimeTooltip>
@@ -116,7 +116,7 @@ function FeedBet(props: { activityItem: any }) {
           <Avatar avatarUrl={user?.avatarUrl} />
         ) : (
           <div className="relative px-1">
-            <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
               <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
             </div>
           </div>
@@ -171,7 +171,7 @@ function EditContract(props: {
   return editing ? (
     <div className="mt-4">
       <Textarea
-        className="textarea h-24 textarea-bordered w-full mb-1"
+        className="textarea textarea-bordered mb-1 h-24 w-full"
         rows={3}
         value={text}
         onChange={(e) => setText(e.target.value || '')}
@@ -238,7 +238,7 @@ export function ContractDescription(props: {
   if (!isCreator && !contract.description.trim()) return null
 
   return (
-    <div className="whitespace-pre-line break-words mt-2 text-gray-700">
+    <div className="mt-2 whitespace-pre-line break-words text-gray-700">
       <Linkify text={contract.description} />
       <br />
       {isCreator && (
@@ -289,7 +289,7 @@ function TruncatedComment(props: {
   }
 
   return (
-    <div className="whitespace-pre-line break-words mt-2 text-gray-700">
+    <div className="mt-2 whitespace-pre-line break-words text-gray-700">
       <Linkify text={truncated} />
       {truncated != comment && (
         <SiteLink href={moreHref} className="text-indigo-700">
@@ -309,7 +309,7 @@ function FeedQuestion(props: { contract: Contract }) {
   // Currently hidden on mobile; ideally we'd fit this in somewhere.
   const closeMessage =
     contract.isResolved || !contract.closeTime ? null : (
-      <span className="float-right text-gray-400 hidden sm:inline">
+      <span className="float-right hidden text-gray-400 sm:inline">
         {formatMoney(truePool)} pool
         <span className="mx-2">•</span>
         {contract.closeTime > Date.now() ? 'Closes' : 'Closed'}
@@ -324,7 +324,7 @@ function FeedQuestion(props: { contract: Contract }) {
         avatarUrl={contract.creatorAvatarUrl}
       />
       <div className="min-w-0 flex-1 py-1.5">
-        <div className="text-sm text-gray-500 mb-2">
+        <div className="mb-2 text-sm text-gray-500">
           <UserLink
             className="text-gray-900"
             name={creatorName}
@@ -333,10 +333,10 @@ function FeedQuestion(props: { contract: Contract }) {
           asked
           {closeMessage}
         </div>
-        <Col className="items-start sm:flex-row justify-between gap-2 sm:gap-4 mb-4">
+        <Col className="mb-4 items-start justify-between gap-2 sm:flex-row sm:gap-4">
           <SiteLink
             href={contractPath(contract)}
-            className="text-lg sm:text-xl text-indigo-700"
+            className="text-lg text-indigo-700 sm:text-xl"
           >
             {question}
           </SiteLink>
@@ -405,7 +405,7 @@ function FeedResolve(props: { contract: Contract }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
             <OutcomeIcon outcome={resolution} />
           </div>
         </div>
@@ -432,7 +432,7 @@ function FeedClose(props: { contract: Contract }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
             <LockClosedIcon
               className="h-5 w-5 text-gray-500"
               aria-hidden="true"
@@ -575,7 +575,7 @@ function FeedBetGroup(props: { activityItem: any }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
             <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
         </div>
@@ -599,7 +599,7 @@ function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
     <>
       <button onClick={() => setExpanded(true)}>
         <div className="relative px-1">
-          <div className="h-8 w-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300">
             <DotsVerticalIcon
               className="h-5 w-5 text-gray-500"
               aria-hidden="true"

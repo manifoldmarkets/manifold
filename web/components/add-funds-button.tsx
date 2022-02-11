@@ -20,7 +20,7 @@ export function AddFundsButton(props: { className?: string }) {
       <label
         htmlFor="add-funds"
         className={clsx(
-          'btn btn-xs btn-outline normal-case modal-button font-normal',
+          'btn btn-xs btn-outline modal-button font-normal normal-case',
           className
         )}
       >
@@ -30,21 +30,21 @@ export function AddFundsButton(props: { className?: string }) {
 
       <div className="modal">
         <div className="modal-box">
-          <div className="text-xl mb-6">Get Manifold Dollars</div>
+          <div className="mb-6 text-xl">Get Manifold Dollars</div>
 
-          <div className="text-gray-500 mb-6">
+          <div className="mb-6 text-gray-500">
             Use Manifold Dollars to trade in your favorite markets. <br /> (Not
             redeemable for cash.)
           </div>
 
-          <div className="text-gray-500 text-sm mb-2">Amount</div>
+          <div className="mb-2 text-sm text-gray-500">Amount</div>
           <FundsSelector
             selected={amountSelected}
             onSelect={setAmountSelected}
           />
 
           <div className="mt-6">
-            <div className="text-gray-500 text-sm mb-1">Price USD</div>
+            <div className="mb-1 text-sm text-gray-500">Price USD</div>
             <div className="text-xl">
               ${Math.round(amountSelected / 100)}.00
             </div>
@@ -61,7 +61,7 @@ export function AddFundsButton(props: { className?: string }) {
             >
               <button
                 type="submit"
-                className="btn btn-primary px-10 font-medium bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
+                className="btn btn-primary bg-gradient-to-r from-teal-500 to-green-500 px-10 font-medium hover:from-teal-600 hover:to-green-600"
               >
                 Checkout
               </button>

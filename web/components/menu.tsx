@@ -9,9 +9,9 @@ export function MenuButton(props: {
 }) {
   const { buttonContent, menuItems, className } = props
   return (
-    <Menu as="div" className={clsx('flex-shrink-0 relative z-40', className)}>
+    <Menu as="div" className={clsx('relative z-40 flex-shrink-0', className)}>
       <div>
-        <Menu.Button className="rounded-full flex">
+        <Menu.Button className="flex rounded-full">
           <span className="sr-only">Open user menu</span>
           {buttonContent}
         </Menu.Button>
@@ -25,7 +25,7 @@ export function MenuButton(props: {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 py-1 focus:outline-none">
+        <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
           {menuItems.map((item) => (
             <Menu.Item key={item.name}>
               {({ active }) => (
