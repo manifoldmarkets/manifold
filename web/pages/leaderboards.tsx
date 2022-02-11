@@ -30,7 +30,7 @@ export default function Leaderboards(props: {
 
   return (
     <Page margin>
-      <Col className="items-center lg:flex-row gap-10">
+      <Col className="items-center gap-10 lg:flex-row">
         <Leaderboard
           title="🏅 Top traders"
           users={topTraders}

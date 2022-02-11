@@ -20,7 +20,7 @@ export function DateTimeTooltip(props: {
   return (
     <>
       <span
-        className="tooltip cursor-default hidden sm:inline-block"
+        className="tooltip hidden cursor-default sm:inline-block"
         data-tip={toolTip}
       >
         {props.children}

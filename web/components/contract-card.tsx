@@ -31,7 +31,7 @@ export function ContractCard(props: {
     <div>
       <div
         className={clsx(
-          'bg-white hover:bg-gray-100 shadow-md rounded-lg p-6 relative',
+          'relative rounded-lg bg-white p-6 shadow-md hover:bg-gray-100',
           className
         )}
       >
@@ -118,9 +118,9 @@ function AbbrContractDetails(props: {
   const { truePool } = contractMetrics(contract)
 
   return (
-    <Col className={clsx('text-sm text-gray-500 gap-2')}>
-      <Row className="justify-between items-center">
-        <Row className="gap-2 items-center">
+    <Col className={clsx('gap-2 text-sm text-gray-500')}>
+      <Row className="items-center justify-between">
+        <Row className="items-center gap-2">
           <Avatar
             username={creatorUsername}
             avatarUrl={contract.creatorAvatarUrl}
@@ -135,12 +135,12 @@ function AbbrContractDetails(props: {
 
         {showHotVolume ? (
           <div className="whitespace-nowrap">
-            <TrendingUpIcon className="h-5 w-5 text-gray-500 inline" />{' '}
+            <TrendingUpIcon className="inline h-5 w-5 text-gray-500" />{' '}
             {formatMoney(volume24Hours)}
           </div>
         ) : showCloseTime ? (
           <div className="whitespace-nowrap">
-            <ClockIcon className="h-5 w-5 -my-1 text-gray-500 inline" /> Closes{' '}
+            <ClockIcon className="-my-1 inline h-5 w-5 text-gray-500" /> Closes{' '}
             {fromNow(closeTime || 0)}
           </div>
         ) : (
@@ -157,8 +157,8 @@ export function ContractDetails(props: { contract: Contract }) {
   const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
 
   return (
-    <Col className="text-sm text-gray-500 gap-2 sm:flex-row sm:flex-wrap">
-      <Row className="gap-2 flex-wrap items-center">
+    <Col className="gap-2 text-sm text-gray-500 sm:flex-row sm:flex-wrap">
+      <Row className="flex-wrap items-center gap-2">
         <Avatar
           username={creatorUsername}
           avatarUrl={contract.creatorAvatarUrl}

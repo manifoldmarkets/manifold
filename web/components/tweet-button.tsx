@@ -6,7 +6,7 @@ export function TweetButton(props: { className?: string; tweetText?: string }) {
   return (
     <a
       className={clsx(
-        'btn btn-xs normal-case border-none flex flex-row flex-nowrap',
+        'btn btn-xs flex flex-row flex-nowrap border-none normal-case',
         className
       )}
       style={{ backgroundColor: '#1da1f2' }}

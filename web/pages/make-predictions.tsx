@@ -41,12 +41,12 @@ function toPrediction(contract: Contract): Prediction {
 function PredictionRow(props: { prediction: Prediction }) {
   const { prediction } = props
   return (
-    <Row className="gap-4 justify-between hover:bg-gray-300 p-4">
+    <Row className="justify-between gap-4 p-4 hover:bg-gray-300">
       <Col className="justify-between">
-        <div className="font-medium text-indigo-700 mb-2">
+        <div className="mb-2 font-medium text-indigo-700">
           <Linkify text={prediction.question} />
         </div>
-        <div className="text-gray-500 text-sm">{prediction.description}</div>
+        <div className="text-sm text-gray-500">{prediction.description}</div>
       </Col>
       {/* Initial probability */}
       <div className="ml-auto">
@@ -72,7 +72,7 @@ function PredictionRow(props: { prediction: Prediction }) {
 function PredictionList(props: { predictions: Prediction[] }) {
   const { predictions } = props
   return (
-    <Col className="divide-gray-300 divide-y border-gray-300 border rounded-md">
+    <Col className="divide-y divide-gray-300 rounded-md border border-gray-300">
       {predictions.map((prediction) =>
         prediction.createdUrl ? (
           <Link href={prediction.createdUrl}>
@@ -166,19 +166,19 @@ ${TEST_VALUE}
   return (
     <Page>
       <Title text="Make Predictions" />
-      <div className="w-full bg-gray-100 rounded-lg shadow-xl px-6 py-4">
+      <div className="w-full rounded-lg bg-gray-100 px-6 py-4 shadow-xl">
         <form>
           <div className="form-control">
             <label className="label">
               <span className="label-text">Prediction</span>
-              <div className="text-sm text-gray-500 ml-1">
+              <div className="ml-1 text-sm text-gray-500">
                 One prediction per line, each formatted like "The sun will rise
                 tomorrow: 99%"
               </div>
             </label>
 
             <textarea
-              className="textarea h-60 textarea-bordered"
+              className="textarea textarea-bordered h-60"
               placeholder={bulkPlaceholder}
               value={predictionsString}
               onChange={(e) => setPredictionsString(e.target.value || '')}
@@ -215,8 +215,8 @@ ${TEST_VALUE}
           />
         </div>
 
-        <div className="form-control items-start mb-1">
-          <label className="label gap-2 mb-1">
+        <div className="form-control mb-1 items-start">
+          <label className="label mb-1 gap-2">
             <span>Market close</span>
             <InfoTooltip text="Trading will be halted after this time (local timezone)." />
           </label>
@@ -233,8 +233,8 @@ ${TEST_VALUE}
 
         <Spacer h={4} />
 
-        <div className="form-control items-start mb-1">
-          <label className="label gap-2 mb-1">
+        <div className="form-control mb-1 items-start">
+          <label className="label mb-1 gap-2">
             <span>Market ante</span>
             <InfoTooltip
               text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
@@ -263,7 +263,7 @@ ${TEST_VALUE}
 
         <Spacer h={4} />
 
-        <div className="flex justify-end my-4">
+        <div className="my-4 flex justify-end">
           <button
             type="submit"
             className={clsx('btn btn-primary', {
@@ -284,7 +284,7 @@ ${TEST_VALUE}
         <>
           <Spacer h={16} />
           <Title text="Created Predictions" />
-          <div className="w-full bg-gray-100 rounded-lg shadow-xl px-6 py-4">
+          <div className="w-full rounded-lg bg-gray-100 px-6 py-4 shadow-xl">
             <PredictionList predictions={createdContracts.map(toPrediction)} />
           </div>
         </>

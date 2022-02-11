@@ -16,7 +16,7 @@ export function ProfileMenu(props: { user: User | undefined }) {
       />
 
       <MenuButton
-        className="md:hidden mr-2"
+        className="mr-2 md:hidden"
         menuItems={getNavigationOptions(user, { mobile: true })}
         buttonContent={<ProfileSummary user={user} />}
       />
@@ -81,12 +81,12 @@ function getNavigationOptions(
 function ProfileSummary(props: { user: User | undefined }) {
   const { user } = props
   return (
-    <Col className="avatar items-center sm:flex-row gap-2 sm:gap-4">
+    <Col className="avatar items-center gap-2 sm:flex-row sm:gap-4">
       <Avatar avatarUrl={user?.avatarUrl} username={user?.username} noLink />
 
       <div className="truncate text-left sm:w-32">
         <div className="hidden sm:flex">{user?.name}</div>
-        <div className="text-gray-700 text-sm">
+        <div className="text-sm text-gray-700">
           {user ? formatMoney(Math.floor(user.balance)) : ' '}
         </div>
       </div>

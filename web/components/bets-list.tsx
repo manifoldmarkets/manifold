@@ -121,7 +121,7 @@ export function BetsList(props: { user: User }) {
 
   return (
     <Col className="mt-6 gap-6">
-      <Col className="mx-4 md:mx-0 sm:flex-row sm:justify-between gap-4">
+      <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
             <div className="text-sm text-gray-500">Currently invested</div>
@@ -164,7 +164,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
     <div
       tabIndex={0}
       className={clsx(
-        'p-6 bg-white card card-body shadow-xl collapse collapse-arrow cursor-pointer relative',
+        'card card-body collapse collapse-arrow relative cursor-pointer bg-white p-6 shadow-xl',
         collapsed ? 'collapse-close' : 'collapse-open pb-2'
       )}
       onClick={() => setCollapsed((collapsed) => !collapsed)}
@@ -183,12 +183,12 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
 
             {/* Show carrot for collapsing. Hack the positioning. */}
             <div
-              className="collapse-title p-0 absolute w-0 h-0 min-h-0"
+              className="collapse-title absolute h-0 min-h-0 w-0 p-0"
               style={{ top: -10, right: 4 }}
             />
           </Row>
 
-          <Row className="gap-2 text-gray-500 text-sm items-center">
+          <Row className="items-center gap-2 text-sm text-gray-500">
             {resolution ? (
               <div>
                 Resolved <OutcomeLabel outcome={resolution} />
@@ -205,7 +205,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
         </Col>
 
         <MyBetsSummary
-          className="flex-1 justify-end mr-5 sm:mr-8"
+          className="mr-5 flex-1 justify-end sm:mr-8"
           contract={contract}
           bets={bets}
         />
@@ -259,7 +259,7 @@ export function MyBetsSummary(props: {
       )}
     >
       <Col>
-        <div className="text-sm text-gray-500 whitespace-nowrap">Invested</div>
+        <div className="whitespace-nowrap text-sm text-gray-500">Invested</div>
         <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
       </Col>
       {resolution ? (
@@ -270,20 +270,20 @@ export function MyBetsSummary(props: {
       ) : (
         <Row className="gap-4 sm:gap-6">
           <Col>
-            <div className="text-sm text-gray-500 whitespace-nowrap">
+            <div className="whitespace-nowrap text-sm text-gray-500">
               Payout if <YesLabel />
             </div>
             <div className="whitespace-nowrap">{formatMoney(yesWinnings)}</div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500 whitespace-nowrap">
+            <div className="whitespace-nowrap text-sm text-gray-500">
               Payout if <NoLabel />
             </div>
             <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
           </Col>
           {showMKT && (
             <Col>
-              <div className="text-sm text-gray-500 whitespace-nowrap">
+              <div className="whitespace-nowrap text-sm text-gray-500">
                 Payout if <MarketLabel />
               </div>
               <div className="whitespace-nowrap">
@@ -313,7 +313,7 @@ export function ContractBetsTable(props: {
 
   return (
     <div className={clsx('overflow-x-auto', className)}>
-      <table className="table table-zebra table-compact text-gray-500 w-full">
+      <table className="table-zebra table-compact table w-full text-gray-500">
         <thead>
           <tr className="p-2">
             <th>Date</th>
@@ -415,7 +415,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
         setIsSubmitting(false)
       }}
     >
-      <div className="text-2xl mb-4">
+      <div className="mb-4 text-2xl">
         Sell <OutcomeLabel outcome={bet.outcome} />
       </div>
       <div>

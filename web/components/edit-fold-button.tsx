@@ -48,10 +48,10 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
       <label
         htmlFor="edit"
         className={clsx(
-          'modal-button text-sm text-gray-700 cursor-pointer whitespace-nowrap'
+          'modal-button cursor-pointer whitespace-nowrap text-sm text-gray-700'
         )}
       >
-        <PencilIcon className="h-4 w-4 inline" /> Edit
+        <PencilIcon className="inline h-4 w-4" /> Edit
       </label>
       <input type="checkbox" id="edit" className="modal-toggle" />
 
@@ -118,7 +118,7 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
                 }
               }}
               className={clsx(
-                'btn btn-sm btn-outline hover:bg-red-500 hover:border-red-500 mr-auto self-center'
+                'btn btn-sm btn-outline mr-auto self-center hover:border-red-500 hover:bg-red-500'
               )}
             >
               Delete

@@ -33,7 +33,7 @@ export default function Document() {
         />
       </Head>
 
-      <body className="min-h-screen font-readex-pro bg-base-200">
+      <body className="font-readex-pro bg-base-200 min-h-screen">
         <Main />
         <NextScript />
       </body>
