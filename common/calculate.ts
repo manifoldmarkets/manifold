@@ -206,5 +206,5 @@ export function currentValue(contract: Contract, bet: Bet) {
 export const deductFees = (betAmount: number, winnings: number) => {
   return winnings > betAmount
     ? betAmount + (1 - FEES) * (winnings - betAmount)
-    : betAmount
+    : winnings
 }
