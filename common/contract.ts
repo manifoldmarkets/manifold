@@ -1,4 +1,4 @@
-export type Contract = {
+export type Contract<outcomeType extends 'BINARY' | 'MULTI' = 'BINARY'> = {
   id: string
   slug: string // auto-generated; must be unique
 
@@ -11,14 +11,26 @@ export type Contract = {
   description: string // More info about what the contract is about
   tags: string[]
   lowercaseTags: string[]
-  outcomeType: 'BINARY' // | 'MULTI' | 'interval' | 'date'
+  outcomeType: outcomeType
   visibility: 'public' | 'unlisted'
 
   mechanism: 'dpm-2'
-  phantomShares: { YES: number; NO: number }
-  pool: { YES: number; NO: number }
-  totalShares: { YES: number; NO: number }
-  totalBets: { YES: number; NO: number }
+  phantomShares: {
+    BINARY: { YES: number; NO: number }
+    MULTI: { [answerId: string]: number }
+  }[outcomeType]
+  pool: {
+    BINARY: { YES: number; NO: number }
+    MULTI: { [answerId: string]: number }
+  }[outcomeType]
+  totalShares: {
+    BINARY: { YES: number; NO: number }
+    MULTI: { [answerId: string]: number }
+  }[outcomeType]
+  totalBets: {
+    BINARY: { YES: number; NO: number }
+    MULTI: { [answerId: string]: number }
+  }[outcomeType]
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime: number // If the question or description was changed
@@ -26,7 +38,10 @@ export type Contract = {
 
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
-  resolution?: outcome // Chosen by creator; must be one of outcomes
+  resolution?: {
+    BINARY: outcome
+    MULTI: string
+  }[outcomeType]
   resolutionProbability?: number
 
   volume24Hours: number
