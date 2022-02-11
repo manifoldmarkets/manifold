@@ -9,7 +9,7 @@ export function AdvancedPanel(props: { children: any }) {
     <div
       tabIndex={0}
       className={clsx(
-        'relative collapse collapse-arrow',
+        'collapse collapse-arrow relative',
         collapsed ? 'collapse-close' : 'collapse-open'
       )}
     >
@@ -17,11 +17,11 @@ export function AdvancedPanel(props: { children: any }) {
         onClick={() => setCollapsed((collapsed) => !collapsed)}
         className="cursor-pointer"
       >
-        <div className="mt-4 mr-6 text-sm text-gray-500 text-right">
+        <div className="mt-4 mr-6 text-right text-sm text-gray-500">
           Advanced
         </div>
         <div
-          className="collapse-title p-0 absolute w-0 h-0 min-h-0"
+          className="collapse-title absolute h-0 min-h-0 w-0 p-0"
           style={{
             top: -2,
             right: -15,
@@ -30,7 +30,7 @@ export function AdvancedPanel(props: { children: any }) {
         />
       </div>
 
-      <div className="collapse-content !p-0 m-0 !bg-transparent">
+      <div className="collapse-content m-0 !bg-transparent !p-0">
         {children}
       </div>
     </div>

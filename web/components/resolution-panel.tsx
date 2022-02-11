@@ -63,7 +63,7 @@ export function ResolutionPanel(props: {
       : 'btn-disabled'
 
   return (
-    <Col className={clsx('bg-white px-8 py-6 rounded-md', className)}>
+    <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
       <Title className="mt-0" text="Your market" />
 
       <div className="pt-2 pb-1 text-sm text-gray-500">Resolve outcome</div>

@@ -162,7 +162,7 @@ function NewBidTable(props: {
 
   return (
     <>
-      <table className="table table-compact my-8 w-full text-center">
+      <table className="table-compact my-8 table w-full text-center">
         <thead>
           <tr>
             <th>Order #</th>
@@ -255,10 +255,10 @@ export default function Simulator() {
   return (
     <Col>
       <NavBar />
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full mt-8 p-2 mx-auto text-center">
+      <div className="mx-auto mt-8 grid w-full grid-cols-1 gap-4 p-2 text-center xl:grid-cols-2">
         {/* Left column */}
         <div>
-          <h1 className="text-2xl font-bold mb-8">
+          <h1 className="mb-8 text-2xl font-bold">
             Dynamic Parimutuel Market Simulator
           </h1>
 
@@ -286,13 +286,13 @@ export default function Simulator() {
 
         {/* Right column */}
         <Col>
-          <h1 className="text-2xl font-bold mb-8">
+          <h1 className="mb-8 text-2xl font-bold">
             Probability of
-            <div className="badge badge-success text-2xl h-8 w-18 ml-3">
+            <div className="badge badge-success w-18 ml-3 h-8 text-2xl">
               YES
             </div>
           </h1>
-          <div className="w-full mb-10" style={{ height: 500 }}>
+          <div className="mb-10 w-full" style={{ height: 500 }}>
             <ResponsiveLine
               data={data}
               yScale={{ min: 0, max: 100, type: 'linear' }}

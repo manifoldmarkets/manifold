@@ -29,16 +29,16 @@ export function NavBar(props: {
 
   return (
     <>
-      <nav className={clsx('w-full p-4 mb-4', className)} aria-label="Global">
+      <nav className={clsx('mb-4 w-full p-4', className)} aria-label="Global">
         <Row
           className={clsx(
-            'justify-between items-center mx-auto sm:px-4',
+            'mx-auto items-center justify-between sm:px-4',
             wide ? 'max-w-6xl' : 'max-w-4xl'
           )}
         >
           <ManifoldLogo className="my-1" darkBackground={darkBackground} />
 
-          <Row className="items-center gap-6 sm:gap-8 ml-6">
+          <Row className="ml-6 items-center gap-6 sm:gap-8">
             {(user || user === null || assertUser) && (
               <NavOptions
                 user={user}
@@ -58,13 +58,13 @@ export function NavBar(props: {
 function BottomNavBar(props: { user: User }) {
   const { user } = props
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white z-20 flex justify-between text-xs text-gray-700 border-t-2">
+    <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 md:hidden">
       <Link href="/home">
         <a
           href="#"
-          className="w-full block py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700 transition duration-300"
+          className="block w-full py-2 px-3 text-center transition duration-300 hover:bg-indigo-200 hover:text-indigo-700"
         >
-          <HomeIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          <HomeIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
           {/* Home */}
         </a>
       </Link>
@@ -72,9 +72,9 @@ function BottomNavBar(props: { user: User }) {
       <Link href="/markets">
         <a
           href="#"
-          className="w-full block py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
+          className="block w-full py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
         >
-          <SearchIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          <SearchIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
           {/* Explore */}
         </a>
       </Link>
@@ -82,9 +82,9 @@ function BottomNavBar(props: { user: User }) {
       <Link href="/folds">
         <a
           href="#"
-          className="w-full block py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
+          className="block w-full py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
         >
-          <UserGroupIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          <UserGroupIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
           {/* Folds */}
         </a>
       </Link>
@@ -92,9 +92,9 @@ function BottomNavBar(props: { user: User }) {
       <Link href="/trades">
         <a
           href="#"
-          className="w-full block py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
+          className="block w-full py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
         >
-          <CollectionIcon className="h-6 w-6 my-1 mx-auto" aria-hidden="true" />
+          <CollectionIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
           {/* Your Trades */}
         </a>
       </Link>
@@ -118,7 +118,7 @@ function NavOptions(props: {
         <Link href="/about">
           <a
             className={clsx(
-              'text-base hidden md:block whitespace-nowrap',
+              'hidden whitespace-nowrap text-base md:block',
               themeClasses
             )}
           >
@@ -130,7 +130,7 @@ function NavOptions(props: {
       <Link href="/folds">
         <a
           className={clsx(
-            'text-base hidden md:block whitespace-nowrap',
+            'hidden whitespace-nowrap text-base md:block',
             themeClasses
           )}
         >
@@ -141,7 +141,7 @@ function NavOptions(props: {
       <Link href="/markets">
         <a
           className={clsx(
-            'text-base hidden md:block whitespace-nowrap',
+            'hidden whitespace-nowrap text-base md:block',
             themeClasses
           )}
         >
@@ -152,7 +152,7 @@ function NavOptions(props: {
       {showSignedOut && (
         <>
           <button
-            className="btn btn-sm btn-outline normal-case text-base font-medium px-6 bg-gradient-to-r"
+            className="btn btn-sm btn-outline bg-gradient-to-r px-6 text-base font-medium normal-case"
             onClick={firebaseLogin}
           >
             Sign in

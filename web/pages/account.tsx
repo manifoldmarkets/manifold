@@ -6,14 +6,14 @@ import { firebaseLogin } from '../lib/firebase/users'
 
 function SignInCard() {
   return (
-    <div className="card glass sm:card-side shadow-xl hover:shadow-xl text-neutral-content bg-green-600 hover:bg-green-600 transition-all max-w-sm mx-4 sm:mx-auto my-12">
+    <div className="card glass sm:card-side text-neutral-content mx-4 my-12 max-w-sm bg-green-600 shadow-xl transition-all hover:bg-green-600 hover:shadow-xl sm:mx-auto">
       <div className="p-4">
         <img
           src="/logo-bg-white.png"
-          className="rounded-lg shadow-lg w-20 h-20"
+          className="h-20 w-20 rounded-lg shadow-lg"
         />
       </div>
-      <div className="max-w-md card-body">
+      <div className="card-body max-w-md">
         <h2 className="card-title font-major-mono">Welcome!</h2>
         <p>Sign in to get started</p>
         <div className="card-actions">

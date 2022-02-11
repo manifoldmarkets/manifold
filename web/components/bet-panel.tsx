@@ -136,7 +136,7 @@ export function BetPanel(props: {
   }
 
   return (
-    <Col className={clsx('bg-white px-8 py-6 rounded-md', className)}>
+    <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
       <Title
         className={clsx('!mt-0', title ? '!text-xl' : '')}
         text={panelTitle}
@@ -149,7 +149,7 @@ export function BetPanel(props: {
         onSelect={(choice) => onBetChoice(choice)}
       />
 
-      <div className="my-3 text-sm text-gray-500 text-left">Amount </div>
+      <div className="my-3 text-left text-sm text-gray-500">Amount </div>
       <AmountInput
         inputClassName="w-full"
         amount={betAmount}
@@ -201,7 +201,7 @@ export function BetPanel(props: {
               ? 'btn-disabled'
               : betChoice === 'YES'
               ? 'btn-primary'
-              : 'bg-red-400 hover:bg-red-500 border-none',
+              : 'border-none bg-red-400 hover:bg-red-500',
             isSubmitting ? 'loading' : ''
           )}
           onClick={betDisabled ? undefined : submitBet}
@@ -210,7 +210,7 @@ export function BetPanel(props: {
         </button>
       ) : (
         <button
-          className="btn mt-4 border-none normal-case text-lg font-medium whitespace-nowrap px-10 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
+          className="btn mt-4 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
           onClick={firebaseLogin}
         >
           Sign in to trade!

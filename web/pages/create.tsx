@@ -24,10 +24,10 @@ export default function Create() {
 
   return (
     <Page>
-      <div className="w-full max-w-2xl mx-auto">
+      <div className="mx-auto w-full max-w-2xl">
         <Title text="Create a new prediction market" />
 
-        <div className="bg-gray-100 rounded-lg shadow-md px-6 py-4">
+        <div className="rounded-lg bg-gray-100 px-6 py-4 shadow-md">
           <form>
             <div className="form-control w-full">
               <label className="label">
@@ -174,13 +174,13 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <Spacer h={4} />
 
-      <div className="form-control items-start mb-1">
-        <label className="label gap-2 mb-1">
+      <div className="form-control mb-1 items-start">
+        <label className="label mb-1 gap-2">
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this market." />
         </label>
         <Textarea
-          className="textarea w-full textarea-bordered"
+          className="textarea textarea-bordered w-full"
           rows={3}
           placeholder={descriptionPlaceholder}
           value={description}
@@ -192,7 +192,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <Spacer h={4} />
 
-      <div className="form-control items-start max-w-sm">
+      <div className="form-control max-w-sm items-start">
         <label className="label gap-2">
           <span className="mb-1">Tags</span>
           <InfoTooltip text="Optional. Help categorize your market with related tags." />
@@ -211,8 +211,8 @@ export function NewContract(props: { question: string; tag?: string }) {
       <TagsList tags={tags} noLink noLabel />
       <Spacer h={4} />
 
-      <div className="form-control items-start mb-1">
-        <label className="label gap-2 mb-1">
+      <div className="form-control mb-1 items-start">
+        <label className="label mb-1 gap-2">
           <span>Market close</span>
           <InfoTooltip text="Trading will be halted after this time (local timezone)." />
         </label>
@@ -229,8 +229,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <Spacer h={4} />
 
-      <div className="form-control items-start mb-1">
-        <label className="label gap-2 mb-1">
+      <div className="form-control mb-1 items-start">
+        <label className="label mb-1 gap-2">
           <span>Market ante</span>
           <InfoTooltip
             text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
@@ -249,7 +249,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <Spacer h={4} />
 
-      <div className="flex justify-end my-4">
+      <div className="my-4 flex justify-end">
         <button
           type="submit"
           className={clsx(

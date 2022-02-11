@@ -32,14 +32,14 @@ export function ContractsGrid(props: {
 
   if (contracts.length === 0) {
     return (
-      <p className="text-gray-500 mx-2">
+      <p className="mx-2 text-gray-500">
         No markets found. Why not create one?
       </p>
     )
   }
 
   return (
-    <ul className="w-full grid grid-cols-1 gap-6 md:grid-cols-2">
+    <ul className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
       {contracts.map((contract) => (
         <ContractCard
           contract={contract}
@@ -250,7 +250,7 @@ export function SearchableGrid(props: {
   return (
     <div>
       {/* Show a search input next to a sort dropdown */}
-      <div className="flex justify-between gap-2 mt-2 mb-8">
+      <div className="mt-2 mb-8 flex justify-between gap-2">
         <input
           type="text"
           value={query}

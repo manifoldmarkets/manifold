@@ -19,10 +19,10 @@ export function Leaderboard(props: {
     <div className={clsx('w-full px-1', className)}>
       <Title text={title} className="!mt-0" />
       {users.length === 0 ? (
-        <div className="text-gray-500 ml-2">None yet</div>
+        <div className="ml-2 text-gray-500">None yet</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="table table-zebra table-compact text-gray-500 w-full">
+          <table className="table-zebra table-compact table w-full text-gray-500">
             <thead>
               <tr className="p-2">
                 <th>#</th>

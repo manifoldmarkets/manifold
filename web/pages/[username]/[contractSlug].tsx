@@ -110,8 +110,8 @@ export default function ContractPage(props: {
         ogCardProps={ogCardProps}
       />
 
-      <Col className="w-full md:flex-row justify-between">
-        <div className="flex-[3] bg-white px-2 py-6 md:px-6 md:py-8 rounded border-0 border-gray-100">
+      <Col className="w-full justify-between md:flex-row">
+        <div className="flex-[3] rounded border-0 border-gray-100 bg-white px-2 py-6 md:px-6 md:py-8">
           <ContractOverview
             contract={contract}
             bets={bets ?? []}

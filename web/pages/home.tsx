@@ -120,11 +120,11 @@ const Home = (props: {
   return (
     <Page assertUser="signed-in">
       <Col className="items-center">
-        <Col className="max-w-3xl w-full">
+        <Col className="w-full max-w-3xl">
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
-          <Row className="text-sm text-gray-800 mx-3 mb-3 gap-2 items-center">
-            <SearchIcon className="inline w-5 h-5" aria-hidden="true" />
+          <Row className="mx-3 mb-3 items-center gap-2 text-sm text-gray-800">
+            <SearchIcon className="inline h-5 w-5" aria-hidden="true" />
             Explore our communities
           </Row>
           <FoldTagList
@@ -144,9 +144,9 @@ const Home = (props: {
             ]}
           />
           <Spacer h={10} />
-          <Col className="sm:flex-row text-sm text-gray-800 mx-3 mb-3 gap-2">
+          <Col className="mx-3 mb-3 gap-2 text-sm text-gray-800 sm:flex-row">
             <Row className="gap-2">
-              <SparklesIcon className="inline w-5 h-5" aria-hidden="true" />
+              <SparklesIcon className="inline h-5 w-5" aria-hidden="true" />
               <span className="whitespace-nowrap">Recent activity</span>
               <span className="hidden sm:flex">—</span>
             </Row>
