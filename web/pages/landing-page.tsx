@@ -33,17 +33,17 @@ const scrollToAbout = () => {
 
 function Hero() {
   return (
-    <div className="overflow-hidden h-screen bg-world-trading bg-cover bg-gray-900 bg-center lg:bg-left">
+    <div className="bg-world-trading h-screen overflow-hidden bg-gray-900 bg-cover bg-center lg:bg-left">
       <NavBar darkBackground />
       <main>
-        <div className="pt-32 sm:pt-8 lg:pt-0 lg:pb-14 lg:overflow-hidden">
+        <div className="pt-32 sm:pt-8 lg:overflow-hidden lg:pt-0 lg:pb-14">
           <div className="mx-auto max-w-7xl lg:px-8 xl:px-0">
             <div className="lg:grid lg:grid-cols-2 lg:gap-8">
-              <div className="mx-auto max-w-md px-8 sm:max-w-2xl sm:text-center lg:px-0 lg:text-left lg:flex lg:items-center">
+              <div className="mx-auto max-w-md px-8 sm:max-w-2xl sm:text-center lg:flex lg:items-center lg:px-0 lg:text-left">
                 <div className="lg:py-24">
                   <h1 className="mt-4 text-4xl text-white sm:mt-5 sm:text-6xl lg:mt-6 xl:text-6xl">
                     <div className="mb-2">Create your own</div>
-                    <div className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-300 to-green-400">
+                    <div className="bg-gradient-to-r from-teal-300 to-green-400 bg-clip-text font-bold text-transparent">
                       prediction markets
                     </div>
                   </h1>
@@ -54,7 +54,7 @@ function Hero() {
                   </p>
                   <div className="mt-10 sm:mt-12">
                     <button
-                      className="btn normal-case text-lg font-medium px-10 bg-gradient-to-r from-teal-500 to-green-500 hover:from-teal-600 hover:to-green-600"
+                      className="btn bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
                       onClick={firebaseLogin}
                     >
                       Sign in to get started!
@@ -66,7 +66,7 @@ function Hero() {
           </div>
           <div className="absolute bottom-12 w-full">
             <ArrowDownIcon
-              className="text-white mx-auto cursor-pointer animate-bounce"
+              className="mx-auto animate-bounce cursor-pointer text-white"
               width={32}
               height={32}
               onClick={scrollToAbout}
@@ -106,14 +106,14 @@ function FeaturesSection() {
   ]
 
   return (
-    <div id="about" className="w-full py-16 bg-green-50">
-      <div className="max-w-4xl py-12 mx-auto">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+    <div id="about" className="w-full bg-green-50 py-16">
+      <div className="mx-auto max-w-4xl py-12">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="lg:text-center">
-            <h2 className="text-base text-teal-600 font-semibold tracking-wide uppercase">
+            <h2 className="text-base font-semibold uppercase tracking-wide text-teal-600">
               Manifold Markets
             </h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+            <p className="mt-2 text-3xl font-extrabold leading-8 tracking-tight text-gray-900 sm:text-4xl">
               Better forecasting for everyone
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
@@ -122,14 +122,14 @@ function FeaturesSection() {
           </div>
 
           <div className="mt-10">
-            <dl className="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
+            <dl className="space-y-10 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10 md:space-y-0">
               {features.map((feature) => (
                 <div key={feature.name} className="relative">
                   <dt>
-                    <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-teal-500 text-white">
+                    <div className="absolute flex h-12 w-12 items-center justify-center rounded-md bg-teal-500 text-white">
                       <feature.icon className="h-6 w-6" aria-hidden="true" />
                     </div>
-                    <p className="ml-16 text-lg leading-6 font-medium text-gray-900">
+                    <p className="ml-16 text-lg font-medium leading-6 text-gray-900">
                       {feature.name}
                     </p>
                   </dt>
@@ -155,8 +155,8 @@ function FeaturesSection() {
 function ExploreMarketsSection(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
   return (
-    <div className="max-w-4xl px-4 py-8 mx-auto">
-      <p className="my-12 text-3xl leading-8 font-extrabold tracking-tight text-indigo-700 sm:text-4xl">
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      <p className="my-12 text-3xl font-extrabold leading-8 tracking-tight text-indigo-700 sm:text-4xl">
         Today's top markets
       </p>
 

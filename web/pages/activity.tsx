@@ -97,7 +97,7 @@ export function ActivityFeed(props: {
   return contracts.length > 0 ? (
     <Col className="items-center">
       <Col className="w-full max-w-3xl">
-        <Col className="w-full bg-white self-center divide-gray-300 divide-y">
+        <Col className="w-full divide-y divide-gray-300 self-center bg-white">
           {contracts.map((contract, i) => (
             <div key={contract.id} className="py-6 px-2 sm:px-4">
               <ContractFeed

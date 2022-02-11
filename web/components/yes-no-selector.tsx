@@ -16,10 +16,10 @@ export function YesNoSelector(props: {
     <Row className={clsx('space-x-3', className)}>
       <button
         className={clsx(
-          'flex-1 inline-flex justify-center items-center p-2  hover:bg-primary-focus hover:text-white rounded-lg border-primary hover:border-primary-focus border-2',
+          'hover:bg-primary-focus border-primary hover:border-primary-focus inline-flex flex-1  items-center justify-center rounded-lg border-2 p-2 hover:text-white',
           selected == 'YES'
             ? 'bg-primary text-white'
-            : 'bg-transparent text-primary',
+            : 'text-primary bg-transparent',
           btnClassName
         )}
         onClick={() => onSelect('YES')}
@@ -28,7 +28,7 @@ export function YesNoSelector(props: {
       </button>
       <button
         className={clsx(
-          'flex-1 inline-flex justify-center items-center p-2  hover:bg-red-500 hover:text-white rounded-lg border-red-400 hover:border-red-500 border-2',
+          'inline-flex flex-1 items-center justify-center rounded-lg  border-2 border-red-400 p-2 hover:border-red-500 hover:bg-red-500 hover:text-white',
           selected == 'NO'
             ? 'bg-red-400 text-white'
             : 'bg-transparent text-red-400',
@@ -54,7 +54,7 @@ export function YesNoCancelSelector(props: {
 
   return (
     <Col>
-      <Row className={clsx('space-x-3 w-full', className)}>
+      <Row className={clsx('w-full space-x-3', className)}>
         <Button
           color={selected === 'YES' ? 'green' : 'gray'}
           onClick={() => onSelect('YES')}
@@ -72,7 +72,7 @@ export function YesNoCancelSelector(props: {
         </Button>
       </Row>
 
-      <Row className={clsx('space-x-3 w-full', className)}>
+      <Row className={clsx('w-full space-x-3', className)}>
         <Button
           color={selected === 'MKT' ? 'blue' : 'gray'}
           onClick={() => onSelect('MKT')}
@@ -132,12 +132,12 @@ function Button(props: {
     <button
       type="button"
       className={clsx(
-        'flex-1 inline-flex justify-center items-center px-8 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium',
+        'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 text-sm font-medium shadow-sm',
         color === 'green' && 'btn-primary text-white',
-        color === 'red' && 'bg-red-400 hover:bg-red-500 text-white',
-        color === 'yellow' && 'bg-yellow-400 hover:bg-yellow-500 text-white',
-        color === 'blue' && 'bg-blue-400 hover:bg-blue-500 text-white',
-        color === 'gray' && 'text-gray-700 bg-gray-300 hover:bg-gray-400',
+        color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
+        color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
+        color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
+        color === 'gray' && 'bg-gray-300 text-gray-700 hover:bg-gray-400',
         className
       )}
       onClick={onClick}

@@ -16,12 +16,12 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
       <Col className="w-full bg-white p-6 sm:rounded-lg">
         <h1 className="mt-4 text-4xl sm:mt-5 sm:text-6xl lg:mt-6 xl:text-6xl">
           <div className="mb-2">Create your own</div>
-          <div className="font-bold bg-clip-text text-transparent bg-gradient-to-r  from-teal-400 to-green-400">
+          <div className="bg-gradient-to-r from-teal-400 to-green-400 bg-clip-text  font-bold text-transparent">
             prediction markets
           </div>
         </h1>
         <Spacer h={6} />
-        <div className="text-gray-500 mb-4">
+        <div className="mb-4 text-gray-500">
           Find prediction markets run by your favorite creators, or make your
           own.
           <br />
@@ -81,7 +81,7 @@ export default function FeedCreate(props: {
 
   return (
     <div
-      className={clsx('w-full bg-white p-4 shadow-md mt-2', className)}
+      className={clsx('mt-2 w-full bg-white p-4 shadow-md', className)}
       onClick={() => !question && inputRef.current?.focus()}
     >
       <div className="relative flex items-start space-x-3">
@@ -94,7 +94,7 @@ export default function FeedCreate(props: {
           </div>
           <textarea
             ref={inputRef as any}
-            className="text-lg sm:text-xl text-indigo-700 w-full border-transparent focus:border-transparent bg-transparent p-0 appearance-none resize-none focus:ring-transparent placeholder:text-gray-400"
+            className="w-full resize-none appearance-none border-transparent bg-transparent p-0 text-lg text-indigo-700 placeholder:text-gray-400 focus:border-transparent focus:ring-transparent sm:text-xl"
             placeholder={placeholder}
             value={question}
             onClick={(e) => e.stopPropagation()}
