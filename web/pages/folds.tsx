@@ -64,14 +64,14 @@ export default function Folds(props: {
   return (
     <Page>
       <Col className="items-center">
-        <Col className="max-w-xl w-full">
+        <Col className="w-full max-w-xl">
           <Col className="px-4 sm:px-0">
-            <Row className="justify-between items-center">
+            <Row className="items-center justify-between">
               <Title text="Explore communities" />
               {user && <CreateFoldButton />}
             </Row>
 
-            <div className="text-gray-500 mb-6">
+            <div className="mb-6 text-gray-500">
               Communities on Manifold are centered around a collection of
               markets.
             </div>
@@ -98,16 +98,16 @@ function FoldCard(props: { fold: Fold; curator: User | undefined }) {
   return (
     <Col
       key={fold.id}
-      className="bg-white hover:bg-gray-100 p-8 rounded-xl gap-1 shadow-md relative"
+      className="relative gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100"
     >
       <Link href={foldPath(fold)}>
         <a className="absolute left-0 right-0 top-0 bottom-0" />
       </Link>
-      <Row className="justify-between items-center gap-2">
+      <Row className="items-center justify-between gap-2">
         <span className="text-xl">{fold.name}</span>
         <FollowFoldButton className="z-10 mb-1" fold={fold} />
       </Row>
-      <Row className="items-center gap-2 text-gray-500 text-sm">
+      <Row className="items-center gap-2 text-sm text-gray-500">
         <div>{fold.followCount} followers</div>
         <div>•</div>
         <Row>
@@ -119,7 +119,7 @@ function FoldCard(props: { fold: Fold; curator: User | undefined }) {
           />
         </Row>
       </Row>
-      <div className="text-gray-500 text-sm">{fold.about}</div>
+      <div className="text-sm text-gray-500">{fold.about}</div>
       {tags.length > 0 && (
         <TagsList className="mt-4" tags={tags} noLink noLabel />
       )}

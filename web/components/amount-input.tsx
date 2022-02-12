@@ -52,7 +52,7 @@ export function AmountInput(props: {
   return (
     <Col className={className}>
       <label className="input-group">
-        <span className="text-sm bg-gray-200">M$</span>
+        <span className="bg-gray-200 text-sm">M$</span>
         <input
           className={clsx(
             'input input-bordered',
@@ -69,13 +69,13 @@ export function AmountInput(props: {
         />
       </label>
       {error && (
-        <div className="font-medium tracking-wide text-red-500 text-xs whitespace-nowrap mr-auto self-center mt-4">
+        <div className="mr-auto mt-4 self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
           {error}
         </div>
       )}
       {user && (
-        <Col className="text-sm mt-3">
-          <div className="text-gray-500 whitespace-nowrap mb-2">
+        <Col className="mt-3 text-sm">
+          <div className="mb-2 whitespace-nowrap text-gray-500">
             Remaining balance
           </div>
           <Row className="gap-4">

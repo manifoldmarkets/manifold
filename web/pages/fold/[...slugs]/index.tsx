@@ -39,6 +39,7 @@ import { FollowFoldButton } from '../../../components/follow-fold-button'
 import FeedCreate from '../../../components/feed-create'
 import { SEO } from '../../../components/SEO'
 import { useTaggedContracts } from '../../../hooks/use-contracts'
+import { Linkify } from '../../../components/linkify'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -116,7 +117,7 @@ async function toTopUsers(userScores: { [userId: string]: number }) {
   const topUserPairs = _.take(
     _.sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
     10
-  ).filter(([_, score]) => score > 0)
+  ).filter(([_, score]) => score >= 0.5)
 
   const topUsers = await Promise.all(
     topUserPairs.map(([userId]) => getUser(userId))
@@ -186,7 +187,7 @@ export default function FoldPage(props: {
       />
 
       <div className="px-3 lg:px-1">
-        <Row className="justify-between mb-6">
+        <Row className="mb-6 justify-between">
           <Title className="!m-0" text={fold.name} />
           {isCurator ? (
             <EditFoldButton className="ml-1" fold={fold} />
@@ -195,7 +196,7 @@ export default function FoldPage(props: {
           )}
         </Row>
 
-        <Col className="md:hidden text-gray-500 gap-2 mb-6">
+        <Col className="mb-6 gap-2 text-gray-500 md:hidden">
           <Row>
             <div className="mr-1">Curated by</div>
             <UserLink
@@ -204,7 +205,7 @@ export default function FoldPage(props: {
               username={curator.username}
             />
           </Row>
-          <div>{fold.about}</div>
+          <Linkify text={fold.about ?? ''} />
         </Col>
       </div>
 
@@ -262,7 +263,7 @@ export default function FoldPage(props: {
                   contractComments={activeContractComments}
                 />
                 {activeContracts.length === 0 && (
-                  <div className="text-gray-500 mt-4 mx-2 lg:mx-0">
+                  <div className="mx-2 mt-4 text-gray-500 lg:mx-0">
                     No activity from matching markets.{' '}
                     {isCurator && 'Try editing to add more tags!'}
                   </div>
@@ -278,7 +279,7 @@ export default function FoldPage(props: {
               />
             )}
           </Col>
-          <Col className="hidden md:flex max-w-xs w-full gap-12">
+          <Col className="hidden w-full max-w-xs gap-12 md:flex">
             <FoldOverview fold={fold} curator={curator} />
             <FoldLeaderboards
               traderScores={traderScores}
@@ -292,7 +293,7 @@ export default function FoldPage(props: {
       )}
 
       {page === 'leaderboards' && (
-        <Col className="gap-8 lg:flex-row px-4">
+        <Col className="gap-8 px-4 lg:flex-row">
           <FoldLeaderboards
             traderScores={traderScores}
             creatorScores={creatorScores}
@@ -313,12 +314,12 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
 
   return (
     <Col>
-      <div className="px-4 py-3 bg-indigo-500 text-white text-sm rounded-t">
+      <div className="rounded-t bg-indigo-500 px-4 py-3 text-sm text-white">
         About community
       </div>
-      <Col className="p-4 bg-white gap-2 rounded-b">
+      <Col className="gap-2 rounded-b bg-white p-4">
         <Row>
-          <div className="text-gray-500 mr-1">Curated by</div>
+          <div className="mr-1 text-gray-500">Curated by</div>
           <UserLink
             className="text-neutral"
             name={curator.name}
@@ -329,13 +330,15 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
         {about && (
           <>
             <Spacer h={2} />
-            <div className="text-gray-500">{about}</div>
+            <div className="text-gray-500">
+              <Linkify text={about} />
+            </div>
           </>
         )}
 
         <div className="divider" />
 
-        <div className="text-gray-500 mb-2">
+        <div className="mb-2 text-gray-500">
           Includes markets matching any of these tags:
         </div>
 
@@ -372,11 +375,11 @@ function FoldLeaderboards(props: {
     <>
       {user && (
         <Col className={yourPerformanceClassName}>
-          <div className="bg-indigo-500 text-white text-sm px-4 py-3 rounded">
+          <div className="rounded bg-indigo-500 px-4 py-3 text-sm text-white">
             Your performance
           </div>
           <div className="bg-white p-2">
-            <table className="table table-compact text-gray-500 w-full">
+            <table className="table-compact table w-full text-gray-500">
               <tbody>
                 <tr>
                   <td>Trading profit</td>

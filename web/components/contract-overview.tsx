@@ -50,11 +50,11 @@ export const ContractOverview = (props: {
     <Col className={clsx('mb-6', className)}>
       <Row className="justify-between gap-4 px-2">
         <Col className="gap-4">
-          <div className="text-2xl md:text-3xl text-indigo-700">
+          <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={contract.question} />
           </div>
 
-          <Row className="justify-between items-center gap-4">
+          <Row className="items-center justify-between gap-4">
             <ResolutionOrChance
               className="md:hidden"
               resolution={resolution}
@@ -74,7 +74,7 @@ export const ContractOverview = (props: {
           <ContractDetails contract={contract} />
         </Col>
 
-        <Col className="hidden md:flex justify-between items-end">
+        <Col className="hidden items-end justify-between md:flex">
           <ResolutionOrChance
             className="items-end"
             resolution={resolution}
@@ -86,9 +86,9 @@ export const ContractOverview = (props: {
 
       <Spacer h={4} />
 
-      <ContractProbGraph contract={contract} />
+      <ContractProbGraph contract={contract} bets={bets} />
 
-      <Row className="hidden sm:flex justify-between items-center mt-6 ml-4 gap-4">
+      <Row className="mt-6 ml-4 hidden items-center justify-between gap-4 sm:flex">
         {folds.length === 0 ? (
           <TagsInput className={clsx('mx-4')} contract={contract} />
         ) : (
@@ -97,7 +97,7 @@ export const ContractOverview = (props: {
         <TweetButton tweetText={tweetText} />
       </Row>
 
-      <Col className="sm:hidden mt-6 ml-4 gap-4">
+      <Col className="mt-6 ml-4 gap-4 sm:hidden">
         <TweetButton className="self-end" tweetText={tweetText} />
         {folds.length === 0 ? (
           <TagsInput contract={contract} />
@@ -107,7 +107,7 @@ export const ContractOverview = (props: {
       </Col>
 
       {folds.length > 0 && (
-        <RevealableTagsInput className="mt-4 mx-4" contract={contract} />
+        <RevealableTagsInput className="mx-4 mt-4" contract={contract} />
       )}
 
       <Spacer h={12} />

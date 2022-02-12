@@ -93,7 +93,7 @@ export default function ProfilePage() {
     <Page>
       <SEO title="Profile" description="User profile settings" url="/profile" />
 
-      <Col className="max-w-lg p-6 sm:mx-auto bg-white rounded shadow-md">
+      <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
         <Row className="justify-between">
           <Title className="!mt-0" text="Profile" />
           {isEditing ? (
@@ -108,7 +108,7 @@ export default function ProfilePage() {
               className="btn btn-ghost"
               onClick={() => setIsEditing(true)}
             >
-              <PencilIcon className="w-5 h-5" />{' '}
+              <PencilIcon className="h-5 w-5" />{' '}
               <div className="ml-2">Edit</div>
             </button>
           )}
@@ -123,7 +123,7 @@ export default function ProfilePage() {
                   src={avatarUrl}
                   width={80}
                   height={80}
-                  className="rounded-full bg-gray-400 flex items-center justify-center"
+                  className="flex items-center justify-center rounded-full bg-gray-400"
                 />
                 {isEditing && (
                   <input type="file" name="file" onChange={fileHandler} />
@@ -175,7 +175,7 @@ export default function ProfilePage() {
 
           <div>
             <label className="label">Balance</label>
-            <Row className="ml-1 gap-4 items-start text-gray-500">
+            <Row className="ml-1 items-start gap-4 text-gray-500">
               {formatMoney(user?.balance || 0)}
               <AddFundsButton />
             </Row>

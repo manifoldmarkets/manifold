@@ -25,6 +25,7 @@ export const markets = functions
   })
 
 const getContractInfo = ({
+  id,
   creatorUsername,
   creatorName,
   createdTime,
@@ -40,6 +41,7 @@ const getContractInfo = ({
   resolution,
 }: Contract) => {
   return {
+    id,
     creatorUsername,
     creatorName,
     createdTime,

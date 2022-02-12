@@ -51,7 +51,7 @@ export function CreateFoldButton() {
       id="create-fold"
       openModelBtn={{
         label: 'New',
-        icon: <PlusCircleIcon className="w-5 h-5 mr-2" />,
+        icon: <PlusCircleIcon className="mr-2 h-5 w-5" />,
         className: clsx(
           isSubmitting ? 'loading btn-disabled' : 'btn-primary',
           'btn-sm'
@@ -65,7 +65,7 @@ export function CreateFoldButton() {
     >
       <Title className="!mt-0" text="Create a community" />
 
-      <Col className="text-gray-500 gap-1">
+      <Col className="gap-1 text-gray-500">
         <div>
           Markets are included in a community if they match one or more tags.
         </div>
