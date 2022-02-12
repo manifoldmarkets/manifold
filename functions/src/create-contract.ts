@@ -6,7 +6,11 @@ import { Contract } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 import { getNewContract } from '../../common/new-contract'
-import { getAnteBets, MINIMUM_ANTE } from '../../common/antes'
+import {
+  getAnteBets,
+  getFreeAnswerAnte,
+  MINIMUM_ANTE,
+} from '../../common/antes'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })
@@ -14,6 +18,7 @@ export const createContract = functions
     async (
       data: {
         question: string
+        outcomeType: 'BINARY' | 'MULTI'
         description: string
         initialProb: number
         ante: number
@@ -28,12 +33,26 @@ export const createContract = functions
       const creator = await getUser(userId)
       if (!creator) return { status: 'error', message: 'User not found' }
 
-      const { question, description, initialProb, ante, closeTime, tags } = data
+      const {
+        question,
+        outcomeType,
+        description,
+        initialProb,
+        ante,
+        closeTime,
+        tags,
+      } = data
 
-      if (!question || !initialProb)
-        return { status: 'error', message: 'Missing contract attributes' }
+      if (!question)
+        return { status: 'error', message: 'Missing question field' }
 
-      if (initialProb < 1 || initialProb > 99)
+      if (outcomeType !== 'BINARY' && outcomeType !== 'MULTI')
+        return { status: 'error', message: 'Invalid outcomeType' }
+
+      if (
+        outcomeType === 'BINARY' &&
+        (!initialProb || initialProb < 1 || initialProb > 99)
+      )
         return { status: 'error', message: 'Invalid initial probability' }
 
       if (
@@ -63,6 +82,7 @@ export const createContract = functions
         slug,
         creator,
         question,
+        outcomeType,
         description,
         initialProb,
         ante,
@@ -75,22 +95,35 @@ export const createContract = functions
       await contractRef.create(contract)
 
       if (ante) {
-        const yesBetDoc = firestore
-          .collection(`contracts/${contract.id}/bets`)
-          .doc()
+        if (outcomeType === 'BINARY') {
+          const yesBetDoc = firestore
+            .collection(`contracts/${contract.id}/bets`)
+            .doc()
 
-        const noBetDoc = firestore
-          .collection(`contracts/${contract.id}/bets`)
-          .doc()
+          const noBetDoc = firestore
+            .collection(`contracts/${contract.id}/bets`)
+            .doc()
 
-        const { yesBet, noBet } = getAnteBets(
-          creator,
-          contract,
-          yesBetDoc.id,
-          noBetDoc.id
-        )
-        await yesBetDoc.set(yesBet)
-        await noBetDoc.set(noBet)
+          const { yesBet, noBet } = getAnteBets(
+            creator,
+            contract as Contract<'BINARY'>,
+            yesBetDoc.id,
+            noBetDoc.id
+          )
+          await yesBetDoc.set(yesBet)
+          await noBetDoc.set(noBet)
+        } else if (outcomeType === 'MULTI') {
+          const anteBetDoc = firestore
+            .collection(`contracts/${contract.id}/bets`)
+            .doc()
+          getFreeAnswerAnte(
+            creator,
+            contract as Contract<'MULTI'>,
+            anteBetDoc.id
+          )
+          // Disable until we figure out how this should work.
+          // await anteBetDoc.set(anteBetDoc)
+        }
       }
 
       return { status: 'success', contract }

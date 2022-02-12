@@ -61,3 +61,28 @@ export function getAnteBets(
 
   return { yesBet, noBet }
 }
+
+export function getFreeAnswerAnte(
+  creator: User,
+  contract: Contract<'MULTI'>,
+  anteBetId: string
+) {
+  const ante = contract.totalBets.YES + contract.totalBets.NO
+
+  const { createdTime } = contract
+
+  const anteBet: Bet<'MULTI'> = {
+    id: anteBetId,
+    userId: creator.id,
+    contractId: contract.id,
+    amount: ante,
+    shares: 0,
+    outcome: 'NONE',
+    probBefore: 0,
+    probAfter: 0,
+    createdTime,
+    isAnte: true,
+  }
+
+  return anteBet
+}

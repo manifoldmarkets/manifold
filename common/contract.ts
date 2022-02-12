@@ -11,13 +11,18 @@ export type Contract<outcomeType extends 'BINARY' | 'MULTI' = 'BINARY'> = {
   description: string // More info about what the contract is about
   tags: string[]
   lowercaseTags: string[]
-  outcomeType: outcomeType
   visibility: 'public' | 'unlisted'
+
+  outcomeType: outcomeType
+  outcomes: {
+    BINARY: undefined
+    MULTI: 'FREE_ANSWER' | string[]
+  }[outcomeType]
 
   mechanism: 'dpm-2'
   phantomShares: {
     BINARY: { YES: number; NO: number }
-    MULTI: { [answerId: string]: number }
+    MULTI: undefined
   }[outcomeType]
   pool: {
     BINARY: { YES: number; NO: number }

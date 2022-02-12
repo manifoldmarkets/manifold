@@ -17,6 +17,7 @@ import { Title } from '../components/title'
 import { ProbabilitySelector } from '../components/probability-selector'
 import { parseWordsAsTags } from '../../common/util/parse'
 import { TagsList } from '../components/tags-list'
+import { Row } from '../components/layout/row'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -61,6 +62,7 @@ export function NewContract(props: { question: string; tag?: string }) {
     createContract({}).catch() // warm up function
   }, [])
 
+  const [outcomeType, setOutcomeType] = useState<'BINARY' | 'MULTI'>('BINARY')
   const [initialProb, setInitialProb] = useState(50)
   const [description, setDescription] = useState('')
   const [tagText, setTagText] = useState<string>(tag ?? '')
@@ -105,6 +107,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
     const result: any = await createContract({
       question,
+      outcomeType,
       description,
       initialProb,
       ante,
@@ -126,18 +129,48 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   return (
     <div>
-      <Spacer h={4} />
-
-      <div className="form-control">
-        <label className="label">
-          <span className="mb-1">Initial probability</span>
+      <label className="label">
+        <span className="mb-1">Answer type</span>
+      </label>
+      <Row className="form-control gap-2">
+        <label className="cursor-pointer label gap-2">
+          <input
+            className="radio"
+            type="radio"
+            name="opt"
+            checked={outcomeType === 'BINARY'}
+            value="BINARY"
+            onChange={(e) => setOutcomeType(e.target.value as 'BINARY')}
+          />
+          <span className="label-text">Yes / No</span>
         </label>
 
-        <ProbabilitySelector
-          probabilityInt={initialProb}
-          setProbabilityInt={setInitialProb}
-        />
-      </div>
+        <label className="cursor-pointer label gap-2">
+          <input
+            className="radio"
+            type="radio"
+            name="opt"
+            checked={outcomeType === 'MULTI'}
+            value="MULTI"
+            onChange={(e) => setOutcomeType(e.target.value as 'MULTI')}
+          />
+          <span className="label-text">Free response</span>
+        </label>
+      </Row>
+      <Spacer h={4} />
+
+      {outcomeType === 'BINARY' && (
+        <div className="form-control">
+          <label className="label">
+            <span className="mb-1">Initial probability</span>
+          </label>
+
+          <ProbabilitySelector
+            probabilityInt={initialProb}
+            setProbabilityInt={setInitialProb}
+          />
+        </div>
+      )}
 
       <Spacer h={4} />
 

@@ -1,11 +1,12 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { getUser, removeUndefinedProps } from './utils'
+import { getUser } from './utils'
 import { Contract } from '../../common/contract'
 import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
 import { cleanUsername } from '../../common/util/clean-username'
+import { removeUndefinedProps } from '../../common/util/object'
 
 export const changeUserInfo = functions
   .runWith({ minInstances: 1 })

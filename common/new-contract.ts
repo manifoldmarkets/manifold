@@ -1,32 +1,37 @@
 import { calcStartPool } from './antes'
-
 import { Contract } from './contract'
 import { User } from './user'
 import { parseTags } from './util/parse'
+import { removeUndefinedProps } from './util/object'
 
 export function getNewContract(
   id: string,
   slug: string,
   creator: User,
   question: string,
+  outcomeType: 'BINARY' | 'MULTI',
   description: string,
   initialProb: number,
   ante: number,
   closeTime: number,
   extraTags: string[]
 ) {
-  const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
-    calcStartPool(initialProb, ante)
-
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
   )
   const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
-  const contract: Contract = {
+  const propsByOutcomeType =
+    outcomeType === 'BINARY'
+      ? getBinaryProps(initialProb, ante)
+      : getFreeAnswerProps()
+
+  const contract: Contract<'BINARY' | 'MULTI'> = removeUndefinedProps({
     id,
     slug,
-    outcomeType: 'BINARY',
+    mechanism: 'dpm-2',
+    outcomeType,
+    ...propsByOutcomeType,
 
     creatorId: creator.id,
     creatorName: creator.name,
@@ -38,22 +43,45 @@ export function getNewContract(
     tags,
     lowercaseTags,
     visibility: 'public',
+    isResolved: false,
+    createdTime: Date.now(),
+    lastUpdatedTime: Date.now(),
+    closeTime,
 
-    mechanism: 'dpm-2',
+    volume24Hours: 0,
+    volume7Days: 0,
+  })
+
+  return contract
+}
+
+const getBinaryProps = (initialProb: number, ante: number) => {
+  const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
+    calcStartPool(initialProb, ante)
+
+  return {
     phantomShares: { YES: phantomYes, NO: phantomNo },
     pool: { YES: poolYes, NO: poolNo },
     totalShares: { YES: sharesYes, NO: sharesNo },
     totalBets: { YES: poolYes, NO: poolNo },
-    isResolved: false,
-
-    createdTime: Date.now(),
-    lastUpdatedTime: Date.now(),
-
-    volume24Hours: 0,
-    volume7Days: 0,
+    outcomes: undefined,
   }
+}
 
-  if (closeTime) contract.closeTime = closeTime
+const getFreeAnswerProps = () => {
+  return {
+    pool: {},
+    totalShares: {},
+    totalBets: {},
+    phantomShares: undefined,
+    outcomes: 'FREE_ANSWER' as const,
+  }
+}
 
-  return contract
+const getMultiProps = (
+  outcomes: string[],
+  initialProbs: number[],
+  ante: number
+) => {
+  // Not implemented.
 }
