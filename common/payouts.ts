@@ -3,7 +3,7 @@ import * as _ from 'lodash'
 import { Bet } from './bet'
 import { deductFees, getProbability } from './calculate'
 import { Contract, outcome } from './contract'
-import { CREATOR_FEE } from './fees'
+import { CREATOR_FEE, FEES } from './fees'
 
 export const getCancelPayouts = (contract: Contract, bets: Bet[]) => {
   const { pool } = contract
@@ -29,25 +29,57 @@ export const getStandardPayouts = (
   const pool = contract.pool.YES + contract.pool.NO
   const totalShares = _.sumBy(winningBets, (b) => b.shares)
 
-  const winnerPayouts = winningBets.map((bet) => ({
-    userId: bet.userId,
-    payout: deductFees(bet.amount, (bet.shares / totalShares) * pool),
-  }))
+  const winnerPayouts = winningBets.map((bet) => {
+    const winnings = (bet.shares / totalShares) * pool
 
-  const creatorPayout = CREATOR_FEE * pool
+    return {
+      userId: bet.userId,
+      amount: bet.amount,
+      profit: winnings - bet.amount,
+    }
+  })
+
+  const [profitable, unprofitable] = _.partition(
+    winnerPayouts,
+    (wp) => wp.profit >= 0
+  )
+
+  const totalProfits = _.sumBy(profitable, (wp) => wp.profit)
+  const totalFees = FEES * totalProfits
+  const deficit = _.sumBy(unprofitable, (wp) => -wp.profit)
+  const adjTotalFees = deficit >= totalFees ? 0 : totalFees - deficit
+  const creatorPayout = Math.min(adjTotalFees, CREATOR_FEE * totalProfits)
+
+  const w = deficit > totalFees ? totalFees / deficit : 1
+
+  const adjUnprofitable = unprofitable.map((wp) => {
+    const adjustment = w * -wp.profit
+
+    return {
+      ...wp,
+      profit: wp.profit + adjustment,
+    }
+  })
 
   console.log(
     'resolved',
     outcome,
-    'pool: M$',
+    'pool',
     pool,
-    'creator fee: M$',
+    'profits',
+    totalProfits,
+    'deficit',
+    deficit,
+    'creator fee',
     creatorPayout
   )
 
-  return winnerPayouts.concat([
-    { userId: contract.creatorId, payout: creatorPayout },
-  ]) // add creator fee
+  return _.union(profitable, adjUnprofitable)
+    .map(({ userId, amount, profit }) => ({
+      userId,
+      payout: amount + (1 - FEES) * profit,
+    }))
+    .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
 }
 
 export const getMktPayouts = (
