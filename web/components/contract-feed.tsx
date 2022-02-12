@@ -6,7 +6,6 @@ import {
   CheckIcon,
   DotsVerticalIcon,
   LockClosedIcon,
-  StarIcon,
   UserIcon,
   UsersIcon,
   XIcon,
@@ -21,6 +20,7 @@ import {
   contractPath,
   updateContract,
   tradingAllowed,
+  getBinaryProbPercent,
 } from '../lib/firebase/contracts'
 import { useUser } from '../hooks/use-user'
 import { Linkify } from './linkify'
@@ -33,8 +33,8 @@ import { SiteLink } from './site-link'
 import { Col } from './layout/col'
 import { UserLink } from './user-page'
 import { DateTimeTooltip } from './datetime-tooltip'
-import { useBets } from '../hooks/use-bets'
-import { Bet, withoutAnteBets } from '../lib/firebase/bets'
+import { useBetsWithoutAntes } from '../hooks/use-bets'
+import { Bet } from '../lib/firebase/bets'
 import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
 import Textarea from 'react-expanding-textarea'
@@ -302,9 +302,8 @@ function TruncatedComment(props: {
 
 function FeedQuestion(props: { contract: Contract }) {
   const { contract } = props
-  const { creatorName, creatorUsername, createdTime, question, resolution } =
-    contract
-  const { probPercent, truePool } = contractMetrics(contract)
+  const { creatorName, creatorUsername, question, resolution } = contract
+  const { truePool } = contractMetrics(contract)
 
   // Currently hidden on mobile; ideally we'd fit this in somewhere.
   const closeMessage =
@@ -343,7 +342,7 @@ function FeedQuestion(props: { contract: Contract }) {
           <ResolutionOrChance
             className="items-center"
             resolution={resolution}
-            probPercent={probPercent}
+            probPercent={getBinaryProbPercent(contract)}
           />
         </Col>
         <TruncatedComment
@@ -642,12 +641,13 @@ export function ContractFeed(props: {
   betRowClassName?: string
 }) {
   const { contract, feedType, betRowClassName } = props
-  const { id } = contract
+  const { id, outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
+
   const [expanded, setExpanded] = useState(false)
   const user = useUser()
 
-  let bets = useBets(id) ?? props.bets
-  bets = withoutAnteBets(contract, bets)
+  const bets = useBetsWithoutAntes(contract, props.bets) ?? []
 
   const comments = useComments(id) ?? props.comments
 
@@ -715,7 +715,7 @@ export function ContractFeed(props: {
           </li>
         ))}
       </ul>
-      {tradingAllowed(contract) && (
+      {isBinary && tradingAllowed(contract) && (
         <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
       )}
     </div>

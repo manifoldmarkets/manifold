@@ -12,10 +12,10 @@ import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
 import { User } from '../../lib/firebase/users'
 import {
-  contractMetrics,
   Contract,
   getContractFromSlug,
   tradingAllowed,
+  getBinaryProbPercent,
 } from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
@@ -82,33 +82,27 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
 
-  const { creatorId, isResolved, resolution, question } = contract
+  const { creatorId, isResolved, question, outcomeType } = contract
+
   const isCreator = user?.id === creatorId
+  const isBinary = outcomeType === 'BINARY'
   const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
+  const hasSidePanel = isBinary && (allowTrade || allowResolve)
 
-  const { probPercent } = contractMetrics(contract)
-
-  const description = resolution
-    ? `Resolved ${resolution}. ${contract.description}`
-    : `${probPercent} chance. ${contract.description}`
-
-  const ogCardProps = {
-    question,
-    probability: probPercent,
-    metadata: contractTextDetails(contract),
-    creatorName: contract.creatorName,
-    creatorUsername: contract.creatorUsername,
-  }
+  // TODO(James): Create SEO props for non-binary contracts.
+  const ogCardProps = isBinary ? getOpenGraphProps(contract) : undefined
 
   return (
-    <Page wide={allowTrade || allowResolve}>
-      <SEO
-        title={question}
-        description={description}
-        url={`/${props.username}/${props.slug}`}
-        ogCardProps={ogCardProps}
-      />
+    <Page wide={hasSidePanel}>
+      {ogCardProps && (
+        <SEO
+          title={question}
+          description={ogCardProps.description}
+          url={`/${props.username}/${props.slug}`}
+          ogCardProps={ogCardProps}
+        />
+      )}
 
       <Col className="w-full justify-between md:flex-row">
         <div className="flex-[3] rounded border-0 border-gray-100 bg-white px-2 py-6 md:px-6 md:py-8">
@@ -118,10 +112,10 @@ export default function ContractPage(props: {
             comments={comments ?? []}
             folds={folds}
           />
-          <BetsSection contract={contract} user={user ?? null} />
+          <BetsSection contract={contract} user={user ?? null} bets={bets} />
         </div>
 
-        {(allowTrade || allowResolve) && (
+        {hasSidePanel && (
           <>
             <div className="md:ml-6" />
 
@@ -140,11 +134,13 @@ export default function ContractPage(props: {
   )
 }
 
-function BetsSection(props: { contract: Contract; user: User | null }) {
+function BetsSection(props: {
+  contract: Contract
+  user: User | null
+  bets: Bet[]
+}) {
   const { contract, user } = props
-  const bets = useBets(contract.id)
-
-  if (!bets || bets.length === 0) return <></>
+  const bets = useBets(contract.id) ?? props.bets
 
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
@@ -167,4 +163,22 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
       <Spacer h={12} />
     </div>
   )
+}
+
+const getOpenGraphProps = (contract: Contract<'BINARY'>) => {
+  const { resolution, question, creatorName, creatorUsername } = contract
+  const probPercent = getBinaryProbPercent(contract)
+
+  const description = resolution
+    ? `Resolved ${resolution}. ${contract.description}`
+    : `${probPercent} chance. ${contract.description}`
+
+  return {
+    question,
+    probability: probPercent,
+    metadata: contractTextDetails(contract),
+    creatorName: creatorName,
+    creatorUsername: creatorUsername,
+    description,
+  }
 }

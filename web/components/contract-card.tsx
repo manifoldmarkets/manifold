@@ -7,6 +7,7 @@ import {
   Contract,
   contractMetrics,
   contractPath,
+  getBinaryProbPercent,
 } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import dayjs from 'dayjs'
@@ -25,7 +26,7 @@ export function ContractCard(props: {
 }) {
   const { contract, showHotVolume, showCloseTime, className } = props
   const { question, resolution } = contract
-  const { probPercent } = contractMetrics(contract)
+  const probPercent = getBinaryProbPercent(contract)
 
   return (
     <div>

@@ -33,19 +33,12 @@ export const createContract = functions
       const creator = await getUser(userId)
       if (!creator) return { status: 'error', message: 'User not found' }
 
-      const {
-        question,
-        outcomeType,
-        description,
-        initialProb,
-        ante,
-        closeTime,
-        tags,
-      } = data
+      const { question, description, initialProb, ante, closeTime, tags } = data
 
       if (!question)
         return { status: 'error', message: 'Missing question field' }
 
+      let outcomeType = data.outcomeType ?? 'BINARY'
       if (outcomeType !== 'BINARY' && outcomeType !== 'MULTI')
         return { status: 'error', message: 'Invalid outcomeType' }
 

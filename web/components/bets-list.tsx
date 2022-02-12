@@ -18,7 +18,7 @@ import {
   Contract,
   getContractFromId,
   contractPath,
-  contractMetrics,
+  getBinaryProbPercent,
 } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
@@ -159,7 +159,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
   const { resolution } = contract
 
   const [collapsed, setCollapsed] = useState(true)
-  const { probPercent } = contractMetrics(contract)
+  const probPercent = getBinaryProbPercent(contract)
   return (
     <div
       tabIndex={0}
