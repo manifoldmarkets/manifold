@@ -3,7 +3,7 @@ import { getProbability } from './calculate'
 import { Contract } from './contract'
 import { User } from './user'
 
-export const PHANTOM_ANTE = 100
+export const PHANTOM_ANTE = 0.001
 export const MINIMUM_ANTE = 10
 
 export const calcStartPool = (initialProbInt: number, ante = 0) => {
