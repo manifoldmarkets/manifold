@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
+import Textarea from 'react-expanding-textarea'
 
 import { OutcomeLabel } from './outcome-label'
 import {
@@ -37,7 +38,6 @@ import { useBetsWithoutAntes } from '../hooks/use-bets'
 import { Bet } from '../lib/firebase/bets'
 import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
-import Textarea from 'react-expanding-textarea'
 import { outcome } from '../../common/contract'
 import { fromNow } from '../lib/util/time'
 import BetRow from './bet-row'
@@ -204,7 +204,7 @@ function EditContract(props: {
   ) : (
     <Row>
       <button
-        className="btn btn-neutral btn-outline btn-sm mt-4"
+        className="btn btn-neutral btn-outline btn-xs mt-4"
         onClick={() => setEditing(true)}
       >
         {props.buttonText}

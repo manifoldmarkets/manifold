@@ -1,9 +1,10 @@
 import { Bet } from './bet'
 import { calculateShares, getProbability } from './calculate'
+import { calculateMultiShares, getMultiProbability } from './calculate-multi'
 import { Contract } from './contract'
 import { User } from './user'
 
-export const getNewBetInfo = (
+export const getNewBinaryBetInfo = (
   user: User,
   outcome: 'YES' | 'NO',
   amount: number,
@@ -37,6 +38,46 @@ export const getNewBetInfo = (
   const probAfter = getProbability(newTotalShares)
 
   const newBet: Bet = {
+    id: newBetId,
+    userId: user.id,
+    contractId: contract.id,
+    amount,
+    shares,
+    outcome,
+    probBefore,
+    probAfter,
+    createdTime: Date.now(),
+  }
+
+  const newBalance = user.balance - amount
+
+  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+}
+
+export const getNewMultiBetInfo = (
+  user: User,
+  outcome: string,
+  amount: number,
+  contract: Contract<'MULTI'>,
+  newBetId: string
+) => {
+  const { pool, totalShares, totalBets } = contract
+
+  const prevOutcomePool = pool[outcome] ?? 0
+  const newPool = { ...pool, outcome: prevOutcomePool + amount }
+
+  const shares = calculateMultiShares(contract.totalShares, amount, outcome)
+
+  const prevShares = totalShares[outcome] ?? 0
+  const newTotalShares = { ...totalShares, outcome: prevShares + shares }
+
+  const prevTotalBets = totalBets[outcome] ?? 0
+  const newTotalBets = { ...totalBets, outcome: prevTotalBets + amount }
+
+  const probBefore = getMultiProbability(totalShares, outcome)
+  const probAfter = getMultiProbability(newTotalShares, outcome)
+
+  const newBet: Bet<'MULTI'> = {
     id: newBetId,
     userId: user.id,
     contractId: contract.id,

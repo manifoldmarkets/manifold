@@ -3,29 +3,30 @@ import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
-import { getNewBinaryBetInfo } from '../../common/new-bet'
+import { getNewMultiBetInfo } from '../../common/new-bet'
+import { Answer } from '../../common/answer'
 
-export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
+export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
     data: {
-      amount: number
-      outcome: string
       contractId: string
+      amount: number
+      text: string
     },
     context
   ) => {
     const userId = context?.auth?.uid
     if (!userId) return { status: 'error', message: 'Not authorized' }
 
-    const { amount, outcome, contractId } = data
+    const { contractId, amount, text } = data
 
     if (amount <= 0 || isNaN(amount) || !isFinite(amount))
       return { status: 'error', message: 'Invalid amount' }
 
-    if (outcome !== 'YES' && outcome !== 'NO')
-      return { status: 'error', message: 'Invalid outcome' }
+    if (!text || typeof text !== 'string' || text.length > 1000)
+      return { status: 'error', message: 'Invalid text' }
 
-    // run as transaction to prevent race conditions
+    // Run as transaction to prevent race conditions.
     return await firestore.runTransaction(async (transaction) => {
       const userDoc = firestore.doc(`users/${userId}`)
       const userSnap = await transaction.get(userDoc)
@@ -40,18 +41,46 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       const contractSnap = await transaction.get(contractDoc)
       if (!contractSnap.exists)
         return { status: 'error', message: 'Invalid contract' }
-      const contract = contractSnap.data() as Contract
+      const contract = contractSnap.data() as Contract<'MULTI'>
+
+      if (
+        contract.outcomeType !== 'MULTI' ||
+        contract.outcomes !== 'FREE_ANSWER'
+      )
+        return {
+          status: 'error',
+          message: 'Requires a multi, free answer contract',
+        }
 
       const { closeTime } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
+
+      const newAnswerDoc = firestore
+        .collection(`contracts/${contractId}/answers`)
+        .doc()
+
+      const answerId = newAnswerDoc.id
+      const { username, name, avatarUrl } = user
+
+      const answer: Answer = {
+        id: answerId,
+        contractId,
+        createdTime: Date.now(),
+        userId: user.id,
+        username,
+        name,
+        avatarUrl,
+        text,
+      }
+      transaction.create(newAnswerDoc, answer)
 
       const newBetDoc = firestore
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
       const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
-        getNewBinaryBetInfo(user, outcome, amount, contract, newBetDoc.id)
+        getNewMultiBetInfo(user, answerId, amount, contract, newBetDoc.id)
 
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, {
@@ -61,7 +90,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       })
       transaction.update(userDoc, { balance: newBalance })
 
-      return { status: 'success', betId: newBetDoc.id }
+      return { status: 'success', answerId, betId: newBetDoc.id }
     })
   }
 )

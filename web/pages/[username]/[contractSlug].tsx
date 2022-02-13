@@ -26,6 +26,9 @@ import Custom404 from '../404'
 import { getFoldsByTags } from '../../lib/firebase/folds'
 import { Fold } from '../../../common/fold'
 import { useFoldsWithTags } from '../../hooks/use-fold'
+import { listAllAnswers } from '../../lib/firebase/answers'
+import { Answer } from '../../../common/answer'
+import { AnswersPanel } from '../../components/answers-panel'
 
 export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
@@ -36,9 +39,12 @@ export async function getStaticProps(props: {
 
   const foldsPromise = getFoldsByTags(contract?.tags ?? [])
 
-  const [bets, comments] = await Promise.all([
+  const [bets, comments, answers] = await Promise.all([
     contractId ? listAllBets(contractId) : [],
     contractId ? listAllComments(contractId) : [],
+    contractId && contract.outcomes === 'FREE_ANSWER'
+      ? listAllAnswers(contractId)
+      : [],
   ])
 
   const folds = await foldsPromise
@@ -50,6 +56,7 @@ export async function getStaticProps(props: {
       slug: contractSlug,
       bets,
       comments,
+      answers,
       folds,
     },
 
@@ -66,6 +73,7 @@ export default function ContractPage(props: {
   username: string
   bets: Bet[]
   comments: Comment[]
+  answers: Answer[]
   slug: string
   folds: Fold[]
 }) {
@@ -112,6 +120,10 @@ export default function ContractPage(props: {
             comments={comments ?? []}
             folds={folds}
           />
+
+          {contract.outcomes === 'FREE_ANSWER' && (
+            <AnswersPanel contract={contract as any} answers={props.answers} />
+          )}
           <BetsSection contract={contract} user={user ?? null} bets={bets} />
         </div>
 
@@ -140,6 +152,7 @@ function BetsSection(props: {
   bets: Bet[]
 }) {
   const { contract, user } = props
+  const isBinary = contract.outcomeType === 'BINARY'
   const bets = useBets(contract.id) ?? props.bets
 
   // Decending creation time.
@@ -152,13 +165,17 @@ function BetsSection(props: {
   return (
     <div>
       <Title className="px-2" text="Your trades" />
-      <MyBetsSummary
-        className="px-2"
-        contract={contract}
-        bets={userBets}
-        showMKT
-      />
-      <Spacer h={6} />
+      {isBinary && (
+        <>
+          <MyBetsSummary
+            className="px-2"
+            contract={contract}
+            bets={userBets}
+            showMKT
+          />
+          <Spacer h={6} />
+        </>
+      )}
       <ContractBetsTable contract={contract} bets={userBets} />
       <Spacer h={12} />
     </div>

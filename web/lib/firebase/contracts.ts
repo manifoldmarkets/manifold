@@ -49,7 +49,7 @@ export function getBinaryProbPercent(contract: Contract) {
   return probPercent
 }
 
-export function tradingAllowed(contract: Contract) {
+export function tradingAllowed(contract: Contract<'BINARY' | 'MULTI'>) {
   return (
     !contract.isResolved &&
     (!contract.closeTime || contract.closeTime > Date.now())
@@ -84,7 +84,9 @@ export async function getContractFromSlug(slug: string) {
   const q = query(contractCollection, where('slug', '==', slug))
   const snapshot = await getDocs(q)
 
-  return snapshot.empty ? undefined : (snapshot.docs[0].data() as Contract)
+  return snapshot.empty
+    ? undefined
+    : (snapshot.docs[0].data() as Contract<'BINARY' | 'MULTI'>)
 }
 
 export async function deleteContract(contractId: string) {

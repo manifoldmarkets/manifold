@@ -44,6 +44,14 @@ service cloud.firestore {
       allow read;
     }
 
+    match /contracts/{contractId}/answers/{answerId} {
+      allow read;
+    }
+
+    match /{somePath=**}/answers/{answerId} {
+      allow read;
+    }
+
     match /folds/{foldId} {
       allow read;
       allow update, delete: if request.auth.uid == resource.data.curatorId;
