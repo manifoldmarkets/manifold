@@ -140,7 +140,8 @@ export function calculateStandardPayout(
   const total = totalShares[outcome] - phantomShares[outcome]
 
   const winnings = (shares / total) * pool
-  return deductFees(amount, winnings)
+  // profit can be negative if using phantom shares
+  return amount + (1 - FEES) * Math.max(0, winnings - amount)
 }
 
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
