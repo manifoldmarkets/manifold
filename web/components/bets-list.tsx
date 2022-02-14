@@ -129,7 +129,7 @@ export function BetsList(props: { user: User }) {
     ((currentBetsValue - currentInvestment) / currentInvestment) * 100
 
   return (
-    <Col className="mt-6 gap-6">
+    <Col className="mt-6 gap-4 sm:gap-6">
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
@@ -190,9 +190,9 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
       )}
       onClick={() => setCollapsed((collapsed) => !collapsed)}
     >
-      <Row className="flex-wrap gap-4">
+      <Row className="flex-wrap gap-2">
         <Col className="flex-[2] gap-1">
-          <Row className="mr-6">
+          <Row className="mr-2 max-w-lg">
             <Link href={contractPath(contract)}>
               <a
                 className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
@@ -226,7 +226,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
         </Col>
 
         <MyBetsSummary
-          className="mr-5 flex-1 justify-end sm:mr-8"
+          className="mr-5 justify-end sm:mr-8"
           contract={contract}
           bets={bets}
           onlyMKT
