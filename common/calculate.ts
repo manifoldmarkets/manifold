@@ -1,39 +1,51 @@
+import _ from 'lodash'
 import { Bet } from './bet'
 import { Contract } from './contract'
 import { FEES } from './fees'
 
 export function getProbability(totalShares: { YES: number; NO: number }) {
-  const { YES: y, NO: n } = totalShares
-  return y ** 2 / (y ** 2 + n ** 2)
+  return getOutcomeProbability(totalShares, 'YES')
+}
+
+export function getOutcomeProbability(
+  totalShares: {
+    [outcome: string]: number
+  },
+  outcome: string
+) {
+  const squareSum = _.sumBy(Object.values(totalShares), (shares) => shares ** 2)
+  const shares = totalShares[outcome] ?? 0
+  return shares ** 2 / squareSum
 }
 
 export function getProbabilityAfterBet(
-  totalShares: { YES: number; NO: number },
-  outcome: 'YES' | 'NO',
+  totalShares: {
+    [outcome: string]: number
+  },
+  outcome: string,
   bet: number
 ) {
   const shares = calculateShares(totalShares, bet, outcome)
 
-  const [YES, NO] =
-    outcome === 'YES'
-      ? [totalShares.YES + shares, totalShares.NO]
-      : [totalShares.YES, totalShares.NO + shares]
+  const prevShares = totalShares[outcome] ?? 0
+  const newTotalShares = { ...totalShares, outcome: prevShares + shares }
 
-  return getProbability({ YES, NO })
+  return getOutcomeProbability(newTotalShares, outcome)
 }
 
 export function calculateShares(
-  totalShares: { YES: number; NO: number },
+  totalShares: {
+    [outcome: string]: number
+  },
   bet: number,
-  betChoice: 'YES' | 'NO'
+  betChoice: string
 ) {
-  const [yesShares, noShares] = [totalShares.YES, totalShares.NO]
+  const squareSum = _.sumBy(Object.values(totalShares), (shares) => shares ** 2)
+  const shares = totalShares[betChoice] ?? 0
 
-  const c = 2 * bet * Math.sqrt(yesShares ** 2 + noShares ** 2)
+  const c = 2 * bet * Math.sqrt(squareSum)
 
-  return betChoice === 'YES'
-    ? Math.sqrt(bet ** 2 + yesShares ** 2 + c) - yesShares
-    : Math.sqrt(bet ** 2 + noShares ** 2 + c) - noShares
+  return Math.sqrt(bet ** 2 + shares ** 2 + c) - shares
 }
 
 export function calculateEstimatedWinnings(
@@ -128,15 +140,15 @@ export function calculateCancelPayout(contract: Contract, bet: Bet) {
 export function calculateStandardPayout(
   contract: Contract,
   bet: Bet,
-  outcome: 'YES' | 'NO'
+  outcome: string
 ) {
   const { amount, outcome: betOutcome, shares } = bet
   if (betOutcome !== outcome) return 0
 
   const { totalShares, totalBets, phantomShares } = contract
-  if (totalShares[outcome] === 0) return 0
+  if (!totalShares[outcome]) return 0
 
-  const truePool = contract.pool.YES + contract.pool.NO
+  const truePool = _.sum(Object.values(totalShares))
 
   if (totalBets[outcome] >= truePool)
     return (amount / totalBets[outcome]) * truePool
