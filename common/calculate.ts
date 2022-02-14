@@ -116,7 +116,9 @@ export function calculateShareValue(contract: Contract, bet: Bet) {
 }
 
 export function calculateSaleAmount(contract: Contract, bet: Bet) {
-  return (1 - FEES) * calculateShareValue(contract, bet)
+  const { amount } = bet
+  const winnings = calculateShareValue(contract, bet)
+  return deductFees(amount, winnings)
 }
 
 export function calculatePayout(
@@ -145,19 +147,16 @@ export function calculateStandardPayout(
   const { amount, outcome: betOutcome, shares } = bet
   if (betOutcome !== outcome) return 0
 
-  const { totalShares, totalBets, phantomShares } = contract
+  const { totalShares, phantomShares } = contract
   if (!totalShares[outcome]) return 0
 
-  const truePool = _.sum(Object.values(totalShares))
+  const pool = _.sum(Object.values(totalShares))
 
-  if (totalBets[outcome] >= truePool)
-    return (amount / totalBets[outcome]) * truePool
+  const total = totalShares[outcome] - phantomShares[outcome]
 
-  const total =
-    totalShares[outcome] - phantomShares[outcome] - totalBets[outcome]
-  const winningsPool = truePool - totalBets[outcome]
-
-  return amount + (1 - FEES) * ((shares - amount) / total) * winningsPool
+  const winnings = (shares / total) * pool
+  // profit can be negative if using phantom shares
+  return amount + (1 - FEES) * Math.max(0, winnings - amount)
 }
 
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
@@ -191,35 +190,18 @@ function calculateMktPayout(contract: Contract, bet: Bet) {
       ? contract.resolutionProbability
       : getProbability(contract.totalShares)
 
-  const weightedTotal =
-    p * contract.totalBets.YES + (1 - p) * contract.totalBets.NO
-
-  const truePool = contract.pool.YES + contract.pool.NO
-
-  const betP = bet.outcome === 'YES' ? p : 1 - p
-
-  if (weightedTotal >= truePool) {
-    return ((betP * bet.amount) / weightedTotal) * truePool
-  }
-
-  const winningsPool = truePool - weightedTotal
+  const pool = contract.pool.YES + contract.pool.NO
 
   const weightedShareTotal =
-    p *
-      (contract.totalShares.YES -
-        contract.phantomShares.YES -
-        contract.totalBets.YES) +
-    (1 - p) *
-      (contract.totalShares.NO -
-        contract.phantomShares.NO -
-        contract.totalBets.NO)
+    p * (contract.totalShares.YES - contract.phantomShares.YES) +
+    (1 - p) * (contract.totalShares.NO - contract.phantomShares.NO)
 
-  return (
-    betP * bet.amount +
-    (1 - FEES) *
-      ((betP * (bet.shares - bet.amount)) / weightedShareTotal) *
-      winningsPool
-  )
+  const { outcome, amount, shares } = bet
+
+  const betP = outcome === 'YES' ? p : 1 - p
+  const winnings = ((betP * shares) / weightedShareTotal) * pool
+
+  return deductFees(amount, winnings)
 }
 
 export function resolvedPayout(contract: Contract, bet: Bet) {
@@ -235,4 +217,10 @@ export function currentValue(contract: Contract, bet: Bet) {
   const noPayout = calculatePayout(contract, bet, 'NO')
 
   return prob * yesPayout + (1 - prob) * noPayout
+}
+
+export const deductFees = (betAmount: number, winnings: number) => {
+  return winnings > betAmount
+    ? betAmount + (1 - FEES) * (winnings - betAmount)
+    : winnings
 }

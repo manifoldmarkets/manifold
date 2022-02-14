@@ -1,5 +1,5 @@
 import { Bet } from './bet'
-import { calculateShareValue, getProbability } from './calculate'
+import { calculateShareValue, deductFees, getProbability } from './calculate'
 import { Contract } from './contract'
 import { CREATOR_FEE, FEES } from './fees'
 import { User } from './user'
@@ -36,8 +36,9 @@ export const getSellBetInfo = (
   const probBefore = getProbability(contract.totalShares)
   const probAfter = getProbability(newTotalShares)
 
-  const creatorFee = CREATOR_FEE * adjShareValue
-  const saleAmount = (1 - FEES) * adjShareValue
+  const profit = adjShareValue - amount
+  const creatorFee = CREATOR_FEE * Math.max(0, profit)
+  const saleAmount = deductFees(amount, adjShareValue)
 
   console.log(
     'SELL M$',

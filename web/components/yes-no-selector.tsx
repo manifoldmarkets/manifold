@@ -48,47 +48,44 @@ export function YesNoCancelSelector(props: {
   className?: string
   btnClassName?: string
 }) {
-  const { selected, onSelect, className } = props
+  const { selected, onSelect } = props
 
   const btnClassName = clsx('px-6 flex-1', props.btnClassName)
 
   return (
-    <Col>
-      <Row className={clsx('w-full space-x-3', className)}>
-        <Button
-          color={selected === 'YES' ? 'green' : 'gray'}
-          onClick={() => onSelect('YES')}
-          className={btnClassName}
-        >
-          YES
-        </Button>
+    <Col className="gap-2">
+      {/* Should ideally use a radio group instead of buttons */}
+      <Button
+        color={selected === 'YES' ? 'green' : 'gray'}
+        onClick={() => onSelect('YES')}
+        className={btnClassName}
+      >
+        YES
+      </Button>
 
-        <Button
-          color={selected === 'NO' ? 'red' : 'gray'}
-          onClick={() => onSelect('NO')}
-          className={btnClassName}
-        >
-          NO
-        </Button>
-      </Row>
+      <Button
+        color={selected === 'NO' ? 'red' : 'gray'}
+        onClick={() => onSelect('NO')}
+        className={btnClassName}
+      >
+        NO
+      </Button>
 
-      <Row className={clsx('w-full space-x-3', className)}>
-        <Button
-          color={selected === 'MKT' ? 'blue' : 'gray'}
-          onClick={() => onSelect('MKT')}
-          className={clsx(btnClassName, 'btn-sm')}
-        >
-          PROB
-        </Button>
+      <Button
+        color={selected === 'MKT' ? 'blue' : 'gray'}
+        onClick={() => onSelect('MKT')}
+        className={clsx(btnClassName, 'btn-sm')}
+      >
+        PROB
+      </Button>
 
-        <Button
-          color={selected === 'CANCEL' ? 'yellow' : 'gray'}
-          onClick={() => onSelect('CANCEL')}
-          className={clsx(btnClassName, 'btn-sm')}
-        >
-          N/A
-        </Button>
-      </Row>
+      <Button
+        color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+        onClick={() => onSelect('CANCEL')}
+        className={clsx(btnClassName, 'btn-sm')}
+      >
+        N/A
+      </Button>
     </Col>
   )
 }

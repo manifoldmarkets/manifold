@@ -30,7 +30,9 @@ export const resolveMarket = functions
 
       if (
         probabilityInt !== undefined &&
-        (probabilityInt < 1 || probabilityInt > 99 || !isFinite(probabilityInt))
+        (probabilityInt < 0 ||
+          probabilityInt > 100 ||
+          !isFinite(probabilityInt))
       )
         return { status: 'error', message: 'Invalid probability' }
 

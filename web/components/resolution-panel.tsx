@@ -64,9 +64,9 @@ export function ResolutionPanel(props: {
 
   return (
     <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
-      <Title className="mt-0" text="Your market" />
+      <Title className="mt-0" text="Resolve market" />
 
-      <div className="pt-2 pb-1 text-sm text-gray-500">Resolve outcome</div>
+      <div className="pt-2 pb-1 text-sm text-gray-500">Outcome</div>
 
       <YesNoCancelSelector
         className="mx-auto my-2"
@@ -80,20 +80,30 @@ export function ResolutionPanel(props: {
       <div>
         {outcome === 'YES' ? (
           <>
-            Winnings will be paid out to YES bettors. You earn{' '}
-            {CREATOR_FEE * 100}% of trader profits.
+            Winnings will be paid out to YES bettors.
+            <br />
+            <br />
+            You earn {CREATOR_FEE * 100}% of trader profits.
           </>
         ) : outcome === 'NO' ? (
           <>
-            Winnings will be paid out to NO bettors. You earn{' '}
-            {CREATOR_FEE * 100}% of trader profits.
+            Winnings will be paid out to NO bettors.
+            <br />
+            <br />
+            You earn {CREATOR_FEE * 100}% of trader profits.
           </>
         ) : outcome === 'CANCEL' ? (
           <>The pool will be returned to traders with no fees.</>
         ) : outcome === 'MKT' ? (
           <>
-            Traders will be paid out at the probability you specify. You earn{' '}
-            {CREATOR_FEE * 100}% of trader profits.
+            Traders will be paid out at the probability you specify:
+            <Spacer h={2} />
+            <ProbabilitySelector
+              probabilityInt={Math.round(prob)}
+              setProbabilityInt={setProb}
+            />
+            <Spacer h={2} />
+            You earn {CREATOR_FEE * 100}% of trader profits.
           </>
         ) : (
           <>Resolving this market will immediately pay out traders.</>
@@ -123,20 +133,7 @@ export function ResolutionPanel(props: {
         }}
         onSubmit={resolve}
       >
-        {outcome === 'MKT' ? (
-          <>
-            <p className="mb-4">
-              What probability would you like to resolve the market to?
-            </p>
-
-            <ProbabilitySelector
-              probabilityInt={Math.round(prob)}
-              setProbabilityInt={setProb}
-            />
-          </>
-        ) : (
-          <p>Are you sure you want to resolve this market?</p>
-        )}
+        <p>Are you sure you want to resolve this market?</p>
       </ConfirmationButton>
     </Col>
   )
