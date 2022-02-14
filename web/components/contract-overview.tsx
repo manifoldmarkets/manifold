@@ -28,9 +28,10 @@ export const ContractOverview = (props: {
   bets: Bet[]
   comments: Comment[]
   folds: Fold[]
+  children?: any
   className?: string
 }) => {
-  const { contract, bets, comments, folds, className } = props
+  const { contract, bets, comments, folds, children, className } = props
   const { question, resolution, creatorId, outcomeType } = contract
 
   const user = useUser()
@@ -84,6 +85,8 @@ export const ContractOverview = (props: {
       <Spacer h={4} />
 
       {isBinary && <ContractProbGraph contract={contract} bets={bets} />}
+
+      {children}
 
       <Row className="mt-6 ml-4 hidden items-center justify-between gap-4 sm:flex">
         {folds.length === 0 ? (

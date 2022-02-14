@@ -119,11 +119,15 @@ export default function ContractPage(props: {
             bets={bets ?? []}
             comments={comments ?? []}
             folds={folds}
-          />
+          >
+            {contract.outcomes === 'FREE_ANSWER' && (
+              <AnswersPanel
+                contract={contract as any}
+                answers={props.answers}
+              />
+            )}
+          </ContractOverview>
 
-          {contract.outcomes === 'FREE_ANSWER' && (
-            <AnswersPanel contract={contract as any} answers={props.answers} />
-          )}
           <BetsSection contract={contract} user={user ?? null} bets={bets} />
         </div>
 

@@ -7,6 +7,12 @@ import { Contract } from '../../common/contract'
 import { AmountInput } from './amount-input'
 import { Col } from './layout/col'
 import { createAnswer } from '../lib/firebase/api-call'
+import { Row } from './layout/row'
+import { Avatar } from './avatar'
+import { SiteLink } from './site-link'
+import { DateTimeTooltip } from './datetime-tooltip'
+import dayjs from 'dayjs'
+import { BuyButton } from './yes-no-selector'
 
 export function AnswersPanel(props: {
   contract: Contract<'MULTI'>
@@ -15,11 +21,48 @@ export function AnswersPanel(props: {
   const { contract, answers } = props
 
   return (
-    <Col>
-      <CreateAnswerInput contract={contract} />
+    <Col className="gap-4">
       {answers.map((answer) => (
-        <div>{answer.text}</div>
+        <AnswerItem key={answer.id} answer={answer} contract={contract} />
       ))}
+      <CreateAnswerInput contract={contract} />
+    </Col>
+  )
+}
+
+function AnswerItem(props: { answer: Answer; contract: Contract<'MULTI'> }) {
+  const { answer, contract } = props
+  const { username, avatarUrl, name, createdTime } = answer
+
+  const createdDate = dayjs(createdTime).format('MMM D')
+
+  return (
+    <Col className="p-2 sm:flex-row">
+      <Col className="gap-2 flex-1">
+        <div>{answer.text}</div>
+
+        <Row className="text-gray-500 text-sm gap-2 items-center">
+          <SiteLink className="relative" href={`/${username}`}>
+            <Row className="items-center gap-2">
+              <Avatar avatarUrl={avatarUrl} size={6} />
+              <div className="truncate">{name}</div>
+            </Row>
+          </SiteLink>
+
+          <div className="">•</div>
+
+          <div className="whitespace-nowrap">
+            <DateTimeTooltip text="" time={contract.createdTime}>
+              {createdDate}
+            </DateTimeTooltip>
+          </div>
+        </Row>
+      </Col>
+
+      <BuyButton
+        className="justify-end self-end flex-initial"
+        onClick={() => {}}
+      />
     </Col>
   )
 }
@@ -55,40 +98,40 @@ function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
   }
 
   return (
-    <Col className="gap-4">
-      <div className="text-xl text-indigo-700">Add your answer</div>
-      <Textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        className="textarea textarea-bordered w-full"
-        placeholder="Type your answer..."
-        rows={1}
-        maxLength={10000}
-      />
-      <Col className="gap-2 justify-between self-end sm:flex-row">
-        {text && (
-          <Col className="gap-2">
-            <div className="text-gray-500 text-sm">Bet amount</div>
-            <AmountInput
-              amount={betAmount}
-              onChange={setBetAmount}
-              error={amountError}
-              setError={setAmountError}
-              minimumAmount={10}
-              disabled={isSubmitting}
-            />
-          </Col>
-        )}
-        <button
-          className={clsx(
-            'btn btn-sm self-start',
-            canSubmit ? 'btn-outline' : 'btn-disabled'
-          )}
-          disabled={!canSubmit}
-          onClick={submitAnswer}
-        >
-          Submit answer
-        </button>
+    <Col className="gap-4 mt-2">
+      <Col className="sm:flex-row gap-8">
+        <Col className="flex-1 gap-2">
+          <div className="text-gray-500 text-sm mb-1">Add your answer</div>
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="textarea textarea-bordered w-full"
+            placeholder="Type your answer..."
+            rows={1}
+            maxLength={10000}
+          />
+          <button
+            className={clsx(
+              'btn btn-sm self-end mt-2',
+              canSubmit ? 'btn-outline' : 'btn-disabled'
+            )}
+            disabled={!canSubmit}
+            onClick={submitAnswer}
+          >
+            Submit answer & bet
+          </button>
+        </Col>
+        <Col className={clsx('gap-2', text ? 'visible' : 'invisible')}>
+          <div className="text-gray-500 text-sm">Bet amount</div>
+          <AmountInput
+            amount={betAmount}
+            onChange={setBetAmount}
+            error={amountError}
+            setError={setAmountError}
+            minimumAmount={10}
+            disabled={isSubmitting}
+          />
+        </Col>
       </Col>
     </Col>
   )
