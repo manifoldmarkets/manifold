@@ -104,7 +104,9 @@ export function calculateShareValue(contract: Contract, bet: Bet) {
 }
 
 export function calculateSaleAmount(contract: Contract, bet: Bet) {
-  return (1 - FEES) * calculateShareValue(contract, bet)
+  const { amount } = bet
+  const winnings = calculateShareValue(contract, bet)
+  return deductFees(amount, winnings)
 }
 
 export function calculatePayout(
