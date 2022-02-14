@@ -123,33 +123,34 @@ export function BetsList(props: { user: User }) {
 
   const totalPortfolio = currentBetsValue + user.balance
 
-  const pnl = totalPortfolio - user.totalDeposits
-  const totalReturn =
-    (pnl > 0 ? '+' : '') + ((pnl / user.totalDeposits) * 100).toFixed() + '%'
-
-  const color = pnl === 0 ? '' : pnl > 0 ? 'text-green-500' : 'text-red-500'
+  const totalPnl = totalPortfolio - user.totalDeposits
+  const totalProfit = (totalPnl / user.totalDeposits) * 100
+  const investedProfit =
+    ((currentBetsValue - currentInvestment) / currentInvestment) * 100
 
   return (
     <Col className="mt-6 gap-6">
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
-            <div className="text-sm text-gray-500">Portfolio value</div>
-            <div>{formatMoney(totalPortfolio)}</div>
-          </Col>
-          <Col>
-            <div className="text-sm text-gray-500">Total profits & losses</div>
-            <div>
-              {formatMoney(pnl)} (<span className={color}>{totalReturn}</span>)
+            <div className="text-sm text-gray-500">Invested</div>
+            <div className="text-lg">
+              {formatMoney(currentBetsValue)}{' '}
+              <ProfitBadge profitPercent={investedProfit} />
             </div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">Currently invested</div>
-            <div>{formatMoney(currentInvestment)}</div>
+            <div className="text-sm text-gray-500">Balance</div>
+            <div className="whitespace-nowrap text-lg">
+              {formatMoney(user.balance)}{' '}
+            </div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">Current market value</div>
-            <div>{formatMoney(currentBetsValue)}</div>
+            <div className="text-sm text-gray-500">Total portfolio</div>
+            <div className="text-lg">
+              {formatMoney(totalPortfolio)}{' '}
+              <ProfitBadge profitPercent={totalProfit} />
+            </div>
           </Col>
         </Row>
 
@@ -282,21 +283,15 @@ export function MyBetsSummary(props: {
 
   const currentValue = resolution ? betsPayout : marketWinnings
   const pnl = currentValue - betsTotal
-  const totalReturn =
-    betsTotal === 0
-      ? '0%'
-      : (pnl > 0 ? '+' : '') + ((pnl / betsTotal) * 100).toFixed() + '%'
+  const profit = (pnl / betsTotal) * 100
 
-  const color = pnl === 0 ? '' : pnl > 0 ? 'text-green-500' : 'text-red-500'
-
-  const mktCol = (
+  const valueCol = (
     <Col>
-      <div className="whitespace-nowrap text-sm text-gray-500">
-        Market value
+      <div className="whitespace-nowrap text-right text-lg">
+        {formatMoney(currentValue)}
       </div>
-      <div className="whitespace-nowrap">
-        {formatMoney(marketWinnings)} (
-        <span className={color}>{totalReturn}</span>)
+      <div className="text-right">
+        <ProfitBadge profitPercent={profit} />
       </div>
     </Col>
   )
@@ -305,7 +300,7 @@ export function MyBetsSummary(props: {
     <Col>
       <div className="text-sm text-gray-500">Payout</div>
       <div className="whitespace-nowrap">
-        {formatMoney(betsPayout)} (<span className={color}>{totalReturn}</span>)
+        {formatMoney(betsPayout)} <ProfitBadge profitPercent={profit} />
       </div>
     </Col>
   )
@@ -319,7 +314,7 @@ export function MyBetsSummary(props: {
       )}
     >
       {onlyMKT ? (
-        <Row className="gap-4 sm:gap-6">{resolution ? payoutCol : mktCol}</Row>
+        <Row className="gap-4 sm:gap-6">{valueCol}</Row>
       ) : (
         <Row className="gap-4 sm:gap-6">
           <Col>
@@ -494,5 +489,25 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
         {formatMoney(calculateSaleAmount(contract, bet))}?
       </div>
     </ConfirmationButton>
+  )
+}
+
+function ProfitBadge(props: { profitPercent: number }) {
+  const { profitPercent } = props
+  if (!profitPercent) return null
+  const colors =
+    profitPercent > 0
+      ? 'bg-green-100 text-green-800'
+      : 'bg-red-100 text-red-800'
+
+  return (
+    <span
+      className={clsx(
+        'ml-1 inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium',
+        colors
+      )}
+    >
+      {(profitPercent > 0 ? '+' : '') + profitPercent.toFixed(1) + '%'}
+    </span>
   )
 }
