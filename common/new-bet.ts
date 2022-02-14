@@ -67,15 +67,15 @@ export const getNewMultiBetInfo = (
   const { pool, totalShares, totalBets } = contract
 
   const prevOutcomePool = pool[outcome] ?? 0
-  const newPool = { ...pool, outcome: prevOutcomePool + amount }
+  const newPool = { ...pool, [outcome]: prevOutcomePool + amount }
 
   const shares = calculateShares(contract.totalShares, amount, outcome)
 
   const prevShares = totalShares[outcome] ?? 0
-  const newTotalShares = { ...totalShares, outcome: prevShares + shares }
+  const newTotalShares = { ...totalShares, [outcome]: prevShares + shares }
 
   const prevTotalBets = totalBets[outcome] ?? 0
-  const newTotalBets = { ...totalBets, outcome: prevTotalBets + amount }
+  const newTotalBets = { ...totalBets, [outcome]: prevTotalBets + amount }
 
   const probBefore = getOutcomeProbability(totalShares, outcome)
   const probAfter = getOutcomeProbability(newTotalShares, outcome)
