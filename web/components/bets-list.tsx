@@ -121,16 +121,32 @@ export function BetsList(props: { user: User }) {
     (c) => contractsCurrentValue[c.id]
   )
 
+  const totalPortfolio = currentBetsValue + user.balance
+
+  const pnl = totalPortfolio - user.totalDeposits
+  const totalReturn =
+    (pnl > 0 ? '+' : '') + ((pnl / user.totalDeposits) * 100).toFixed() + '%'
+
   return (
     <Col className="mt-6 gap-6">
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
+            <div className="text-sm text-gray-500">Total portfolio</div>
+            <div>{formatMoney(totalPortfolio)}</div>
+          </Col>
+          <Col>
+            <div className="text-sm text-gray-500">Total profits & losses</div>
+            <div>
+              {formatMoney(pnl)} ({totalReturn})
+            </div>
+          </Col>
+          <Col>
             <div className="text-sm text-gray-500">Currently invested</div>
             <div>{formatMoney(currentInvestment)}</div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">Current value</div>
+            <div className="text-sm text-gray-500">Current market value</div>
             <div>{formatMoney(currentBetsValue)}</div>
           </Col>
         </Row>
