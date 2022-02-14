@@ -25,6 +25,7 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const tags = parseWordsAsTags(toCamelCase(name) + ' ' + otherTags)
+  const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
   const saveDisabled =
     name === fold.name &&
@@ -38,6 +39,7 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
       name,
       about,
       tags,
+      lowercaseTags,
     })
 
     setIsSubmitting(false)
