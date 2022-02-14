@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Page } from '../../components/page'
 import { Title } from '../../components/title'
 // From https://github.com/lynn/hello-wordl
@@ -11,15 +12,10 @@ export default function Wordle() {
   // const dict = dictionary.filter((word) => word.length === WORD_LENGTH)
   const words = targets.filter((word) => word.length === WORD_LENGTH)
 
-  const pastGuesses: PastGuess[] = [
-    // From https://hellowordl.net/?challenge=aGFyZHk
-    // { guess: 'sheep', result: 'BYBBB' },
-    // { guess: 'butch', result: 'BBBBY' },
-    // { guess: 'hydra', result: 'GYYYY' },
-    // Answer: hardy
-    { guess: 'snowy', result: 'BBBYB' },
-    { guess: 'wheel', result: 'GYBBB' },
-  ]
+  const [input, setInput] = useState('')
+
+  const pastGuesses: PastGuess[] = parsePastGuesses(input)
+  const placeholder = 'e.g.\nstage BBYBB\nlucre YYGYY'
 
   const valids = validHardMode(words, pastGuesses)
 
@@ -34,7 +30,12 @@ export default function Wordle() {
         Actually for{' '}
         <a href="https://hellowordl.net/">https://hellowordl.net/</a>
         <p>Past guesses:</p>
-        <pre>{JSON.stringify(pastGuesses, null, 2)}</pre>
+        <textarea
+          className="h-32 w-full p-2"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={placeholder}
+        />
         <br />
         <br />
         <p className="text-black">
@@ -98,11 +99,17 @@ function validHardMode(wordlist: string[], pastGuesses: PastGuess[]) {
 }
 
 function parsePastGuesses(pastGuesses: string) {
-  return pastGuesses.split('\n').map((pg) => {
-    const [guess, result] = pg.split(', ')
-    return { guess, result }
-  })
+  return pastGuesses
+    .split('\n')
+    .map((pg) => {
+      const [guess, result] = pg.split(' ')
+      return { guess, result }
+    })
+    .filter(({ guess, result }) => guess && result)
 }
 
 // Bad target words: witan, sedum
 // TODO: Maybe just use canonical Wordle dictionaries
+
+// DEBUG:     { guess: 'lucre', result: 'YYGYY' }
+// Should produce: ulcer
