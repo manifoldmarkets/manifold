@@ -21,10 +21,6 @@ export function CancelLabel() {
   return <span className="text-yellow-400">N/A</span>
 }
 
-export function MarketLabel() {
-  return <span className="text-blue-400">MKT</span>
-}
-
 export function ProbLabel() {
   return <span className="text-blue-400">PROB</span>
 }

@@ -23,13 +23,15 @@ import {
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import {
+  calculateCancelPayout,
   calculatePayout,
   calculateSaleAmount,
+  getProbability,
   resolvedPayout,
 } from '../../common/calculate'
 import { sellBet } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
-import { OutcomeLabel, YesLabel, NoLabel, MarketLabel } from './outcome-label'
+import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 
 type BetSort = 'newest' | 'profit'
 
@@ -231,6 +233,7 @@ export function MyBetsSummary(props: {
 }) {
   const { bets, contract, showMKT, className } = props
   const { resolution } = contract
+  calculateCancelPayout
 
   const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
   const betsTotal = _.sumBy(excludeSales, (bet) => bet.amount)
@@ -284,7 +287,10 @@ export function MyBetsSummary(props: {
           {showMKT && (
             <Col>
               <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if <MarketLabel />
+                Payout at{' '}
+                <span className="text-blue-400">
+                  {formatPercent(getProbability(contract.totalShares))}
+                </span>
               </div>
               <div className="whitespace-nowrap">
                 {formatMoney(marketWinnings)}
