@@ -1,14 +1,14 @@
 import { Page } from '../components/page'
-import { Grid } from 'gridjs-react'
+import { Grid, _ as r } from 'gridjs-react'
 import 'gridjs/dist/theme/mermaid.css'
 import { html } from 'gridjs'
 import dayjs from 'dayjs'
 import { usePrivateUsers, useUsers } from '../hooks/use-users'
-import { useUser } from '../hooks/use-user'
 import Custom404 from './404'
 import { useContracts } from '../hooks/use-contracts'
 import _ from 'lodash'
 import { useAdmin } from '../hooks/use-admin'
+import { contractPath } from '../lib/firebase/contracts'
 
 function avatarHtml(avatarUrl: string) {
   return `<img
@@ -111,6 +111,20 @@ function ContractsTable() {
   let contracts = useContracts() ?? []
   // Sort users by createdTime descending, by default
   contracts.sort((a, b) => b.createdTime - a.createdTime)
+  // Render a clickable question. See https://gridjs.io/docs/examples/react-cells for docs
+  contracts.map((contract) => {
+    // @ts-ignore
+    contract.questionLink = r(
+      <div className="w-60">
+        <a
+          className="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+          href={contractPath(contract)}
+        >
+          {contract.question}
+        </a>
+      </div>
+    )
+  })
 
   return (
     <Grid
@@ -126,9 +140,8 @@ function ContractsTable() {
               href="/${cell}">@${cell}</a>`),
         },
         {
-          id: 'question',
+          id: 'questionLink',
           name: 'Question',
-          formatter: (cell) => html(`<div class="w-60">${cell}</div>`),
         },
         {
           id: 'volume24Hours',
