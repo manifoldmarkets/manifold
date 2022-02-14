@@ -340,11 +340,7 @@ function FeedQuestion(props: { contract: Contract }) {
           >
             {question}
           </SiteLink>
-          <ResolutionOrChance
-            className="items-center"
-            resolution={resolution}
-            probPercent={probPercent}
-          />
+          <ResolutionOrChance className="items-center" contract={contract} />
         </Col>
         <TruncatedComment
           comment={contract.description}

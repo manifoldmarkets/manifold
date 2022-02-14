@@ -57,8 +57,7 @@ export const ContractOverview = (props: {
           <Row className="items-center justify-between gap-4">
             <ResolutionOrChance
               className="md:hidden"
-              resolution={resolution}
-              probPercent={probPercent}
+              contract={contract}
               large
             />
 
@@ -75,12 +74,7 @@ export const ContractOverview = (props: {
         </Col>
 
         <Col className="hidden items-end justify-between md:flex">
-          <ResolutionOrChance
-            className="items-end"
-            resolution={resolution}
-            probPercent={probPercent}
-            large
-          />
+          <ResolutionOrChance className="items-end" contract={contract} large />
         </Col>
       </Row>
 

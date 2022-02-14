@@ -48,11 +48,7 @@ export function ContractCard(props: {
 
         <Row className="justify-between gap-4">
           <p className="font-medium text-indigo-700">{question}</p>
-          <ResolutionOrChance
-            className="items-center"
-            resolution={resolution}
-            probPercent={probPercent}
-          />
+          <ResolutionOrChance className="items-center" contract={contract} />
         </Row>
       </div>
     </div>
@@ -60,12 +56,14 @@ export function ContractCard(props: {
 }
 
 export function ResolutionOrChance(props: {
-  resolution?: 'YES' | 'NO' | 'MKT' | 'CANCEL'
-  probPercent: string
+  contract: Contract
   large?: boolean
   className?: string
 }) {
-  const { resolution, probPercent, large, className } = props
+  const { contract, large, className } = props
+  const { resolution } = contract
+  const { probPercent } = contractMetrics(contract)
+  const marketClosed = (contract.closeTime || Infinity) < Date.now()
 
   const resolutionColor = {
     YES: 'text-primary',
@@ -74,6 +72,8 @@ export function ResolutionOrChance(props: {
     CANCEL: 'text-yellow-400',
     '': '', // Empty if unresolved
   }[resolution || '']
+
+  const probColor = marketClosed ? 'text-gray-400' : 'text-primary'
 
   const resolutionText = {
     YES: 'YES',
@@ -96,10 +96,8 @@ export function ResolutionOrChance(props: {
         </>
       ) : (
         <>
-          <div className="text-primary">{probPercent}</div>
-          <div
-            className={clsx('text-primary', large ? 'text-xl' : 'text-base')}
-          >
+          <div className={probColor}>{probPercent}</div>
+          <div className={clsx(probColor, large ? 'text-xl' : 'text-base')}>
             chance
           </div>
         </>
