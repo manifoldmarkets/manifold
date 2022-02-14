@@ -127,18 +127,20 @@ export function BetsList(props: { user: User }) {
   const totalReturn =
     (pnl > 0 ? '+' : '') + ((pnl / user.totalDeposits) * 100).toFixed() + '%'
 
+  const color = pnl === 0 ? '' : pnl > 0 ? 'text-green-500' : 'text-red-500'
+
   return (
     <Col className="mt-6 gap-6">
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
-            <div className="text-sm text-gray-500">Total portfolio</div>
+            <div className="text-sm text-gray-500">Portfolio value</div>
             <div>{formatMoney(totalPortfolio)}</div>
           </Col>
           <Col>
             <div className="text-sm text-gray-500">Total profits & losses</div>
             <div>
-              {formatMoney(pnl)} ({totalReturn})
+              {formatMoney(pnl)} (<span className={color}>{totalReturn}</span>)
             </div>
           </Col>
           <Col>
@@ -226,6 +228,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
           className="mr-5 flex-1 justify-end sm:mr-8"
           contract={contract}
           bets={bets}
+          onlyMKT
         />
       </Row>
 
@@ -233,6 +236,14 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
         className="collapse-content !px-0"
         style={{ backgroundColor: 'white' }}
       >
+        <Spacer h={8} />
+
+        <MyBetsSummary
+          className="mr-5 flex-1 sm:mr-8"
+          contract={contract}
+          bets={bets}
+        />
+
         <Spacer h={8} />
 
         <ContractBetsTable contract={contract} bets={bets} />
@@ -244,10 +255,10 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
 export function MyBetsSummary(props: {
   contract: Contract
   bets: Bet[]
-  showMKT?: boolean
+  onlyMKT?: boolean
   className?: string
 }) {
-  const { bets, contract, showMKT, className } = props
+  const { bets, contract, onlyMKT, className } = props
   const { resolution } = contract
   calculateCancelPayout
 
@@ -269,49 +280,86 @@ export function MyBetsSummary(props: {
     calculatePayout(contract, bet, 'MKT')
   )
 
+  const currentValue = resolution ? betsPayout : marketWinnings
+  const pnl = currentValue - betsTotal
+  const totalReturn =
+    betsTotal === 0
+      ? '0%'
+      : (pnl > 0 ? '+' : '') + ((pnl / betsTotal) * 100).toFixed() + '%'
+
+  const color = pnl === 0 ? '' : pnl > 0 ? 'text-green-500' : 'text-red-500'
+
+  const mktCol = (
+    <Col>
+      <div className="whitespace-nowrap text-sm text-gray-500">
+        Market value
+      </div>
+      <div className="whitespace-nowrap">
+        {formatMoney(marketWinnings)} (
+        <span className={color}>{totalReturn}</span>)
+      </div>
+    </Col>
+  )
+
+  const payoutCol = (
+    <Col>
+      <div className="text-sm text-gray-500">Payout</div>
+      <div className="whitespace-nowrap">
+        {formatMoney(betsPayout)} (<span className={color}>{totalReturn}</span>)
+      </div>
+    </Col>
+  )
+
   return (
     <Row
       className={clsx(
         'gap-4 sm:gap-6',
-        showMKT && 'flex-wrap sm:flex-nowrap',
+        !onlyMKT && 'flex-wrap sm:flex-nowrap',
         className
       )}
     >
-      <Col>
-        <div className="whitespace-nowrap text-sm text-gray-500">Invested</div>
-        <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
-      </Col>
-      {resolution ? (
-        <Col>
-          <div className="text-sm text-gray-500">Payout</div>
-          <div className="whitespace-nowrap">{formatMoney(betsPayout)}</div>
-        </Col>
+      {onlyMKT ? (
+        <Row className="gap-4 sm:gap-6">{resolution ? payoutCol : mktCol}</Row>
       ) : (
         <Row className="gap-4 sm:gap-6">
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">
-              Payout if <YesLabel />
+              Invested
             </div>
-            <div className="whitespace-nowrap">{formatMoney(yesWinnings)}</div>
+            <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
           </Col>
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Payout if <NoLabel />
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
-          </Col>
-          {showMKT && (
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout at{' '}
-                <span className="text-blue-400">
-                  {formatPercent(getProbability(contract.totalShares))}
-                </span>
-              </div>
-              <div className="whitespace-nowrap">
-                {formatMoney(marketWinnings)}
-              </div>
-            </Col>
+          {resolution ? (
+            payoutCol
+          ) : (
+            <>
+              <Col>
+                <div className="whitespace-nowrap text-sm text-gray-500">
+                  Payout if <YesLabel />
+                </div>
+                <div className="whitespace-nowrap">
+                  {formatMoney(yesWinnings)}
+                </div>
+              </Col>
+              <Col>
+                <div className="whitespace-nowrap text-sm text-gray-500">
+                  Payout if <NoLabel />
+                </div>
+                <div className="whitespace-nowrap">
+                  {formatMoney(noWinnings)}
+                </div>
+              </Col>
+              <Col>
+                <div className="whitespace-nowrap text-sm text-gray-500">
+                  Payout at{' '}
+                  <span className="text-blue-400">
+                    {formatPercent(getProbability(contract.totalShares))}
+                  </span>
+                </div>
+                <div className="whitespace-nowrap">
+                  {formatMoney(marketWinnings)}
+                </div>
+              </Col>
+            </>
           )}
         </Row>
       )}
