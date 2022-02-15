@@ -47,7 +47,12 @@ export function ContractCard(props: {
         <Spacer h={3} />
 
         <Row className="justify-between gap-4">
-          <p className="font-medium text-indigo-700">{question}</p>
+          <p
+            className="font-medium text-indigo-700 break-words"
+            style={{ /* For iOS safari */ wordBreak: 'break-word' }}
+          >
+            {question}
+          </p>
           <ResolutionOrChance className="items-center" contract={contract} />
         </Row>
       </div>
