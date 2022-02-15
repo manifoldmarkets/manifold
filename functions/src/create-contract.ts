@@ -107,9 +107,9 @@ export const createContract = functions
           await yesBetDoc.set(yesBet)
           await noBetDoc.set(noBet)
         } else if (outcomeType === 'MULTI') {
-          const noneAnswerDoc = firestore.doc(
-            `contracts/${contract.id}/answers/NONE`
-          )
+          const noneAnswerDoc = firestore
+            .collection(`contracts/${contract.id}/answers`)
+            .doc('0')
           const noneAnswer = getNoneAnswer(contract.id, creator)
           await noneAnswerDoc.set(noneAnswer)
 

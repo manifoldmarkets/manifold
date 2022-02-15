@@ -127,6 +127,7 @@ export default function ContractPage(props: {
                   contract={contract as any}
                   answers={props.answers}
                 />
+                <div className="divider before:bg-gray-300 after:bg-gray-300" />
               </>
             )}
           </ContractOverview>

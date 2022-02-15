@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import _ from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 import { XIcon } from '@heroicons/react/solid'
@@ -30,16 +31,23 @@ import {
 } from '../../common/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
 import { Bet } from '../../common/bet'
+import { useAnswers } from '../hooks/use-answers'
 
 export function AnswersPanel(props: {
   contract: Contract<'MULTI'>
   answers: Answer[]
 }) {
-  const { contract, answers } = props
+  const { contract } = props
+
+  const answers = useAnswers(contract.id) ?? props.answers
+  const sortedAnswers = _.sortBy(
+    answers,
+    (answer) => -1 * getOutcomeProbability(contract.totalShares, answer.id)
+  )
 
   return (
     <Col className="gap-4">
-      {answers.map((answer) => (
+      {sortedAnswers.map((answer) => (
         <AnswerItem key={answer.id} answer={answer} contract={contract} />
       ))}
       <CreateAnswerInput contract={contract} />
@@ -49,7 +57,7 @@ export function AnswersPanel(props: {
 
 function AnswerItem(props: { answer: Answer; contract: Contract<'MULTI'> }) {
   const { answer, contract } = props
-  const { username, avatarUrl, name, createdTime } = answer
+  const { username, avatarUrl, name, createdTime, number, text } = answer
 
   const createdDate = dayjs(createdTime).format('MMM D')
   const prob = getOutcomeProbability(contract.totalShares, answer.id)
@@ -58,48 +66,46 @@ function AnswerItem(props: { answer: Answer; contract: Contract<'MULTI'> }) {
   const [isBetting, setIsBetting] = useState(false)
 
   return (
-    <Col className="p-2 sm:flex-row">
-      <Row className="flex-1">
-        <Col className="gap-2 flex-1">
-          <div>{answer.text}</div>
+    <Col className="px-4 py-2 sm:flex-row bg-gray-50 rounded">
+      <Col className="gap-3 flex-1">
+        <div>{text}</div>
 
-          <Row className="text-gray-500 text-sm gap-2 items-center">
-            <SiteLink className="relative" href={`/${username}`}>
-              <Row className="items-center gap-2">
-                <Avatar avatarUrl={avatarUrl} size={6} />
-                <div className="truncate">{name}</div>
-              </Row>
-            </SiteLink>
+        <Row className="text-gray-500 text-sm gap-2 items-center">
+          <SiteLink className="relative" href={`/${username}`}>
+            <Row className="items-center gap-2">
+              <Avatar avatarUrl={avatarUrl} size={6} />
+              <div className="truncate">{name}</div>
+            </Row>
+          </SiteLink>
 
-            <div className="">•</div>
+          <div className="">•</div>
 
-            <div className="whitespace-nowrap">
-              <DateTimeTooltip text="" time={contract.createdTime}>
-                {createdDate}
-              </DateTimeTooltip>
-            </div>
-          </Row>
-        </Col>
+          <div className="whitespace-nowrap">
+            <DateTimeTooltip text="" time={contract.createdTime}>
+              {createdDate}
+            </DateTimeTooltip>
+          </div>
+          <div className="">•</div>
+          <div className="text-base">#{number}</div>
+        </Row>
+      </Col>
 
-        {!isBetting && (
-          <Col className="sm:flex-row items-center gap-4">
-            <div className="text-2xl text-green-500">{probPercent}</div>
-            <BuyButton
-              className="justify-end self-end flex-initial btn-md !px-4 sm:!px-8"
-              onClick={() => {
-                setIsBetting(true)
-              }}
-            />
-          </Col>
-        )}
-      </Row>
-
-      {isBetting && (
+      {isBetting ? (
         <AnswerBetPanel
           answer={answer}
           contract={contract}
           closePanel={() => setIsBetting(false)}
         />
+      ) : (
+        <Row className="self-end sm:self-start items-center gap-4">
+          <div className="text-2xl text-green-500">{probPercent}</div>
+          <BuyButton
+            className="justify-end self-end flex-initial btn-md !px-8"
+            onClick={() => {
+              setIsBetting(true)
+            }}
+          />
+        </Row>
       )}
     </Col>
   )
@@ -178,7 +184,7 @@ function AnswerBetPanel(props: {
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
   return (
-    <Col className="items-start">
+    <Col className="items-start px-2 pb-2">
       <Row className="self-stretch items-center justify-between">
         <div className="text-xl">Buy this answer</div>
 
@@ -209,7 +215,7 @@ function AnswerBetPanel(props: {
       <Spacer h={4} />
 
       <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
-        Potential payout
+        Payout if chosen
         <InfoTooltip
           text={`Current payout for ${formatWithCommas(
             shares
@@ -302,7 +308,7 @@ function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
             Submit answer & bet
           </button>
         </Col>
-        <Col className={clsx('gap-2', text ? 'visible' : 'invisible')}>
+        <Col className="gap-2">
           <div className="text-gray-500 text-sm">Bet amount</div>
           <AmountInput
             amount={betAmount}

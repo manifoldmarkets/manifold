@@ -6,7 +6,8 @@ export function OutcomeLabel(props: {
   if (outcome === 'YES') return <YesLabel />
   if (outcome === 'NO') return <NoLabel />
   if (outcome === 'MKT') return <ProbLabel />
-  return <CancelLabel />
+  if (outcome === 'CANCEL') return <CancelLabel />
+  return <AnswerNumberLabel number={outcome} />
 }
 
 export function YesLabel() {
@@ -23,4 +24,8 @@ export function CancelLabel() {
 
 export function ProbLabel() {
   return <span className="text-blue-400">PROB</span>
+}
+
+export function AnswerNumberLabel(props: { number: string }) {
+  return <span className="text-blue-400">#{props.number}</span>
 }

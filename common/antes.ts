@@ -79,9 +79,9 @@ export function getFreeAnswerAnte(
     contractId: contract.id,
     amount,
     shares,
-    outcome: 'NONE',
-    probBefore: 100,
-    probAfter: 100,
+    outcome: '0',
+    probBefore: 1,
+    probAfter: 1,
     createdTime,
     isAnte: true,
   }

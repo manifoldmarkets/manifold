@@ -80,7 +80,7 @@ export function calculateMoneyRatio<T extends 'BINARY' | 'MULTI'>(
 
   const p = getOutcomeProbability(totalShares, outcome)
 
-  const actual = pool.YES + pool.NO - shareValue
+  const actual = _.sum(Object.values(pool)) - shareValue
 
   const betAmount = p * amount
 
@@ -142,15 +142,15 @@ export function calculateStandardPayout(
   const { amount, outcome: betOutcome, shares } = bet
   if (betOutcome !== outcome) return 0
 
-  const { totalShares, phantomShares } = contract
+  const { totalShares, phantomShares, pool } = contract
   if (!totalShares[outcome]) return 0
 
-  const pool = _.sum(Object.values(totalShares))
+  const poolTotal = _.sum(Object.values(pool))
 
   const total =
     totalShares[outcome] - (phantomShares ? phantomShares[outcome] : 0)
 
-  const winnings = (shares / total) * pool
+  const winnings = (shares / total) * poolTotal
   // profit can be negative if using phantom shares
   return amount + (1 - FEES) * Math.max(0, winnings - amount)
 }

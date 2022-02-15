@@ -88,7 +88,7 @@ export const ContractOverview = (props: {
 
       {children}
 
-      <Row className="mt-6 ml-4 hidden items-center justify-between gap-4 sm:flex">
+      <Row className="mt-6 hidden items-center justify-between gap-4 sm:flex">
         {folds.length === 0 ? (
           <TagsInput className={clsx('mx-4')} contract={contract} />
         ) : (
@@ -97,7 +97,7 @@ export const ContractOverview = (props: {
         <TweetButton tweetText={tweetText} />
       </Row>
 
-      <Col className="mt-6 ml-4 gap-4 sm:hidden">
+      <Col className="mt-6 gap-4 sm:hidden">
         <TweetButton className="self-end" tweetText={tweetText} />
         {folds.length === 0 ? (
           <TagsInput contract={contract} />
@@ -107,7 +107,7 @@ export const ContractOverview = (props: {
       </Col>
 
       {folds.length > 0 && (
-        <RevealableTagsInput className="mx-4 mt-4" contract={contract} />
+        <RevealableTagsInput className="mt-4" contract={contract} />
       )}
 
       {/* Show a delete button for contracts without any trading */}

@@ -2,6 +2,7 @@ import { User } from './user'
 
 export type Answer = {
   id: string
+  number: number
   contractId: string
   createdTime: number
 
@@ -17,7 +18,8 @@ export const getNoneAnswer = (contractId: string, creator: User) => {
   const { username, name, avatarUrl } = creator
 
   return {
-    id: 'NONE',
+    id: '0',
+    number: 0,
     contractId,
     createdTime: Date.now(),
     userId: creator.id,

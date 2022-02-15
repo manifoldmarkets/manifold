@@ -5,6 +5,7 @@ import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { getNewMultiBetInfo } from '../../common/new-bet'
 import { Answer } from '../../common/answer'
+import { getValues } from './utils'
 
 export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -56,15 +57,29 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
+      const [lastAnswer] = await getValues<Answer>(
+        firestore
+          .collection(`contracts/${contractId}/answers`)
+          .orderBy('number', 'desc')
+          .limit(1)
+      )
+
+      if (!lastAnswer)
+        return { status: 'error', message: 'Could not fetch last answer' }
+
+      const number = lastAnswer.number + 1
+      const id = `${number}`
+
       const newAnswerDoc = firestore
         .collection(`contracts/${contractId}/answers`)
-        .doc()
+        .doc(id)
 
       const answerId = newAnswerDoc.id
       const { username, name, avatarUrl } = user
 
       const answer: Answer = {
-        id: answerId,
+        id,
+        number,
         contractId,
         createdTime: Date.now(),
         userId: user.id,

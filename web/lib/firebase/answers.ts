@@ -1,35 +1,11 @@
-import { doc, collection, setDoc } from 'firebase/firestore'
+import { collection } from 'firebase/firestore'
 
 import { getValues, listenForValues } from './utils'
 import { db } from './init'
-import { User } from '../../../common/user'
 import { Answer } from '../../../common/answer'
 
 function getAnswersCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'answers')
-}
-
-export async function createAnswer(
-  contractId: string,
-  text: string,
-  user: User
-) {
-  const { id: userId, username, name, avatarUrl } = user
-
-  const ref = doc(getAnswersCollection(contractId))
-
-  const answer: Answer = {
-    id: ref.id,
-    contractId,
-    createdTime: Date.now(),
-    userId,
-    username,
-    name,
-    avatarUrl,
-    text,
-  }
-
-  return await setDoc(ref, answer)
 }
 
 export async function listAllAnswers(contractId: string) {

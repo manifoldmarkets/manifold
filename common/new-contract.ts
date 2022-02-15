@@ -70,9 +70,9 @@ const getBinaryProps = (initialProb: number, ante: number) => {
 
 const getFreeAnswerProps = (ante: number) => {
   return {
-    pool: { NONE: ante },
-    totalShares: { NONE: ante },
-    totalBets: { NONE: ante },
+    pool: { '0': ante },
+    totalShares: { '0': ante },
+    totalBets: { '0': ante },
     phantomShares: undefined,
     outcomes: 'FREE_ANSWER' as const,
   }
