@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import * as _ from 'lodash'
 import { Bet } from './bet'
 import { Contract } from './contract'
 import { FEES } from './fees'

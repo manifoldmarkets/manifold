@@ -24,7 +24,7 @@ export function getNewContract(
   const propsByOutcomeType =
     outcomeType === 'BINARY'
       ? getBinaryProps(initialProb, ante)
-      : getFreeAnswerProps()
+      : getFreeAnswerProps(ante)
 
   const contract: Contract<'BINARY' | 'MULTI'> = removeUndefinedProps({
     id,
@@ -68,11 +68,11 @@ const getBinaryProps = (initialProb: number, ante: number) => {
   }
 }
 
-const getFreeAnswerProps = () => {
+const getFreeAnswerProps = (ante: number) => {
   return {
-    pool: {},
-    totalShares: {},
-    totalBets: {},
+    pool: { NONE: ante },
+    totalShares: { NONE: ante },
+    totalBets: { NONE: ante },
     phantomShares: undefined,
     outcomes: 'FREE_ANSWER' as const,
   }

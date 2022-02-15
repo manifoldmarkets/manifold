@@ -11,6 +11,7 @@ import {
   getFreeAnswerAnte,
   MINIMUM_ANTE,
 } from '../../common/antes'
+import { getNoneAnswer } from '../../common/answer'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })
@@ -106,16 +107,21 @@ export const createContract = functions
           await yesBetDoc.set(yesBet)
           await noBetDoc.set(noBet)
         } else if (outcomeType === 'MULTI') {
+          const noneAnswerDoc = firestore.doc(
+            `contracts/${contract.id}/answers/NONE`
+          )
+          const noneAnswer = getNoneAnswer(contract.id, creator)
+          await noneAnswerDoc.set(noneAnswer)
+
           const anteBetDoc = firestore
             .collection(`contracts/${contract.id}/bets`)
             .doc()
-          getFreeAnswerAnte(
+          const anteBet = getFreeAnswerAnte(
             creator,
             contract as Contract<'MULTI'>,
             anteBetDoc.id
           )
-          // Disable until we figure out how this should work.
-          // await anteBetDoc.set(anteBetDoc)
+          await anteBetDoc.set(anteBet)
         }
       }
 

@@ -121,10 +121,13 @@ export default function ContractPage(props: {
             folds={folds}
           >
             {contract.outcomes === 'FREE_ANSWER' && (
-              <AnswersPanel
-                contract={contract as any}
-                answers={props.answers}
-              />
+              <>
+                <Spacer h={4} />
+                <AnswersPanel
+                  contract={contract as any}
+                  answers={props.answers}
+                />
+              </>
             )}
           </ContractOverview>
 

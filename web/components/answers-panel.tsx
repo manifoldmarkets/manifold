@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 import Textarea from 'react-expanding-textarea'
+import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from '../../common/answer'
 import { Contract } from '../../common/contract'
@@ -25,8 +26,10 @@ import {
   getProbabilityAfterBet,
   getOutcomeProbability,
   calculateShares,
+  calculatePayoutAfterCorrectBet,
 } from '../../common/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
+import { Bet } from '../../common/bet'
 
 export function AnswersPanel(props: {
   contract: Contract<'MULTI'>
@@ -49,12 +52,14 @@ function AnswerItem(props: { answer: Answer; contract: Contract<'MULTI'> }) {
   const { username, avatarUrl, name, createdTime } = answer
 
   const createdDate = dayjs(createdTime).format('MMM D')
+  const prob = getOutcomeProbability(contract.totalShares, answer.id)
+  const probPercent = formatPercent(prob)
 
   const [isBetting, setIsBetting] = useState(false)
 
   return (
-    <Col>
-      <Col className="p-2 sm:flex-row">
+    <Col className="p-2 sm:flex-row">
+      <Row className="flex-1">
         <Col className="gap-2 flex-1">
           <div>{answer.text}</div>
 
@@ -76,15 +81,26 @@ function AnswerItem(props: { answer: Answer; contract: Contract<'MULTI'> }) {
           </Row>
         </Col>
 
-        <BuyButton
-          className="justify-end self-end flex-initial"
-          onClick={() => {
-            setIsBetting(true)
-          }}
-        />
-      </Col>
+        {!isBetting && (
+          <Col className="sm:flex-row items-center gap-4">
+            <div className="text-2xl text-green-500">{probPercent}</div>
+            <BuyButton
+              className="justify-end self-end flex-initial btn-md !px-4 sm:!px-8"
+              onClick={() => {
+                setIsBetting(true)
+              }}
+            />
+          </Col>
+        )}
+      </Row>
 
-      {isBetting && <AnswerBetPanel answer={answer} contract={contract} />}
+      {isBetting && (
+        <AnswerBetPanel
+          answer={answer}
+          contract={contract}
+          closePanel={() => setIsBetting(false)}
+        />
+      )}
     </Col>
   )
 }
@@ -92,8 +108,9 @@ function AnswerItem(props: { answer: Answer; contract: Contract<'MULTI'> }) {
 function AnswerBetPanel(props: {
   answer: Answer
   contract: Contract<'MULTI'>
+  closePanel: () => void
 }) {
-  const { answer, contract } = props
+  const { answer, contract, closePanel } = props
   const { id: answerId } = answer
 
   const user = useUser()
@@ -101,17 +118,11 @@ function AnswerBetPanel(props: {
 
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const inputRef = useRef<HTMLElement>(null)
   useEffect(() => {
     inputRef.current && inputRef.current.focus()
   }, [])
-
-  function onBetChange(newAmount: number | undefined) {
-    setWasSubmitted(false)
-    setBetAmount(newAmount)
-  }
 
   async function submitBet() {
     if (!user || !betAmount) return
@@ -133,9 +144,7 @@ function AnswerBetPanel(props: {
     console.log('placed bet. Result:', result)
 
     if (result?.status === 'success') {
-      setIsSubmitting(false)
-      setWasSubmitted(true)
-      setBetAmount(undefined)
+      closePanel()
     } else {
       setError(result?.error || 'Error placing bet')
       setIsSubmitting(false)
@@ -155,83 +164,86 @@ function AnswerBetPanel(props: {
   const shares = calculateShares(contract.totalShares, betAmount ?? 0, answerId)
 
   const currentPayout = betAmount
-    ? 0
-    : // calculatePayoutAfterCorrectBet(contract, {
-      //     outcome: answerId,
-      //     amount: betAmount,
-      //     shares,
-      //   } as Bet)
-      0
+    ? calculatePayoutAfterCorrectBet(
+        contract as any as Contract,
+        {
+          outcome: answerId,
+          amount: betAmount,
+          shares,
+        } as Bet
+      )
+    : 0
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
   return (
-    <Col className="items-center">
-      <Col className="p-2 items-start">
-        <div className="my-3 text-left text-sm text-gray-500">Amount </div>
-        <AmountInput
-          inputClassName="w-full"
-          amount={betAmount}
-          onChange={onBetChange}
-          error={error}
-          setError={setError}
-          disabled={isSubmitting}
-          inputRef={inputRef}
+    <Col className="items-start">
+      <Row className="self-stretch items-center justify-between">
+        <div className="text-xl">Buy this answer</div>
+
+        <button className="btn-ghost btn-circle" onClick={closePanel}>
+          <XIcon className="w-8 h-8 text-gray-500 mx-auto" aria-hidden="true" />
+        </button>
+      </Row>
+      <div className="my-3 text-left text-sm text-gray-500">Amount </div>
+      <AmountInput
+        inputClassName="w-full"
+        amount={betAmount}
+        onChange={setBetAmount}
+        error={error}
+        setError={setError}
+        disabled={isSubmitting}
+        inputRef={inputRef}
+      />
+
+      <Spacer h={4} />
+
+      <div className="mt-2 mb-1 text-sm text-gray-500">Implied probability</div>
+      <Row>
+        <div>{formatPercent(initialProb)}</div>
+        <div className="mx-2">→</div>
+        <div>{formatPercent(resultProb)}</div>
+      </Row>
+
+      <Spacer h={4} />
+
+      <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
+        Potential payout
+        <InfoTooltip
+          text={`Current payout for ${formatWithCommas(
+            shares
+          )} / ${formatWithCommas(
+            shares + contract.totalShares[answerId]
+          )} shares`}
         />
+      </Row>
+      <div>
+        {formatMoney(currentPayout)}
+        &nbsp; <span>(+{currentReturnPercent})</span>
+      </div>
 
-        <Spacer h={4} />
+      <Spacer h={6} />
 
-        <div className="mt-2 mb-1 text-sm text-gray-500">
-          Implied probability
-        </div>
-        <Row>
-          <div>{formatPercent(initialProb)}</div>
-          <div className="mx-2">→</div>
-          <div>{formatPercent(resultProb)}</div>
-        </Row>
-
-        <Spacer h={4} />
-
-        <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
-          Potential payout
-          <InfoTooltip
-            text={`Current payout for ${formatWithCommas(
-              shares
-            )} / ${formatWithCommas(
-              shares + contract.totalShares[answerId]
-            )} shares`}
-          />
-        </Row>
-        <div>
-          {formatMoney(currentPayout)}
-          &nbsp; <span>(+{currentReturnPercent})</span>
-        </div>
-
-        <Spacer h={6} />
-
-        {user ? (
-          <button
-            className={clsx(
-              'btn',
-              betDisabled ? 'btn-disabled' : 'btn-primary',
-              isSubmitting ? 'loading' : ''
-            )}
-            onClick={betDisabled ? undefined : submitBet}
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit trade'}
-          </button>
-        ) : (
-          <button
-            className="btn mt-4 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-            onClick={firebaseLogin}
-          >
-            Sign in to trade!
-          </button>
-        )}
-
-        {wasSubmitted && <div className="mt-4">Trade submitted!</div>}
-      </Col>
+      {user ? (
+        <button
+          className={clsx(
+            'btn',
+            betDisabled ? 'btn-disabled' : 'btn-primary',
+            isSubmitting ? 'loading' : ''
+          )}
+          onClick={betDisabled ? undefined : submitBet}
+        >
+          {isSubmitting ? 'Submitting...' : 'Submit trade'}
+        </button>
+      ) : (
+        <button
+          className="btn mt-4 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
+          onClick={firebaseLogin}
+        >
+          Sign in to trade!
+        </button>
+      )}
     </Col>
   )
 }
@@ -267,7 +279,7 @@ function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
   }
 
   return (
-    <Col className="gap-4 mt-2">
+    <Col className="gap-4 mt-2 px-2">
       <Col className="sm:flex-row gap-8">
         <Col className="flex-1 gap-2">
           <div className="text-gray-500 text-sm mb-1">Add your answer</div>

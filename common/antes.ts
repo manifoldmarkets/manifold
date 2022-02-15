@@ -67,7 +67,9 @@ export function getFreeAnswerAnte(
   contract: Contract<'MULTI'>,
   anteBetId: string
 ) {
-  const ante = contract.totalBets.YES + contract.totalBets.NO
+  const { totalBets, totalShares } = contract
+  const amount = totalBets.NONE
+  const shares = totalShares.NONE
 
   const { createdTime } = contract
 
@@ -75,11 +77,11 @@ export function getFreeAnswerAnte(
     id: anteBetId,
     userId: creator.id,
     contractId: contract.id,
-    amount: ante,
-    shares: 0,
+    amount,
+    shares,
     outcome: 'NONE',
-    probBefore: 0,
-    probAfter: 0,
+    probBefore: 100,
+    probAfter: 100,
     createdTime,
     isAnte: true,
   }
