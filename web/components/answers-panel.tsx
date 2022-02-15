@@ -46,7 +46,7 @@ export function AnswersPanel(props: {
   )
 
   return (
-    <Col className="gap-4">
+    <Col className="gap-3">
       {sortedAnswers.map((answer) => (
         <AnswerItem key={answer.id} answer={answer} contract={contract} />
       ))}
@@ -66,7 +66,7 @@ function AnswerItem(props: { answer: Answer; contract: Contract<'MULTI'> }) {
   const [isBetting, setIsBetting] = useState(false)
 
   return (
-    <Col className="px-4 py-2 sm:flex-row bg-gray-50 rounded">
+    <Col className="p-4 sm:flex-row bg-gray-50 rounded">
       <Col className="gap-3 flex-1">
         <div>{text}</div>
 
@@ -150,6 +150,7 @@ function AnswerBetPanel(props: {
     console.log('placed bet. Result:', result)
 
     if (result?.status === 'success') {
+      setIsSubmitting(false)
       closePanel()
     } else {
       setError(result?.error || 'Error placing bet')
@@ -184,7 +185,7 @@ function AnswerBetPanel(props: {
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
   return (
-    <Col className="items-start px-2 pb-2">
+    <Col className="items-start px-2 pb-2 pt-4 sm:pt-0">
       <Row className="self-stretch items-center justify-between">
         <div className="text-xl">Buy this answer</div>
 
@@ -266,14 +267,12 @@ function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
   const submitAnswer = async () => {
     if (canSubmit) {
       setIsSubmitting(true)
-      console.log('submitting', { text, betAmount })
       const result = await createAnswer({
         contractId: contract.id,
         text,
         amount: betAmount,
       }).then((r) => r.data)
 
-      console.log('submit complte', result)
       setIsSubmitting(false)
 
       if (result.status === 'success') {
@@ -285,18 +284,34 @@ function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
   }
 
   return (
-    <Col className="gap-4 mt-2 px-2">
-      <Col className="sm:flex-row gap-8">
-        <Col className="flex-1 gap-2">
-          <div className="text-gray-500 text-sm mb-1">Add your answer</div>
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="textarea textarea-bordered w-full"
-            placeholder="Type your answer..."
-            rows={1}
-            maxLength={10000}
-          />
+    <Col className="gap-4 p-4 bg-gray-50 rounded">
+      <Col className="flex-1 gap-2">
+        <div className="mb-1">Add your answer</div>
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="textarea textarea-bordered w-full"
+          placeholder="Type your answer..."
+          rows={1}
+          maxLength={10000}
+        />
+        <div />
+        <Col
+          className={clsx('sm:flex-row', text ? 'justify-between' : 'self-end')}
+        >
+          {text && (
+            <Col className="gap-2 mt-1">
+              <div className="text-gray-500 text-sm">Bet amount</div>
+              <AmountInput
+                amount={betAmount}
+                onChange={setBetAmount}
+                error={amountError}
+                setError={setAmountError}
+                minimumAmount={10}
+                disabled={isSubmitting}
+              />
+            </Col>
+          )}
           <button
             className={clsx(
               'btn btn-sm self-end mt-2',
@@ -307,17 +322,6 @@ function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
           >
             Submit answer & bet
           </button>
-        </Col>
-        <Col className="gap-2">
-          <div className="text-gray-500 text-sm">Bet amount</div>
-          <AmountInput
-            amount={betAmount}
-            onChange={setBetAmount}
-            error={amountError}
-            setError={setAmountError}
-            minimumAmount={10}
-            disabled={isSubmitting}
-          />
         </Col>
       </Col>
     </Col>

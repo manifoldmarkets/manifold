@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
-import { getNewBinaryBetInfo } from '../../common/new-bet'
+import { getNewBinaryBetInfo, getNewMultiBetInfo } from '../../common/new-bet'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -22,7 +22,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
     if (amount <= 0 || isNaN(amount) || !isFinite(amount))
       return { status: 'error', message: 'Invalid amount' }
 
-    if (outcome !== 'YES' && outcome !== 'NO')
+    if (outcome !== 'YES' && outcome !== 'NO' && isNaN(+outcome))
       return { status: 'error', message: 'Invalid outcome' }
 
     // run as transaction to prevent race conditions
@@ -42,16 +42,39 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
 
-      const { closeTime } = contract
+      const { closeTime, outcomes } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
+
+      const isFreeAnswer = outcomes === 'FREE_ANSWER'
+      if (isFreeAnswer) {
+        const answerSnap = await transaction.get(
+          contractDoc.collection('answers').doc(outcome)
+        )
+        if (!answerSnap.exists)
+          return { status: 'error', message: 'Invalid contract' }
+      }
 
       const newBetDoc = firestore
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
       const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
-        getNewBinaryBetInfo(user, outcome, amount, contract, newBetDoc.id)
+        isFreeAnswer
+          ? getNewMultiBetInfo(
+              user,
+              outcome,
+              amount,
+              contract as any,
+              newBetDoc.id
+            )
+          : getNewBinaryBetInfo(
+              user,
+              outcome as 'YES' | 'NO',
+              amount,
+              contract,
+              newBetDoc.id
+            )
 
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, {
