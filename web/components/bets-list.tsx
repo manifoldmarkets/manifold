@@ -177,10 +177,13 @@ export function BetsList(props: { user: User }) {
 
 function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
   const { bets, contract } = props
-  const { resolution } = contract
+  const { resolution, outcomeType } = contract
 
   const [collapsed, setCollapsed] = useState(true)
+
+  const isBinary = outcomeType === 'BINARY'
   const probPercent = getBinaryProbPercent(contract)
+
   return (
     <div
       tabIndex={0}
@@ -210,14 +213,18 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
           </Row>
 
           <Row className="items-center gap-2 text-sm text-gray-500">
-            {resolution ? (
-              <div>
-                Resolved <OutcomeLabel outcome={resolution} />
-              </div>
-            ) : (
-              <div className="text-primary text-lg">{probPercent}</div>
+            {isBinary && (
+              <>
+                {resolution ? (
+                  <div>
+                    Resolved <OutcomeLabel outcome={resolution} />
+                  </div>
+                ) : (
+                  <div className="text-primary text-lg">{probPercent}</div>
+                )}
+                <div>•</div>
+              </>
             )}
-            <div>•</div>
             <UserLink
               name={contract.creatorName}
               username={contract.creatorUsername}
@@ -260,8 +267,8 @@ export function MyBetsSummary(props: {
   className?: string
 }) {
   const { bets, contract, onlyMKT, className } = props
-  const { resolution } = contract
-  calculateCancelPayout
+  const { resolution, outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
 
   const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
   const betsTotal = _.sumBy(excludeSales, (bet) => bet.amount)
@@ -345,10 +352,16 @@ export function MyBetsSummary(props: {
               </Col>
               <Col>
                 <div className="whitespace-nowrap text-sm text-gray-500">
-                  Payout at{' '}
-                  <span className="text-blue-400">
-                    {formatPercent(getProbability(contract.totalShares))}
-                  </span>
+                  {isBinary ? (
+                    <>
+                      Payout at{' '}
+                      <span className="text-blue-400">
+                        {formatPercent(getProbability(contract.totalShares))}
+                      </span>
+                    </>
+                  ) : (
+                    <>Current payout</>
+                  )}
                 </div>
                 <div className="whitespace-nowrap">
                   {formatMoney(marketWinnings)}
