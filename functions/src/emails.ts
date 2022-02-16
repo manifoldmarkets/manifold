@@ -87,3 +87,26 @@ Best,
 Austin from Manifold`
   )
 }
+
+export const sendMarketCloseEmail = async (
+  user: User,
+  privateUser: PrivateUser,
+  contract: Contract
+) => {
+  const firstName = user.name.split(' ')[0]
+  const url = `https://manifold.markets/${user.username}/${contract.slug}`
+
+  await sendTextEmail(
+    privateUser.email || '',
+    'Your market has closed',
+    `Hi ${firstName},
+
+Trading for one of your markets has ended. Please resolve it as soon as possible.
+
+Question: ${contract.question}
+Url: ${url}
+
+Best,
+Austin from Manifold`
+  )
+}
