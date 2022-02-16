@@ -68,8 +68,8 @@ export function getFreeAnswerAnte(
   anteBetId: string
 ) {
   const { totalBets, totalShares } = contract
-  const amount = totalBets.NONE
-  const shares = totalShares.NONE
+  const amount = totalBets['0']
+  const shares = totalShares['0']
 
   const { createdTime } = contract
 

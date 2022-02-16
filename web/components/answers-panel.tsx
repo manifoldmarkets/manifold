@@ -401,8 +401,9 @@ function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
           )}
           <button
             className={clsx(
-              'btn btn-sm self-end mt-2',
-              canSubmit ? 'btn-outline' : 'btn-disabled'
+              'btn self-end mt-2',
+              canSubmit ? 'btn-outline' : 'btn-disabled',
+              isSubmitting && 'loading'
             )}
             disabled={!canSubmit}
             onClick={submitAnswer}
@@ -434,12 +435,12 @@ function AnswerResolvePanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
 
   const onResolve = async () => {
-    if (answer === undefined) return
+    if (resolveOption === 'CHOOSE' && answer === undefined) return
 
     setIsSubmitting(true)
 
     const result = await resolveMarket({
-      outcome: answer,
+      outcome: resolveOption === 'CHOOSE' ? (answer as string) : 'CANCEL',
       contractId: contract.id,
     }).then((r) => r.data as any)
 

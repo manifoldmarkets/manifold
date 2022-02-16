@@ -36,7 +36,7 @@ export const resolveMarket = functions
         if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
           return { status: 'error', message: 'Invalid outcome' }
       } else if (outcomeType === 'MULTI') {
-        if (isNaN(+outcome))
+        if (outcome !== 'CANCEL' && isNaN(+outcome))
           return { status: 'error', message: 'Invalid outcome' }
       } else {
         return { status: 'error', message: 'Invalid contract outcomeType' }

@@ -111,7 +111,7 @@ export const ContractOverview = (props: {
       )}
 
       {/* Show a delete button for contracts without any trading */}
-      {isCreator && (isBinary ? bets.length <= 2 : bets.length <= 1) && (
+      {isCreator && bets.length === 0 && (
         <>
           <button
             className="btn btn-xs btn-error btn-outline mt-1 max-w-fit self-end"

@@ -302,8 +302,10 @@ function TruncatedComment(props: {
 
 function FeedQuestion(props: { contract: Contract }) {
   const { contract } = props
-  const { creatorName, creatorUsername, question, resolution } = contract
+  const { creatorName, creatorUsername, question, resolution, outcomeType } =
+    contract
   const { truePool } = contractMetrics(contract)
+  const isBinary = outcomeType === 'BINARY'
 
   // Currently hidden on mobile; ideally we'd fit this in somewhere.
   const closeMessage =
@@ -339,11 +341,13 @@ function FeedQuestion(props: { contract: Contract }) {
           >
             {question}
           </SiteLink>
-          <ResolutionOrChance
-            className="items-center"
-            resolution={resolution}
-            probPercent={getBinaryProbPercent(contract)}
-          />
+          {(isBinary || resolution) && (
+            <ResolutionOrChance
+              className="items-center"
+              resolution={resolution}
+              probPercent={getBinaryProbPercent(contract)}
+            />
+          )}
         </Col>
         <TruncatedComment
           comment={contract.description}
