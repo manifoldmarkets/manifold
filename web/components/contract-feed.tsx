@@ -540,7 +540,7 @@ function groupBets(
   return items as ActivityItem[]
 }
 
-function BetGroupSpan(props: { bets: Bet[]; outcome: 'YES' | 'NO' }) {
+function BetGroupSpan(props: { bets: Bet[]; outcome: string }) {
   const { bets, outcome } = props
 
   const numberTraders = _.uniqBy(bets, (b) => b.userId).length
@@ -566,7 +566,8 @@ function FeedBetGroup(props: { activityItem: any }) {
   const { activityItem } = props
   const bets: Bet[] = activityItem.bets
 
-  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
+  const betGroups = _.groupBy(bets, (bet) => bet.outcome)
+  const outcomes = Object.keys(betGroups)
 
   // Use the time of the last bet for the entire group
   const createdTime = bets[bets.length - 1].createdTime
@@ -582,9 +583,12 @@ function FeedBetGroup(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-sm text-gray-500">
-          {yesBets.length > 0 && <BetGroupSpan outcome="YES" bets={yesBets} />}
-          {yesBets.length > 0 && noBets.length > 0 && <br />}
-          {noBets.length > 0 && <BetGroupSpan outcome="NO" bets={noBets} />}
+          {outcomes.map((outcome, index) => (
+            <>
+              <BetGroupSpan outcome={outcome} bets={betGroups[outcome]} />
+              {index !== outcomes.length - 1 && <br />}
+            </>
+          ))}
           <Timestamp time={createdTime} />
         </div>
       </div>
