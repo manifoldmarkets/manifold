@@ -6,6 +6,13 @@ export type User = {
   username: string
   avatarUrl?: string
 
+  // For their user page
+  bio?: string
+  bannerUrl?: string
+  website?: string
+  twitterHandle?: string
+  discordHandle?: string
+
   balance: number
   totalDeposits: number
   totalPnLCached: number

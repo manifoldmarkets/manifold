@@ -16,6 +16,40 @@ import { changeUserInfo } from '../lib/firebase/api-call'
 import { uploadImage } from '../lib/firebase/storage'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
+import { User } from '../../common/user'
+import { defaultBannerUrl, updateUser } from '../lib/firebase/users'
+
+function EditUserField(props: {
+  user: User
+  field: 'bio' | 'bannerUrl' | 'twitterHandle' | 'discordHandle'
+  label: string
+  isEditing: boolean
+}) {
+  const { user, field, label, isEditing } = props
+  const [value, setValue] = useState(user[field] ?? '')
+
+  async function updateField() {
+    await updateUser(user.id, { [field]: value })
+  }
+
+  return (
+    <div>
+      <label className="label">{label}</label>
+
+      {isEditing ? (
+        <input
+          type="text"
+          className="input input-bordered"
+          value={value}
+          onChange={(e) => setValue(e.target.value || '')}
+          onBlur={updateField}
+        />
+      ) : (
+        <div className="ml-1 break-words text-gray-500">{value || '-'}</div>
+      )}
+    </div>
+  )
+}
 
 export default function ProfilePage() {
   const user = useUser()
@@ -165,6 +199,42 @@ export default function ProfilePage() {
               <div className="ml-1 text-gray-500">{username}</div>
             )}
           </div>
+
+          {user && (
+            <>
+              {/* TODO: Allow users with M$ 2000 of assets to set custom banners */}
+              {/* <EditUserField
+                user={user}
+                field="bannerUrl"
+                label="Banner Url"
+                isEditing={isEditing}
+              /> */}
+              <label className="label">Banner</label>
+              <div
+                className="h-32 w-full bg-cover bg-center sm:h-40"
+                style={{
+                  backgroundImage: `url(${
+                    user.bannerUrl || defaultBannerUrl(user.id)
+                  })`,
+                }}
+              />
+
+              {[
+                ['bio', 'Bio'],
+                ['website', 'Website URL'],
+                ['twitterHandle', 'Twitter'],
+                ['discordHandle', 'Discord'],
+              ].map(([field, label]) => (
+                <EditUserField
+                  user={user}
+                  // @ts-ignore
+                  field={field}
+                  label={label}
+                  isEditing={isEditing}
+                />
+              ))}
+            </>
+          )}
 
           <div>
             <label className="label">Email</label>
