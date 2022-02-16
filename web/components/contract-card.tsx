@@ -48,12 +48,13 @@ export function ContractCard(props: {
         <Spacer h={3} />
 
         <Row className="justify-between gap-4">
-          <p className="font-medium text-indigo-700">{question}</p>
-          <ResolutionOrChance
-            className="items-center"
-            resolution={resolution}
-            probPercent={probPercent}
-          />
+          <p
+            className="font-medium text-indigo-700 break-words"
+            style={{ /* For iOS safari */ wordBreak: 'break-word' }}
+          >
+            {question}
+          </p>
+          <ResolutionOrChance className="items-center" contract={contract} />
         </Row>
       </div>
     </div>
@@ -61,12 +62,13 @@ export function ContractCard(props: {
 }
 
 export function ResolutionOrChance(props: {
-  resolution?: 'YES' | 'NO' | 'MKT' | 'CANCEL' | string
-  probPercent: string
+  contract: Contract
   large?: boolean
   className?: string
 }) {
-  const { resolution, probPercent, large, className } = props
+  const { contract, large, className } = props
+  const { resolution } = contract
+  const marketClosed = (contract.closeTime || Infinity) < Date.now()
 
   const resolutionColor =
     {
@@ -77,11 +79,13 @@ export function ResolutionOrChance(props: {
       '': '', // Empty if unresolved
     }[resolution || ''] ?? 'text-primary'
 
+  const probColor = marketClosed ? 'text-gray-400' : 'text-primary'
+
   const resolutionText =
     {
       YES: 'YES',
       NO: 'NO',
-      MKT: probPercent,
+      MKT: getBinaryProbPercent(contract),
       CANCEL: 'N/A',
       '': '',
     }[resolution || ''] ?? `#${resolution}`
@@ -99,10 +103,8 @@ export function ResolutionOrChance(props: {
         </>
       ) : (
         <>
-          <div className="text-primary">{probPercent}</div>
-          <div
-            className={clsx('text-primary', large ? 'text-xl' : 'text-base')}
-          >
+          <div className={probColor}>{getBinaryProbPercent(contract)}</div>
+          <div className={clsx(probColor, large ? 'text-xl' : 'text-base')}>
             chance
           </div>
         </>

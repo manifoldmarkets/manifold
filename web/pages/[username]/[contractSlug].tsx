@@ -176,12 +176,7 @@ function BetsSection(props: {
       <Title className="px-2" text="Your trades" />
       {isBinary && (
         <>
-          <MyBetsSummary
-            className="px-2"
-            contract={contract}
-            bets={userBets}
-            showMKT
-          />
+          <MyBetsSummary className="px-2" contract={contract} bets={userBets} />
           <Spacer h={6} />
         </>
       )}

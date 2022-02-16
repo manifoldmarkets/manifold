@@ -123,31 +123,34 @@ export function BetsList(props: { user: User }) {
 
   const totalPortfolio = currentBetsValue + user.balance
 
-  const pnl = totalPortfolio - user.totalDeposits
-  const totalReturn =
-    (pnl > 0 ? '+' : '') + ((pnl / user.totalDeposits) * 100).toFixed() + '%'
+  const totalPnl = totalPortfolio - user.totalDeposits
+  const totalProfit = (totalPnl / user.totalDeposits) * 100
+  const investedProfit =
+    ((currentBetsValue - currentInvestment) / currentInvestment) * 100
 
   return (
-    <Col className="mt-6 gap-6">
+    <Col className="mt-6 gap-4 sm:gap-6">
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
-            <div className="text-sm text-gray-500">Total portfolio</div>
-            <div>{formatMoney(totalPortfolio)}</div>
-          </Col>
-          <Col>
-            <div className="text-sm text-gray-500">Total profits & losses</div>
-            <div>
-              {formatMoney(pnl)} ({totalReturn})
+            <div className="text-sm text-gray-500">Invested</div>
+            <div className="text-lg">
+              {formatMoney(currentBetsValue)}{' '}
+              <ProfitBadge profitPercent={investedProfit} />
             </div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">Currently invested</div>
-            <div>{formatMoney(currentInvestment)}</div>
+            <div className="text-sm text-gray-500">Balance</div>
+            <div className="whitespace-nowrap text-lg">
+              {formatMoney(user.balance)}{' '}
+            </div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">Current market value</div>
-            <div>{formatMoney(currentBetsValue)}</div>
+            <div className="text-sm text-gray-500">Total portfolio</div>
+            <div className="text-lg">
+              {formatMoney(totalPortfolio)}{' '}
+              <ProfitBadge profitPercent={totalProfit} />
+            </div>
           </Col>
         </Row>
 
@@ -187,9 +190,9 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
       )}
       onClick={() => setCollapsed((collapsed) => !collapsed)}
     >
-      <Row className="flex-wrap gap-4">
+      <Row className="flex-wrap gap-2">
         <Col className="flex-[2] gap-1">
-          <Row className="mr-6">
+          <Row className="mr-2 max-w-lg">
             <Link href={contractPath(contract)}>
               <a
                 className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
@@ -223,9 +226,10 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
         </Col>
 
         <MyBetsSummary
-          className="mr-5 flex-1 justify-end sm:mr-8"
+          className="mr-5 justify-end sm:mr-8"
           contract={contract}
           bets={bets}
+          onlyMKT
         />
       </Row>
 
@@ -233,6 +237,14 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
         className="collapse-content !px-0"
         style={{ backgroundColor: 'white' }}
       >
+        <Spacer h={8} />
+
+        <MyBetsSummary
+          className="mr-5 flex-1 sm:mr-8"
+          contract={contract}
+          bets={bets}
+        />
+
         <Spacer h={8} />
 
         <ContractBetsTable contract={contract} bets={bets} />
@@ -244,10 +256,10 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
 export function MyBetsSummary(props: {
   contract: Contract
   bets: Bet[]
-  showMKT?: boolean
+  onlyMKT?: boolean
   className?: string
 }) {
-  const { bets, contract, showMKT, className } = props
+  const { bets, contract, onlyMKT, className } = props
   const { resolution } = contract
   calculateCancelPayout
 
@@ -269,49 +281,80 @@ export function MyBetsSummary(props: {
     calculatePayout(contract, bet, 'MKT')
   )
 
+  const currentValue = resolution ? betsPayout : marketWinnings
+  const pnl = currentValue - betsTotal
+  const profit = (pnl / betsTotal) * 100
+
+  const valueCol = (
+    <Col>
+      <div className="whitespace-nowrap text-right text-lg">
+        {formatMoney(currentValue)}
+      </div>
+      <div className="text-right">
+        <ProfitBadge profitPercent={profit} />
+      </div>
+    </Col>
+  )
+
+  const payoutCol = (
+    <Col>
+      <div className="text-sm text-gray-500">Payout</div>
+      <div className="whitespace-nowrap">
+        {formatMoney(betsPayout)} <ProfitBadge profitPercent={profit} />
+      </div>
+    </Col>
+  )
+
   return (
     <Row
       className={clsx(
         'gap-4 sm:gap-6',
-        showMKT && 'flex-wrap sm:flex-nowrap',
+        !onlyMKT && 'flex-wrap sm:flex-nowrap',
         className
       )}
     >
-      <Col>
-        <div className="whitespace-nowrap text-sm text-gray-500">Invested</div>
-        <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
-      </Col>
-      {resolution ? (
-        <Col>
-          <div className="text-sm text-gray-500">Payout</div>
-          <div className="whitespace-nowrap">{formatMoney(betsPayout)}</div>
-        </Col>
+      {onlyMKT ? (
+        <Row className="gap-4 sm:gap-6">{valueCol}</Row>
       ) : (
         <Row className="gap-4 sm:gap-6">
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">
-              Payout if <YesLabel />
+              Invested
             </div>
-            <div className="whitespace-nowrap">{formatMoney(yesWinnings)}</div>
+            <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
           </Col>
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Payout if <NoLabel />
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
-          </Col>
-          {showMKT && (
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout at{' '}
-                <span className="text-blue-400">
-                  {formatPercent(getProbability(contract.totalShares))}
-                </span>
-              </div>
-              <div className="whitespace-nowrap">
-                {formatMoney(marketWinnings)}
-              </div>
-            </Col>
+          {resolution ? (
+            payoutCol
+          ) : (
+            <>
+              <Col>
+                <div className="whitespace-nowrap text-sm text-gray-500">
+                  Payout if <YesLabel />
+                </div>
+                <div className="whitespace-nowrap">
+                  {formatMoney(yesWinnings)}
+                </div>
+              </Col>
+              <Col>
+                <div className="whitespace-nowrap text-sm text-gray-500">
+                  Payout if <NoLabel />
+                </div>
+                <div className="whitespace-nowrap">
+                  {formatMoney(noWinnings)}
+                </div>
+              </Col>
+              <Col>
+                <div className="whitespace-nowrap text-sm text-gray-500">
+                  Payout at{' '}
+                  <span className="text-blue-400">
+                    {formatPercent(getProbability(contract.totalShares))}
+                  </span>
+                </div>
+                <div className="whitespace-nowrap">
+                  {formatMoney(marketWinnings)}
+                </div>
+              </Col>
+            </>
           )}
         </Row>
       )}
@@ -446,5 +489,25 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
         {formatMoney(calculateSaleAmount(contract, bet))}?
       </div>
     </ConfirmationButton>
+  )
+}
+
+function ProfitBadge(props: { profitPercent: number }) {
+  const { profitPercent } = props
+  if (!profitPercent) return null
+  const colors =
+    profitPercent > 0
+      ? 'bg-green-100 text-green-800'
+      : 'bg-red-100 text-red-800'
+
+  return (
+    <span
+      className={clsx(
+        'ml-1 inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium',
+        colors
+      )}
+    >
+      {(profitPercent > 0 ? '+' : '') + profitPercent.toFixed(1) + '%'}
+    </span>
   )
 }

@@ -342,11 +342,7 @@ function FeedQuestion(props: { contract: Contract }) {
             {question}
           </SiteLink>
           {(isBinary || resolution) && (
-            <ResolutionOrChance
-              className="items-center"
-              resolution={resolution}
-              probPercent={getBinaryProbPercent(contract)}
-            />
+            <ResolutionOrChance className="items-center" contract={contract} />
           )}
         </Col>
         <TruncatedComment
