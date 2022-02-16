@@ -31,7 +31,7 @@ async function sendMarketCloseEmails() {
           return undefined
 
         transaction.update(doc.ref, {
-          closeEmailsSent: contract.closeEmailsSent ?? 0 + 1,
+          closeEmailsSent: (contract.closeEmailsSent ?? 0) + 1,
         })
 
         return contract
