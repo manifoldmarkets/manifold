@@ -90,6 +90,37 @@ export function YesNoCancelSelector(props: {
   )
 }
 
+export function ChooseCancelSelector(props: {
+  selected: 'CHOOSE' | 'CANCEL' | undefined
+  onSelect: (selected: 'CHOOSE' | 'CANCEL') => void
+  className?: string
+  btnClassName?: string
+}) {
+  const { selected, onSelect, className } = props
+
+  const btnClassName = clsx('px-6 flex-1', props.btnClassName)
+
+  return (
+    <Col className={clsx('gap-2', className)}>
+      <Button
+        color={selected === 'CHOOSE' ? 'green' : 'gray'}
+        onClick={() => onSelect('CHOOSE')}
+        className={clsx('whitespace-nowrap', btnClassName)}
+      >
+        Choose an answer
+      </Button>
+
+      <Button
+        color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+        onClick={() => onSelect('CANCEL')}
+        className={clsx(btnClassName, '')}
+      >
+        N/A
+      </Button>
+    </Col>
+  )
+}
+
 const fundAmounts = [500, 1000, 2500, 10000]
 
 export function FundsSelector(props: {
@@ -121,7 +152,7 @@ export function BuyButton(props: { className?: string; onClick?: () => void }) {
   const { className, onClick } = props
   return (
     <Button className={className} onClick={onClick} color="green">
-      Buy
+      BUY
     </Button>
   )
 }

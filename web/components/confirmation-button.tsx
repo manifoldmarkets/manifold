@@ -51,3 +51,36 @@ export function ConfirmationButton(props: {
     </>
   )
 }
+
+export function ResolveConfirmationButton(props: {
+  onResolve: () => void
+  isSubmitting: boolean
+  openModelButtonClass?: string
+  submitButtonClass?: string
+}) {
+  const { onResolve, isSubmitting, openModelButtonClass, submitButtonClass } =
+    props
+  return (
+    <ConfirmationButton
+      id="resolution-modal"
+      openModelBtn={{
+        className: clsx(
+          'border-none self-start',
+          openModelButtonClass,
+          isSubmitting && 'btn-disabled loading'
+        ),
+        label: 'Resolve',
+      }}
+      cancelBtn={{
+        label: 'Back',
+      }}
+      submitBtn={{
+        label: 'Resolve',
+        className: clsx('border-none', submitButtonClass),
+      }}
+      onSubmit={onResolve}
+    >
+      <p>Are you sure you want to resolve this market?</p>
+    </ConfirmationButton>
+  )
+}

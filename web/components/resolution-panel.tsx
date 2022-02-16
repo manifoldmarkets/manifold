@@ -7,7 +7,7 @@ import { Title } from './title'
 import { User } from '../lib/firebase/users'
 import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
-import { ConfirmationButton as ConfirmationButton } from './confirmation-button'
+import { ResolveConfirmationButton } from './confirmation-button'
 import { resolveMarket } from '../lib/firebase/api-call'
 import { ProbabilitySelector } from './probability-selector'
 import { getProbability } from '../../common/calculate'
@@ -114,27 +114,12 @@ export function ResolutionPanel(props: {
 
       {!!error && <div className="text-red-500">{error}</div>}
 
-      <ConfirmationButton
-        id="resolution-modal"
-        openModelBtn={{
-          className: clsx(
-            'border-none self-start mt-2 w-full',
-            submitButtonClass,
-            isSubmitting && 'btn-disabled loading'
-          ),
-          label: 'Resolve',
-        }}
-        cancelBtn={{
-          label: 'Back',
-        }}
-        submitBtn={{
-          label: 'Resolve',
-          className: submitButtonClass,
-        }}
-        onSubmit={resolve}
-      >
-        <p>Are you sure you want to resolve this market?</p>
-      </ConfirmationButton>
+      <ResolveConfirmationButton
+        onResolve={resolve}
+        isSubmitting={isSubmitting}
+        openModelButtonClass={clsx('w-full mt-2', submitButtonClass)}
+        submitButtonClass={submitButtonClass}
+      />
     </Col>
   )
 }

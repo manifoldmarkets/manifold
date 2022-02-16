@@ -14,7 +14,7 @@ import { Avatar } from './avatar'
 import { SiteLink } from './site-link'
 import { DateTimeTooltip } from './datetime-tooltip'
 import dayjs from 'dayjs'
-import { BuyButton } from './yes-no-selector'
+import { BuyButton, ChooseCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import {
   formatMoney,
@@ -32,6 +32,7 @@ import {
 import { firebaseLogin } from '../lib/firebase/users'
 import { Bet } from '../../common/bet'
 import { useAnswers } from '../hooks/use-answers'
+import { ResolveConfirmationButton } from './confirmation-button'
 
 export function AnswersPanel(props: {
   contract: Contract<'MULTI'>
@@ -45,18 +46,49 @@ export function AnswersPanel(props: {
     (answer) => -1 * getOutcomeProbability(contract.totalShares, answer.id)
   )
 
+  const user = useUser()
+
+  const [resolveOption, setResolveOption] = useState<
+    'CHOOSE' | 'CANCEL' | undefined
+  >()
+  const [answerChoice, setAnswerChoice] = useState<string | undefined>()
+
   return (
     <Col className="gap-3">
       {sortedAnswers.map((answer) => (
-        <AnswerItem key={answer.id} answer={answer} contract={contract} />
+        <AnswerItem
+          key={answer.id}
+          answer={answer}
+          contract={contract}
+          showChoice={resolveOption === 'CHOOSE'}
+          isChosen={answer.id === answerChoice}
+          onChoose={() => setAnswerChoice(answer.id)}
+        />
       ))}
+
       <CreateAnswerInput contract={contract} />
+
+      {user?.id === contract.creatorId && (
+        <AnswerResolvePanel
+          contract={contract}
+          resolveOption={resolveOption}
+          setResolveOption={setResolveOption}
+          answer={answerChoice}
+          clearAnswerChoice={() => setAnswerChoice(undefined)}
+        />
+      )}
     </Col>
   )
 }
 
-function AnswerItem(props: { answer: Answer; contract: Contract<'MULTI'> }) {
-  const { answer, contract } = props
+function AnswerItem(props: {
+  answer: Answer
+  contract: Contract<'MULTI'>
+  showChoice: boolean
+  isChosen: boolean
+  onChoose: () => void
+}) {
+  const { answer, contract, showChoice, isChosen, onChoose } = props
   const { username, avatarUrl, name, createdTime, number, text } = answer
 
   const createdDate = dayjs(createdTime).format('MMM D')
@@ -99,12 +131,28 @@ function AnswerItem(props: { answer: Answer; contract: Contract<'MULTI'> }) {
       ) : (
         <Row className="self-end sm:self-start items-center gap-4">
           <div className="text-2xl text-green-500">{probPercent}</div>
-          <BuyButton
-            className="justify-end self-end flex-initial btn-md !px-8"
-            onClick={() => {
-              setIsBetting(true)
-            }}
-          />
+          {showChoice ? (
+            <div className="form-control py-1">
+              <label className="cursor-pointer label gap-2">
+                <span className="label-text">Choose this answer</span>
+                <input
+                  className={clsx('radio', isChosen && '!bg-green-500')}
+                  type="radio"
+                  name="opt"
+                  checked={isChosen}
+                  onChange={onChoose}
+                  value={answer.id}
+                />
+              </label>
+            </div>
+          ) : (
+            <BuyButton
+              className="justify-end self-end flex-initial btn-md !px-8"
+              onClick={() => {
+                setIsBetting(true)
+              }}
+            />
+          )}
         </Row>
       )}
     </Col>
@@ -323,6 +371,67 @@ function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
             Submit answer & bet
           </button>
         </Col>
+      </Col>
+    </Col>
+  )
+}
+
+function AnswerResolvePanel(props: {
+  contract: Contract<'MULTI'>
+  resolveOption: 'CHOOSE' | 'CANCEL' | undefined
+  setResolveOption: (option: 'CHOOSE' | 'CANCEL' | undefined) => void
+  answer: string | undefined
+  clearAnswerChoice: () => void
+}) {
+  const {
+    contract,
+    resolveOption,
+    setResolveOption,
+    answer,
+    clearAnswerChoice,
+  } = props
+
+  const resolutionButtonClass =
+    resolveOption === 'CANCEL'
+      ? 'bg-yellow-400 hover:bg-yellow-500'
+      : resolveOption === 'CHOOSE' && answer
+      ? 'btn-primary'
+      : 'btn-disabled'
+
+  return (
+    <Col className="gap-4 p-4 bg-gray-50 rounded">
+      <div>Resolve your market</div>
+      <Col className="sm:flex-row sm:items-center gap-2">
+        <ChooseCancelSelector
+          className="!flex-row flex-wrap items-center"
+          selected={resolveOption}
+          onSelect={setResolveOption}
+        />
+
+        <Row
+          className={clsx(
+            'flex-1 items-center',
+            resolveOption ? 'justify-between' : 'justify-end'
+          )}
+        >
+          {resolveOption && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                setResolveOption(undefined)
+                clearAnswerChoice()
+              }}
+            >
+              Clear
+            </button>
+          )}
+          <ResolveConfirmationButton
+            onResolve={() => {}}
+            isSubmitting={false}
+            openModelButtonClass={resolutionButtonClass}
+            submitButtonClass={resolutionButtonClass}
+          />
+        </Row>
       </Col>
     </Col>
   )

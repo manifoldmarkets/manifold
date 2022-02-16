@@ -27,5 +27,5 @@ export function ProbLabel() {
 }
 
 export function AnswerNumberLabel(props: { number: string }) {
-  return <span className="text-blue-400">#{props.number}</span>
+  return <span className="text-primary">#{props.number}</span>
 }
