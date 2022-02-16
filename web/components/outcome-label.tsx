@@ -1,5 +1,5 @@
 export function OutcomeLabel(props: {
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
+  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string
 }) {
   const { outcome } = props
 

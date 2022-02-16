@@ -33,18 +33,28 @@ import { firebaseLogin } from '../lib/firebase/users'
 import { Bet } from '../../common/bet'
 import { useAnswers } from '../hooks/use-answers'
 import { ResolveConfirmationButton } from './confirmation-button'
+import { tradingAllowed } from '../lib/firebase/contracts'
+import { OutcomeLabel } from './outcome-label'
 
 export function AnswersPanel(props: {
   contract: Contract<'MULTI'>
   answers: Answer[]
 }) {
   const { contract } = props
+  const { creatorId, resolution } = contract
 
   const answers = useAnswers(contract.id) ?? props.answers
-  const sortedAnswers = _.sortBy(
+  const [chosenAnswer, otherAnswers] = _.partition(
     answers,
-    (answer) => -1 * getOutcomeProbability(contract.totalShares, answer.id)
+    (answer) => answer.id === resolution
   )
+  const sortedAnswers = [
+    ...chosenAnswer,
+    ..._.sortBy(
+      otherAnswers,
+      (answer) => -1 * getOutcomeProbability(contract.totalShares, answer.id)
+    ),
+  ]
 
   const user = useUser()
 
@@ -55,6 +65,11 @@ export function AnswersPanel(props: {
 
   return (
     <Col className="gap-3">
+      {resolution && (
+        <div>
+          Resolved to answer <OutcomeLabel outcome={resolution} />:
+        </div>
+      )}
       {sortedAnswers.map((answer) => (
         <AnswerItem
           key={answer.id}
@@ -66,9 +81,9 @@ export function AnswersPanel(props: {
         />
       ))}
 
-      <CreateAnswerInput contract={contract} />
+      {tradingAllowed(contract) && <CreateAnswerInput contract={contract} />}
 
-      {user?.id === contract.creatorId && (
+      {user?.id === creatorId && !resolution && (
         <AnswerResolvePanel
           contract={contract}
           resolveOption={resolveOption}
@@ -89,16 +104,27 @@ function AnswerItem(props: {
   onChoose: () => void
 }) {
   const { answer, contract, showChoice, isChosen, onChoose } = props
+  const { resolution, totalShares } = contract
   const { username, avatarUrl, name, createdTime, number, text } = answer
 
   const createdDate = dayjs(createdTime).format('MMM D')
-  const prob = getOutcomeProbability(contract.totalShares, answer.id)
+  const prob = getOutcomeProbability(totalShares, answer.id)
   const probPercent = formatPercent(prob)
+  const wasResolvedTo = resolution === answer.id
 
   const [isBetting, setIsBetting] = useState(false)
 
   return (
-    <Col className="p-4 sm:flex-row bg-gray-50 rounded">
+    <Col
+      className={clsx(
+        'p-4 sm:flex-row rounded',
+        wasResolvedTo
+          ? 'bg-green-50 mb-8'
+          : isChosen
+          ? 'bg-green-50'
+          : 'bg-gray-50'
+      )}
+    >
       <Col className="gap-3 flex-1">
         <div>{text}</div>
 
@@ -130,7 +156,14 @@ function AnswerItem(props: {
         />
       ) : (
         <Row className="self-end sm:self-start items-center gap-4">
-          <div className="text-2xl text-green-500">{probPercent}</div>
+          <div
+            className={clsx(
+              'text-2xl',
+              tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
+            )}
+          >
+            {probPercent}
+          </div>
           {showChoice ? (
             <div className="form-control py-1">
               <label className="cursor-pointer label gap-2">
@@ -146,12 +179,19 @@ function AnswerItem(props: {
               </label>
             </div>
           ) : (
-            <BuyButton
-              className="justify-end self-end flex-initial btn-md !px-8"
-              onClick={() => {
-                setIsBetting(true)
-              }}
-            />
+            <>
+              {tradingAllowed(contract) && (
+                <BuyButton
+                  className="justify-end self-end flex-initial btn-md !px-8"
+                  onClick={() => {
+                    setIsBetting(true)
+                  }}
+                />
+              )}
+              {wasResolvedTo && (
+                <div className="text-green-700 text-xl">Chosen</div>
+              )}
+            </>
           )}
         </Row>
       )}
@@ -422,7 +462,7 @@ function AnswerResolvePanel(props: {
   return (
     <Col className="gap-4 p-4 bg-gray-50 rounded">
       <div>Resolve your market</div>
-      <Col className="sm:flex-row sm:items-center gap-2">
+      <Col className="sm:flex-row sm:items-center gap-4">
         <ChooseCancelSelector
           className="!flex-row flex-wrap items-center"
           selected={resolveOption}
