@@ -34,7 +34,7 @@ import { SiteLink } from './site-link'
 import { Col } from './layout/col'
 import { UserLink } from './user-page'
 import { DateTimeTooltip } from './datetime-tooltip'
-import { useBetsWithoutAntes } from '../hooks/use-bets'
+import { useBets } from '../hooks/use-bets'
 import { Bet } from '../lib/firebase/bets'
 import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
@@ -652,7 +652,10 @@ export function ContractFeed(props: {
   const [expanded, setExpanded] = useState(false)
   const user = useUser()
 
-  const bets = useBetsWithoutAntes(contract, props.bets) ?? []
+  let bets = useBets(contract.id) ?? props.bets
+  bets = isBinary
+    ? bets.filter((bet) => !bet.isAnte)
+    : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
 
   const comments = useComments(id) ?? props.comments
 
