@@ -2,9 +2,11 @@ import { Fragment } from 'react'
 import { SiteLink } from './site-link'
 
 // Return a JSX span, linkifying @username, #hashtags, and https://...
+// TODO: Use a markdown parser instead of rolling our own here.
 export function Linkify(props: { text: string; gray?: boolean }) {
   const { text, gray } = props
-  const regex = /(?:^|\s)(?:[@#][a-z0-9_]+|https?:\/\/\S+)/gi
+  const regex =
+    /(?:^|\s)(?:[@#][a-z0-9_]+|https?:\/\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#\/%=~_()|])/gi
   const matches = text.match(regex) || []
   const links = matches.map((match) => {
     // Matches are in the form: " @username" or "https://example.com"
