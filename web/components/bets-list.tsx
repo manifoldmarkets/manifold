@@ -33,7 +33,7 @@ import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from '../../common/util/array'
 
-type BetSort = 'newest' | 'profit'
+type BetSort = 'newest' | 'profit' | 'resolved'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -111,6 +111,8 @@ export function BetsList(props: { user: User }) {
     (c) => c.isResolved
   )
 
+  const displayedContracts = sort === 'resolved' ? resolved : unresolved
+
   const currentInvestment = _.sumBy(
     unresolved,
     (c) => contractsInvestment[c.id]
@@ -161,10 +163,11 @@ export function BetsList(props: { user: User }) {
         >
           <option value="profit">By profit</option>
           <option value="newest">Newest</option>
+          <option value="resolved">Resolved</option>
         </select>
       </Col>
 
-      {[...unresolved, ...resolved].map((contract) => (
+      {displayedContracts.map((contract) => (
         <MyContractBets
           key={contract.id}
           contract={contract}
