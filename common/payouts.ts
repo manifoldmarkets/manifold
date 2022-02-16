@@ -7,7 +7,7 @@ import { CREATOR_FEE, FEES } from './fees'
 
 export const getCancelPayouts = (contract: Contract, bets: Bet[]) => {
   const { pool } = contract
-  const poolTotal = pool.YES + pool.NO
+  const poolTotal = _.sum(Object.values(pool))
   console.log('resolved N/A, pool M$', poolTotal)
 
   const betSum = _.sumBy(bets, (b) => b.amount)
@@ -19,18 +19,17 @@ export const getCancelPayouts = (contract: Contract, bets: Bet[]) => {
 }
 
 export const getStandardPayouts = (
-  outcome: 'YES' | 'NO',
+  outcome: string,
   contract: Contract,
   bets: Bet[]
 ) => {
-  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
-  const winningBets = outcome === 'YES' ? yesBets : noBets
+  const winningBets = bets.filter((bet) => bet.outcome === outcome)
 
-  const pool = contract.pool.YES + contract.pool.NO
+  const poolTotal = _.sum(Object.values(contract.pool))
   const totalShares = _.sumBy(winningBets, (b) => b.shares)
 
   const payouts = winningBets.map(({ userId, amount, shares }) => {
-    const winnings = (shares / totalShares) * pool
+    const winnings = (shares / totalShares) * poolTotal
     const profit = winnings - amount
 
     // profit can be negative if using phantom shares
@@ -45,7 +44,7 @@ export const getStandardPayouts = (
     'resolved',
     outcome,
     'pool',
-    pool,
+    poolTotal,
     'profits',
     profits,
     'creator fee',
@@ -114,5 +113,8 @@ export const getPayouts = (
       return getMktPayouts(contract, bets, resolutionProbability)
     case 'CANCEL':
       return getCancelPayouts(contract, bets)
+    default:
+      // Multi outcome.
+      return getStandardPayouts(outcome, contract, bets)
   }
 }

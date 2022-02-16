@@ -8,7 +8,7 @@ import { Answer } from '../../common/answer'
 import { Contract } from '../../common/contract'
 import { AmountInput } from './amount-input'
 import { Col } from './layout/col'
-import { createAnswer, placeBet } from '../lib/firebase/api-call'
+import { createAnswer, placeBet, resolveMarket } from '../lib/firebase/api-call'
 import { Row } from './layout/row'
 import { Avatar } from './avatar'
 import { SiteLink } from './site-link'
@@ -391,6 +391,27 @@ function AnswerResolvePanel(props: {
     clearAnswerChoice,
   } = props
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | undefined>(undefined)
+
+  const onResolve = async () => {
+    if (answer === undefined) return
+
+    setIsSubmitting(true)
+
+    const result = await resolveMarket({
+      outcome: answer,
+      contractId: contract.id,
+    }).then((r) => r.data as any)
+
+    console.log('resolved', `#${answer}`, 'result:', result)
+
+    if (result?.status !== 'success') {
+      setError(result?.error || 'Error resolving market')
+    }
+    setIsSubmitting(false)
+  }
+
   const resolutionButtonClass =
     resolveOption === 'CANCEL'
       ? 'bg-yellow-400 hover:bg-yellow-500'
@@ -426,13 +447,15 @@ function AnswerResolvePanel(props: {
             </button>
           )}
           <ResolveConfirmationButton
-            onResolve={() => {}}
-            isSubmitting={false}
+            onResolve={onResolve}
+            isSubmitting={isSubmitting}
             openModelButtonClass={resolutionButtonClass}
             submitButtonClass={resolutionButtonClass}
           />
         </Row>
       </Col>
+
+      {!!error && <div className="text-red-500">{error}</div>}
     </Col>
   )
 }

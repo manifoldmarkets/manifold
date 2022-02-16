@@ -20,7 +20,7 @@ export function ResolutionPanel(props: {
 }) {
   useEffect(() => {
     // warm up cloud function
-    resolveMarket({}).catch()
+    resolveMarket({} as any).catch()
   }, [])
 
   const { contract, className } = props
@@ -35,6 +35,8 @@ export function ResolutionPanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
 
   const resolve = async () => {
+    if (!outcome) return
+
     setIsSubmitting(true)
 
     const result = await resolveMarket({

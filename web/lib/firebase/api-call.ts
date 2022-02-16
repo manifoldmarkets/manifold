@@ -28,7 +28,14 @@ export const createAnswer = cloudFunction<
   }
 >('createAnswer')
 
-export const resolveMarket = cloudFunction('resolveMarket')
+export const resolveMarket = cloudFunction<
+  {
+    outcome: string
+    contractId: string
+    probabilityInt?: number
+  },
+  { status: 'error' | 'success'; message?: string }
+>('resolveMarket')
 
 export const sellBet = cloudFunction('sellBet')
 

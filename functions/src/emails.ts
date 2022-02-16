@@ -15,12 +15,23 @@ type market_resolved_template = {
   url: string
 }
 
+const toDisplayResolution = (outcome: string, prob: number) => {
+  const display = {
+    YES: 'YES',
+    NO: 'NO',
+    CANCEL: 'N/A',
+    MKT: formatPercent(prob),
+  }[outcome]
+
+  return display === undefined ? `#${outcome}` : display
+}
+
 export const sendMarketResolutionEmail = async (
   userId: string,
   payout: number,
   creator: User,
   contract: Contract,
-  resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT',
+  resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string,
   resolutionProbability?: number
 ) => {
   const privateUser = await getPrivateUser(userId)
@@ -36,13 +47,7 @@ export const sendMarketResolutionEmail = async (
 
   const prob = resolutionProbability ?? getProbability(contract.totalShares)
 
-  const toDisplayResolution = {
-    YES: 'YES',
-    NO: 'NO',
-    CANCEL: 'N/A',
-    MKT: formatPercent(prob),
-  }
-  const outcome = toDisplayResolution[resolution]
+  const outcome = toDisplayResolution(resolution, prob)
 
   const subject = `Resolved ${outcome}: ${contract.question}`
 

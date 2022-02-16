@@ -179,33 +179,48 @@ export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
 }
 
 function calculateMktPayout(contract: Contract, bet: Bet) {
-  const { resolutionProbability, totalShares, pool, phantomShares } = contract
+  if (contract.outcomeType === 'BINARY')
+    return calculateBinaryMktPayout(contract, bet)
+
+  const { totalShares, pool } = contract as any as Contract<'MULTI'>
 
   const totalPool = _.sum(Object.values(pool))
-  const squareSum = _.sumBy(Object.values(totalShares), (shares) => shares ** 2)
+  const sharesSquareSum = _.sumBy(
+    Object.values(totalShares),
+    (shares) => shares ** 2
+  )
 
-  let weightedShareTotal = _.sumBy(Object.keys(totalShares), (outcome) => {
-    const shareTotals = totalShares as { [outcome: string]: number }
-
-    // Avoid O(n^2) by reusing squareSum for prob.
-    const prob = shareTotals[outcome] ** 2 / squareSum
-    const shares =
-      shareTotals[outcome] -
-      (phantomShares ? phantomShares[outcome as 'YES' | 'NO'] : 0)
+  const weightedShareTotal = _.sumBy(Object.keys(totalShares), (outcome) => {
+    // Avoid O(n^2) by reusing sharesSquareSum for prob.
+    const shares = totalShares[outcome]
+    const prob = shares ** 2 / sharesSquareSum
     return prob * shares
   })
-
-  // Compute binary case if resolutionProbability provided.
-  if (resolutionProbability !== undefined) {
-    weightedShareTotal =
-      resolutionProbability * (totalShares.YES - phantomShares.YES) +
-      (1 - resolutionProbability) * (totalShares.NO - phantomShares.NO)
-  }
 
   const { outcome, amount, shares } = bet
 
   const betP = getOutcomeProbability(totalShares, outcome)
   const winnings = ((betP * shares) / weightedShareTotal) * totalPool
+
+  return deductFees(amount, winnings)
+}
+
+function calculateBinaryMktPayout(contract: Contract, bet: Bet) {
+  const p =
+    contract.resolutionProbability !== undefined
+      ? contract.resolutionProbability
+      : getProbability(contract.totalShares)
+
+  const pool = contract.pool.YES + contract.pool.NO
+
+  const weightedShareTotal =
+    p * (contract.totalShares.YES - contract.phantomShares.YES) +
+    (1 - p) * (contract.totalShares.NO - contract.phantomShares.NO)
+
+  const { outcome, amount, shares } = bet
+
+  const betP = outcome === 'YES' ? p : 1 - p
+  const winnings = ((betP * shares) / weightedShareTotal) * pool
 
   return deductFees(amount, winnings)
 }
