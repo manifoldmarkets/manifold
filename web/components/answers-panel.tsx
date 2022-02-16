@@ -34,7 +34,6 @@ import { Bet } from '../../common/bet'
 import { useAnswers } from '../hooks/use-answers'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { tradingAllowed } from '../lib/firebase/contracts'
-import { OutcomeLabel } from './outcome-label'
 
 export function AnswersPanel(props: {
   contract: Contract<'MULTI'>
@@ -65,11 +64,6 @@ export function AnswersPanel(props: {
 
   return (
     <Col className="gap-3">
-      {resolution && (
-        <div>
-          Resolved to answer <OutcomeLabel outcome={resolution} />:
-        </div>
-      )}
       {sortedAnswers.map((answer) => (
         <AnswerItem
           key={answer.id}
@@ -156,14 +150,16 @@ function AnswerItem(props: {
         />
       ) : (
         <Row className="self-end sm:self-start items-center gap-4">
-          <div
-            className={clsx(
-              'text-2xl',
-              tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
-            )}
-          >
-            {probPercent}
-          </div>
+          {!wasResolvedTo && (
+            <div
+              className={clsx(
+                'text-2xl',
+                tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
+              )}
+            >
+              {probPercent}
+            </div>
+          )}
           {showChoice ? (
             <div className="form-control py-1">
               <label className="cursor-pointer label gap-2">
@@ -189,7 +185,10 @@ function AnswerItem(props: {
                 />
               )}
               {wasResolvedTo && (
-                <div className="text-green-700 text-xl">Chosen</div>
+                <Col className="items-end">
+                  <div className="text-green-700 text-xl">Chosen</div>
+                  <div className="text-2xl text-gray-500">{probPercent}</div>
+                </Col>
               )}
             </>
           )}

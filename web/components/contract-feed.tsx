@@ -390,8 +390,9 @@ function OutcomeIcon(props: { outcome?: outcome }) {
     case 'NO':
       return <XIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
     case 'CANCEL':
-    default:
       return <BanIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+    default:
+      return <CheckIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
   }
 }
 

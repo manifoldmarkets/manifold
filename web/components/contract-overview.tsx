@@ -48,29 +48,29 @@ export const ContractOverview = (props: {
             <Linkify text={question} />
           </div>
 
-          {isBinary && (
-            <Row className="items-center justify-between gap-4">
+          <Row className="items-center justify-between gap-4">
+            {(isBinary || resolution) && (
               <ResolutionOrChance
                 className="md:hidden"
                 resolution={resolution}
                 probPercent={getBinaryProbPercent(contract)}
                 large
               />
+            )}
 
-              {tradingAllowed(contract) && (
-                <BetRow
-                  contract={contract}
-                  className="md:hidden"
-                  labelClassName="hidden"
-                />
-              )}
-            </Row>
-          )}
+            {isBinary && tradingAllowed(contract) && (
+              <BetRow
+                contract={contract}
+                className="md:hidden"
+                labelClassName="hidden"
+              />
+            )}
+          </Row>
 
           <ContractDetails contract={contract} />
         </Col>
 
-        {isBinary && (
+        {(isBinary || resolution) && (
           <Col className="hidden items-end justify-between md:flex">
             <ResolutionOrChance
               className="items-end"

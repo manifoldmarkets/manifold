@@ -61,28 +61,30 @@ export function ContractCard(props: {
 }
 
 export function ResolutionOrChance(props: {
-  resolution?: 'YES' | 'NO' | 'MKT' | 'CANCEL'
+  resolution?: 'YES' | 'NO' | 'MKT' | 'CANCEL' | string
   probPercent: string
   large?: boolean
   className?: string
 }) {
   const { resolution, probPercent, large, className } = props
 
-  const resolutionColor = {
-    YES: 'text-primary',
-    NO: 'text-red-400',
-    MKT: 'text-blue-400',
-    CANCEL: 'text-yellow-400',
-    '': '', // Empty if unresolved
-  }[resolution || '']
+  const resolutionColor =
+    {
+      YES: 'text-primary',
+      NO: 'text-red-400',
+      MKT: 'text-blue-400',
+      CANCEL: 'text-yellow-400',
+      '': '', // Empty if unresolved
+    }[resolution || ''] ?? 'text-primary'
 
-  const resolutionText = {
-    YES: 'YES',
-    NO: 'NO',
-    MKT: probPercent,
-    CANCEL: 'N/A',
-    '': '',
-  }[resolution || '']
+  const resolutionText =
+    {
+      YES: 'YES',
+      NO: 'NO',
+      MKT: probPercent,
+      CANCEL: 'N/A',
+      '': '',
+    }[resolution || ''] ?? `#${resolution}`
 
   return (
     <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
