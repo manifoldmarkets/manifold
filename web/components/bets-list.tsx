@@ -23,7 +23,6 @@ import {
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import {
-  calculateCancelPayout,
   calculatePayout,
   calculateSaleAmount,
   getProbability,
