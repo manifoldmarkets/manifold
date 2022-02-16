@@ -43,21 +43,21 @@ export function UserPage(props: { user: User; currentUser?: User }) {
       <SEO
         title={possesive + 'markets'}
         description={possesive + 'markets'}
-        url={`/@${user.username}`}
+        url={`/${user.username}`}
       />
 
+      {/* Banner image up top, with an circle avatar overlaid */}
       <div
         className="h-32 w-full bg-cover bg-center sm:h-40"
         style={{
           backgroundImage: `url(${bannerImageUrl})`,
         }}
       />
-
       <div className="relative -top-10 left-4">
         <Avatar username={user.username} avatarUrl={user.avatarUrl} size={20} />
       </div>
 
-      {/* Then the user's name, username, brief bio, and link to their twitter */}
+      {/* Profile details: name, username, bio, and link to twitter/discord */}
       <Col className="mx-4 -mt-6">
         <span className="text-2xl font-bold">{user.name}</span>
         <span className="text-gray-500">@{user.username}</span>
