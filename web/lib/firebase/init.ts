@@ -1,7 +1,7 @@
 import { getFirestore } from '@firebase/firestore'
 import { initializeApp, getApps, getApp } from 'firebase/app'
 
-export const isProd = process.env.NEXT_PUBLIC_FIREBASE_ENV !== 'DEV'
+export const isProd = false // process.env.NEXT_PUBLIC_FIREBASE_ENV !== 'DEV'
 
 const firebaseConfig = isProd
   ? {
