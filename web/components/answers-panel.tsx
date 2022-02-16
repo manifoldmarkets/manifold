@@ -75,14 +75,14 @@ export function AnswersPanel(props: {
         />
       ))}
 
-      {sortedAnswers.length === 0 && (
-        <div className="text-gray-500">No answers yet...</div>
+      {sortedAnswers.length === 0 ? (
+        <div className="text-gray-500 p-4">No answers yet...</div>
+      ) : (
+        <div className="text-gray-500 self-end p-4">
+          None of the above:{' '}
+          {formatPercent(getOutcomeProbability(contract.totalShares, '0'))}
+        </div>
       )}
-
-      <div className="self-end p-4">
-        None of the above:{' '}
-        {formatPercent(getOutcomeProbability(contract.totalShares, '0'))}
-      </div>
 
       {tradingAllowed(contract) && <CreateAnswerInput contract={contract} />}
 
@@ -480,7 +480,7 @@ function AnswerResolvePanel(props: {
       <div>Resolve your market</div>
       <Col className="sm:flex-row sm:items-center gap-4">
         <ChooseNoneCancelSelector
-          className="!flex-row flex-wrap items-center"
+          className="sm:!flex-row sm:items-center"
           selected={resolveOption}
           onSelect={setResolveOption}
         />
