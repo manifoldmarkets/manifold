@@ -14,7 +14,7 @@ import { Avatar } from './avatar'
 import { SiteLink } from './site-link'
 import { DateTimeTooltip } from './datetime-tooltip'
 import dayjs from 'dayjs'
-import { BuyButton, ChooseCancelSelector } from './yes-no-selector'
+import { BuyButton, ChooseNoneCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import {
   formatMoney,
@@ -44,7 +44,7 @@ export function AnswersPanel(props: {
 
   const answers = useAnswers(contract.id) ?? props.answers
   const [chosenAnswer, otherAnswers] = _.partition(
-    answers,
+    answers.filter((answer) => answer.id !== '0'),
     (answer) => answer.id === resolution
   )
   const sortedAnswers = [
@@ -58,7 +58,7 @@ export function AnswersPanel(props: {
   const user = useUser()
 
   const [resolveOption, setResolveOption] = useState<
-    'CHOOSE' | 'CANCEL' | undefined
+    'CHOOSE' | 'NONE' | 'CANCEL' | undefined
   >()
   const [answerChoice, setAnswerChoice] = useState<string | undefined>()
 
@@ -74,6 +74,15 @@ export function AnswersPanel(props: {
           onChoose={() => setAnswerChoice(answer.id)}
         />
       ))}
+
+      {sortedAnswers.length === 0 && (
+        <div className="text-gray-500">No answers yet...</div>
+      )}
+
+      <div className="self-end p-4">
+        None of the above:{' '}
+        {formatPercent(getOutcomeProbability(contract.totalShares, '0'))}
+      </div>
 
       {tradingAllowed(contract) && <CreateAnswerInput contract={contract} />}
 
@@ -418,8 +427,8 @@ function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
 
 function AnswerResolvePanel(props: {
   contract: Contract<'MULTI'>
-  resolveOption: 'CHOOSE' | 'CANCEL' | undefined
-  setResolveOption: (option: 'CHOOSE' | 'CANCEL' | undefined) => void
+  resolveOption: 'CHOOSE' | 'NONE' | 'CANCEL' | undefined
+  setResolveOption: (option: 'CHOOSE' | 'NONE' | 'CANCEL' | undefined) => void
   answer: string | undefined
   clearAnswerChoice: () => void
 }) {
@@ -440,7 +449,12 @@ function AnswerResolvePanel(props: {
     setIsSubmitting(true)
 
     const result = await resolveMarket({
-      outcome: resolveOption === 'CHOOSE' ? (answer as string) : 'CANCEL',
+      outcome:
+        resolveOption === 'CHOOSE'
+          ? (answer as string)
+          : resolveOption === 'NONE'
+          ? '0'
+          : 'CANCEL',
       contractId: contract.id,
     }).then((r) => r.data as any)
 
@@ -455,6 +469,8 @@ function AnswerResolvePanel(props: {
   const resolutionButtonClass =
     resolveOption === 'CANCEL'
       ? 'bg-yellow-400 hover:bg-yellow-500'
+      : resolveOption === 'NONE'
+      ? 'bg-red-400 hover:bg-red-500'
       : resolveOption === 'CHOOSE' && answer
       ? 'btn-primary'
       : 'btn-disabled'
@@ -463,7 +479,7 @@ function AnswerResolvePanel(props: {
     <Col className="gap-4 p-4 bg-gray-50 rounded">
       <div>Resolve your market</div>
       <Col className="sm:flex-row sm:items-center gap-4">
-        <ChooseCancelSelector
+        <ChooseNoneCancelSelector
           className="!flex-row flex-wrap items-center"
           selected={resolveOption}
           onSelect={setResolveOption}
