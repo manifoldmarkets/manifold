@@ -25,8 +25,7 @@ export function ContractCard(props: {
   className?: string
 }) {
   const { contract, showHotVolume, showCloseTime, className } = props
-  const { question, resolution } = contract
-  const probPercent = getBinaryProbPercent(contract)
+  const { question } = contract
 
   return (
     <div>
@@ -67,7 +66,8 @@ export function ResolutionOrChance(props: {
   className?: string
 }) {
   const { contract, large, className } = props
-  const { resolution } = contract
+  const { resolution, outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
 
   const resolutionColor =
@@ -102,12 +102,14 @@ export function ResolutionOrChance(props: {
           <div className={resolutionColor}>{resolutionText}</div>
         </>
       ) : (
-        <>
-          <div className={probColor}>{getBinaryProbPercent(contract)}</div>
-          <div className={clsx(probColor, large ? 'text-xl' : 'text-base')}>
-            chance
-          </div>
-        </>
+        isBinary && (
+          <>
+            <div className={probColor}>{getBinaryProbPercent(contract)}</div>
+            <div className={clsx(probColor, large ? 'text-xl' : 'text-base')}>
+              chance
+            </div>
+          </>
+        )
       )}
     </Col>
   )

@@ -111,7 +111,7 @@ function AnswerItem(props: {
   return (
     <Col
       className={clsx(
-        'p-4 sm:flex-row rounded',
+        'p-4 sm:flex-row rounded gap-4',
         wasResolvedTo
           ? 'bg-green-50 mb-8'
           : isChosen
