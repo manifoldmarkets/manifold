@@ -1,5 +1,5 @@
 import { Avatar } from './avatar'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { NewContract } from '../pages/create'
 import { firebaseLogin, User } from '../lib/firebase/users'
@@ -78,7 +78,21 @@ export default function FeedCreate(props: {
   )
   const placeholder = props.placeholder ?? `e.g. ${placeholders[randIndex]}`
 
+  const panelRef = useRef<HTMLElement | null>()
   const inputRef = useRef<HTMLTextAreaElement | null>()
+
+  useEffect(() => {
+    const onClick = () => {
+      if (
+        panelRef.current &&
+        document.activeElement &&
+        !panelRef.current.contains(document.activeElement)
+      )
+        setFocused(false)
+    }
+    window.addEventListener('click', onClick)
+    return () => window.removeEventListener('click', onClick)
+  })
 
   return (
     <div
@@ -87,7 +101,8 @@ export default function FeedCreate(props: {
         question || focused ? 'ring-2 ring-indigo-300' : '',
         className
       )}
-      onClick={() => !question && inputRef.current?.focus()}
+      onClick={() => !focused && inputRef.current?.focus()}
+      ref={(elem) => (panelRef.current = elem)}
     >
       <div className="relative flex items-start space-x-3">
         <Avatar username={user?.username} avatarUrl={user?.avatarUrl} noLink />
@@ -105,7 +120,6 @@ export default function FeedCreate(props: {
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setQuestion(e.target.value.replace('\n', ''))}
             onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
           />
         </div>
       </div>
