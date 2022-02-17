@@ -144,7 +144,7 @@ export function BetsList(props: { user: User }) {
           <Col>
             <div className="text-sm text-gray-500">Balance</div>
             <div className="whitespace-nowrap text-lg">
-              {formatMoney(user.balance)}{' '}
+              {formatMoney(Math.floor(user.balance))}{' '}
             </div>
           </Col>
           <Col>
