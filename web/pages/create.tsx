@@ -123,7 +123,10 @@ export function NewContract(props: { question: string; tag?: string }) {
     await router.push(contractPath(result.contract as Contract))
   }
 
-  const descriptionPlaceholder = `e.g. This market resolves to "YES" if, two weeks after closing, the...`
+  const descriptionPlaceholder =
+    outcomeType === 'BINARY'
+      ? `e.g. This market resolves to "YES" if, two weeks after closing, the...`
+      : `e.g. I will choose the answer according to...`
 
   if (!creator) return <></>
 
