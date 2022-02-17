@@ -1,13 +1,10 @@
-export type Bet<outcomeType extends 'BINARY' | 'MULTI' = 'BINARY'> = {
+export type Bet = {
   id: string
   userId: string
   contractId: string
 
   amount: number // bet size; negative if SELL bet
-  outcome: {
-    BINARY: 'YES' | 'NO'
-    MULTI: string
-  }[outcomeType]
+  outcome: string
   shares: number // dynamic parimutuel pool weight; negative if SELL bet
 
   probBefore: number

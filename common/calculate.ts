@@ -3,7 +3,8 @@ import { Bet } from './bet'
 import { Contract } from './contract'
 import { FEES } from './fees'
 
-export function getProbability(totalShares: { YES: number; NO: number }) {
+export function getProbability(totalShares: { [outcome: string]: number }) {
+  // For binary contracts only.
   return getOutcomeProbability(totalShares, 'YES')
 }
 
@@ -70,9 +71,9 @@ export function calculateRawShareValue(
   return currentValue - postSaleValue
 }
 
-export function calculateMoneyRatio<T extends 'BINARY' | 'MULTI'>(
-  contract: Contract<T>,
-  bet: Bet<T>,
+export function calculateMoneyRatio(
+  contract: Contract,
+  bet: Bet,
   shareValue: number
 ) {
   const { totalShares, totalBets, pool } = contract
@@ -115,11 +116,7 @@ export function calculateSaleAmount(contract: Contract, bet: Bet) {
   return deductFees(amount, winnings)
 }
 
-export function calculatePayout(
-  contract: Contract,
-  bet: Bet,
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
-) {
+export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
   if (outcome === 'CANCEL') return calculateCancelPayout(contract, bet)
   if (outcome === 'MKT') return calculateMktPayout(contract, bet)
 
@@ -182,7 +179,7 @@ function calculateMktPayout(contract: Contract, bet: Bet) {
   if (contract.outcomeType === 'BINARY')
     return calculateBinaryMktPayout(contract, bet)
 
-  const { totalShares, pool } = contract as any as Contract<'MULTI'>
+  const { totalShares, pool } = contract
 
   const totalPool = _.sum(Object.values(pool))
   const sharesSquareSum = _.sumBy(
@@ -206,16 +203,17 @@ function calculateMktPayout(contract: Contract, bet: Bet) {
 }
 
 function calculateBinaryMktPayout(contract: Contract, bet: Bet) {
+  const { resolutionProbability, totalShares, phantomShares } = contract
   const p =
-    contract.resolutionProbability !== undefined
-      ? contract.resolutionProbability
-      : getProbability(contract.totalShares)
+    resolutionProbability !== undefined
+      ? resolutionProbability
+      : getProbability(totalShares)
 
   const pool = contract.pool.YES + contract.pool.NO
 
   const weightedShareTotal =
-    p * (contract.totalShares.YES - contract.phantomShares.YES) +
-    (1 - p) * (contract.totalShares.NO - contract.phantomShares.NO)
+    p * (totalShares.YES - (phantomShares?.YES ?? 0)) +
+    (1 - p) * (totalShares.NO - (phantomShares?.NO ?? 0))
 
   const { outcome, amount, shares } = bet
 

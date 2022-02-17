@@ -26,7 +26,7 @@ type Prediction = {
 }
 
 function toPrediction(contract: Contract): Prediction {
-  const startProb = getProbability(contract.phantomShares)
+  const startProb = getProbability(contract.totalShares)
   return {
     question: contract.question,
     description: contract.description,

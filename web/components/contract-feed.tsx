@@ -21,7 +21,6 @@ import {
   contractPath,
   updateContract,
   tradingAllowed,
-  getBinaryProbPercent,
 } from '../lib/firebase/contracts'
 import { useUser } from '../hooks/use-user'
 import { Linkify } from './linkify'
@@ -38,7 +37,6 @@ import { useBets } from '../hooks/use-bets'
 import { Bet } from '../lib/firebase/bets'
 import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
-import { outcome } from '../../common/contract'
 import { fromNow } from '../lib/util/time'
 import BetRow from './bet-row'
 import { parseTags } from '../../common/util/parse'
@@ -382,7 +380,7 @@ function FeedDescription(props: { contract: Contract }) {
   )
 }
 
-function OutcomeIcon(props: { outcome?: outcome }) {
+function OutcomeIcon(props: { outcome?: string }) {
   const { outcome } = props
   switch (outcome) {
     case 'YES':

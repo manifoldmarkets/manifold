@@ -61,7 +61,7 @@ export const getNewMultiBetInfo = (
   user: User,
   outcome: string,
   amount: number,
-  contract: Contract<'MULTI'>,
+  contract: Contract,
   newBetId: string
 ) => {
   const { pool, totalShares, totalBets } = contract
@@ -80,7 +80,7 @@ export const getNewMultiBetInfo = (
   const probBefore = getOutcomeProbability(totalShares, outcome)
   const probAfter = getOutcomeProbability(newTotalShares, outcome)
 
-  const newBet: Bet<'MULTI'> = {
+  const newBet: Bet = {
     id: newBetId,
     userId: user.id,
     contractId: contract.id,

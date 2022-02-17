@@ -100,7 +100,7 @@ export const createContract = functions
 
           const { yesBet, noBet } = getAnteBets(
             creator,
-            contract as Contract<'BINARY'>,
+            contract,
             yesBetDoc.id,
             noBetDoc.id
           )
@@ -116,11 +116,7 @@ export const createContract = functions
           const anteBetDoc = firestore
             .collection(`contracts/${contract.id}/bets`)
             .doc()
-          const anteBet = getFreeAnswerAnte(
-            creator,
-            contract as Contract<'MULTI'>,
-            anteBetDoc.id
-          )
+          const anteBet = getFreeAnswerAnte(creator, contract, anteBetDoc.id)
           await anteBetDoc.set(anteBet)
         }
       }

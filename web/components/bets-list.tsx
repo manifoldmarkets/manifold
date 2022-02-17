@@ -31,6 +31,7 @@ import {
 import { sellBet } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
+import { filterDefined } from '../../common/util/array'
 
 type BetSort = 'newest' | 'profit'
 
@@ -49,7 +50,7 @@ export function BetsList(props: { user: User }) {
     let disposed = false
     Promise.all(contractIds.map((id) => getContractFromId(id))).then(
       (contracts) => {
-        if (!disposed) setContracts(contracts.filter(Boolean) as Contract[])
+        if (!disposed) setContracts(filterDefined(contracts))
       }
     )
 

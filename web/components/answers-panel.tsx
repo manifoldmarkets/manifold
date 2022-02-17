@@ -35,10 +35,7 @@ import { useAnswers } from '../hooks/use-answers'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { tradingAllowed } from '../lib/firebase/contracts'
 
-export function AnswersPanel(props: {
-  contract: Contract<'MULTI'>
-  answers: Answer[]
-}) {
+export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
   const { contract } = props
   const { creatorId, resolution } = contract
 
@@ -101,7 +98,7 @@ export function AnswersPanel(props: {
 
 function AnswerItem(props: {
   answer: Answer
-  contract: Contract<'MULTI'>
+  contract: Contract
   showChoice: boolean
   isChosen: boolean
   onChoose: () => void
@@ -209,7 +206,7 @@ function AnswerItem(props: {
 
 function AnswerBetPanel(props: {
   answer: Answer
-  contract: Contract<'MULTI'>
+  contract: Contract
   closePanel: () => void
 }) {
   const { answer, contract, closePanel } = props
@@ -267,14 +264,11 @@ function AnswerBetPanel(props: {
   const shares = calculateShares(contract.totalShares, betAmount ?? 0, answerId)
 
   const currentPayout = betAmount
-    ? calculatePayoutAfterCorrectBet(
-        contract as any as Contract,
-        {
-          outcome: answerId,
-          amount: betAmount,
-          shares,
-        } as Bet
-      )
+    ? calculatePayoutAfterCorrectBet(contract, {
+        outcome: answerId,
+        amount: betAmount,
+        shares,
+      } as Bet)
     : 0
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
@@ -351,7 +345,7 @@ function AnswerBetPanel(props: {
   )
 }
 
-function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
+function CreateAnswerInput(props: { contract: Contract }) {
   const { contract } = props
   const [text, setText] = useState('')
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
@@ -426,7 +420,7 @@ function CreateAnswerInput(props: { contract: Contract<'MULTI'> }) {
 }
 
 function AnswerResolvePanel(props: {
-  contract: Contract<'MULTI'>
+  contract: Contract
   resolveOption: 'CHOOSE' | 'NONE' | 'CANCEL' | undefined
   setResolveOption: (option: 'CHOOSE' | 'NONE' | 'CANCEL' | undefined) => void
   answer: string | undefined

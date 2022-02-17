@@ -26,7 +26,7 @@ export function getNewContract(
       ? getBinaryProps(initialProb, ante)
       : getFreeAnswerProps(ante)
 
-  const contract: Contract<'BINARY' | 'MULTI'> = removeUndefinedProps({
+  const contract: Contract = removeUndefinedProps({
     id,
     slug,
     mechanism: 'dpm-2',

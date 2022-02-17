@@ -42,7 +42,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       const contractSnap = await transaction.get(contractDoc)
       if (!contractSnap.exists)
         return { status: 'error', message: 'Invalid contract' }
-      const contract = contractSnap.data() as Contract<'MULTI'>
+      const contract = contractSnap.data() as Contract
 
       if (
         contract.outcomeType !== 'MULTI' ||

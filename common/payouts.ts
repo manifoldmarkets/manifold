@@ -2,7 +2,7 @@ import * as _ from 'lodash'
 
 import { Bet } from './bet'
 import { deductFees, getProbability } from './calculate'
-import { Contract, outcome } from './contract'
+import { Contract } from './contract'
 import { CREATOR_FEE, FEES } from './fees'
 
 export const getCancelPayouts = (contract: Contract, bets: Bet[]) => {
@@ -100,7 +100,7 @@ export const getMktPayouts = (
 }
 
 export const getPayouts = (
-  outcome: outcome,
+  outcome: string,
   contract: Contract,
   bets: Bet[],
   resolutionProbability?: number

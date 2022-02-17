@@ -49,6 +49,7 @@ export function BetPanel(props: {
   }, [])
 
   const { contract, className, title, selected, onBetSuccess } = props
+  const { totalShares, phantomShares } = contract
 
   const user = useUser()
 
@@ -179,8 +180,8 @@ export function BetPanel(props: {
                 shares
               )} / ${formatWithCommas(
                 shares +
-                  contract.totalShares[betChoice] -
-                  contract.phantomShares[betChoice]
+                  totalShares[betChoice] -
+                  (phantomShares ? phantomShares[betChoice] : 0)
               )} ${betChoice} shares`}
             />
           </Row>

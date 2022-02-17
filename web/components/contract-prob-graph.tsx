@@ -13,7 +13,9 @@ export function ContractProbGraph(props: { contract: Contract; bets: Bet[] }) {
 
   const bets = useBetsWithoutAntes(contract, props.bets)
 
-  const startProb = getProbability(phantomShares)
+  const startProb = getProbability(
+    phantomShares as { [outcome: string]: number }
+  )
 
   const times = bets
     ? [contract.createdTime, ...bets.map((bet) => bet.createdTime)].map(

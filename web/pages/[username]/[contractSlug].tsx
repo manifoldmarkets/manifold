@@ -186,7 +186,7 @@ function BetsSection(props: {
   )
 }
 
-const getOpenGraphProps = (contract: Contract<'BINARY'>) => {
+const getOpenGraphProps = (contract: Contract) => {
   const { resolution, question, creatorName, creatorUsername } = contract
   const probPercent = getBinaryProbPercent(contract)
 

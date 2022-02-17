@@ -64,7 +64,7 @@ export function getAnteBets(
 
 export function getFreeAnswerAnte(
   creator: User,
-  contract: Contract<'MULTI'>,
+  contract: Contract,
   anteBetId: string
 ) {
   const { totalBets, totalShares } = contract
@@ -73,7 +73,7 @@ export function getFreeAnswerAnte(
 
   const { createdTime } = contract
 
-  const anteBet: Bet<'MULTI'> = {
+  const anteBet: Bet = {
     id: anteBetId,
     userId: creator.id,
     contractId: contract.id,

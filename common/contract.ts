@@ -1,4 +1,4 @@
-export type Contract<outcomeType extends 'BINARY' | 'MULTI' = 'BINARY'> = {
+export type Contract = {
   id: string
   slug: string // auto-generated; must be unique
 
@@ -13,29 +13,14 @@ export type Contract<outcomeType extends 'BINARY' | 'MULTI' = 'BINARY'> = {
   lowercaseTags: string[]
   visibility: 'public' | 'unlisted'
 
-  outcomeType: outcomeType
-  outcomes: {
-    BINARY: undefined
-    MULTI: 'FREE_ANSWER' | string[]
-  }[outcomeType]
+  outcomeType: 'BINARY' | 'MULTI'
+  outcomes?: 'FREE_ANSWER' | string[]
 
   mechanism: 'dpm-2'
-  phantomShares: {
-    BINARY: { YES: number; NO: number }
-    MULTI: undefined
-  }[outcomeType]
-  pool: {
-    BINARY: { YES: number; NO: number }
-    MULTI: { [answerId: string]: number }
-  }[outcomeType]
-  totalShares: {
-    BINARY: { YES: number; NO: number }
-    MULTI: { [answerId: string]: number }
-  }[outcomeType]
-  totalBets: {
-    BINARY: { YES: number; NO: number }
-    MULTI: { [answerId: string]: number }
-  }[outcomeType]
+  phantomShares?: { [outcome: string]: number }
+  pool: { [outcome: string]: number }
+  totalShares: { [outcome: string]: number }
+  totalBets: { [outcome: string]: number }
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime: number // If the question or description was changed
@@ -43,14 +28,9 @@ export type Contract<outcomeType extends 'BINARY' | 'MULTI' = 'BINARY'> = {
 
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
-  resolution?: {
-    BINARY: outcome
-    MULTI: string
-  }[outcomeType]
+  resolution?: string
   resolutionProbability?: number
 
   volume24Hours: number
   volume7Days: number
 }
-
-export type outcome = 'YES' | 'NO' | 'CANCEL' | 'MKT'
