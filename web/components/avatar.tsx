@@ -7,8 +7,9 @@ export function Avatar(props: {
   avatarUrl?: string
   noLink?: boolean
   size?: number
+  className?: string
 }) {
-  const { username, avatarUrl, noLink, size } = props
+  const { username, avatarUrl, noLink, size, className } = props
   const s = size || 10
 
   const onClick =
@@ -25,7 +26,8 @@ export function Avatar(props: {
           className={clsx(
             'flex items-center justify-center rounded-full object-cover',
             `w-${s} h-${s}`,
-            !noLink && 'cursor-pointer'
+            !noLink && 'cursor-pointer',
+            className
           )}
           src={avatarUrl}
           onClick={onClick}

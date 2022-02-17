@@ -55,8 +55,12 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         }}
       />
       <div className="relative -top-10 left-4">
-        {/* TODO: add a white ring to the avatar */}
-        <Avatar username={user.username} avatarUrl={user.avatarUrl} size={20} />
+        <Avatar
+          username={user.username}
+          avatarUrl={user.avatarUrl}
+          size={20}
+          className="bg-white ring-4 ring-white"
+        />
       </div>
 
       {/* Profile details: name, username, bio, and link to twitter/discord */}

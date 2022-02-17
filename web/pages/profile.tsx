@@ -17,7 +17,8 @@ import { uploadImage } from '../lib/firebase/storage'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { User } from '../../common/user'
-import { defaultBannerUrl, updateUser } from '../lib/firebase/users'
+import { updateUser } from '../lib/firebase/users'
+import { defaultBannerUrl } from '../components/user-page'
 
 function EditUserField(props: {
   user: User
