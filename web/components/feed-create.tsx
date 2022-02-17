@@ -61,6 +61,7 @@ export default function FeedCreate(props: {
 }) {
   const { user, tag, className } = props
   const [question, setQuestion] = useState('')
+  const [focused, setFocused] = useState(false)
 
   const placeholders = [
     'Will anyone I know get engaged this year?',
@@ -81,7 +82,11 @@ export default function FeedCreate(props: {
 
   return (
     <div
-      className={clsx('mt-2 w-full bg-white p-4 shadow-md', className)}
+      className={clsx(
+        'mt-2 w-full rounded bg-white p-4 shadow-md',
+        question || focused ? 'ring-2 ring-indigo-300' : '',
+        className
+      )}
       onClick={() => !question && inputRef.current?.focus()}
     >
       <div className="relative flex items-start space-x-3">
@@ -99,17 +104,19 @@ export default function FeedCreate(props: {
             value={question}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setQuestion(e.target.value.replace('\n', ''))}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
           />
         </div>
       </div>
 
       {/* Hide component instead of deleting, so edits to NewContract don't get lost */}
-      <div className={question ? '' : 'hidden'}>
+      <div className={question || focused ? '' : 'hidden'}>
         <NewContract question={question} tag={tag} />
       </div>
 
       {/* Show a fake "Create Market" button, which gets replaced with the NewContract one*/}
-      {!question && (
+      {!(question || focused) && (
         <div className="flex justify-end">
           <button className="btn btn-sm" disabled>
             Create Market
