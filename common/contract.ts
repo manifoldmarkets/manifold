@@ -1,3 +1,5 @@
+import { Answer } from './answer'
+
 export type Contract = {
   id: string
   slug: string // auto-generated; must be unique
@@ -15,6 +17,7 @@ export type Contract = {
 
   outcomeType: 'BINARY' | 'MULTI' | 'FREE_RESPONSE'
   multiOutcomes?: string[] // Used for outcomeType 'MULTI'.
+  answers?: Answer[] // Used for outcomeType 'FREE_RESPONSE'.
 
   mechanism: 'dpm-2'
   phantomShares?: { [outcome: string]: number }

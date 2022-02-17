@@ -99,6 +99,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         pool: newPool,
         totalShares: newTotalShares,
         totalBets: newTotalBets,
+        answers: [...(contract.answers ?? []), answer],
       })
       transaction.update(userDoc, { balance: newBalance })
 

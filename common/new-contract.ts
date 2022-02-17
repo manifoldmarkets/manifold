@@ -72,6 +72,7 @@ const getFreeAnswerProps = (ante: number) => {
     pool: { '0': ante },
     totalShares: { '0': ante },
     totalBets: { '0': ante },
+    answers: [],
   }
 }
 
