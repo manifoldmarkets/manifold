@@ -4,7 +4,7 @@ export type Bet = {
   contractId: string
 
   amount: number // bet size; negative if SELL bet
-  outcome: 'YES' | 'NO'
+  outcome: string
   shares: number // dynamic parimutuel pool weight; negative if SELL bet
 
   probBefore: number

@@ -49,6 +49,7 @@ export function BetPanel(props: {
   }, [])
 
   const { contract, className, title, selected, onBetSuccess } = props
+  const { totalShares, phantomShares } = contract
 
   const user = useUser()
 
@@ -108,11 +109,12 @@ export function BetPanel(props: {
 
   const initialProb = getProbability(contract.totalShares)
 
-  const resultProb = getProbabilityAfterBet(
+  const outcomeProb = getProbabilityAfterBet(
     contract.totalShares,
     betChoice || 'YES',
     betAmount ?? 0
   )
+  const resultProb = betChoice === 'NO' ? 1 - outcomeProb : outcomeProb
 
   const shares = calculateShares(
     contract.totalShares,
@@ -179,8 +181,8 @@ export function BetPanel(props: {
                 shares
               )} / ${formatWithCommas(
                 shares +
-                  contract.totalShares[betChoice] -
-                  contract.phantomShares[betChoice]
+                  totalShares[betChoice] -
+                  (phantomShares ? phantomShares[betChoice] : 0)
               )} ${betChoice} shares`}
             />
           </Row>

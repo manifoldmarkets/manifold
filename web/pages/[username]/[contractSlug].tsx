@@ -12,10 +12,10 @@ import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
 import { User } from '../../lib/firebase/users'
 import {
-  contractMetrics,
   Contract,
   getContractFromSlug,
   tradingAllowed,
+  getBinaryProbPercent,
 } from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
@@ -26,6 +26,9 @@ import Custom404 from '../404'
 import { getFoldsByTags } from '../../lib/firebase/folds'
 import { Fold } from '../../../common/fold'
 import { useFoldsWithTags } from '../../hooks/use-fold'
+import { listAllAnswers } from '../../lib/firebase/answers'
+import { Answer } from '../../../common/answer'
+import { AnswersPanel } from '../../components/answers-panel'
 
 export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
@@ -36,9 +39,12 @@ export async function getStaticProps(props: {
 
   const foldsPromise = getFoldsByTags(contract?.tags ?? [])
 
-  const [bets, comments] = await Promise.all([
+  const [bets, comments, answers] = await Promise.all([
     contractId ? listAllBets(contractId) : [],
     contractId ? listAllComments(contractId) : [],
+    contractId && contract.outcomeType === 'FREE_RESPONSE'
+      ? listAllAnswers(contractId)
+      : [],
   ])
 
   const folds = await foldsPromise
@@ -50,6 +56,7 @@ export async function getStaticProps(props: {
       slug: contractSlug,
       bets,
       comments,
+      answers,
       folds,
     },
 
@@ -66,6 +73,7 @@ export default function ContractPage(props: {
   username: string
   bets: Bet[]
   comments: Comment[]
+  answers: Answer[]
   slug: string
   folds: Fold[]
 }) {
@@ -82,33 +90,27 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
 
-  const { creatorId, isResolved, resolution, question } = contract
+  const { creatorId, isResolved, question, outcomeType } = contract
+
   const isCreator = user?.id === creatorId
+  const isBinary = outcomeType === 'BINARY'
   const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
+  const hasSidePanel = isBinary && (allowTrade || allowResolve)
 
-  const { probPercent } = contractMetrics(contract)
-
-  const description = resolution
-    ? `Resolved ${resolution}. ${contract.description}`
-    : `${probPercent} chance. ${contract.description}`
-
-  const ogCardProps = {
-    question,
-    probability: probPercent,
-    metadata: contractTextDetails(contract),
-    creatorName: contract.creatorName,
-    creatorUsername: contract.creatorUsername,
-  }
+  // TODO(James): Create SEO props for non-binary contracts.
+  const ogCardProps = isBinary ? getOpenGraphProps(contract) : undefined
 
   return (
-    <Page wide={allowTrade || allowResolve}>
-      <SEO
-        title={question}
-        description={description}
-        url={`/${props.username}/${props.slug}`}
-        ogCardProps={ogCardProps}
-      />
+    <Page wide={hasSidePanel}>
+      {ogCardProps && (
+        <SEO
+          title={question}
+          description={ogCardProps.description}
+          url={`/${props.username}/${props.slug}`}
+          ogCardProps={ogCardProps}
+        />
+      )}
 
       <Col className="w-full justify-between md:flex-row">
         <div className="flex-[3] rounded border-0 border-gray-100 bg-white px-2 py-6 md:px-6 md:py-8">
@@ -117,11 +119,24 @@ export default function ContractPage(props: {
             bets={bets ?? []}
             comments={comments ?? []}
             folds={folds}
-          />
-          <BetsSection contract={contract} user={user ?? null} />
+          >
+            {contract.outcomeType === 'FREE_RESPONSE' && (
+              <>
+                <Spacer h={4} />
+                <AnswersPanel
+                  contract={contract as any}
+                  answers={props.answers}
+                />
+                <Spacer h={4} />
+                <div className="divider before:bg-gray-300 after:bg-gray-300" />
+              </>
+            )}
+          </ContractOverview>
+
+          <BetsSection contract={contract} user={user ?? null} bets={bets} />
         </div>
 
-        {(allowTrade || allowResolve) && (
+        {hasSidePanel && (
           <>
             <div className="md:ml-6" />
 
@@ -140,11 +155,14 @@ export default function ContractPage(props: {
   )
 }
 
-function BetsSection(props: { contract: Contract; user: User | null }) {
+function BetsSection(props: {
+  contract: Contract
+  user: User | null
+  bets: Bet[]
+}) {
   const { contract, user } = props
-  const bets = useBets(contract.id)
-
-  if (!bets || bets.length === 0) return <></>
+  const isBinary = contract.outcomeType === 'BINARY'
+  const bets = useBets(contract.id) ?? props.bets
 
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
@@ -156,10 +174,32 @@ function BetsSection(props: { contract: Contract; user: User | null }) {
   return (
     <div>
       <Title className="px-2" text="Your trades" />
-      <MyBetsSummary className="px-2" contract={contract} bets={userBets} />
-      <Spacer h={6} />
+      {isBinary && (
+        <>
+          <MyBetsSummary className="px-2" contract={contract} bets={userBets} />
+          <Spacer h={6} />
+        </>
+      )}
       <ContractBetsTable contract={contract} bets={userBets} />
       <Spacer h={12} />
     </div>
   )
+}
+
+const getOpenGraphProps = (contract: Contract) => {
+  const { resolution, question, creatorName, creatorUsername } = contract
+  const probPercent = getBinaryProbPercent(contract)
+
+  const description = resolution
+    ? `Resolved ${resolution}. ${contract.description}`
+    : `${probPercent} chance. ${contract.description}`
+
+  return {
+    question,
+    probability: probPercent,
+    metadata: contractTextDetails(contract),
+    creatorName: creatorName,
+    creatorUsername: creatorUsername,
+    description,
+  }
 }
