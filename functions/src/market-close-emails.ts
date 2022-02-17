@@ -6,7 +6,7 @@ import { getPrivateUser, getUserByUsername } from './utils'
 import { sendMarketCloseEmail } from './emails'
 
 export const marketCloseEmails = functions.pubsub
-  .schedule('every hour')
+  .schedule('every 1 hours')
   .onRun(async () => {
     await sendMarketCloseEmails()
   })
