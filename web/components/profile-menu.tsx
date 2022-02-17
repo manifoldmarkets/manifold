@@ -87,7 +87,7 @@ function ProfileSummary(props: { user: User | undefined }) {
       <div className="truncate text-left sm:w-32">
         <div className="hidden sm:flex">{user?.name}</div>
         <div className="text-sm text-gray-700">
-          {user ? formatMoney(Math.floor(user.balance)) : ' '}
+          {user ? formatMoney(user.balance) : ' '}
         </div>
       </div>
     </Col>
