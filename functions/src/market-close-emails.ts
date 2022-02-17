@@ -51,7 +51,6 @@ async function sendMarketCloseEmails() {
     if (!user) continue
 
     const privateUser = await getPrivateUser(user.id)
-    console.log('private user', privateUser)
     if (!privateUser) continue
 
     await sendMarketCloseEmail(user, privateUser, contract)
