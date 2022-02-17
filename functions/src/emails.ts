@@ -95,6 +95,13 @@ export const sendMarketCloseEmail = async (
   privateUser: PrivateUser,
   contract: Contract
 ) => {
+  if (
+    !privateUser ||
+    privateUser.unsubscribedFromResolutionEmails ||
+    !privateUser.email
+  )
+    return
+
   const { username, name, id: userId } = user
   const firstName = name.split(' ')[0]
 
@@ -103,7 +110,7 @@ export const sendMarketCloseEmail = async (
   const url = `https://manifold.markets/${username}/${slug}`
 
   await sendTemplateEmail(
-    privateUser.email || '',
+    privateUser.email,
     'Your market has closed',
     'market-close',
     {
