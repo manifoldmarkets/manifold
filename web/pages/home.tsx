@@ -123,26 +123,7 @@ const Home = (props: {
         <Col className="w-full max-w-3xl">
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
-          <Row className="mx-3 mb-3 items-center gap-2 text-sm text-gray-800">
-            <SearchIcon className="inline h-5 w-5" aria-hidden="true" />
-            Explore our communities
-          </Row>
-          <FoldTagList
-            className="mx-2"
-            noLabel
-            folds={[
-              { name: 'Politics', slug: 'politics' },
-              { name: 'Crypto', slug: 'crypto' },
-              { name: 'Sports', slug: 'sports' },
-              { name: 'Science', slug: 'science' },
-              { name: 'Covid', slug: 'covid' },
-              { name: 'AI', slug: 'ai' },
-              {
-                name: 'Manifold Markets',
-                slug: 'manifold-markets',
-              },
-            ]}
-          />
+          <FastFoldFollowing />
           <Spacer h={10} />
           <Col className="mx-3 mb-3 gap-2 text-sm text-gray-800 sm:flex-row">
             <Row className="gap-2">
@@ -170,6 +151,33 @@ const Home = (props: {
         </Col>
       </Col>
     </Page>
+  )
+}
+
+const FastFoldFollowing = () => {
+  return (
+    <>
+      <Row className="mx-3 mb-3 items-center gap-2 text-sm text-gray-800">
+        <SearchIcon className="inline h-5 w-5" aria-hidden="true" />
+        Personalize your feed — click on a community to follow
+      </Row>
+      <FoldTagList
+        className="mx-2"
+        noLabel
+        folds={[
+          { name: 'Politics', slug: 'politics' },
+          { name: 'Crypto', slug: 'crypto' },
+          { name: 'Sports', slug: 'sports' },
+          { name: 'Science', slug: 'science' },
+          { name: 'Covid', slug: 'covid' },
+          { name: 'AI', slug: 'ai' },
+          {
+            name: 'Manifold Markets',
+            slug: 'manifold-markets',
+          },
+        ]}
+      />
+    </>
   )
 }
 
