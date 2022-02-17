@@ -89,6 +89,7 @@ Questions? Feedback? I'd love to hear from you - just reply to this email!
 Or come chat with us on Discord: https://discord.gg/eHQBNBqXuh
 
 Best,
-Austin from Manifold`
+Austin from Manifold
+https://manifold.markets/`
   )
 }
