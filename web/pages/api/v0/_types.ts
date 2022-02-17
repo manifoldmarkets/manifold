@@ -3,16 +3,23 @@ import { getProbability } from '../../../../common/calculate'
 import { Comment } from '../../../../common/comment'
 import { Contract } from '../../../../common/contract'
 
-export type LiteContract = {
+export type LiteMarket = {
+  // Unique identifer for this market
   id: string
+
+  // Attributes about the creator
   creatorUsername: string
   creatorName: string
   createdTime: number
+  creatorAvatarUrl?: string
+
+  // Market attributes. All times are in milliseconds since epoch
   closeTime?: number
   question: string
   description: string
   tags: string[]
   url: string
+
   pool: number
   probability: number
   volume7Days: number
@@ -21,7 +28,7 @@ export type LiteContract = {
   resolution?: string
 }
 
-export type FullContract = LiteContract & {
+export type FullMarket = LiteMarket & {
   bets: Bet[]
   comments: Comment[]
 }
@@ -30,11 +37,12 @@ export type ApiError = {
   error: string
 }
 
-export function toLiteContract({
+export function toLiteMarket({
   id,
   creatorUsername,
   creatorName,
   createdTime,
+  creatorAvatarUrl,
   closeTime,
   question,
   description,
@@ -46,12 +54,13 @@ export function toLiteContract({
   volume24Hours,
   isResolved,
   resolution,
-}: Contract): LiteContract {
+}: Contract): LiteMarket {
   return {
     id,
     creatorUsername,
     creatorName,
     createdTime,
+    creatorAvatarUrl,
     closeTime,
     question,
     description,
