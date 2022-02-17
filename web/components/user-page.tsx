@@ -11,6 +11,7 @@ import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
 import { LinkIcon } from '@heroicons/react/solid'
 import { genHash } from '../../common/util/random'
+import { PencilIcon } from '@heroicons/react/outline'
 
 export function UserLink(props: {
   name: string
@@ -53,14 +54,26 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         style={{
           backgroundImage: `url(${bannerUrl})`,
         }}
-      />
-      <div className="relative -top-10 left-4">
-        <Avatar
-          username={user.username}
-          avatarUrl={user.avatarUrl}
-          size={20}
-          className="bg-white ring-4 ring-white"
-        />
+      ></div>
+      <div className="relative mb-20">
+        <div className="absolute -top-10 left-4">
+          <Avatar
+            username={user.username}
+            avatarUrl={user.avatarUrl}
+            size={20}
+            className="bg-white ring-4 ring-white"
+          />
+        </div>
+
+        {/* Top right buttons (e.g. edit, follow) */}
+        <div className="absolute right-0 top-0 mt-4 mr-4">
+          {isCurrentUser && (
+            <SiteLink className="btn" href="/profile">
+              <PencilIcon className="h-5 w-5" />{' '}
+              <div className="ml-2">Edit</div>
+            </SiteLink>
+          )}
+        </div>
       </div>
 
       {/* Profile details: name, username, bio, and link to twitter/discord */}

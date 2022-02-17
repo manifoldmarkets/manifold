@@ -19,6 +19,7 @@ import { Row } from '../components/layout/row'
 import { User } from '../../common/user'
 import { updateUser } from '../lib/firebase/users'
 import { defaultBannerUrl } from '../components/user-page'
+import { SiteLink } from '../components/site-link'
 
 function EditUserField(props: {
   user: User
@@ -37,17 +38,13 @@ function EditUserField(props: {
     <div>
       <label className="label">{label}</label>
 
-      {isEditing ? (
-        <input
-          type="text"
-          className="input input-bordered"
-          value={value}
-          onChange={(e) => setValue(e.target.value || '')}
-          onBlur={updateField}
-        />
-      ) : (
-        <div className="ml-1 break-words text-gray-500">{value || '-'}</div>
-      )}
+      <input
+        type="text"
+        className="input input-bordered"
+        value={value}
+        onChange={(e) => setValue(e.target.value || '')}
+        onBlur={updateField}
+      />
     </div>
   )
 }
@@ -60,8 +57,6 @@ export default function ProfilePage() {
   const [avatarLoading, setAvatarLoading] = useState(false)
   const [name, setName] = useState(user?.name || '')
   const [username, setUsername] = useState(user?.username || '')
-
-  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -130,23 +125,10 @@ export default function ProfilePage() {
 
       <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
         <Row className="justify-between">
-          <Title className="!mt-0" text="Profile" />
-          {isEditing ? (
-            <button
-              className="btn btn-primary"
-              onClick={() => setIsEditing(false)}
-            >
-              Done
-            </button>
-          ) : (
-            <button
-              className="btn btn-ghost"
-              onClick={() => setIsEditing(true)}
-            >
-              <PencilIcon className="h-5 w-5" />{' '}
-              <div className="ml-2">Edit</div>
-            </button>
-          )}
+          <Title className="!mt-0" text="Edit Profile" />
+          <SiteLink className="btn btn-primary" href={`/${user?.username}`}>
+            Done
+          </SiteLink>
         </Row>
         <Col className="gap-4">
           <Row className="items-center gap-4">
@@ -160,9 +142,7 @@ export default function ProfilePage() {
                   height={80}
                   className="flex items-center justify-center rounded-full bg-gray-400"
                 />
-                {isEditing && (
-                  <input type="file" name="file" onChange={fileHandler} />
-                )}
+                <input type="file" name="file" onChange={fileHandler} />
               </>
             )}
           </Row>
@@ -170,35 +150,27 @@ export default function ProfilePage() {
           <div>
             <label className="label">Display name</label>
 
-            {isEditing ? (
-              <input
-                type="text"
-                placeholder="Display name"
-                className="input input-bordered"
-                value={name}
-                onChange={(e) => setName(e.target.value || '')}
-                onBlur={updateDisplayName}
-              />
-            ) : (
-              <div className="ml-1 text-gray-500">{name}</div>
-            )}
+            <input
+              type="text"
+              placeholder="Display name"
+              className="input input-bordered"
+              value={name}
+              onChange={(e) => setName(e.target.value || '')}
+              onBlur={updateDisplayName}
+            />
           </div>
 
           <div>
             <label className="label">Username</label>
 
-            {isEditing ? (
-              <input
-                type="text"
-                placeholder="Username"
-                className="input input-bordered"
-                value={username}
-                onChange={(e) => setUsername(e.target.value || '')}
-                onBlur={updateUsername}
-              />
-            ) : (
-              <div className="ml-1 text-gray-500">{username}</div>
-            )}
+            <input
+              type="text"
+              placeholder="Username"
+              className="input input-bordered"
+              value={username}
+              onChange={(e) => setUsername(e.target.value || '')}
+              onBlur={updateUsername}
+            />
           </div>
 
           {user && (
@@ -210,7 +182,12 @@ export default function ProfilePage() {
                 label="Banner Url"
                 isEditing={isEditing}
               /> */}
-              <label className="label">Banner</label>
+              <label className="label">
+                Banner image{' '}
+                <span className="text-sm text-gray-400">
+                  Not editable for now
+                </span>
+              </label>
               <div
                 className="h-32 w-full bg-cover bg-center sm:h-40"
                 style={{
@@ -231,7 +208,6 @@ export default function ProfilePage() {
                   // @ts-ignore
                   field={field}
                   label={label}
-                  isEditing={isEditing}
                 />
               ))}
             </>
