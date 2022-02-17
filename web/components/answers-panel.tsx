@@ -14,7 +14,7 @@ import { Avatar } from './avatar'
 import { SiteLink } from './site-link'
 import { DateTimeTooltip } from './datetime-tooltip'
 import dayjs from 'dayjs'
-import { BuyButton, ChooseNoneCancelSelector } from './yes-no-selector'
+import { BuyButton, ChooseCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import {
   formatMoney,
@@ -55,9 +55,13 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
   const user = useUser()
 
   const [resolveOption, setResolveOption] = useState<
-    'CHOOSE' | 'NONE' | 'CANCEL' | undefined
+    'CHOOSE' | 'CANCEL' | undefined
   >()
   const [answerChoice, setAnswerChoice] = useState<string | undefined>()
+
+  useEffect(() => {
+    if (resolveOption !== 'CHOOSE' && answerChoice) setAnswerChoice(undefined)
+  }, [answerChoice, resolveOption])
 
   return (
     <Col className="gap-3">
@@ -89,7 +93,6 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
           resolveOption={resolveOption}
           setResolveOption={setResolveOption}
           answer={answerChoice}
-          clearAnswerChoice={() => setAnswerChoice(undefined)}
         />
       )}
     </Col>
@@ -421,18 +424,11 @@ function CreateAnswerInput(props: { contract: Contract }) {
 
 function AnswerResolvePanel(props: {
   contract: Contract
-  resolveOption: 'CHOOSE' | 'NONE' | 'CANCEL' | undefined
-  setResolveOption: (option: 'CHOOSE' | 'NONE' | 'CANCEL' | undefined) => void
+  resolveOption: 'CHOOSE' | 'CANCEL' | undefined
+  setResolveOption: (option: 'CHOOSE' | 'CANCEL' | undefined) => void
   answer: string | undefined
-  clearAnswerChoice: () => void
 }) {
-  const {
-    contract,
-    resolveOption,
-    setResolveOption,
-    answer,
-    clearAnswerChoice,
-  } = props
+  const { contract, resolveOption, setResolveOption, answer } = props
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
@@ -443,12 +439,7 @@ function AnswerResolvePanel(props: {
     setIsSubmitting(true)
 
     const result = await resolveMarket({
-      outcome:
-        resolveOption === 'CHOOSE'
-          ? (answer as string)
-          : resolveOption === 'NONE'
-          ? '0'
-          : 'CANCEL',
+      outcome: resolveOption === 'CHOOSE' ? (answer as string) : 'CANCEL',
       contractId: contract.id,
     }).then((r) => r.data as any)
 
@@ -458,15 +449,12 @@ function AnswerResolvePanel(props: {
       setError(result?.error || 'Error resolving market')
     }
     setResolveOption(undefined)
-    clearAnswerChoice()
     setIsSubmitting(false)
   }
 
   const resolutionButtonClass =
     resolveOption === 'CANCEL'
       ? 'bg-yellow-400 hover:bg-yellow-500'
-      : resolveOption === 'NONE'
-      ? 'bg-red-400 hover:bg-red-500'
       : resolveOption === 'CHOOSE' && answer
       ? 'btn-primary'
       : 'btn-disabled'
@@ -475,7 +463,7 @@ function AnswerResolvePanel(props: {
     <Col className="gap-4 p-4 bg-gray-50 rounded">
       <div>Resolve your market</div>
       <Col className="sm:flex-row sm:items-center gap-4">
-        <ChooseNoneCancelSelector
+        <ChooseCancelSelector
           className="sm:!flex-row sm:items-center"
           selected={resolveOption}
           onSelect={setResolveOption}
@@ -492,7 +480,6 @@ function AnswerResolvePanel(props: {
               className="btn btn-ghost"
               onClick={() => {
                 setResolveOption(undefined)
-                clearAnswerChoice()
               }}
             >
               Clear

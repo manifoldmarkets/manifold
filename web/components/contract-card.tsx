@@ -76,7 +76,6 @@ export function ResolutionOrChance(props: {
       NO: 'text-red-400',
       MKT: 'text-blue-400',
       CANCEL: 'text-yellow-400',
-      '0': 'text-red-400',
       '': '', // Empty if unresolved
     }[resolution || ''] ?? 'text-primary'
 
@@ -88,7 +87,6 @@ export function ResolutionOrChance(props: {
       NO: 'NO',
       MKT: getBinaryProbPercent(contract),
       CANCEL: 'N/A',
-      '0': 'NONE',
       '': '',
     }[resolution || ''] ?? `#${resolution}`
 

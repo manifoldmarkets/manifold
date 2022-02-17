@@ -90,9 +90,9 @@ export function YesNoCancelSelector(props: {
   )
 }
 
-export function ChooseNoneCancelSelector(props: {
-  selected: 'CHOOSE' | 'NONE' | 'CANCEL' | undefined
-  onSelect: (selected: 'CHOOSE' | 'NONE' | 'CANCEL') => void
+export function ChooseCancelSelector(props: {
+  selected: 'CHOOSE' | 'CANCEL' | undefined
+  onSelect: (selected: 'CHOOSE' | 'CANCEL') => void
   className?: string
   btnClassName?: string
 }) {
@@ -108,14 +108,6 @@ export function ChooseNoneCancelSelector(props: {
         className={clsx('whitespace-nowrap', btnClassName)}
       >
         Choose an answer
-      </Button>
-
-      <Button
-        color={selected === 'NONE' ? 'red' : 'gray'}
-        onClick={() => onSelect('NONE')}
-        className={clsx('whitespace-nowrap', btnClassName)}
-      >
-        None
       </Button>
 
       <Button

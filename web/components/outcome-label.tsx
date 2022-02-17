@@ -27,7 +27,5 @@ export function ProbLabel() {
 }
 
 export function AnswerNumberLabel(props: { number: string }) {
-  if (props.number == '0') return <span className="text-red-400">NONE</span>
-
   return <span className="text-primary">#{props.number}</span>
 }
