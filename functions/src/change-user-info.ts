@@ -7,6 +7,7 @@ import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
 import { cleanUsername } from '../../common/util/clean-username'
 import { removeUndefinedProps } from '../../common/util/object'
+import { Answer } from '../../common/answer'
 
 export const changeUserInfo = functions
   .runWith({ minInstances: 1 })
@@ -89,10 +90,21 @@ export const changeUser = async (
       userAvatarUrl: update.avatarUrl,
     })
 
+    const answerSnap = await transaction.get(
+      firestore
+        .collectionGroup('answers')
+        .where('username', '==', user.username)
+    )
+    const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
+
     await transaction.update(userRef, userUpdate)
 
     await Promise.all(
       commentSnap.docs.map((d) => transaction.update(d.ref, commentUpdate))
+    )
+
+    await Promise.all(
+      answerSnap.docs.map((d) => transaction.update(d.ref, answerUpdate))
     )
 
     await contracts.docs.map((d) => transaction.update(d.ref, contractUpdate))
