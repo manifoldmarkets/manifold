@@ -7,6 +7,7 @@ import {
   Contract,
   contractMetrics,
   contractPath,
+  getBinaryProbPercent,
 } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import dayjs from 'dayjs'
@@ -24,8 +25,7 @@ export function ContractCard(props: {
   className?: string
 }) {
   const { contract, showHotVolume, showCloseTime, className } = props
-  const { question, resolution } = contract
-  const { probPercent } = contractMetrics(contract)
+  const { question } = contract
 
   return (
     <div>
@@ -66,27 +66,29 @@ export function ResolutionOrChance(props: {
   className?: string
 }) {
   const { contract, large, className } = props
-  const { resolution } = contract
-  const { probPercent } = contractMetrics(contract)
+  const { resolution, outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
 
-  const resolutionColor = {
-    YES: 'text-primary',
-    NO: 'text-red-400',
-    MKT: 'text-blue-400',
-    CANCEL: 'text-yellow-400',
-    '': '', // Empty if unresolved
-  }[resolution || '']
+  const resolutionColor =
+    {
+      YES: 'text-primary',
+      NO: 'text-red-400',
+      MKT: 'text-blue-400',
+      CANCEL: 'text-yellow-400',
+      '': '', // Empty if unresolved
+    }[resolution || ''] ?? 'text-primary'
 
   const probColor = marketClosed ? 'text-gray-400' : 'text-primary'
 
-  const resolutionText = {
-    YES: 'YES',
-    NO: 'NO',
-    MKT: probPercent,
-    CANCEL: 'N/A',
-    '': '',
-  }[resolution || '']
+  const resolutionText =
+    {
+      YES: 'YES',
+      NO: 'NO',
+      MKT: getBinaryProbPercent(contract),
+      CANCEL: 'N/A',
+      '': '',
+    }[resolution || ''] ?? `#${resolution}`
 
   return (
     <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
@@ -100,12 +102,14 @@ export function ResolutionOrChance(props: {
           <div className={resolutionColor}>{resolutionText}</div>
         </>
       ) : (
-        <>
-          <div className={probColor}>{probPercent}</div>
-          <div className={clsx(probColor, large ? 'text-xl' : 'text-base')}>
-            chance
-          </div>
-        </>
+        isBinary && (
+          <>
+            <div className={probColor}>{getBinaryProbPercent(contract)}</div>
+            <div className={clsx(probColor, large ? 'text-xl' : 'text-base')}>
+              chance
+            </div>
+          </>
+        )
       )}
     </Col>
   )

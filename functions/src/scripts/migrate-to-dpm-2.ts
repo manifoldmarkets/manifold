@@ -83,11 +83,15 @@ async function recalculateContract(
     let totalShares = {
       YES: Math.sqrt(p) * (phantomAnte + realAnte),
       NO: Math.sqrt(1 - p) * (phantomAnte + realAnte),
+    } as { [outcome: string]: number }
+
+    let pool = { YES: p * realAnte, NO: (1 - p) * realAnte } as {
+      [outcome: string]: number
     }
 
-    let pool = { YES: p * realAnte, NO: (1 - p) * realAnte }
-
-    let totalBets = { YES: p * realAnte, NO: (1 - p) * realAnte }
+    let totalBets = { YES: p * realAnte, NO: (1 - p) * realAnte } as {
+      [outcome: string]: number
+    }
 
     const betsRef = contractRef.collection('bets')
 

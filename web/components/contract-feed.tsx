@@ -1,18 +1,18 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import _ from 'lodash'
 import {
   BanIcon,
   CheckIcon,
   DotsVerticalIcon,
   LockClosedIcon,
-  StarIcon,
   UserIcon,
   UsersIcon,
   XIcon,
 } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
+import Textarea from 'react-expanding-textarea'
 
 import { OutcomeLabel } from './outcome-label'
 import {
@@ -34,11 +34,9 @@ import { Col } from './layout/col'
 import { UserLink } from './user-page'
 import { DateTimeTooltip } from './datetime-tooltip'
 import { useBets } from '../hooks/use-bets'
-import { Bet, withoutAnteBets } from '../lib/firebase/bets'
+import { Bet } from '../lib/firebase/bets'
 import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
 import { JoinSpans } from './join-spans'
-import Textarea from 'react-expanding-textarea'
-import { outcome } from '../../common/contract'
 import { fromNow } from '../lib/util/time'
 import BetRow from './bet-row'
 import { parseTags } from '../../common/util/parse'
@@ -204,7 +202,7 @@ function EditContract(props: {
   ) : (
     <Row>
       <button
-        className="btn btn-neutral btn-outline btn-sm mt-4"
+        className="btn btn-neutral btn-outline btn-xs mt-4"
         onClick={() => setEditing(true)}
       >
         {props.buttonText}
@@ -302,9 +300,10 @@ function TruncatedComment(props: {
 
 function FeedQuestion(props: { contract: Contract }) {
   const { contract } = props
-  const { creatorName, creatorUsername, createdTime, question, resolution } =
+  const { creatorName, creatorUsername, question, resolution, outcomeType } =
     contract
-  const { probPercent, truePool } = contractMetrics(contract)
+  const { truePool } = contractMetrics(contract)
+  const isBinary = outcomeType === 'BINARY'
 
   // Currently hidden on mobile; ideally we'd fit this in somewhere.
   const closeMessage =
@@ -340,7 +339,9 @@ function FeedQuestion(props: { contract: Contract }) {
           >
             {question}
           </SiteLink>
-          <ResolutionOrChance className="items-center" contract={contract} />
+          {(isBinary || resolution) && (
+            <ResolutionOrChance className="items-center" contract={contract} />
+          )}
         </Col>
         <TruncatedComment
           comment={contract.description}
@@ -379,7 +380,7 @@ function FeedDescription(props: { contract: Contract }) {
   )
 }
 
-function OutcomeIcon(props: { outcome?: outcome }) {
+function OutcomeIcon(props: { outcome?: string }) {
   const { outcome } = props
   switch (outcome) {
     case 'YES':
@@ -387,8 +388,9 @@ function OutcomeIcon(props: { outcome?: outcome }) {
     case 'NO':
       return <XIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
     case 'CANCEL':
-    default:
       return <BanIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+    default:
+      return <CheckIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
   }
 }
 
@@ -536,7 +538,7 @@ function groupBets(
   return items as ActivityItem[]
 }
 
-function BetGroupSpan(props: { bets: Bet[]; outcome: 'YES' | 'NO' }) {
+function BetGroupSpan(props: { bets: Bet[]; outcome: string }) {
   const { bets, outcome } = props
 
   const numberTraders = _.uniqBy(bets, (b) => b.userId).length
@@ -562,7 +564,8 @@ function FeedBetGroup(props: { activityItem: any }) {
   const { activityItem } = props
   const bets: Bet[] = activityItem.bets
 
-  const [yesBets, noBets] = _.partition(bets, (bet) => bet.outcome === 'YES')
+  const betGroups = _.groupBy(bets, (bet) => bet.outcome)
+  const outcomes = Object.keys(betGroups)
 
   // Use the time of the last bet for the entire group
   const createdTime = bets[bets.length - 1].createdTime
@@ -578,9 +581,12 @@ function FeedBetGroup(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-sm text-gray-500">
-          {yesBets.length > 0 && <BetGroupSpan outcome="YES" bets={yesBets} />}
-          {yesBets.length > 0 && noBets.length > 0 && <br />}
-          {noBets.length > 0 && <BetGroupSpan outcome="NO" bets={noBets} />}
+          {outcomes.map((outcome, index) => (
+            <Fragment key={outcome}>
+              <BetGroupSpan outcome={outcome} bets={betGroups[outcome]} />
+              {index !== outcomes.length - 1 && <br />}
+            </Fragment>
+          ))}
           <Timestamp time={createdTime} />
         </div>
       </div>
@@ -638,12 +644,16 @@ export function ContractFeed(props: {
   betRowClassName?: string
 }) {
   const { contract, feedType, betRowClassName } = props
-  const { id } = contract
+  const { id, outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
+
   const [expanded, setExpanded] = useState(false)
   const user = useUser()
 
-  let bets = useBets(id) ?? props.bets
-  bets = withoutAnteBets(contract, bets)
+  let bets = useBets(contract.id) ?? props.bets
+  bets = isBinary
+    ? bets.filter((bet) => !bet.isAnte)
+    : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
 
   const comments = useComments(id) ?? props.comments
 
@@ -711,7 +721,7 @@ export function ContractFeed(props: {
           </li>
         ))}
       </ul>
-      {tradingAllowed(contract) && (
+      {isBinary && tradingAllowed(contract) && (
         <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
       )}
     </div>

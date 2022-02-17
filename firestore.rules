@@ -27,20 +27,16 @@ service cloud.firestore {
       allow delete: if resource.data.creatorId == request.auth.uid;
     }
 
-    match /contracts/{contractId}/bets/{betId} {
-      allow read;
-    }
-
     match /{somePath=**}/bets/{betId} {
       allow read;
     }
 
-    match /contracts/{contractId}/comments/{commentId} {
+    match /{somePath=**}/comments/{commentId} {
       allow read;
       allow create: if request.auth != null;
     }
 
-    match /{somePath=**}/comments/{commentId} {
+    match /{somePath=**}/answers/{answerId} {
       allow read;
     }
 
@@ -49,13 +45,9 @@ service cloud.firestore {
       allow update, delete: if request.auth.uid == resource.data.curatorId;
     }
 
-    match /folds/{foldId}/followers/{userId} {
-      allow read;
-      allow write: if request.auth.uid == userId;
-    }
-
     match /{somePath=**}/followers/{userId} {
       allow read;
+      allow write: if request.auth.uid == userId;
     }
   }
 }
