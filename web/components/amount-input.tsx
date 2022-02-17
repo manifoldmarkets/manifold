@@ -79,7 +79,7 @@ export function AmountInput(props: {
             Remaining balance
           </div>
           <Row className="gap-4">
-            <div>{formatMoney(remainingBalance)}</div>
+            <div>{formatMoney(Math.floor(remainingBalance))}</div>
             {user.balance !== 1000 && <AddFundsButton />}
           </Row>
         </Col>
