@@ -156,19 +156,23 @@ export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
   const { totalShares, pool, totalBets } = contract
   const { shares, amount, outcome } = bet
 
+  const prevShares = totalShares[outcome] ?? 0
+  const prevPool = pool[outcome] ?? 0
+  const prevTotalBet = totalBets[outcome] ?? 0
+
   const newContract = {
     ...contract,
     totalShares: {
       ...totalShares,
-      [outcome]: totalShares[outcome] + shares,
+      [outcome]: prevShares + shares,
     },
     pool: {
       ...pool,
-      [outcome]: pool[outcome] + amount,
+      [outcome]: prevPool + amount,
     },
     totalBets: {
       ...totalBets,
-      [outcome]: totalBets[outcome] + amount,
+      [outcome]: prevTotalBet + amount,
     },
   }
 

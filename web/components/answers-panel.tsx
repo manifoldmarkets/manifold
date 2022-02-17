@@ -376,6 +376,25 @@ function CreateAnswerInput(props: { contract: Contract }) {
     }
   }
 
+  const resultProb = getProbabilityAfterBet(
+    contract.totalShares,
+    'new',
+    betAmount ?? 0
+  )
+
+  const shares = calculateShares(contract.totalShares, betAmount ?? 0, 'new')
+
+  const currentPayout = betAmount
+    ? calculatePayoutAfterCorrectBet(contract, {
+        outcome: 'new',
+        amount: betAmount,
+        shares,
+      } as Bet)
+    : 0
+
+  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
+  const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
+
   return (
     <Col className="gap-4 p-4 bg-gray-50 rounded">
       <Col className="flex-1 gap-2">
@@ -390,20 +409,47 @@ function CreateAnswerInput(props: { contract: Contract }) {
         />
         <div />
         <Col
-          className={clsx('sm:flex-row', text ? 'justify-between' : 'self-end')}
+          className={clsx(
+            'sm:flex-row gap-4',
+            text ? 'justify-between' : 'self-end'
+          )}
         >
           {text && (
-            <Col className="gap-2 mt-1">
-              <div className="text-gray-500 text-sm">Bet amount</div>
-              <AmountInput
-                amount={betAmount}
-                onChange={setBetAmount}
-                error={amountError}
-                setError={setAmountError}
-                minimumAmount={10}
-                disabled={isSubmitting}
-              />
-            </Col>
+            <>
+              <Col className="gap-2 mt-1">
+                <div className="text-gray-500 text-sm">
+                  Ante bet (cannot be sold)
+                </div>
+                <AmountInput
+                  amount={betAmount}
+                  onChange={setBetAmount}
+                  error={amountError}
+                  setError={setAmountError}
+                  minimumAmount={10}
+                  disabled={isSubmitting}
+                />
+              </Col>
+              <Col className="gap-2 mt-1">
+                <div className="text-sm text-gray-500">Implied probability</div>
+                <Row>
+                  <div>{formatPercent(0)}</div>
+                  <div className="mx-2">→</div>
+                  <div>{formatPercent(resultProb)}</div>
+                </Row>
+                <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
+                  Payout if chosen
+                  <InfoTooltip
+                    text={`Current payout for ${formatWithCommas(
+                      shares
+                    )} / ${formatWithCommas(shares)} shares`}
+                  />
+                </Row>
+                <div>
+                  {formatMoney(currentPayout)}
+                  &nbsp; <span>(+{currentReturnPercent})</span>
+                </div>
+              </Col>
+            </>
           )}
           <button
             className={clsx(
