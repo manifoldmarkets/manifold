@@ -33,7 +33,7 @@ import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from '../../common/util/array'
 
-type BetSort = 'newest' | 'profit' | 'resolved'
+type BetSort = 'newest' | 'profit' | 'resolved' | 'value'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -41,7 +41,7 @@ export function BetsList(props: { user: User }) {
 
   const [contracts, setContracts] = useState<Contract[]>([])
 
-  const [sort, setSort] = useState<BetSort>('profit')
+  const [sort, setSort] = useState<BetSort>('value')
 
   useEffect(() => {
     const loadedBets = bets ? bets : []
@@ -104,6 +104,8 @@ export function BetsList(props: { user: User }) {
       contracts,
       (c) => -1 * (contractsCurrentValue[c.id] - contractsInvestment[c.id])
     )
+  } else if (sort === 'value') {
+    sortedContracts = _.sortBy(contracts, (c) => -contractsCurrentValue[c.id])
   }
 
   const [resolved, unresolved] = _.partition(
@@ -161,6 +163,7 @@ export function BetsList(props: { user: User }) {
           value={sort}
           onChange={(e) => setSort(e.target.value as BetSort)}
         >
+          <option value="value">By value</option>
           <option value="profit">By profit</option>
           <option value="newest">Newest</option>
           <option value="resolved">Resolved</option>
@@ -287,6 +290,9 @@ export function MyBetsSummary(props: {
     calculatePayout(contract, bet, 'NO')
   )
 
+  // const p = getProbability(contract.totalShares)
+  // const expectation = p * yesWinnings + (1 - p) * noWinnings
+
   const marketWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'MKT')
   )
@@ -337,6 +343,14 @@ export function MyBetsSummary(props: {
             payoutCol
           ) : (
             <>
+              {/* <Col>
+                <div className="whitespace-nowrap text-sm text-gray-500">
+                  Expectation
+                </div>
+                <div className="whitespace-nowrap">
+                  {formatMoney(expectation)}
+                </div>
+              </Col> */}
               <Col>
                 <div className="whitespace-nowrap text-sm text-gray-500">
                   Payout if <YesLabel />
