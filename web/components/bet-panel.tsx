@@ -109,11 +109,12 @@ export function BetPanel(props: {
 
   const initialProb = getProbability(contract.totalShares)
 
-  const resultProb = getProbabilityAfterBet(
+  const outcomeProb = getProbabilityAfterBet(
     contract.totalShares,
     betChoice || 'YES',
     betAmount ?? 0
   )
+  const resultProb = betChoice === 'NO' ? 1 - outcomeProb : outcomeProb
 
   const shares = calculateShares(
     contract.totalShares,
