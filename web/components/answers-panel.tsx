@@ -418,7 +418,7 @@ function CreateAnswerInput(props: { contract: Contract }) {
             <>
               <Col className="gap-2 mt-1">
                 <div className="text-gray-500 text-sm">
-                  Ante bet (cannot be sold)
+                  Ante (cannot be sold)
                 </div>
                 <AmountInput
                   amount={betAmount}

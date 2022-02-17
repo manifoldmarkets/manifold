@@ -1,5 +1,5 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import _ from 'lodash'
 import {
   BanIcon,
@@ -582,10 +582,10 @@ function FeedBetGroup(props: { activityItem: any }) {
       <div className="min-w-0 flex-1">
         <div className="text-sm text-gray-500">
           {outcomes.map((outcome, index) => (
-            <>
+            <Fragment key={outcome}>
               <BetGroupSpan outcome={outcome} bets={betGroups[outcome]} />
               {index !== outcomes.length - 1 && <br />}
-            </>
+            </Fragment>
           ))}
           <Timestamp time={createdTime} />
         </div>
