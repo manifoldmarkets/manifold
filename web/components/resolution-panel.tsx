@@ -66,9 +66,9 @@ export function ResolutionPanel(props: {
 
   return (
     <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
-      <Title className="mt-0" text="Resolve market" />
+      <Title className="mt-0 whitespace-nowrap" text="Resolve market" />
 
-      <div className="pt-2 pb-1 text-sm text-gray-500">Outcome</div>
+      <div className="mb-2 text-sm text-gray-500">Outcome</div>
 
       <YesNoCancelSelector
         className="mx-auto my-2"
@@ -77,7 +77,7 @@ export function ResolutionPanel(props: {
         btnClassName={isSubmitting ? 'btn-disabled' : ''}
       />
 
-      <Spacer h={3} />
+      <Spacer h={4} />
 
       <div>
         {outcome === 'YES' ? (
@@ -97,22 +97,20 @@ export function ResolutionPanel(props: {
         ) : outcome === 'CANCEL' ? (
           <>The pool will be returned to traders with no fees.</>
         ) : outcome === 'MKT' ? (
-          <>
-            Traders will be paid out at the probability you specify:
-            <Spacer h={2} />
+          <Col className="gap-6">
+            <div>Traders will be paid out at the probability you specify:</div>
             <ProbabilitySelector
               probabilityInt={Math.round(prob)}
               setProbabilityInt={setProb}
             />
-            <Spacer h={2} />
-            You earn {CREATOR_FEE * 100}% of trader profits.
-          </>
+            <div>You earn {CREATOR_FEE * 100}% of trader profits.</div>
+          </Col>
         ) : (
           <>Resolving this market will immediately pay out traders.</>
         )}
       </div>
 
-      <Spacer h={3} />
+      <Spacer h={4} />
 
       {!!error && <div className="text-red-500">{error}</div>}
 
