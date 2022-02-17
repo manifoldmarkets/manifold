@@ -25,10 +25,14 @@ import { useFollowedFolds } from '../hooks/use-fold'
 import { SiteLink } from '../components/site-link'
 
 export async function getStaticProps() {
-  const [contracts, folds] = await Promise.all([
+  let [contracts, folds] = await Promise.all([
     listAllContracts().catch((_) => []),
     listAllFolds().catch(() => []),
   ])
+
+  // TODO(James): Remove this line. We are filtering out non-binary contracts so that
+  // branches other than free-response work.
+  contracts = contracts.filter((contract) => contract.outcomeType === 'BINARY')
 
   const [contractBets, contractComments] = await Promise.all([
     Promise.all(contracts.map((contract) => listAllBets(contract.id))),
