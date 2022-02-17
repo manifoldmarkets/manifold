@@ -12,12 +12,11 @@ export const useBets = (contractId: string) => {
   return bets
 }
 
-export const useBetsWithoutAntes = (
-  contract: Contract,
-  initialBets?: Bet[]
-) => {
-  const [bets, setBets] = useState<Bet[] | undefined>(
-    withoutAnteBets(contract, initialBets)
+export const useBetsWithoutAntes = (contract: Contract, initialBets: Bet[]) => {
+  const [bets, setBets] = useState<Bet[]>(
+    withoutAnteBets(contract, initialBets).sort(
+      (bet1, bet2) => bet1.createdTime - bet2.createdTime
+    )
   )
 
   useEffect(() => {
