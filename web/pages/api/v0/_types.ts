@@ -11,6 +11,7 @@ export type LiteContract = {
   closeTime?: number
   question: string
   description: string
+  tags: string[]
   url: string
   pool: number
   probability: number
@@ -37,6 +38,7 @@ export function toLiteContract({
   closeTime,
   question,
   description,
+  tags,
   slug,
   pool,
   totalShares,
@@ -53,6 +55,7 @@ export function toLiteContract({
     closeTime,
     question,
     description,
+    tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
     pool: pool.YES + pool.NO,
     probability: getProbability(totalShares),
