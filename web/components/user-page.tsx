@@ -31,20 +31,15 @@ export function UserLink(props: {
 
 export function UserPage(props: { user: User; currentUser?: User }) {
   const { user, currentUser } = props
-
   const isCurrentUser = user.id === currentUser?.id
-
-  const possesive = isCurrentUser ? 'Your ' : `${user.name}'s `
-
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
-
   const placeholderBio = `I... haven't gotten around to writing a bio yet 😛`
 
   return (
     <Page>
       <SEO
-        title={possesive + 'markets'}
-        description={possesive + 'markets'}
+        title={`${user.name} (@${user.username})`}
+        description={user.bio ?? placeholderBio}
         url={`/${user.username}`}
       />
 
