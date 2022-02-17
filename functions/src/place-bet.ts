@@ -42,12 +42,11 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
 
-      const { closeTime, outcomes } = contract
+      const { closeTime, outcomeType } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
-      const isFreeAnswer = outcomes === 'FREE_ANSWER'
-      if (isFreeAnswer) {
+      if (outcomeType === 'FREE_RESPONSE') {
         const answerSnap = await transaction.get(
           contractDoc.collection('answers').doc(outcome)
         )
@@ -60,21 +59,15 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         .doc()
 
       const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
-        isFreeAnswer
-          ? getNewMultiBetInfo(
-              user,
-              outcome,
-              amount,
-              contract as any,
-              newBetDoc.id
-            )
-          : getNewBinaryBetInfo(
+        outcomeType === 'BINARY'
+          ? getNewBinaryBetInfo(
               user,
               outcome as 'YES' | 'NO',
               amount,
               contract,
               newBetDoc.id
             )
+          : getNewMultiBetInfo(user, outcome, amount, contract, newBetDoc.id)
 
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, {

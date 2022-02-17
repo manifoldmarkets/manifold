@@ -18,6 +18,7 @@ import { ProbabilitySelector } from '../components/probability-selector'
 import { parseWordsAsTags } from '../../common/util/parse'
 import { TagsList } from '../components/tags-list'
 import { Row } from '../components/layout/row'
+import { outcomeType } from '../../common/contract'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -62,7 +63,7 @@ export function NewContract(props: { question: string; tag?: string }) {
     createContract({}).catch() // warm up function
   }, [])
 
-  const [outcomeType, setOutcomeType] = useState<'BINARY' | 'MULTI'>('BINARY')
+  const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb, setInitialProb] = useState(50)
   const [description, setDescription] = useState('')
   const [tagText, setTagText] = useState<string>(tag ?? '')
@@ -143,7 +144,7 @@ export function NewContract(props: { question: string; tag?: string }) {
             name="opt"
             checked={outcomeType === 'BINARY'}
             value="BINARY"
-            onChange={(e) => setOutcomeType(e.target.value as 'BINARY')}
+            onChange={() => setOutcomeType('BINARY')}
           />
           <span className="label-text">Yes / No</span>
         </label>
@@ -153,9 +154,9 @@ export function NewContract(props: { question: string; tag?: string }) {
             className="radio"
             type="radio"
             name="opt"
-            checked={outcomeType === 'MULTI'}
-            value="MULTI"
-            onChange={(e) => setOutcomeType(e.target.value as 'MULTI')}
+            checked={outcomeType === 'FREE_RESPONSE'}
+            value="FREE_RESPONSE"
+            onChange={() => setOutcomeType('FREE_RESPONSE')}
           />
           <span className="label-text">Free response</span>
         </label>

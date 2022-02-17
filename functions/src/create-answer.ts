@@ -44,13 +44,10 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
 
-      if (
-        contract.outcomeType !== 'MULTI' ||
-        contract.outcomes !== 'FREE_ANSWER'
-      )
+      if (contract.outcomeType !== 'FREE_RESPONSE')
         return {
           status: 'error',
-          message: 'Requires a multi, free answer contract',
+          message: 'Requires a free response contract',
         }
 
       const { closeTime } = contract

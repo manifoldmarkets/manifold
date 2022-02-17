@@ -35,7 +35,7 @@ export const resolveMarket = functions
       if (outcomeType === 'BINARY') {
         if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
           return { status: 'error', message: 'Invalid outcome' }
-      } else if (outcomeType === 'MULTI') {
+      } else if (outcomeType === 'FREE_RESPONSE') {
         if (outcome !== 'CANCEL' && isNaN(+outcome))
           return { status: 'error', message: 'Invalid outcome' }
       } else {

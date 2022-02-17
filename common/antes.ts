@@ -80,7 +80,7 @@ export function getFreeAnswerAnte(
     amount,
     shares,
     outcome: '0',
-    probBefore: 1,
+    probBefore: 0,
     probAfter: 1,
     createdTime,
     isAnte: true,

@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { chargeUser, getUser } from './utils'
-import { Contract } from '../../common/contract'
+import { Contract, outcomeType } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 import { getNewContract } from '../../common/new-contract'
@@ -19,7 +19,7 @@ export const createContract = functions
     async (
       data: {
         question: string
-        outcomeType: 'BINARY' | 'MULTI'
+        outcomeType: outcomeType
         description: string
         initialProb: number
         ante: number
@@ -40,7 +40,7 @@ export const createContract = functions
         return { status: 'error', message: 'Missing question field' }
 
       let outcomeType = data.outcomeType ?? 'BINARY'
-      if (outcomeType !== 'BINARY' && outcomeType !== 'MULTI')
+      if (!['BINARY', 'MULTI', 'FREE_RESPONSE'].includes(outcomeType))
         return { status: 'error', message: 'Invalid outcomeType' }
 
       if (
@@ -106,7 +106,7 @@ export const createContract = functions
           )
           await yesBetDoc.set(yesBet)
           await noBetDoc.set(noBet)
-        } else if (outcomeType === 'MULTI') {
+        } else if (outcomeType === 'FREE_RESPONSE') {
           const noneAnswerDoc = firestore
             .collection(`contracts/${contract.id}/answers`)
             .doc('0')

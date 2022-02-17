@@ -42,7 +42,7 @@ export async function getStaticProps(props: {
   const [bets, comments, answers] = await Promise.all([
     contractId ? listAllBets(contractId) : [],
     contractId ? listAllComments(contractId) : [],
-    contractId && contract.outcomes === 'FREE_ANSWER'
+    contractId && contract.outcomeType === 'FREE_RESPONSE'
       ? listAllAnswers(contractId)
       : [],
   ])
@@ -120,7 +120,7 @@ export default function ContractPage(props: {
             comments={comments ?? []}
             folds={folds}
           >
-            {contract.outcomes === 'FREE_ANSWER' && (
+            {contract.outcomeType === 'FREE_RESPONSE' && (
               <>
                 <Spacer h={4} />
                 <AnswersPanel

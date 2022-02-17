@@ -1,5 +1,5 @@
 import { calcStartPool } from './antes'
-import { Contract } from './contract'
+import { Contract, outcomeType } from './contract'
 import { User } from './user'
 import { parseTags } from './util/parse'
 import { removeUndefinedProps } from './util/object'
@@ -9,7 +9,7 @@ export function getNewContract(
   slug: string,
   creator: User,
   question: string,
-  outcomeType: 'BINARY' | 'MULTI',
+  outcomeType: outcomeType,
   description: string,
   initialProb: number,
   ante: number,
@@ -64,7 +64,6 @@ const getBinaryProps = (initialProb: number, ante: number) => {
     pool: { YES: poolYes, NO: poolNo },
     totalShares: { YES: sharesYes, NO: sharesNo },
     totalBets: { YES: poolYes, NO: poolNo },
-    outcomes: undefined,
   }
 }
 
@@ -73,8 +72,6 @@ const getFreeAnswerProps = (ante: number) => {
     pool: { '0': ante },
     totalShares: { '0': ante },
     totalBets: { '0': ante },
-    phantomShares: undefined,
-    outcomes: 'FREE_ANSWER' as const,
   }
 }
 

@@ -13,8 +13,8 @@ export type Contract = {
   lowercaseTags: string[]
   visibility: 'public' | 'unlisted'
 
-  outcomeType: 'BINARY' | 'MULTI'
-  outcomes?: 'FREE_ANSWER' | string[]
+  outcomeType: 'BINARY' | 'MULTI' | 'FREE_RESPONSE'
+  multiOutcomes?: string[] // Used for outcomeType 'MULTI'.
 
   mechanism: 'dpm-2'
   phantomShares?: { [outcome: string]: number }
@@ -34,3 +34,5 @@ export type Contract = {
   volume24Hours: number
   volume7Days: number
 }
+
+export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE'
