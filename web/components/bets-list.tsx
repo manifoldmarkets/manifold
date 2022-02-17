@@ -283,9 +283,8 @@ export function MyBetsSummary(props: {
     calculatePayout(contract, bet, 'NO')
   )
 
-  const p = getProbability(contract.totalShares)
-
-  const expectation = p * yesWinnings + (1 - p) * noWinnings
+  // const p = getProbability(contract.totalShares)
+  // const expectation = p * yesWinnings + (1 - p) * noWinnings
 
   const marketWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'MKT')
@@ -337,14 +336,14 @@ export function MyBetsSummary(props: {
             payoutCol
           ) : (
             <>
-              <Col>
+              {/* <Col>
                 <div className="whitespace-nowrap text-sm text-gray-500">
                   Expectation
                 </div>
                 <div className="whitespace-nowrap">
                   {formatMoney(expectation)}
                 </div>
-              </Col>
+              </Col> */}
               <Col>
                 <div className="whitespace-nowrap text-sm text-gray-500">
                   Payout if <YesLabel />
