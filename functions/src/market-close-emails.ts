@@ -26,6 +26,7 @@ async function sendMarketCloseEmails() {
         if (
           contract.resolution ||
           (contract.closeEmailsSent ?? 0) >= 1 ||
+          contract.closeTime === undefined ||
           (contract.closeTime ?? 0) > Date.now()
         )
           return undefined
