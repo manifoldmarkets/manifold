@@ -24,7 +24,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
     if (amount <= 0 || isNaN(amount) || !isFinite(amount))
       return { status: 'error', message: 'Invalid amount' }
 
-    if (!text || typeof text !== 'string' || text.length > 1000)
+    if (!text || typeof text !== 'string' || text.length > 10000)
       return { status: 'error', message: 'Invalid text' }
 
     // Run as transaction to prevent race conditions.

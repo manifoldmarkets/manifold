@@ -126,7 +126,7 @@ function AnswerItem(props: {
       )}
     >
       <Col className="gap-3 flex-1">
-        <div>{text}</div>
+        <div className="whitespace-pre-line break-words">{text}</div>
 
         <Row className="text-gray-500 text-sm gap-2 items-center">
           <SiteLink className="relative" href={`/${username}`}>
