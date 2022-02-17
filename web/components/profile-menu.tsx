@@ -35,8 +35,8 @@ function getNavigationOptions(
       href: user ? '/home' : '/',
     },
     {
-      name: 'Profile',
-      href: '/profile',
+      name: `@${user?.username}`,
+      href: `/${user?.username}`,
     },
     ...(mobile
       ? [
@@ -53,10 +53,6 @@ function getNavigationOptions(
     {
       name: 'Your trades',
       href: '/trades',
-    },
-    {
-      name: 'Your markets',
-      href: `/${user?.username ?? ''}`,
     },
     {
       name: 'Leaderboards',
