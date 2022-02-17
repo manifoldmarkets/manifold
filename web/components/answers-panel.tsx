@@ -66,7 +66,7 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
           key={answer.id}
           answer={answer}
           contract={contract}
-          showChoice={resolveOption === 'CHOOSE'}
+          showChoice={!resolution && resolveOption === 'CHOOSE'}
           isChosen={answer.id === answerChoice}
           onChoose={() => setAnswerChoice(answer.id)}
         />
@@ -457,6 +457,8 @@ function AnswerResolvePanel(props: {
     if (result?.status !== 'success') {
       setError(result?.error || 'Error resolving market')
     }
+    setResolveOption(undefined)
+    clearAnswerChoice()
     setIsSubmitting(false)
   }
 
