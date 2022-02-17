@@ -1,7 +1,9 @@
+import _ = require('lodash')
 import { getProbability } from '../../common/calculate'
 import { Contract } from '../../common/contract'
+import { CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
-import { formatPercent } from '../../common/util/format'
+import { formatMoney, formatPercent } from '../../common/util/format'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 
@@ -93,20 +95,24 @@ export const sendMarketCloseEmail = async (
   privateUser: PrivateUser,
   contract: Contract
 ) => {
-  const firstName = user.name.split(' ')[0]
-  const url = `https://manifold.markets/${user.username}/${contract.slug}`
+  const { username, name, id: userId } = user
+  const firstName = name.split(' ')[0]
 
-  await sendTextEmail(
+  const { question, pool: pools, slug } = contract
+  const pool = formatMoney(_.sum(_.values(pools)))
+  const url = `https://manifold.markets/${username}/${slug}`
+
+  await sendTemplateEmail(
     privateUser.email || '',
     'Your market has closed',
-    `Hi ${firstName},
-
-Trading for one of your markets has ended. Please resolve it as soon as possible.
-
-Question: ${contract.question}
-Url: ${url}
-
-Best,
-Austin from Manifold`
+    'market-close',
+    {
+      name: firstName,
+      question,
+      pool,
+      url,
+      userId,
+      creatorFee: (CREATOR_FEE * 100).toString(),
+    }
   )
 }
