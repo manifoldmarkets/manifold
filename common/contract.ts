@@ -33,6 +33,7 @@ export type Contract = {
   resolutionTime?: number // When the contract creator resolved the market
   resolution?: string
   resolutionProbability?: number
+  closeEmailsSent?: number
 
   volume24Hours: number
   volume7Days: number
