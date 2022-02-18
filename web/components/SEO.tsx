@@ -2,7 +2,7 @@ import Head from 'next/head'
 
 export type OgCardProps = {
   question: string
-  probability: string
+  probability?: string
   metadata: string
   creatorName: string
   creatorUsername: string
@@ -11,11 +11,16 @@ export type OgCardProps = {
 }
 
 function buildCardUrl(props: OgCardProps) {
+  const probabilityParam =
+    props.probability === undefined
+      ? ''
+      : `&probability=${encodeURIComponent(props.probability ?? '')}`
+
   // URL encode each of the props, then add them as query params
   return (
     `https://manifold-og-image.vercel.app/m.png` +
     `?question=${encodeURIComponent(props.question)}` +
-    `&probability=${encodeURIComponent(props.probability)}` +
+    probabilityParam +
     `&metadata=${encodeURIComponent(props.metadata)}` +
     `&creatorName=${encodeURIComponent(props.creatorName)}` +
     `&creatorUsername=${encodeURIComponent(props.creatorUsername)}`
