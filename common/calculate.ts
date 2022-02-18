@@ -34,6 +34,20 @@ export function getProbabilityAfterBet(
   return getOutcomeProbability(newTotalShares, outcome)
 }
 
+export function getProbabilityAfterSale(
+  totalShares: {
+    [outcome: string]: number
+  },
+  outcome: string,
+  shares: number
+) {
+  const prevShares = totalShares[outcome] ?? 0
+  const newTotalShares = { ...totalShares, [outcome]: prevShares - shares }
+
+  const predictionOutcome = outcome === 'NO' ? 'YES' : outcome
+  return getOutcomeProbability(newTotalShares, predictionOutcome)
+}
+
 export function calculateShares(
   totalShares: {
     [outcome: string]: number

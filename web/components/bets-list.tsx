@@ -25,7 +25,9 @@ import { UserLink } from './user-page'
 import {
   calculatePayout,
   calculateSaleAmount,
+  getOutcomeProbability,
   getProbability,
+  getProbabilityAfterSale,
   resolvedPayout,
 } from '../../common/calculate'
 import { sellBet } from '../lib/firebase/api-call'
@@ -496,6 +498,19 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   const { contract, bet } = props
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const initialProb = getOutcomeProbability(
+    contract.totalShares,
+    bet.outcome === 'NO' ? 'YES' : bet.outcome
+  )
+
+  const outcomeProb = getProbabilityAfterSale(
+    contract.totalShares,
+    bet.outcome,
+    bet.shares
+  )
+
+  const saleAmount = calculateSaleAmount(contract, bet)
+
   return (
     <ConfirmationButton
       id={`sell-${bet.id}`}
@@ -515,8 +530,12 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
       </div>
       <div>
         Do you want to sell {formatWithCommas(bet.shares)} shares of{' '}
-        <OutcomeLabel outcome={bet.outcome} /> for{' '}
-        {formatMoney(calculateSaleAmount(contract, bet))}?
+        <OutcomeLabel outcome={bet.outcome} /> for {formatMoney(saleAmount)}?
+      </div>
+
+      <div className="mt-2 mb-1 text-sm text-gray-500">
+        Implied probability: {formatPercent(initialProb)} →{' '}
+        {formatPercent(outcomeProb)}
       </div>
     </ConfirmationButton>
   )
