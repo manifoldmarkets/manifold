@@ -131,7 +131,7 @@ export const ContractOverview = (props: {
         bets={bets}
         comments={comments}
         feedType="market"
-        betRowClassName="md:hidden !mt-0"
+        betRowClassName="!mt-0"
       />
     </Col>
   )
