@@ -3,21 +3,21 @@ export const randomString = (length = 12) =>
     .toString(16)
     .substring(2, length + 2)
 
+export function genHash(str: string) {
+  // xmur3
+  for (var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353)
+    h = (h << 13) | (h >>> 19)
+  }
+  return function () {
+    h = Math.imul(h ^ (h >>> 16), 2246822507)
+    h = Math.imul(h ^ (h >>> 13), 3266489909)
+    return (h ^= h >>> 16) >>> 0
+  }
+}
+
 export function createRNG(seed: string) {
   // https://stackoverflow.com/a/47593316/1592933
-
-  function genHash(str: string) {
-    // xmur3
-    for (var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
-      h = Math.imul(h ^ str.charCodeAt(i), 3432918353)
-      h = (h << 13) | (h >>> 19)
-    }
-    return function () {
-      h = Math.imul(h ^ (h >>> 16), 2246822507)
-      h = Math.imul(h ^ (h >>> 13), 3266489909)
-      return (h ^= h >>> 16) >>> 0
-    }
-  }
 
   const gen = genHash(seed)
   let [a, b, c, d] = [gen(), gen(), gen(), gen()]
