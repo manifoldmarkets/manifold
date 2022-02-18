@@ -31,7 +31,7 @@ export function ConfirmationButton(props: {
       <input type="checkbox" id={id} className="modal-toggle" />
 
       <div className="modal">
-        <div className="modal-box">
+        <div className="modal-box whitespace-normal">
           {children}
 
           <div className="modal-action">
