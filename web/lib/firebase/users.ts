@@ -9,6 +9,7 @@ import {
   limit,
   getDocs,
   orderBy,
+  updateDoc,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -21,7 +22,8 @@ import {
 import { app } from './init'
 import { PrivateUser, User } from '../../../common/user'
 import { createUser } from './api-call'
-import { getValue, getValues, listenForValue, listenForValues } from './utils'
+import { getValues, listenForValue, listenForValues } from './utils'
+
 export type { User }
 
 const db = getFirestore(app)
@@ -43,6 +45,10 @@ export async function getUserByUsername(username: string) {
 
 export async function setUser(userId: string, user: User) {
   await setDoc(doc(db, 'users', userId), user)
+}
+
+export async function updateUser(userId: string, update: Partial<User>) {
+  await updateDoc(doc(db, 'users', userId), { ...update })
 }
 
 export function listenForUser(

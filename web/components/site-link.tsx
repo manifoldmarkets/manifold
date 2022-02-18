@@ -12,10 +12,11 @@ export const SiteLink = (props: {
     <a
       href={href}
       className={clsx(
-        'break-words z-10 hover:underline hover:decoration-indigo-400 hover:decoration-2',
+        'z-10 break-words hover:underline hover:decoration-indigo-400 hover:decoration-2',
         className
       )}
       style={{ /* For iOS safari */ wordBreak: 'break-word' }}
+      target="_blank"
       onClick={(e) => e.stopPropagation()}
     >
       {children}
@@ -24,7 +25,7 @@ export const SiteLink = (props: {
     <Link href={href}>
       <a
         className={clsx(
-          'break-words z-10 hover:underline hover:decoration-indigo-400 hover:decoration-2',
+          'z-10 break-words hover:underline hover:decoration-indigo-400 hover:decoration-2',
           className
         )}
         style={{ /* For iOS safari */ wordBreak: 'break-word' }}

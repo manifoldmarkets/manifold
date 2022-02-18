@@ -16,6 +16,48 @@ import { changeUserInfo } from '../lib/firebase/api-call'
 import { uploadImage } from '../lib/firebase/storage'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
+import { User } from '../../common/user'
+import { updateUser } from '../lib/firebase/users'
+import { defaultBannerUrl } from '../components/user-page'
+import { SiteLink } from '../components/site-link'
+import Textarea from 'react-expanding-textarea'
+
+function EditUserField(props: {
+  user: User
+  field: 'bio' | 'bannerUrl' | 'twitterHandle' | 'discordHandle'
+  label: string
+}) {
+  const { user, field, label } = props
+  const [value, setValue] = useState(user[field] ?? '')
+
+  async function updateField() {
+    // Note: We trim whitespace before uploading to Firestore
+    await updateUser(user.id, { [field]: value.trim() })
+  }
+
+  return (
+    <div>
+      <label className="label">{label}</label>
+
+      {field === 'bio' ? (
+        <Textarea
+          className="textarea textarea-bordered w-full"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={updateField}
+        />
+      ) : (
+        <input
+          type="text"
+          className="input input-bordered"
+          value={value}
+          onChange={(e) => setValue(e.target.value || '')}
+          onBlur={updateField}
+        />
+      )}
+    </div>
+  )
+}
 
 export default function ProfilePage() {
   const user = useUser()
@@ -25,8 +67,6 @@ export default function ProfilePage() {
   const [avatarLoading, setAvatarLoading] = useState(false)
   const [name, setName] = useState(user?.name || '')
   const [username, setUsername] = useState(user?.username || '')
-
-  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -95,23 +135,10 @@ export default function ProfilePage() {
 
       <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
         <Row className="justify-between">
-          <Title className="!mt-0" text="Profile" />
-          {isEditing ? (
-            <button
-              className="btn btn-primary"
-              onClick={() => setIsEditing(false)}
-            >
-              Done
-            </button>
-          ) : (
-            <button
-              className="btn btn-ghost"
-              onClick={() => setIsEditing(true)}
-            >
-              <PencilIcon className="h-5 w-5" />{' '}
-              <div className="ml-2">Edit</div>
-            </button>
-          )}
+          <Title className="!mt-0" text="Edit Profile" />
+          <SiteLink className="btn btn-primary" href={`/${user?.username}`}>
+            Done
+          </SiteLink>
         </Row>
         <Col className="gap-4">
           <Row className="items-center gap-4">
@@ -125,9 +152,7 @@ export default function ProfilePage() {
                   height={80}
                   className="flex items-center justify-center rounded-full bg-gray-400"
                 />
-                {isEditing && (
-                  <input type="file" name="file" onChange={fileHandler} />
-                )}
+                <input type="file" name="file" onChange={fileHandler} />
               </>
             )}
           </Row>
@@ -135,36 +160,68 @@ export default function ProfilePage() {
           <div>
             <label className="label">Display name</label>
 
-            {isEditing ? (
-              <input
-                type="text"
-                placeholder="Display name"
-                className="input input-bordered"
-                value={name}
-                onChange={(e) => setName(e.target.value || '')}
-                onBlur={updateDisplayName}
-              />
-            ) : (
-              <div className="ml-1 text-gray-500">{name}</div>
-            )}
+            <input
+              type="text"
+              placeholder="Display name"
+              className="input input-bordered"
+              value={name}
+              onChange={(e) => setName(e.target.value || '')}
+              onBlur={updateDisplayName}
+            />
           </div>
 
           <div>
             <label className="label">Username</label>
 
-            {isEditing ? (
-              <input
-                type="text"
-                placeholder="Username"
-                className="input input-bordered"
-                value={username}
-                onChange={(e) => setUsername(e.target.value || '')}
-                onBlur={updateUsername}
-              />
-            ) : (
-              <div className="ml-1 text-gray-500">{username}</div>
-            )}
+            <input
+              type="text"
+              placeholder="Username"
+              className="input input-bordered"
+              value={username}
+              onChange={(e) => setUsername(e.target.value || '')}
+              onBlur={updateUsername}
+            />
           </div>
+
+          {user && (
+            <>
+              {/* TODO: Allow users with M$ 2000 of assets to set custom banners */}
+              {/* <EditUserField
+                user={user}
+                field="bannerUrl"
+                label="Banner Url"
+                isEditing={isEditing}
+              /> */}
+              <label className="label">
+                Banner image{' '}
+                <span className="text-sm text-gray-400">
+                  Not editable for now
+                </span>
+              </label>
+              <div
+                className="h-32 w-full bg-cover bg-center sm:h-40"
+                style={{
+                  backgroundImage: `url(${
+                    user.bannerUrl || defaultBannerUrl(user.id)
+                  })`,
+                }}
+              />
+
+              {[
+                ['bio', 'Bio'],
+                ['website', 'Website URL'],
+                ['twitterHandle', 'Twitter'],
+                ['discordHandle', 'Discord'],
+              ].map(([field, label]) => (
+                <EditUserField
+                  user={user}
+                  // @ts-ignore
+                  field={field}
+                  label={label}
+                />
+              ))}
+            </>
+          )}
 
           <div>
             <label className="label">Email</label>
