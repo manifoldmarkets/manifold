@@ -82,6 +82,10 @@ export default function ContractPage(props: {
   const contract = useContractWithPreload(props.slug, props.contract)
   const { bets, comments } = props
 
+  // Sort for now to see if bug is fixed.
+  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+  bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
+
   const folds = (useFoldsWithTags(contract?.tags) ?? props.folds).filter(
     (fold) => fold.followCount > 1 || user?.id === fold.curatorId
   )
