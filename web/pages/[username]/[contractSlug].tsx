@@ -102,8 +102,7 @@ export default function ContractPage(props: {
   const allowResolve = !isResolved && isCreator && !!user
   const hasSidePanel = isBinary && (allowTrade || allowResolve)
 
-  // TODO(James): Create SEO props for non-binary contracts.
-  const ogCardProps = isBinary ? getOpenGraphProps(contract) : undefined
+  const ogCardProps = getOpenGraphProps(contract)
 
   return (
     <Page wide={hasSidePanel}>
@@ -191,8 +190,10 @@ function BetsSection(props: {
 }
 
 const getOpenGraphProps = (contract: Contract) => {
-  const { resolution, question, creatorName, creatorUsername } = contract
-  const probPercent = getBinaryProbPercent(contract)
+  const { resolution, question, creatorName, creatorUsername, outcomeType } =
+    contract
+  const probPercent =
+    outcomeType === 'BINARY' ? getBinaryProbPercent(contract) : undefined
 
   const description = resolution
     ? `Resolved ${resolution}. ${contract.description}`

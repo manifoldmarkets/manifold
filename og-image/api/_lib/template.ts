@@ -1,15 +1,15 @@
-import { sanitizeHtml } from "./sanitizer";
-import { ParsedRequest } from "./types";
+import { sanitizeHtml } from './sanitizer'
+import { ParsedRequest } from './types'
 
 function getCss(theme: string, fontSize: string) {
-  let background = "white";
-  let foreground = "black";
-  let radial = "lightgray";
+  let background = 'white'
+  let foreground = 'black'
+  let radial = 'lightgray'
 
-  if (theme === "dark") {
-    background = "black";
-    foreground = "white";
-    radial = "dimgray";
+  if (theme === 'dark') {
+    background = 'black'
+    foreground = 'white'
+    radial = 'dimgray'
   }
   // To use Readex Pro: `font-family: 'Readex Pro', sans-serif;`
   return `
@@ -78,7 +78,7 @@ function getCss(theme: string, fontSize: string) {
     .text-primary {
       color: #11b981;
     }
-    `;
+    `
 }
 
 export function getHtml(parsedReq: ParsedRequest) {
@@ -92,8 +92,8 @@ export function getHtml(parsedReq: ParsedRequest) {
     creatorName,
     creatorUsername,
     creatorAvatarUrl,
-  } = parsedReq;
-  const hideAvatar = creatorAvatarUrl ? "" : "hidden";
+  } = parsedReq
+  const hideAvatar = creatorAvatarUrl ? '' : 'hidden'
   return `<!DOCTYPE html>
 <html>
     <head>
@@ -145,7 +145,7 @@ export function getHtml(parsedReq: ParsedRequest) {
         </div>
         <div class="flex flex-col text-primary">
           <div class="text-8xl">${probability}</div>
-          <div class="text-4xl">chance</div>
+          <div class="text-4xl">${probability !== '' ? 'chance' : ''}</div>
         </div>
       </div>
 
@@ -157,5 +157,5 @@ export function getHtml(parsedReq: ParsedRequest) {
       </div>
     </div>
   </body>
-</html>`;
+</html>`
 }
