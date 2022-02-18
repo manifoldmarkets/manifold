@@ -5,8 +5,8 @@ import _ from 'lodash'
 import { Contract, listAllContracts } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
 import { ActivityFeed, findActiveContracts } from './activity'
-import { Comment, listAllComments } from '../lib/firebase/comments'
-import { Bet, listAllBets } from '../lib/firebase/bets'
+import { Comment, getRecentComments } from '../lib/firebase/comments'
+import { Bet, getRecentBets } from '../lib/firebase/bets'
 import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
@@ -30,16 +30,16 @@ export async function getStaticProps() {
     listAllFolds().catch(() => []),
   ])
 
-  const [contractBets, contractComments] = await Promise.all([
-    Promise.all(contracts.map((contract) => listAllBets(contract.id))),
-    Promise.all(contracts.map((contract) => listAllComments(contract.id))),
+  const [recentBets, recentComments] = await Promise.all([
+    getRecentBets(),
+    getRecentComments(),
   ])
 
   return {
     props: {
       contracts,
-      contractBets,
-      contractComments,
+      recentBets,
+      recentComments,
       folds,
     },
 
@@ -49,18 +49,15 @@ export async function getStaticProps() {
 
 const Home = (props: {
   contracts: Contract[]
-  contractBets: Bet[][]
-  contractComments: Comment[][]
   folds: Fold[]
+  recentBets: Bet[]
+  recentComments: Comment[]
 }) => {
-  const { contractBets, contractComments, folds } = props
+  const { folds, recentBets, recentComments } = props
 
   const user = useUser()
 
   const contracts = useUpdatedContracts(props.contracts)
-  const contractIdToIndex = _.fromPairs(
-    contracts.map((contract, index) => [contract.id, index])
-  )
 
   const followedFoldIds = useFollowedFolds(user)
   const followedFolds = filterDefined(
@@ -88,29 +85,25 @@ const Home = (props: {
       )
   }
 
-  const oneDayMS = 24 * 60 * 60 * 1000
-  const recentBets = (feedContracts ?? [])
-    .map((c) => contractBets[contractIdToIndex[c.id]])
-    .flat()
-    .filter((bet) => bet.createdTime > Date.now() - oneDayMS)
-  const feedComments = (feedContracts ?? [])
-    .map((c) => contractComments[contractIdToIndex[c.id]])
-    .flat()
+  const activeContracts = findActiveContracts(
+    feedContracts,
+    recentComments,
+    recentBets,
+    365
+  )
 
-  const activeContracts =
-    feedContracts &&
-    findActiveContracts(feedContracts, feedComments, recentBets, 365)
+  const betsByContract = _.groupBy(recentBets, (bet) => bet.contractId)
+  const activeBets = activeContracts.map(
+    (contract) => betsByContract[contract.id] ?? []
+  )
 
-  const activeBets = activeContracts
-    ? activeContracts.map(
-        (contract) => contractBets[contractIdToIndex[contract.id]]
-      )
-    : []
-  const activeComments = activeContracts
-    ? activeContracts.map(
-        (contract) => contractComments[contractIdToIndex[contract.id]]
-      )
-    : []
+  const commentsByContract = _.groupBy(
+    recentComments,
+    (comment) => comment.contractId
+  )
+  const activeComments = activeContracts.map(
+    (contract) => commentsByContract[contract.id] ?? []
+  )
 
   if (user === null) {
     Router.replace('/')
