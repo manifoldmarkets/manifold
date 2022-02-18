@@ -18,22 +18,24 @@ import {
   Contract,
   getContractFromId,
   contractPath,
-  contractMetrics,
+  getBinaryProbPercent,
 } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import {
-  calculateCancelPayout,
   calculatePayout,
   calculateSaleAmount,
+  getOutcomeProbability,
   getProbability,
+  getProbabilityAfterSale,
   resolvedPayout,
 } from '../../common/calculate'
 import { sellBet } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
+import { filterDefined } from '../../common/util/array'
 
-type BetSort = 'newest' | 'profit' | 'resolved'
+type BetSort = 'newest' | 'profit' | 'resolved' | 'value'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -41,7 +43,7 @@ export function BetsList(props: { user: User }) {
 
   const [contracts, setContracts] = useState<Contract[]>([])
 
-  const [sort, setSort] = useState<BetSort>('profit')
+  const [sort, setSort] = useState<BetSort>('value')
 
   useEffect(() => {
     const loadedBets = bets ? bets : []
@@ -50,7 +52,7 @@ export function BetsList(props: { user: User }) {
     let disposed = false
     Promise.all(contractIds.map((id) => getContractFromId(id))).then(
       (contracts) => {
-        if (!disposed) setContracts(contracts.filter(Boolean) as Contract[])
+        if (!disposed) setContracts(filterDefined(contracts))
       }
     )
 
@@ -104,6 +106,8 @@ export function BetsList(props: { user: User }) {
       contracts,
       (c) => -1 * (contractsCurrentValue[c.id] - contractsInvestment[c.id])
     )
+  } else if (sort === 'value') {
+    sortedContracts = _.sortBy(contracts, (c) => -contractsCurrentValue[c.id])
   }
 
   const [resolved, unresolved] = _.partition(
@@ -161,6 +165,7 @@ export function BetsList(props: { user: User }) {
           value={sort}
           onChange={(e) => setSort(e.target.value as BetSort)}
         >
+          <option value="value">By value</option>
           <option value="profit">By profit</option>
           <option value="newest">Newest</option>
           <option value="resolved">Resolved</option>
@@ -180,10 +185,13 @@ export function BetsList(props: { user: User }) {
 
 function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
   const { bets, contract } = props
-  const { resolution } = contract
+  const { resolution, outcomeType } = contract
 
   const [collapsed, setCollapsed] = useState(true)
-  const { probPercent } = contractMetrics(contract)
+
+  const isBinary = outcomeType === 'BINARY'
+  const probPercent = getBinaryProbPercent(contract)
+
   return (
     <div
       tabIndex={0}
@@ -213,14 +221,18 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
           </Row>
 
           <Row className="items-center gap-2 text-sm text-gray-500">
-            {resolution ? (
-              <div>
-                Resolved <OutcomeLabel outcome={resolution} />
-              </div>
-            ) : (
-              <div className="text-primary text-lg">{probPercent}</div>
+            {isBinary && (
+              <>
+                {resolution ? (
+                  <div>
+                    Resolved <OutcomeLabel outcome={resolution} />
+                  </div>
+                ) : (
+                  <div className="text-primary text-lg">{probPercent}</div>
+                )}
+                <div>•</div>
+              </>
             )}
-            <div>•</div>
             <UserLink
               name={contract.creatorName}
               username={contract.creatorUsername}
@@ -263,8 +275,8 @@ export function MyBetsSummary(props: {
   className?: string
 }) {
   const { bets, contract, onlyMKT, className } = props
-  const { resolution } = contract
-  calculateCancelPayout
+  const { resolution, outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
 
   const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
   const betsTotal = _.sumBy(excludeSales, (bet) => bet.amount)
@@ -279,6 +291,9 @@ export function MyBetsSummary(props: {
   const noWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
+
+  // const p = getProbability(contract.totalShares)
+  // const expectation = p * yesWinnings + (1 - p) * noWinnings
 
   const marketWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'MKT')
@@ -330,6 +345,14 @@ export function MyBetsSummary(props: {
             payoutCol
           ) : (
             <>
+              {/* <Col>
+                <div className="whitespace-nowrap text-sm text-gray-500">
+                  Expectation
+                </div>
+                <div className="whitespace-nowrap">
+                  {formatMoney(expectation)}
+                </div>
+              </Col> */}
               <Col>
                 <div className="whitespace-nowrap text-sm text-gray-500">
                   Payout if <YesLabel />
@@ -348,10 +371,16 @@ export function MyBetsSummary(props: {
               </Col>
               <Col>
                 <div className="whitespace-nowrap text-sm text-gray-500">
-                  Payout at{' '}
-                  <span className="text-blue-400">
-                    {formatPercent(getProbability(contract.totalShares))}
-                  </span>
+                  {isBinary ? (
+                    <>
+                      Payout at{' '}
+                      <span className="text-blue-400">
+                        {formatPercent(getProbability(contract.totalShares))}
+                      </span>
+                    </>
+                  ) : (
+                    <>Current payout</>
+                  )}
                 </div>
                 <div className="whitespace-nowrap">
                   {formatMoney(marketWinnings)}
@@ -469,6 +498,19 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   const { contract, bet } = props
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const initialProb = getOutcomeProbability(
+    contract.totalShares,
+    bet.outcome === 'NO' ? 'YES' : bet.outcome
+  )
+
+  const outcomeProb = getProbabilityAfterSale(
+    contract.totalShares,
+    bet.outcome,
+    bet.shares
+  )
+
+  const saleAmount = calculateSaleAmount(contract, bet)
+
   return (
     <ConfirmationButton
       id={`sell-${bet.id}`}
@@ -488,8 +530,12 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
       </div>
       <div>
         Do you want to sell {formatWithCommas(bet.shares)} shares of{' '}
-        <OutcomeLabel outcome={bet.outcome} /> for{' '}
-        {formatMoney(calculateSaleAmount(contract, bet))}?
+        <OutcomeLabel outcome={bet.outcome} /> for {formatMoney(saleAmount)}?
+      </div>
+
+      <div className="mt-2 mb-1 text-sm text-gray-500">
+        Implied probability: {formatPercent(initialProb)} →{' '}
+        {formatPercent(outcomeProb)}
       </div>
     </ConfirmationButton>
   )

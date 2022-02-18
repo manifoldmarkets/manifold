@@ -3,6 +3,7 @@ import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
+import { getProbability } from '../../common/calculate'
 import { parseWordsAsTags } from '../../common/util/parse'
 import { AmountInput } from '../components/amount-input'
 import { InfoTooltip } from '../components/info-tooltip'
@@ -15,11 +16,7 @@ import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
 import { createContract } from '../lib/firebase/api-call'
-import {
-  contractMetrics,
-  Contract,
-  contractPath,
-} from '../lib/firebase/contracts'
+import { Contract, contractPath } from '../lib/firebase/contracts'
 
 type Prediction = {
   question: string
@@ -29,7 +26,7 @@ type Prediction = {
 }
 
 function toPrediction(contract: Contract): Prediction {
-  const { startProb } = contractMetrics(contract)
+  const startProb = getProbability(contract.totalShares)
   return {
     question: contract.question,
     description: contract.description,

@@ -30,10 +30,6 @@ export async function getStaticProps() {
     listAllFolds().catch(() => []),
   ])
 
-  // TODO(James): Remove this line. We are filtering out non-binary contracts so that
-  // branches other than free-response work.
-  contracts = contracts.filter((contract) => contract.outcomeType === 'BINARY')
-
   const [contractBets, contractComments] = await Promise.all([
     Promise.all(contracts.map((contract) => listAllBets(contract.id))),
     Promise.all(contracts.map((contract) => listAllComments(contract.id))),

@@ -1,3 +1,5 @@
+import { Answer } from './answer'
+
 export type Contract = {
   id: string
   slug: string // auto-generated; must be unique
@@ -11,14 +13,17 @@ export type Contract = {
   description: string // More info about what the contract is about
   tags: string[]
   lowercaseTags: string[]
-  outcomeType: 'BINARY' // | 'MULTI' | 'interval' | 'date'
   visibility: 'public' | 'unlisted'
 
+  outcomeType: 'BINARY' | 'MULTI' | 'FREE_RESPONSE'
+  multiOutcomes?: string[] // Used for outcomeType 'MULTI'.
+  answers?: Answer[] // Used for outcomeType 'FREE_RESPONSE'.
+
   mechanism: 'dpm-2'
-  phantomShares: { YES: number; NO: number }
-  pool: { YES: number; NO: number }
-  totalShares: { YES: number; NO: number }
-  totalBets: { YES: number; NO: number }
+  phantomShares?: { [outcome: string]: number }
+  pool: { [outcome: string]: number }
+  totalShares: { [outcome: string]: number }
+  totalBets: { [outcome: string]: number }
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime: number // If the question or description was changed
@@ -26,11 +31,12 @@ export type Contract = {
 
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
-  resolution?: outcome // Chosen by creator; must be one of outcomes
+  resolution?: string
   resolutionProbability?: number
+  closeEmailsSent?: number
 
   volume24Hours: number
   volume7Days: number
 }
 
-export type outcome = 'YES' | 'NO' | 'CANCEL' | 'MKT'
+export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE'

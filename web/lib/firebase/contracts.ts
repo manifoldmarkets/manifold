@@ -27,21 +27,9 @@ export function contractPath(contract: Contract) {
 }
 
 export function contractMetrics(contract: Contract) {
-  const {
-    pool,
-    phantomShares,
-    totalShares,
-    createdTime,
-    resolutionTime,
-    isResolved,
-    resolutionProbability,
-  } = contract
+  const { pool, createdTime, resolutionTime, isResolved } = contract
 
-  const truePool = pool.YES + pool.NO
-  const prob = resolutionProbability ?? getProbability(totalShares)
-  const probPercent = Math.round(prob * 100) + '%'
-
-  const startProb = getProbability(phantomShares)
+  const truePool = _.sum(Object.values(pool))
 
   const createdDate = dayjs(createdTime).format('MMM D')
 
@@ -49,7 +37,16 @@ export function contractMetrics(contract: Contract) {
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
 
-  return { truePool, probPercent, startProb, createdDate, resolvedDate }
+  return { truePool, createdDate, resolvedDate }
+}
+
+export function getBinaryProbPercent(contract: Contract) {
+  const { totalShares, resolutionProbability } = contract
+
+  const prob = resolutionProbability ?? getProbability(totalShares)
+  const probPercent = Math.round(prob * 100) + '%'
+
+  return probPercent
 }
 
 export function tradingAllowed(contract: Contract) {

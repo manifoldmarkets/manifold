@@ -14,7 +14,7 @@ const pathsToPrivateKey = {
   stephen:
     '../../../../../../Downloads/mantic-markets-firebase-adminsdk-1ep46-351a65eca3.json',
   stephenDev:
-    '../../../../Downloads/dev-mantic-markets-firebase-adminsdk-sir5m-b2d27f8970.json',
+    '../../../../../../Downloads/dev-mantic-markets-firebase-adminsdk-sir5m-b2d27f8970.json',
 }
 
 export const initAdmin = (who: keyof typeof pathsToPrivateKey) => {

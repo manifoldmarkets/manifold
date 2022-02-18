@@ -90,6 +90,37 @@ export function YesNoCancelSelector(props: {
   )
 }
 
+export function ChooseCancelSelector(props: {
+  selected: 'CHOOSE' | 'CANCEL' | undefined
+  onSelect: (selected: 'CHOOSE' | 'CANCEL') => void
+  className?: string
+  btnClassName?: string
+}) {
+  const { selected, onSelect, className } = props
+
+  const btnClassName = clsx('px-6 flex-1', props.btnClassName)
+
+  return (
+    <Col className={clsx('gap-2', className)}>
+      <Button
+        color={selected === 'CHOOSE' ? 'green' : 'gray'}
+        onClick={() => onSelect('CHOOSE')}
+        className={clsx('whitespace-nowrap', btnClassName)}
+      >
+        Choose an answer
+      </Button>
+
+      <Button
+        color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+        onClick={() => onSelect('CANCEL')}
+        className={clsx(btnClassName, '')}
+      >
+        N/A
+      </Button>
+    </Col>
+  )
+}
+
 const fundAmounts = [500, 1000, 2500, 10000]
 
 export function FundsSelector(props: {
@@ -117,6 +148,15 @@ export function FundsSelector(props: {
   )
 }
 
+export function BuyButton(props: { className?: string; onClick?: () => void }) {
+  const { className, onClick } = props
+  return (
+    <Button className={className} onClick={onClick} color="green">
+      BUY
+    </Button>
+  )
+}
+
 function Button(props: {
   className?: string
   onClick?: () => void
@@ -129,7 +169,7 @@ function Button(props: {
     <button
       type="button"
       className={clsx(
-        'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 text-sm font-medium shadow-sm',
+        'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 font-medium shadow-sm',
         color === 'green' && 'btn-primary text-white',
         color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',

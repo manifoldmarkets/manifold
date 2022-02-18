@@ -7,12 +7,13 @@ import {
   Contract,
   contractMetrics,
   contractPath,
+  getBinaryProbPercent,
 } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import dayjs from 'dayjs'
 import { TrendingUpIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from './datetime-tooltip'
-import { ClockIcon } from '@heroicons/react/outline'
+import { ClockIcon, DatabaseIcon } from '@heroicons/react/outline'
 import { fromNow } from '../lib/util/time'
 import { Avatar } from './avatar'
 import { Spacer } from './layout/spacer'
@@ -24,8 +25,7 @@ export function ContractCard(props: {
   className?: string
 }) {
   const { contract, showHotVolume, showCloseTime, className } = props
-  const { question, resolution } = contract
-  const { probPercent } = contractMetrics(contract)
+  const { question } = contract
 
   return (
     <div>
@@ -48,7 +48,7 @@ export function ContractCard(props: {
 
         <Row className="justify-between gap-4">
           <p
-            className="font-medium text-indigo-700 break-words"
+            className="break-words font-medium text-indigo-700"
             style={{ /* For iOS safari */ wordBreak: 'break-word' }}
           >
             {question}
@@ -66,27 +66,29 @@ export function ResolutionOrChance(props: {
   className?: string
 }) {
   const { contract, large, className } = props
-  const { resolution } = contract
-  const { probPercent } = contractMetrics(contract)
+  const { resolution, outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
 
-  const resolutionColor = {
-    YES: 'text-primary',
-    NO: 'text-red-400',
-    MKT: 'text-blue-400',
-    CANCEL: 'text-yellow-400',
-    '': '', // Empty if unresolved
-  }[resolution || '']
+  const resolutionColor =
+    {
+      YES: 'text-primary',
+      NO: 'text-red-400',
+      MKT: 'text-blue-400',
+      CANCEL: 'text-yellow-400',
+      '': '', // Empty if unresolved
+    }[resolution || ''] ?? 'text-primary'
 
   const probColor = marketClosed ? 'text-gray-400' : 'text-primary'
 
-  const resolutionText = {
-    YES: 'YES',
-    NO: 'NO',
-    MKT: probPercent,
-    CANCEL: 'N/A',
-    '': '',
-  }[resolution || '']
+  const resolutionText =
+    {
+      YES: 'YES',
+      NO: 'NO',
+      MKT: getBinaryProbPercent(contract),
+      CANCEL: 'N/A',
+      '': '',
+    }[resolution || ''] ?? `#${resolution}`
 
   return (
     <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
@@ -100,12 +102,14 @@ export function ResolutionOrChance(props: {
           <div className={resolutionColor}>{resolutionText}</div>
         </>
       ) : (
-        <>
-          <div className={probColor}>{probPercent}</div>
-          <div className={clsx(probColor, large ? 'text-xl' : 'text-base')}>
-            chance
-          </div>
-        </>
+        isBinary && (
+          <>
+            <div className={probColor}>{getBinaryProbPercent(contract)}</div>
+            <div className={clsx(probColor, large ? 'text-xl' : 'text-base')}>
+              chance
+            </div>
+          </>
+        )
       )}
     </Col>
   )
@@ -137,17 +141,19 @@ function AbbrContractDetails(props: {
         </Row>
 
         {showHotVolume ? (
-          <div className="whitespace-nowrap">
-            <TrendingUpIcon className="inline h-5 w-5 text-gray-500" />{' '}
-            {formatMoney(volume24Hours)}
-          </div>
+          <Row className="gap-1">
+            <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
+          </Row>
         ) : showCloseTime ? (
-          <div className="whitespace-nowrap">
-            <ClockIcon className="-my-1 inline h-5 w-5 text-gray-500" /> Closes{' '}
-            {fromNow(closeTime || 0)}
-          </div>
+          <Row className="gap-1">
+            <ClockIcon className="h-5 w-5" />
+            Closes {fromNow(closeTime || 0)}
+          </Row>
         ) : (
-          <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
+          <Row className="gap-1">
+            {/* <DatabaseIcon className="h-5 w-5" /> */}
+            {formatMoney(truePool)} pool
+          </Row>
         )}
       </Row>
     </Col>
@@ -161,20 +167,23 @@ export function ContractDetails(props: { contract: Contract }) {
 
   return (
     <Col className="gap-2 text-sm text-gray-500 sm:flex-row sm:flex-wrap">
-      <Row className="flex-wrap items-center gap-2">
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={contract.creatorAvatarUrl}
-          size={6}
-        />
-        <UserLink
-          className="whitespace-nowrap"
-          name={creatorName}
-          username={creatorUsername}
-        />
-        <div className="">•</div>
+      <Row className="flex-wrap items-center gap-x-4 gap-y-2">
+        <Row className="items-center gap-2">
+          <Avatar
+            username={creatorUsername}
+            avatarUrl={contract.creatorAvatarUrl}
+            size={6}
+          />
+          <UserLink
+            className="whitespace-nowrap"
+            name={creatorName}
+            username={creatorUsername}
+          />
+        </Row>
 
-        <div className="whitespace-nowrap">
+        <Row className="items-center gap-1">
+          <ClockIcon className="h-5 w-5" />
+
           <DateTimeTooltip text="Market created:" time={contract.createdTime}>
             {createdDate}
           </DateTimeTooltip>
@@ -200,14 +209,17 @@ export function ContractDetails(props: { contract: Contract }) {
                 }
                 time={closeTime}
               >
-                {dayjs(closeTime).format('MMM D, YYYY')}
+                {dayjs(closeTime).format('MMM D')} ({fromNow(closeTime)})
               </DateTimeTooltip>
             </>
           )}
-        </div>
+        </Row>
 
-        <div className="">•</div>
-        <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
+        <Row className="items-center gap-1">
+          <DatabaseIcon className="h-5 w-5" />
+
+          <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
+        </Row>
       </Row>
     </Col>
   )

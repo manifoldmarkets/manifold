@@ -1,7 +1,9 @@
+import _ = require('lodash')
 import { getProbability } from '../../common/calculate'
 import { Contract } from '../../common/contract'
+import { CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
-import { formatPercent } from '../../common/util/format'
+import { formatMoney, formatPercent } from '../../common/util/format'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 
@@ -15,12 +17,23 @@ type market_resolved_template = {
   url: string
 }
 
+const toDisplayResolution = (outcome: string, prob: number) => {
+  const display = {
+    YES: 'YES',
+    NO: 'NO',
+    CANCEL: 'N/A',
+    MKT: formatPercent(prob),
+  }[outcome]
+
+  return display === undefined ? `#${outcome}` : display
+}
+
 export const sendMarketResolutionEmail = async (
   userId: string,
   payout: number,
   creator: User,
   contract: Contract,
-  resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT',
+  resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string,
   resolutionProbability?: number
 ) => {
   const privateUser = await getPrivateUser(userId)
@@ -36,13 +49,7 @@ export const sendMarketResolutionEmail = async (
 
   const prob = resolutionProbability ?? getProbability(contract.totalShares)
 
-  const toDisplayResolution = {
-    YES: 'YES',
-    NO: 'NO',
-    CANCEL: 'N/A',
-    MKT: formatPercent(prob),
-  }
-  const outcome = toDisplayResolution[resolution]
+  const outcome = toDisplayResolution(resolution, prob)
 
   const subject = `Resolved ${outcome}: ${contract.question}`
 
@@ -86,5 +93,39 @@ Or come chat with us on Discord: https://discord.gg/eHQBNBqXuh
 Best,
 Austin from Manifold
 https://manifold.markets/`
+  )
+}
+
+export const sendMarketCloseEmail = async (
+  user: User,
+  privateUser: PrivateUser,
+  contract: Contract
+) => {
+  if (
+    !privateUser ||
+    privateUser.unsubscribedFromResolutionEmails ||
+    !privateUser.email
+  )
+    return
+
+  const { username, name, id: userId } = user
+  const firstName = name.split(' ')[0]
+
+  const { question, pool: pools, slug } = contract
+  const pool = formatMoney(_.sum(_.values(pools)))
+  const url = `https://manifold.markets/${username}/${slug}`
+
+  await sendTemplateEmail(
+    privateUser.email,
+    'Your market has closed',
+    'market-close',
+    {
+      name: firstName,
+      question,
+      pool,
+      url,
+      userId,
+      creatorFee: (CREATOR_FEE * 100).toString(),
+    }
   )
 }

@@ -19,7 +19,7 @@ export function ContractsGrid(props: {
   showHotVolume?: boolean
   showCloseTime?: boolean
 }) {
-  const { showHotVolume, showCloseTime } = props
+  const { showCloseTime } = props
 
   const [resolvedContracts, activeContracts] = _.partition(
     props.contracts,
@@ -33,7 +33,10 @@ export function ContractsGrid(props: {
   if (contracts.length === 0) {
     return (
       <p className="mx-2 text-gray-500">
-        No markets found. Why not create one?
+        No markets found. Why not{' '}
+        <SiteLink href="/home" className="font-bold text-gray-700">
+          create one?
+        </SiteLink>
       </p>
     )
   }

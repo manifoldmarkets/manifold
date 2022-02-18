@@ -12,11 +12,8 @@ export const useBets = (contractId: string) => {
   return bets
 }
 
-export const useBetsWithoutAntes = (
-  contract: Contract,
-  initialBets?: Bet[]
-) => {
-  const [bets, setBets] = useState<Bet[] | undefined>(
+export const useBetsWithoutAntes = (contract: Contract, initialBets: Bet[]) => {
+  const [bets, setBets] = useState<Bet[]>(
     withoutAnteBets(contract, initialBets)
   )
 

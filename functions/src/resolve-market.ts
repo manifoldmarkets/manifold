@@ -25,10 +25,25 @@ export const resolveMarket = functions
 
       const { outcome, contractId, probabilityInt } = data
 
-      if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
-        return { status: 'error', message: 'Invalid outcome' }
+      const contractDoc = firestore.doc(`contracts/${contractId}`)
+      const contractSnap = await contractDoc.get()
+      if (!contractSnap.exists)
+        return { status: 'error', message: 'Invalid contract' }
+      const contract = contractSnap.data() as Contract
+      const { creatorId, outcomeType } = contract
+
+      if (outcomeType === 'BINARY') {
+        if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
+          return { status: 'error', message: 'Invalid outcome' }
+      } else if (outcomeType === 'FREE_RESPONSE') {
+        if (outcome !== 'CANCEL' && isNaN(+outcome))
+          return { status: 'error', message: 'Invalid outcome' }
+      } else {
+        return { status: 'error', message: 'Invalid contract outcomeType' }
+      }
 
       if (
+        outcomeType === 'BINARY' &&
         probabilityInt !== undefined &&
         (probabilityInt < 0 ||
           probabilityInt > 100 ||
@@ -36,19 +51,13 @@ export const resolveMarket = functions
       )
         return { status: 'error', message: 'Invalid probability' }
 
-      const contractDoc = firestore.doc(`contracts/${contractId}`)
-      const contractSnap = await contractDoc.get()
-      if (!contractSnap.exists)
-        return { status: 'error', message: 'Invalid contract' }
-      const contract = contractSnap.data() as Contract
-
-      if (contract.creatorId !== userId)
+      if (creatorId !== userId)
         return { status: 'error', message: 'User not creator of contract' }
 
       if (contract.resolution)
         return { status: 'error', message: 'Contract already resolved' }
 
-      const creator = await getUser(contract.creatorId)
+      const creator = await getUser(creatorId)
       if (!creator) return { status: 'error', message: 'Creator not found' }
 
       const resolutionProbability =
@@ -112,7 +121,7 @@ const sendResolutionEmails = async (
   userPayouts: { [userId: string]: number },
   creator: User,
   contract: Contract,
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT',
+  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string,
   resolutionProbability?: number
 ) => {
   const nonWinners = _.difference(
