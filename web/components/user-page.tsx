@@ -132,6 +132,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
 }
 
 // Assign each user to a random default banner based on the hash of userId
+// TODO: Consider handling banner uploads using our own storage bucket, like user avatars.
 export function defaultBannerUrl(userId: string) {
   const defaultBanner = [
     'https://images.unsplash.com/photo-1501523460185-2aa5d2a0f981?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2131&q=80',

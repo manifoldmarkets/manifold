@@ -14,7 +14,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read;
       allow update: if resource.data.id == request.auth.uid 
-        || request.resource.data.diff(resource.data).affectedKeys()
+        && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle']);
     }
 

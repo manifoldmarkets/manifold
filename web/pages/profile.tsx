@@ -20,31 +20,41 @@ import { User } from '../../common/user'
 import { updateUser } from '../lib/firebase/users'
 import { defaultBannerUrl } from '../components/user-page'
 import { SiteLink } from '../components/site-link'
+import Textarea from 'react-expanding-textarea'
 
 function EditUserField(props: {
   user: User
   field: 'bio' | 'bannerUrl' | 'twitterHandle' | 'discordHandle'
   label: string
-  isEditing: boolean
 }) {
-  const { user, field, label, isEditing } = props
+  const { user, field, label } = props
   const [value, setValue] = useState(user[field] ?? '')
 
   async function updateField() {
-    await updateUser(user.id, { [field]: value })
+    // Note: We trim whitespace before uploading to Firestore
+    await updateUser(user.id, { [field]: value.trim() })
   }
 
   return (
     <div>
       <label className="label">{label}</label>
 
-      <input
-        type="text"
-        className="input input-bordered"
-        value={value}
-        onChange={(e) => setValue(e.target.value || '')}
-        onBlur={updateField}
-      />
+      {field === 'bio' ? (
+        <Textarea
+          className="textarea textarea-bordered w-full"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={updateField}
+        />
+      ) : (
+        <input
+          type="text"
+          className="input input-bordered"
+          value={value}
+          onChange={(e) => setValue(e.target.value || '')}
+          onBlur={updateField}
+        />
+      )}
     </div>
   )
 }

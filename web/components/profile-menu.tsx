@@ -35,7 +35,7 @@ function getNavigationOptions(
       href: user ? '/home' : '/',
     },
     {
-      name: `@${user?.username}`,
+      name: `Your profile`,
       href: `/${user?.username}`,
     },
     ...(mobile
