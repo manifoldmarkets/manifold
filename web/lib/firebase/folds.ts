@@ -118,13 +118,33 @@ export function listenForFold(
   return listenForValue(doc(foldCollection, foldId), setFold)
 }
 
-export function followFold(fold: Fold, user: User) {
-  const followDoc = doc(foldCollection, fold.id, 'followers', user.id)
-  return setDoc(followDoc, { userId: user.id })
+export function followFold(foldId: string, userId: string) {
+  const followDoc = doc(foldCollection, foldId, 'followers', userId)
+  return setDoc(followDoc, { userId })
 }
 
 export function unfollowFold(fold: Fold, user: User) {
   const followDoc = doc(foldCollection, fold.id, 'followers', user.id)
+  return deleteDoc(followDoc)
+}
+
+export async function followFoldFromSlug(slug: string, userId: string) {
+  const snap = await getDocs(query(foldCollection, where('slug', '==', slug)))
+  if (snap.empty) return undefined
+
+  const foldDoc = snap.docs[0]
+  const followDoc = doc(foldDoc.ref, 'followers', userId)
+
+  return setDoc(followDoc, { userId })
+}
+
+export async function unfollowFoldFromSlug(slug: string, userId: string) {
+  const snap = await getDocs(query(foldCollection, where('slug', '==', slug)))
+  if (snap.empty) return undefined
+
+  const foldDoc = snap.docs[0]
+  const followDoc = doc(foldDoc.ref, 'followers', userId)
+
   return deleteDoc(followDoc)
 }
 
