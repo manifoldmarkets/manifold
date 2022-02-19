@@ -115,7 +115,7 @@ const Home = (props: {
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
 
-          {!!user && followedFolds.length === 0 && (
+          {followedFoldIds !== undefined && followedFolds.length === 0 && (
             <FastFoldFollowing
               user={user}
               followedFoldSlugs={followedFolds.map((f) => f.slug)}
