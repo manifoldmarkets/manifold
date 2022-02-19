@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+
 import { Row } from './layout/row'
 import { SiteLink } from './site-link'
 
@@ -47,6 +48,7 @@ export function TagsList(props: {
 export function FoldTag(props: { fold: { slug: string; name: string } }) {
   const { fold } = props
   const { slug, name } = fold
+
   return (
     <SiteLink href={`/fold/${slug}`} className="flex items-center">
       <div

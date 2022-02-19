@@ -11,7 +11,7 @@ export function FollowFoldButton(props: { fold: Fold; className?: string }) {
   const following = useFollowingFold(fold, user)
 
   const onFollow = () => {
-    if (user) followFold(fold, user)
+    if (user) followFold(fold.id, user.id)
   }
 
   const onUnfollow = () => {
