@@ -350,6 +350,7 @@ function AnswerBetPanel(props: {
 
 function CreateAnswerInput(props: { contract: Contract }) {
   const { contract } = props
+  const user = useUser()
   const [text, setText] = useState('')
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [amountError, setAmountError] = useState<string | undefined>()
@@ -451,17 +452,28 @@ function CreateAnswerInput(props: { contract: Contract }) {
               </Col>
             </>
           )}
-          <button
-            className={clsx(
-              'btn self-end mt-2',
-              canSubmit ? 'btn-outline' : 'btn-disabled',
-              isSubmitting && 'loading'
-            )}
-            disabled={!canSubmit}
-            onClick={submitAnswer}
-          >
-            Submit answer & bet
-          </button>
+          {user ? (
+            <button
+              className={clsx(
+                'btn self-end mt-2',
+                canSubmit ? 'btn-outline' : 'btn-disabled',
+                isSubmitting && 'loading'
+              )}
+              disabled={!canSubmit}
+              onClick={submitAnswer}
+            >
+              Submit answer & bet
+            </button>
+          ) : (
+            text && (
+              <button
+                className="btn self-end whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
+                onClick={firebaseLogin}
+              >
+                Sign in
+              </button>
+            )
+          )}
         </Col>
       </Col>
     </Col>
