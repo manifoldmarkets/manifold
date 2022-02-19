@@ -22,24 +22,20 @@ export const updateUserMetrics = functions.pubsub
       contracts.map((contract) => [contract.id, contract])
     )
 
-    await Promise.all(
-      users.map(async (user) => {
-        const investmentValue = await computeInvestmentValue(
-          user,
-          contractsDict
-        )
-        const totalValue = user.balance + investmentValue
+    for (const user of users) {
+      const [investmentValue, creatorVolume] = await Promise.all([
+        computeInvestmentValue(user, contractsDict),
+        computeTotalVolume(user, contractsDict),
+      ])
 
-        const totalPnL = totalValue - user.totalDeposits
+      const totalValue = user.balance + investmentValue
+      const totalPnL = totalValue - user.totalDeposits
 
-        const creatorVolume = await computeTotalVolume(user, contractsDict)
-
-        return firestore.collection('users').doc(user.id).update({
-          totalPnLCached: totalPnL,
-          creatorVolumeCached: creatorVolume,
-        })
+      await firestore.collection('users').doc(user.id).update({
+        totalPnLCached: totalPnL,
+        creatorVolumeCached: creatorVolume,
       })
-    )
+    }
   })
 
 const computeInvestmentValue = async (
