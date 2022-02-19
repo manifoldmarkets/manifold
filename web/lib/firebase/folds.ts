@@ -128,6 +128,26 @@ export function unfollowFold(fold: Fold, user: User) {
   return deleteDoc(followDoc)
 }
 
+export async function followFoldFromSlug(slug: string, userId: string) {
+  const snap = await getDocs(query(foldCollection, where('slug', '==', slug)))
+  if (snap.empty) return undefined
+
+  const foldDoc = snap.docs[0]
+  const followDoc = doc(foldDoc.ref, 'followers', userId)
+
+  return setDoc(followDoc, { userId })
+}
+
+export async function unfollowFoldFromSlug(slug: string, userId: string) {
+  const snap = await getDocs(query(foldCollection, where('slug', '==', slug)))
+  if (snap.empty) return undefined
+
+  const foldDoc = snap.docs[0]
+  const followDoc = doc(foldDoc.ref, 'followers', userId)
+
+  return deleteDoc(followDoc)
+}
+
 export function listenForFollow(
   fold: Fold,
   user: User,

@@ -17,12 +17,10 @@ import { Fold } from '../../common/fold'
 import { filterDefined } from '../../common/util/array'
 import { useUserBetContracts } from '../hooks/use-user-bets'
 import { LoadingIndicator } from '../components/loading-indicator'
-import { FoldTagList } from '../components/tags-list'
-import { SearchIcon } from '@heroicons/react/outline'
 import { Row } from '../components/layout/row'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { useFollowedFolds } from '../hooks/use-fold'
-import { SiteLink } from '../components/site-link'
+import { FastFoldFollowing } from '../components/fast-fold-following'
 
 export async function getStaticProps() {
   let [contracts, folds] = await Promise.all([
@@ -123,20 +121,19 @@ const Home = (props: {
         <Col className="w-full max-w-3xl">
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
-          <FastFoldFollowing />
-          <Spacer h={10} />
+
+          {followedFolds.length === 0 && (
+            <FastFoldFollowing
+              user={user}
+              followedFoldSlugs={followedFolds.map((f) => f.slug)}
+            />
+          )}
+
           <Col className="mx-3 mb-3 gap-2 text-sm text-gray-800 sm:flex-row">
             <Row className="gap-2">
               <SparklesIcon className="inline h-5 w-5" aria-hidden="true" />
               <span className="whitespace-nowrap">Recent activity</span>
-              <span className="hidden sm:flex">—</span>
             </Row>
-            <div className="text-gray-500 sm:text-gray-800">
-              <SiteLink href="/folds" className="font-semibold">
-                Follow a community
-              </SiteLink>{' '}
-              to personalize
-            </div>
           </Col>
 
           {activeContracts ? (
@@ -151,33 +148,6 @@ const Home = (props: {
         </Col>
       </Col>
     </Page>
-  )
-}
-
-const FastFoldFollowing = () => {
-  return (
-    <>
-      <Row className="mx-3 mb-3 items-center gap-2 text-sm text-gray-800">
-        <SearchIcon className="inline h-5 w-5" aria-hidden="true" />
-        Personalize your feed — click on a community to follow
-      </Row>
-      <FoldTagList
-        className="mx-2"
-        noLabel
-        folds={[
-          { name: 'Politics', slug: 'politics' },
-          { name: 'Crypto', slug: 'crypto' },
-          { name: 'Sports', slug: 'sports' },
-          { name: 'Science', slug: 'science' },
-          { name: 'Covid', slug: 'covid' },
-          { name: 'AI', slug: 'ai' },
-          {
-            name: 'Manifold Markets',
-            slug: 'manifold-markets',
-          },
-        ]}
-      />
-    </>
   )
 }
 

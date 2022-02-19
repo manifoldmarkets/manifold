@@ -1,6 +1,5 @@
 import clsx from 'clsx'
-import { useUser } from '../hooks/use-user'
-import { followFold } from '../lib/firebase/folds'
+
 import { Row } from './layout/row'
 import { SiteLink } from './site-link'
 
@@ -46,18 +45,9 @@ export function TagsList(props: {
   )
 }
 
-export function FoldTag(props: {
-  fold: { slug: string; name: string }
-  isFollowButton?: boolean
-}) {
-  const { fold, isFollowButton } = props
+export function FoldTag(props: { fold: { slug: string; name: string } }) {
+  const { fold } = props
   const { slug, name } = fold
-  const user = useUser()
-  const onClick = isFollowButton
-    ? async () => {
-        await followFold(fold.id, user.id)
-      }
-    : undefined
 
   return (
     <SiteLink href={`/fold/${slug}`} className="flex items-center">
