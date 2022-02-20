@@ -28,7 +28,7 @@ import { Fold } from '../../../common/fold'
 import { useFoldsWithTags } from '../../hooks/use-fold'
 import { listAllAnswers } from '../../lib/firebase/answers'
 import { Answer } from '../../../common/answer'
-import { AnswersPanel } from '../../components/answers-panel'
+import { AnswersPanel } from '../../components/answers/answers-panel'
 
 export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
