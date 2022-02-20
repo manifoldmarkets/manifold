@@ -7,23 +7,24 @@ import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
-import { getPayouts } from '../../common/payouts'
+import { getPayouts, getPayoutsMultiOutcome } from '../../common/payouts'
 
 export const resolveMarket = functions
   .runWith({ minInstances: 1 })
   .https.onCall(
     async (
       data: {
-        outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
+        outcome: string
         contractId: string
         probabilityInt?: number
+        resolutions?: { [outcome: string]: number }
       },
       context
     ) => {
       const userId = context?.auth?.uid
       if (!userId) return { status: 'error', message: 'Not authorized' }
 
-      const { outcome, contractId, probabilityInt } = data
+      const { outcome, contractId, probabilityInt, resolutions } = data
 
       const contractDoc = firestore.doc(`contracts/${contractId}`)
       const contractSnap = await contractDoc.get()
@@ -36,7 +37,11 @@ export const resolveMarket = functions
         if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
           return { status: 'error', message: 'Invalid outcome' }
       } else if (outcomeType === 'FREE_RESPONSE') {
-        if (outcome !== 'CANCEL' && isNaN(+outcome))
+        if (
+          isNaN(+outcome) &&
+          !(outcome === 'MKT' && resolutions) &&
+          outcome !== 'CANCEL'
+        )
           return { status: 'error', message: 'Invalid outcome' }
       } else {
         return { status: 'error', message: 'Invalid contract outcomeType' }
@@ -70,6 +75,7 @@ export const resolveMarket = functions
         ...(resolutionProbability === undefined
           ? {}
           : { resolutionProbability }),
+        ...(resolutions === undefined ? {} : { resolutions }),
       })
 
       console.log('contract ', contractId, 'resolved to:', outcome)
@@ -81,12 +87,10 @@ export const resolveMarket = functions
       const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
       const openBets = bets.filter((b) => !b.isSold && !b.sale)
 
-      const payouts = getPayouts(
-        outcome,
-        contract,
-        openBets,
-        resolutionProbability
-      )
+      const payouts =
+        outcomeType === 'FREE_RESPONSE' && resolutions
+          ? getPayoutsMultiOutcome(resolutions, contract, openBets)
+          : getPayouts(outcome, contract, openBets, resolutionProbability)
 
       console.log('payouts:', payouts)
 
@@ -109,7 +113,8 @@ export const resolveMarket = functions
         creator,
         contract,
         outcome,
-        resolutionProbability
+        resolutionProbability,
+        resolutions
       )
 
       return result
@@ -121,8 +126,9 @@ const sendResolutionEmails = async (
   userPayouts: { [userId: string]: number },
   creator: User,
   contract: Contract,
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string,
-  resolutionProbability?: number
+  outcome: string,
+  resolutionProbability?: number,
+  resolutions?: { [outcome: string]: number }
 ) => {
   const nonWinners = _.difference(
     _.uniq(openBets.map(({ userId }) => userId)),
@@ -140,7 +146,8 @@ const sendResolutionEmails = async (
         creator,
         contract,
         outcome,
-        resolutionProbability
+        resolutionProbability,
+        resolutions
       )
     )
   )

@@ -43,12 +43,12 @@ export function ResolutionPanel(props: {
       outcome,
       contractId: contract.id,
       probabilityInt: prob,
-    }).then((r) => r.data as any)
+    }).then((r) => r.data)
 
     console.log('resolved', outcome, 'result:', result)
 
     if (result?.status !== 'success') {
-      setError(result?.error || 'Error resolving market')
+      setError(result?.message || 'Error resolving market')
     }
     setIsSubmitting(false)
   }

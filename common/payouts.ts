@@ -118,3 +118,46 @@ export const getPayouts = (
       return getStandardPayouts(outcome, contract, bets)
   }
 }
+
+export const getPayoutsMultiOutcome = (
+  resolutions: { [outcome: string]: number },
+  contract: Contract,
+  bets: Bet[]
+) => {
+  const poolTotal = _.sum(Object.values(contract.pool))
+  const winningBets = bets.filter((bet) => resolutions[bet.outcome])
+
+  const betsByOutcome = _.groupBy(winningBets, (bet) => bet.outcome)
+  const sharesByOutcome = _.mapValues(betsByOutcome, (bets) =>
+    _.sumBy(bets, (bet) => bet.shares)
+  )
+
+  const probTotal = _.sum(Object.values(resolutions))
+
+  const payouts = winningBets.map(({ userId, outcome, amount, shares }) => {
+    const prob = resolutions[outcome] / probTotal
+    const winnings = (shares / sharesByOutcome[outcome]) * prob * poolTotal
+    const profit = winnings - amount
+
+    const payout = amount + (1 - FEES) * Math.max(0, profit)
+    return { userId, profit, payout }
+  })
+
+  const profits = _.sumBy(payouts, (po) => po.profit)
+  const creatorPayout = CREATOR_FEE * profits
+
+  console.log(
+    'resolved',
+    resolutions,
+    'pool',
+    poolTotal,
+    'profits',
+    profits,
+    'creator fee',
+    creatorPayout
+  )
+
+  return payouts
+    .map(({ userId, payout }) => ({ userId, payout }))
+    .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
+}

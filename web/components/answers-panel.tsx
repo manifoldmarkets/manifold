@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import _ from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 import { XIcon } from '@heroicons/react/solid'
 
@@ -34,18 +34,22 @@ import { Bet } from '../../common/bet'
 import { useAnswers } from '../hooks/use-answers'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { tradingAllowed } from '../lib/firebase/contracts'
+import { removeUndefinedProps } from '../../common/util/object'
 
 export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
   const { contract } = props
-  const { creatorId, resolution } = contract
+  const { creatorId, resolution, resolutions } = contract
 
   const answers = useAnswers(contract.id) ?? props.answers
-  const [chosenAnswer, otherAnswers] = _.partition(
+  const [winningAnswers, otherAnswers] = _.partition(
     answers.filter((answer) => answer.id !== '0'),
-    (answer) => answer.id === resolution
+    (answer) =>
+      answer.id === resolution || (resolutions && resolutions[answer.id])
   )
   const sortedAnswers = [
-    ...chosenAnswer,
+    ..._.sortBy(winningAnswers, (answer) =>
+      resolutions ? -1 * resolutions[answer.id] : 0
+    ),
     ..._.sortBy(
       otherAnswers,
       (answer) => -1 * getOutcomeProbability(contract.totalShares, answer.id)
@@ -55,13 +59,46 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
   const user = useUser()
 
   const [resolveOption, setResolveOption] = useState<
-    'CHOOSE' | 'CANCEL' | undefined
+    'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   >()
-  const [answerChoice, setAnswerChoice] = useState<string | undefined>()
+  const [chosenAnswers, setChosenAnswers] = useState<{
+    [answerId: string]: number
+  }>({})
 
-  useEffect(() => {
-    if (resolveOption !== 'CHOOSE' && answerChoice) setAnswerChoice(undefined)
-  }, [answerChoice, resolveOption])
+  const chosenTotal = _.sum(Object.values(chosenAnswers))
+
+  const onChoose = (answerId: string, prob: number) => {
+    if (resolveOption === 'CHOOSE') {
+      setChosenAnswers({ [answerId]: prob })
+    } else {
+      setChosenAnswers((chosenAnswers) => {
+        return {
+          ...chosenAnswers,
+          [answerId]: prob,
+        }
+      })
+    }
+  }
+
+  const onDeselect = (answerId: string) => {
+    setChosenAnswers((chosenAnswers) => {
+      const newChosenAnswers = { ...chosenAnswers }
+      delete newChosenAnswers[answerId]
+      return newChosenAnswers
+    })
+  }
+
+  useLayoutEffect(() => {
+    setChosenAnswers({})
+  }, [resolveOption])
+
+  const showChoice = resolution
+    ? undefined
+    : resolveOption === 'CHOOSE'
+    ? 'radio'
+    : resolveOption === 'CHOOSE_MULTIPLE'
+    ? 'checkbox'
+    : undefined
 
   return (
     <Col className="gap-3">
@@ -70,9 +107,11 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
           key={answer.id}
           answer={answer}
           contract={contract}
-          showChoice={!resolution && resolveOption === 'CHOOSE'}
-          isChosen={answer.id === answerChoice}
-          onChoose={() => setAnswerChoice(answer.id)}
+          showChoice={showChoice}
+          chosenProb={chosenAnswers[answer.id]}
+          totalChosenProb={chosenTotal}
+          onChoose={onChoose}
+          onDeselect={onDeselect}
         />
       ))}
 
@@ -85,14 +124,16 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
         </div>
       )}
 
-      {tradingAllowed(contract) && <CreateAnswerInput contract={contract} />}
+      {tradingAllowed(contract) && !resolveOption && (
+        <CreateAnswerInput contract={contract} />
+      )}
 
       {user?.id === creatorId && !resolution && (
         <AnswerResolvePanel
           contract={contract}
           resolveOption={resolveOption}
           setResolveOption={setResolveOption}
-          answer={answerChoice}
+          chosenAnswers={chosenAnswers}
         />
       )}
     </Col>
@@ -102,18 +143,31 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
 function AnswerItem(props: {
   answer: Answer
   contract: Contract
-  showChoice: boolean
-  isChosen: boolean
-  onChoose: () => void
+  showChoice: 'radio' | 'checkbox' | undefined
+  chosenProb: number | undefined
+  totalChosenProb?: number
+  onChoose: (answerId: string, prob: number) => void
+  onDeselect: (answerId: string) => void
 }) {
-  const { answer, contract, showChoice, isChosen, onChoose } = props
-  const { resolution, totalShares } = contract
+  const {
+    answer,
+    contract,
+    showChoice,
+    chosenProb,
+    totalChosenProb,
+    onChoose,
+    onDeselect,
+  } = props
+  const { resolution, resolutions, totalShares } = contract
   const { username, avatarUrl, name, createdTime, number, text } = answer
+  const isChosen = chosenProb !== undefined
 
   const createdDate = dayjs(createdTime).format('MMM D')
   const prob = getOutcomeProbability(totalShares, answer.id)
+  const roundedProb = Math.round(prob * 100)
   const probPercent = formatPercent(prob)
-  const wasResolvedTo = resolution === answer.id
+  const wasResolvedTo =
+    resolution === answer.id || (resolutions && resolutions[answer.id])
 
   const [isBetting, setIsBetting] = useState(false)
 
@@ -122,10 +176,14 @@ function AnswerItem(props: {
       className={clsx(
         'p-4 sm:flex-row rounded gap-4',
         wasResolvedTo
-          ? 'bg-green-50 mb-8'
-          : isChosen
+          ? resolution === 'MKT'
+            ? 'bg-blue-50 mb-2'
+            : 'bg-green-50 mb-8'
+          : chosenProb === undefined
+          ? 'bg-gray-50'
+          : showChoice === 'radio'
           ? 'bg-green-50'
-          : 'bg-gray-50'
+          : 'bg-blue-50'
       )}
     >
       <Col className="gap-3 flex-1">
@@ -158,30 +216,71 @@ function AnswerItem(props: {
           closePanel={() => setIsBetting(false)}
         />
       ) : (
-        <Row className="self-end sm:self-start items-center gap-4">
-          {!wasResolvedTo && (
-            <div
-              className={clsx(
-                'text-2xl',
-                tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
-              )}
-            >
-              {probPercent}
-            </div>
-          )}
+        <Row className="self-end sm:self-start items-center gap-4 justify-end">
+          {!wasResolvedTo &&
+            (showChoice === 'checkbox' ? (
+              <input
+                className="input input-bordered text-2xl justify-self-end w-24"
+                type="number"
+                placeholder={`${roundedProb}`}
+                maxLength={9}
+                value={chosenProb ? Math.round(chosenProb) : ''}
+                onChange={(e) => {
+                  const { value } = e.target
+                  const numberValue = value
+                    ? parseInt(value.replace(/[^\d]/, ''))
+                    : 0
+                  if (!isNaN(numberValue)) onChoose(answer.id, numberValue)
+                }}
+              />
+            ) : (
+              <div
+                className={clsx(
+                  'text-2xl',
+                  tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
+                )}
+              >
+                {probPercent}
+              </div>
+            ))}
           {showChoice ? (
             <div className="form-control py-1">
-              <label className="cursor-pointer label gap-2">
-                <span className="label-text">Choose this answer</span>
-                <input
-                  className={clsx('radio', isChosen && '!bg-green-500')}
-                  type="radio"
-                  name="opt"
-                  checked={isChosen}
-                  onChange={onChoose}
-                  value={answer.id}
-                />
+              <label className="cursor-pointer label gap-3">
+                <span className="">Choose this answer</span>
+                {showChoice === 'radio' && (
+                  <input
+                    className={clsx('radio', chosenProb && '!bg-green-500')}
+                    type="radio"
+                    name="opt"
+                    checked={isChosen}
+                    onChange={() => onChoose(answer.id, 1)}
+                    value={answer.id}
+                  />
+                )}
+                {showChoice === 'checkbox' && (
+                  <input
+                    className={clsx('checkbox', chosenProb && '!bg-blue-500')}
+                    type="checkbox"
+                    name="opt"
+                    checked={isChosen}
+                    onChange={() => {
+                      if (isChosen) onDeselect(answer.id)
+                      else {
+                        onChoose(answer.id, 100 * prob)
+                      }
+                    }}
+                    value={answer.id}
+                  />
+                )}
               </label>
+              {showChoice === 'checkbox' && (
+                <div className="ml-1">
+                  {chosenProb && totalChosenProb
+                    ? Math.round((100 * chosenProb) / totalChosenProb)
+                    : 0}
+                  % share
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -195,7 +294,17 @@ function AnswerItem(props: {
               )}
               {wasResolvedTo && (
                 <Col className="items-end">
-                  <div className="text-green-700 text-xl">Chosen</div>
+                  <div
+                    className={clsx(
+                      'text-xl',
+                      resolution === 'MKT' ? 'text-blue-700' : 'text-green-700'
+                    )}
+                  >
+                    Chosen{' '}
+                    {resolutions
+                      ? `${Math.round(resolutions[answer.id])}%`
+                      : ''}
+                  </div>
                   <div className="text-2xl text-gray-500">{probPercent}</div>
                 </Col>
               )}
@@ -482,29 +591,48 @@ function CreateAnswerInput(props: { contract: Contract }) {
 
 function AnswerResolvePanel(props: {
   contract: Contract
-  resolveOption: 'CHOOSE' | 'CANCEL' | undefined
-  setResolveOption: (option: 'CHOOSE' | 'CANCEL' | undefined) => void
-  answer: string | undefined
+  resolveOption: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+  setResolveOption: (
+    option: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+  ) => void
+  chosenAnswers: { [answerId: string]: number }
 }) {
-  const { contract, resolveOption, setResolveOption, answer } = props
+  const { contract, resolveOption, setResolveOption, chosenAnswers } = props
+  const answers = Object.keys(chosenAnswers)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
 
   const onResolve = async () => {
-    if (resolveOption === 'CHOOSE' && answer === undefined) return
+    if (resolveOption === 'CHOOSE' && answers.length !== 1) return
+    if (resolveOption === 'CHOOSE_MULTIPLE' && answers.length < 2) return
 
     setIsSubmitting(true)
 
-    const result = await resolveMarket({
-      outcome: resolveOption === 'CHOOSE' ? (answer as string) : 'CANCEL',
-      contractId: contract.id,
-    }).then((r) => r.data as any)
+    const totalProb = _.sum(Object.values(chosenAnswers))
+    const normalizedProbs = _.mapValues(
+      chosenAnswers,
+      (prob) => (100 * prob) / totalProb
+    )
 
-    console.log('resolved', `#${answer}`, 'result:', result)
+    const resolutionProps = removeUndefinedProps({
+      outcome:
+        resolveOption === 'CHOOSE'
+          ? answers[0]
+          : resolveOption === 'CHOOSE_MULTIPLE'
+          ? 'MKT'
+          : 'CANCEL',
+      resolutions:
+        resolveOption === 'CHOOSE_MULTIPLE' ? normalizedProbs : undefined,
+      contractId: contract.id,
+    })
+
+    const result = await resolveMarket(resolutionProps).then((r) => r.data)
+
+    console.log('resolved', resolutionProps, 'result:', result)
 
     if (result?.status !== 'success') {
-      setError(result?.error || 'Error resolving market')
+      setError(result?.message || 'Error resolving market')
     }
     setResolveOption(undefined)
     setIsSubmitting(false)
@@ -513,8 +641,12 @@ function AnswerResolvePanel(props: {
   const resolutionButtonClass =
     resolveOption === 'CANCEL'
       ? 'bg-yellow-400 hover:bg-yellow-500'
-      : resolveOption === 'CHOOSE' && answer
+      : resolveOption === 'CHOOSE' && answers.length
       ? 'btn-primary'
+      : resolveOption === 'CHOOSE_MULTIPLE' &&
+        answers.length > 1 &&
+        answers.every((answer) => chosenAnswers[answer] > 0)
+      ? 'bg-blue-400 hover:bg-blue-500'
       : 'btn-disabled'
 
   return (

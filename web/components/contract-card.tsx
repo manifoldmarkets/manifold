@@ -85,7 +85,7 @@ export function ResolutionOrChance(props: {
     {
       YES: 'YES',
       NO: 'NO',
-      MKT: getBinaryProbPercent(contract),
+      MKT: isBinary ? getBinaryProbPercent(contract) : 'MULTI',
       CANCEL: 'N/A',
       '': '',
     }[resolution || ''] ?? `#${resolution}`
