@@ -93,15 +93,13 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
           {text && (
             <>
               <Col className="gap-2 mt-1">
-                <div className="text-gray-500 text-sm">
-                  Ante (cannot be sold)
-                </div>
+                <div className="text-gray-500 text-sm">Buy amount</div>
                 <AmountInput
                   amount={betAmount}
                   onChange={setBetAmount}
                   error={amountError}
                   setError={setAmountError}
-                  minimumAmount={10}
+                  minimumAmount={1}
                   disabled={isSubmitting}
                 />
               </Col>
@@ -137,7 +135,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
               disabled={!canSubmit}
               onClick={submitAnswer}
             >
-              Submit answer & bet
+              Submit answer & buy
             </button>
           ) : (
             text && (
