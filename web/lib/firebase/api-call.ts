@@ -33,6 +33,7 @@ export const resolveMarket = cloudFunction<
     outcome: string
     contractId: string
     probabilityInt?: number
+    resolutions?: { [outcome: string]: number }
   },
   { status: 'error' | 'success'; message?: string }
 >('resolveMarket')

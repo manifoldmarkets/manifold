@@ -91,8 +91,8 @@ export function YesNoCancelSelector(props: {
 }
 
 export function ChooseCancelSelector(props: {
-  selected: 'CHOOSE' | 'CANCEL' | undefined
-  onSelect: (selected: 'CHOOSE' | 'CANCEL') => void
+  selected: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+  onSelect: (selected: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL') => void
   className?: string
   btnClassName?: string
 }) {
@@ -108,6 +108,14 @@ export function ChooseCancelSelector(props: {
         className={clsx('whitespace-nowrap', btnClassName)}
       >
         Choose an answer
+      </Button>
+
+      <Button
+        color={selected === 'CHOOSE_MULTIPLE' ? 'blue' : 'gray'}
+        onClick={() => onSelect('CHOOSE_MULTIPLE')}
+        className={clsx('whitespace-nowrap', btnClassName)}
+      >
+        Choose multiple
       </Button>
 
       <Button

@@ -32,7 +32,8 @@ export type Contract = {
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
   resolution?: string
-  resolutionProbability?: number
+  resolutionProbability?: number // Used for BINARY markets resolved to MKT
+  resolutions?: { [outcome: string]: number } // Used for outcomeType FREE_RESPONSE resolved to MKT
   closeEmailsSent?: number
 
   volume24Hours: number
