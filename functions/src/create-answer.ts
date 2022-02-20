@@ -94,7 +94,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
         getNewMultiBetInfo(user, answerId, amount, contract, newBetDoc.id)
 
-      transaction.create(newBetDoc, { ...newBet, isAnte: true })
+      transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, {
         pool: newPool,
         totalShares: newTotalShares,
