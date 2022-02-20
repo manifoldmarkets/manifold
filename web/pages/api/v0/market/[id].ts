@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { listAllBets } from '../../../../lib/firebase/bets'
+import { Bet, listAllBets } from '../../../../lib/firebase/bets'
 import { listAllComments } from '../../../../lib/firebase/comments'
 import { getContractFromId } from '../../../../lib/firebase/contracts'
 import { FullMarket, ApiError, toLiteMarket } from '../_types'
@@ -11,11 +11,16 @@ export default async function handler(
   const { id } = req.query
   const contractId = id as string
 
-  const [contract, bets, comments] = await Promise.all([
+  const [contract, allBets, comments] = await Promise.all([
     getContractFromId(contractId),
     listAllBets(contractId),
     listAllComments(contractId),
   ])
+
+  const bets = allBets.map(({ userId, ...bet }) => bet) as Exclude<
+    Bet,
+    'userId'
+  >[]
 
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })
