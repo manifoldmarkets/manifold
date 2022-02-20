@@ -1,46 +1,30 @@
 import React from 'react'
 import Router from 'next/router'
-import _ from 'lodash'
 
-import { Contract, listAllContracts } from '../lib/firebase/contracts'
+import { Contract } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
-import { ActivityFeed, findActiveContracts } from './activity'
-import { Comment, getRecentComments } from '../lib/firebase/comments'
-import { Bet, getRecentBets } from '../lib/firebase/bets'
+import { ActivityFeed } from './activity'
+import { Comment } from '../lib/firebase/comments'
+import { Bet } from '../lib/firebase/bets'
 import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
-import { useUpdatedContracts } from '../hooks/use-contracts'
-import { listAllFolds } from '../lib/firebase/folds'
 import { Fold } from '../../common/fold'
-import { filterDefined } from '../../common/util/array'
-import { useUserBetContracts } from '../hooks/use-user-bets'
 import { LoadingIndicator } from '../components/loading-indicator'
 import { Row } from '../components/layout/row'
 import { SparklesIcon } from '@heroicons/react/solid'
-import { useFollowedFolds } from '../hooks/use-fold'
 import { FastFoldFollowing } from '../components/fast-fold-following'
+import {
+  getAllContractInfo,
+  useActiveContracts,
+} from '../hooks/use-active-contracts'
 
 export async function getStaticProps() {
-  let [contracts, folds] = await Promise.all([
-    listAllContracts().catch((_) => []),
-    listAllFolds().catch(() => []),
-  ])
-
-  const [recentBets, recentComments] = await Promise.all([
-    getRecentBets(),
-    getRecentComments(),
-  ])
+  const contractInfo = await getAllContractInfo()
 
   return {
-    props: {
-      contracts,
-      recentBets,
-      recentComments,
-      folds,
-    },
-
+    props: contractInfo,
     revalidate: 60, // regenerate after a minute
   }
 }
@@ -51,57 +35,10 @@ const Home = (props: {
   recentBets: Bet[]
   recentComments: Comment[]
 }) => {
-  const { folds, recentBets, recentComments } = props
-
   const user = useUser()
 
-  const contracts = useUpdatedContracts(props.contracts)
-
-  const followedFoldIds = useFollowedFolds(user)
-  const followedFolds = filterDefined(
-    (followedFoldIds ?? []).map((id) => folds.find((fold) => fold.id === id))
-  )
-  const tagSet = new Set(
-    _.flatten(followedFolds.map((fold) => fold.lowercaseTags))
-  )
-
-  const yourBetContractIds = useUserBetContracts(user?.id)
-  const yourBetContracts = yourBetContractIds
-    ? new Set(yourBetContractIds)
-    : undefined
-
-  // Show no contracts before your info is loaded.
-  let feedContracts: Contract[] = []
-  if (yourBetContracts && followedFoldIds) {
-    // Show all contracts if no folds are followed.
-    if (followedFoldIds.length === 0) feedContracts = contracts
-    else
-      feedContracts = contracts.filter(
-        (contract) =>
-          contract.lowercaseTags.some((tag) => tagSet.has(tag)) ||
-          yourBetContracts.has(contract.id)
-      )
-  }
-
-  const activeContracts = findActiveContracts(
-    feedContracts,
-    recentComments,
-    recentBets,
-    365
-  )
-
-  const betsByContract = _.groupBy(recentBets, (bet) => bet.contractId)
-  const activeBets = activeContracts.map(
-    (contract) => betsByContract[contract.id] ?? []
-  )
-
-  const commentsByContract = _.groupBy(
-    recentComments,
-    (comment) => comment.contractId
-  )
-  const activeComments = activeContracts.map(
-    (contract) => commentsByContract[contract.id] ?? []
-  )
+  const { activeContracts, activeBets, activeComments, followedFoldSlugs } =
+    useActiveContracts(props, user)
 
   if (user === null) {
     Router.replace('/')
@@ -115,12 +52,13 @@ const Home = (props: {
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
 
-          {followedFoldIds !== undefined && followedFolds.length === 0 && (
-            <FastFoldFollowing
-              user={user}
-              followedFoldSlugs={followedFolds.map((f) => f.slug)}
-            />
-          )}
+          {followedFoldSlugs !== undefined &&
+            followedFoldSlugs.length === 0 && (
+              <FastFoldFollowing
+                user={user}
+                followedFoldSlugs={followedFoldSlugs}
+              />
+            )}
 
           <Col className="mx-3 mb-3 gap-2 text-sm text-gray-800 sm:flex-row">
             <Row className="gap-2">
