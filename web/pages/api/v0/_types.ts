@@ -29,7 +29,7 @@ export type LiteMarket = {
 }
 
 export type FullMarket = LiteMarket & {
-  bets: Bet[]
+  bets: Exclude<Bet, 'userId'>[]
   comments: Comment[]
 }
 
