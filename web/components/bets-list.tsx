@@ -110,7 +110,13 @@ export function BetsList(props: { user: User }) {
     )
   } else if (sort === 'value') {
     sortedContracts = _.sortBy(contracts, (c) => -contractsCurrentValue[c.id])
-  }
+  } else if (sort === 'newest')
+    sortedContracts = _.sortBy(
+      contracts,
+      (c) => -1 * Math.max(...contractBets[c.id].map((bet) => bet.createdTime))
+    )
+  else if (sort === 'resolved')
+    sortedContracts = _.sortBy(contracts, (c) => -1 * (c.resolutionTime ?? 0))
 
   const [resolved, unresolved] = _.partition(
     sortedContracts,
