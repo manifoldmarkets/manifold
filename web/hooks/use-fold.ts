@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { Fold } from '../../common/fold'
 import { User } from '../../common/user'
 import {
-  getFollowedFolds,
   listenForFold,
   listenForFolds,
   listenForFoldsWithTags,
   listenForFollow,
+  listenForFollowedFolds,
 } from '../lib/firebase/folds'
 
 export const useFold = (foldId: string | undefined) => {
@@ -62,7 +62,7 @@ export const useFollowedFolds = (user: User | null | undefined) => {
         setFollowedFoldIds(JSON.parse(followedFoldJson))
       }
 
-      getFollowedFolds(user.id).then((foldIds) => {
+      return listenForFollowedFolds(user.id, (foldIds) => {
         setFollowedFoldIds(foldIds)
         localStorage.setItem(key, JSON.stringify(foldIds))
       })

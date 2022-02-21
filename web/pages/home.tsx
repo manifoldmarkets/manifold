@@ -37,8 +37,12 @@ const Home = (props: {
 }) => {
   const user = useUser()
 
-  const { activeContracts, activeBets, activeComments, followedFoldSlugs } =
-    useActiveContracts(props, user)
+  const {
+    activeContracts,
+    activeBets,
+    activeComments,
+    initialFollowedFoldSlugs,
+  } = useActiveContracts(props, user)
 
   if (user === null) {
     Router.replace('/')
@@ -52,11 +56,11 @@ const Home = (props: {
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
 
-          {followedFoldSlugs !== undefined &&
-            followedFoldSlugs.length === 0 && (
+          {initialFollowedFoldSlugs !== undefined &&
+            initialFollowedFoldSlugs.length === 0 && (
               <FastFoldFollowing
                 user={user}
-                followedFoldSlugs={followedFoldSlugs}
+                followedFoldSlugs={initialFollowedFoldSlugs}
               />
             )}
 
