@@ -195,7 +195,7 @@ export function BetPanel(props: {
 
       <Spacer h={6} />
 
-      {user ? (
+      {user && (
         <button
           className={clsx(
             'btn',
@@ -210,7 +210,8 @@ export function BetPanel(props: {
         >
           {isSubmitting ? 'Submitting...' : 'Submit trade'}
         </button>
-      ) : (
+      )}
+      {user === null && (
         <button
           className="btn mt-4 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
           onClick={firebaseLogin}
