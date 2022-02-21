@@ -34,6 +34,7 @@ import { sellBet } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from '../../common/util/array'
+import { LoadingIndicator } from './loading-indicator'
 
 type BetSort = 'newest' | 'profit' | 'resolved' | 'value'
 
@@ -41,28 +42,29 @@ export function BetsList(props: { user: User }) {
   const { user } = props
   const bets = useUserBets(user.id)
 
-  const [contracts, setContracts] = useState<Contract[]>([])
+  const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   const [sort, setSort] = useState<BetSort>('value')
 
   useEffect(() => {
-    const loadedBets = bets ? bets : []
-    const contractIds = _.uniq(loadedBets.map((bet) => bet.contractId))
+    if (bets) {
+      const contractIds = _.uniq(bets.map((bet) => bet.contractId))
 
-    let disposed = false
-    Promise.all(contractIds.map((id) => getContractFromId(id))).then(
-      (contracts) => {
-        if (!disposed) setContracts(filterDefined(contracts))
+      let disposed = false
+      Promise.all(contractIds.map((id) => getContractFromId(id))).then(
+        (contracts) => {
+          if (!disposed) setContracts(filterDefined(contracts))
+        }
+      )
+
+      return () => {
+        disposed = true
       }
-    )
-
-    return () => {
-      disposed = true
     }
   }, [bets])
 
-  if (!bets) {
-    return <></>
+  if (!bets || !contracts) {
+    return <LoadingIndicator />
   }
 
   if (bets.length === 0)
