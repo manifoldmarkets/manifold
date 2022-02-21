@@ -36,6 +36,10 @@ export async function getRecentBets() {
   return getValues<Bet>(recentBetsQuery)
 }
 
+export function listenForRecentBets(setBets: (bets: Bet[]) => void) {
+  return listenForValues<Bet>(recentBetsQuery, setBets)
+}
+
 export async function getRecentContractBets(contractId: string) {
   const q = query(
     getBetsCollection(contractId),
