@@ -154,12 +154,6 @@ export function BetsList(props: { user: User }) {
             </div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">Balance</div>
-            <div className="whitespace-nowrap text-lg">
-              {formatMoney(Math.floor(user.balance))}{' '}
-            </div>
-          </Col>
-          <Col>
             <div className="text-sm text-gray-500">Total portfolio</div>
             <div className="text-lg">
               {formatMoney(totalPortfolio)}{' '}
@@ -228,7 +222,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
             />
           </Row>
 
-          <Row className="items-center gap-2 text-sm text-gray-500">
+          <Row className="items-center gap-2 text-sm text-gray-500 flex-1">
             {isBinary && (
               <>
                 {resolution ? (
