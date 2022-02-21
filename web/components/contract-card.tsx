@@ -1,5 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
+import { ClockIcon, DatabaseIcon, PencilIcon } from '@heroicons/react/outline'
+import { TrendingUpIcon } from '@heroicons/react/solid'
 import { Row } from '../components/layout/row'
 import { formatMoney } from '../../common/util/format'
 import { UserLink } from './user-page'
@@ -8,15 +10,15 @@ import {
   contractMetrics,
   contractPath,
   getBinaryProbPercent,
+  updateContract,
 } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import dayjs from 'dayjs'
-import { TrendingUpIcon } from '@heroicons/react/solid'
 import { DateTimeTooltip } from './datetime-tooltip'
-import { ClockIcon, DatabaseIcon } from '@heroicons/react/outline'
 import { fromNow } from '../lib/util/time'
 import { Avatar } from './avatar'
 import { Spacer } from './layout/spacer'
+import { useState } from 'react'
 
 export function ContractCard(props: {
   contract: Contract
@@ -160,8 +162,11 @@ function AbbrContractDetails(props: {
   )
 }
 
-export function ContractDetails(props: { contract: Contract }) {
-  const { contract } = props
+export function ContractDetails(props: {
+  contract: Contract
+  isCreator?: boolean
+}) {
+  const { contract, isCreator } = props
   const { closeTime, creatorName, creatorUsername } = contract
   const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
 
@@ -202,15 +207,12 @@ export function ContractDetails(props: { contract: Contract }) {
 
           {!resolvedDate && closeTime && (
             <>
-              {' - '}
-              <DateTimeTooltip
-                text={
-                  closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'
-                }
-                time={closeTime}
-              >
-                {dayjs(closeTime).format('MMM D')} ({fromNow(closeTime)})
-              </DateTimeTooltip>
+              {' - '}{' '}
+              <EditableCloseDate
+                closeTime={closeTime}
+                contract={contract}
+                isCreator={isCreator ?? false}
+              />
             </>
           )}
         </Row>
@@ -241,5 +243,73 @@ export function contractTextDetails(contract: Contract) {
       : '') +
     ` • ${formatMoney(truePool)} pool` +
     (hashtags.length > 0 ? ` • ${hashtags.join(' ')}` : '')
+  )
+}
+
+function EditableCloseDate(props: {
+  closeTime: number
+  contract: Contract
+  isCreator: boolean
+}) {
+  const { closeTime, contract, isCreator } = props
+
+  const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
+  const [closeDate, setCloseDate] = useState(
+    closeTime && dayjs(closeTime).format('YYYY-MM-DDT23:59')
+  )
+
+  const onSave = () => {
+    const newCloseTime = dayjs(closeDate).valueOf()
+    if (newCloseTime === closeTime) setIsEditingCloseTime(false)
+    else if (newCloseTime > Date.now()) {
+      const { description } = contract
+      const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
+      const newDescription = `${description}\n\nClose date updated to ${formattedCloseDate}`
+
+      updateContract(contract.id, {
+        closeTime: newCloseTime,
+        description: newDescription,
+      })
+
+      setIsEditingCloseTime(false)
+    }
+  }
+
+  return (
+    <>
+      {isEditingCloseTime ? (
+        <div className="form-control mr-1 items-start">
+          <input
+            type="datetime-local"
+            className="input input-bordered"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setCloseDate(e.target.value || '')}
+            min={Date.now()}
+            value={closeDate}
+          />
+        </div>
+      ) : (
+        <DateTimeTooltip
+          text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
+          time={closeTime}
+        >
+          {dayjs(closeTime).format('MMM D')} ({fromNow(closeTime)})
+        </DateTimeTooltip>
+      )}
+
+      {isCreator &&
+        (isEditingCloseTime ? (
+          <button className="btn btn-xs" onClick={onSave}>
+            Done
+          </button>
+        ) : (
+          <button
+            className="btn btn-xs btn-ghost"
+            onClick={() => setIsEditingCloseTime(true)}
+          >
+            <PencilIcon className="inline h-4 w-4 mr-2" /> Edit
+          </button>
+        ))}
+    </>
   )
 }

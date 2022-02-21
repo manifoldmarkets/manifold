@@ -66,7 +66,7 @@ export const ContractOverview = (props: {
             )}
           </Row>
 
-          <ContractDetails contract={contract} />
+          <ContractDetails contract={contract} isCreator={isCreator} />
         </Col>
 
         {(isBinary || resolution) && (

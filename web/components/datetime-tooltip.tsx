@@ -25,7 +25,7 @@ export function DateTimeTooltip(props: {
       >
         {props.children}
       </span>
-      <span className="sm:hidden">{props.children}</span>
+      <span className="sm:hidden whitespace-nowrap">{props.children}</span>
     </>
   )
 }
