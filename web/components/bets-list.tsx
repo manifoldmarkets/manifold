@@ -409,19 +409,18 @@ export function ContractBetsTable(props: {
   )
 
   const { isResolved } = contract
-
   return (
     <div className={clsx('overflow-x-auto', className)}>
       <table className="table-zebra table-compact table w-full text-gray-500">
         <thead>
           <tr className="p-2">
-            <th>Date</th>
+            <th></th>
+            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             <th>Outcome</th>
             <th>Amount</th>
             <th>Probability</th>
             <th>Shares</th>
-            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
-            <th></th>
+            <th>Date</th>
           </tr>
         </thead>
         <tbody>
@@ -471,7 +470,12 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
 
   return (
     <tr>
-      <td>{dayjs(createdTime).format('MMM D, h:mma')}</td>
+      <td className="text-neutral">
+        {!isResolved && !isClosed && !isSold && !isAnte && (
+          <SellButton contract={contract} bet={bet} />
+        )}
+      </td>
+      <td>{saleDisplay}</td>
       <td>
         <OutcomeLabel outcome={outcome} />
       </td>
@@ -480,13 +484,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
       <td>{formatWithCommas(shares)}</td>
-      <td>{saleDisplay}</td>
-
-      {!isResolved && !isClosed && !isSold && !isAnte && (
-        <td className="text-neutral">
-          <SellButton contract={contract} bet={bet} />
-        </td>
-      )}
+      <td>{dayjs(createdTime).format('MMM D, h:mma')}</td>
     </tr>
   )
 }
