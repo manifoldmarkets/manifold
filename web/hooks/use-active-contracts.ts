@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import { useRef } from 'react'
 
 import { Fold } from '../../common/fold'
 import { User } from '../../common/user'
@@ -50,8 +51,11 @@ export const useActiveContracts = (
     )
   )
 
-  const followedFoldSlugs =
-    followedFoldIds === undefined ? undefined : followedFolds.map((f) => f.slug)
+  // Save the initial followed fold slugs.
+  const followedFoldSlugsRef = useRef<string[] | undefined>()
+  if (followedFoldIds && !followedFoldSlugsRef.current)
+    followedFoldSlugsRef.current = followedFolds.map((f) => f.slug)
+  const initialFollowedFoldSlugs = followedFoldSlugsRef.current
 
   const tagSet = new Set(
     _.flatten(followedFolds.map((fold) => fold.lowercaseTags))
@@ -97,5 +101,10 @@ export const useActiveContracts = (
     (contract) => commentsByContract[contract.id] ?? []
   )
 
-  return { activeContracts, activeBets, activeComments, followedFoldSlugs }
+  return {
+    activeContracts,
+    activeBets,
+    activeComments,
+    initialFollowedFoldSlugs,
+  }
 }

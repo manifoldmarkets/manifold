@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
   query,
   setDoc,
   updateDoc,
@@ -200,4 +201,21 @@ export async function getFollowedFolds(userId: string) {
     (doc) => doc.ref.parent.parent?.id as string
   )
   return foldIds
+}
+
+export function listenForFollowedFolds(
+  userId: string,
+  setFoldIds: (foldIds: string[]) => void
+) {
+  return onSnapshot(
+    query(collectionGroup(db, 'followers'), where('userId', '==', userId)),
+    (snapshot) => {
+      if (snapshot.metadata.fromCache) return
+
+      const foldIds = snapshot.docs.map(
+        (doc) => doc.ref.parent.parent?.id as string
+      )
+      setFoldIds(foldIds)
+    }
+  )
 }
