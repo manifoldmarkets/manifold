@@ -15,11 +15,13 @@ import { AnswerResolvePanel } from './answer-resolve-panel'
 
 export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
   const { contract } = props
-  const { creatorId, resolution, resolutions, pool } = contract
+  const { creatorId, resolution, resolutions, totalBets } = contract
 
   const answers = useAnswers(contract.id) ?? props.answers
   const [winningAnswers, otherAnswers] = _.partition(
-    answers.filter((answer) => answer.id !== '0' && pool[answer.id] > 0),
+    answers.filter(
+      (answer) => answer.id !== '0' && totalBets[answer.id] > 0.000000001
+    ),
     (answer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
   )
