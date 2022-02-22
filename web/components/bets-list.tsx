@@ -35,6 +35,7 @@ import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from '../../common/util/array'
 import { LoadingIndicator } from './loading-indicator'
+import { SiteLink } from './site-link'
 
 type BetSort = 'newest' | 'profit' | 'resolved' | 'value'
 
@@ -67,17 +68,7 @@ export function BetsList(props: { user: User }) {
     return <LoadingIndicator />
   }
 
-  if (bets.length === 0)
-    return (
-      <div>
-        You have not made any bets yet.{' '}
-        <Link href="/">
-          <a className="text-green-500 hover:underline hover:decoration-2">
-            Find a prediction market!
-          </a>
-        </Link>
-      </div>
-    )
+  if (bets.length === 0) return <NoBets />
 
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
@@ -174,14 +165,29 @@ export function BetsList(props: { user: User }) {
         </select>
       </Col>
 
-      {displayedContracts.map((contract) => (
-        <MyContractBets
-          key={contract.id}
-          contract={contract}
-          bets={contractBets[contract.id] ?? []}
-        />
-      ))}
+      {displayedContracts.length === 0 ? (
+        <NoBets />
+      ) : (
+        displayedContracts.map((contract) => (
+          <MyContractBets
+            key={contract.id}
+            contract={contract}
+            bets={contractBets[contract.id] ?? []}
+          />
+        ))
+      )}
     </Col>
+  )
+}
+
+const NoBets = () => {
+  return (
+    <div className="mx-4 text-gray-500">
+      You have not made any bets yet.{' '}
+      <SiteLink href="/" className="underline">
+        Find a prediction market!
+      </SiteLink>
+    </div>
   )
 }
 
