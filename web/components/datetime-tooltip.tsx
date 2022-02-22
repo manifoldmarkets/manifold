@@ -14,7 +14,7 @@ export function DateTimeTooltip(props: {
 }) {
   const { time, text } = props
 
-  const formattedTime = dayjs(time).format('MMM DD, YYYY hh:mm a')
+  const formattedTime = dayjs(time).format('MMM DD, YYYY hh:mm a z')
   const toolTip = text ? `${text} ${formattedTime}` : formattedTime
 
   return (
