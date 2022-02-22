@@ -5,7 +5,7 @@ import advanced from 'dayjs/plugin/advancedFormat'
 import { useEffect, useState } from 'react'
 
 dayjs.extend(utc)
-dayjs.extend(timezone)
+// dayjs.extend(timezone)
 dayjs.extend(advanced)
 
 export function DateTimeTooltip(props: {
