@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import advanced from 'dayjs/plugin/advancedFormat'
+import { useEffect, useState } from 'react'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -16,6 +17,11 @@ export function DateTimeTooltip(props: {
 
   const formattedTime = dayjs(time).format('MMM DD, YYYY hh:mm a')
   const toolTip = text ? `${text} ${formattedTime}` : formattedTime
+
+  const [_, setIt] = useState()
+  useEffect(() => {
+    setIt(undefined)
+  }, [])
 
   return (
     <>
