@@ -94,7 +94,9 @@ export const sendWelcomeEmail = async (
     `Hi ${firstName},
 
 Thanks for joining us! We can't wait to see what markets you create.
+
 Questions? Feedback? I'd love to hear from you - just reply to this email!
+
 Or come chat with us on Discord: https://discord.gg/eHQBNBqXuh
 
 Best,
