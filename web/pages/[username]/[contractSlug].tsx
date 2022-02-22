@@ -197,7 +197,9 @@ const getOpenGraphProps = (contract: Contract) => {
 
   const description = resolution
     ? `Resolved ${resolution}. ${contract.description}`
-    : `${probPercent} chance. ${contract.description}`
+    : probPercent
+    ? `${probPercent} chance. ${contract.description}`
+    : contract.description
 
   return {
     question,
