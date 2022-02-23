@@ -165,8 +165,9 @@ function AbbrContractDetails(props: {
 export function ContractDetails(props: {
   contract: Contract
   isCreator?: boolean
+  children?: any
 }) {
-  const { contract, isCreator } = props
+  const { contract, isCreator, children } = props
   const { closeTime, creatorName, creatorUsername } = contract
   const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
 
@@ -222,6 +223,8 @@ export function ContractDetails(props: {
 
           <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
         </Row>
+
+        {children}
       </Row>
     </Col>
   )
