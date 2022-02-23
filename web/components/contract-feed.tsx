@@ -682,45 +682,43 @@ export function ContractFeed(props: {
 
   return (
     <div className="flow-root pr-2 md:pr-0">
-      <ul role="list" className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
+      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
         {items.map((activityItem, activityItemIdx) => (
-          <li key={activityItem.id}>
-            <div className="relative pb-8">
-              {activityItemIdx !== items.length - 1 ? (
-                <span
-                  className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
-                  aria-hidden="true"
+          <div className="relative pb-8">
+            {activityItemIdx !== items.length - 1 ? (
+              <span
+                className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+                aria-hidden="true"
+              />
+            ) : null}
+            <div className="relative flex items-start space-x-3">
+              {activityItem.type === 'start' ? (
+                feedType == 'activity' ? (
+                  <FeedQuestion contract={contract} />
+                ) : (
+                  <FeedDescription contract={contract} />
+                )
+              ) : activityItem.type === 'comment' ? (
+                <FeedComment
+                  activityItem={activityItem}
+                  moreHref={contractPath(contract)}
+                  feedType={feedType}
                 />
+              ) : activityItem.type === 'bet' ? (
+                <FeedBet activityItem={activityItem} />
+              ) : activityItem.type === 'betgroup' ? (
+                <FeedBetGroup activityItem={activityItem} />
+              ) : activityItem.type === 'close' ? (
+                <FeedClose contract={contract} />
+              ) : activityItem.type === 'resolve' ? (
+                <FeedResolve contract={contract} />
+              ) : activityItem.type === 'expand' ? (
+                <FeedExpand setExpanded={setExpanded} />
               ) : null}
-              <div className="relative flex items-start space-x-3">
-                {activityItem.type === 'start' ? (
-                  feedType == 'activity' ? (
-                    <FeedQuestion contract={contract} />
-                  ) : (
-                    <FeedDescription contract={contract} />
-                  )
-                ) : activityItem.type === 'comment' ? (
-                  <FeedComment
-                    activityItem={activityItem}
-                    moreHref={contractPath(contract)}
-                    feedType={feedType}
-                  />
-                ) : activityItem.type === 'bet' ? (
-                  <FeedBet activityItem={activityItem} />
-                ) : activityItem.type === 'betgroup' ? (
-                  <FeedBetGroup activityItem={activityItem} />
-                ) : activityItem.type === 'close' ? (
-                  <FeedClose contract={contract} />
-                ) : activityItem.type === 'resolve' ? (
-                  <FeedResolve contract={contract} />
-                ) : activityItem.type === 'expand' ? (
-                  <FeedExpand setExpanded={setExpanded} />
-                ) : null}
-              </div>
             </div>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
       {isBinary && tradingAllowed(contract) && (
         <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
       )}
