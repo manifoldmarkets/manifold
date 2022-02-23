@@ -79,7 +79,7 @@ function FeedComment(props: {
   )
 }
 
-function Timestamp(props: { time: number }) {
+export function Timestamp(props: { time: number }) {
   const { time } = props
   return (
     <DateTimeTooltip time={time}>
