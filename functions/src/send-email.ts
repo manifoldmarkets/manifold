@@ -24,10 +24,11 @@ export const sendTemplateEmail = (
   to: string,
   subject: string,
   templateId: string,
-  templateData: Record<string, string>
+  templateData: Record<string, string>,
+  options?: { from: string }
 ) => {
   const data = {
-    from: 'Manifold Markets <info@manifold.markets>',
+    from: options?.from ?? 'Manifold Markets <info@manifold.markets>',
     to,
     subject,
     template: templateId,

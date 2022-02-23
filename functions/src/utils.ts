@@ -3,6 +3,9 @@ import * as admin from 'firebase-admin'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 
+export const isProd =
+  admin.instanceId().app.options.projectId === 'mantic-markets'
+
 export const getValue = async <T>(collection: string, doc: string) => {
   const snap = await admin.firestore().collection(collection).doc(doc).get()
 

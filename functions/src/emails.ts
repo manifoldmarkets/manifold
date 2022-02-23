@@ -1,11 +1,12 @@
 import _ = require('lodash')
 import { getProbability } from '../../common/calculate'
+import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
 import { CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
 import { formatMoney, formatPercent } from '../../common/util/format'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
-import { getPrivateUser, getUser } from './utils'
+import { getPrivateUser, getUser, isProd } from './utils'
 
 type market_resolved_template = {
   userId: string
@@ -136,5 +137,50 @@ export const sendMarketCloseEmail = async (
       userId,
       creatorFee: (CREATOR_FEE * 100).toString(),
     }
+  )
+}
+
+export const sendNewCommentEmail = async (
+  userId: string,
+  commentCreator: User,
+  comment: Comment,
+  contract: Contract
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (
+    !privateUser ||
+    privateUser.unsubscribedFromCommentEmails ||
+    !privateUser.email
+  )
+    return
+
+  const user = await getUser(userId)
+  if (!user) return
+
+  const { question, creatorUsername, slug } = contract
+  const marketUrl = `https://manifold.markets/${creatorUsername}/${slug}`
+
+  const unsubscribeUrl = `https://us-central1-${
+    isProd ? 'mantic-markets' : 'dev-mantic-markets'
+  }.cloudfunctions.net/unsubscribe?id=${userId}&type=market-comment`
+
+  const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
+  const { text } = comment
+
+  const subject = `Comment on ${question}`
+  const from = `${commentorName} <info@manifold.markets>`
+
+  await sendTemplateEmail(
+    privateUser.email,
+    subject,
+    'market-comment',
+    {
+      commentorName,
+      commentorAvatarUrl: commentorAvatarUrl ?? '',
+      comment: text,
+      marketUrl,
+      unsubscribeUrl,
+    },
+    { from }
   )
 }
