@@ -66,7 +66,9 @@ export const ContractOverview = (props: {
             )}
           </Row>
 
-          <ContractDetails contract={contract} isCreator={isCreator} />
+          <ContractDetails contract={contract} isCreator={isCreator}>
+            <TweetButton className="md:hidden self-end" tweetText={tweetText} />
+          </ContractDetails>
         </Col>
 
         {(isBinary || resolution) && (
@@ -76,6 +78,7 @@ export const ContractOverview = (props: {
               contract={contract}
               large
             />
+            <TweetButton tweetText={tweetText} />
           </Col>
         )}
       </Row>
@@ -92,11 +95,9 @@ export const ContractOverview = (props: {
         ) : (
           <FoldTagList folds={folds} />
         )}
-        <TweetButton tweetText={tweetText} />
       </Row>
 
       <Col className="mt-6 gap-4 sm:hidden">
-        <TweetButton className="self-end" tweetText={tweetText} />
         {folds.length === 0 ? (
           <TagsInput contract={contract} />
         ) : (
