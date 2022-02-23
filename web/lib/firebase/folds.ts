@@ -54,13 +54,12 @@ export async function getFoldBySlug(slug: string) {
 }
 
 function contractsByTagsQuery(tags: string[]) {
+  // TODO: if tags.length > 10, execute multiple parallel queries
+  const lowercaseTags = tags.map((tag) => tag.toLowerCase()).slice(0, 10)
+
   return query(
     contractCollection,
-    where(
-      'lowercaseTags',
-      'array-contains-any',
-      tags.map((tag) => tag.toLowerCase())
-    )
+    where('lowercaseTags', 'array-contains-any', lowercaseTags)
   )
 }
 
@@ -74,7 +73,6 @@ export async function getFoldContracts(fold: Fold) {
   } = fold
 
   const [tagsContracts, includedContracts] = await Promise.all([
-    // TODO: if tags.length > 10, execute multiple parallel queries
     tags.length > 0 ? getValues<Contract>(contractsByTagsQuery(tags)) : [],
 
     // TODO: if contractIds.length > 10, execute multiple parallel queries
@@ -163,9 +161,10 @@ export function listenForFollow(
 export async function getFoldsByTags(tags: string[]) {
   if (tags.length === 0) return []
 
-  const lowercaseTags = tags.map((tag) => tag.toLowerCase())
+  // TODO: split into multiple queries if tags.length > 10.
+  const lowercaseTags = tags.map((tag) => tag.toLowerCase()).slice(0, 10)
+
   const folds = await getValues<Fold>(
-    // TODO: split into multiple queries if tags.length > 10.
     query(
       foldCollection,
       where('lowercaseTags', 'array-contains-any', lowercaseTags)
@@ -179,13 +178,13 @@ export function listenForFoldsWithTags(
   tags: string[],
   setFolds: (folds: Fold[]) => void
 ) {
-  const lowercaseTags = tags.map((tag) => tag.toLowerCase())
-  const q =
-    // TODO: split into multiple queries if tags.length > 10.
-    query(
-      foldCollection,
-      where('lowercaseTags', 'array-contains-any', lowercaseTags)
-    )
+  // TODO: split into multiple queries if tags.length > 10.
+  const lowercaseTags = tags.map((tag) => tag.toLowerCase()).slice(0, 10)
+
+  const q = query(
+    foldCollection,
+    where('lowercaseTags', 'array-contains-any', lowercaseTags)
+  )
 
   return listenForValues<Fold>(q, (folds) => {
     const sorted = _.sortBy(folds, (fold) => -1 * fold.followCount)
