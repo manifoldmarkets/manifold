@@ -155,7 +155,7 @@ const topTradersQuery = query(
 
 export async function getTopTraders() {
   const users = await getValues<User>(topTradersQuery)
-  return users.filter((user) => user.username !== 'SG').slice(0, 20)
+  return users.slice(0, 20)
 }
 
 const topCreatorsQuery = query(
