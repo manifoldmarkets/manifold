@@ -29,6 +29,7 @@ export type PrivateUser = {
   email?: string
   unsubscribedFromResolutionEmails?: boolean
   unsubscribedFromCommentEmails?: boolean
+  unsubscribedFromAnswerEmails?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string
 }

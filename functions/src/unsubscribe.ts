@@ -16,8 +16,15 @@ export const unsubscribe = functions
       const { name } = user
 
       const update: Partial<PrivateUser> = {
-        unsubscribedFromResolutionEmails: type === 'market-resolve',
-        unsubscribedFromCommentEmails: type === 'market-comment',
+        ...(type === 'market-resolve' && {
+          unsubscribedFromResolutionEmails: true,
+        }),
+        ...(type === 'market-comment' && {
+          unsubscribedFromCommentEmails: true,
+        }),
+        ...(type === 'market-answer' && {
+          unsubscribedFromAnswerEmails: true,
+        }),
       }
 
       await firestore.collection('private-users').doc(id).update(update)
@@ -29,6 +36,10 @@ export const unsubscribe = functions
       else if (type === 'market-comment')
         res.send(
           `${name}, you have been unsubscribed from market comment emails on Manifold Markets.`
+        )
+      else if (type === 'market-answer')
+        res.send(
+          `${name}, you have been unsubscribed from market answer emails on Manifold Markets.`
         )
       else res.send(`${name}, you have been unsubscribed.`)
     } else {
