@@ -8,7 +8,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../avatar'
 import { SiteLink } from '../site-link'
-import { DateTimeTooltip } from '../datetime-tooltip'
 import dayjs from 'dayjs'
 import { BuyButton } from '../yes-no-selector'
 import { formatPercent } from '../../../common/util/format'
@@ -39,7 +38,6 @@ export function AnswerItem(props: {
   const { username, avatarUrl, name, createdTime, number, text } = answer
   const isChosen = chosenProb !== undefined
 
-  const createdDate = dayjs(createdTime).format('MMM D')
   const prob = getOutcomeProbability(totalShares, answer.id)
   const roundedProb = Math.round(prob * 100)
   const probPercent = formatPercent(prob)
@@ -49,9 +47,9 @@ export function AnswerItem(props: {
   const [isBetting, setIsBetting] = useState(false)
 
   return (
-    <Col
+    <div
       className={clsx(
-        'gap-4 rounded p-4 sm:flex-row',
+        'flex flex-col gap-4 rounded p-4 sm:flex-row',
         wasResolvedTo
           ? resolution === 'MKT'
             ? 'mb-2 bg-blue-50'
@@ -60,13 +58,14 @@ export function AnswerItem(props: {
           ? 'bg-gray-50'
           : showChoice === 'radio'
           ? 'bg-green-50'
-          : 'bg-blue-50'
+          : 'bg-blue-50',
+        isBetting ? '' : 'cursor-pointer hover:bg-gray-100'
       )}
+      onClick={() => !isBetting && setIsBetting(true)}
     >
       <Col className="flex-1 gap-3">
         <div className="whitespace-pre-line break-words">{text}</div>
 
-        {/* TODO: replace with ContractDetails */}
         <Row className="items-center gap-2 text-sm text-gray-500">
           <SiteLink className="relative" href={`/${username}`}>
             <Row className="items-center gap-2">
@@ -74,6 +73,7 @@ export function AnswerItem(props: {
               <div className="truncate">{name}</div>
             </Row>
           </SiteLink>
+          {/* TODO: Show total pool */}
         </Row>
 
         {isBetting && (
@@ -190,6 +190,6 @@ export function AnswerItem(props: {
           )}
         </Row>
       )}
-    </Col>
+    </div>
   )
 }
