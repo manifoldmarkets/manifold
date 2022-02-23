@@ -5,7 +5,8 @@ import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { getNewMultiBetInfo } from '../../common/new-bet'
 import { Answer } from '../../common/answer'
-import { getValues } from './utils'
+import { getContract, getValues } from './utils'
+import { sendNewAnswerEmail } from './emails'
 
 export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -28,7 +29,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       return { status: 'error', message: 'Invalid text' }
 
     // Run as transaction to prevent race conditions.
-    return await firestore.runTransaction(async (transaction) => {
+    const result = await firestore.runTransaction(async (transaction) => {
       const userDoc = firestore.doc(`users/${userId}`)
       const userSnap = await transaction.get(userDoc)
       if (!userSnap.exists)
@@ -103,8 +104,15 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       })
       transaction.update(userDoc, { balance: newBalance })
 
-      return { status: 'success', answerId, betId: newBetDoc.id }
+      return { status: 'success', answerId, betId: newBetDoc.id, answer }
     })
+
+    const { answer } = result
+    const contract = await getContract(contractId)
+
+    if (answer && contract) await sendNewAnswerEmail(answer, contract)
+
+    return result
   }
 )
 

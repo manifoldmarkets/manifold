@@ -1,4 +1,5 @@
 import _ = require('lodash')
+import { Answer } from '../../common/answer'
 import { getProbability } from '../../common/calculate'
 import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
@@ -149,13 +150,10 @@ export const sendNewCommentEmail = async (
   const privateUser = await getPrivateUser(userId)
   if (
     !privateUser ||
-    privateUser.unsubscribedFromCommentEmails ||
-    !privateUser.email
+    !privateUser.email ||
+    privateUser.unsubscribedFromCommentEmails
   )
     return
-
-  const user = await getUser(userId)
-  if (!user) return
 
   const { question, creatorUsername, slug } = contract
   const marketUrl = `https://manifold.markets/${creatorUsername}/${slug}`
@@ -178,6 +176,46 @@ export const sendNewCommentEmail = async (
       commentorName,
       commentorAvatarUrl: commentorAvatarUrl ?? '',
       comment: text,
+      marketUrl,
+      unsubscribeUrl,
+    },
+    { from }
+  )
+}
+
+export const sendNewAnswerEmail = async (
+  answer: Answer,
+  contract: Contract
+) => {
+  // Send to just the creator for now.
+  const { creatorId: userId } = contract
+  const privateUser = await getPrivateUser(userId)
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser.unsubscribedFromAnswerEmails
+  )
+    return
+
+  const { question, creatorUsername, slug } = contract
+  const { name, avatarUrl, text } = answer
+
+  const marketUrl = `https://manifold.markets/${creatorUsername}/${slug}`
+  const unsubscribeUrl = `https://us-central1-${
+    isProd ? 'mantic-markets' : 'dev-mantic-markets'
+  }.cloudfunctions.net/unsubscribe?id=${userId}&type=market-answer`
+
+  const subject = `New answer on ${question}`
+  const from = `${name} <info@manifold.markets>`
+
+  await sendTemplateEmail(
+    privateUser.email,
+    subject,
+    'market-answer',
+    {
+      name,
+      avatarUrl: avatarUrl ?? '',
+      answer: text,
       marketUrl,
       unsubscribeUrl,
     },
