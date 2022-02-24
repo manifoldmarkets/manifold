@@ -214,7 +214,8 @@ export function SearchableGrid(props: {
       check(c.description) ||
       check(c.creatorName) ||
       check(c.creatorUsername) ||
-      check(c.lowercaseTags.map((tag) => `#${tag}`).join(' '))
+      check(c.lowercaseTags.map((tag) => `#${tag}`).join(' ')) ||
+      check((c.answers ?? []).map((answer) => answer.text).join(' '))
   )
 
   if (sort === 'newest' || sort === 'all') {
