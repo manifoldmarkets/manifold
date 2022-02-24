@@ -134,14 +134,24 @@ const sendResolutionEmails = async (
     _.uniq(openBets.map(({ userId }) => userId)),
     Object.keys(userPayouts)
   )
+  const investedByUser = _.mapValues(
+    _.groupBy(openBets, (bet) => bet.userId),
+    (bets) => _.sumBy(bets, (bet) => bet.amount)
+  )
   const emailPayouts = [
     ...Object.entries(userPayouts),
     ...nonWinners.map((userId) => [userId, 0] as const),
-  ]
+  ].map(([userId, payout]) => ({
+    userId,
+    investment: investedByUser[userId],
+    payout,
+  }))
+
   await Promise.all(
-    emailPayouts.map(([userId, payout]) =>
+    emailPayouts.map(({ userId, investment, payout }) =>
       sendMarketResolutionEmail(
         userId,
+        investment,
         payout,
         creator,
         contract,
