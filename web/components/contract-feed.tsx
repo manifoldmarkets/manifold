@@ -305,15 +305,13 @@ function FeedQuestion(props: { contract: Contract }) {
   const { truePool } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
 
-  // Currently hidden on mobile; ideally we'd fit this in somewhere.
   const closeMessage =
     contract.isResolved || !contract.closeTime ? null : (
-      <span className="float-right hidden text-gray-400 sm:inline">
-        {formatMoney(truePool)} pool
+      <>
         <span className="mx-2">•</span>
         {contract.closeTime > Date.now() ? 'Closes' : 'Closed'}
         <Timestamp time={contract.closeTime || 0} />
-      </span>
+      </>
     )
 
   return (
@@ -330,7 +328,11 @@ function FeedQuestion(props: { contract: Contract }) {
             username={creatorUsername}
           />{' '}
           asked
-          {closeMessage}
+          {/* Currently hidden on mobile; ideally we'd fit this in somewhere. */}
+          <span className="float-right hidden text-gray-400 sm:inline">
+            {formatMoney(truePool)} pool
+            {closeMessage}
+          </span>
         </div>
         <Col className="mb-4 items-start justify-between gap-2 sm:flex-row sm:gap-4">
           <SiteLink
