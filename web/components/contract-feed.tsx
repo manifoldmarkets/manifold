@@ -46,7 +46,7 @@ import { useAdmin } from '../hooks/use-admin'
 function FeedComment(props: {
   activityItem: any
   moreHref: string
-  feedType: 'activity' | 'market'
+  feedType: FeedType
 }) {
   const { activityItem, moreHref, feedType } = props
   const { person, text, amount, outcome, createdTime } = activityItem
@@ -65,7 +65,8 @@ function FeedComment(props: {
               username={person.username}
               name={person.name}
             />{' '}
-            {bought} {money} of <OutcomeLabel outcome={outcome} />{' '}
+            {bought} {money}
+            <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
             <Timestamp time={createdTime} />
           </p>
         </div>
@@ -90,8 +91,8 @@ function Timestamp(props: { time: number }) {
   )
 }
 
-function FeedBet(props: { activityItem: any }) {
-  const { activityItem } = props
+function FeedBet(props: { activityItem: any; feedType: FeedType }) {
+  const { activityItem, feedType } = props
   const { id, contractId, amount, outcome, createdTime } = activityItem
   const user = useUser()
   const isSelf = user?.id == activityItem.userId
@@ -122,8 +123,9 @@ function FeedBet(props: { activityItem: any }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span>{isSelf ? 'You' : 'A trader'}</span> {bought} {money} of{' '}
-          <OutcomeLabel outcome={outcome} /> <Timestamp time={createdTime} />
+          <span>{isSelf ? 'You' : 'A trader'}</span> {bought} {money}
+          <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
+          <Timestamp time={createdTime} />
           {canComment && (
             // Allow user to comment in an textarea if they are the creator
             <div className="mt-2">
@@ -382,6 +384,29 @@ function FeedDescription(props: { contract: Contract }) {
   )
 }
 
+function FeedAnswer(props: { contract: Contract; outcome: string }) {
+  const { contract, outcome } = props
+  const answer = contract?.answers?.[Number(outcome) - 1]
+  if (!answer) return null
+
+  return (
+    <>
+      <Avatar username={answer.username} avatarUrl={answer.avatarUrl} />
+      <div className="min-w-0 flex-1 py-1.5">
+        <div className="text-sm text-gray-500">
+          <UserLink
+            className="text-gray-900"
+            name={answer.name}
+            username={answer.username}
+          />{' '}
+          submitted answer <OutcomeLabel outcome={outcome} />{' '}
+          <Timestamp time={contract.createdTime} />
+        </div>
+      </div>
+    </>
+  )
+}
+
 function OutcomeIcon(props: { outcome?: string }) {
   const { outcome } = props
   switch (outcome) {
@@ -540,8 +565,12 @@ function groupBets(
   return items as ActivityItem[]
 }
 
-function BetGroupSpan(props: { bets: Bet[]; outcome: string }) {
-  const { bets, outcome } = props
+function BetGroupSpan(props: {
+  bets: Bet[]
+  outcome: string
+  feedType: FeedType
+}) {
+  const { bets, outcome, feedType } = props
 
   const numberTraders = _.uniqBy(bets, (b) => b.userId).length
 
@@ -556,14 +585,14 @@ function BetGroupSpan(props: { bets: Bet[]; outcome: string }) {
         {buyTotal > 0 && <>bought {formatMoney(buyTotal)} </>}
         {sellTotal > 0 && <>sold {formatMoney(sellTotal)} </>}
       </JoinSpans>
-      of <OutcomeLabel outcome={outcome} />
+      <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />{' '}
     </span>
   )
 }
 
 // TODO: Make this expandable to show all grouped bets?
-function FeedBetGroup(props: { activityItem: any }) {
-  const { activityItem } = props
+function FeedBetGroup(props: { activityItem: any; feedType: FeedType }) {
+  const { activityItem, feedType } = props
   const bets: Bet[] = activityItem.bets
 
   const betGroups = _.groupBy(bets, (bet) => bet.outcome)
@@ -585,7 +614,11 @@ function FeedBetGroup(props: { activityItem: any }) {
         <div className="text-sm text-gray-500">
           {outcomes.map((outcome, index) => (
             <Fragment key={outcome}>
-              <BetGroupSpan outcome={outcome} bets={betGroups[outcome]} />
+              <BetGroupSpan
+                outcome={outcome}
+                bets={betGroups[outcome]}
+                feedType={feedType}
+              />
               {index !== outcomes.length - 1 && <br />}
             </Fragment>
           ))}
@@ -623,6 +656,18 @@ function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
   )
 }
 
+// On 'multi' feeds, the outcome is redundant, so we hide it
+function MaybeOutcomeLabel(props: { outcome: string; feedType: FeedType }) {
+  const { outcome, feedType } = props
+  return feedType === 'multi' ? null : (
+    <span>
+      {' '}
+      of <OutcomeLabel outcome={outcome} />
+      {/* TODO: Link to the correct e.g. #23 */}
+    </span>
+  )
+}
+
 // Missing feed items:
 // - Bet sold?
 type ActivityItem = {
@@ -637,15 +682,23 @@ type ActivityItem = {
     | 'expand'
 }
 
+type FeedType =
+  // Main homepage/fold feed,
+  | 'activity'
+  // Comments feed on a market
+  | 'market'
+  // Grouped for a multi-category outcome
+  | 'multi'
+
 export function ContractFeed(props: {
   contract: Contract
   bets: Bet[]
   comments: Comment[]
-  // Feed types: 'activity' = Activity feed, 'market' = Comments feed on a market
-  feedType: 'activity' | 'market'
+  feedType: FeedType
+  outcome?: string // Which multi-category outcome to filter
   betRowClassName?: string
 }) {
-  const { contract, feedType, betRowClassName } = props
+  const { contract, feedType, outcome, betRowClassName } = props
   const { id, outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
 
@@ -656,6 +709,10 @@ export function ContractFeed(props: {
   bets = isBinary
     ? bets.filter((bet) => !bet.isAnte)
     : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
+
+  if (feedType === 'multi') {
+    bets = bets.filter((bet) => bet.outcome === outcome)
+  }
 
   const comments = useComments(id) ?? props.comments
 
@@ -671,6 +728,10 @@ export function ContractFeed(props: {
   if (contract.resolution) {
     allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
   }
+  if (feedType === 'multi') {
+    // Hack to add some more padding above the 'multi' feedType, by adding a null item
+    allItems.unshift({ type: '', id: -1 })
+  }
 
   // If there are more than 5 items, only show the first, an expand item, and last 3
   let items = allItems
@@ -684,45 +745,45 @@ export function ContractFeed(props: {
 
   return (
     <div className="flow-root pr-2 md:pr-0">
-      <ul role="list" className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
+      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
         {items.map((activityItem, activityItemIdx) => (
-          <li key={activityItem.id}>
-            <div className="relative pb-8">
-              {activityItemIdx !== items.length - 1 ? (
-                <span
-                  className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
-                  aria-hidden="true"
+          <div className="relative pb-8">
+            {activityItemIdx !== items.length - 1 ? (
+              <span
+                className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+                aria-hidden="true"
+              />
+            ) : null}
+            <div className="relative flex items-start space-x-3">
+              {activityItem.type === 'start' ? (
+                feedType === 'activity' ? (
+                  <FeedQuestion contract={contract} />
+                ) : feedType === 'market' ? (
+                  <FeedDescription contract={contract} />
+                ) : feedType === 'multi' ? (
+                  <FeedAnswer contract={contract} outcome={outcome || '0'} />
+                ) : null
+              ) : activityItem.type === 'comment' ? (
+                <FeedComment
+                  activityItem={activityItem}
+                  moreHref={contractPath(contract)}
+                  feedType={feedType}
                 />
+              ) : activityItem.type === 'bet' ? (
+                <FeedBet activityItem={activityItem} feedType={feedType} />
+              ) : activityItem.type === 'betgroup' ? (
+                <FeedBetGroup activityItem={activityItem} feedType={feedType} />
+              ) : activityItem.type === 'close' ? (
+                <FeedClose contract={contract} />
+              ) : activityItem.type === 'resolve' ? (
+                <FeedResolve contract={contract} />
+              ) : activityItem.type === 'expand' ? (
+                <FeedExpand setExpanded={setExpanded} />
               ) : null}
-              <div className="relative flex items-start space-x-3">
-                {activityItem.type === 'start' ? (
-                  feedType == 'activity' ? (
-                    <FeedQuestion contract={contract} />
-                  ) : (
-                    <FeedDescription contract={contract} />
-                  )
-                ) : activityItem.type === 'comment' ? (
-                  <FeedComment
-                    activityItem={activityItem}
-                    moreHref={contractPath(contract)}
-                    feedType={feedType}
-                  />
-                ) : activityItem.type === 'bet' ? (
-                  <FeedBet activityItem={activityItem} />
-                ) : activityItem.type === 'betgroup' ? (
-                  <FeedBetGroup activityItem={activityItem} />
-                ) : activityItem.type === 'close' ? (
-                  <FeedClose contract={contract} />
-                ) : activityItem.type === 'resolve' ? (
-                  <FeedResolve contract={contract} />
-                ) : activityItem.type === 'expand' ? (
-                  <FeedExpand setExpanded={setExpanded} />
-                ) : null}
-              </div>
             </div>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
       {isBinary && tradingAllowed(contract) && (
         <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
       )}
