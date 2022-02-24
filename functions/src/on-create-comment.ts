@@ -32,6 +32,10 @@ export const onCreateComment = functions.firestore
       .get()
     const bet = betSnapshot.data() as Bet
 
+    const answer =
+      contract.answers &&
+      contract.answers.find((answer) => answer.id === bet.outcome)
+
     const comments = await getValues<Comment>(
       firestore.collection('contracts').doc(contractId).collection('comments')
     )
@@ -43,7 +47,14 @@ export const onCreateComment = functions.firestore
 
     await Promise.all(
       recipientUserIds.map((userId) =>
-        sendNewCommentEmail(userId, commentCreator, contract, comment, bet)
+        sendNewCommentEmail(
+          userId,
+          commentCreator,
+          contract,
+          comment,
+          bet,
+          answer
+        )
       )
     )
   })

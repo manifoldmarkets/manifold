@@ -147,7 +147,8 @@ export const sendNewCommentEmail = async (
   commentCreator: User,
   contract: Contract,
   comment: Comment,
-  bet: Bet
+  bet: Bet,
+  answer?: Answer
 ) => {
   const privateUser = await getPrivateUser(userId)
   if (
@@ -168,27 +169,49 @@ export const sendNewCommentEmail = async (
   const { text } = comment
 
   const { amount, sale, outcome } = bet
-  const betDescription = `${sale ? 'sold' : 'bought'} M$ ${Math.round(
-    amount
-  )} of ${toDisplayResolution(outcome)}`
+  let betDescription = `${sale ? 'sold' : 'bought'} M$ ${Math.round(amount)}`
 
   const subject = `Comment on ${question}`
   const from = `${commentorName} <info@manifold.markets>`
 
-  await sendTemplateEmail(
-    privateUser.email,
-    subject,
-    'market-comment',
-    {
-      commentorName,
-      commentorAvatarUrl: commentorAvatarUrl ?? '',
-      comment: text,
-      marketUrl,
-      unsubscribeUrl,
-      betDescription,
-    },
-    { from }
-  )
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    const answerText = answer?.text ?? ''
+    const answerNumber = `#${answer?.id ?? ''}`
+
+    await sendTemplateEmail(
+      privateUser.email,
+      subject,
+      'market-answer-comment',
+      {
+        answer: answerText,
+        answerNumber,
+        commentorName,
+        commentorAvatarUrl: commentorAvatarUrl ?? '',
+        comment: text,
+        marketUrl,
+        unsubscribeUrl,
+        betDescription,
+      },
+      { from }
+    )
+  } else {
+    betDescription = `${betDescription} of ${toDisplayResolution(outcome)}`
+
+    await sendTemplateEmail(
+      privateUser.email,
+      subject,
+      'market-comment',
+      {
+        commentorName,
+        commentorAvatarUrl: commentorAvatarUrl ?? '',
+        comment: text,
+        marketUrl,
+        unsubscribeUrl,
+        betDescription,
+      },
+      { from }
+    )
+  }
 }
 
 export const sendNewAnswerEmail = async (
