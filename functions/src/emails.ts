@@ -16,6 +16,7 @@ type market_resolved_template = {
   creatorName: string
   question: string
   outcome: string
+  investment: string
   payout: string
   url: string
 }
@@ -39,6 +40,7 @@ const toDisplayResolution = (
 
 export const sendMarketResolutionEmail = async (
   userId: string,
+  investment: number,
   payout: number,
   creator: User,
   contract: Contract,
@@ -69,6 +71,7 @@ export const sendMarketResolutionEmail = async (
     creatorName: creator.name,
     question: contract.question,
     outcome,
+    investment: `${Math.round(investment)}`,
     payout: `${Math.round(payout)}`,
     url: `https://manifold.markets/${creator.username}/${contract.slug}`,
   }
