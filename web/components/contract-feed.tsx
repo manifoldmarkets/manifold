@@ -759,7 +759,7 @@ export function ContractFeed(props: {
                 ) : feedType === 'market' ? (
                   <FeedDescription contract={contract} />
                 ) : feedType === 'multi' ? (
-                  <FeedAnswer contract={contract} outcome={outcome} />
+                  <FeedAnswer contract={contract} outcome={outcome || '0'} />
                 ) : null
               ) : activityItem.type === 'comment' ? (
                 <FeedComment
