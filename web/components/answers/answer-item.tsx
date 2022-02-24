@@ -8,7 +8,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../avatar'
 import { SiteLink } from '../site-link'
-import dayjs from 'dayjs'
 import { BuyButton } from '../yes-no-selector'
 import { formatPercent } from '../../../common/util/format'
 import { getOutcomeProbability } from '../../../common/calculate'
@@ -35,7 +34,7 @@ export function AnswerItem(props: {
     onDeselect,
   } = props
   const { resolution, resolutions, totalShares } = contract
-  const { username, avatarUrl, name, createdTime, number, text } = answer
+  const { username, avatarUrl, name, number, text } = answer
   const isChosen = chosenProb !== undefined
 
   const prob = getOutcomeProbability(totalShares, answer.id)
@@ -73,7 +72,7 @@ export function AnswerItem(props: {
               <div className="truncate">{name}</div>
             </Row>
           </SiteLink>
-          {/* TODO: Show total pool */}
+          {/* TODO: Show total pool? */}
         </Row>
 
         {isBetting && (

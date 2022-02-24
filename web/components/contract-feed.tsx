@@ -382,6 +382,29 @@ function FeedDescription(props: { contract: Contract }) {
   )
 }
 
+function FeedAnswer(props: { contract: Contract; outcome: string }) {
+  const { contract, outcome } = props
+  const answer = contract?.answers?.[Number(outcome) - 1]
+  if (!answer) return null
+
+  return (
+    <>
+      <Avatar username={answer.username} avatarUrl={answer.avatarUrl} />
+      <div className="min-w-0 flex-1 py-1.5">
+        <div className="text-sm text-gray-500">
+          <UserLink
+            className="text-gray-900"
+            name={answer.name}
+            username={answer.username}
+          />{' '}
+          submitted answer <OutcomeLabel outcome={outcome} />{' '}
+          <Timestamp time={contract.createdTime} />
+        </div>
+      </div>
+    </>
+  )
+}
+
 function OutcomeIcon(props: { outcome?: string }) {
   const { outcome } = props
   switch (outcome) {
@@ -638,6 +661,7 @@ function MaybeOutcomeLabel(props: { outcome: string; feedType: FeedType }) {
     <span>
       {' '}
       of <OutcomeLabel outcome={outcome} />
+      {/* TODO: Link to the correct e.g. #23 */}
     </span>
   )
 }
@@ -684,7 +708,7 @@ export function ContractFeed(props: {
     ? bets.filter((bet) => !bet.isAnte)
     : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
 
-  if (feedType == 'multi') {
+  if (feedType === 'multi') {
     bets = bets.filter((bet) => bet.outcome === outcome)
   }
 
@@ -701,6 +725,10 @@ export function ContractFeed(props: {
   }
   if (contract.resolution) {
     allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
+  }
+  if (feedType === 'multi') {
+    // Hack to add some more padding above the 'multi' feedType, by adding a null item
+    allItems.unshift({ type: '', id: -1 })
   }
 
   // If there are more than 5 items, only show the first, an expand item, and last 3
@@ -730,6 +758,8 @@ export function ContractFeed(props: {
                   <FeedQuestion contract={contract} />
                 ) : feedType === 'market' ? (
                   <FeedDescription contract={contract} />
+                ) : feedType === 'multi' ? (
+                  <FeedAnswer contract={contract} outcome={outcome} />
                 ) : null
               ) : activityItem.type === 'comment' ? (
                 <FeedComment
