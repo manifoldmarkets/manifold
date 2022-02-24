@@ -1,5 +1,6 @@
 import _ = require('lodash')
 import { Answer } from '../../common/answer'
+import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
 import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
@@ -21,7 +22,7 @@ type market_resolved_template = {
 
 const toDisplayResolution = (
   outcome: string,
-  prob: number,
+  prob?: number,
   resolutions?: { [outcome: string]: number }
 ) => {
   if (outcome === 'MKT' && resolutions) return 'MULTI'
@@ -30,7 +31,7 @@ const toDisplayResolution = (
     YES: 'YES',
     NO: 'NO',
     CANCEL: 'N/A',
-    MKT: formatPercent(prob),
+    MKT: formatPercent(prob ?? 0),
   }[outcome]
 
   return display === undefined ? `#${outcome}` : display
@@ -144,8 +145,9 @@ export const sendMarketCloseEmail = async (
 export const sendNewCommentEmail = async (
   userId: string,
   commentCreator: User,
+  contract: Contract,
   comment: Comment,
-  contract: Contract
+  bet: Bet
 ) => {
   const privateUser = await getPrivateUser(userId)
   if (
@@ -165,6 +167,11 @@ export const sendNewCommentEmail = async (
   const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
   const { text } = comment
 
+  const { amount, sale, outcome } = bet
+  const betDescription = `${sale ? 'sold' : 'bought'} M$ ${Math.round(
+    amount
+  )} of ${toDisplayResolution(outcome)}`
+
   const subject = `Comment on ${question}`
   const from = `${commentorName} <info@manifold.markets>`
 
@@ -178,6 +185,7 @@ export const sendNewCommentEmail = async (
       comment: text,
       marketUrl,
       unsubscribeUrl,
+      betDescription,
     },
     { from }
   )

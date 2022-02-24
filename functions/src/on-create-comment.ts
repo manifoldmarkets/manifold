@@ -5,6 +5,7 @@ import * as _ from 'lodash'
 import { getContract, getUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
+import { Bet } from '../../common/bet'
 
 const firestore = admin.firestore()
 
@@ -23,6 +24,14 @@ export const onCreateComment = functions.firestore
     const commentCreator = await getUser(comment.userId)
     if (!commentCreator) return
 
+    const betSnapshot = await firestore
+      .collection('contracts')
+      .doc(contractId)
+      .collection('bets')
+      .doc(comment.betId)
+      .get()
+    const bet = betSnapshot.data() as Bet
+
     const comments = await getValues<Comment>(
       firestore.collection('contracts').doc(contractId).collection('comments')
     )
@@ -34,7 +43,7 @@ export const onCreateComment = functions.firestore
 
     await Promise.all(
       recipientUserIds.map((userId) =>
-        sendNewCommentEmail(userId, commentCreator, comment, contract)
+        sendNewCommentEmail(userId, commentCreator, contract, comment, bet)
       )
     )
   })
