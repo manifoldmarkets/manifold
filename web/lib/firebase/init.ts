@@ -1,6 +1,9 @@
 import { getFirestore } from '@firebase/firestore'
 import { initializeApp, getApps, getApp } from 'firebase/app'
 
+// Used to decide which Stripe instance to point to
+export const isProd = process.env.NEXT_PUBLIC_FIREBASE_ENV !== 'DEV'
+
 const FIREBASE_CONFIGS = {
   DEV: {
     apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
@@ -30,7 +33,6 @@ const FIREBASE_CONFIGS = {
     measurementId: 'G-Y3EZ1WNT6E',
   },
 }
-
 const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 // @ts-ignore
 const firebaseConfig = FIREBASE_CONFIGS[ENV]
