@@ -67,8 +67,7 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
   let activeContracts = findActiveContracts(
     contracts,
     _.flatten(contractComments),
-    _.flatten(contractRecentBets),
-    365
+    _.flatten(contractRecentBets)
   )
   const [resolved, unresolved] = _.partition(
     activeContracts,

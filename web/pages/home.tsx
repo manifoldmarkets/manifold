@@ -19,6 +19,7 @@ import {
   getAllContractInfo,
   useActiveContracts,
 } from '../hooks/use-active-contracts'
+import { useGetRecentBets } from '../hooks/use-bets'
 
 export async function getStaticProps() {
   const contractInfo = await getAllContractInfo()
@@ -35,14 +36,20 @@ const Home = (props: {
   recentBets: Bet[]
   recentComments: Comment[]
 }) => {
+  const { contracts, folds, recentComments } = props
   const user = useUser()
+
+  const recentBets = useGetRecentBets()
 
   const {
     activeContracts,
     activeBets,
     activeComments,
     initialFollowedFoldSlugs,
-  } = useActiveContracts(props, user)
+  } = useActiveContracts(
+    { contracts, folds, recentBets: recentBets ?? [], recentComments },
+    user
+  )
 
   if (user === null) {
     Router.replace('/')
@@ -71,7 +78,7 @@ const Home = (props: {
             </Row>
           </Col>
 
-          {activeContracts ? (
+          {activeContracts && recentBets ? (
             <ActivityFeed
               contracts={activeContracts}
               contractBets={activeBets}

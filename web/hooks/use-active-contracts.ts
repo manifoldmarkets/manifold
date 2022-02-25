@@ -9,8 +9,6 @@ import { Comment, getRecentComments } from '../lib/firebase/comments'
 import { Contract, listAllContracts } from '../lib/firebase/contracts'
 import { listAllFolds } from '../lib/firebase/folds'
 import { findActiveContracts } from '../pages/activity'
-import { useRecentBets } from './use-bets'
-import { useRecentComments } from './use-comments'
 import { useContracts } from './use-contracts'
 import { useFollowedFolds } from './use-fold'
 import { useUserBetContracts } from './use-user-bets'
@@ -39,9 +37,8 @@ export const useActiveContracts = (
   },
   user: User | undefined | null
 ) => {
+  const { recentBets, recentComments } = props
   const contracts = useContracts() ?? props.contracts
-  const recentBets = useRecentBets() ?? props.recentBets
-  const recentComments = useRecentComments() ?? props.recentComments
 
   const followedFoldIds = useFollowedFolds(user)
 
@@ -82,8 +79,7 @@ export const useActiveContracts = (
   const activeContracts = findActiveContracts(
     feedContracts,
     recentComments,
-    recentBets,
-    365
+    recentBets
   )
 
   const betsByContract = _.groupBy(recentBets, (bet) => bet.contractId)
