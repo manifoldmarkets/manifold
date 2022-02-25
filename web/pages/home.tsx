@@ -17,7 +17,7 @@ import { SparklesIcon } from '@heroicons/react/solid'
 import { FastFoldFollowing } from '../components/fast-fold-following'
 import {
   getAllContractInfo,
-  useActiveContracts,
+  useFindActiveContracts,
 } from '../hooks/use-active-contracts'
 import { useGetRecentBets } from '../hooks/use-bets'
 
@@ -46,7 +46,7 @@ const Home = (props: {
     activeBets,
     activeComments,
     initialFollowedFoldSlugs,
-  } = useActiveContracts(
+  } = useFindActiveContracts(
     { contracts, folds, recentBets: recentBets ?? [], recentComments },
     user
   )
