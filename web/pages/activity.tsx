@@ -23,7 +23,7 @@ function lastActivityTime(contract: Contract) {
 // - Comment on a market
 // - New market created
 // - Market resolved
-// - Markets with most betting in last 24 hours
+// - Bet on market
 export function findActiveContracts(
   allContracts: Contract[],
   recentComments: Comment[],
@@ -36,23 +36,17 @@ export function findActiveContracts(
     idToActivityTime.set(contractId, Math.max(oldTime ?? 0, time))
   }
 
-  let contracts: Contract[] = []
+  const contractsById = new Map(allContracts.map((c) => [c.id, c]))
 
-  // Find contracts with activity in the last 3 days
-  const DAY_IN_MS = 24 * 60 * 60 * 1000
-  for (const contract of allContracts || []) {
-    contracts.push(contract)
+  // Record contract activity.
+  for (const contract of allContracts) {
     record(contract.id, lastActivityTime(contract))
   }
 
   // Add every contract that had a recent comment, too
-  const contractsById = new Map(allContracts.map((c) => [c.id, c]))
   for (const comment of recentComments) {
     const contract = contractsById.get(comment.contractId)
-    if (contract) {
-      contracts.push(contract)
-      record(contract.id, comment.createdTime)
-    }
+    if (contract) record(contract.id, comment.createdTime)
   }
 
   // Add contracts by last bet time.
@@ -62,19 +56,18 @@ export function findActiveContracts(
     (bets) => _.maxBy(bets, (bet) => bet.createdTime) as Bet
   )
   for (const bet of Object.values(contractMostRecentBet)) {
-    const contract = contractsById.get(bet.id)
-    if (contract) {
-      contracts.push(contract)
-      record(contract.id, bet.createdTime)
-    }
+    const contract = contractsById.get(bet.contractId)
+    if (contract) record(contract.id, bet.createdTime)
   }
 
-  contracts = _.uniqBy(contracts, (c) => c.id)
-  contracts = contracts.filter(
+  let activeContracts = allContracts.filter(
     (contract) => contract.visibility === 'public' && !contract.isResolved
   )
-  contracts = _.sortBy(contracts, (c) => -(idToActivityTime.get(c.id) ?? 0))
-  return contracts.slice(0, MAX_ACTIVE_CONTRACTS)
+  activeContracts = _.sortBy(
+    activeContracts,
+    (c) => -(idToActivityTime.get(c.id) ?? 0)
+  )
+  return activeContracts.slice(0, MAX_ACTIVE_CONTRACTS)
 }
 
 export function ActivityFeed(props: {
