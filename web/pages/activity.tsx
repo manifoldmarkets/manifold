@@ -5,10 +5,8 @@ import { Contract } from '../lib/firebase/contracts'
 import { Comment } from '../lib/firebase/comments'
 import { Col } from '../components/layout/col'
 import { Bet } from '../../common/bet'
-import { filterDefined } from '../../common/util/array'
 
 const MAX_ACTIVE_CONTRACTS = 75
-const MAX_HOT_MARKETS = 10
 
 // This does NOT include comment times, since those aren't part of the contract atm.
 // TODO: Maybe store last activity time directly in the contract?
@@ -29,8 +27,7 @@ function lastActivityTime(contract: Contract) {
 export function findActiveContracts(
   allContracts: Contract[],
   recentComments: Comment[],
-  recentBets: Bet[],
-  daysAgo = 3
+  recentBets: Bet[]
 ) {
   const idToActivityTime = new Map<string, number>()
   function record(contractId: string, time: number) {
@@ -44,10 +41,8 @@ export function findActiveContracts(
   // Find contracts with activity in the last 3 days
   const DAY_IN_MS = 24 * 60 * 60 * 1000
   for (const contract of allContracts || []) {
-    if (lastActivityTime(contract) > Date.now() - daysAgo * DAY_IN_MS) {
-      contracts.push(contract)
-      record(contract.id, lastActivityTime(contract))
-    }
+    contracts.push(contract)
+    record(contract.id, lastActivityTime(contract))
   }
 
   // Add every contract that had a recent comment, too
@@ -60,29 +55,24 @@ export function findActiveContracts(
     }
   }
 
-  // Add recent top-trading contracts, ordered by last bet.
+  // Add contracts by last bet time.
   const contractBets = _.groupBy(recentBets, (bet) => bet.contractId)
-  const contractTotalBets = _.mapValues(contractBets, (bets) =>
-    _.sumBy(bets, (bet) => bet.amount)
+  const contractMostRecentBet = _.mapValues(
+    contractBets,
+    (bets) => _.maxBy(bets, (bet) => bet.createdTime) as Bet
   )
-  const sortedPairs = _.sortBy(
-    _.toPairs(contractTotalBets),
-    ([_, total]) => -1 * total
-  )
-  const topTradedContracts = filterDefined(
-    sortedPairs.map(([id]) => contractsById.get(id))
-  ).slice(0, MAX_HOT_MARKETS)
-
-  for (const contract of topTradedContracts) {
-    const bet = recentBets.find((bet) => bet.contractId === contract.id)
-    if (bet) {
+  for (const bet of Object.values(contractMostRecentBet)) {
+    const contract = contractsById.get(bet.id)
+    if (contract) {
       contracts.push(contract)
       record(contract.id, bet.createdTime)
     }
   }
 
   contracts = _.uniqBy(contracts, (c) => c.id)
-  contracts = contracts.filter((contract) => contract.visibility === 'public')
+  contracts = contracts.filter(
+    (contract) => contract.visibility === 'public' && !contract.isResolved
+  )
   contracts = _.sortBy(contracts, (c) => -(idToActivityTime.get(c.id) ?? 0))
   return contracts.slice(0, MAX_ACTIVE_CONTRACTS)
 }
