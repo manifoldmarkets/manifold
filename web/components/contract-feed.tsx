@@ -747,7 +747,7 @@ export function ContractFeed(props: {
     <div className="flow-root pr-2 md:pr-0">
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
         {items.map((activityItem, activityItemIdx) => (
-          <div className="relative pb-8">
+          <div key={activityItem.id} className="relative pb-8">
             {activityItemIdx !== items.length - 1 ? (
               <span
                 className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"

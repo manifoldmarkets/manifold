@@ -115,6 +115,23 @@ export function listenForContracts(
   return listenForValues<Contract>(q, setContracts)
 }
 
+const activeContracts = query(
+  contractCollection,
+  where('isResolved', '==', false),
+  where('visibility', '==', 'public'),
+  where('volume24Hours', '>', 0)
+)
+
+export function getActiveContracts() {
+  return getValues<Contract>(activeContracts)
+}
+
+export function listenForActiveContracts(
+  setContracts: (contracts: Contract[]) => void
+) {
+  return listenForValues<Contract>(activeContracts, setContracts)
+}
+
 export function listenForContract(
   contractId: string,
   setContract: (contract: Contract | null) => void

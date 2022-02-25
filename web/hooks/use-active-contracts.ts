@@ -6,17 +6,17 @@ import { User } from '../../common/user'
 import { filterDefined } from '../../common/util/array'
 import { Bet, getRecentBets } from '../lib/firebase/bets'
 import { Comment, getRecentComments } from '../lib/firebase/comments'
-import { Contract, listAllContracts } from '../lib/firebase/contracts'
+import { Contract, getActiveContracts } from '../lib/firebase/contracts'
 import { listAllFolds } from '../lib/firebase/folds'
 import { findActiveContracts } from '../pages/activity'
-import { useContracts } from './use-contracts'
+import { useActiveContracts } from './use-contracts'
 import { useFollowedFolds } from './use-fold'
 import { useUserBetContracts } from './use-user-bets'
 
 // used in static props
 export const getAllContractInfo = async () => {
   let [contracts, folds] = await Promise.all([
-    listAllContracts().catch((_) => []),
+    getActiveContracts().catch((_) => []),
     listAllFolds().catch(() => []),
   ])
 
@@ -28,7 +28,7 @@ export const getAllContractInfo = async () => {
   return { contracts, recentBets, recentComments, folds }
 }
 
-export const useActiveContracts = (
+export const useFindActiveContracts = (
   props: {
     contracts: Contract[]
     folds: Fold[]
@@ -38,7 +38,7 @@ export const useActiveContracts = (
   user: User | undefined | null
 ) => {
   const { recentBets, recentComments } = props
-  const contracts = useContracts() ?? props.contracts
+  const contracts = useActiveContracts() ?? props.contracts
 
   const followedFoldIds = useFollowedFolds(user)
 
