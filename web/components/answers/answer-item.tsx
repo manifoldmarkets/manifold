@@ -76,6 +76,7 @@ export function AnswerItem(props: {
             </Row>
           </SiteLink>
           {/* TODO: Show total pool? */}
+          <div className="text-base">#{number}</div>
         </Row>
 
         {isBetting && (
