@@ -37,7 +37,7 @@ import { filterDefined } from '../../common/util/array'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
 
-type BetSort = 'newest' | 'profit' | 'resolved' | 'value'
+type BetSort = 'newest' | 'profit' | 'settled' | 'value'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -106,23 +106,20 @@ export function BetsList(props: { user: User }) {
       contracts,
       (c) => -1 * Math.max(...contractBets[c.id].map((bet) => bet.createdTime))
     )
-  else if (sort === 'resolved')
+  else if (sort === 'settled')
     sortedContracts = _.sortBy(contracts, (c) => -1 * (c.resolutionTime ?? 0))
 
-  const [resolved, unresolved] = _.partition(
+  const [settled, unsettled] = _.partition(
     sortedContracts,
-    (c) => c.isResolved
+    (c) => c.isResolved || contractsInvestment[c.id] === 0
   )
 
-  const displayedContracts = sort === 'resolved' ? resolved : unresolved
+  const displayedContracts = sort === 'settled' ? settled : unsettled
 
-  const currentInvestment = _.sumBy(
-    unresolved,
-    (c) => contractsInvestment[c.id]
-  )
+  const currentInvestment = _.sumBy(unsettled, (c) => contractsInvestment[c.id])
 
   const currentBetsValue = _.sumBy(
-    unresolved,
+    unsettled,
     (c) => contractsCurrentValue[c.id]
   )
 
@@ -161,7 +158,7 @@ export function BetsList(props: { user: User }) {
           <option value="value">By value</option>
           <option value="profit">By profit</option>
           <option value="newest">Newest</option>
-          <option value="resolved">Resolved</option>
+          <option value="settled">Settled</option>
         </select>
       </Col>
 
@@ -228,7 +225,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
             />
           </Row>
 
-          <Row className="items-center gap-2 text-sm text-gray-500 flex-1">
+          <Row className="flex-1 items-center gap-2 text-sm text-gray-500">
             {isBinary && (
               <>
                 {resolution ? (
