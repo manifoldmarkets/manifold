@@ -14,6 +14,7 @@ import { getOutcomeProbability } from '../../../common/calculate'
 import { tradingAllowed } from '../../lib/firebase/contracts'
 import { AnswerBetPanel } from './answer-bet-panel'
 import { ContractFeed } from '../contract-feed'
+import { Linkify } from '../linkify'
 
 export function AnswerItem(props: {
   answer: Answer
@@ -63,7 +64,9 @@ export function AnswerItem(props: {
       onClick={() => !isBetting && setIsBetting(true)}
     >
       <Col className="flex-1 gap-3">
-        <div className="whitespace-pre-line break-words">{text}</div>
+        <div className="whitespace-pre-line">
+          <Linkify text={text} />
+        </div>
 
         <Row className="items-center gap-2 text-sm text-gray-500">
           <SiteLink className="relative" href={`/${username}`}>
