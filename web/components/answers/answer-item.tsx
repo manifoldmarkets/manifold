@@ -46,6 +46,8 @@ export function AnswerItem(props: {
 
   const [isBetting, setIsBetting] = useState(false)
 
+  const canBet = !isBetting && !showChoice && tradingAllowed(contract)
+
   return (
     <div
       className={clsx(
@@ -59,9 +61,9 @@ export function AnswerItem(props: {
           : showChoice === 'radio'
           ? 'bg-green-50'
           : 'bg-blue-50',
-        isBetting ? '' : 'cursor-pointer hover:bg-gray-100'
+        canBet && 'cursor-pointer hover:bg-gray-100'
       )}
-      onClick={() => !isBetting && setIsBetting(true)}
+      onClick={() => canBet && setIsBetting(true)}
     >
       <Col className="flex-1 gap-3">
         <div className="whitespace-pre-line">
