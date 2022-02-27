@@ -5,7 +5,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app'
 export const isProd = process.env.NEXT_PUBLIC_FIREBASE_ENV !== 'DEV'
 
 const FIREBASE_CONFIGS = {
-  DEV: {
+  PROD: {
     apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
     authDomain: 'mantic-markets.firebaseapp.com',
     projectId: 'mantic-markets',
@@ -14,7 +14,7 @@ const FIREBASE_CONFIGS = {
     appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
     measurementId: 'G-SSFK1Q138D',
   },
-  PROD: {
+  DEV: {
     apiKey: 'AIzaSyBoq3rzUa8Ekyo3ZaTnlycQYPRCA26VpOw',
     authDomain: 'dev-mantic-markets.firebaseapp.com',
     projectId: 'dev-mantic-markets',
