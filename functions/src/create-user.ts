@@ -14,7 +14,6 @@ import {
   cleanUsername,
 } from '../../common/util/clean-username'
 import { sendWelcomeEmail } from './emails'
-import { isWhitelisted } from '../../common/access'
 
 export const createUser = functions
   .runWith({ minInstances: 1 })
@@ -33,9 +32,6 @@ export const createUser = functions
     const fbUser = await admin.auth().getUser(userId)
 
     const email = fbUser.email
-    if (!isWhitelisted(email)) {
-      return { status: 'error', message: `${email} is not whitelisted` }
-    }
     const emailName = email?.replace(/@.*$/, '')
 
     const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
