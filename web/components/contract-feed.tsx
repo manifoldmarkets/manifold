@@ -790,3 +790,27 @@ export function ContractFeed(props: {
     </div>
   )
 }
+
+export function ContractSummaryFeed(props: {
+  contract: Contract
+  betRowClassName?: string
+}) {
+  const { contract, betRowClassName } = props
+  const { outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
+
+  return (
+    <div className="flow-root pr-2 md:pr-0">
+      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
+        <div className="relative pb-8">
+          <div className="relative flex items-start space-x-3">
+            <FeedQuestion contract={contract} />
+          </div>
+        </div>
+      </div>
+      {isBinary && tradingAllowed(contract) && (
+        <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
+      )}
+    </div>
+  )
+}

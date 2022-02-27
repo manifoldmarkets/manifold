@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { ContractFeed } from '../components/contract-feed'
+import { ContractFeed, ContractSummaryFeed } from '../components/contract-feed'
 import { Page } from '../components/page'
 import { Contract } from '../lib/firebase/contracts'
 import { Comment } from '../lib/firebase/comments'
@@ -96,6 +96,24 @@ export function ActivityFeed(props: {
     </Col>
   ) : (
     <></>
+  )
+}
+
+export function SummaryActivityFeed(props: { contracts: Contract[] }) {
+  const { contracts } = props
+
+  return (
+    <Col className="items-center">
+      <Col className="w-full max-w-3xl">
+        <Col className="w-full divide-y divide-gray-300 self-center bg-white">
+          {contracts.map((contract) => (
+            <div key={contract.id} className="py-6 px-2 sm:px-4">
+              <ContractSummaryFeed contract={contract} />
+            </div>
+          ))}
+        </Col>
+      </Col>
+    </Col>
   )
 }
 

@@ -101,7 +101,7 @@ export const FastFoldFollowing = (props: {
         ]}
       />
 
-      <Spacer h={10} />
+      <Spacer h={5} />
     </>
   )
 }
