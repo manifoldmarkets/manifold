@@ -90,7 +90,7 @@ const Home = (props: {
               <div className="tabs">
                 <div
                   className={clsx(
-                    'tab tab-bordered gap-2',
+                    'tab gap-2',
                     feedMode === 'activity' && 'tab-active'
                   )}
                   onClick={() => setFeedMode('activity')}
@@ -100,7 +100,7 @@ const Home = (props: {
                 </div>
                 <div
                   className={clsx(
-                    'tab tab-bordered gap-2',
+                    'tab gap-2',
                     feedMode === 'explore' && 'tab-active'
                   )}
                   onClick={() => setFeedMode('explore')}
