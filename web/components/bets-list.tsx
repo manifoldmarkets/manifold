@@ -358,22 +358,26 @@ export function MyBetsSummary(props: {
                   {formatMoney(expectation)}
                 </div>
               </Col> */}
-              <Col>
-                <div className="whitespace-nowrap text-sm text-gray-500">
-                  Payout if <YesLabel />
-                </div>
-                <div className="whitespace-nowrap">
-                  {formatMoney(yesWinnings)}
-                </div>
-              </Col>
-              <Col>
-                <div className="whitespace-nowrap text-sm text-gray-500">
-                  Payout if <NoLabel />
-                </div>
-                <div className="whitespace-nowrap">
-                  {formatMoney(noWinnings)}
-                </div>
-              </Col>
+              {isBinary && (
+                <>
+                  <Col>
+                    <div className="whitespace-nowrap text-sm text-gray-500">
+                      Payout if <YesLabel />
+                    </div>
+                    <div className="whitespace-nowrap">
+                      {formatMoney(yesWinnings)}
+                    </div>
+                  </Col>
+                  <Col>
+                    <div className="whitespace-nowrap text-sm text-gray-500">
+                      Payout if <NoLabel />
+                    </div>
+                    <div className="whitespace-nowrap">
+                      {formatMoney(noWinnings)}
+                    </div>
+                  </Col>
+                </>
+              )}
               <Col>
                 <div className="whitespace-nowrap text-sm text-gray-500">
                   {isBinary ? (
