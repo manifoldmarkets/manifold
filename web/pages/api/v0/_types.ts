@@ -26,6 +26,7 @@ export type LiteMarket = {
   volume24Hours: number
   isResolved: boolean
   resolution?: string
+  resolutionTime?: number
 }
 
 export type FullMarket = LiteMarket & {
@@ -54,6 +55,7 @@ export function toLiteMarket({
   volume24Hours,
   isResolved,
   resolution,
+  resolutionTime,
 }: Contract): LiteMarket {
   return {
     id,
@@ -61,7 +63,10 @@ export function toLiteMarket({
     creatorName,
     createdTime,
     creatorAvatarUrl,
-    closeTime,
+    closeTime:
+      resolutionTime && closeTime
+        ? Math.min(resolutionTime, closeTime)
+        : closeTime,
     question,
     description,
     tags,
@@ -72,5 +77,6 @@ export function toLiteMarket({
     volume24Hours,
     isResolved,
     resolution,
+    resolutionTime,
   }
 }
