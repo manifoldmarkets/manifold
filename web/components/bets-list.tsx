@@ -157,8 +157,8 @@ export function BetsList(props: { user: User }) {
         >
           <option value="value">By value</option>
           <option value="profit">By profit</option>
-          <option value="newest">Newest</option>
-          <option value="settled">Settled</option>
+          <option value="newest">Most recent</option>
+          <option value="settled">Resolved</option>
         </select>
       </Col>
 
