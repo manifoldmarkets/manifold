@@ -425,7 +425,7 @@ export function ContractBetsTable(props: {
             <th>Outcome</th>
             <th>Amount</th>
             <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
-            <th>Payout if chosen</th>
+            {!isResolved && <th>Payout if chosen</th>}
             <th>Probability</th>
             <th>Shares</th>
             <th>Date</th>
@@ -476,7 +476,10 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     )
   )
 
-  const payoutIfChosen = calculatePayout(contract, bet, bet.outcome)
+  const payoutIfChosenDisplay =
+    bet.outcome === '0' && bet.isAnte
+      ? 'N/A'
+      : formatMoney(calculatePayout(contract, bet, bet.outcome))
 
   return (
     <tr>
@@ -490,7 +493,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
       </td>
       <td>{formatMoney(amount)}</td>
       <td>{saleDisplay}</td>
-      <td>{formatMoney(payoutIfChosen)}</td>
+      {!isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
