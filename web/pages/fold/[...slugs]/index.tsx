@@ -40,6 +40,7 @@ import FeedCreate from '../../../components/feed-create'
 import { SEO } from '../../../components/SEO'
 import { useTaggedContracts } from '../../../hooks/use-contracts'
 import { Linkify } from '../../../components/linkify'
+import { filterDefined } from '../../../../common/util/array'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -168,9 +169,11 @@ export default function FoldPage(props: {
     taggedContracts.map((contract) => [contract.id, contract])
   )
 
-  const contracts = props.contracts.map((contract) => contractsMap[contract.id])
-  const activeContracts = props.activeContracts.map(
-    (contract) => contractsMap[contract.id]
+  const contracts = filterDefined(
+    props.contracts.map((contract) => contractsMap[contract.id])
+  )
+  const activeContracts = filterDefined(
+    props.activeContracts.map((contract) => contractsMap[contract.id])
   )
 
   if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
