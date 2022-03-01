@@ -422,9 +422,10 @@ export function ContractBetsTable(props: {
         <thead>
           <tr className="p-2">
             <th></th>
-            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             <th>Outcome</th>
             <th>Amount</th>
+            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
+            <th>Payout if chosen</th>
             <th>Probability</th>
             <th>Shares</th>
             <th>Date</th>
@@ -475,6 +476,8 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     )
   )
 
+  const payoutIfChosen = calculatePayout(contract, bet, bet.outcome)
+
   return (
     <tr>
       <td className="text-neutral">
@@ -482,11 +485,12 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
           <SellButton contract={contract} bet={bet} />
         )}
       </td>
-      <td>{saleDisplay}</td>
       <td>
         <OutcomeLabel outcome={outcome} />
       </td>
       <td>{formatMoney(amount)}</td>
+      <td>{saleDisplay}</td>
+      <td>{formatMoney(payoutIfChosen)}</td>
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
@@ -503,6 +507,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   }, [])
 
   const { contract, bet } = props
+  const isBinary = contract.outcomeType === 'BINARY'
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const initialProb = getOutcomeProbability(
@@ -541,8 +546,9 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
       </div>
 
       <div className="mt-2 mb-1 text-sm text-gray-500">
-        Implied probability: {formatPercent(initialProb)} →{' '}
-        {formatPercent(outcomeProb)}
+        ({isBinary ? 'Updated' : <OutcomeLabel outcome={bet.outcome} />}{' '}
+        probability: {formatPercent(initialProb)} → {formatPercent(outcomeProb)}
+        )
       </div>
     </ConfirmationButton>
   )
