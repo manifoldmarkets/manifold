@@ -55,27 +55,32 @@ function getNavigationOptions(
       name: 'Your trades',
       href: '/trades',
     },
-    // Disable "Add Funds" for teams
+    // Disable irrelevant menu options for teams.
     ...(IS_PRIVATE_MANIFOLD
-      ? []
+      ? [
+          {
+            name: 'Leaderboards',
+            href: '/leaderboards',
+          },
+        ]
       : [
           {
             name: 'Add funds',
             href: '/add-funds',
           },
+          {
+            name: 'Leaderboards',
+            href: '/leaderboards',
+          },
+          {
+            name: 'Discord',
+            href: 'https://discord.gg/eHQBNBqXuh',
+          },
+          {
+            name: 'About',
+            href: '/about',
+          },
         ]),
-    {
-      name: 'Leaderboards',
-      href: '/leaderboards',
-    },
-    {
-      name: 'Discord',
-      href: 'https://discord.gg/eHQBNBqXuh',
-    },
-    {
-      name: 'About',
-      href: '/about',
-    },
     {
       name: 'Sign out',
       href: '#',
