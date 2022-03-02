@@ -26,6 +26,7 @@ import {
 import { useGetRecentBets } from '../hooks/use-bets'
 import { usePropz } from '../hooks/use-propz'
 import { useActiveContracts } from '../hooks/use-contracts'
+import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
 
 export async function getStaticPropz() {
   const contractInfo = await getAllContractInfo()
@@ -82,7 +83,8 @@ const Home = (props: {
           <Spacer h={6} />
 
           {initialFollowedFoldSlugs !== undefined &&
-            initialFollowedFoldSlugs.length === 0 && (
+            initialFollowedFoldSlugs.length === 0 &&
+            !IS_PRIVATE_MANIFOLD && (
               <FastFoldFollowing
                 user={user}
                 followedFoldSlugs={initialFollowedFoldSlugs}

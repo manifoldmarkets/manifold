@@ -3,6 +3,7 @@ import { formatMoney } from '../../common/util/format'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
 import { MenuButton } from './menu'
+import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
 
 export function ProfileMenu(props: { user: User | undefined }) {
   const { user } = props
@@ -54,10 +55,15 @@ function getNavigationOptions(
       name: 'Your trades',
       href: '/trades',
     },
-    {
-      name: 'Add funds',
-      href: '/add-funds',
-    },
+    // Disable "Add Funds" for teams
+    ...(IS_PRIVATE_MANIFOLD
+      ? []
+      : [
+          {
+            name: 'Add funds',
+            href: '/add-funds',
+          },
+        ]),
     {
       name: 'Leaderboards',
       href: '/leaderboards',
