@@ -103,7 +103,8 @@ export const getNewMultiBetInfo = (
 }
 
 export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {
-  const prevLoanAmount = _.sumBy(yourBets, (bet) => bet.loanAmount ?? 0)
+  const openBets = yourBets.filter((bet) => !bet.isSold && !bet.sale)
+  const prevLoanAmount = _.sumBy(openBets, (bet) => bet.loanAmount ?? 0)
   const loanAmount = Math.min(
     newBetAmount,
     MAX_LOAN_PER_CONTRACT - prevLoanAmount
