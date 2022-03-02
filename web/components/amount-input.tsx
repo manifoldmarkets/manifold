@@ -38,7 +38,8 @@ export function AmountInput(props: {
   const user = useUser()
 
   const userBets = useUserContractBets(user?.id, contractId) ?? []
-  const prevLoanAmount = _.sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+  const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
+  const prevLoanAmount = _.sumBy(openUserBets, (bet) => bet.loanAmount ?? 0)
 
   const loanAmount = Math.min(
     amount ?? 0,
