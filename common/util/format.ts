@@ -6,7 +6,7 @@ const formatter = new Intl.NumberFormat('en-US', {
 })
 
 export function formatMoney(amount: number) {
-  return 'M$ ' + formatter.format(amount).replace('$', '')
+  return 'T$ ' + formatter.format(amount).replace('$', '')
 }
 
 export function formatWithCommas(amount: number) {
