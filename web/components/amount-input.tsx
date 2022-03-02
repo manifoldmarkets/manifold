@@ -14,7 +14,7 @@ export function AmountInput(props: {
   onChange: (newAmount: number | undefined) => void
   error: string | undefined
   setError: (error: string | undefined) => void
-  contractId: string | undefined
+  contractIdForLoan: string | undefined
   minimumAmount?: number
   disabled?: boolean
   className?: string
@@ -27,7 +27,7 @@ export function AmountInput(props: {
     onChange,
     error,
     setError,
-    contractId,
+    contractIdForLoan,
     disabled,
     className,
     inputClassName,
@@ -37,14 +37,13 @@ export function AmountInput(props: {
 
   const user = useUser()
 
-  const userBets = useUserContractBets(user?.id, contractId) ?? []
+  const userBets = useUserContractBets(user?.id, contractIdForLoan) ?? []
   const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
   const prevLoanAmount = _.sumBy(openUserBets, (bet) => bet.loanAmount ?? 0)
 
-  const loanAmount = Math.min(
-    amount ?? 0,
-    MAX_LOAN_PER_CONTRACT - prevLoanAmount
-  )
+  const loanAmount = contractIdForLoan
+    ? Math.min(amount ?? 0, MAX_LOAN_PER_CONTRACT - prevLoanAmount)
+    : 0
 
   const onAmountChange = (str: string) => {
     if (str.includes('-')) {
@@ -99,7 +98,7 @@ export function AmountInput(props: {
       )}
       {user && (
         <Col className="gap-3 text-sm">
-          {contractId && (
+          {contractIdForLoan && (
             <Row className="items-center justify-between gap-2 text-gray-500">
               <Row className="items-center gap-2">
                 Amount loaned{' '}

@@ -159,7 +159,7 @@ export function BetPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
-        contractId={contract.id}
+        contractIdForLoan={contract.id}
       />
 
       <Col className="gap-3 mt-3 w-full">

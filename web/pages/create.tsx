@@ -248,7 +248,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           error={anteError}
           setError={setAnteError}
           disabled={isSubmitting}
-          contractId={undefined}
+          contractIdForLoan={undefined}
         />
       </div>
 
