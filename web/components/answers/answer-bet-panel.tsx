@@ -30,8 +30,9 @@ export function AnswerBetPanel(props: {
   answer: Answer
   contract: Contract
   closePanel: () => void
+  className?: string
 }) {
-  const { answer, contract, closePanel } = props
+  const { answer, contract, closePanel, className } = props
   const { id: answerId } = answer
 
   const user = useUser()
@@ -97,7 +98,7 @@ export function AnswerBetPanel(props: {
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
   return (
-    <Col className="items-start px-2 pb-2 pt-4 sm:pt-0">
+    <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
       <Row className="self-stretch items-center justify-between">
         <div className="text-xl">Buy this answer</div>
 
@@ -114,40 +115,44 @@ export function AnswerBetPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
+        contractId={contract.id}
       />
+      <Col className="gap-3 mt-3 w-full">
+        <Row className="justify-between items-center text-sm">
+          <div className="text-gray-500">Probability</div>
+          <Row>
+            <div>{formatPercent(initialProb)}</div>
+            <div className="mx-2">→</div>
+            <div>{formatPercent(resultProb)}</div>
+          </Row>
+        </Row>
 
-      <Spacer h={4} />
-
-      <div className="mt-2 mb-1 text-sm text-gray-500">Implied probability</div>
-      <Row>
-        <div>{formatPercent(initialProb)}</div>
-        <div className="mx-2">→</div>
-        <div>{formatPercent(resultProb)}</div>
-      </Row>
-
-      <Spacer h={4} />
-
-      <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
-        Payout if chosen
-        <InfoTooltip
-          text={`Current payout for ${formatWithCommas(
-            shares
-          )} / ${formatWithCommas(
-            shares + contract.totalShares[answerId]
-          )} shares`}
-        />
-      </Row>
-      <div>
-        {formatMoney(currentPayout)}
-        &nbsp; <span>(+{currentReturnPercent})</span>
-      </div>
+        <Row className="justify-between items-start text-sm gap-2">
+          <Row className="flex-nowrap whitespace-nowrap items-center gap-2 text-gray-500">
+            <div>Payout if chosen</div>
+            <InfoTooltip
+              text={`Current payout for ${formatWithCommas(
+                shares
+              )} / ${formatWithCommas(
+                shares + contract.totalShares[answerId]
+              )} shares`}
+            />
+          </Row>
+          <Row className="flex-wrap justify-end items-end gap-2">
+            <span className="whitespace-nowrap">
+              {formatMoney(currentPayout)}
+            </span>
+            <span>(+{currentReturnPercent})</span>
+          </Row>
+        </Row>
+      </Col>
 
       <Spacer h={6} />
 
       {user ? (
         <button
           className={clsx(
-            'btn',
+            'btn self-stretch',
             betDisabled ? 'btn-disabled' : 'btn-primary',
             isSubmitting ? 'loading' : ''
           )}
@@ -157,7 +162,7 @@ export function AnswerBetPanel(props: {
         </button>
       ) : (
         <button
-          className="btn mt-4 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
+          className="btn self-stretch whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
           onClick={firebaseLogin}
         >
           Sign in to trade!

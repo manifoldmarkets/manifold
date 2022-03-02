@@ -2,8 +2,10 @@ import _ from 'lodash'
 import { useEffect, useState } from 'react'
 import {
   Contract,
+  listenForActiveContracts,
   listenForContracts,
   listenForHotContracts,
+  listenForInactiveContracts,
 } from '../lib/firebase/contracts'
 import { listenForTaggedContracts } from '../lib/firebase/folds'
 
@@ -12,6 +14,26 @@ export const useContracts = () => {
 
   useEffect(() => {
     return listenForContracts(setContracts)
+  }, [])
+
+  return contracts
+}
+
+export const useActiveContracts = () => {
+  const [contracts, setContracts] = useState<Contract[] | undefined>()
+
+  useEffect(() => {
+    return listenForActiveContracts(setContracts)
+  }, [])
+
+  return contracts
+}
+
+export const useInactiveContracts = () => {
+  const [contracts, setContracts] = useState<Contract[] | undefined>()
+
+  useEffect(() => {
+    return listenForInactiveContracts(setContracts)
   }, [])
 
   return contracts

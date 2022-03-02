@@ -19,6 +19,7 @@ import { fromNow } from '../lib/util/time'
 import { Avatar } from './avatar'
 import { Spacer } from './layout/spacer'
 import { useState } from 'react'
+import { TweetButton } from './tweet-button'
 
 export function ContractCard(props: {
   contract: Contract
@@ -149,7 +150,8 @@ function AbbrContractDetails(props: {
         ) : showCloseTime ? (
           <Row className="gap-1">
             <ClockIcon className="h-5 w-5" />
-            Closes {fromNow(closeTime || 0)}
+            {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
+            {fromNow(closeTime || 0)}
           </Row>
         ) : (
           <Row className="gap-1">
@@ -169,6 +171,8 @@ export function ContractDetails(props: {
   const { contract, isCreator } = props
   const { closeTime, creatorName, creatorUsername } = contract
   const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
+
+  const tweetText = getTweetText(contract, !!isCreator)
 
   return (
     <Col className="gap-2 text-sm text-gray-500 sm:flex-row sm:flex-wrap">
@@ -222,6 +226,8 @@ export function ContractDetails(props: {
 
           <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
         </Row>
+
+        <TweetButton className={'self-end'} tweetText={tweetText} />
       </Row>
     </Col>
   )
@@ -307,9 +313,28 @@ function EditableCloseDate(props: {
             className="btn btn-xs btn-ghost"
             onClick={() => setIsEditingCloseTime(true)}
           >
-            <PencilIcon className="inline h-4 w-4 mr-2" /> Edit
+            <PencilIcon className="mr-2 inline h-4 w-4" /> Edit
           </button>
         ))}
     </>
   )
+}
+
+const getTweetText = (contract: Contract, isCreator: boolean) => {
+  const { question, creatorName, resolution, outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
+
+  const tweetQuestion = isCreator
+    ? question
+    : `${question} Asked by ${creatorName}.`
+  const tweetDescription = resolution
+    ? `Resolved ${resolution}!`
+    : isBinary
+    ? `Currently ${getBinaryProbPercent(
+        contract
+      )} chance, place your bets here:`
+    : `Submit your own answer:`
+  const url = `https://manifold.markets${contractPath(contract)}`
+
+  return `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
 }

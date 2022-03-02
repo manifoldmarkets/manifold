@@ -1,11 +1,14 @@
 import _ = require('lodash')
+import { Answer } from '../../common/answer'
+import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
+import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
 import { CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
 import { formatMoney, formatPercent } from '../../common/util/format'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
-import { getPrivateUser, getUser } from './utils'
+import { getPrivateUser, getUser, isProd } from './utils'
 
 type market_resolved_template = {
   userId: string
@@ -13,13 +16,14 @@ type market_resolved_template = {
   creatorName: string
   question: string
   outcome: string
+  investment: string
   payout: string
   url: string
 }
 
 const toDisplayResolution = (
   outcome: string,
-  prob: number,
+  prob?: number,
   resolutions?: { [outcome: string]: number }
 ) => {
   if (outcome === 'MKT' && resolutions) return 'MULTI'
@@ -28,7 +32,7 @@ const toDisplayResolution = (
     YES: 'YES',
     NO: 'NO',
     CANCEL: 'N/A',
-    MKT: formatPercent(prob),
+    MKT: formatPercent(prob ?? 0),
   }[outcome]
 
   return display === undefined ? `#${outcome}` : display
@@ -36,6 +40,7 @@ const toDisplayResolution = (
 
 export const sendMarketResolutionEmail = async (
   userId: string,
+  investment: number,
   payout: number,
   creator: User,
   contract: Contract,
@@ -66,6 +71,7 @@ export const sendMarketResolutionEmail = async (
     creatorName: creator.name,
     question: contract.question,
     outcome,
+    investment: `${Math.round(investment)}`,
     payout: `${Math.round(payout)}`,
     url: `https://manifold.markets/${creator.username}/${contract.slug}`,
   }
@@ -136,5 +142,121 @@ export const sendMarketCloseEmail = async (
       userId,
       creatorFee: (CREATOR_FEE * 100).toString(),
     }
+  )
+}
+
+export const sendNewCommentEmail = async (
+  userId: string,
+  commentCreator: User,
+  contract: Contract,
+  comment: Comment,
+  bet: Bet,
+  answer?: Answer
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser.unsubscribedFromCommentEmails
+  )
+    return
+
+  const { question, creatorUsername, slug } = contract
+  const marketUrl = `https://manifold.markets/${creatorUsername}/${slug}`
+
+  const unsubscribeUrl = `https://us-central1-${
+    isProd ? 'mantic-markets' : 'dev-mantic-markets'
+  }.cloudfunctions.net/unsubscribe?id=${userId}&type=market-comment`
+
+  const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
+  const { text } = comment
+
+  const { amount, sale, outcome } = bet
+  let betDescription = `${sale ? 'sold' : 'bought'} M$ ${Math.round(amount)}`
+
+  const subject = `Comment on ${question}`
+  const from = `${commentorName} <info@manifold.markets>`
+
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    const answerText = answer?.text ?? ''
+    const answerNumber = `#${answer?.id ?? ''}`
+
+    await sendTemplateEmail(
+      privateUser.email,
+      subject,
+      'market-answer-comment',
+      {
+        answer: answerText,
+        answerNumber,
+        commentorName,
+        commentorAvatarUrl: commentorAvatarUrl ?? '',
+        comment: text,
+        marketUrl,
+        unsubscribeUrl,
+        betDescription,
+      },
+      { from }
+    )
+  } else {
+    betDescription = `${betDescription} of ${toDisplayResolution(outcome)}`
+
+    await sendTemplateEmail(
+      privateUser.email,
+      subject,
+      'market-comment',
+      {
+        commentorName,
+        commentorAvatarUrl: commentorAvatarUrl ?? '',
+        comment: text,
+        marketUrl,
+        unsubscribeUrl,
+        betDescription,
+      },
+      { from }
+    )
+  }
+}
+
+export const sendNewAnswerEmail = async (
+  answer: Answer,
+  contract: Contract
+) => {
+  // Send to just the creator for now.
+  const { creatorId: userId } = contract
+
+  // Don't send the creator's own answers.
+  if (answer.userId === userId) return
+
+  const privateUser = await getPrivateUser(userId)
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser.unsubscribedFromAnswerEmails
+  )
+    return
+
+  const { question, creatorUsername, slug } = contract
+  const { name, avatarUrl, text } = answer
+
+  const marketUrl = `https://manifold.markets/${creatorUsername}/${slug}`
+  const unsubscribeUrl = `https://us-central1-${
+    isProd ? 'mantic-markets' : 'dev-mantic-markets'
+  }.cloudfunctions.net/unsubscribe?id=${userId}&type=market-answer`
+
+  const subject = `New answer on ${question}`
+  const from = `${name} <info@manifold.markets>`
+
+  await sendTemplateEmail(
+    privateUser.email,
+    subject,
+    'market-answer',
+    {
+      name,
+      avatarUrl: avatarUrl ?? '',
+      answer: text,
+      marketUrl,
+      unsubscribeUrl,
+    },
+    { from }
   )
 }

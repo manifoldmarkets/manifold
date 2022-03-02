@@ -7,7 +7,12 @@ import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
-import { getPayouts, getPayoutsMultiOutcome } from '../../common/payouts'
+import {
+  getLoanPayouts,
+  getPayouts,
+  getPayoutsMultiOutcome,
+} from '../../common/payouts'
+import { removeUndefinedProps } from '../../common/util/object'
 
 export const resolveMarket = functions
   .runWith({ minInstances: 1 })
@@ -31,7 +36,7 @@ export const resolveMarket = functions
       if (!contractSnap.exists)
         return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
-      const { creatorId, outcomeType } = contract
+      const { creatorId, outcomeType, closeTime } = contract
 
       if (outcomeType === 'BINARY') {
         if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
@@ -68,15 +73,21 @@ export const resolveMarket = functions
       const resolutionProbability =
         probabilityInt !== undefined ? probabilityInt / 100 : undefined
 
-      await contractDoc.update({
-        isResolved: true,
-        resolution: outcome,
-        resolutionTime: Date.now(),
-        ...(resolutionProbability === undefined
-          ? {}
-          : { resolutionProbability }),
-        ...(resolutions === undefined ? {} : { resolutions }),
-      })
+      const resolutionTime = Date.now()
+      const newCloseTime = closeTime
+        ? Math.min(closeTime, resolutionTime)
+        : closeTime
+
+      await contractDoc.update(
+        removeUndefinedProps({
+          isResolved: true,
+          resolution: outcome,
+          resolutionTime,
+          closeTime: newCloseTime,
+          resolutionProbability,
+          resolutions,
+        })
+      )
 
       console.log('contract ', contractId, 'resolved to:', outcome)
 
@@ -92,10 +103,20 @@ export const resolveMarket = functions
           ? getPayoutsMultiOutcome(resolutions, contract as any, openBets)
           : getPayouts(outcome, contract, openBets, resolutionProbability)
 
+      const loanPayouts = getLoanPayouts(openBets)
+
       console.log('payouts:', payouts)
 
-      const groups = _.groupBy(payouts, (payout) => payout.userId)
+      const groups = _.groupBy(
+        [...payouts, ...loanPayouts],
+        (payout) => payout.userId
+      )
       const userPayouts = _.mapValues(groups, (group) =>
+        _.sumBy(group, (g) => g.payout)
+      )
+
+      const groupsWithoutLoans = _.groupBy(payouts, (payout) => payout.userId)
+      const userPayoutsWithoutLoans = _.mapValues(groupsWithoutLoans, (group) =>
         _.sumBy(group, (g) => g.payout)
       )
 
@@ -109,7 +130,7 @@ export const resolveMarket = functions
 
       await sendResolutionEmails(
         openBets,
-        userPayouts,
+        userPayoutsWithoutLoans,
         creator,
         contract,
         outcome,
@@ -134,14 +155,24 @@ const sendResolutionEmails = async (
     _.uniq(openBets.map(({ userId }) => userId)),
     Object.keys(userPayouts)
   )
+  const investedByUser = _.mapValues(
+    _.groupBy(openBets, (bet) => bet.userId),
+    (bets) => _.sumBy(bets, (bet) => bet.amount)
+  )
   const emailPayouts = [
     ...Object.entries(userPayouts),
     ...nonWinners.map((userId) => [userId, 0] as const),
-  ]
+  ].map(([userId, payout]) => ({
+    userId,
+    investment: investedByUser[userId],
+    payout,
+  }))
+
   await Promise.all(
-    emailPayouts.map(([userId, payout]) =>
+    emailPayouts.map(({ userId, investment, payout }) =>
       sendMarketResolutionEmail(
         userId,
+        investment,
         payout,
         creator,
         contract,

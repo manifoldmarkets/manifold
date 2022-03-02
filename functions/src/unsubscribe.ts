@@ -1,30 +1,47 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
-import { getPrivateUser } from './utils'
+import { getUser } from './utils'
 import { PrivateUser } from '../../common/user'
 
 export const unsubscribe = functions
   .runWith({ minInstances: 1 })
   .https.onRequest(async (req, res) => {
-    let id = req.query.id as string
-    if (!id) return
+    const { id, type } = req.query as { id: string; type: string }
+    if (!id || !type) return
 
-    let privateUser = await getPrivateUser(id)
+    const user = await getUser(id)
 
-    if (privateUser) {
-      let { username } = privateUser
+    if (user) {
+      const { name } = user
 
       const update: Partial<PrivateUser> = {
-        unsubscribedFromResolutionEmails: true,
+        ...(type === 'market-resolve' && {
+          unsubscribedFromResolutionEmails: true,
+        }),
+        ...(type === 'market-comment' && {
+          unsubscribedFromCommentEmails: true,
+        }),
+        ...(type === 'market-answer' && {
+          unsubscribedFromAnswerEmails: true,
+        }),
       }
 
       await firestore.collection('private-users').doc(id).update(update)
 
-      res.send(
-        username +
-          ', you have been unsubscribed from market resolution emails on Manifold Markets.'
-      )
+      if (type === 'market-resolve')
+        res.send(
+          `${name}, you have been unsubscribed from market resolution emails on Manifold Markets.`
+        )
+      else if (type === 'market-comment')
+        res.send(
+          `${name}, you have been unsubscribed from market comment emails on Manifold Markets.`
+        )
+      else if (type === 'market-answer')
+        res.send(
+          `${name}, you have been unsubscribed from market answer emails on Manifold Markets.`
+        )
+      else res.send(`${name}, you have been unsubscribed.`)
     } else {
       res.send('This user is not currently subscribed or does not exist.')
     }

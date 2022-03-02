@@ -8,13 +8,13 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../avatar'
 import { SiteLink } from '../site-link'
-import { DateTimeTooltip } from '../datetime-tooltip'
-import dayjs from 'dayjs'
 import { BuyButton } from '../yes-no-selector'
 import { formatPercent } from '../../../common/util/format'
 import { getOutcomeProbability } from '../../../common/calculate'
 import { tradingAllowed } from '../../lib/firebase/contracts'
 import { AnswerBetPanel } from './answer-bet-panel'
+import { ContractFeed } from '../contract-feed'
+import { Linkify } from '../linkify'
 
 export function AnswerItem(props: {
   answer: Answer
@@ -35,10 +35,9 @@ export function AnswerItem(props: {
     onDeselect,
   } = props
   const { resolution, resolutions, totalShares } = contract
-  const { username, avatarUrl, name, createdTime, number, text } = answer
+  const { username, avatarUrl, name, number, text } = answer
   const isChosen = chosenProb !== undefined
 
-  const createdDate = dayjs(createdTime).format('MMM D')
   const prob = getOutcomeProbability(totalShares, answer.id)
   const roundedProb = Math.round(prob * 100)
   const probPercent = formatPercent(prob)
@@ -47,42 +46,50 @@ export function AnswerItem(props: {
 
   const [isBetting, setIsBetting] = useState(false)
 
+  const canBet = !isBetting && !showChoice && tradingAllowed(contract)
+
   return (
-    <Col
+    <div
       className={clsx(
-        'p-4 sm:flex-row rounded gap-4',
+        'flex flex-col gap-4 rounded p-4 sm:flex-row',
         wasResolvedTo
           ? resolution === 'MKT'
-            ? 'bg-blue-50 mb-2'
-            : 'bg-green-50 mb-8'
+            ? 'mb-2 bg-blue-50'
+            : 'mb-8 bg-green-50'
           : chosenProb === undefined
           ? 'bg-gray-50'
           : showChoice === 'radio'
           ? 'bg-green-50'
-          : 'bg-blue-50'
+          : 'bg-blue-50',
+        canBet && 'cursor-pointer hover:bg-gray-100'
       )}
+      onClick={() => canBet && setIsBetting(true)}
     >
-      <Col className="gap-3 flex-1">
-        <div className="whitespace-pre-line break-words">{text}</div>
+      <Col className="flex-1 gap-3">
+        <div className="whitespace-pre-line">
+          <Linkify text={text} />
+        </div>
 
-        <Row className="text-gray-500 text-sm gap-2 items-center">
+        <Row className="items-center gap-2 text-sm text-gray-500">
           <SiteLink className="relative" href={`/${username}`}>
             <Row className="items-center gap-2">
               <Avatar avatarUrl={avatarUrl} size={6} />
               <div className="truncate">{name}</div>
             </Row>
           </SiteLink>
-
-          <div className="">•</div>
-
-          <div className="whitespace-nowrap">
-            <DateTimeTooltip text="" time={contract.createdTime}>
-              {createdDate}
-            </DateTimeTooltip>
-          </div>
-          <div className="">•</div>
+          {/* TODO: Show total pool? */}
           <div className="text-base">#{number}</div>
         </Row>
+
+        {isBetting && (
+          <ContractFeed
+            contract={contract}
+            bets={[]}
+            comments={[]}
+            feedType="multi"
+            outcome={answer.id}
+          />
+        )}
       </Col>
 
       {isBetting ? (
@@ -90,13 +97,14 @@ export function AnswerItem(props: {
           answer={answer}
           contract={contract}
           closePanel={() => setIsBetting(false)}
+          className="sm:w-72"
         />
       ) : (
-        <Row className="self-end sm:self-start items-center gap-4 justify-end">
+        <Row className="items-center justify-end gap-4 self-end sm:self-start">
           {!wasResolvedTo &&
             (showChoice === 'checkbox' ? (
               <input
-                className="input input-bordered text-2xl justify-self-end w-24"
+                className="input input-bordered w-24 justify-self-end text-2xl"
                 type="number"
                 placeholder={`${roundedProb}`}
                 maxLength={9}
@@ -121,7 +129,7 @@ export function AnswerItem(props: {
             ))}
           {showChoice ? (
             <div className="form-control py-1">
-              <label className="cursor-pointer label gap-3">
+              <label className="label cursor-pointer gap-3">
                 <span className="">Choose this answer</span>
                 {showChoice === 'radio' && (
                   <input
@@ -162,7 +170,7 @@ export function AnswerItem(props: {
             <>
               {tradingAllowed(contract) && (
                 <BuyButton
-                  className="justify-end self-end flex-initial btn-md !px-8"
+                  className="btn-md flex-initial justify-end self-end !px-8"
                   onClick={() => {
                     setIsBetting(true)
                   }}
@@ -188,6 +196,6 @@ export function AnswerItem(props: {
           )}
         </Row>
       )}
-    </Col>
+    </div>
   )
 }

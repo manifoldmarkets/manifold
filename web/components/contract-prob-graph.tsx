@@ -83,7 +83,7 @@ export function ContractProbGraph(props: { contract: Contract; bets: Bet[] }) {
           format: (time) => formatTime(+time, lessThanAWeek),
         }}
         colors={{ datum: 'color' }}
-        pointSize={10}
+        pointSize={bets.length > 100 ? 0 : 10}
         pointBorderWidth={1}
         pointBorderColor="#fff"
         enableSlices="x"

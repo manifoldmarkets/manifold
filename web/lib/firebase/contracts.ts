@@ -115,6 +115,41 @@ export function listenForContracts(
   return listenForValues<Contract>(q, setContracts)
 }
 
+const activeContractsQuery = query(
+  contractCollection,
+  where('isResolved', '==', false),
+  where('visibility', '==', 'public'),
+  where('volume24Hours', '>', 0)
+)
+
+export function getActiveContracts() {
+  return getValues<Contract>(activeContractsQuery)
+}
+
+export function listenForActiveContracts(
+  setContracts: (contracts: Contract[]) => void
+) {
+  return listenForValues<Contract>(activeContractsQuery, setContracts)
+}
+
+const inactiveContractsQuery = query(
+  contractCollection,
+  where('isResolved', '==', false),
+  where('closeTime', '>', Date.now()),
+  where('visibility', '==', 'public'),
+  where('volume24Hours', '==', 0)
+)
+
+export function getInactiveContracts() {
+  return getValues<Contract>(inactiveContractsQuery)
+}
+
+export function listenForInactiveContracts(
+  setContracts: (contracts: Contract[]) => void
+) {
+  return listenForValues<Contract>(inactiveContractsQuery, setContracts)
+}
+
 export function listenForContract(
   contractId: string,
   setContract: (contract: Contract | null) => void

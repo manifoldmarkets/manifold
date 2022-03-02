@@ -139,6 +139,15 @@ function Contents() {
         bettors that are correct more often will gain influence, leading to
         better-calibrated forecasts over time.
       </p>
+      <p>
+        Since our launch, we've seen hundreds of users trade each day, on over a
+        thousand different markets! You can track the popularity of our platform
+        at{' '}
+        <a href="http://manifold.markets/analytics">
+          http://manifold.markets/analytics
+        </a>
+        .
+      </p>
       <h3 id="how-are-markets-resolved-">How are markets resolved?</h3>
       <p>
         The creator of the prediction market decides the outcome and earns{' '}

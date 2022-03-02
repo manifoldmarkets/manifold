@@ -48,8 +48,9 @@ export function scoreUsersByContract(
   const investments = bets
     .filter((bet) => !bet.sale)
     .map((bet) => {
-      const { userId, amount } = bet
-      return { userId, payout: -amount }
+      const { userId, amount, loanAmount } = bet
+      const payout = -amount - (loanAmount ?? 0)
+      return { userId, payout }
     })
 
   const netPayouts = [...resolvePayouts, ...salePayouts, ...investments]

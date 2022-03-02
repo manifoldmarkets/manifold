@@ -1,4 +1,5 @@
-import { Bet } from './bet'
+import * as _ from 'lodash'
+import { Bet, MAX_LOAN_PER_CONTRACT } from './bet'
 import {
   calculateShares,
   getProbability,
@@ -20,6 +21,7 @@ export const getNewBinaryCpmmBetInfo = (
   outcome: 'YES' | 'NO',
   amount: number,
   contract: FullContract<CPMM, Binary>,
+  loanAmount: number,
   newBetId: string
 ) => {
   const { pool, k } = contract
@@ -32,7 +34,7 @@ export const getNewBinaryCpmmBetInfo = (
       ? [y - shares + amount, amount]
       : [amount, n - shares + amount]
 
-  const newBalance = user.balance - amount
+  const newBalance = user.balance - (amount - loanAmount)
 
   const probBefore = getCpmmProbability(pool)
   const newPool = { YES: newY, NO: newN }
@@ -45,6 +47,7 @@ export const getNewBinaryCpmmBetInfo = (
     amount,
     shares,
     outcome,
+    loanAmount,
     probBefore,
     probAfter,
     createdTime: Date.now(),
@@ -58,6 +61,7 @@ export const getNewBinaryDpmBetInfo = (
   outcome: 'YES' | 'NO',
   amount: number,
   contract: FullContract<DPM, Binary>,
+  loanAmount: number,
   newBetId: string
 ) => {
   const { YES: yesPool, NO: noPool } = contract.pool
@@ -91,6 +95,7 @@ export const getNewBinaryDpmBetInfo = (
     userId: user.id,
     contractId: contract.id,
     amount,
+    loanAmount,
     shares,
     outcome,
     probBefore,
@@ -98,7 +103,7 @@ export const getNewBinaryDpmBetInfo = (
     createdTime: Date.now(),
   }
 
-  const newBalance = user.balance - amount
+  const newBalance = user.balance - (amount - loanAmount)
 
   return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
 }
@@ -108,6 +113,7 @@ export const getNewMultiBetInfo = (
   outcome: string,
   amount: number,
   contract: FullContract<DPM, Multi | FreeResponse>,
+  loanAmount: number,
   newBetId: string
 ) => {
   const { pool, totalShares, totalBets } = contract
@@ -131,6 +137,7 @@ export const getNewMultiBetInfo = (
     userId: user.id,
     contractId: contract.id,
     amount,
+    loanAmount,
     shares,
     outcome,
     probBefore,
@@ -138,7 +145,17 @@ export const getNewMultiBetInfo = (
     createdTime: Date.now(),
   }
 
-  const newBalance = user.balance - amount
+  const newBalance = user.balance - (amount - loanAmount)
 
   return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+}
+
+export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {
+  const openBets = yourBets.filter((bet) => !bet.isSold && !bet.sale)
+  const prevLoanAmount = _.sumBy(openBets, (bet) => bet.loanAmount ?? 0)
+  const loanAmount = Math.min(
+    newBetAmount,
+    MAX_LOAN_PER_CONTRACT - prevLoanAmount
+  )
+  return loanAmount
 }

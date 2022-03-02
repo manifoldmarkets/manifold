@@ -5,12 +5,7 @@ import { Fold } from '../../../../common/fold'
 import { Comment } from '../../../../common/comment'
 import { Page } from '../../../components/page'
 import { Title } from '../../../components/title'
-import {
-  Bet,
-  getRecentContractBets,
-  listAllBets,
-} from '../../../lib/firebase/bets'
-import { listAllComments } from '../../../lib/firebase/comments'
+import { Bet, listAllBets } from '../../../lib/firebase/bets'
 import { Contract } from '../../../lib/firebase/contracts'
 import {
   foldPath,
@@ -40,6 +35,7 @@ import FeedCreate from '../../../components/feed-create'
 import { SEO } from '../../../components/SEO'
 import { useTaggedContracts } from '../../../hooks/use-contracts'
 import { Linkify } from '../../../components/linkify'
+import { filterDefined } from '../../../../common/util/array'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -49,42 +45,21 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
 
   const contracts = fold ? await getFoldContracts(fold).catch((_) => []) : []
 
-  const betsPromise = Promise.all(
+  const bets = await Promise.all(
     contracts.map((contract) => listAllBets(contract.id))
   )
+  const betsByContract = _.fromPairs(contracts.map((c, i) => [c.id, bets[i]]))
 
-  const [contractComments, contractRecentBets] = await Promise.all([
-    Promise.all(
-      contracts.map((contract) => listAllComments(contract.id).catch((_) => []))
-    ),
-    Promise.all(
-      contracts.map((contract) =>
-        getRecentContractBets(contract.id).catch((_) => [])
-      )
-    ),
-  ])
-
-  let activeContracts = findActiveContracts(
-    contracts,
-    _.flatten(contractComments),
-    _.flatten(contractRecentBets),
-    365
-  )
+  let activeContracts = findActiveContracts(contracts, [], _.flatten(bets))
   const [resolved, unresolved] = _.partition(
     activeContracts,
     ({ isResolved }) => isResolved
   )
   activeContracts = [...unresolved, ...resolved]
 
-  const activeContractBets = await Promise.all(
-    activeContracts.map((contract) => listAllBets(contract.id).catch((_) => []))
+  const activeContractBets = activeContracts.map(
+    (contract) => betsByContract[contract.id] ?? []
   )
-  const activeContractComments = activeContracts.map(
-    (contract) =>
-      contractComments[contracts.findIndex((c) => c.id === contract.id)]
-  )
-
-  const bets = await betsPromise
 
   const creatorScores = scoreCreators(contracts, bets)
   const traderScores = scoreTraders(contracts, bets)
@@ -102,7 +77,7 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
       contracts,
       activeContracts,
       activeContractBets,
-      activeContractComments,
+      activeContractComments: activeContracts.map(() => []),
       traderScores,
       topTraders,
       creatorScores,
@@ -169,9 +144,11 @@ export default function FoldPage(props: {
     taggedContracts.map((contract) => [contract.id, contract])
   )
 
-  const contracts = props.contracts.map((contract) => contractsMap[contract.id])
-  const activeContracts = props.activeContracts.map(
-    (contract) => contractsMap[contract.id]
+  const contracts = filterDefined(
+    props.contracts.map((contract) => contractsMap[contract.id])
+  )
+  const activeContracts = filterDefined(
+    props.activeContracts.map((contract) => contractsMap[contract.id])
   )
 
   if (fold === null || !foldSubpages.includes(page) || slugs[2]) {

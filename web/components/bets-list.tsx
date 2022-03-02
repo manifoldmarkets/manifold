@@ -37,7 +37,7 @@ import { filterDefined } from '../../common/util/array'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
 
-type BetSort = 'newest' | 'profit' | 'resolved' | 'value'
+type BetSort = 'newest' | 'profit' | 'settled' | 'value'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -82,7 +82,8 @@ export function BetsList(props: { user: User }) {
         if (bet.isSold || bet.sale) return 0
 
         const contract = contracts.find((c) => c.id === contractId)
-        return contract ? calculatePayout(contract, bet, 'MKT') : 0
+        const payout = contract ? calculatePayout(contract, bet, 'MKT') : 0
+        return payout - (bet.loanAmount ?? 0)
       })
     }
   )
@@ -106,23 +107,20 @@ export function BetsList(props: { user: User }) {
       contracts,
       (c) => -1 * Math.max(...contractBets[c.id].map((bet) => bet.createdTime))
     )
-  else if (sort === 'resolved')
+  else if (sort === 'settled')
     sortedContracts = _.sortBy(contracts, (c) => -1 * (c.resolutionTime ?? 0))
 
-  const [resolved, unresolved] = _.partition(
+  const [settled, unsettled] = _.partition(
     sortedContracts,
-    (c) => c.isResolved
+    (c) => c.isResolved || contractsInvestment[c.id] === 0
   )
 
-  const displayedContracts = sort === 'resolved' ? resolved : unresolved
+  const displayedContracts = sort === 'settled' ? settled : unsettled
 
-  const currentInvestment = _.sumBy(
-    unresolved,
-    (c) => contractsInvestment[c.id]
-  )
+  const currentInvestment = _.sumBy(unsettled, (c) => contractsInvestment[c.id])
 
   const currentBetsValue = _.sumBy(
-    unresolved,
+    unsettled,
     (c) => contractsCurrentValue[c.id]
   )
 
@@ -140,7 +138,7 @@ export function BetsList(props: { user: User }) {
           <Col>
             <div className="text-sm text-gray-500">Invested</div>
             <div className="text-lg">
-              {formatMoney(currentBetsValue)}{' '}
+              {formatMoney(currentInvestment)}{' '}
               <ProfitBadge profitPercent={investedProfit} />
             </div>
           </Col>
@@ -160,8 +158,8 @@ export function BetsList(props: { user: User }) {
         >
           <option value="value">By value</option>
           <option value="profit">By profit</option>
-          <option value="newest">Newest</option>
-          <option value="resolved">Resolved</option>
+          <option value="newest">Most recent</option>
+          <option value="settled">Resolved</option>
         </select>
       </Col>
 
@@ -228,7 +226,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
             />
           </Row>
 
-          <Row className="items-center gap-2 text-sm text-gray-500 flex-1">
+          <Row className="flex-1 items-center gap-2 text-sm text-gray-500">
             {isBinary && (
               <>
                 {resolution ? (
@@ -361,22 +359,26 @@ export function MyBetsSummary(props: {
                   {formatMoney(expectation)}
                 </div>
               </Col> */}
-              <Col>
-                <div className="whitespace-nowrap text-sm text-gray-500">
-                  Payout if <YesLabel />
-                </div>
-                <div className="whitespace-nowrap">
-                  {formatMoney(yesWinnings)}
-                </div>
-              </Col>
-              <Col>
-                <div className="whitespace-nowrap text-sm text-gray-500">
-                  Payout if <NoLabel />
-                </div>
-                <div className="whitespace-nowrap">
-                  {formatMoney(noWinnings)}
-                </div>
-              </Col>
+              {isBinary && (
+                <>
+                  <Col>
+                    <div className="whitespace-nowrap text-sm text-gray-500">
+                      Payout if <YesLabel />
+                    </div>
+                    <div className="whitespace-nowrap">
+                      {formatMoney(yesWinnings)}
+                    </div>
+                  </Col>
+                  <Col>
+                    <div className="whitespace-nowrap text-sm text-gray-500">
+                      Payout if <NoLabel />
+                    </div>
+                    <div className="whitespace-nowrap">
+                      {formatMoney(noWinnings)}
+                    </div>
+                  </Col>
+                </>
+              )}
               <Col>
                 <div className="whitespace-nowrap text-sm text-gray-500">
                   {isBinary ? (
@@ -421,9 +423,10 @@ export function ContractBetsTable(props: {
         <thead>
           <tr className="p-2">
             <th></th>
-            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             <th>Outcome</th>
             <th>Amount</th>
+            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
+            {!isResolved && <th>Payout if chosen</th>}
             <th>Probability</th>
             <th>Shares</th>
             <th>Date</th>
@@ -455,6 +458,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     shares,
     isSold,
     isAnte,
+    loanAmount,
   } = bet
 
   const { isResolved, closeTime } = contract
@@ -462,7 +466,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
 
   const saleAmount = saleBet?.sale?.amount
 
-  const saleDisplay = bet.isAnte ? (
+  const saleDisplay = isAnte ? (
     'ANTE'
   ) : saleAmount !== undefined ? (
     <>{formatMoney(saleAmount)} (sold)</>
@@ -474,6 +478,11 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     )
   )
 
+  const payoutIfChosenDisplay =
+    bet.outcome === '0' && bet.isAnte
+      ? 'N/A'
+      : formatMoney(calculatePayout(contract, bet, bet.outcome))
+
   return (
     <tr>
       <td className="text-neutral">
@@ -481,11 +490,15 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
           <SellButton contract={contract} bet={bet} />
         )}
       </td>
-      <td>{saleDisplay}</td>
       <td>
         <OutcomeLabel outcome={outcome} />
       </td>
-      <td>{formatMoney(amount)}</td>
+      <td>
+        {formatMoney(amount)}
+        {loanAmount ? ` (${formatMoney(loanAmount ?? 0)} loan)` : ''}
+      </td>
+      <td>{saleDisplay}</td>
+      {!isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
@@ -502,17 +515,19 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   }, [])
 
   const { contract, bet } = props
+  const { outcome, shares, loanAmount } = bet
+
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const initialProb = getOutcomeProbability(
     contract.totalShares,
-    bet.outcome === 'NO' ? 'YES' : bet.outcome
+    outcome === 'NO' ? 'YES' : outcome
   )
 
   const outcomeProb = getProbabilityAfterSale(
     contract.totalShares,
-    bet.outcome,
-    bet.shares
+    outcome,
+    shares
   )
 
   const saleAmount = calculateSaleAmount(contract, bet)
@@ -524,7 +539,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
         className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
         label: 'Sell',
       }}
-      submitBtn={{ className: 'btn-primary' }}
+      submitBtn={{ className: 'btn-primary', label: 'Sell' }}
       onSubmit={async () => {
         setIsSubmitting(true)
         await sellBet({ contractId: contract.id, betId: bet.id })
@@ -532,15 +547,18 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
       }}
     >
       <div className="mb-4 text-2xl">
-        Sell <OutcomeLabel outcome={bet.outcome} />
+        Sell {formatWithCommas(shares)} shares of{' '}
+        <OutcomeLabel outcome={outcome} /> for {formatMoney(saleAmount)}?
       </div>
-      <div>
-        Do you want to sell {formatWithCommas(bet.shares)} shares of{' '}
-        <OutcomeLabel outcome={bet.outcome} /> for {formatMoney(saleAmount)}?
-      </div>
+      {!!loanAmount && (
+        <div className="mt-2">
+          You will also pay back {formatMoney(loanAmount)} of your loan, for a
+          net of {formatMoney(saleAmount - loanAmount)}.
+        </div>
+      )}
 
-      <div className="mt-2 mb-1 text-sm text-gray-500">
-        Implied probability: {formatPercent(initialProb)} →{' '}
+      <div className="mt-2 mb-1 text-sm">
+        Market probability: {formatPercent(initialProb)} →{' '}
         {formatPercent(outcomeProb)}
       </div>
     </ConfirmationButton>

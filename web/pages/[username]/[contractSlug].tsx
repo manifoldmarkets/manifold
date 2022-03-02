@@ -145,7 +145,7 @@ export default function ContractPage(props: {
 
             <Col className="flex-1">
               {allowTrade && (
-                <BetPanel className="hidden lg:inline" contract={contract} />
+                <BetPanel className="hidden lg:flex" contract={contract} />
               )}
               {allowResolve && (
                 <ResolutionPanel creator={user} contract={contract} />
@@ -177,12 +177,8 @@ function BetsSection(props: {
   return (
     <div>
       <Title className="px-2" text="Your trades" />
-      {isBinary && (
-        <>
-          <MyBetsSummary className="px-2" contract={contract} bets={userBets} />
-          <Spacer h={6} />
-        </>
-      )}
+      <MyBetsSummary className="px-2" contract={contract} bets={userBets} />
+      <Spacer h={6} />
       <ContractBetsTable contract={contract} bets={userBets} />
       <Spacer h={12} />
     </div>

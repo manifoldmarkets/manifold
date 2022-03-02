@@ -1,9 +1,7 @@
 import {
   Contract,
   deleteContract,
-  contractPath,
   tradingAllowed,
-  getBinaryProbPercent,
 } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
@@ -15,7 +13,6 @@ import { Linkify } from './linkify'
 import clsx from 'clsx'
 import { ContractDetails, ResolutionOrChance } from './contract-card'
 import { ContractFeed } from './contract-feed'
-import { TweetButton } from './tweet-button'
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
 import { RevealableTagsInput, TagsInput } from './tags-input'
@@ -37,8 +34,6 @@ export const ContractOverview = (props: {
   const user = useUser()
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
-
-  const tweetText = getTweetText(contract, isCreator)
 
   return (
     <Col className={clsx('mb-6', className)}>
@@ -92,11 +87,9 @@ export const ContractOverview = (props: {
         ) : (
           <FoldTagList folds={folds} />
         )}
-        <TweetButton tweetText={tweetText} />
       </Row>
 
       <Col className="mt-6 gap-4 sm:hidden">
-        <TweetButton className="self-end" tweetText={tweetText} />
         {folds.length === 0 ? (
           <TagsInput contract={contract} />
         ) : (
@@ -135,23 +128,4 @@ export const ContractOverview = (props: {
       />
     </Col>
   )
-}
-
-const getTweetText = (contract: Contract, isCreator: boolean) => {
-  const { question, creatorName, resolution, outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-
-  const tweetQuestion = isCreator
-    ? question
-    : `${question} Asked by ${creatorName}.`
-  const tweetDescription = resolution
-    ? `Resolved ${resolution}!`
-    : isBinary
-    ? `Currently ${getBinaryProbPercent(
-        contract
-      )} chance, place your bets here:`
-    : `Submit your own answer:`
-  const url = `https://manifold.markets${contractPath(contract)}`
-
-  return `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
 }

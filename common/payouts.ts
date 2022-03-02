@@ -281,3 +281,12 @@ export const getPayoutsMultiOutcome = (
     .map(({ userId, payout }) => ({ userId, payout }))
     .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
 }
+
+export const getLoanPayouts = (bets: Bet[]) => {
+  const betsWithLoans = bets.filter((bet) => bet.loanAmount)
+  const betsByUser = _.groupBy(betsWithLoans, (bet) => bet.userId)
+  const loansByUser = _.mapValues(betsByUser, (bets) =>
+    _.sumBy(bets, (bet) => -(bet.loanAmount ?? 0))
+  )
+  return _.toPairs(loansByUser).map(([userId, payout]) => ({ userId, payout }))
+}

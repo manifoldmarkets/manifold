@@ -4,6 +4,7 @@ export type Bet = {
   contractId: string
 
   amount: number // bet size; negative if SELL bet
+  loanAmount?: number
   outcome: string
   shares: number // dynamic parimutuel pool weight; negative if SELL bet
 
@@ -21,3 +22,5 @@ export type Bet = {
 
   createdTime: number
 }
+
+export const MAX_LOAN_PER_CONTRACT = 20

@@ -205,16 +205,19 @@ export function SearchableGrid(props: {
 }) {
   const { contracts, query, setQuery, sort, setSort, byOneCreator } = props
 
+  const queryWords = query.toLowerCase().split(' ')
   function check(corpus: String) {
-    return corpus.toLowerCase().includes(query.toLowerCase())
+    return queryWords.every((word) => corpus.toLowerCase().includes(word))
   }
+
   let matches = contracts.filter(
     (c) =>
       check(c.question) ||
       check(c.description) ||
       check(c.creatorName) ||
       check(c.creatorUsername) ||
-      check(c.lowercaseTags.map((tag) => `#${tag}`).join(' '))
+      check(c.lowercaseTags.map((tag) => `#${tag}`).join(' ')) ||
+      check((c.answers ?? []).map((answer) => answer.text).join(' '))
   )
 
   if (sort === 'newest' || sort === 'all') {
@@ -226,11 +229,13 @@ export function SearchableGrid(props: {
     )
   } else if (sort === 'oldest') {
     matches.sort((a, b) => a.createdTime - b.createdTime)
-  } else if (sort === 'close-date') {
+  } else if (sort === 'close-date' || sort === 'closed') {
     matches = _.sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
     matches = _.sortBy(matches, (contract) => contract.closeTime)
-    // Hide contracts that have already closed
-    matches = matches.filter(({ closeTime }) => (closeTime || 0) > Date.now())
+    const hideClosed = sort === 'closed'
+    matches = matches.filter(
+      ({ closeTime }) => closeTime && closeTime > Date.now() !== hideClosed
+    )
   } else if (sort === 'most-traded') {
     matches.sort(
       (a, b) => contractMetrics(b).truePool - contractMetrics(a).truePool
@@ -269,6 +274,7 @@ export function SearchableGrid(props: {
           <option value="most-traded">Most traded</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
+          <option value="closed">Closed</option>
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
 
@@ -286,7 +292,7 @@ export function SearchableGrid(props: {
       ) : (
         <ContractsGrid
           contracts={matches}
-          showCloseTime={sort == 'close-date'}
+          showCloseTime={['close-date', 'closed'].includes(sort)}
         />
       )}
     </div>

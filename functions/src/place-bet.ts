@@ -7,8 +7,11 @@ import {
   getNewBinaryCpmmBetInfo,
   getNewBinaryDpmBetInfo,
   getNewMultiBetInfo,
+  getLoanAmount,
 } from '../../common/new-bet'
 import { removeUndefinedProps } from '../../common/util/object'
+import { Bet } from '../../common/bet'
+import { getValues } from './utils'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -51,6 +54,11 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
+      const yourBetsSnap = await transaction.get(
+        contractDoc.collection('bets').where('userId', '==', userId)
+      )
+      const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
+
       if (outcomeType === 'FREE_RESPONSE') {
         const answerSnap = await transaction.get(
           contractDoc.collection('answers').doc(outcome)
@@ -63,6 +71,8 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
+      const loanAmount = getLoanAmount(yourBets, amount)
+
       const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
         outcomeType === 'BINARY'
           ? mechanism === 'dpm-2'
@@ -71,6 +81,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
                 outcome as 'YES' | 'NO',
                 amount,
                 contract,
+                loanAmount,
                 newBetDoc.id
               )
             : (getNewBinaryCpmmBetInfo(
@@ -78,6 +89,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
                 outcome as 'YES' | 'NO',
                 amount,
                 contract,
+                loanAmount,
                 newBetDoc.id
               ) as any)
           : getNewMultiBetInfo(
@@ -85,6 +97,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
               outcome,
               amount,
               contract as any,
+              loanAmount,
               newBetDoc.id
             )
 
