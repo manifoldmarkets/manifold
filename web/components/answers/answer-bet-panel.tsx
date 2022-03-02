@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from '../../../common/answer'
-import { Contract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { AmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { placeBet } from '../../lib/firebase/api-call'
@@ -28,7 +28,7 @@ import { Bet } from '../../../common/bet'
 
 export function AnswerBetPanel(props: {
   answer: Answer
-  contract: Contract
+  contract: FullContract<DPM, FreeResponse>
   closePanel: () => void
   className?: string
 }) {

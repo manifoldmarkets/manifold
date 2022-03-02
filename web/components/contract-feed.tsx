@@ -42,6 +42,7 @@ import BetRow from './bet-row'
 import { parseTags } from '../../common/util/parse'
 import { Avatar } from './avatar'
 import { useAdmin } from '../hooks/use-admin'
+import { FreeResponse, FullContract } from '../../common/contract'
 
 function FeedComment(props: {
   activityItem: any
@@ -384,7 +385,10 @@ function FeedDescription(props: { contract: Contract }) {
   )
 }
 
-function FeedAnswer(props: { contract: Contract; outcome: string }) {
+function FeedAnswer(props: {
+  contract: FullContract<any, FreeResponse>
+  outcome: string
+}) {
   const { contract, outcome } = props
   const answer = contract?.answers?.[Number(outcome) - 1]
   if (!answer) return null

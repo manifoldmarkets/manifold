@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { useState } from 'react'
 
 import { Answer } from '../../../common/answer'
-import { Contract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../avatar'
@@ -18,7 +18,7 @@ import { Linkify } from '../linkify'
 
 export function AnswerItem(props: {
   answer: Answer
-  contract: Contract
+  contract: FullContract<DPM, FreeResponse>
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined
   totalChosenProb?: number

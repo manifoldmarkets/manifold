@@ -3,7 +3,12 @@ import _ from 'lodash'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
-import { Contract } from '../../../common/contract'
+import {
+  Contract,
+  DPM,
+  FreeResponse,
+  FullContract,
+} from '../../../common/contract'
 import { AmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { createAnswer } from '../../lib/firebase/api-call'
@@ -23,7 +28,9 @@ import {
 import { firebaseLogin } from '../../lib/firebase/users'
 import { Bet } from '../../../common/bet'
 
-export function CreateAnswerPanel(props: { contract: Contract }) {
+export function CreateAnswerPanel(props: {
+  contract: FullContract<DPM, FreeResponse>
+}) {
   const { contract } = props
   const user = useUser()
   const [text, setText] = useState('')

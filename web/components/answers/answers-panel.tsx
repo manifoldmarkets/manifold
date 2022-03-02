@@ -2,7 +2,7 @@ import _ from 'lodash'
 import { useLayoutEffect, useState } from 'react'
 
 import { Answer } from '../../../common/answer'
-import { Contract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { Col } from '../layout/col'
 import { formatPercent } from '../../../common/util/format'
 import { useUser } from '../../hooks/use-user'
@@ -13,7 +13,10 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 
-export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
+export function AnswersPanel(props: {
+  contract: FullContract<DPM, FreeResponse>
+  answers: Answer[]
+}) {
   const { contract } = props
   const { creatorId, resolution, resolutions, totalBets } = contract
 
