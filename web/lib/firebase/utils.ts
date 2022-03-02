@@ -1,6 +1,5 @@
 import { db } from './init'
 import {
-  doc,
   getDoc,
   getDocs,
   onSnapshot,
@@ -22,7 +21,7 @@ export function listenForValue<T>(
   docRef: DocumentReference,
   setValue: (value: T | null) => void
 ) {
-  return onSnapshot(docRef, (snapshot) => {
+  return onSnapshot(docRef, { includeMetadataChanges: true }, (snapshot) => {
     if (snapshot.metadata.fromCache) return
 
     const value = snapshot.exists() ? (snapshot.data() as T) : null
@@ -34,7 +33,7 @@ export function listenForValues<T>(
   query: Query,
   setValues: (values: T[]) => void
 ) {
-  return onSnapshot(query, (snapshot) => {
+  return onSnapshot(query, { includeMetadataChanges: true }, (snapshot) => {
     if (snapshot.metadata.fromCache) return
 
     const values = snapshot.docs.map((doc) => doc.data() as T)
