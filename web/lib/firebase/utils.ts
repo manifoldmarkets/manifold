@@ -21,6 +21,8 @@ export function listenForValue<T>(
   docRef: DocumentReference,
   setValue: (value: T | null) => void
 ) {
+  // Exclude cached snapshots so we only trigger on fresh data.
+  // includeMetadataChanges ensures listener is called even when server data is the same as cached data.
   return onSnapshot(docRef, { includeMetadataChanges: true }, (snapshot) => {
     if (snapshot.metadata.fromCache) return
 
@@ -33,6 +35,8 @@ export function listenForValues<T>(
   query: Query,
   setValues: (values: T[]) => void
 ) {
+  // Exclude cached snapshots so we only trigger on fresh data.
+  // includeMetadataChanges ensures listener is called even when server data is the same as cached data.
   return onSnapshot(query, { includeMetadataChanges: true }, (snapshot) => {
     if (snapshot.metadata.fromCache) return
 
