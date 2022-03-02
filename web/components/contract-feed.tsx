@@ -25,7 +25,7 @@ import {
 import { useUser } from '../hooks/use-user'
 import { Linkify } from './linkify'
 import { Row } from './layout/row'
-import { createComment } from '../lib/firebase/comments'
+import { createComment, MAX_COMMENT_LENGTH } from '../lib/firebase/comments'
 import { useComments } from '../hooks/use-comments'
 import { formatMoney } from '../../common/util/format'
 import { ResolutionOrChance } from './contract-card'
@@ -135,6 +135,7 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
                 className="textarea textarea-bordered w-full"
                 placeholder="Add a comment..."
                 rows={3}
+                maxLength={MAX_COMMENT_LENGTH}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     submitComment()

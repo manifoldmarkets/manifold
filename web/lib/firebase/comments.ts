@@ -14,6 +14,8 @@ import { User } from '../../../common/user'
 import { Comment } from '../../../common/comment'
 export type { Comment }
 
+export const MAX_COMMENT_LENGTH = 10000
+
 export async function createComment(
   contractId: string,
   betId: string,
@@ -27,7 +29,7 @@ export async function createComment(
     contractId,
     betId,
     userId: commenter.id,
-    text,
+    text: text.slice(0, MAX_COMMENT_LENGTH),
     createdTime: Date.now(),
     userName: commenter.name,
     userUsername: commenter.username,
