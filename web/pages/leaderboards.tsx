@@ -5,8 +5,9 @@ import { Leaderboard } from '../components/leaderboard'
 import { Page } from '../components/page'
 import { getTopCreators, getTopTraders, User } from '../lib/firebase/users'
 import { formatMoney } from '../../common/util/format'
+import { usePropz } from '../hooks/use-propz'
 
-export async function getStaticProps() {
+export async function getStaticPropz() {
   const [topTraders, topCreators] = await Promise.all([
     getTopTraders().catch((_) => {}),
     getTopCreators().catch((_) => {}),
@@ -26,6 +27,10 @@ export default function Leaderboards(props: {
   topTraders: User[]
   topCreators: User[]
 }) {
+  props = usePropz(getStaticPropz) ?? {
+    topTraders: [],
+    topCreators: [],
+  }
   const { topTraders, topCreators } = props
 
   return (

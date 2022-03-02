@@ -29,8 +29,9 @@ import { useFoldsWithTags } from '../../hooks/use-fold'
 import { listAllAnswers } from '../../lib/firebase/answers'
 import { Answer } from '../../../common/answer'
 import { AnswersPanel } from '../../components/answers/answers-panel'
+import { usePropz } from '../../hooks/use-propz'
 
-export async function getStaticProps(props: {
+export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
 }) {
   const { username, contractSlug } = props.params
@@ -64,7 +65,7 @@ export async function getStaticProps(props: {
   }
 }
 
-export async function getStaticPaths() {
+export async function getStaticPathz() {
   return { paths: [], fallback: 'blocking' }
 }
 
@@ -77,6 +78,16 @@ export default function ContractPage(props: {
   slug: string
   folds: Fold[]
 }) {
+  // @ts-ignore
+  props = usePropz(getStaticPropz, true) ?? {
+    contract: null,
+    username: '',
+    comments: [],
+    answers: [],
+    bets: [],
+    slug: '',
+    folds: [],
+  }
   const user = useUser()
 
   const contract = useContractWithPreload(props.slug, props.contract)

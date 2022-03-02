@@ -20,8 +20,9 @@ import {
   useFindActiveContracts,
 } from '../hooks/use-active-contracts'
 import { useGetRecentBets } from '../hooks/use-bets'
+import { usePropz } from '../hooks/use-propz'
 
-export async function getStaticProps() {
+export async function getStaticPropz() {
   const contractInfo = await getAllContractInfo()
 
   return {
@@ -36,6 +37,11 @@ const Home = (props: {
   recentBets: Bet[]
   recentComments: Comment[]
 }) => {
+  props = usePropz(getStaticPropz) ?? {
+    contracts: [],
+    folds: [],
+    recentComments: [],
+  }
   const { contracts, folds, recentComments } = props
   const user = useUser()
 
