@@ -82,7 +82,8 @@ export function BetsList(props: { user: User }) {
         if (bet.isSold || bet.sale) return 0
 
         const contract = contracts.find((c) => c.id === contractId)
-        return contract ? calculatePayout(contract, bet, 'MKT') : 0
+        const payout = contract ? calculatePayout(contract, bet, 'MKT') : 0
+        return payout - (bet.loanAmount ?? 0)
       })
     }
   )
@@ -137,7 +138,7 @@ export function BetsList(props: { user: User }) {
           <Col>
             <div className="text-sm text-gray-500">Invested</div>
             <div className="text-lg">
-              {formatMoney(currentBetsValue)}{' '}
+              {formatMoney(currentInvestment)}{' '}
               <ProfitBadge profitPercent={investedProfit} />
             </div>
           </Col>
