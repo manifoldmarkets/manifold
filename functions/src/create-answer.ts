@@ -3,10 +3,11 @@ import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
-import { getNewMultiBetInfo } from '../../common/new-bet'
+import { getLoanAmount, getNewMultiBetInfo } from '../../common/new-bet'
 import { Answer } from '../../common/answer'
 import { getContract, getValues } from './utils'
 import { sendNewAnswerEmail } from './emails'
+import { Bet } from '../../common/bet'
 
 export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -55,6 +56,11 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
+      const yourBetsSnap = await transaction.get(
+        contractDoc.collection('bets').where('userId', '==', userId)
+      )
+      const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
+
       const [lastAnswer] = await getValues<Answer>(
         firestore
           .collection(`contracts/${contractId}/answers`)
@@ -92,8 +98,17 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
+      const loanAmount = getLoanAmount(yourBets, amount)
+
       const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
-        getNewMultiBetInfo(user, answerId, amount, contract, newBetDoc.id)
+        getNewMultiBetInfo(
+          user,
+          answerId,
+          amount,
+          loanAmount,
+          contract,
+          newBetDoc.id
+        )
 
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, {

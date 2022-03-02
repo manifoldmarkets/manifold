@@ -7,7 +7,11 @@ import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
-import { getPayouts, getPayoutsMultiOutcome } from '../../common/payouts'
+import {
+  getLoanPayouts,
+  getPayouts,
+  getPayoutsMultiOutcome,
+} from '../../common/payouts'
 import { removeUndefinedProps } from '../../common/util/object'
 
 export const resolveMarket = functions
@@ -99,10 +103,20 @@ export const resolveMarket = functions
           ? getPayoutsMultiOutcome(resolutions, contract, openBets)
           : getPayouts(outcome, contract, openBets, resolutionProbability)
 
+      const loanPayouts = getLoanPayouts(openBets)
+
       console.log('payouts:', payouts)
 
-      const groups = _.groupBy(payouts, (payout) => payout.userId)
+      const groups = _.groupBy(
+        [...payouts, ...loanPayouts],
+        (payout) => payout.userId
+      )
       const userPayouts = _.mapValues(groups, (group) =>
+        _.sumBy(group, (g) => g.payout)
+      )
+
+      const groupsWithoutLoans = _.groupBy(payouts, (payout) => payout.userId)
+      const userPayoutsWithoutLoans = _.mapValues(groupsWithoutLoans, (group) =>
         _.sumBy(group, (g) => g.payout)
       )
 
@@ -116,7 +130,7 @@ export const resolveMarket = functions
 
       await sendResolutionEmails(
         openBets,
-        userPayouts,
+        userPayoutsWithoutLoans,
         creator,
         contract,
         outcome,
