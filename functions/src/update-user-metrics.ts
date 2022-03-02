@@ -52,7 +52,8 @@ const computeInvestmentValue = async (
     if (!contract || contract.isResolved) return 0
     if (bet.sale || bet.isSold) return 0
 
-    return calculatePayout(contract, bet, 'MKT')
+    const payout = calculatePayout(contract, bet, 'MKT')
+    return payout - (bet.loanAmount ?? 0)
   })
 }
 
