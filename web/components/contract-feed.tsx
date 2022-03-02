@@ -136,7 +136,7 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
                 placeholder="Add a comment..."
                 rows={3}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     submitComment()
                   }
                 }}
@@ -181,7 +181,7 @@ function EditContract(props: {
           e.target.setSelectionRange(text.length, text.length)
         }
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && e.ctrlKey) {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             onSave(text)
           }
         }}
