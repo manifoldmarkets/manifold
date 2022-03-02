@@ -3,7 +3,13 @@ import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
-import { getNewBinaryBetInfo, getNewMultiBetInfo } from '../../common/new-bet'
+import {
+  getLoanAmount,
+  getNewBinaryBetInfo,
+  getNewMultiBetInfo,
+} from '../../common/new-bet'
+import { Bet } from '../../common/bet'
+import { getValues } from './utils'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -46,6 +52,11 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
+      const yourBetsSnap = await transaction.get(
+        contractDoc.collection('bets').where('userId', '==', userId)
+      )
+      const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
+
       if (outcomeType === 'FREE_RESPONSE') {
         const answerSnap = await transaction.get(
           contractDoc.collection('answers').doc(outcome)
@@ -58,16 +69,26 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
+      const loanAmount = getLoanAmount(yourBets, amount)
+
       const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
         outcomeType === 'BINARY'
           ? getNewBinaryBetInfo(
               user,
               outcome as 'YES' | 'NO',
               amount,
+              loanAmount,
               contract,
               newBetDoc.id
             )
-          : getNewMultiBetInfo(user, outcome, amount, contract, newBetDoc.id)
+          : getNewMultiBetInfo(
+              user,
+              outcome,
+              amount,
+              loanAmount,
+              contract,
+              newBetDoc.id
+            )
 
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, {
