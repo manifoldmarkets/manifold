@@ -36,7 +36,6 @@ export function getNewContract(
   const contract = removeUndefinedProps({
     id,
     slug,
-    outcomeType,
     ...propsByOutcomeType,
 
     creatorId: creator.id,
