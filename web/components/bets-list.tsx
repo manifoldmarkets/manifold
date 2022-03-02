@@ -136,7 +136,7 @@ export function BetsList(props: { user: User }) {
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
-            <div className="text-sm text-gray-500">Invested value</div>
+            <div className="text-sm text-gray-500">Investment value</div>
             <div className="text-lg">
               {formatMoney(currentBetsValue)}{' '}
               <ProfitBadge profitPercent={investedProfitPercent} />
