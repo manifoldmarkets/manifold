@@ -97,15 +97,15 @@ export function AmountInput(props: {
         </div>
       )}
       {user && (
-        <Col className="text-sm gap-3">
+        <Col className="gap-3 text-sm">
           {contractId && (
             <Row className="items-center justify-between gap-2 text-gray-500">
               <Row className="items-center gap-2">
-                Loan amount{' '}
+                Amount loaned{' '}
                 <InfoTooltip
-                  text={`Up to ${formatMoney(
+                  text={`In every market, you get an interest-free loan on the first ${formatMoney(
                     MAX_LOAN_PER_CONTRACT
-                  )} is automatically borrowed and repaid when the market resolves.`}
+                  )}.`}
                 />
               </Row>
               <span className="text-neutral">{formatMoney(loanAmount)}</span>{' '}
