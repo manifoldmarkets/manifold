@@ -1,8 +1,14 @@
 import { useEffect } from 'gridjs'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
+import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
 
 export default function Custom404() {
+  if (IS_PRIVATE_MANIFOLD) {
+    // Since private Manifolds are client-side rendered, they'll blink the 404
+    // So we just show a blank page here:
+    return <Page></Page>
+  }
   return (
     <Page>
       <div className="flex h-full flex-col items-center justify-center">

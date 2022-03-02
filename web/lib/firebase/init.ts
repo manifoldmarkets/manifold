@@ -34,6 +34,7 @@ const FIREBASE_CONFIGS = {
   },
 }
 const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
+export const IS_PRIVATE_MANIFOLD = !['PROD', 'DEV'].includes(ENV)
 // @ts-ignore
 const firebaseConfig = FIREBASE_CONFIGS[ENV]
 // Initialize Firebase
