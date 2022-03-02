@@ -223,6 +223,10 @@ export const sendNewAnswerEmail = async (
 ) => {
   // Send to just the creator for now.
   const { creatorId: userId } = contract
+
+  // Don't send the creator's own answers.
+  if (answer.userId === userId) return
+
   const privateUser = await getPrivateUser(userId)
   if (
     !privateUser ||
