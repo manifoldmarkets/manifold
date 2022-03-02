@@ -4,7 +4,8 @@ import * as functions from 'firebase-functions'
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
-import { getSellBetInfo } from '../../common/sell-bet'
+import { getCpmmSellBetInfo, getSellBetInfo } from '../../common/sell-bet'
+import { removeUndefinedProps } from '../../common/util/object'
 
 export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -33,7 +34,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
         return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
 
-      const { closeTime } = contract
+      const { closeTime, mechanism } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
@@ -55,7 +56,15 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
         newTotalBets,
         newBalance,
         creatorFee,
-      } = getSellBetInfo(user, bet, contract, newBetDoc.id)
+      } =
+        mechanism === 'dpm-2'
+          ? getSellBetInfo(user, bet, contract, newBetDoc.id)
+          : (getCpmmSellBetInfo(
+              user,
+              bet,
+              contract as any,
+              newBetDoc.id
+            ) as any)
 
       if (contract.creatorId === userId) {
         transaction.update(userDoc, { balance: newBalance + creatorFee })
@@ -74,11 +83,14 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
 
       transaction.update(betDoc, { isSold: true })
       transaction.create(newBetDoc, newBet)
-      transaction.update(contractDoc, {
-        pool: newPool,
-        totalShares: newTotalShares,
-        totalBets: newTotalBets,
-      })
+      transaction.update(
+        contractDoc,
+        removeUndefinedProps({
+          pool: newPool,
+          totalShares: newTotalShares,
+          totalBets: newTotalBets,
+        })
+      )
 
       return { status: 'success' }
     })

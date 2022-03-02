@@ -4,14 +4,60 @@ import {
   getProbability,
   getOutcomeProbability,
 } from './calculate'
-import { Contract } from './contract'
+import { calculateCpmmShares, getCpmmProbability } from './calculate-cpmm'
+import {
+  Binary,
+  CPMM,
+  DPM,
+  FreeResponse,
+  FullContract,
+  Multi,
+} from './contract'
 import { User } from './user'
 
-export const getNewBinaryBetInfo = (
+export const getNewBinaryCpmmBetInfo = (
   user: User,
   outcome: 'YES' | 'NO',
   amount: number,
-  contract: Contract,
+  contract: FullContract<CPMM, Binary>,
+  newBetId: string
+) => {
+  const { pool, k } = contract
+
+  const shares = calculateCpmmShares(pool, k, amount, outcome)
+  const { YES: y, NO: n } = pool
+
+  const [newY, newN] =
+    outcome === 'YES'
+      ? [y - shares + amount, amount]
+      : [amount, n - shares + amount]
+
+  const newBalance = user.balance - amount
+
+  const probBefore = getCpmmProbability(pool)
+  const newPool = { YES: newY, NO: newN }
+  const probAfter = getCpmmProbability(newPool)
+
+  const newBet: Bet = {
+    id: newBetId,
+    userId: user.id,
+    contractId: contract.id,
+    amount,
+    shares,
+    outcome,
+    probBefore,
+    probAfter,
+    createdTime: Date.now(),
+  }
+
+  return { newBet, newPool, newBalance }
+}
+
+export const getNewBinaryDpmBetInfo = (
+  user: User,
+  outcome: 'YES' | 'NO',
+  amount: number,
+  contract: FullContract<DPM, Binary>,
   newBetId: string
 ) => {
   const { YES: yesPool, NO: noPool } = contract.pool
@@ -61,7 +107,7 @@ export const getNewMultiBetInfo = (
   user: User,
   outcome: string,
   amount: number,
-  contract: Contract,
+  contract: FullContract<DPM, Multi | FreeResponse>,
   newBetId: string
 ) => {
   const { pool, totalShares, totalBets } = contract

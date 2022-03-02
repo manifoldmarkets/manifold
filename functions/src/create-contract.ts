@@ -2,12 +2,21 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { chargeUser, getUser } from './utils'
-import { Contract, outcomeType } from '../../common/contract'
+import {
+  Binary,
+  Contract,
+  CPMM,
+  DPM,
+  FreeResponse,
+  FullContract,
+  outcomeType,
+} from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 import { getNewContract } from '../../common/new-contract'
 import {
   getAnteBets,
+  getCpmmAnteBet,
   getFreeAnswerAnte,
   MINIMUM_ANTE,
 } from '../../common/antes'
@@ -89,7 +98,7 @@ export const createContract = functions
       await contractRef.create(contract)
 
       if (ante) {
-        if (outcomeType === 'BINARY') {
+        if (outcomeType === 'BINARY' && contract.mechanism === 'dpm-2') {
           const yesBetDoc = firestore
             .collection(`contracts/${contract.id}/bets`)
             .doc()
@@ -100,23 +109,51 @@ export const createContract = functions
 
           const { yesBet, noBet } = getAnteBets(
             creator,
-            contract,
+            contract as FullContract<DPM, Binary>,
             yesBetDoc.id,
             noBetDoc.id
           )
+
           await yesBetDoc.set(yesBet)
           await noBetDoc.set(noBet)
+        } else if (outcomeType === 'BINARY') {
+          const { YES: y, NO: n } = contract.pool
+          const anteBet = Math.abs(y - n)
+
+          if (anteBet) {
+            const betDoc = firestore
+              .collection(`contracts/${contract.id}/bets`)
+              .doc()
+
+            const outcome = y > n ? 'NO' : 'YES' // more in YES pool if prob leans NO
+
+            const bet = await getCpmmAnteBet(
+              creator,
+              contract as FullContract<CPMM, Binary>,
+              betDoc.id,
+              anteBet,
+              outcome
+            )
+
+            await betDoc.set(bet)
+          }
         } else if (outcomeType === 'FREE_RESPONSE') {
           const noneAnswerDoc = firestore
             .collection(`contracts/${contract.id}/answers`)
             .doc('0')
+
           const noneAnswer = getNoneAnswer(contract.id, creator)
           await noneAnswerDoc.set(noneAnswer)
 
           const anteBetDoc = firestore
             .collection(`contracts/${contract.id}/bets`)
             .doc()
-          const anteBet = getFreeAnswerAnte(creator, contract, anteBetDoc.id)
+
+          const anteBet = getFreeAnswerAnte(
+            creator,
+            contract as FullContract<DPM, FreeResponse>,
+            anteBetDoc.id
+          )
           await anteBetDoc.set(anteBet)
         }
       }

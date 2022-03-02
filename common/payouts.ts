@@ -2,10 +2,21 @@ import * as _ from 'lodash'
 
 import { Bet } from './bet'
 import { deductFees, getProbability } from './calculate'
-import { Contract } from './contract'
+import {
+  Binary,
+  Contract,
+  CPMM,
+  DPM,
+  FreeResponse,
+  FullContract,
+  Multi,
+} from './contract'
 import { CREATOR_FEE, FEES } from './fees'
 
-export const getCancelPayouts = (contract: Contract, bets: Bet[]) => {
+export const getDpmCancelPayouts = (
+  contract: FullContract<DPM, any>,
+  bets: Bet[]
+) => {
   const { pool } = contract
   const poolTotal = _.sum(Object.values(pool))
   console.log('resolved N/A, pool M$', poolTotal)
@@ -18,9 +29,59 @@ export const getCancelPayouts = (contract: Contract, bets: Bet[]) => {
   }))
 }
 
+export const getFixedCancelPayouts = (bets: Bet[]) => {
+  return bets.map((bet) => ({
+    userId: bet.userId,
+    payout: bet.amount,
+  }))
+}
+
+export const getStandardFixedPayouts = (
+  outcome: string,
+  contract: FullContract<CPMM, Binary>,
+  bets: Bet[]
+) => {
+  const winningBets = bets.filter((bet) => bet.outcome === outcome)
+
+  const payouts = winningBets.map(({ userId, amount, shares }) => {
+    const winnings = shares
+    const profit = winnings - amount
+
+    const payout = amount + (1 - FEES) * profit
+    return { userId, profit, payout }
+  })
+
+  const profits = _.sumBy(payouts, (po) => Math.max(0, po.profit))
+  const creatorPayout = CREATOR_FEE * profits
+
+  console.log(
+    'resolved',
+    outcome,
+    'pool',
+    contract.pool,
+    'profits',
+    profits,
+    'creator fee',
+    creatorPayout
+  )
+
+  return payouts
+    .map(({ userId, payout }) => ({ userId, payout }))
+    .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
+    .concat(getLiquidityPoolPayouts(contract, outcome))
+}
+
+export const getLiquidityPoolPayouts = (
+  contract: FullContract<CPMM, Binary>,
+  outcome: string
+) => {
+  const { creatorId, pool } = contract
+  return [{ userId: creatorId, payout: pool[outcome] }]
+}
+
 export const getStandardPayouts = (
   outcome: string,
-  contract: Contract,
+  contract: FullContract<DPM, any>,
   bets: Bet[]
 ) => {
   const winningBets = bets.filter((bet) => bet.outcome === outcome)
@@ -57,7 +118,7 @@ export const getStandardPayouts = (
 }
 
 export const getMktPayouts = (
-  contract: Contract,
+  contract: FullContract<DPM, any>,
   bets: Bet[],
   resolutionProbability?: number
 ) => {
@@ -99,12 +160,71 @@ export const getMktPayouts = (
     .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
 }
 
+export const getMktFixedPayouts = (
+  contract: FullContract<CPMM, Binary>,
+  bets: Bet[],
+  resolutionProbability?: number
+) => {
+  const p =
+    resolutionProbability === undefined
+      ? getProbability(contract.pool)
+      : resolutionProbability
+
+  const payouts = bets.map(({ userId, outcome, amount, shares }) => {
+    const betP = outcome === 'YES' ? p : 1 - p
+    const winnings = betP * shares
+    const profit = winnings - amount
+    const payout = deductFees(amount, winnings)
+    return { userId, profit, payout }
+  })
+
+  const profits = _.sumBy(payouts, (po) => Math.max(0, po.profit))
+  const creatorPayout = CREATOR_FEE * profits
+
+  console.log(
+    'resolved MKT',
+    p,
+    'pool',
+    contract.pool,
+    'profits',
+    profits,
+    'creator fee',
+    creatorPayout
+  )
+
+  return payouts
+    .map(({ userId, payout }) => ({ userId, payout }))
+    .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
+    .concat(getLiquidityPoolProbPayouts(contract, p))
+}
+
+export const getLiquidityPoolProbPayouts = (
+  contract: FullContract<CPMM, Binary>,
+  p: number
+) => {
+  const { creatorId, pool } = contract
+  const payout = p * pool.YES + (1 - p) * pool.NO
+  return [{ userId: creatorId, payout }]
+}
+
 export const getPayouts = (
   outcome: string,
   contract: Contract,
   bets: Bet[],
   resolutionProbability?: number
 ) => {
+  if (contract.mechanism === 'cpmm-1') {
+    switch (outcome) {
+      case 'YES':
+      case 'NO':
+        return getStandardFixedPayouts(outcome, contract as any, bets)
+      case 'MKT':
+        return getMktFixedPayouts(contract as any, bets, resolutionProbability)
+      case 'CANCEL':
+        return getFixedCancelPayouts(bets)
+    }
+  }
+
   switch (outcome) {
     case 'YES':
     case 'NO':
@@ -112,7 +232,7 @@ export const getPayouts = (
     case 'MKT':
       return getMktPayouts(contract, bets, resolutionProbability)
     case 'CANCEL':
-      return getCancelPayouts(contract, bets)
+      return getDpmCancelPayouts(contract, bets)
     default:
       // Multi outcome.
       return getStandardPayouts(outcome, contract, bets)
@@ -121,7 +241,7 @@ export const getPayouts = (
 
 export const getPayoutsMultiOutcome = (
   resolutions: { [outcome: string]: number },
-  contract: Contract,
+  contract: FullContract<DPM, Multi | FreeResponse>,
   bets: Bet[]
 ) => {
   const poolTotal = _.sum(Object.values(contract.pool))

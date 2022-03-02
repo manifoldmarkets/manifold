@@ -1,13 +1,18 @@
 import { Bet } from './bet'
 import { calculateShareValue, deductFees, getProbability } from './calculate'
-import { Contract } from './contract'
+import {
+  calculateCpmmSale,
+  calculateCpmmShareValue,
+  getCpmmProbability,
+} from './calculate-cpmm'
+import { Binary, DPM, CPMM, FullContract } from './contract'
 import { CREATOR_FEE } from './fees'
 import { User } from './user'
 
 export const getSellBetInfo = (
   user: User,
   bet: Bet,
-  contract: Contract,
+  contract: FullContract<DPM, any>,
   newBetId: string
 ) => {
   const { pool, totalShares, totalBets } = contract
@@ -64,6 +69,60 @@ export const getSellBetInfo = (
     newPool,
     newTotalShares,
     newTotalBets,
+    newBalance,
+    creatorFee,
+  }
+}
+
+export const getCpmmSellBetInfo = (
+  user: User,
+  bet: Bet,
+  contract: FullContract<CPMM, Binary>,
+  newBetId: string
+) => {
+  const { pool } = contract
+  const { id: betId, amount, shares, outcome } = bet
+
+  const { saleValue, newPool } = calculateCpmmSale(contract, bet)
+
+  const probBefore = getCpmmProbability(pool)
+  const probAfter = getCpmmProbability(newPool)
+
+  const profit = saleValue - amount
+  const creatorFee = CREATOR_FEE * Math.max(0, profit)
+  const saleAmount = deductFees(amount, profit)
+
+  console.log(
+    'SELL M$',
+    amount,
+    outcome,
+    'for M$',
+    saleAmount,
+    'creator fee: M$',
+    creatorFee
+  )
+
+  const newBet: Bet = {
+    id: newBetId,
+    userId: user.id,
+    contractId: contract.id,
+    amount: -saleValue,
+    shares: -shares,
+    outcome,
+    probBefore,
+    probAfter,
+    createdTime: Date.now(),
+    sale: {
+      amount: saleAmount,
+      betId,
+    },
+  }
+
+  const newBalance = user.balance + saleAmount
+
+  return {
+    newBet,
+    newPool,
     newBalance,
     creatorFee,
   }

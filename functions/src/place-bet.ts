@@ -3,7 +3,12 @@ import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
-import { getNewBinaryBetInfo, getNewMultiBetInfo } from '../../common/new-bet'
+import {
+  getNewBinaryCpmmBetInfo,
+  getNewBinaryDpmBetInfo,
+  getNewMultiBetInfo,
+} from '../../common/new-bet'
+import { removeUndefinedProps } from '../../common/util/object'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -42,7 +47,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
 
-      const { closeTime, outcomeType } = contract
+      const { closeTime, outcomeType, mechanism } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
@@ -60,21 +65,40 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
 
       const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
         outcomeType === 'BINARY'
-          ? getNewBinaryBetInfo(
+          ? mechanism === 'dpm-2'
+            ? getNewBinaryDpmBetInfo(
+                user,
+                outcome as 'YES' | 'NO',
+                amount,
+                contract,
+                newBetDoc.id
+              )
+            : (getNewBinaryCpmmBetInfo(
+                user,
+                outcome as 'YES' | 'NO',
+                amount,
+                contract,
+                newBetDoc.id
+              ) as any)
+          : getNewMultiBetInfo(
               user,
-              outcome as 'YES' | 'NO',
+              outcome,
               amount,
-              contract,
+              contract as any,
               newBetDoc.id
             )
-          : getNewMultiBetInfo(user, outcome, amount, contract, newBetDoc.id)
 
       transaction.create(newBetDoc, newBet)
-      transaction.update(contractDoc, {
-        pool: newPool,
-        totalShares: newTotalShares,
-        totalBets: newTotalBets,
-      })
+
+      transaction.update(
+        contractDoc,
+        removeUndefinedProps({
+          pool: newPool,
+          totalShares: newTotalShares,
+          totalBets: newTotalBets,
+        })
+      )
+
       transaction.update(userDoc, { balance: newBalance })
 
       return { status: 'success', betId: newBetDoc.id }

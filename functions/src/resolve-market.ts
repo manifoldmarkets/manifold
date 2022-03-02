@@ -89,7 +89,7 @@ export const resolveMarket = functions
 
       const payouts =
         outcomeType === 'FREE_RESPONSE' && resolutions
-          ? getPayoutsMultiOutcome(resolutions, contract, openBets)
+          ? getPayoutsMultiOutcome(resolutions, contract as any, openBets)
           : getPayouts(outcome, contract, openBets, resolutionProbability)
 
       console.log('payouts:', payouts)

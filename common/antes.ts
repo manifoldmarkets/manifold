@@ -1,10 +1,49 @@
 import { Bet } from './bet'
 import { getProbability } from './calculate'
-import { Contract } from './contract'
+import { getCpmmProbability } from './calculate-cpmm'
+import { Binary, CPMM, DPM, FreeResponse, FullContract } from './contract'
 import { User } from './user'
 
 export const PHANTOM_ANTE = 0.001
 export const MINIMUM_ANTE = 10
+
+export const calcStartCpmmPool = (initialProbInt: number, ante: number) => {
+  const p = initialProbInt / 100.0
+  const invP = 1.0 / p - 1
+  const otherAnte = ante / invP
+
+  const [poolYes, poolNo] = p >= 0.5 ? [otherAnte, ante] : [ante, otherAnte]
+  const k = poolYes * poolNo
+
+  return { poolYes, poolNo, k }
+}
+
+export function getCpmmAnteBet(
+  creator: User,
+  contract: FullContract<CPMM, Binary>,
+  anteId: string,
+  amount: number,
+  outcome: 'YES' | 'NO'
+) {
+  const p = getCpmmProbability(contract.pool)
+
+  const { createdTime } = contract
+
+  const bet: Bet = {
+    id: anteId,
+    userId: creator.id,
+    contractId: contract.id,
+    amount: amount,
+    shares: amount,
+    outcome,
+    probBefore: p,
+    probAfter: p,
+    createdTime,
+    isAnte: true,
+  }
+
+  return bet
+}
 
 export const calcStartPool = (initialProbInt: number, ante = 0) => {
   const p = initialProbInt / 100.0
@@ -24,7 +63,7 @@ export const calcStartPool = (initialProbInt: number, ante = 0) => {
 
 export function getAnteBets(
   creator: User,
-  contract: Contract,
+  contract: FullContract<DPM, Binary>,
   yesAnteId: string,
   noAnteId: string
 ) {
@@ -64,7 +103,7 @@ export function getAnteBets(
 
 export function getFreeAnswerAnte(
   creator: User,
-  contract: Contract,
+  contract: FullContract<DPM, FreeResponse>,
   anteBetId: string
 ) {
   const { totalBets, totalShares } = contract
