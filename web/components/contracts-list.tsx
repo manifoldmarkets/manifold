@@ -229,11 +229,13 @@ export function SearchableGrid(props: {
     )
   } else if (sort === 'oldest') {
     matches.sort((a, b) => a.createdTime - b.createdTime)
-  } else if (sort === 'close-date') {
+  } else if (sort === 'close-date' || sort === 'closed') {
     matches = _.sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
     matches = _.sortBy(matches, (contract) => contract.closeTime)
-    // Hide contracts that have already closed
-    matches = matches.filter(({ closeTime }) => (closeTime || 0) > Date.now())
+    const hideClosed = sort === 'closed'
+    matches = matches.filter(
+      ({ closeTime }) => closeTime && closeTime > Date.now() !== hideClosed
+    )
   } else if (sort === 'most-traded') {
     matches.sort(
       (a, b) => contractMetrics(b).truePool - contractMetrics(a).truePool
@@ -272,6 +274,7 @@ export function SearchableGrid(props: {
           <option value="most-traded">Most traded</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
+          <option value="closed">Closed</option>
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
 
@@ -289,7 +292,7 @@ export function SearchableGrid(props: {
       ) : (
         <ContractsGrid
           contracts={matches}
-          showCloseTime={sort == 'close-date'}
+          showCloseTime={['close-date', 'closed'].includes(sort)}
         />
       )}
     </div>
