@@ -86,7 +86,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
         <div />
         <Col
           className={clsx(
-            'sm:flex-row gap-4',
+            'sm:flex-row sm:items-end gap-4',
             text ? 'justify-between' : 'self-end'
           )}
         >
@@ -114,7 +114,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
                   </Row>
                 </Row>
 
-                <Row className="justify-between items-start text-sm gap-2">
+                <Row className="justify-between text-sm gap-2">
                   <Row className="flex-nowrap whitespace-nowrap items-center gap-2 text-gray-500">
                     <div>Payout if chosen</div>
                     <InfoTooltip
@@ -136,7 +136,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
           {user ? (
             <button
               className={clsx(
-                'btn self-end mt-2',
+                'btn mt-2',
                 canSubmit ? 'btn-outline' : 'btn-disabled',
                 isSubmitting && 'loading'
               )}
