@@ -115,6 +115,11 @@ export const resolveMarket = functions
         _.sumBy(group, (g) => g.payout)
       )
 
+      const groupsWithoutLoans = _.groupBy(payouts, (payout) => payout.userId)
+      const userPayoutsWithoutLoans = _.mapValues(groupsWithoutLoans, (group) =>
+        _.sumBy(group, (g) => g.payout)
+      )
+
       const payoutPromises = Object.entries(userPayouts).map(
         ([userId, payout]) => payUser(userId, payout)
       )
@@ -125,7 +130,7 @@ export const resolveMarket = functions
 
       await sendResolutionEmails(
         openBets,
-        userPayouts,
+        userPayoutsWithoutLoans,
         creator,
         contract,
         outcome,
