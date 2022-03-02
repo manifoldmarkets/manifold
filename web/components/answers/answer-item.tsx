@@ -97,6 +97,7 @@ export function AnswerItem(props: {
           answer={answer}
           contract={contract}
           closePanel={() => setIsBetting(false)}
+          className="sm:w-72"
         />
       ) : (
         <Row className="items-center justify-end gap-4 self-end sm:self-start">
