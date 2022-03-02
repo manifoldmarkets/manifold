@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 
 import { Fold } from '../../common/fold'
 import { User } from '../../common/user'
@@ -9,7 +9,7 @@ import { Comment, getRecentComments } from '../lib/firebase/comments'
 import { Contract, getActiveContracts } from '../lib/firebase/contracts'
 import { listAllFolds } from '../lib/firebase/folds'
 import { findActiveContracts } from '../pages/activity'
-import { useActiveContracts } from './use-contracts'
+import { useInactiveContracts } from './use-contracts'
 import { useFollowedFolds } from './use-fold'
 import { useUserBetContracts } from './use-user-bets'
 
@@ -28,24 +28,15 @@ export const getAllContractInfo = async () => {
   return { contracts, recentBets, recentComments, folds }
 }
 
-export const useFindActiveContracts = (
-  props: {
-    contracts: Contract[]
-    folds: Fold[]
-    recentBets: Bet[]
-    recentComments: Comment[]
-  },
-  user: User | undefined | null
+export const useFilterYourContracts = (
+  user: User | undefined | null,
+  folds: Fold[],
+  contracts: Contract[]
 ) => {
-  const { recentBets, recentComments } = props
-  const contracts = useActiveContracts() ?? props.contracts
-
   const followedFoldIds = useFollowedFolds(user)
 
   const followedFolds = filterDefined(
-    (followedFoldIds ?? []).map((id) =>
-      props.folds.find((fold) => fold.id === id)
-    )
+    (followedFoldIds ?? []).map((id) => folds.find((fold) => fold.id === id))
   )
 
   // Save the initial followed fold slugs.
@@ -64,20 +55,33 @@ export const useFindActiveContracts = (
     : undefined
 
   // Show no contracts before your info is loaded.
-  let feedContracts: Contract[] = []
+  let yourContracts: Contract[] = []
   if (yourBetContracts && followedFoldIds) {
     // Show all contracts if no folds are followed.
-    if (followedFoldIds.length === 0) feedContracts = contracts
+    if (followedFoldIds.length === 0) yourContracts = contracts
     else
-      feedContracts = contracts.filter(
+      yourContracts = contracts.filter(
         (contract) =>
           contract.lowercaseTags.some((tag) => tagSet.has(tag)) ||
           yourBetContracts.has(contract.id)
       )
   }
 
+  return {
+    yourContracts,
+    initialFollowedFoldSlugs,
+  }
+}
+
+export const useFindActiveContracts = (props: {
+  contracts: Contract[]
+  recentBets: Bet[]
+  recentComments: Comment[]
+}) => {
+  const { contracts, recentBets, recentComments } = props
+
   const activeContracts = findActiveContracts(
-    feedContracts,
+    contracts,
     recentComments,
     recentBets
   )
@@ -101,6 +105,24 @@ export const useFindActiveContracts = (
     activeContracts,
     activeBets,
     activeComments,
-    initialFollowedFoldSlugs,
   }
+}
+
+export const useExploreContracts = (maxContracts = 75) => {
+  const inactiveContracts = useInactiveContracts()
+
+  const contractsDict = _.fromPairs(
+    (inactiveContracts ?? []).map((c) => [c.id, c])
+  )
+
+  // Preserve random ordering once inactiveContracts loaded.
+  const exploreContractIds = useMemo(
+    () => _.shuffle(Object.keys(contractsDict)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [!!inactiveContracts]
+  ).slice(0, maxContracts)
+
+  if (!inactiveContracts) return undefined
+
+  return filterDefined(exploreContractIds.map((id) => contractsDict[id]))
 }

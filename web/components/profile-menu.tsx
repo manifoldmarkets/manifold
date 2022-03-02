@@ -55,6 +55,10 @@ function getNavigationOptions(
       href: '/trades',
     },
     {
+      name: 'Add funds',
+      href: '/add-funds',
+    },
+    {
       name: 'Leaderboards',
       href: '/leaderboards',
     },

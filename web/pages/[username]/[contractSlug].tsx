@@ -188,12 +188,8 @@ function BetsSection(props: {
   return (
     <div>
       <Title className="px-2" text="Your trades" />
-      {isBinary && (
-        <>
-          <MyBetsSummary className="px-2" contract={contract} bets={userBets} />
-          <Spacer h={6} />
-        </>
-      )}
+      <MyBetsSummary className="px-2" contract={contract} bets={userBets} />
+      <Spacer h={6} />
       <ContractBetsTable contract={contract} bets={userBets} />
       <Spacer h={12} />
     </div>

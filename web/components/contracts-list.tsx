@@ -205,9 +205,11 @@ export function SearchableGrid(props: {
 }) {
   const { contracts, query, setQuery, sort, setSort, byOneCreator } = props
 
+  const queryWords = query.toLowerCase().split(' ')
   function check(corpus: String) {
-    return corpus.toLowerCase().includes(query.toLowerCase())
+    return queryWords.every((word) => corpus.toLowerCase().includes(word))
   }
+
   let matches = contracts.filter(
     (c) =>
       check(c.question) ||

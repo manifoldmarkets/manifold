@@ -19,11 +19,11 @@ export default function AddFundsPage() {
       <SEO title="Add funds" description="Add funds" url="/add-funds" />
 
       <Col className="items-center">
-        <Col>
-          <Title text="Get Manifold Dollars" />
+        <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
+          <Title className="!mt-0" text="Get Manifold Dollars" />
           <img
-            className="mt-6 block"
-            src="/praying-mantis-light.svg"
+            className="mb-6 block -scale-x-100 self-center"
+            src="/stylized-crane-black.png"
             width={200}
             height={200}
           />
@@ -50,7 +50,7 @@ export default function AddFundsPage() {
           <form
             action={checkoutURL(user?.id || '', amountSelected)}
             method="POST"
-            className="mt-12"
+            className="mt-8"
           >
             <button
               type="submit"

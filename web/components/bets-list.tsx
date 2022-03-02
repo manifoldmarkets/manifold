@@ -157,8 +157,8 @@ export function BetsList(props: { user: User }) {
         >
           <option value="value">By value</option>
           <option value="profit">By profit</option>
-          <option value="newest">Newest</option>
-          <option value="settled">Settled</option>
+          <option value="newest">Most recent</option>
+          <option value="settled">Resolved</option>
         </select>
       </Col>
 
@@ -358,22 +358,26 @@ export function MyBetsSummary(props: {
                   {formatMoney(expectation)}
                 </div>
               </Col> */}
-              <Col>
-                <div className="whitespace-nowrap text-sm text-gray-500">
-                  Payout if <YesLabel />
-                </div>
-                <div className="whitespace-nowrap">
-                  {formatMoney(yesWinnings)}
-                </div>
-              </Col>
-              <Col>
-                <div className="whitespace-nowrap text-sm text-gray-500">
-                  Payout if <NoLabel />
-                </div>
-                <div className="whitespace-nowrap">
-                  {formatMoney(noWinnings)}
-                </div>
-              </Col>
+              {isBinary && (
+                <>
+                  <Col>
+                    <div className="whitespace-nowrap text-sm text-gray-500">
+                      Payout if <YesLabel />
+                    </div>
+                    <div className="whitespace-nowrap">
+                      {formatMoney(yesWinnings)}
+                    </div>
+                  </Col>
+                  <Col>
+                    <div className="whitespace-nowrap text-sm text-gray-500">
+                      Payout if <NoLabel />
+                    </div>
+                    <div className="whitespace-nowrap">
+                      {formatMoney(noWinnings)}
+                    </div>
+                  </Col>
+                </>
+              )}
               <Col>
                 <div className="whitespace-nowrap text-sm text-gray-500">
                   {isBinary ? (
@@ -418,9 +422,10 @@ export function ContractBetsTable(props: {
         <thead>
           <tr className="p-2">
             <th></th>
-            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             <th>Outcome</th>
             <th>Amount</th>
+            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
+            {!isResolved && <th>Payout if chosen</th>}
             <th>Probability</th>
             <th>Shares</th>
             <th>Date</th>
@@ -471,6 +476,11 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     )
   )
 
+  const payoutIfChosenDisplay =
+    bet.outcome === '0' && bet.isAnte
+      ? 'N/A'
+      : formatMoney(calculatePayout(contract, bet, bet.outcome))
+
   return (
     <tr>
       <td className="text-neutral">
@@ -478,11 +488,12 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
           <SellButton contract={contract} bet={bet} />
         )}
       </td>
-      <td>{saleDisplay}</td>
       <td>
         <OutcomeLabel outcome={outcome} />
       </td>
       <td>{formatMoney(amount)}</td>
+      <td>{saleDisplay}</td>
+      {!isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
@@ -499,6 +510,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   }, [])
 
   const { contract, bet } = props
+  const isBinary = contract.outcomeType === 'BINARY'
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const initialProb = getOutcomeProbability(
@@ -537,8 +549,9 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
       </div>
 
       <div className="mt-2 mb-1 text-sm text-gray-500">
-        Implied probability: {formatPercent(initialProb)} →{' '}
-        {formatPercent(outcomeProb)}
+        ({isBinary ? 'Updated' : <OutcomeLabel outcome={bet.outcome} />}{' '}
+        probability: {formatPercent(initialProb)} → {formatPercent(outcomeProb)}
+        )
       </div>
     </ConfirmationButton>
   )

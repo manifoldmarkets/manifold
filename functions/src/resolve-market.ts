@@ -8,6 +8,7 @@ import { Bet } from '../../common/bet'
 import { getUser, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
 import { getPayouts, getPayoutsMultiOutcome } from '../../common/payouts'
+import { removeUndefinedProps } from '../../common/util/object'
 
 export const resolveMarket = functions
   .runWith({ minInstances: 1 })
@@ -31,7 +32,7 @@ export const resolveMarket = functions
       if (!contractSnap.exists)
         return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
-      const { creatorId, outcomeType } = contract
+      const { creatorId, outcomeType, closeTime } = contract
 
       if (outcomeType === 'BINARY') {
         if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
@@ -68,15 +69,21 @@ export const resolveMarket = functions
       const resolutionProbability =
         probabilityInt !== undefined ? probabilityInt / 100 : undefined
 
-      await contractDoc.update({
-        isResolved: true,
-        resolution: outcome,
-        resolutionTime: Date.now(),
-        ...(resolutionProbability === undefined
-          ? {}
-          : { resolutionProbability }),
-        ...(resolutions === undefined ? {} : { resolutions }),
-      })
+      const resolutionTime = Date.now()
+      const newCloseTime = closeTime
+        ? Math.min(closeTime, resolutionTime)
+        : closeTime
+
+      await contractDoc.update(
+        removeUndefinedProps({
+          isResolved: true,
+          resolution: outcome,
+          resolutionTime,
+          closeTime: newCloseTime,
+          resolutionProbability,
+          resolutions,
+        })
+      )
 
       console.log('contract ', contractId, 'resolved to:', outcome)
 
