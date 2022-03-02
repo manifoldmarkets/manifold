@@ -1,15 +1,20 @@
 import clsx from 'clsx'
+import _ from 'lodash'
 import { useUser } from '../hooks/use-user'
 import { formatMoney } from '../../common/util/format'
-import { AddFundsButton } from './add-funds-button'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
+import { useUserContractBets } from '../hooks/use-user-bets'
+import { MAX_LOAN_PER_CONTRACT } from '../../common/bet'
+import { InfoTooltip } from './info-tooltip'
+import { Spacer } from './layout/spacer'
 
 export function AmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
   error: string | undefined
   setError: (error: string | undefined) => void
+  contractId: string | undefined
   minimumAmount?: number
   disabled?: boolean
   className?: string
@@ -22,6 +27,7 @@ export function AmountInput(props: {
     onChange,
     error,
     setError,
+    contractId,
     disabled,
     className,
     inputClassName,
@@ -31,10 +37,23 @@ export function AmountInput(props: {
 
   const user = useUser()
 
+  const userBets = useUserContractBets(user?.id, contractId) ?? []
+  const prevLoanAmount = _.sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+
+  const loanAmount = Math.min(
+    amount ?? 0,
+    MAX_LOAN_PER_CONTRACT - prevLoanAmount
+  )
+
   const onAmountChange = (str: string) => {
+    if (str.includes('-')) {
+      onChange(undefined)
+      return
+    }
     const amount = parseInt(str.replace(/[^\d]/, ''))
 
     if (str && isNaN(amount)) return
+    if (amount >= 10 ** 9) return
 
     onChange(str ? amount : undefined)
 
@@ -47,7 +66,8 @@ export function AmountInput(props: {
     }
   }
 
-  const remainingBalance = Math.max(0, (user?.balance ?? 0) - (amount ?? 0))
+  const amountNetLoan = (amount ?? 0) - loanAmount
+  const remainingBalance = Math.max(0, (user?.balance ?? 0) - amountNetLoan)
 
   return (
     <Col className={className}>
@@ -68,19 +88,34 @@ export function AmountInput(props: {
           onChange={(e) => onAmountChange(e.target.value)}
         />
       </label>
+
+      <Spacer h={4} />
+
       {error && (
-        <div className="mr-auto mt-4 self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
           {error}
         </div>
       )}
       {user && (
-        <Col className="mt-3 text-sm">
-          <div className="mb-2 whitespace-nowrap text-gray-500">
-            Remaining balance
-          </div>
-          <Row className="gap-4">
-            <div>{formatMoney(Math.floor(remainingBalance))}</div>
-            {user.balance !== 1000 && <AddFundsButton />}
+        <Col className="text-sm gap-3">
+          {contractId && (
+            <Row className="items-center justify-between gap-2 text-gray-500">
+              <Row className="items-center gap-2">
+                Loan amount{' '}
+                <InfoTooltip
+                  text={`Up to ${formatMoney(
+                    MAX_LOAN_PER_CONTRACT
+                  )} is automatically borrowed and repaid when the market resolves.`}
+                />
+              </Row>
+              <span className="text-neutral">{formatMoney(loanAmount)}</span>{' '}
+            </Row>
+          )}
+          <Row className="items-center justify-between gap-2 text-gray-500">
+            Remaining balance{' '}
+            <span className="text-neutral">
+              {formatMoney(remainingBalance)}
+            </span>
           </Row>
         </Col>
       )}

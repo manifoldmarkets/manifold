@@ -74,6 +74,21 @@ export function listenForUserBets(
   })
 }
 
+export function listenForUserContractBets(
+  userId: string,
+  contractId: string,
+  setBets: (bets: Bet[]) => void
+) {
+  const betsQuery = query(
+    collection(db, 'contracts', contractId, 'bets'),
+    where('userId', '==', userId)
+  )
+  return listenForValues<Bet>(betsQuery, (bets) => {
+    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
+    setBets(bets)
+  })
+}
+
 export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
   const { createdTime } = contract
 

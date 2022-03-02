@@ -101,27 +101,35 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
                   setError={setAmountError}
                   minimumAmount={1}
                   disabled={isSubmitting}
+                  contractId={contract.id}
                 />
               </Col>
-              <Col className="gap-2 mt-1">
-                <div className="text-sm text-gray-500">Implied probability</div>
-                <Row>
-                  <div>{formatPercent(0)}</div>
-                  <div className="mx-2">→</div>
-                  <div>{formatPercent(resultProb)}</div>
+              <Col className="gap-3">
+                <Row className="justify-between items-center text-sm">
+                  <div className="text-gray-500">Probability</div>
+                  <Row>
+                    <div>{formatPercent(0)}</div>
+                    <div className="mx-2">→</div>
+                    <div>{formatPercent(resultProb)}</div>
+                  </Row>
                 </Row>
-                <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
-                  Payout if chosen
-                  <InfoTooltip
-                    text={`Current payout for ${formatWithCommas(
-                      shares
-                    )} / ${formatWithCommas(shares)} shares`}
-                  />
+
+                <Row className="justify-between items-start text-sm gap-2">
+                  <Row className="flex-nowrap whitespace-nowrap items-center gap-2 text-gray-500">
+                    <div>Payout if chosen</div>
+                    <InfoTooltip
+                      text={`Current payout for ${formatWithCommas(
+                        shares
+                      )} / ${formatWithCommas(shares)} shares`}
+                    />
+                  </Row>
+                  <Row className="flex-wrap justify-end items-end gap-2">
+                    <span className="whitespace-nowrap">
+                      {formatMoney(currentPayout)}
+                    </span>
+                    <span>(+{currentReturnPercent})</span>
+                  </Row>
                 </Row>
-                <div>
-                  {formatMoney(currentPayout)}
-                  &nbsp; <span>(+{currentReturnPercent})</span>
-                </div>
               </Col>
             </>
           )}

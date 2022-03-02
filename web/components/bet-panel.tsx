@@ -144,7 +144,6 @@ export function BetPanel(props: {
         text={panelTitle}
       />
 
-      {/* <div className="mt-2 mb-1 text-sm text-gray-500">Outcome</div> */}
       <YesNoSelector
         className="mb-4"
         selected={betChoice}
@@ -160,45 +159,49 @@ export function BetPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
+        contractId={contract.id}
       />
 
-      <Spacer h={4} />
+      <Col className="gap-3 mt-3 w-64">
+        <Row className="justify-between items-center text-sm">
+          <div className="text-gray-500">Probability</div>
+          <Row>
+            <div>{formatPercent(initialProb)}</div>
+            <div className="mx-2">→</div>
+            <div>{formatPercent(resultProb)}</div>
+          </Row>
+        </Row>
 
-      <div className="mt-2 mb-1 text-sm text-gray-500">Implied probability</div>
-      <Row>
-        <div>{formatPercent(initialProb)}</div>
-        <div className="mx-2">→</div>
-        <div>{formatPercent(resultProb)}</div>
-      </Row>
-
-      {betChoice && (
-        <>
-          <Spacer h={4} />
-          <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
-            Payout if <OutcomeLabel outcome={betChoice} />
+        <Row className="justify-between items-start text-sm gap-2">
+          <Row className="flex-nowrap whitespace-nowrap items-center gap-2 text-gray-500">
+            <div>
+              Payout if <OutcomeLabel outcome={betChoice ?? 'YES'} />
+            </div>
             <InfoTooltip
               text={`Current payout for ${formatWithCommas(
                 shares
               )} / ${formatWithCommas(
                 shares +
-                  totalShares[betChoice] -
-                  (phantomShares ? phantomShares[betChoice] : 0)
+                  totalShares[betChoice ?? 'YES'] -
+                  (phantomShares ? phantomShares[betChoice ?? 'YES'] : 0)
               )} ${betChoice} shares`}
             />
           </Row>
-          <div>
-            {formatMoney(currentPayout)}
-            &nbsp; <span>(+{currentReturnPercent})</span>
-          </div>
-        </>
-      )}
+          <Row className="flex-wrap justify-end items-end gap-2">
+            <span className="whitespace-nowrap">
+              {formatMoney(currentPayout)}
+            </span>
+            <span>(+{currentReturnPercent})</span>
+          </Row>
+        </Row>
+      </Col>
 
-      <Spacer h={6} />
+      <Spacer h={8} />
 
       {user && (
         <button
           className={clsx(
-            'btn',
+            'btn flex-1',
             betDisabled
               ? 'btn-disabled'
               : betChoice === 'YES'
@@ -213,7 +216,7 @@ export function BetPanel(props: {
       )}
       {user === null && (
         <button
-          className="btn mt-4 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
+          className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
           onClick={firebaseLogin}
         >
           Sign in to trade!
