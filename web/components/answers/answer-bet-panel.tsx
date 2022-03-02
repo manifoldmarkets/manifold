@@ -30,8 +30,9 @@ export function AnswerBetPanel(props: {
   answer: Answer
   contract: Contract
   closePanel: () => void
+  className?: string
 }) {
-  const { answer, contract, closePanel } = props
+  const { answer, contract, closePanel, className } = props
   const { id: answerId } = answer
 
   const user = useUser()
@@ -97,7 +98,7 @@ export function AnswerBetPanel(props: {
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
   return (
-    <Col className="items-start px-2 pb-2 pt-4 sm:pt-0">
+    <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
       <Row className="self-stretch items-center justify-between">
         <div className="text-xl">Buy this answer</div>
 
@@ -116,7 +117,7 @@ export function AnswerBetPanel(props: {
         inputRef={inputRef}
         contractId={contract.id}
       />
-      <Col className="gap-3 mt-3 w-64">
+      <Col className="gap-3 mt-3 w-full">
         <Row className="justify-between items-center text-sm">
           <div className="text-gray-500">Probability</div>
           <Row>

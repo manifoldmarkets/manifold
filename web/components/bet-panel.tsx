@@ -162,7 +162,7 @@ export function BetPanel(props: {
         contractId={contract.id}
       />
 
-      <Col className="gap-3 mt-3 w-64">
+      <Col className="gap-3 mt-3 w-full">
         <Row className="justify-between items-center text-sm">
           <div className="text-gray-500">Probability</div>
           <Row>
