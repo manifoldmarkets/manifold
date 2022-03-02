@@ -114,7 +114,7 @@ export function AmountInput(props: {
           <Row className="items-center justify-between gap-2 text-gray-500">
             Remaining balance{' '}
             <span className="text-neutral">
-              {formatMoney(remainingBalance)}
+              {formatMoney(Math.floor(remainingBalance))}
             </span>
           </Row>
         </Col>
