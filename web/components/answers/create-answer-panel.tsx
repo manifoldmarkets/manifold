@@ -36,6 +36,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
   const submitAnswer = async () => {
     if (canSubmit) {
       setIsSubmitting(true)
+
       const result = await createAnswer({
         contractId: contract.id,
         text,
@@ -48,7 +49,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
         setText('')
         setBetAmount(10)
         setAmountError(undefined)
-      }
+      } else setAmountError(result.message)
     }
   }
 
