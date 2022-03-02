@@ -20,24 +20,7 @@ export function ManifoldLogo(props: {
           width={45}
           height={45}
         />
-        <div
-          className={clsx(
-            'font-major-mono mt-1 text-lg lowercase sm:hidden',
-            darkBackground && 'text-white'
-          )}
-        >
-          Manifold
-          <br />
-          Markets
-        </div>
-        <div
-          className={clsx(
-            'font-major-mono mt-1 hidden lowercase sm:flex sm:text-2xl md:whitespace-nowrap',
-            darkBackground && 'text-white'
-          )}
-        >
-          Manifold Markets
-        </div>
+        <img src={'/theoremone/TheoremOne-Logo.svg'} width={245} height={45} />
       </a>
     </Link>
   )

@@ -4,7 +4,7 @@ export default function Document() {
   return (
     <Html data-theme="mantic" className="min-h-screen">
       <Head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/theoremone/logo.ico" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
