@@ -538,7 +538,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
         className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
         label: 'Sell',
       }}
-      submitBtn={{ className: 'btn-primary' }}
+      submitBtn={{ className: 'btn-primary', label: 'Sell' }}
       onSubmit={async () => {
         setIsSubmitting(true)
         await sellBet({ contractId: contract.id, betId: bet.id })
@@ -546,22 +546,19 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
       }}
     >
       <div className="mb-4 text-2xl">
-        Sell <OutcomeLabel outcome={bet.outcome} />
-      </div>
-      <div>
-        Do you want to sell {formatWithCommas(shares)} shares of{' '}
+        Sell {formatWithCommas(shares)} shares of{' '}
         <OutcomeLabel outcome={outcome} /> for {formatMoney(saleAmount)}?
       </div>
       {!!loanAmount && (
         <div className="mt-2">
-          You will also pay back {formatMoney(loanAmount)} of your loan for a
+          You will also pay back {formatMoney(loanAmount)} of your loan, for a
           net of {formatMoney(saleAmount - loanAmount)}.
         </div>
       )}
 
       <div className="mt-2 mb-1 text-sm">
-        (Updated probability: {formatPercent(initialProb)} →{' '}
-        {formatPercent(outcomeProb)})
+        Market probability: {formatPercent(initialProb)} →{' '}
+        {formatPercent(outcomeProb)}
       </div>
     </ConfirmationButton>
   )
