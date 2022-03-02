@@ -78,11 +78,6 @@ export function BetPanel(props: {
   async function submitBet() {
     if (!user || !betAmount) return
 
-    if (user.balance < betAmount) {
-      setError('Insufficient balance')
-      return
-    }
-
     setError(undefined)
     setIsSubmitting(true)
 
