@@ -57,7 +57,12 @@ export function AmountInput(props: {
 
     onChange(str ? amount : undefined)
 
-    if (user && user.balance < amount) {
+    const loanAmount = contractIdForLoan
+      ? Math.min(amount, MAX_LOAN_PER_CONTRACT - prevLoanAmount)
+      : 0
+    const amountNetLoan = amount - loanAmount
+
+    if (user && user.balance < amountNetLoan) {
       setError('Insufficient balance')
     } else if (minimumAmount && amount < minimumAmount) {
       setError('Minimum amount: ' + formatMoney(minimumAmount))
