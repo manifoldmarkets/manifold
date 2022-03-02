@@ -127,8 +127,8 @@ export function BetsList(props: { user: User }) {
   const totalPortfolio = currentBetsValue + user.balance
 
   const totalPnl = totalPortfolio - user.totalDeposits
-  const totalProfit = (totalPnl / user.totalDeposits) * 100
-  const investedProfit =
+  const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
+  const investedProfitPercent =
     ((currentBetsValue - currentInvestment) / currentInvestment) * 100
 
   return (
@@ -136,17 +136,17 @@ export function BetsList(props: { user: User }) {
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
-            <div className="text-sm text-gray-500">Invested</div>
+            <div className="text-sm text-gray-500">Invested value</div>
             <div className="text-lg">
-              {formatMoney(currentInvestment)}{' '}
-              <ProfitBadge profitPercent={investedProfit} />
+              {formatMoney(currentBetsValue)}{' '}
+              <ProfitBadge profitPercent={investedProfitPercent} />
             </div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">Total portfolio</div>
+            <div className="text-sm text-gray-500">Total profit</div>
             <div className="text-lg">
-              {formatMoney(totalPortfolio)}{' '}
-              <ProfitBadge profitPercent={totalProfit} />
+              {formatMoney(totalPnl)}{' '}
+              <ProfitBadge profitPercent={totalProfitPercent} />
             </div>
           </Col>
         </Row>
