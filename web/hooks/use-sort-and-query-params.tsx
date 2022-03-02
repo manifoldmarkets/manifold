@@ -10,6 +10,7 @@ export type Sort =
   | 'most-traded'
   | '24-hour-vol'
   | 'close-date'
+  | 'closed'
   | 'resolved'
   | 'all'
 
