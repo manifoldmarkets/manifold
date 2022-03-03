@@ -6,7 +6,7 @@ initAdmin('stephenDev')
 
 import { Contract } from '../../../common/contract'
 import { Bet } from '../../../common/bet'
-import { calculateShares, getProbability } from '../../../common/calculate'
+import { calculateShares, getProbability } from '../../../common/calculate-dpm'
 import { getSellBetInfo } from '../../../common/sell-bet'
 import { User } from '../../../common/user'
 

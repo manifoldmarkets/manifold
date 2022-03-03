@@ -6,7 +6,7 @@ import { getValues } from './utils'
 import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import { User } from '../../common/user'
-import { calculatePayout } from '../../common/calculate'
+import { calculatePayout } from '../../common/calculate-dpm'
 
 const firestore = admin.firestore()
 

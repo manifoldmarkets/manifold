@@ -5,7 +5,7 @@ import { initAdmin } from './script-init'
 initAdmin('stephen')
 
 import { Bet } from '../../../common/bet'
-import { getProbability } from '../../../common/calculate'
+import { getProbability } from '../../../common/calculate-dpm'
 import { Contract } from '../../../common/contract'
 
 type DocRef = admin.firestore.DocumentReference

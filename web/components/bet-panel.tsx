@@ -18,7 +18,7 @@ import {
   calculateShares,
   getProbabilityAfterBet,
   calculatePayoutAfterCorrectBet,
-} from '../../common/calculate'
+} from '../../common/calculate-dpm'
 import { firebaseLogin } from '../lib/firebase/users'
 import { Bet } from '../../common/bet'
 import { placeBet } from '../lib/firebase/api-call'

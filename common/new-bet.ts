@@ -4,7 +4,7 @@ import {
   calculateShares,
   getProbability,
   getOutcomeProbability,
-} from './calculate'
+} from './calculate-dpm'
 import { calculateCpmmShares, getCpmmProbability } from './calculate-cpmm'
 import {
   Binary,

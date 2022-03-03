@@ -1,7 +1,7 @@
 import _ = require('lodash')
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
-import { getProbability } from '../../common/calculate'
+import { getProbability } from '../../common/calculate-dpm'
 import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
 import { CREATOR_FEE } from '../../common/fees'

@@ -29,7 +29,7 @@ import {
   getProbability,
   getProbabilityAfterSale,
   resolvedPayout,
-} from '../../common/calculate'
+} from '../../common/calculate-dpm'
 import { sellBet } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'

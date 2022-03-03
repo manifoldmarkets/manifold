@@ -1,5 +1,5 @@
 import { Bet } from './bet'
-import { getProbability } from './calculate'
+import { getProbability } from './calculate-dpm'
 import { getCpmmProbability } from './calculate-cpmm'
 import { Binary, CPMM, DPM, FreeResponse, FullContract } from './contract'
 import { User } from './user'

@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 
 import { Bet } from './bet'
-import { deductFees, getProbability } from './calculate'
+import { deductFees, getProbability } from './calculate-dpm'
 import {
   Binary,
   Contract,

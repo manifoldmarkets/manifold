@@ -1,5 +1,5 @@
 import { Bet } from '../../../../common/bet'
-import { getProbability } from '../../../../common/calculate'
+import { getProbability } from '../../../../common/calculate-dpm'
 import { Comment } from '../../../../common/comment'
 import { Contract } from '../../../../common/contract'
 

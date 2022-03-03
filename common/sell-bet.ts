@@ -1,5 +1,9 @@
 import { Bet } from './bet'
-import { calculateShareValue, deductFees, getProbability } from './calculate'
+import {
+  calculateShareValue,
+  deductFees,
+  getProbability,
+} from './calculate-dpm'
 import {
   calculateCpmmSale,
   calculateCpmmShareValue,

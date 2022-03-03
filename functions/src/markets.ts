@@ -4,7 +4,7 @@ import * as _ from 'lodash'
 
 import { getValues } from './utils'
 import { Contract } from '../../common/contract'
-import { getProbability } from '../../common/calculate'
+import { getProbability } from '../../common/calculate-dpm'
 
 const cache = { lastUpdated: 0, data: '' }
 

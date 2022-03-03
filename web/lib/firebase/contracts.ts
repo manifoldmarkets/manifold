@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { app } from './init'
 import { getValues, listenForValue, listenForValues } from './utils'
 import { Binary, Contract, FullContract } from '../../../common/contract'
-import { getProbability } from '../../../common/calculate'
+import { getProbability } from '../../../common/calculate-dpm'
 import { createRNG, shuffle } from '../../../common/util/random'
 import { getCpmmProbability } from '../../../common/calculate-cpmm'
 export type { Contract }

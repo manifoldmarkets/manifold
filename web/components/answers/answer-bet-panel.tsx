@@ -22,7 +22,7 @@ import {
   getOutcomeProbability,
   calculateShares,
   calculatePayoutAfterCorrectBet,
-} from '../../../common/calculate'
+} from '../../../common/calculate-dpm'
 import { firebaseLogin } from '../../lib/firebase/users'
 import { Bet } from '../../../common/bet'
 
