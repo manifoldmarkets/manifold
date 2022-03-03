@@ -8,13 +8,14 @@ export function getCpmmProbability(pool: { [outcome: string]: number }) {
   return NO / (YES + NO)
 }
 
-export function getCpmmProbabilityAfterBet(
+export function getCpmmOutcomeProbabilityAfterBet(
   contract: FullContract<CPMM, Binary>,
   outcome: string,
   bet: number
 ) {
   const { newPool } = calculateCpmmPurchase(contract, bet, outcome)
-  return getCpmmProbability(newPool)
+  const p = getCpmmProbability(newPool)
+  return outcome === 'NO' ? 1 - p : p
 }
 
 export function calculateCpmmShares(

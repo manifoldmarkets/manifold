@@ -19,7 +19,7 @@ export function getDpmOutcomeProbability(
   return shares ** 2 / squareSum
 }
 
-export function getDpmProbabilityAfterBet(
+export function getDpmOutcomeProbabilityAfterBet(
   totalShares: {
     [outcome: string]: number
   },

@@ -23,7 +23,7 @@ import {
   calculatePayoutAfterCorrectBet,
   calculateShares,
   getProbability,
-  getProbabilityAfterBet,
+  getOutcomeProbabilityAfterBet,
 } from '../../common/calculate'
 import { useFocus } from '../hooks/use-focus'
 
@@ -99,7 +99,7 @@ export function BetPanel(props: {
 
   const initialProb = getProbability(contract)
 
-  const outcomeProb = getProbabilityAfterBet(
+  const outcomeProb = getOutcomeProbabilityAfterBet(
     contract,
     betChoice || 'YES',
     betAmount ?? 0

@@ -3,7 +3,7 @@ import {
   calculateCpmmShares,
   calculateCpmmShareValue,
   getCpmmProbability,
-  getCpmmProbabilityAfterBet,
+  getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbabilityAfterSale,
 } from './calculate-cpmm'
 import {
@@ -13,7 +13,7 @@ import {
   calculateDpmShares,
   getDpmOutcomeProbability,
   getDpmProbability,
-  getDpmProbabilityAfterBet,
+  getDpmOutcomeProbabilityAfterBet,
   getDpmProbabilityAfterSale,
 } from './calculate-dpm'
 import {
@@ -42,18 +42,18 @@ export function getOutcomeProbability(contract: Contract, outcome: string) {
     : getDpmOutcomeProbability(contract.totalShares, outcome)
 }
 
-export function getProbabilityAfterBet(
+export function getOutcomeProbabilityAfterBet(
   contract: Contract,
   outcome: string,
   bet: number
 ) {
   return contract.mechanism === 'cpmm-1'
-    ? getCpmmProbabilityAfterBet(
+    ? getCpmmOutcomeProbabilityAfterBet(
         contract as FullContract<CPMM, Binary>,
         outcome,
         bet
       )
-    : getDpmProbabilityAfterBet(contract.totalShares, outcome, bet)
+    : getDpmOutcomeProbabilityAfterBet(contract.totalShares, outcome, bet)
 }
 
 export function calculateShares(
