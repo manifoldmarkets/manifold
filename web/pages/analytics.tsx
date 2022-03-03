@@ -2,9 +2,11 @@ import dayjs from 'dayjs'
 import _ from 'lodash'
 import { DailyCountChart } from '../components/analytics/charts'
 import { Col } from '../components/layout/col'
+import { Spacer } from '../components/layout/spacer'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { getDailyBets } from '../lib/firebase/bets'
+import { getDailyComments } from '../lib/firebase/comments'
 import { getDailyContracts } from '../lib/firebase/contracts'
 
 export async function getStaticProps() {
@@ -12,22 +14,34 @@ export async function getStaticProps() {
   const today = dayjs(dayjs().format('YYYY-MM-DD'))
   const startDate = today.subtract(numberOfDays, 'day')
 
-  const dailyBets = await getDailyBets(startDate.valueOf(), numberOfDays)
-  const dailyBetCounts = dailyBets.map((bets) => bets.length)
+  const [dailyBets, dailyContracts, dailyComments] = await Promise.all([
+    getDailyBets(startDate.valueOf(), numberOfDays),
+    getDailyContracts(startDate.valueOf(), numberOfDays),
+    getDailyComments(startDate.valueOf(), numberOfDays),
+  ])
 
-  const dailyContracts = await getDailyContracts(
-    startDate.valueOf(),
-    numberOfDays
-  )
+  const dailyBetCounts = dailyBets.map((bets) => bets.length)
   const dailyContractCounts = dailyContracts.map(
     (contracts) => contracts.length
+  )
+  const dailyCommentCounts = dailyComments.map((comments) => comments.length)
+
+  const dailyActiveUsers = _.zip(dailyContracts, dailyBets, dailyComments).map(
+    ([contracts, bets, comments]) => {
+      const creatorIds = (contracts ?? []).map((c) => c.creatorId)
+      const betUserIds = (bets ?? []).map((bet) => bet.userId)
+      const commentUserIds = (comments ?? []).map((comment) => comment.userId)
+      return _.uniq([...creatorIds, ...betUserIds, commentUserIds]).length
+    }
   )
 
   return {
     props: {
       startDate: startDate.valueOf(),
+      dailyActiveUsers,
       dailyBetCounts,
       dailyContractCounts,
+      dailyCommentCounts,
     },
     revalidate: 12 * 60 * 60, // regenerate after half a day
   }
@@ -35,12 +49,15 @@ export async function getStaticProps() {
 
 export default function Analytics(props: {
   startDate: number
+  dailyActiveUsers: number[]
   dailyBetCounts: number[]
   dailyContractCounts: number[]
+  dailyCommentCounts: number[]
 }) {
   return (
     <Page>
       <CustomAnalytics {...props} />
+      <Spacer h={8} />
       <FirebaseAnalytics />
     </Page>
   )
@@ -48,19 +65,42 @@ export default function Analytics(props: {
 
 function CustomAnalytics(props: {
   startDate: number
+  dailyActiveUsers: number[]
   dailyBetCounts: number[]
   dailyContractCounts: number[]
+  dailyCommentCounts: number[]
 }) {
-  const { startDate, dailyBetCounts, dailyContractCounts } = props
+  const {
+    startDate,
+    dailyActiveUsers,
+    dailyBetCounts,
+    dailyContractCounts,
+    dailyCommentCounts,
+  } = props
   return (
-    <Col className="mb-8">
+    <Col>
+      <Title text="Active users" />
+      <DailyCountChart dailyCounts={dailyActiveUsers} startDate={startDate} />
+
       <Title text="Bets count" />
-      <DailyCountChart dailyCounts={dailyBetCounts} startDate={startDate} />
+      <DailyCountChart
+        dailyCounts={dailyBetCounts}
+        startDate={startDate}
+        small
+      />
 
       <Title text="Markets count" />
       <DailyCountChart
         dailyCounts={dailyContractCounts}
         startDate={startDate}
+        small
+      />
+
+      <Title text="Comments count" />
+      <DailyCountChart
+        dailyCounts={dailyCommentCounts}
+        startDate={startDate}
+        small
       />
     </Col>
   )

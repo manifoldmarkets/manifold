@@ -7,6 +7,7 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore'
+import _ from 'lodash'
 
 import { getValues, listenForValues } from './utils'
 import { db } from './init'
@@ -88,4 +89,31 @@ export function listenForRecentComments(
   setComments: (comments: Comment[]) => void
 ) {
   return listenForValues<Comment>(recentCommentsQuery, setComments)
+}
+
+const getCommentsQuery = (startTime: number, endTime: number) =>
+  query(
+    collectionGroup(db, 'comments'),
+    where('createdTime', '>=', startTime),
+    where('createdTime', '<', endTime),
+    orderBy('createdTime', 'asc')
+  )
+
+export async function getDailyComments(
+  startTime: number,
+  numberOfDays: number
+) {
+  const query = getCommentsQuery(
+    startTime,
+    startTime + DAY_IN_MS * numberOfDays
+  )
+  const comments = await getValues<Comment>(query)
+
+  const commentsByDay = _.range(0, numberOfDays).map(() => [] as Comment[])
+  for (const comment of comments) {
+    const dayIndex = Math.floor((comment.createdTime - startTime) / DAY_IN_MS)
+    commentsByDay[dayIndex].push(comment)
+  }
+
+  return commentsByDay
 }
