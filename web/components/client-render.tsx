@@ -9,5 +9,5 @@ export function ClientRender(props: { children: React.ReactNode }) {
     setMounted(true)
   }, [])
 
-  return mounted ? children : null
+  return mounted ? <>{children}</> : null
 }
