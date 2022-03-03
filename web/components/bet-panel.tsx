@@ -14,10 +14,10 @@ import {
 } from '../../common/util/format'
 import { Title } from './title'
 import {
-  getProbability,
-  calculateShares,
-  getProbabilityAfterBet,
-  calculatePayoutAfterCorrectBet,
+  getDpmProbability,
+  calculateDpmShares,
+  getDpmProbabilityAfterBet,
+  calculateDpmPayoutAfterCorrectBet,
 } from '../../common/calculate-dpm'
 import { firebaseLogin } from '../lib/firebase/users'
 import { Bet } from '../../common/bet'
@@ -107,23 +107,23 @@ export function BetPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getProbability(contract.totalShares)
+  const initialProb = getDpmProbability(contract.totalShares)
 
-  const outcomeProb = getProbabilityAfterBet(
+  const outcomeProb = getDpmProbabilityAfterBet(
     contract.totalShares,
     betChoice || 'YES',
     betAmount ?? 0
   )
   const resultProb = betChoice === 'NO' ? 1 - outcomeProb : outcomeProb
 
-  const shares = calculateShares(
+  const shares = calculateDpmShares(
     contract.totalShares,
     betAmount ?? 0,
     betChoice || 'YES'
   )
 
   const currentPayout = betAmount
-    ? calculatePayoutAfterCorrectBet(contract, {
+    ? calculateDpmPayoutAfterCorrectBet(contract, {
         outcome: betChoice,
         amount: betAmount,
         shares,

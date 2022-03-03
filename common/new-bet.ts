@@ -1,9 +1,9 @@
 import * as _ from 'lodash'
 import { Bet, MAX_LOAN_PER_CONTRACT } from './bet'
 import {
-  calculateShares,
-  getProbability,
-  getOutcomeProbability,
+  calculateDpmShares,
+  getDpmProbability,
+  getDpmOutcomeProbability,
 } from './calculate-dpm'
 import { calculateCpmmShares, getCpmmProbability } from './calculate-cpmm'
 import {
@@ -71,7 +71,7 @@ export const getNewBinaryDpmBetInfo = (
       ? { YES: yesPool + amount, NO: noPool }
       : { YES: yesPool, NO: noPool + amount }
 
-  const shares = calculateShares(contract.totalShares, amount, outcome)
+  const shares = calculateDpmShares(contract.totalShares, amount, outcome)
 
   const { YES: yesShares, NO: noShares } = contract.totalShares
 
@@ -87,8 +87,8 @@ export const getNewBinaryDpmBetInfo = (
       ? { YES: yesBets + amount, NO: noBets }
       : { YES: yesBets, NO: noBets + amount }
 
-  const probBefore = getProbability(contract.totalShares)
-  const probAfter = getProbability(newTotalShares)
+  const probBefore = getDpmProbability(contract.totalShares)
+  const probAfter = getDpmProbability(newTotalShares)
 
   const newBet: Bet = {
     id: newBetId,
@@ -121,7 +121,7 @@ export const getNewMultiBetInfo = (
   const prevOutcomePool = pool[outcome] ?? 0
   const newPool = { ...pool, [outcome]: prevOutcomePool + amount }
 
-  const shares = calculateShares(contract.totalShares, amount, outcome)
+  const shares = calculateDpmShares(contract.totalShares, amount, outcome)
 
   const prevShares = totalShares[outcome] ?? 0
   const newTotalShares = { ...totalShares, [outcome]: prevShares + shares }
@@ -129,8 +129,8 @@ export const getNewMultiBetInfo = (
   const prevTotalBets = totalBets[outcome] ?? 0
   const newTotalBets = { ...totalBets, [outcome]: prevTotalBets + amount }
 
-  const probBefore = getOutcomeProbability(totalShares, outcome)
-  const probAfter = getOutcomeProbability(newTotalShares, outcome)
+  const probBefore = getDpmOutcomeProbability(totalShares, outcome)
+  const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
 
   const newBet: Bet = {
     id: newBetId,

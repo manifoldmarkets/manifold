@@ -6,7 +6,10 @@ initAdmin('stephenDev')
 
 import { Contract } from '../../../common/contract'
 import { Bet } from '../../../common/bet'
-import { calculateShares, getProbability } from '../../../common/calculate-dpm'
+import {
+  calculateDpmShares,
+  getDpmProbability,
+} from '../../../common/calculate-dpm'
 import { getSellBetInfo } from '../../../common/sell-bet'
 import { User } from '../../../common/user'
 
@@ -126,7 +129,7 @@ async function recalculateContract(
         continue
       }
 
-      const shares = calculateShares(totalShares, bet.amount, bet.outcome)
+      const shares = calculateDpmShares(totalShares, bet.amount, bet.outcome)
       const probBefore = p
       const ind = bet.outcome === 'YES' ? 1 : 0
 
@@ -145,7 +148,7 @@ async function recalculateContract(
         NO: totalBets.NO + (1 - ind) * bet.amount,
       }
 
-      p = getProbability(totalShares)
+      p = getDpmProbability(totalShares)
 
       const probAfter = p
 

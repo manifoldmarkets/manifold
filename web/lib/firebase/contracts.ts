@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { app } from './init'
 import { getValues, listenForValue, listenForValues } from './utils'
 import { Binary, Contract, FullContract } from '../../../common/contract'
-import { getProbability } from '../../../common/calculate-dpm'
+import { getDpmProbability } from '../../../common/calculate-dpm'
 import { createRNG, shuffle } from '../../../common/util/random'
 import { getCpmmProbability } from '../../../common/calculate-cpmm'
 export type { Contract }
@@ -47,7 +47,7 @@ export function getBinaryProbPercent(contract: FullContract<any, Binary>) {
   const prob =
     resolutionProbability ?? mechanism === 'cpmm-1'
       ? getCpmmProbability(pool)
-      : getProbability(totalShares)
+      : getDpmProbability(totalShares)
 
   const probPercent = Math.round(prob * 100) + '%'
   return probPercent

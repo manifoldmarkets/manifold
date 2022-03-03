@@ -4,7 +4,7 @@ import * as _ from 'lodash'
 
 import { getValues } from './utils'
 import { Contract } from '../../common/contract'
-import { getProbability } from '../../common/calculate-dpm'
+import { getDpmProbability } from '../../common/calculate-dpm'
 
 const cache = { lastUpdated: 0, data: '' }
 
@@ -50,7 +50,7 @@ const getContractInfo = ({
     description,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
     pool: pool.YES + pool.NO,
-    probability: getProbability(totalShares),
+    probability: getDpmProbability(totalShares),
     volume7Days,
     volume24Hours,
     isResolved,

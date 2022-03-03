@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
-import { getProbability } from '../../common/calculate-dpm'
+import { getDpmProbability } from '../../common/calculate-dpm'
 import { parseWordsAsTags } from '../../common/util/parse'
 import { AmountInput } from '../components/amount-input'
 import { InfoTooltip } from '../components/info-tooltip'
@@ -26,7 +26,7 @@ type Prediction = {
 }
 
 function toPrediction(contract: Contract): Prediction {
-  const startProb = getProbability(contract.totalShares)
+  const startProb = getDpmProbability(contract.totalShares)
   return {
     question: contract.question,
     description: contract.description,

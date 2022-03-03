@@ -1,7 +1,7 @@
 import _ = require('lodash')
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
-import { getProbability } from '../../common/calculate-dpm'
+import { getDpmProbability } from '../../common/calculate-dpm'
 import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
 import { CREATOR_FEE } from '../../common/fees'
@@ -59,7 +59,7 @@ export const sendMarketResolutionEmail = async (
   const user = await getUser(userId)
   if (!user) return
 
-  const prob = resolutionProbability ?? getProbability(contract.totalShares)
+  const prob = resolutionProbability ?? getDpmProbability(contract.totalShares)
 
   const outcome = toDisplayResolution(resolution, prob, resolutions)
 

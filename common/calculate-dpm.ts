@@ -3,12 +3,12 @@ import { Bet } from './bet'
 import { Binary, DPM, FullContract } from './contract'
 import { FEES } from './fees'
 
-export function getProbability(totalShares: { [outcome: string]: number }) {
+export function getDpmProbability(totalShares: { [outcome: string]: number }) {
   // For binary contracts only.
-  return getOutcomeProbability(totalShares, 'YES')
+  return getDpmOutcomeProbability(totalShares, 'YES')
 }
 
-export function getOutcomeProbability(
+export function getDpmOutcomeProbability(
   totalShares: {
     [outcome: string]: number
   },
@@ -19,22 +19,22 @@ export function getOutcomeProbability(
   return shares ** 2 / squareSum
 }
 
-export function getProbabilityAfterBet(
+export function getDpmProbabilityAfterBet(
   totalShares: {
     [outcome: string]: number
   },
   outcome: string,
   bet: number
 ) {
-  const shares = calculateShares(totalShares, bet, outcome)
+  const shares = calculateDpmShares(totalShares, bet, outcome)
 
   const prevShares = totalShares[outcome] ?? 0
   const newTotalShares = { ...totalShares, [outcome]: prevShares + shares }
 
-  return getOutcomeProbability(newTotalShares, outcome)
+  return getDpmOutcomeProbability(newTotalShares, outcome)
 }
 
-export function getProbabilityAfterSale(
+export function getDpmProbabilityAfterSale(
   totalShares: {
     [outcome: string]: number
   },
@@ -45,10 +45,10 @@ export function getProbabilityAfterSale(
   const newTotalShares = { ...totalShares, [outcome]: prevShares - shares }
 
   const predictionOutcome = outcome === 'NO' ? 'YES' : outcome
-  return getOutcomeProbability(newTotalShares, predictionOutcome)
+  return getDpmOutcomeProbability(newTotalShares, predictionOutcome)
 }
 
-export function calculateShares(
+export function calculateDpmShares(
   totalShares: {
     [outcome: string]: number
   },
@@ -63,7 +63,7 @@ export function calculateShares(
   return Math.sqrt(bet ** 2 + shares ** 2 + c) - shares
 }
 
-export function calculateRawShareValue(
+export function calculateDpmRawShareValue(
   totalShares: {
     [outcome: string]: number
   },
@@ -85,7 +85,7 @@ export function calculateRawShareValue(
   return currentValue - postSaleValue
 }
 
-export function calculateMoneyRatio(
+export function calculateDpmMoneyRatio(
   contract: FullContract<DPM, any>,
   bet: Bet,
   shareValue: number
@@ -93,7 +93,7 @@ export function calculateMoneyRatio(
   const { totalShares, totalBets, pool } = contract
   const { outcome, amount } = bet
 
-  const p = getOutcomeProbability(totalShares, outcome)
+  const p = getDpmOutcomeProbability(totalShares, outcome)
 
   const actual = _.sum(Object.values(pool)) - shareValue
 
@@ -103,7 +103,7 @@ export function calculateMoneyRatio(
     _.sumBy(
       Object.keys(totalBets),
       (outcome) =>
-        getOutcomeProbability(totalShares, outcome) *
+        getDpmOutcomeProbability(totalShares, outcome) *
         (totalBets as { [outcome: string]: number })[outcome]
     ) - betAmount
 
@@ -112,42 +112,42 @@ export function calculateMoneyRatio(
   return actual / expected
 }
 
-export function calculateShareValue(
+export function calculateDpmShareValue(
   contract: FullContract<DPM, any>,
   bet: Bet
 ) {
   const { pool, totalShares } = contract
   const { shares, outcome } = bet
 
-  const shareValue = calculateRawShareValue(totalShares, shares, outcome)
-  const f = calculateMoneyRatio(contract, bet, shareValue)
+  const shareValue = calculateDpmRawShareValue(totalShares, shares, outcome)
+  const f = calculateDpmMoneyRatio(contract, bet, shareValue)
 
   const myPool = pool[outcome]
   const adjShareValue = Math.min(Math.min(1, f) * shareValue, myPool)
   return adjShareValue
 }
 
-export function calculateSaleAmount(
+export function calculateDpmSaleAmount(
   contract: FullContract<DPM, any>,
   bet: Bet
 ) {
   const { amount } = bet
-  const winnings = calculateShareValue(contract, bet)
-  return deductFees(amount, winnings)
+  const winnings = calculateDpmShareValue(contract, bet)
+  return deductDpmFees(amount, winnings)
 }
 
-export function calculatePayout(
+export function calculateDpmPayout(
   contract: FullContract<DPM, any>,
   bet: Bet,
   outcome: string
 ) {
-  if (outcome === 'CANCEL') return calculateCancelPayout(contract, bet)
-  if (outcome === 'MKT') return calculateMktPayout(contract, bet)
+  if (outcome === 'CANCEL') return calculateDpmCancelPayout(contract, bet)
+  if (outcome === 'MKT') return calculateMktDpmPayout(contract, bet)
 
-  return calculateStandardPayout(contract, bet, outcome)
+  return calculateStandardDpmPayout(contract, bet, outcome)
 }
 
-export function calculateCancelPayout(
+export function calculateDpmCancelPayout(
   contract: FullContract<DPM, any>,
   bet: Bet
 ) {
@@ -158,7 +158,7 @@ export function calculateCancelPayout(
   return (bet.amount / betTotal) * poolTotal
 }
 
-export function calculateStandardPayout(
+export function calculateStandardDpmPayout(
   contract: FullContract<DPM, any>,
   bet: Bet,
   outcome: string
@@ -179,7 +179,7 @@ export function calculateStandardPayout(
   return amount + (1 - FEES) * Math.max(0, winnings - amount)
 }
 
-export function calculatePayoutAfterCorrectBet(
+export function calculateDpmPayoutAfterCorrectBet(
   contract: FullContract<DPM, any>,
   bet: Bet
 ) {
@@ -206,12 +206,12 @@ export function calculatePayoutAfterCorrectBet(
     },
   }
 
-  return calculateStandardPayout(newContract, bet, outcome)
+  return calculateStandardDpmPayout(newContract, bet, outcome)
 }
 
-function calculateMktPayout(contract: FullContract<DPM, any>, bet: Bet) {
+function calculateMktDpmPayout(contract: FullContract<DPM, any>, bet: Bet) {
   if (contract.outcomeType === 'BINARY')
-    return calculateBinaryMktPayout(contract, bet)
+    return calculateBinaryMktDpmPayout(contract, bet)
 
   const { totalShares, pool } = contract
 
@@ -230,13 +230,13 @@ function calculateMktPayout(contract: FullContract<DPM, any>, bet: Bet) {
 
   const { outcome, amount, shares } = bet
 
-  const betP = getOutcomeProbability(totalShares, outcome)
+  const betP = getDpmOutcomeProbability(totalShares, outcome)
   const winnings = ((betP * shares) / weightedShareTotal) * totalPool
 
-  return deductFees(amount, winnings)
+  return deductDpmFees(amount, winnings)
 }
 
-function calculateBinaryMktPayout(
+function calculateBinaryMktDpmPayout(
   contract: FullContract<DPM, Binary>,
   bet: Bet
 ) {
@@ -244,7 +244,7 @@ function calculateBinaryMktPayout(
   const p =
     resolutionProbability !== undefined
       ? resolutionProbability
-      : getProbability(totalShares)
+      : getDpmProbability(totalShares)
 
   const pool = contract.pool.YES + contract.pool.NO
 
@@ -257,16 +257,16 @@ function calculateBinaryMktPayout(
   const betP = outcome === 'YES' ? p : 1 - p
   const winnings = ((betP * shares) / weightedShareTotal) * pool
 
-  return deductFees(amount, winnings)
+  return deductDpmFees(amount, winnings)
 }
 
-export function resolvedPayout(contract: FullContract<DPM, any>, bet: Bet) {
+export function resolvedDpmPayout(contract: FullContract<DPM, any>, bet: Bet) {
   if (contract.resolution)
-    return calculatePayout(contract, bet, contract.resolution)
+    return calculateDpmPayout(contract, bet, contract.resolution)
   throw new Error('Contract was not resolved')
 }
 
-export const deductFees = (betAmount: number, winnings: number) => {
+export const deductDpmFees = (betAmount: number, winnings: number) => {
   return winnings > betAmount
     ? betAmount + (1 - FEES) * (winnings - betAmount)
     : winnings

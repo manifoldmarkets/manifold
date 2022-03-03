@@ -2,7 +2,7 @@ import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
 import { Bet } from '../../common/bet'
-import { getProbability } from '../../common/calculate-dpm'
+import { getDpmProbability } from '../../common/calculate-dpm'
 import { useBetsWithoutAntes } from '../hooks/use-bets'
 import { useWindowSize } from '../hooks/use-window-size'
 import { Contract } from '../lib/firebase/contracts'
@@ -13,7 +13,7 @@ export function ContractProbGraph(props: { contract: Contract; bets: Bet[] }) {
 
   const bets = useBetsWithoutAntes(contract, props.bets)
 
-  const startProb = getProbability(
+  const startProb = getDpmProbability(
     phantomShares as { [outcome: string]: number }
   )
 

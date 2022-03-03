@@ -1,5 +1,5 @@
 import { Bet } from './bet'
-import { getProbability } from './calculate-dpm'
+import { getDpmProbability } from './calculate-dpm'
 import { getCpmmProbability } from './calculate-cpmm'
 import { Binary, CPMM, DPM, FreeResponse, FullContract } from './contract'
 import { User } from './user'
@@ -67,7 +67,7 @@ export function getAnteBets(
   yesAnteId: string,
   noAnteId: string
 ) {
-  const p = getProbability(contract.totalShares)
+  const p = getDpmProbability(contract.totalShares)
   const ante = contract.totalBets.YES + contract.totalBets.NO
 
   const { createdTime } = contract

@@ -10,7 +10,7 @@ import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { resolveMarket } from '../lib/firebase/api-call'
 import { ProbabilitySelector } from './probability-selector'
-import { getProbability } from '../../common/calculate-dpm'
+import { getDpmProbability } from '../../common/calculate-dpm'
 import { CREATOR_FEE } from '../../common/fees'
 
 export function ResolutionPanel(props: {
@@ -29,7 +29,9 @@ export function ResolutionPanel(props: {
     'YES' | 'NO' | 'MKT' | 'CANCEL' | undefined
   >()
 
-  const [prob, setProb] = useState(getProbability(contract.totalShares) * 100)
+  const [prob, setProb] = useState(
+    getDpmProbability(contract.totalShares) * 100
+  )
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)

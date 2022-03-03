@@ -6,7 +6,7 @@ import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { Col } from '../layout/col'
 import { formatPercent } from '../../../common/util/format'
 import { useUser } from '../../hooks/use-user'
-import { getOutcomeProbability } from '../../../common/calculate-dpm'
+import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
 import { useAnswers } from '../../hooks/use-answers'
 import { tradingAllowed } from '../../lib/firebase/contracts'
 import { AnswerItem } from './answer-item'
@@ -34,7 +34,7 @@ export function AnswersPanel(props: {
     ),
     ..._.sortBy(
       otherAnswers,
-      (answer) => -1 * getOutcomeProbability(contract.totalShares, answer.id)
+      (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
     ),
   ]
 
@@ -102,7 +102,7 @@ export function AnswersPanel(props: {
       ) : (
         <div className="text-gray-500 self-end p-4">
           None of the above:{' '}
-          {formatPercent(getOutcomeProbability(contract.totalShares, '0'))}
+          {formatPercent(getDpmOutcomeProbability(contract.totalShares, '0'))}
         </div>
       )}
 

@@ -1,8 +1,8 @@
 import { Bet } from './bet'
 import {
-  calculateShareValue,
-  deductFees,
-  getProbability,
+  getDpmProbability,
+  calculateDpmShareValue,
+  deductDpmFees,
 } from './calculate-dpm'
 import {
   calculateCpmmSale,
@@ -22,7 +22,7 @@ export const getSellBetInfo = (
   const { pool, totalShares, totalBets } = contract
   const { id: betId, amount, shares, outcome, loanAmount } = bet
 
-  const adjShareValue = calculateShareValue(contract, bet)
+  const adjShareValue = calculateDpmShareValue(contract, bet)
 
   const newPool = { ...pool, [outcome]: pool[outcome] - adjShareValue }
 
@@ -33,12 +33,12 @@ export const getSellBetInfo = (
 
   const newTotalBets = { ...totalBets, [outcome]: totalBets[outcome] - amount }
 
-  const probBefore = getProbability(totalShares)
-  const probAfter = getProbability(newTotalShares)
+  const probBefore = getDpmProbability(totalShares)
+  const probAfter = getDpmProbability(newTotalShares)
 
   const profit = adjShareValue - amount
   const creatorFee = CREATOR_FEE * Math.max(0, profit)
-  const saleAmount = deductFees(amount, adjShareValue)
+  const saleAmount = deductDpmFees(amount, adjShareValue)
 
   console.log(
     'SELL M$',
@@ -94,7 +94,7 @@ export const getCpmmSellBetInfo = (
 
   const profit = saleValue - amount
   const creatorFee = CREATOR_FEE * Math.max(0, profit)
-  const saleAmount = deductFees(amount, profit)
+  const saleAmount = deductDpmFees(amount, profit)
 
   console.log(
     'SELL M$',

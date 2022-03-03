@@ -6,7 +6,7 @@ import { getValues } from './utils'
 import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import { User } from '../../common/user'
-import { calculatePayout } from '../../common/calculate-dpm'
+import { calculateDpmPayout } from '../../common/calculate-dpm'
 
 const firestore = admin.firestore()
 
@@ -52,7 +52,7 @@ const computeInvestmentValue = async (
     if (!contract || contract.isResolved) return 0
     if (bet.sale || bet.isSold) return 0
 
-    const payout = calculatePayout(contract, bet, 'MKT')
+    const payout = calculateDpmPayout(contract, bet, 'MKT')
     return payout - (bet.loanAmount ?? 0)
   })
 }

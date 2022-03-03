@@ -5,7 +5,7 @@ import { initAdmin } from './script-init'
 initAdmin('stephen')
 
 import { Bet } from '../../../common/bet'
-import { getProbability } from '../../../common/calculate-dpm'
+import { getDpmProbability } from '../../../common/calculate-dpm'
 import { Contract } from '../../../common/contract'
 
 type DocRef = admin.firestore.DocumentReference
@@ -19,7 +19,7 @@ async function migrateContract(contractRef: DocRef, contract: Contract) {
 
   const lastBet = _.sortBy(bets, (bet) => -bet.createdTime)[0]
   if (lastBet) {
-    const probAfter = getProbability(contract.totalShares)
+    const probAfter = getDpmProbability(contract.totalShares)
 
     await firestore
       .doc(`contracts/${contract.id}/bets/${lastBet.id}`)

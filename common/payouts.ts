@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 
 import { Bet } from './bet'
-import { deductFees, getProbability } from './calculate-dpm'
+import { deductDpmFees, getDpmProbability } from './calculate-dpm'
 import {
   Binary,
   Contract,
@@ -124,7 +124,7 @@ export const getMktPayouts = (
 ) => {
   const p =
     resolutionProbability === undefined
-      ? getProbability(contract.totalShares)
+      ? getDpmProbability(contract.totalShares)
       : resolutionProbability
 
   const weightedShareTotal = _.sumBy(bets, (b) =>
@@ -137,7 +137,7 @@ export const getMktPayouts = (
     const betP = outcome === 'YES' ? p : 1 - p
     const winnings = ((betP * shares) / weightedShareTotal) * pool
     const profit = winnings - amount
-    const payout = deductFees(amount, winnings)
+    const payout = deductDpmFees(amount, winnings)
     return { userId, profit, payout }
   })
 
@@ -167,14 +167,14 @@ export const getMktFixedPayouts = (
 ) => {
   const p =
     resolutionProbability === undefined
-      ? getProbability(contract.pool)
+      ? getDpmProbability(contract.pool)
       : resolutionProbability
 
   const payouts = bets.map(({ userId, outcome, amount, shares }) => {
     const betP = outcome === 'YES' ? p : 1 - p
     const winnings = betP * shares
     const profit = winnings - amount
-    const payout = deductFees(amount, winnings)
+    const payout = deductDpmFees(amount, winnings)
     return { userId, profit, payout }
   })
 
