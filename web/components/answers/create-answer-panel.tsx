@@ -3,12 +3,7 @@ import _ from 'lodash'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
-import {
-  Contract,
-  DPM,
-  FreeResponse,
-  FullContract,
-} from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { AmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { createAnswer } from '../../lib/firebase/api-call'
@@ -21,9 +16,9 @@ import {
 import { InfoTooltip } from '../info-tooltip'
 import { useUser } from '../../hooks/use-user'
 import {
-  getDpmProbabilityAfterBet,
   calculateDpmShares,
   calculateDpmPayoutAfterCorrectBet,
+  getDpmOutcomeProbabilityAfterBet,
 } from '../../../common/calculate-dpm'
 import { firebaseLogin } from '../../lib/firebase/users'
 import { Bet } from '../../../common/bet'
@@ -59,7 +54,7 @@ export function CreateAnswerPanel(props: {
     }
   }
 
-  const resultProb = getDpmProbabilityAfterBet(
+  const resultProb = getDpmOutcomeProbabilityAfterBet(
     contract.totalShares,
     'new',
     betAmount ?? 0

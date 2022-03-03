@@ -18,10 +18,10 @@ import {
 import { InfoTooltip } from '../info-tooltip'
 import { useUser } from '../../hooks/use-user'
 import {
-  getDpmProbabilityAfterBet,
   getDpmOutcomeProbability,
   calculateDpmShares,
   calculateDpmPayoutAfterCorrectBet,
+  getDpmOutcomeProbabilityAfterBet,
 } from '../../../common/calculate-dpm'
 import { firebaseLogin } from '../../lib/firebase/users'
 import { Bet } from '../../../common/bet'
@@ -78,7 +78,7 @@ export function AnswerBetPanel(props: {
 
   const initialProb = getDpmOutcomeProbability(contract.totalShares, answer.id)
 
-  const resultProb = getDpmProbabilityAfterBet(
+  const resultProb = getDpmOutcomeProbabilityAfterBet(
     contract.totalShares,
     answerId,
     betAmount ?? 0
