@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 
-import { Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Title } from './title'
 import { User } from '../lib/firebase/users'
@@ -10,12 +9,13 @@ import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { resolveMarket } from '../lib/firebase/api-call'
 import { ProbabilitySelector } from './probability-selector'
-import { getDpmProbability } from '../../common/calculate-dpm'
 import { CREATOR_FEE } from '../../common/fees'
+import { getProbability } from '../../common/calculate'
+import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 
 export function ResolutionPanel(props: {
   creator: User
-  contract: Contract
+  contract: FullContract<DPM | CPMM, Binary>
   className?: string
 }) {
   useEffect(() => {
@@ -29,9 +29,7 @@ export function ResolutionPanel(props: {
     'YES' | 'NO' | 'MKT' | 'CANCEL' | undefined
   >()
 
-  const [prob, setProb] = useState(
-    getDpmProbability(contract.totalShares) * 100
-  )
+  const [prob, setProb] = useState(getProbability(contract) * 100)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)

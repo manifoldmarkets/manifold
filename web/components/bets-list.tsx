@@ -25,9 +25,6 @@ import { UserLink } from './user-page'
 import {
   calculateDpmPayout,
   calculateDpmSaleAmount,
-  getDpmOutcomeProbability,
-  getDpmProbability,
-  getDpmProbabilityAfterSale,
   resolvedDpmPayout,
 } from '../../common/calculate-dpm'
 import { sellBet } from '../lib/firebase/api-call'
@@ -36,6 +33,11 @@ import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from '../../common/util/array'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
+import {
+  getOutcomeProbability,
+  getProbability,
+  getProbabilityAfterSale,
+} from '../../common/calculate'
 
 type BetSort = 'newest' | 'profit' | 'settled' | 'value'
 
@@ -385,7 +387,7 @@ export function MyBetsSummary(props: {
                     <>
                       Payout at{' '}
                       <span className="text-blue-400">
-                        {formatPercent(getDpmProbability(contract.totalShares))}
+                        {formatPercent(getProbability(contract))}
                       </span>
                     </>
                   ) : (
@@ -519,16 +521,12 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const initialProb = getDpmOutcomeProbability(
-    contract.totalShares,
+  const initialProb = getOutcomeProbability(
+    contract,
     outcome === 'NO' ? 'YES' : outcome
   )
 
-  const outcomeProb = getDpmProbabilityAfterSale(
-    contract.totalShares,
-    outcome,
-    shares
-  )
+  const outcomeProb = getProbabilityAfterSale(contract, outcome, shares)
 
   const saleAmount = calculateDpmSaleAmount(contract, bet)
 

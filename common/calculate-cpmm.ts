@@ -88,6 +88,14 @@ export function calculateCpmmSale(
   return { saleValue, newPool }
 }
 
+export function getCpmmProbabilityAfterSale(
+  contract: FullContract<CPMM, Binary>,
+  bet: Bet
+) {
+  const { newPool } = calculateCpmmSale(contract, bet)
+  return getCpmmProbability(newPool)
+}
+
 export function calculateFixedPayout(
   contract: FullContract<CPMM, Binary>,
   bet: Bet,

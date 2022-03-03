@@ -2,20 +2,21 @@ import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
 import { Bet } from '../../common/bet'
-import { getDpmProbability } from '../../common/calculate-dpm'
+import { getInitialProbability } from '../../common/calculate'
+import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 import { useBetsWithoutAntes } from '../hooks/use-bets'
 import { useWindowSize } from '../hooks/use-window-size'
-import { Contract } from '../lib/firebase/contracts'
 
-export function ContractProbGraph(props: { contract: Contract; bets: Bet[] }) {
+export function ContractProbGraph(props: {
+  contract: FullContract<DPM | CPMM, Binary>
+  bets: Bet[]
+}) {
   const { contract } = props
-  const { phantomShares, resolutionTime, closeTime } = contract
+  const { resolutionTime, closeTime } = contract
 
   const bets = useBetsWithoutAntes(contract, props.bets)
 
-  const startProb = getDpmProbability(
-    phantomShares as { [outcome: string]: number }
-  )
+  const startProb = getInitialProbability(contract)
 
   const times = bets
     ? [contract.createdTime, ...bets.map((bet) => bet.createdTime)].map(

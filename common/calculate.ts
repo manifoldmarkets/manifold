@@ -3,6 +3,7 @@ import {
   calculateCpmmShares,
   getCpmmProbability,
   getCpmmProbabilityAfterBet,
+  getCpmmProbabilityAfterSale,
 } from './calculate-cpmm'
 import {
   calculateDpmPayoutAfterCorrectBet,
@@ -10,6 +11,7 @@ import {
   getDpmOutcomeProbability,
   getDpmProbability,
   getDpmProbabilityAfterBet,
+  getDpmProbabilityAfterSale,
 } from './calculate-dpm'
 import { Binary, Contract, CPMM, DPM, FullContract } from './contract'
 import { FEES } from './fees'
@@ -18,6 +20,14 @@ export function getProbability(contract: FullContract<DPM | CPMM, Binary>) {
   return contract.mechanism === 'cpmm-1'
     ? getCpmmProbability(contract.pool)
     : getDpmProbability(contract.totalShares)
+}
+
+export function getInitialProbability(
+  contract: FullContract<DPM | CPMM, Binary>
+) {
+  return contract.mechanism === 'cpmm-1'
+    ? getCpmmProbability(contract.liquidity[contract.creatorId])
+    : getDpmProbability(contract.phantomShares ?? contract.totalShares)
 }
 
 export function getOutcomeProbability(contract: Contract, outcome: string) {
@@ -54,6 +64,19 @@ export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
   return contract.mechanism === 'cpmm-1'
     ? deductFees(bet.amount, bet.shares)
     : calculateDpmPayoutAfterCorrectBet(contract, bet)
+}
+
+export function getProbabilityAfterSale(
+  contract: Contract,
+  outcome: string,
+  shares: number
+) {
+  return contract.mechanism === 'cpmm-1'
+    ? getCpmmProbabilityAfterSale(
+        contract as FullContract<CPMM, Binary>,
+        { shares, outcome } as Bet
+      )
+    : getDpmProbabilityAfterSale(contract.totalShares, outcome, shares)
 }
 
 export const deductFees = (betAmount: number, winnings: number) => {
