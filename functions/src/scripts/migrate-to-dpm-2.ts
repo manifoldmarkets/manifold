@@ -4,7 +4,7 @@ import * as _ from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin('stephenDev')
 
-import { Contract } from '../../../common/contract'
+import { Binary, Contract, DPM, FullContract } from '../../../common/contract'
 import { Bet } from '../../../common/bet'
 import {
   calculateDpmShares,
@@ -32,7 +32,7 @@ async function recalculateContract(
 
   await firestore.runTransaction(async (transaction) => {
     const contractDoc = await transaction.get(contractRef)
-    const contract = contractDoc.data() as Contract
+    const contract = contractDoc.data() as FullContract<DPM, Binary>
 
     const betDocs = await transaction.get(contractRef.collection('bets'))
     const bets = _.sortBy(

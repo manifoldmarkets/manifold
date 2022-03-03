@@ -33,8 +33,9 @@ export const onCreateComment = functions.firestore
     const bet = betSnapshot.data() as Bet
 
     const answer =
-      contract.answers &&
-      contract.answers.find((answer) => answer.id === bet.outcome)
+      contract.outcomeType === 'FREE_RESPONSE' && contract.answers
+        ? contract.answers.find((answer) => answer.id === bet.outcome)
+        : undefined
 
     const comments = await getValues<Comment>(
       firestore.collection('contracts').doc(contractId).collection('comments')

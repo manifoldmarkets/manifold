@@ -1,7 +1,8 @@
-import _ = require('lodash')
+import * as _ from 'lodash'
+
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
-import { getDpmProbability } from '../../common/calculate-dpm'
+import { getProbability } from '../../common/calculate'
 import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
 import { CREATOR_FEE } from '../../common/fees'
@@ -9,34 +10,6 @@ import { PrivateUser, User } from '../../common/user'
 import { formatMoney, formatPercent } from '../../common/util/format'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { getPrivateUser, getUser, isProd } from './utils'
-
-type market_resolved_template = {
-  userId: string
-  name: string
-  creatorName: string
-  question: string
-  outcome: string
-  investment: string
-  payout: string
-  url: string
-}
-
-const toDisplayResolution = (
-  outcome: string,
-  prob?: number,
-  resolutions?: { [outcome: string]: number }
-) => {
-  if (outcome === 'MKT' && resolutions) return 'MULTI'
-
-  const display = {
-    YES: 'YES',
-    NO: 'NO',
-    CANCEL: 'N/A',
-    MKT: formatPercent(prob ?? 0),
-  }[outcome]
-
-  return display === undefined ? `#${outcome}` : display
-}
 
 export const sendMarketResolutionEmail = async (
   userId: string,
@@ -59,9 +32,12 @@ export const sendMarketResolutionEmail = async (
   const user = await getUser(userId)
   if (!user) return
 
-  const prob = resolutionProbability ?? getDpmProbability(contract.totalShares)
-
-  const outcome = toDisplayResolution(resolution, prob, resolutions)
+  const outcome = toDisplayResolution(
+    contract,
+    resolution,
+    resolutionProbability,
+    resolutions
+  )
 
   const subject = `Resolved ${outcome}: ${contract.question}`
 
@@ -86,6 +62,41 @@ export const sendMarketResolutionEmail = async (
     'market-resolved',
     templateData
   )
+}
+
+type market_resolved_template = {
+  userId: string
+  name: string
+  creatorName: string
+  question: string
+  outcome: string
+  investment: string
+  payout: string
+  url: string
+}
+
+const toDisplayResolution = (
+  contract: Contract,
+  resolution: string,
+  resolutionProbability?: number,
+  resolutions?: { [outcome: string]: number }
+) => {
+  if (contract.outcomeType === 'BINARY') {
+    const prob = resolutionProbability ?? getProbability(contract)
+
+    const display = {
+      YES: 'YES',
+      NO: 'NO',
+      CANCEL: 'N/A',
+      MKT: formatPercent(prob ?? 0),
+    }[resolution]
+
+    return display || resolution
+  }
+
+  if (resolution === 'MKT' && resolutions) return 'MULTI'
+
+  return `#${resolution}`
 }
 
 export const sendWelcomeEmail = async (
@@ -198,7 +209,10 @@ export const sendNewCommentEmail = async (
       { from }
     )
   } else {
-    betDescription = `${betDescription} of ${toDisplayResolution(outcome)}`
+    betDescription = `${betDescription} of ${toDisplayResolution(
+      contract,
+      outcome
+    )}`
 
     await sendTemplateEmail(
       privateUser.email,
