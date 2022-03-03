@@ -85,7 +85,7 @@ const Home = (props: {
 
           <Spacer h={5} />
 
-          <Col className="mx-3 mb-3 gap-2 text-sm text-gray-800 sm:flex-row">
+          <Col className="mb-3 gap-2 text-sm text-gray-800 sm:flex-row">
             <Row className="gap-2">
               <div className="tabs">
                 <div
