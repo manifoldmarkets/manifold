@@ -73,7 +73,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
   return (
-    <Col className="gap-4 p-4 bg-gray-50 rounded">
+    <Col className="gap-4 rounded bg-gray-50 p-4">
       <Col className="flex-1 gap-2">
         <div className="mb-1">Add your answer</div>
         <Textarea
@@ -87,14 +87,14 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
         <div />
         <Col
           className={clsx(
-            'sm:flex-row sm:items-end gap-4',
+            'gap-4 sm:flex-row sm:items-end',
             text ? 'justify-between' : 'self-end'
           )}
         >
           {text && (
             <>
-              <Col className="gap-2 mt-1">
-                <div className="text-gray-500 text-sm">Buy amount</div>
+              <Col className="mt-1 gap-2">
+                <div className="text-sm text-gray-500">Buy amount</div>
                 <AmountInput
                   amount={betAmount}
                   onChange={setBetAmount}
@@ -106,7 +106,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
                 />
               </Col>
               <Col className="gap-3">
-                <Row className="justify-between items-center text-sm">
+                <Row className="items-center justify-between text-sm">
                   <div className="text-gray-500">Probability</div>
                   <Row>
                     <div>{formatPercent(0)}</div>
@@ -115,8 +115,8 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
                   </Row>
                 </Row>
 
-                <Row className="justify-between text-sm gap-2">
-                  <Row className="flex-nowrap whitespace-nowrap items-center gap-2 text-gray-500">
+                <Row className="justify-between gap-2 text-sm">
+                  <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
                     <div>Payout if chosen</div>
                     <InfoTooltip
                       text={`Current payout for ${formatWithCommas(
@@ -124,7 +124,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
                       )} / ${formatWithCommas(shares)} shares`}
                     />
                   </Row>
-                  <Row className="flex-wrap justify-end items-end gap-2">
+                  <Row className="flex-wrap items-end justify-end gap-2">
                     <span className="whitespace-nowrap">
                       {formatMoney(currentPayout)}
                     </span>

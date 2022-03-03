@@ -19,10 +19,10 @@ export default function AddFundsPage() {
       <SEO title="Add funds" description="Add funds" url="/add-funds" />
 
       <Col className="items-center">
-        <Col className="bg-white rounded sm:shadow-md p-4 py-8 sm:p-8 h-full">
+        <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
           <Title className="!mt-0" text="Get Manifold Dollars" />
           <img
-            className="mb-6 block self-center -scale-x-100"
+            className="mb-6 block -scale-x-100 self-center"
             src="/stylized-crane-black.png"
             width={200}
             height={200}
