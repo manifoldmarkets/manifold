@@ -6,8 +6,9 @@ import { useWindowSize } from '../../hooks/use-window-size'
 export function DailyCountChart(props: {
   startDate: number
   dailyCounts: number[]
+  small?: boolean
 }) {
-  const { dailyCounts, startDate } = props
+  const { dailyCounts, startDate, small } = props
   const { width } = useWindowSize()
 
   const dates = dailyCounts.map((_, i) =>
@@ -18,16 +19,16 @@ export function DailyCountChart(props: {
     x: date,
     y: betCount,
   }))
-  const data = [{ id: 'Yes', data: points, color: '#11b981' }]
+  const data = [{ id: 'Count', data: points, color: '#11b981' }]
 
   return (
     <div
       className="w-full"
-      style={{ height: !width || width >= 800 ? 400 : 250 }}
+      style={{ height: !small && (!width || width >= 800) ? 400 : 250 }}
     >
       <ResponsiveLine
         data={data}
-        yScale={{ type: 'linear' }}
+        yScale={{ type: 'linear', stacked: false }}
         xScale={{
           type: 'time',
         }}
@@ -35,7 +36,7 @@ export function DailyCountChart(props: {
           format: (date) => dayjs(date).format('MMM DD'),
         }}
         colors={{ datum: 'color' }}
-        pointSize={10}
+        pointSize={width && width >= 800 ? 10 : 0}
         pointBorderWidth={1}
         pointBorderColor="#fff"
         enableSlices="x"
