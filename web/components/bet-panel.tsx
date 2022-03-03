@@ -157,8 +157,8 @@ export function BetPanel(props: {
         contractIdForLoan={contract.id}
       />
 
-      <Col className="gap-3 mt-3 w-full">
-        <Row className="justify-between items-center text-sm">
+      <Col className="mt-3 w-full gap-3">
+        <Row className="items-center justify-between text-sm">
           <div className="text-gray-500">Probability</div>
           <Row>
             <div>{formatPercent(initialProb)}</div>
@@ -167,8 +167,8 @@ export function BetPanel(props: {
           </Row>
         </Row>
 
-        <Row className="justify-between items-start text-sm gap-2">
-          <Row className="flex-nowrap whitespace-nowrap items-center gap-2 text-gray-500">
+        <Row className="items-start justify-between gap-2 text-sm">
+          <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
             <div>
               Payout if <OutcomeLabel outcome={betChoice ?? 'YES'} />
             </div>
@@ -182,7 +182,7 @@ export function BetPanel(props: {
               )} ${betChoice} shares`}
             />
           </Row>
-          <Row className="flex-wrap justify-end items-end gap-2">
+          <Row className="flex-wrap items-end justify-end gap-2">
             <span className="whitespace-nowrap">
               {formatMoney(currentPayout)}
             </span>

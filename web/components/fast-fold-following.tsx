@@ -32,7 +32,7 @@ function FollowFoldButton(props: {
       className={clsx(
         'rounded-full border-2 px-4 py-1 shadow-md',
         'cursor-pointer',
-        followed ? 'bg-gray-300 border-gray-300' : 'bg-white'
+        followed ? 'border-gray-300 bg-gray-300' : 'bg-white'
       )}
       onClick={onClick}
     >
