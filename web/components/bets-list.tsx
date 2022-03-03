@@ -531,6 +531,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   )
 
   const saleAmount = calculateSaleAmount(contract, bet)
+  const profit = saleAmount - bet.amount
 
   return (
     <ConfirmationButton
@@ -558,6 +559,8 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
       )}
 
       <div className="mt-2 mb-1 text-sm">
+        {profit > 0 ? 'Profit' : 'Loss'}: {formatMoney(profit).replace('-', '')}
+        <br />
         Market probability: {formatPercent(initialProb)} →{' '}
         {formatPercent(outcomeProb)}
       </div>
