@@ -88,7 +88,7 @@ export const FastFoldFollowing = (props: {
         user={user}
         followedFoldSlugs={followedFoldSlugs}
         folds={[
-          { name: 'Politics', slug: 'politics' },
+          { name: 'Russia/Ukraine', slug: 'russia-ukraine' },
           { name: 'Crypto', slug: 'crypto' },
           { name: 'Sports', slug: 'sports' },
           { name: 'Science', slug: 'science' },
