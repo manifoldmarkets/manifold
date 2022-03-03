@@ -11,7 +11,6 @@ import {
 } from '../../common/new-bet'
 import { removeUndefinedProps } from '../../common/util/object'
 import { Bet } from '../../common/bet'
-import { getValues } from './utils'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (

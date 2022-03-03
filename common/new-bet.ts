@@ -1,11 +1,12 @@
 import * as _ from 'lodash'
+
 import { Bet, MAX_LOAN_PER_CONTRACT } from './bet'
 import {
   calculateDpmShares,
   getDpmProbability,
   getDpmOutcomeProbability,
 } from './calculate-dpm'
-import { calculateCpmmShares, getCpmmProbability } from './calculate-cpmm'
+import { calculateCpmmPurchase, getCpmmProbability } from './calculate-cpmm'
 import {
   Binary,
   CPMM,
@@ -24,20 +25,11 @@ export const getNewBinaryCpmmBetInfo = (
   loanAmount: number,
   newBetId: string
 ) => {
-  const { pool, k } = contract
-
-  const shares = calculateCpmmShares(pool, k, amount, outcome)
-  const { YES: y, NO: n } = pool
-
-  const [newY, newN] =
-    outcome === 'YES'
-      ? [y - shares + amount, amount]
-      : [amount, n - shares + amount]
+  const { shares, newPool } = calculateCpmmPurchase(contract, amount, outcome)
 
   const newBalance = user.balance - (amount - loanAmount)
 
-  const probBefore = getCpmmProbability(pool)
-  const newPool = { YES: newY, NO: newN }
+  const probBefore = getCpmmProbability(contract.pool)
   const probAfter = getCpmmProbability(newPool)
 
   const newBet: Bet = {
