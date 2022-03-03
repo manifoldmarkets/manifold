@@ -4,11 +4,7 @@ import {
   calculateDpmShareValue,
   deductDpmFees,
 } from './calculate-dpm'
-import {
-  calculateCpmmSale,
-  calculateCpmmShareValue,
-  getCpmmProbability,
-} from './calculate-cpmm'
+import { calculateCpmmSale, getCpmmProbability } from './calculate-cpmm'
 import { Binary, DPM, CPMM, FullContract } from './contract'
 import { CREATOR_FEE } from './fees'
 import { User } from './user'
@@ -87,14 +83,13 @@ export const getCpmmSellBetInfo = (
   const { pool } = contract
   const { id: betId, amount, shares, outcome } = bet
 
-  const { saleValue, newPool } = calculateCpmmSale(contract, bet)
+  const { saleValue, newPool, creatorFee, saleAmount } = calculateCpmmSale(
+    contract,
+    bet
+  )
 
   const probBefore = getCpmmProbability(pool)
   const probAfter = getCpmmProbability(newPool)
-
-  const profit = saleValue - amount
-  const creatorFee = CREATOR_FEE * Math.max(0, profit)
-  const saleAmount = deductDpmFees(amount, profit)
 
   console.log(
     'SELL M$',

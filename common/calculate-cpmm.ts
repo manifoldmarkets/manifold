@@ -1,6 +1,8 @@
 import * as _ from 'lodash'
 import { Bet } from './bet'
+import { deductFixedFees } from './calculate-fixed-payouts'
 import { Binary, CPMM, FullContract } from './contract'
+import { CREATOR_FEE } from './fees'
 
 export function getCpmmProbability(pool: { [outcome: string]: number }) {
   // For binary contracts only.
@@ -85,7 +87,11 @@ export function calculateCpmmSale(
 
   const newPool = { YES: newY, NO: newN }
 
-  return { saleValue, newPool }
+  const profit = saleValue - bet.amount
+  const creatorFee = CREATOR_FEE * Math.max(0, profit)
+  const saleAmount = deductFixedFees(bet.amount, saleValue)
+
+  return { saleValue, newPool, creatorFee, saleAmount }
 }
 
 export function getCpmmProbabilityAfterSale(

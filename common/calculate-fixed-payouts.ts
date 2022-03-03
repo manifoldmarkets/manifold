@@ -21,7 +21,7 @@ export function calculateFixedCancelPayout(bet: Bet) {
 export function calculateStandardFixedPayout(bet: Bet, outcome: string) {
   const { amount, outcome: betOutcome, shares } = bet
   if (betOutcome !== outcome) return 0
-  return deductFixedFees(amount, shares - amount)
+  return deductFixedFees(amount, shares)
 }
 
 function calculateFixedMktPayout(
@@ -43,7 +43,8 @@ function calculateFixedMktPayout(
 }
 
 export const deductFixedFees = (betAmount: number, winnings: number) => {
-  return winnings > betAmount
-    ? betAmount + (1 - FEES) * (winnings - betAmount)
-    : winnings
+  return winnings
+  //   return winnings > betAmount
+  //     ? betAmount + (1 - FEES) * (winnings - betAmount)
+  //     : winnings
 }
