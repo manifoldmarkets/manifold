@@ -22,11 +22,6 @@ import {
 } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
-import {
-  calculateDpmPayout,
-  calculateDpmSaleAmount,
-  resolvedDpmPayout,
-} from '../../common/calculate-dpm'
 import { sellBet } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
@@ -34,9 +29,12 @@ import { filterDefined } from '../../common/util/array'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
 import {
+  calculatePayout,
+  calculateSaleAmount,
   getOutcomeProbability,
   getProbability,
   getProbabilityAfterSale,
+  resolvedPayout,
 } from '../../common/calculate'
 
 type BetSort = 'newest' | 'profit' | 'settled' | 'value'
@@ -84,7 +82,7 @@ export function BetsList(props: { user: User }) {
         if (bet.isSold || bet.sale) return 0
 
         const contract = contracts.find((c) => c.id === contractId)
-        const payout = contract ? calculateDpmPayout(contract, bet, 'MKT') : 0
+        const payout = contract ? calculatePayout(contract, bet, 'MKT') : 0
         return payout - (bet.loanAmount ?? 0)
       })
     }
@@ -290,21 +288,21 @@ export function MyBetsSummary(props: {
   const betsTotal = _.sumBy(excludeSales, (bet) => bet.amount)
 
   const betsPayout = resolution
-    ? _.sumBy(excludeSales, (bet) => resolvedDpmPayout(contract, bet))
+    ? _.sumBy(excludeSales, (bet) => resolvedPayout(contract, bet))
     : 0
 
   const yesWinnings = _.sumBy(excludeSales, (bet) =>
-    calculateDpmPayout(contract, bet, 'YES')
+    calculatePayout(contract, bet, 'YES')
   )
   const noWinnings = _.sumBy(excludeSales, (bet) =>
-    calculateDpmPayout(contract, bet, 'NO')
+    calculatePayout(contract, bet, 'NO')
   )
 
   // const p = getProbability(contract.totalShares)
   // const expectation = p * yesWinnings + (1 - p) * noWinnings
 
   const marketWinnings = _.sumBy(excludeSales, (bet) =>
-    calculateDpmPayout(contract, bet, 'MKT')
+    calculatePayout(contract, bet, 'MKT')
   )
 
   const currentValue = resolution ? betsPayout : marketWinnings
@@ -475,15 +473,15 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   ) : (
     formatMoney(
       isResolved
-        ? resolvedDpmPayout(contract, bet)
-        : calculateDpmSaleAmount(contract, bet)
+        ? resolvedPayout(contract, bet)
+        : calculateSaleAmount(contract, bet)
     )
   )
 
   const payoutIfChosenDisplay =
     bet.outcome === '0' && bet.isAnte
       ? 'N/A'
-      : formatMoney(calculateDpmPayout(contract, bet, bet.outcome))
+      : formatMoney(calculatePayout(contract, bet, bet.outcome))
 
   return (
     <tr>
@@ -528,7 +526,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
 
   const outcomeProb = getProbabilityAfterSale(contract, outcome, shares)
 
-  const saleAmount = calculateDpmSaleAmount(contract, bet)
+  const saleAmount = calculateSaleAmount(contract, bet)
 
   return (
     <ConfirmationButton

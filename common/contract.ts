@@ -52,6 +52,8 @@ export type CPMM = {
   liquidity: { [userId: string]: { [outcome: string]: number } } // track liquidity providers
 }
 
+export type FixedPayouts = CPMM
+
 export type Binary = {
   outcomeType: 'BINARY'
   resolutionProbability?: number // Used for BINARY markets resolved to MKT

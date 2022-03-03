@@ -1,7 +1,6 @@
 import * as _ from 'lodash'
 import { Bet } from './bet'
 import { Binary, CPMM, FullContract } from './contract'
-import { FEES } from './fees'
 
 export function getCpmmProbability(pool: { [outcome: string]: number }) {
   // For binary contracts only.
@@ -94,49 +93,4 @@ export function getCpmmProbabilityAfterSale(
 ) {
   const { newPool } = calculateCpmmSale(contract, bet)
   return getCpmmProbability(newPool)
-}
-
-export function calculateFixedPayout(
-  contract: FullContract<CPMM, Binary>,
-  bet: Bet,
-  outcome: string
-) {
-  if (outcome === 'CANCEL') return calculateFixedCancelPayout(bet)
-  if (outcome === 'MKT') return calculateFixedMktPayout(contract, bet)
-
-  return calculateStandardFixedPayout(bet, outcome)
-}
-
-export function calculateFixedCancelPayout(bet: Bet) {
-  return bet.amount
-}
-
-export function calculateStandardFixedPayout(bet: Bet, outcome: string) {
-  const { amount, outcome: betOutcome, shares } = bet
-  if (betOutcome !== outcome) return 0
-  return deductCpmmFees(amount, shares - amount)
-}
-
-function calculateFixedMktPayout(
-  contract: FullContract<CPMM, Binary>,
-  bet: Bet
-) {
-  const { resolutionProbability, pool } = contract
-  const p =
-    resolutionProbability !== undefined
-      ? resolutionProbability
-      : getCpmmProbability(pool)
-
-  const { outcome, amount, shares } = bet
-
-  const betP = outcome === 'YES' ? p : 1 - p
-  const winnings = betP * shares
-
-  return deductCpmmFees(amount, winnings)
-}
-
-export const deductCpmmFees = (betAmount: number, winnings: number) => {
-  return winnings > betAmount
-    ? betAmount + (1 - FEES) * (winnings - betAmount)
-    : winnings
 }

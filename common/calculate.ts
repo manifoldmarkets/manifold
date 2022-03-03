@@ -1,20 +1,26 @@
 import { Bet } from './bet'
 import {
   calculateCpmmShares,
+  calculateCpmmShareValue,
   getCpmmProbability,
   getCpmmProbabilityAfterBet,
   getCpmmProbabilityAfterSale,
 } from './calculate-cpmm'
 import {
+  calculateDpmPayout,
   calculateDpmPayoutAfterCorrectBet,
+  calculateDpmSaleAmount,
   calculateDpmShares,
   getDpmOutcomeProbability,
   getDpmProbability,
   getDpmProbabilityAfterBet,
   getDpmProbabilityAfterSale,
 } from './calculate-dpm'
+import {
+  calculateFixedPayout,
+  deductFixedFees,
+} from './calculate-fixed-payouts'
 import { Binary, Contract, CPMM, DPM, FullContract } from './contract'
-import { FEES } from './fees'
 
 export function getProbability(contract: FullContract<DPM | CPMM, Binary>) {
   return contract.mechanism === 'cpmm-1'
@@ -60,9 +66,18 @@ export function calculateShares(
     : calculateDpmShares(contract.totalShares, bet, betChoice)
 }
 
+export function calculateSaleAmount(contract: Contract, bet: Bet) {
+  return contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY'
+    ? deductFixedFees(
+        bet.amount,
+        calculateCpmmShareValue(contract, bet.shares, bet.outcome)
+      )
+    : calculateDpmSaleAmount(contract, bet)
+}
+
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
   return contract.mechanism === 'cpmm-1'
-    ? deductFees(bet.amount, bet.shares)
+    ? deductFixedFees(bet.amount, bet.shares)
     : calculateDpmPayoutAfterCorrectBet(contract, bet)
 }
 
@@ -79,8 +94,17 @@ export function getProbabilityAfterSale(
     : getDpmProbabilityAfterSale(contract.totalShares, outcome, shares)
 }
 
-export const deductFees = (betAmount: number, winnings: number) => {
-  return winnings > betAmount
-    ? betAmount + (1 - FEES) * (winnings - betAmount)
-    : winnings
+export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
+  return contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY'
+    ? calculateFixedPayout(contract, bet, outcome)
+    : calculateDpmPayout(contract, bet, outcome)
+}
+
+export function resolvedPayout(contract: Contract, bet: Bet) {
+  const outcome = contract.resolution
+  if (!outcome) throw new Error('Contract not resolved')
+
+  return contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY'
+    ? calculateFixedPayout(contract, bet, outcome)
+    : calculateDpmPayout(contract, bet, outcome)
 }
