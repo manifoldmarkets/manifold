@@ -22,7 +22,7 @@ import {
   useFilterYourContracts,
   useFindActiveContracts,
 } from '../hooks/use-find-active-contracts'
-import { useRecentBets } from '../hooks/use-bets'
+import { useGetRecentBets, useRecentBets } from '../hooks/use-bets'
 import { useActiveContracts } from '../hooks/use-contracts'
 import { useRecentComments } from '../hooks/use-comments'
 
@@ -50,12 +50,13 @@ const Home = (props: {
     contracts
   )
 
-  const recentBets = useRecentBets()
+  const initialRecentBets = useGetRecentBets()
+  const recentBets = useRecentBets() ?? initialRecentBets
   const recentComments = useRecentComments() ?? props.recentComments
 
   const { activeContracts } = useFindActiveContracts({
     contracts: yourContracts,
-    recentBets: recentBets ?? [],
+    recentBets: initialRecentBets ?? [],
     recentComments,
   })
 
