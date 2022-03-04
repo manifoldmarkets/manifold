@@ -12,7 +12,10 @@ import {
   getFoldBySlug,
   getFoldContracts,
 } from '../../../lib/firebase/folds'
-import { ActivityFeed, findActiveContracts } from '../../activity'
+import {
+  ActivityFeed,
+  findActiveContracts,
+} from '../../../components/activity-feed'
 import { TagsList } from '../../../components/tags-list'
 import { Row } from '../../../components/layout/row'
 import { UserLink } from '../../../components/user-page'
@@ -36,6 +39,9 @@ import { SEO } from '../../../components/SEO'
 import { useTaggedContracts } from '../../../hooks/use-contracts'
 import { Linkify } from '../../../components/linkify'
 import { filterDefined } from '../../../../common/util/array'
+import { useRecentBets } from '../../../hooks/use-bets'
+import { useRecentComments } from '../../../hooks/use-comments'
+import { LoadingIndicator } from '../../../components/loading-indicator'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -48,7 +54,6 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const bets = await Promise.all(
     contracts.map((contract) => listAllBets(contract.id))
   )
-  const betsByContract = _.fromPairs(contracts.map((c, i) => [c.id, bets[i]]))
 
   let activeContracts = findActiveContracts(contracts, [], _.flatten(bets))
   const [resolved, unresolved] = _.partition(
@@ -56,10 +61,6 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
     ({ isResolved }) => isResolved
   )
   activeContracts = [...unresolved, ...resolved]
-
-  const activeContractBets = activeContracts.map(
-    (contract) => betsByContract[contract.id] ?? []
-  )
 
   const creatorScores = scoreCreators(contracts, bets)
   const traderScores = scoreTraders(contracts, bets)
@@ -76,8 +77,6 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
       curator,
       contracts,
       activeContracts,
-      activeContractBets,
-      activeContractComments: activeContracts.map(() => []),
       traderScores,
       topTraders,
       creatorScores,
@@ -117,15 +116,8 @@ export default function FoldPage(props: {
   creatorScores: { [userId: string]: number }
   topCreators: User[]
 }) {
-  const {
-    curator,
-    activeContractBets,
-    activeContractComments,
-    traderScores,
-    topTraders,
-    creatorScores,
-    topCreators,
-  } = props
+  const { curator, traderScores, topTraders, creatorScores, topCreators } =
+    props
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -150,6 +142,9 @@ export default function FoldPage(props: {
   const activeContracts = filterDefined(
     props.activeContracts.map((contract) => contractsMap[contract.id])
   )
+
+  const recentBets = useRecentBets()
+  const recentComments = useRecentComments()
 
   if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
@@ -233,19 +228,23 @@ export default function FoldPage(props: {
               />
             )}
             {page === 'activity' ? (
-              <>
-                <ActivityFeed
-                  contracts={activeContracts}
-                  contractBets={activeContractBets}
-                  contractComments={activeContractComments}
-                />
-                {activeContracts.length === 0 && (
-                  <div className="mx-2 mt-4 text-gray-500 lg:mx-0">
-                    No activity from matching markets.{' '}
-                    {isCurator && 'Try editing to add more tags!'}
-                  </div>
-                )}
-              </>
+              recentBets && recentComments ? (
+                <>
+                  <ActivityFeed
+                    contracts={activeContracts}
+                    recentBets={recentBets ?? []}
+                    recentComments={recentComments ?? []}
+                  />
+                  {activeContracts.length === 0 && (
+                    <div className="mx-2 mt-4 text-gray-500 lg:mx-0">
+                      No activity from matching markets.{' '}
+                      {isCurator && 'Try editing to add more tags!'}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <LoadingIndicator className="mt-4" />
+              )
             ) : (
               <SearchableGrid
                 contracts={contracts}
