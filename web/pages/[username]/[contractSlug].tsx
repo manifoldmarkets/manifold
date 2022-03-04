@@ -143,7 +143,7 @@ export default function ContractPage(props: {
           <>
             <div className="md:ml-6" />
 
-            <Col className="md:w-[310px]">
+            <Col className="md:w-[310px] flex-shrink-0">
               {allowTrade && (
                 <BetPanel className="hidden lg:flex" contract={contract} />
               )}
