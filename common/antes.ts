@@ -9,10 +9,10 @@ export const MINIMUM_ANTE = 10
 
 export const calcStartCpmmPool = (initialProbInt: number, ante: number) => {
   const p = initialProbInt / 100.0
-  const invP = 1.0 / p - 1
-  const otherAnte = ante / invP
 
-  const [poolYes, poolNo] = p >= 0.5 ? [otherAnte, ante] : [ante, otherAnte]
+  const [poolYes, poolNo] =
+    p >= 0.5 ? [ante * (1 / p - 1), ante] : [ante, ante * (1 / (1 - p) - 1)]
+
   const k = poolYes * poolNo
 
   return { poolYes, poolNo, k }
