@@ -7,11 +7,7 @@ import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
-import {
-  getLoanPayouts,
-  getPayouts,
-  getPayoutsMultiOutcome,
-} from '../../common/payouts'
+import { getLoanPayouts, getPayouts } from '../../common/payouts'
 import { removeUndefinedProps } from '../../common/util/object'
 
 export const resolveMarket = functions
@@ -98,10 +94,12 @@ export const resolveMarket = functions
       const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
       const openBets = bets.filter((b) => !b.isSold && !b.sale)
 
-      const payouts =
-        outcomeType === 'FREE_RESPONSE' && resolutions
-          ? getPayoutsMultiOutcome(resolutions, contract as any, openBets)
-          : getPayouts(outcome, contract, openBets, resolutionProbability)
+      const payouts = getPayouts(
+        resolutions ?? outcome,
+        contract,
+        openBets,
+        resolutionProbability
+      )
 
       const loanPayouts = getLoanPayouts(openBets)
 
