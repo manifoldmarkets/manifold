@@ -304,8 +304,11 @@ function TruncatedComment(props: {
   )
 }
 
-function FeedQuestion(props: { contract: Contract }) {
-  const { contract } = props
+function FeedQuestion(props: {
+  contract: Contract
+  showDescription?: boolean
+}) {
+  const { contract, showDescription } = props
   const { creatorName, creatorUsername, question, resolution, outcomeType } =
     contract
   const { truePool } = contractMetrics(contract)
@@ -341,16 +344,33 @@ function FeedQuestion(props: { contract: Contract }) {
           </span>
         </div>
         <Col className="items-start justify-between gap-2 sm:flex-row sm:gap-4">
-          <SiteLink
-            href={contractPath(contract)}
-            className="text-lg text-indigo-700 sm:text-xl"
-          >
-            {question}
-          </SiteLink>
+          <Col>
+            <SiteLink
+              href={contractPath(contract)}
+              className="text-lg text-indigo-700 sm:text-xl"
+            >
+              {question}
+            </SiteLink>
+            {!showDescription && (
+              <SiteLink
+                href={contractPath(contract)}
+                className="text-sm relative top-4"
+              >
+                <div className="text-gray-500 pb-1.5">See more...</div>
+              </SiteLink>
+            )}
+          </Col>
           {(isBinary || resolution) && (
             <ResolutionOrChance className="items-center" contract={contract} />
           )}
         </Col>
+        {showDescription && (
+          <TruncatedComment
+            comment={contract.description}
+            moreHref={contractPath(contract)}
+            shouldTruncate
+          />
+        )}
       </div>
     </>
   )
@@ -705,7 +725,7 @@ function FeedItems(props: {
 
   return (
     <div className="flow-root pr-2 md:pr-0">
-      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
+      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((activityItem, activityItemIdx) => (
           <div key={activityItem.id} className="relative pb-6">
             {activityItemIdx !== items.length - 1 ? (
@@ -875,7 +895,7 @@ export function ContractSummaryFeed(props: {
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
         <div className="relative pb-8">
           <div className="relative flex items-start space-x-3">
-            <FeedQuestion contract={contract} />
+            <FeedQuestion contract={contract} showDescription />
           </div>
         </div>
       </div>

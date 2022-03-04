@@ -1,5 +1,9 @@
 import _ from 'lodash'
-import { ContractActivityFeed, ContractSummaryFeed } from './contract-feed'
+import {
+  ContractActivityFeed,
+  ContractFeed,
+  ContractSummaryFeed,
+} from './contract-feed'
 import { Contract } from '../lib/firebase/contracts'
 import { Comment } from '../lib/firebase/comments'
 import { Col } from './layout/col'
@@ -73,8 +77,10 @@ export function ActivityFeed(props: {
   contracts: Contract[]
   recentBets: Bet[]
   recentComments: Comment[]
+  loadBetAndCommentHistory?: boolean
 }) {
-  const { contracts, recentBets, recentComments } = props
+  const { contracts, recentBets, recentComments, loadBetAndCommentHistory } =
+    props
 
   const groupedBets = _.groupBy(recentBets, (bet) => bet.contractId)
   const groupedComments = _.groupBy(
@@ -86,13 +92,22 @@ export function ActivityFeed(props: {
     <Col className="items-center">
       <Col className="w-full">
         <Col className="w-full divide-y divide-gray-300 self-center bg-white">
-          {contracts.map((contract, i) => (
+          {contracts.map((contract) => (
             <div key={contract.id} className="py-6 px-2 sm:px-4">
-              <ContractActivityFeed
-                contract={contract}
-                bets={groupedBets[contract.id] ?? []}
-                comments={groupedComments[contract.id] ?? []}
-              />
+              {loadBetAndCommentHistory ? (
+                <ContractFeed
+                  contract={contract}
+                  bets={groupedBets[contract.id] ?? []}
+                  comments={groupedComments[contract.id] ?? []}
+                  feedType="activity"
+                />
+              ) : (
+                <ContractActivityFeed
+                  contract={contract}
+                  bets={groupedBets[contract.id] ?? []}
+                  comments={groupedComments[contract.id] ?? []}
+                />
+              )}
             </div>
           ))}
         </Col>

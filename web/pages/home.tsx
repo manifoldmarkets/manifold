@@ -57,7 +57,7 @@ const Home = (props: {
   const { activeContracts } = useFindActiveContracts({
     contracts: yourContracts,
     recentBets: initialRecentBets ?? [],
-    recentComments,
+    recentComments: props.recentComments,
   })
 
   const exploreContracts = useExploreContracts()
