@@ -6,9 +6,8 @@ import _ from 'lodash'
 
 import { Contract } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
-import { ActivityFeed, SummaryActivityFeed } from './activity'
+import { ActivityFeed, SummaryActivityFeed } from '../components/activity-feed'
 import { Comment } from '../lib/firebase/comments'
-import { Bet } from '../lib/firebase/bets'
 import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
@@ -23,8 +22,9 @@ import {
   useFilterYourContracts,
   useFindActiveContracts,
 } from '../hooks/use-find-active-contracts'
-import { useGetRecentBets } from '../hooks/use-bets'
+import { useGetRecentBets, useRecentBets } from '../hooks/use-bets'
 import { useActiveContracts } from '../hooks/use-contracts'
+import { useRecentComments } from '../hooks/use-comments'
 
 export async function getStaticProps() {
   const contractInfo = await getAllContractInfo()
@@ -38,10 +38,9 @@ export async function getStaticProps() {
 const Home = (props: {
   contracts: Contract[]
   folds: Fold[]
-  recentBets: Bet[]
   recentComments: Comment[]
 }) => {
-  const { folds, recentComments } = props
+  const { folds } = props
   const user = useUser()
 
   const contracts = useActiveContracts() ?? props.contracts
@@ -51,13 +50,15 @@ const Home = (props: {
     contracts
   )
 
-  const recentBets = useGetRecentBets()
-  const { activeContracts, activeBets, activeComments } =
-    useFindActiveContracts({
-      contracts: yourContracts,
-      recentBets: recentBets ?? [],
-      recentComments,
-    })
+  const initialRecentBets = useGetRecentBets()
+  const recentBets = useRecentBets() ?? initialRecentBets
+  const recentComments = useRecentComments() ?? props.recentComments
+
+  const { activeContracts } = useFindActiveContracts({
+    contracts: yourContracts,
+    recentBets: initialRecentBets ?? [],
+    recentComments: props.recentComments,
+  })
 
   const exploreContracts = useExploreContracts()
 
@@ -71,7 +72,7 @@ const Home = (props: {
   return (
     <Page assertUser="signed-in">
       <Col className="items-center">
-        <Col className="w-full max-w-3xl">
+        <Col className="w-full max-w-[700px]">
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
 
@@ -116,8 +117,8 @@ const Home = (props: {
             (recentBets ? (
               <ActivityFeed
                 contracts={activeContracts}
-                contractBets={activeBets}
-                contractComments={activeComments}
+                recentBets={recentBets}
+                recentComments={recentComments}
               />
             ) : (
               <LoadingIndicator className="mt-4" />
