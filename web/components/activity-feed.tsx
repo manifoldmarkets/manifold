@@ -1,9 +1,12 @@
 import _ from 'lodash'
-import { ContractFeed, ContractSummaryFeed } from '../components/contract-feed'
-import { Page } from '../components/page'
+import {
+  ContractActivityFeed,
+  ContractFeed,
+  ContractSummaryFeed,
+} from './contract-feed'
 import { Contract } from '../lib/firebase/contracts'
 import { Comment } from '../lib/firebase/comments'
-import { Col } from '../components/layout/col'
+import { Col } from './layout/col'
 import { Bet } from '../../common/bet'
 
 const MAX_ACTIVE_CONTRACTS = 75
@@ -72,30 +75,44 @@ export function findActiveContracts(
 
 export function ActivityFeed(props: {
   contracts: Contract[]
-  contractBets: Bet[][]
-  contractComments: Comment[][]
+  recentBets: Bet[]
+  recentComments: Comment[]
+  loadBetAndCommentHistory?: boolean
 }) {
-  const { contracts, contractBets, contractComments } = props
+  const { contracts, recentBets, recentComments, loadBetAndCommentHistory } =
+    props
 
-  return contracts.length > 0 ? (
+  const groupedBets = _.groupBy(recentBets, (bet) => bet.contractId)
+  const groupedComments = _.groupBy(
+    recentComments,
+    (comment) => comment.contractId
+  )
+
+  return (
     <Col className="items-center">
-      <Col className="w-full max-w-3xl">
+      <Col className="w-full">
         <Col className="w-full divide-y divide-gray-300 self-center bg-white">
-          {contracts.map((contract, i) => (
+          {contracts.map((contract) => (
             <div key={contract.id} className="py-6 px-2 sm:px-4">
-              <ContractFeed
-                contract={contract}
-                bets={contractBets[i]}
-                comments={contractComments[i]}
-                feedType="activity"
-              />
+              {loadBetAndCommentHistory ? (
+                <ContractFeed
+                  contract={contract}
+                  bets={groupedBets[contract.id] ?? []}
+                  comments={groupedComments[contract.id] ?? []}
+                  feedType="activity"
+                />
+              ) : (
+                <ContractActivityFeed
+                  contract={contract}
+                  bets={groupedBets[contract.id] ?? []}
+                  comments={groupedComments[contract.id] ?? []}
+                />
+              )}
             </div>
           ))}
         </Col>
       </Col>
     </Col>
-  ) : (
-    <></>
   )
 }
 
@@ -114,13 +131,5 @@ export function SummaryActivityFeed(props: { contracts: Contract[] }) {
         </Col>
       </Col>
     </Col>
-  )
-}
-
-export default function ActivityPage() {
-  return (
-    <Page>
-      <ActivityFeed contracts={[]} contractBets={[]} contractComments={[]} />
-    </Page>
   )
 }
