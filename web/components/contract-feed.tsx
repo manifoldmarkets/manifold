@@ -354,7 +354,7 @@ function FeedQuestion(props: {
             {!showDescription && (
               <SiteLink
                 href={contractPath(contract)}
-                className="text-sm relative top-4"
+                className="text-sm relative top-4 hidden sm:flex"
               >
                 <div className="text-gray-500 pb-1.5">See more...</div>
               </SiteLink>
