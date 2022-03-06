@@ -109,7 +109,7 @@ export default function FeedCreate(props: {
         question || focused ? 'ring-2 ring-indigo-300' : '',
         className
       )}
-      onClick={() => !focused && inputRef.current?.focus()}
+      onClick={() => !focused && !question && inputRef.current?.focus()}
       ref={(elem) => (panelRef.current = elem)}
     >
       <div className="relative flex items-start space-x-3">
