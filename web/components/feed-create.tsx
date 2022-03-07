@@ -73,10 +73,14 @@ export default function FeedCreate(props: {
   const inputRef = useRef<HTMLTextAreaElement | null>()
 
   const placeholders = [
-    'Will anyone I know get engaged this year?',
-    'Will humans set foot on Mars by the end of 2030?',
-    'Will any cryptocurrency eclipse Bitcoin by market cap this year?',
-    'Will the Democrats win the 2024 presidential election?',
+    // 'Will anyone I know get engaged this year?',
+    // 'Will humans set foot on Mars by the end of 2030?',
+    // 'Will any cryptocurrency eclipse Bitcoin by market cap this year?',
+    // 'Will the Democrats win the 2024 presidential election?',
+    'Will we have at least 5 new team members by the end of this quarter?',
+    'Will we meet or exceed our goals this sprint?',
+    'Will we sign on 3 or more new clients this month?',
+    'Will Paul shave his beard by the end of the month?',
   ]
   // Rotate through a new placeholder each day
   // Easter egg idea: click your own name to shuffle the placeholder
