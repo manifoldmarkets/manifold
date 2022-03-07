@@ -127,8 +127,8 @@ export function BetsList(props: { user: User }) {
   const totalPortfolio = currentBetsValue + user.balance
 
   const totalPnl = totalPortfolio - user.totalDeposits
-  const totalProfit = (totalPnl / user.totalDeposits) * 100
-  const investedProfit =
+  const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
+  const investedProfitPercent =
     ((currentBetsValue - currentInvestment) / currentInvestment) * 100
 
   return (
@@ -136,17 +136,17 @@ export function BetsList(props: { user: User }) {
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
-            <div className="text-sm text-gray-500">Invested</div>
+            <div className="text-sm text-gray-500">Investment value</div>
             <div className="text-lg">
-              {formatMoney(currentInvestment)}{' '}
-              <ProfitBadge profitPercent={investedProfit} />
+              {formatMoney(currentBetsValue)}{' '}
+              <ProfitBadge profitPercent={investedProfitPercent} />
             </div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">Total portfolio</div>
+            <div className="text-sm text-gray-500">Total profit</div>
             <div className="text-lg">
-              {formatMoney(totalPortfolio)}{' '}
-              <ProfitBadge profitPercent={totalProfit} />
+              {formatMoney(totalPnl)}{' '}
+              <ProfitBadge profitPercent={totalProfitPercent} />
             </div>
           </Col>
         </Row>
@@ -527,6 +527,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   const outcomeProb = getProbabilityAfterSale(contract, outcome, shares)
 
   const saleAmount = calculateSaleAmount(contract, bet)
+  const profit = saleAmount - bet.amount
 
   return (
     <ConfirmationButton
@@ -554,6 +555,8 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
       )}
 
       <div className="mt-2 mb-1 text-sm">
+        {profit > 0 ? 'Profit' : 'Loss'}: {formatMoney(profit).replace('-', '')}
+        <br />
         Market probability: {formatPercent(initialProb)} →{' '}
         {formatPercent(outcomeProb)}
       </div>

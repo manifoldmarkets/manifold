@@ -68,8 +68,7 @@ const updateUserBalance = (
 }
 
 export const payUser = (userId: string, payout: number, isDeposit = false) => {
-  if (!isFinite(payout) || payout <= 0)
-    throw new Error('Payout is not positive: ' + payout)
+  if (!isFinite(payout)) throw new Error('Payout is not finite: ' + payout)
 
   return updateUserBalance(userId, payout, isDeposit)
 }

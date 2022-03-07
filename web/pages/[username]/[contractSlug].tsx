@@ -116,7 +116,7 @@ export default function ContractPage(props: {
       )}
 
       <Col className="w-full justify-between md:flex-row">
-        <div className="flex-[3] rounded border-0 border-gray-100 bg-white px-2 py-6 md:px-6 md:py-8">
+        <div className="flex-1 rounded border-0 border-gray-100 bg-white px-2 py-6 md:px-6 md:py-8">
           <ContractOverview
             contract={contract}
             bets={bets ?? []}
@@ -143,7 +143,7 @@ export default function ContractPage(props: {
           <>
             <div className="md:ml-6" />
 
-            <Col className="flex-1">
+            <Col className="md:w-[310px] flex-shrink-0">
               {allowTrade && (
                 <BetPanel className="hidden lg:flex" contract={contract} />
               )}

@@ -49,11 +49,6 @@ export function AnswerBetPanel(props: {
   async function submitBet() {
     if (!user || !betAmount) return
 
-    if (user.balance < betAmount) {
-      setError('Insufficient balance')
-      return
-    }
-
     setError(undefined)
     setIsSubmitting(true)
 
@@ -103,11 +98,11 @@ export function AnswerBetPanel(props: {
 
   return (
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
-      <Row className="self-stretch items-center justify-between">
+      <Row className="items-center justify-between self-stretch">
         <div className="text-xl">Buy this answer</div>
 
         <button className="btn-ghost btn-circle" onClick={closePanel}>
-          <XIcon className="w-8 h-8 text-gray-500 mx-auto" aria-hidden="true" />
+          <XIcon className="mx-auto h-8 w-8 text-gray-500" aria-hidden="true" />
         </button>
       </Row>
       <div className="my-3 text-left text-sm text-gray-500">Amount </div>
@@ -119,10 +114,10 @@ export function AnswerBetPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
-        contractId={contract.id}
+        contractIdForLoan={contract.id}
       />
-      <Col className="gap-3 mt-3 w-full">
-        <Row className="justify-between items-center text-sm">
+      <Col className="mt-3 w-full gap-3">
+        <Row className="items-center justify-between text-sm">
           <div className="text-gray-500">Probability</div>
           <Row>
             <div>{formatPercent(initialProb)}</div>
@@ -131,8 +126,8 @@ export function AnswerBetPanel(props: {
           </Row>
         </Row>
 
-        <Row className="justify-between items-start text-sm gap-2">
-          <Row className="flex-nowrap whitespace-nowrap items-center gap-2 text-gray-500">
+        <Row className="items-start justify-between gap-2 text-sm">
+          <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
             <div>Payout if chosen</div>
             <InfoTooltip
               text={`Current payout for ${formatWithCommas(
@@ -142,7 +137,7 @@ export function AnswerBetPanel(props: {
               )} shares`}
             />
           </Row>
-          <Row className="flex-wrap justify-end items-end gap-2">
+          <Row className="flex-wrap items-end justify-end gap-2">
             <span className="whitespace-nowrap">
               {formatMoney(currentPayout)}
             </span>

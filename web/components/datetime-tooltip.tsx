@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import advanced from 'dayjs/plugin/advancedFormat'
+import { ClientRender } from './client-render'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -19,13 +20,15 @@ export function DateTimeTooltip(props: {
 
   return (
     <>
-      <span
-        className="tooltip hidden cursor-default sm:inline-block"
-        data-tip={toolTip}
-      >
-        {props.children}
-      </span>
-      <span className="sm:hidden whitespace-nowrap">{props.children}</span>
+      <ClientRender>
+        <span
+          className="tooltip hidden cursor-default sm:inline-block"
+          data-tip={toolTip}
+        >
+          {props.children}
+        </span>
+      </ClientRender>
+      <span className="whitespace-nowrap sm:hidden">{props.children}</span>
     </>
   )
 }

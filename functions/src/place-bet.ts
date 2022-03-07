@@ -40,9 +40,6 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         return { status: 'error', message: 'User not found' }
       const user = userSnap.data() as User
 
-      if (user.balance < amount)
-        return { status: 'error', message: 'Insufficient balance' }
-
       const contractDoc = firestore.doc(`contracts/${contractId}`)
       const contractSnap = await transaction.get(contractDoc)
       if (!contractSnap.exists)
@@ -58,6 +55,10 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       )
       const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
 
+      const loanAmount = getLoanAmount(yourBets, amount)
+      if (user.balance < amount - loanAmount)
+        return { status: 'error', message: 'Insufficient balance' }
+
       if (outcomeType === 'FREE_RESPONSE') {
         const answerSnap = await transaction.get(
           contractDoc.collection('answers').doc(outcome)
@@ -69,8 +70,6 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       const newBetDoc = firestore
         .collection(`contracts/${contractId}/bets`)
         .doc()
-
-      const loanAmount = getLoanAmount(yourBets, amount)
 
       const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
         outcomeType === 'BINARY'
