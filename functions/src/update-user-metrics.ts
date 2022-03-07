@@ -7,6 +7,7 @@ import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import { User } from '../../common/user'
 import { calculatePayout } from '../../common/calculate'
+import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
@@ -22,8 +23,8 @@ export const updateUserMetrics = functions.pubsub
       contracts.map((contract) => [contract.id, contract])
     )
 
-    await Promise.all(
-      users.map(async (user) => {
+    await batchedWaitAll(
+      users.map((user) => async () => {
         const [investmentValue, creatorVolume] = await Promise.all([
           computeInvestmentValue(user, contractsDict),
           computeTotalPool(user, contractsDict),
