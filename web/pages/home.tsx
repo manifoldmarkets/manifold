@@ -6,9 +6,8 @@ import _ from 'lodash'
 
 import { Contract } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
-import { ActivityFeed, SummaryActivityFeed } from './activity'
+import { ActivityFeed, SummaryActivityFeed } from '../components/activity-feed'
 import { Comment } from '../lib/firebase/comments'
-import { Bet } from '../lib/firebase/bets'
 import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
@@ -23,10 +22,11 @@ import {
   useFilterYourContracts,
   useFindActiveContracts,
 } from '../hooks/use-find-active-contracts'
-import { useGetRecentBets } from '../hooks/use-bets'
 import { usePropz } from '../hooks/use-propz'
-import { useActiveContracts } from '../hooks/use-contracts'
 import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
+import { useGetRecentBets, useRecentBets } from '../hooks/use-bets'
+import { useActiveContracts } from '../hooks/use-contracts'
+import { useRecentComments } from '../hooks/use-comments'
 
 export async function getStaticPropz() {
   const contractInfo = await getAllContractInfo()
@@ -40,7 +40,6 @@ export async function getStaticPropz() {
 const Home = (props: {
   contracts: Contract[]
   folds: Fold[]
-  recentBets: Bet[]
   recentComments: Comment[]
 }) => {
   props = usePropz(getStaticPropz) ?? {
@@ -48,7 +47,7 @@ const Home = (props: {
     folds: [],
     recentComments: [],
   }
-  const { folds, recentComments } = props
+  const { folds } = props
   const user = useUser()
 
   const contracts = useActiveContracts() ?? props.contracts
@@ -58,13 +57,15 @@ const Home = (props: {
     contracts
   )
 
-  const recentBets = useGetRecentBets()
-  const { activeContracts, activeBets, activeComments } =
-    useFindActiveContracts({
-      contracts: yourContracts,
-      recentBets: recentBets ?? [],
-      recentComments,
-    })
+  const initialRecentBets = useGetRecentBets()
+  const recentBets = useRecentBets() ?? initialRecentBets
+  const recentComments = useRecentComments() ?? props.recentComments
+
+  const { activeContracts } = useFindActiveContracts({
+    contracts: yourContracts,
+    recentBets: initialRecentBets ?? [],
+    recentComments: props.recentComments,
+  })
 
   const exploreContracts = useExploreContracts()
 
@@ -78,7 +79,7 @@ const Home = (props: {
   return (
     <Page assertUser="signed-in">
       <Col className="items-center">
-        <Col className="w-full max-w-3xl">
+        <Col className="w-full max-w-[700px]">
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
 
@@ -93,7 +94,7 @@ const Home = (props: {
 
           <Spacer h={5} />
 
-          <Col className="mx-3 mb-3 gap-2 text-sm text-gray-800 sm:flex-row">
+          <Col className="mb-3 gap-2 text-sm text-gray-800 sm:flex-row">
             <Row className="gap-2">
               <div className="tabs">
                 <div
@@ -124,8 +125,8 @@ const Home = (props: {
             (recentBets ? (
               <ActivityFeed
                 contracts={activeContracts}
-                contractBets={activeBets}
-                contractComments={activeComments}
+                recentBets={recentBets}
+                recentComments={recentComments}
               />
             ) : (
               <LoadingIndicator className="mt-4" />

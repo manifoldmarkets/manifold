@@ -36,6 +36,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
   const submitAnswer = async () => {
     if (canSubmit) {
       setIsSubmitting(true)
+
       const result = await createAnswer({
         contractId: contract.id,
         text,
@@ -48,7 +49,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
         setText('')
         setBetAmount(10)
         setAmountError(undefined)
-      }
+      } else setAmountError(result.message)
     }
   }
 
@@ -72,7 +73,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
   return (
-    <Col className="gap-4 p-4 bg-gray-50 rounded">
+    <Col className="gap-4 rounded bg-gray-50 p-4">
       <Col className="flex-1 gap-2">
         <div className="mb-1">Add your answer</div>
         <Textarea
@@ -86,14 +87,14 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
         <div />
         <Col
           className={clsx(
-            'sm:flex-row gap-4',
+            'gap-4 sm:flex-row sm:items-end',
             text ? 'justify-between' : 'self-end'
           )}
         >
           {text && (
             <>
-              <Col className="gap-2 mt-1">
-                <div className="text-gray-500 text-sm">Buy amount</div>
+              <Col className="mt-1 gap-2">
+                <div className="text-sm text-gray-500">Buy amount</div>
                 <AmountInput
                   amount={betAmount}
                   onChange={setBetAmount}
@@ -101,34 +102,42 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
                   setError={setAmountError}
                   minimumAmount={1}
                   disabled={isSubmitting}
+                  contractIdForLoan={contract.id}
                 />
               </Col>
-              <Col className="gap-2 mt-1">
-                <div className="text-sm text-gray-500">Implied probability</div>
-                <Row>
-                  <div>{formatPercent(0)}</div>
-                  <div className="mx-2">→</div>
-                  <div>{formatPercent(resultProb)}</div>
+              <Col className="gap-3">
+                <Row className="items-center justify-between text-sm">
+                  <div className="text-gray-500">Probability</div>
+                  <Row>
+                    <div>{formatPercent(0)}</div>
+                    <div className="mx-2">→</div>
+                    <div>{formatPercent(resultProb)}</div>
+                  </Row>
                 </Row>
-                <Row className="mt-2 mb-1 items-center gap-2 text-sm text-gray-500">
-                  Payout if chosen
-                  <InfoTooltip
-                    text={`Current payout for ${formatWithCommas(
-                      shares
-                    )} / ${formatWithCommas(shares)} shares`}
-                  />
+
+                <Row className="justify-between gap-2 text-sm">
+                  <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+                    <div>Payout if chosen</div>
+                    <InfoTooltip
+                      text={`Current payout for ${formatWithCommas(
+                        shares
+                      )} / ${formatWithCommas(shares)} shares`}
+                    />
+                  </Row>
+                  <Row className="flex-wrap items-end justify-end gap-2">
+                    <span className="whitespace-nowrap">
+                      {formatMoney(currentPayout)}
+                    </span>
+                    <span>(+{currentReturnPercent})</span>
+                  </Row>
                 </Row>
-                <div>
-                  {formatMoney(currentPayout)}
-                  &nbsp; <span>(+{currentReturnPercent})</span>
-                </div>
               </Col>
             </>
           )}
           {user ? (
             <button
               className={clsx(
-                'btn self-end mt-2',
+                'btn mt-2',
                 canSubmit ? 'btn-outline' : 'btn-disabled',
                 isSubmitting && 'loading'
               )}

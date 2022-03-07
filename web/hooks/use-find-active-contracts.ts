@@ -4,11 +4,11 @@ import { useMemo, useRef } from 'react'
 import { Fold } from '../../common/fold'
 import { User } from '../../common/user'
 import { filterDefined } from '../../common/util/array'
-import { Bet, getRecentBets } from '../lib/firebase/bets'
+import { Bet } from '../lib/firebase/bets'
 import { Comment, getRecentComments } from '../lib/firebase/comments'
 import { Contract, getActiveContracts } from '../lib/firebase/contracts'
 import { listAllFolds } from '../lib/firebase/folds'
-import { findActiveContracts } from '../pages/activity'
+import { findActiveContracts } from '../components/activity-feed'
 import { useInactiveContracts } from './use-contracts'
 import { useFollowedFolds } from './use-fold'
 import { useUserBetContracts } from './use-user-bets'
@@ -20,12 +20,9 @@ export const getAllContractInfo = async () => {
     listAllFolds().catch(() => []),
   ])
 
-  const [recentBets, recentComments] = await Promise.all([
-    getRecentBets(),
-    getRecentComments(),
-  ])
+  const recentComments = await getRecentComments()
 
-  return { contracts, recentBets, recentComments, folds }
+  return { contracts, recentComments, folds }
 }
 
 export const useFilterYourContracts = (

@@ -137,7 +137,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         <span className="mb-1">Answer type</span>
       </label>
       <Row className="form-control gap-2">
-        <label className="cursor-pointer label gap-2">
+        <label className="label cursor-pointer gap-2">
           <input
             className="radio"
             type="radio"
@@ -149,7 +149,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           <span className="label-text">Yes / No</span>
         </label>
 
-        <label className="cursor-pointer label gap-2">
+        <label className="label cursor-pointer gap-2">
           <input
             className="radio"
             type="radio"
@@ -248,6 +248,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           error={anteError}
           setError={setAnteError}
           disabled={isSubmitting}
+          contractIdForLoan={undefined}
         />
       </div>
 

@@ -5,19 +5,17 @@ import { Fold } from '../../../../common/fold'
 import { Comment } from '../../../../common/comment'
 import { Page } from '../../../components/page'
 import { Title } from '../../../components/title'
-import {
-  Bet,
-  getRecentContractBets,
-  listAllBets,
-} from '../../../lib/firebase/bets'
-import { listAllComments } from '../../../lib/firebase/comments'
+import { Bet, listAllBets } from '../../../lib/firebase/bets'
 import { Contract } from '../../../lib/firebase/contracts'
 import {
   foldPath,
   getFoldBySlug,
   getFoldContracts,
 } from '../../../lib/firebase/folds'
-import { ActivityFeed, findActiveContracts } from '../../activity'
+import {
+  ActivityFeed,
+  findActiveContracts,
+} from '../../../components/activity-feed'
 import { TagsList } from '../../../components/tags-list'
 import { Row } from '../../../components/layout/row'
 import { UserLink } from '../../../components/user-page'
@@ -42,6 +40,9 @@ import { useTaggedContracts } from '../../../hooks/use-contracts'
 import { Linkify } from '../../../components/linkify'
 import { usePropz } from '../../../hooks/use-propz'
 import { filterDefined } from '../../../../common/util/array'
+import { useRecentBets } from '../../../hooks/use-bets'
+import { useRecentComments } from '../../../hooks/use-comments'
+import { LoadingIndicator } from '../../../components/loading-indicator'
 
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -51,41 +52,16 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   const contracts = fold ? await getFoldContracts(fold).catch((_) => []) : []
 
-  const betsPromise = Promise.all(
+  const bets = await Promise.all(
     contracts.map((contract) => listAllBets(contract.id))
   )
 
-  const [contractComments, contractRecentBets] = await Promise.all([
-    Promise.all(
-      contracts.map((contract) => listAllComments(contract.id).catch((_) => []))
-    ),
-    Promise.all(
-      contracts.map((contract) =>
-        getRecentContractBets(contract.id).catch((_) => [])
-      )
-    ),
-  ])
-
-  let activeContracts = findActiveContracts(
-    contracts,
-    _.flatten(contractComments),
-    _.flatten(contractRecentBets)
-  )
+  let activeContracts = findActiveContracts(contracts, [], _.flatten(bets))
   const [resolved, unresolved] = _.partition(
     activeContracts,
     ({ isResolved }) => isResolved
   )
   activeContracts = [...unresolved, ...resolved]
-
-  const activeContractBets = await Promise.all(
-    activeContracts.map((contract) => listAllBets(contract.id).catch((_) => []))
-  )
-  const activeContractComments = activeContracts.map(
-    (contract) =>
-      contractComments[contracts.findIndex((c) => c.id === contract.id)]
-  )
-
-  const bets = await betsPromise
 
   const creatorScores = scoreCreators(contracts, bets)
   const traderScores = scoreTraders(contracts, bets)
@@ -102,8 +78,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       curator,
       contracts,
       activeContracts,
-      activeContractBets,
-      activeContractComments,
       traderScores,
       topTraders,
       creatorScores,
@@ -156,15 +130,8 @@ export default function FoldPage(props: {
     creatorScores: {},
     topCreators: [],
   }
-  const {
-    curator,
-    activeContractBets,
-    activeContractComments,
-    traderScores,
-    topTraders,
-    creatorScores,
-    topCreators,
-  } = props
+  const { curator, traderScores, topTraders, creatorScores, topCreators } =
+    props
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -189,6 +156,9 @@ export default function FoldPage(props: {
   const activeContracts = filterDefined(
     props.activeContracts.map((contract) => contractsMap[contract.id])
   )
+
+  const recentBets = useRecentBets()
+  const recentComments = useRecentComments()
 
   if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
@@ -272,19 +242,24 @@ export default function FoldPage(props: {
               />
             )}
             {page === 'activity' ? (
-              <>
-                <ActivityFeed
-                  contracts={activeContracts}
-                  contractBets={activeContractBets}
-                  contractComments={activeContractComments}
-                />
-                {activeContracts.length === 0 && (
-                  <div className="mx-2 mt-4 text-gray-500 lg:mx-0">
-                    No activity from matching markets.{' '}
-                    {isCurator && 'Try editing to add more tags!'}
-                  </div>
-                )}
-              </>
+              recentBets && recentComments ? (
+                <>
+                  <ActivityFeed
+                    contracts={activeContracts}
+                    recentBets={recentBets ?? []}
+                    recentComments={recentComments ?? []}
+                    loadBetAndCommentHistory
+                  />
+                  {activeContracts.length === 0 && (
+                    <div className="mx-2 mt-4 text-gray-500 lg:mx-0">
+                      No activity from matching markets.{' '}
+                      {isCurator && 'Try editing to add more tags!'}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <LoadingIndicator className="mt-4" />
+              )
             ) : (
               <SearchableGrid
                 contracts={contracts}

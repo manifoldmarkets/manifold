@@ -82,7 +82,8 @@ export function BetsList(props: { user: User }) {
         if (bet.isSold || bet.sale) return 0
 
         const contract = contracts.find((c) => c.id === contractId)
-        return contract ? calculatePayout(contract, bet, 'MKT') : 0
+        const payout = contract ? calculatePayout(contract, bet, 'MKT') : 0
+        return payout - (bet.loanAmount ?? 0)
       })
     }
   )
@@ -126,8 +127,8 @@ export function BetsList(props: { user: User }) {
   const totalPortfolio = currentBetsValue + user.balance
 
   const totalPnl = totalPortfolio - user.totalDeposits
-  const totalProfit = (totalPnl / user.totalDeposits) * 100
-  const investedProfit =
+  const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
+  const investedProfitPercent =
     ((currentBetsValue - currentInvestment) / currentInvestment) * 100
 
   return (
@@ -135,17 +136,17 @@ export function BetsList(props: { user: User }) {
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
-            <div className="text-sm text-gray-500">Invested</div>
+            <div className="text-sm text-gray-500">Investment value</div>
             <div className="text-lg">
               {formatMoney(currentBetsValue)}{' '}
-              <ProfitBadge profitPercent={investedProfit} />
+              <ProfitBadge profitPercent={investedProfitPercent} />
             </div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">Total portfolio</div>
+            <div className="text-sm text-gray-500">Total profit</div>
             <div className="text-lg">
-              {formatMoney(totalPortfolio)}{' '}
-              <ProfitBadge profitPercent={totalProfit} />
+              {formatMoney(totalPnl)}{' '}
+              <ProfitBadge profitPercent={totalProfitPercent} />
             </div>
           </Col>
         </Row>
@@ -457,6 +458,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     shares,
     isSold,
     isAnte,
+    loanAmount,
   } = bet
 
   const { isResolved, closeTime } = contract
@@ -464,7 +466,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
 
   const saleAmount = saleBet?.sale?.amount
 
-  const saleDisplay = bet.isAnte ? (
+  const saleDisplay = isAnte ? (
     'ANTE'
   ) : saleAmount !== undefined ? (
     <>{formatMoney(saleAmount)} (sold)</>
@@ -491,7 +493,10 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
       <td>
         <OutcomeLabel outcome={outcome} />
       </td>
-      <td>{formatMoney(amount)}</td>
+      <td>
+        {formatMoney(amount)}
+        {loanAmount ? ` (${formatMoney(loanAmount ?? 0)} loan)` : ''}
+      </td>
       <td>{saleDisplay}</td>
       {!isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>
@@ -510,21 +515,23 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   }, [])
 
   const { contract, bet } = props
-  const isBinary = contract.outcomeType === 'BINARY'
+  const { outcome, shares, loanAmount } = bet
+
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const initialProb = getOutcomeProbability(
     contract.totalShares,
-    bet.outcome === 'NO' ? 'YES' : bet.outcome
+    outcome === 'NO' ? 'YES' : outcome
   )
 
   const outcomeProb = getProbabilityAfterSale(
     contract.totalShares,
-    bet.outcome,
-    bet.shares
+    outcome,
+    shares
   )
 
   const saleAmount = calculateSaleAmount(contract, bet)
+  const profit = saleAmount - bet.amount
 
   return (
     <ConfirmationButton
@@ -533,7 +540,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
         className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
         label: 'Sell',
       }}
-      submitBtn={{ className: 'btn-primary' }}
+      submitBtn={{ className: 'btn-primary', label: 'Sell' }}
       onSubmit={async () => {
         setIsSubmitting(true)
         await sellBet({ contractId: contract.id, betId: bet.id })
@@ -541,17 +548,21 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
       }}
     >
       <div className="mb-4 text-2xl">
-        Sell <OutcomeLabel outcome={bet.outcome} />
+        Sell {formatWithCommas(shares)} shares of{' '}
+        <OutcomeLabel outcome={outcome} /> for {formatMoney(saleAmount)}?
       </div>
-      <div>
-        Do you want to sell {formatWithCommas(bet.shares)} shares of{' '}
-        <OutcomeLabel outcome={bet.outcome} /> for {formatMoney(saleAmount)}?
-      </div>
+      {!!loanAmount && (
+        <div className="mt-2">
+          You will also pay back {formatMoney(loanAmount)} of your loan, for a
+          net of {formatMoney(saleAmount - loanAmount)}.
+        </div>
+      )}
 
-      <div className="mt-2 mb-1 text-sm text-gray-500">
-        ({isBinary ? 'Updated' : <OutcomeLabel outcome={bet.outcome} />}{' '}
-        probability: {formatPercent(initialProb)} → {formatPercent(outcomeProb)}
-        )
+      <div className="mt-2 mb-1 text-sm">
+        {profit > 0 ? 'Profit' : 'Loss'}: {formatMoney(profit).replace('-', '')}
+        <br />
+        Market probability: {formatPercent(initialProb)} →{' '}
+        {formatPercent(outcomeProb)}
       </div>
     </ConfirmationButton>
   )

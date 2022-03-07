@@ -11,7 +11,7 @@ export const getSellBetInfo = (
   newBetId: string
 ) => {
   const { pool, totalShares, totalBets } = contract
-  const { id: betId, amount, shares, outcome } = bet
+  const { id: betId, amount, shares, outcome, loanAmount } = bet
 
   const adjShareValue = calculateShareValue(contract, bet)
 
@@ -57,7 +57,7 @@ export const getSellBetInfo = (
     },
   }
 
-  const newBalance = user.balance + saleAmount
+  const newBalance = user.balance + saleAmount - (loanAmount ?? 0)
 
   return {
     newBet,

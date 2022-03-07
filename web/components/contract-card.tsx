@@ -150,7 +150,8 @@ function AbbrContractDetails(props: {
         ) : showCloseTime ? (
           <Row className="gap-1">
             <ClockIcon className="h-5 w-5" />
-            Closes {fromNow(closeTime || 0)}
+            {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
+            {fromNow(closeTime || 0)}
           </Row>
         ) : (
           <Row className="gap-1">
@@ -312,7 +313,7 @@ function EditableCloseDate(props: {
             className="btn btn-xs btn-ghost"
             onClick={() => setIsEditingCloseTime(true)}
           >
-            <PencilIcon className="inline h-4 w-4 mr-2" /> Edit
+            <PencilIcon className="mr-2 inline h-4 w-4" /> Edit
           </button>
         ))}
     </>

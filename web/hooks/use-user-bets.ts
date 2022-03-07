@@ -1,6 +1,10 @@
 import _ from 'lodash'
 import { useEffect, useState } from 'react'
-import { Bet, listenForUserBets } from '../lib/firebase/bets'
+import {
+  Bet,
+  listenForUserBets,
+  listenForUserContractBets,
+} from '../lib/firebase/bets'
 
 export const useUserBets = (userId: string | undefined) => {
   const [bets, setBets] = useState<Bet[] | undefined>(undefined)
@@ -8,6 +12,20 @@ export const useUserBets = (userId: string | undefined) => {
   useEffect(() => {
     if (userId) return listenForUserBets(userId, setBets)
   }, [userId])
+
+  return bets
+}
+
+export const useUserContractBets = (
+  userId: string | undefined,
+  contractId: string | undefined
+) => {
+  const [bets, setBets] = useState<Bet[] | undefined>(undefined)
+
+  useEffect(() => {
+    if (userId && contractId)
+      return listenForUserContractBets(userId, contractId, setBets)
+  }, [userId, contractId])
 
   return bets
 }

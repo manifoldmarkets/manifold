@@ -95,9 +95,9 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
       ))}
 
       {sortedAnswers.length === 0 ? (
-        <div className="text-gray-500 p-4">No answers yet...</div>
+        <div className="p-4 text-gray-500">No answers yet...</div>
       ) : (
-        <div className="text-gray-500 self-end p-4">
+        <div className="self-end p-4 text-gray-500">
           None of the above:{' '}
           {formatPercent(getOutcomeProbability(contract.totalShares, '0'))}
         </div>

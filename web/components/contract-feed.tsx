@@ -25,7 +25,7 @@ import {
 import { useUser } from '../hooks/use-user'
 import { Linkify } from './linkify'
 import { Row } from './layout/row'
-import { createComment } from '../lib/firebase/comments'
+import { createComment, MAX_COMMENT_LENGTH } from '../lib/firebase/comments'
 import { useComments } from '../hooks/use-comments'
 import { formatMoney } from '../../common/util/format'
 import { ResolutionOrChance } from './contract-card'
@@ -135,8 +135,9 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
                 className="textarea textarea-bordered w-full"
                 placeholder="Add a comment..."
                 rows={3}
+                maxLength={MAX_COMMENT_LENGTH}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     submitComment()
                   }
                 }}
@@ -181,7 +182,7 @@ function EditContract(props: {
           e.target.setSelectionRange(text.length, text.length)
         }
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && e.ctrlKey) {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             onSave(text)
           }
         }}
@@ -289,7 +290,10 @@ function TruncatedComment(props: {
   }
 
   return (
-    <div className="mt-2 whitespace-pre-line break-words text-gray-700">
+    <div
+      className="mt-2 whitespace-pre-line break-words text-gray-700"
+      style={{ fontSize: 15 }}
+    >
       <Linkify text={truncated} />
       {truncated != comment && (
         <SiteLink href={moreHref} className="text-indigo-700">
@@ -300,8 +304,11 @@ function TruncatedComment(props: {
   )
 }
 
-function FeedQuestion(props: { contract: Contract }) {
-  const { contract } = props
+function FeedQuestion(props: {
+  contract: Contract
+  showDescription?: boolean
+}) {
+  const { contract, showDescription } = props
   const { creatorName, creatorUsername, question, resolution, outcomeType } =
     contract
   const { truePool } = contractMetrics(contract)
@@ -336,22 +343,34 @@ function FeedQuestion(props: { contract: Contract }) {
             {closeMessage}
           </span>
         </div>
-        <Col className="mb-4 items-start justify-between gap-2 sm:flex-row sm:gap-4">
-          <SiteLink
-            href={contractPath(contract)}
-            className="text-lg text-indigo-700 sm:text-xl"
-          >
-            {question}
-          </SiteLink>
+        <Col className="items-start justify-between gap-2 sm:flex-row sm:gap-4">
+          <Col>
+            <SiteLink
+              href={contractPath(contract)}
+              className="text-lg text-indigo-700 sm:text-xl"
+            >
+              {question}
+            </SiteLink>
+            {!showDescription && (
+              <SiteLink
+                href={contractPath(contract)}
+                className="relative top-4 self-end text-sm sm:self-start"
+              >
+                <div className="pb-1.5 text-gray-500">See more...</div>
+              </SiteLink>
+            )}
+          </Col>
           {(isBinary || resolution) && (
             <ResolutionOrChance className="items-center" contract={contract} />
           )}
         </Col>
-        <TruncatedComment
-          comment={contract.description}
-          moreHref={contractPath(contract)}
-          shouldTruncate
-        />
+        {showDescription && (
+          <TruncatedComment
+            comment={contract.description}
+            moreHref={contractPath(contract)}
+            shouldTruncate
+          />
+        )}
       </div>
     </>
   )
@@ -680,6 +699,7 @@ type ActivityItem = {
     | 'close'
     | 'resolve'
     | 'expand'
+    | undefined
 }
 
 type FeedType =
@@ -690,64 +710,24 @@ type FeedType =
   // Grouped for a multi-category outcome
   | 'multi'
 
-export function ContractFeed(props: {
+function FeedItems(props: {
   contract: Contract
-  bets: Bet[]
-  comments: Comment[]
+  items: ActivityItem[]
   feedType: FeedType
+  setExpanded: (expanded: boolean) => void
   outcome?: string // Which multi-category outcome to filter
   betRowClassName?: string
 }) {
-  const { contract, feedType, outcome, betRowClassName } = props
-  const { id, outcomeType } = contract
+  const { contract, items, feedType, outcome, setExpanded, betRowClassName } =
+    props
+  const { outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
-
-  const [expanded, setExpanded] = useState(false)
-  const user = useUser()
-
-  let bets = useBets(contract.id) ?? props.bets
-  bets = isBinary
-    ? bets.filter((bet) => !bet.isAnte)
-    : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
-
-  if (feedType === 'multi') {
-    bets = bets.filter((bet) => bet.outcome === outcome)
-  }
-
-  const comments = useComments(id) ?? props.comments
-
-  const groupWindow = feedType == 'activity' ? 10 * DAY_IN_MS : DAY_IN_MS
-
-  const allItems = [
-    { type: 'start', id: 0 },
-    ...groupBets(bets, comments, groupWindow, user?.id),
-  ]
-  if (contract.closeTime && contract.closeTime <= Date.now()) {
-    allItems.push({ type: 'close', id: `${contract.closeTime}` })
-  }
-  if (contract.resolution) {
-    allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
-  }
-  if (feedType === 'multi') {
-    // Hack to add some more padding above the 'multi' feedType, by adding a null item
-    allItems.unshift({ type: '', id: -1 })
-  }
-
-  // If there are more than 5 items, only show the first, an expand item, and last 3
-  let items = allItems
-  if (!expanded && allItems.length > 5 && feedType == 'activity') {
-    items = [
-      allItems[0],
-      { type: 'expand', id: 'expand' },
-      ...allItems.slice(-3),
-    ]
-  }
 
   return (
     <div className="flow-root pr-2 md:pr-0">
-      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
+      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((activityItem, activityItemIdx) => (
-          <div key={activityItem.id} className="relative pb-8">
+          <div key={activityItem.id} className="relative pb-6">
             {activityItemIdx !== items.length - 1 ? (
               <span
                 className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
@@ -791,6 +771,117 @@ export function ContractFeed(props: {
   )
 }
 
+export function ContractFeed(props: {
+  contract: Contract
+  bets: Bet[]
+  comments: Comment[]
+  feedType: FeedType
+  outcome?: string // Which multi-category outcome to filter
+  betRowClassName?: string
+}) {
+  const { contract, feedType, outcome, betRowClassName } = props
+  const { id, outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
+
+  const [expanded, setExpanded] = useState(false)
+  const user = useUser()
+
+  let bets = useBets(contract.id) ?? props.bets
+  bets = isBinary
+    ? bets.filter((bet) => !bet.isAnte)
+    : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
+
+  if (feedType === 'multi') {
+    bets = bets.filter((bet) => bet.outcome === outcome)
+  }
+
+  const comments = useComments(id) ?? props.comments
+
+  const groupWindow = feedType == 'activity' ? 10 * DAY_IN_MS : DAY_IN_MS
+
+  const allItems: ActivityItem[] = [
+    { type: 'start', id: '0' },
+    ...groupBets(bets, comments, groupWindow, user?.id),
+  ]
+  if (contract.closeTime && contract.closeTime <= Date.now()) {
+    allItems.push({ type: 'close', id: `${contract.closeTime}` })
+  }
+  if (contract.resolution) {
+    allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
+  }
+  if (feedType === 'multi') {
+    // Hack to add some more padding above the 'multi' feedType, by adding a null item
+    allItems.unshift({ type: undefined, id: '-1' })
+  }
+
+  // If there are more than 5 items, only show the first, an expand item, and last 3
+  let items = allItems
+  if (!expanded && allItems.length > 5 && feedType == 'activity') {
+    items = [
+      allItems[0],
+      { type: 'expand', id: 'expand' },
+      ...allItems.slice(-3),
+    ]
+  }
+
+  return (
+    <FeedItems
+      contract={contract}
+      items={items}
+      feedType={feedType}
+      setExpanded={setExpanded}
+      betRowClassName={betRowClassName}
+      outcome={outcome}
+    />
+  )
+}
+
+export function ContractActivityFeed(props: {
+  contract: Contract
+  bets: Bet[]
+  comments: Comment[]
+  betRowClassName?: string
+}) {
+  const { contract, betRowClassName, bets, comments } = props
+
+  const user = useUser()
+
+  bets.sort((b1, b2) => b1.createdTime - b2.createdTime)
+  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+
+  const allItems: ActivityItem[] = [
+    { type: 'start', id: '0' },
+    ...groupBets(bets, comments, DAY_IN_MS, user?.id),
+  ]
+  if (contract.closeTime && contract.closeTime <= Date.now()) {
+    allItems.push({ type: 'close', id: `${contract.closeTime}` })
+  }
+  if (contract.resolution) {
+    allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
+  }
+
+  // Remove all but last bet group.
+  const betGroups = allItems.filter((item) => item.type === 'betgroup')
+  const lastBetGroup = betGroups[betGroups.length - 1]
+  const filtered = allItems.filter(
+    (item) => item.type !== 'betgroup' || item.id === lastBetGroup?.id
+  )
+
+  // Only show the first item plus the last three items.
+  const items =
+    filtered.length > 3 ? [filtered[0], ...filtered.slice(-3)] : filtered
+
+  return (
+    <FeedItems
+      contract={contract}
+      items={items}
+      feedType="activity"
+      setExpanded={() => {}}
+      betRowClassName={betRowClassName}
+    />
+  )
+}
+
 export function ContractSummaryFeed(props: {
   contract: Contract
   betRowClassName?: string
@@ -804,7 +895,7 @@ export function ContractSummaryFeed(props: {
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
         <div className="relative pb-8">
           <div className="relative flex items-start space-x-3">
-            <FeedQuestion contract={contract} />
+            <FeedQuestion contract={contract} showDescription />
           </div>
         </div>
       </div>

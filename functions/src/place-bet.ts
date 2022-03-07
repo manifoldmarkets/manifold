@@ -3,7 +3,12 @@ import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
-import { getNewBinaryBetInfo, getNewMultiBetInfo } from '../../common/new-bet'
+import {
+  getLoanAmount,
+  getNewBinaryBetInfo,
+  getNewMultiBetInfo,
+} from '../../common/new-bet'
+import { Bet } from '../../common/bet'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -33,9 +38,6 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         return { status: 'error', message: 'User not found' }
       const user = userSnap.data() as User
 
-      if (user.balance < amount)
-        return { status: 'error', message: 'Insufficient balance' }
-
       const contractDoc = firestore.doc(`contracts/${contractId}`)
       const contractSnap = await transaction.get(contractDoc)
       if (!contractSnap.exists)
@@ -45,6 +47,15 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       const { closeTime, outcomeType } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
+
+      const yourBetsSnap = await transaction.get(
+        contractDoc.collection('bets').where('userId', '==', userId)
+      )
+      const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
+
+      const loanAmount = getLoanAmount(yourBets, amount)
+      if (user.balance < amount - loanAmount)
+        return { status: 'error', message: 'Insufficient balance' }
 
       if (outcomeType === 'FREE_RESPONSE') {
         const answerSnap = await transaction.get(
@@ -64,10 +75,18 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
               user,
               outcome as 'YES' | 'NO',
               amount,
+              loanAmount,
               contract,
               newBetDoc.id
             )
-          : getNewMultiBetInfo(user, outcome, amount, contract, newBetDoc.id)
+          : getNewMultiBetInfo(
+              user,
+              outcome,
+              amount,
+              loanAmount,
+              contract,
+              newBetDoc.id
+            )
 
       transaction.create(newBetDoc, newBet)
       transaction.update(contractDoc, {
