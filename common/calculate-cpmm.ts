@@ -20,7 +20,8 @@ export function getCpmmOutcomeProbabilityAfterBet(
   return outcome === 'NO' ? 1 - p : p
 }
 
-export function calculateCpmmShares(
+// before liquidity fee
+function calculateCpmmShares(
   pool: {
     [outcome: string]: number
   },
@@ -28,11 +29,35 @@ export function calculateCpmmShares(
   betChoice: string
 ) {
   const { YES: y, NO: n } = pool
-  const k = y * n
-  const numerator = bet ** 2 + bet * (y + n) - k + y * n
+  const numerator = bet ** 2 + bet * (y + n)
   const denominator = betChoice === 'YES' ? bet + n : bet + y
   const shares = numerator / denominator
   return shares
+}
+
+export const CPMM_LIQUIDITY_FEE = 0 // 0.02
+
+export function getCpmmLiquidityFee(
+  contract: FullContract<CPMM, Binary>,
+  bet: number,
+  outcome: string
+) {
+  const p = getCpmmProbability(contract.pool)
+  const betP = outcome === 'YES' ? 1 - p : p
+  const fee = CPMM_LIQUIDITY_FEE * betP * bet
+  const remainingBet = bet - fee
+  return { fee, remainingBet }
+}
+
+export function calculateCpmmSharesAfterFee(
+  contract: FullContract<CPMM, Binary>,
+  bet: number,
+  outcome: string
+) {
+  const { pool } = contract
+  const { remainingBet } = getCpmmLiquidityFee(contract, bet, outcome)
+
+  return calculateCpmmShares(pool, remainingBet, outcome)
 }
 
 export function calculateCpmmPurchase(
@@ -41,8 +66,9 @@ export function calculateCpmmPurchase(
   outcome: string
 ) {
   const { pool } = contract
+  const { remainingBet } = getCpmmLiquidityFee(contract, bet, outcome)
 
-  const shares = calculateCpmmShares(pool, bet, outcome)
+  const shares = calculateCpmmShares(pool, remainingBet, outcome)
   const { YES: y, NO: n } = pool
 
   const [newY, newN] =
@@ -75,15 +101,21 @@ export function calculateCpmmSale(
 ) {
   const { shares, outcome } = bet
 
-  const saleValue = calculateCpmmShareValue(contract, shares, outcome)
+  const rawSaleValue = calculateCpmmShareValue(contract, shares, outcome)
+
+  const { fee, remainingBet: saleValue } = getCpmmLiquidityFee(
+    contract,
+    rawSaleValue,
+    outcome === 'YES' ? 'NO' : 'YES'
+  )
 
   const { pool } = contract
   const { YES: y, NO: n } = pool
 
   const [newY, newN] =
     outcome === 'YES'
-      ? [y + shares - saleValue, n - saleValue]
-      : [y - saleValue, n + shares - saleValue]
+      ? [y + shares - saleValue + fee, n - saleValue + fee]
+      : [y - saleValue + fee, n + shares - saleValue + fee]
 
   const newPool = { YES: newY, NO: newN }
 

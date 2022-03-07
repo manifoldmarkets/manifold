@@ -1,10 +1,10 @@
 import { Bet } from './bet'
 import {
-  calculateCpmmShares,
   calculateCpmmShareValue,
   getCpmmProbability,
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbabilityAfterSale,
+  calculateCpmmSharesAfterFee,
 } from './calculate-cpmm'
 import {
   calculateDpmPayout,
@@ -62,7 +62,11 @@ export function calculateShares(
   betChoice: string
 ) {
   return contract.mechanism === 'cpmm-1'
-    ? calculateCpmmShares(contract.pool, bet, betChoice)
+    ? calculateCpmmSharesAfterFee(
+        contract as FullContract<CPMM, Binary>,
+        bet,
+        betChoice
+      )
     : calculateDpmShares(contract.totalShares, bet, betChoice)
 }
 
