@@ -1,4 +1,5 @@
 import _ = require('lodash')
+import { DOMAIN } from '../../common/access'
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
@@ -73,7 +74,7 @@ export const sendMarketResolutionEmail = async (
     outcome,
     investment: `${Math.round(investment)}`,
     payout: `${Math.round(payout)}`,
-    url: `https://manifold.markets/${creator.username}/${contract.slug}`,
+    url: `https://${DOMAIN}/${creator.username}/${contract.slug}`,
   }
 
   // Modify template here:
@@ -107,7 +108,7 @@ Or come chat with us on Discord: https://discord.gg/eHQBNBqXuh
 
 Best,
 Austin from Manifold
-https://manifold.markets/`
+https://${DOMAIN}/`
   )
 }
 
@@ -128,7 +129,7 @@ export const sendMarketCloseEmail = async (
 
   const { question, pool: pools, slug } = contract
   const pool = formatMoney(_.sum(_.values(pools)))
-  const url = `https://manifold.markets/${username}/${slug}`
+  const url = `https://${DOMAIN}/${username}/${slug}`
 
   await sendTemplateEmail(
     privateUser.email,
@@ -162,7 +163,7 @@ export const sendNewCommentEmail = async (
     return
 
   const { question, creatorUsername, slug } = contract
-  const marketUrl = `https://manifold.markets/${creatorUsername}/${slug}`
+  const marketUrl = `https://${DOMAIN}/${creatorUsername}/${slug}`
 
   const unsubscribeUrl = `https://us-central1-${
     isProd ? 'mantic-markets' : 'dev-mantic-markets'
@@ -238,7 +239,7 @@ export const sendNewAnswerEmail = async (
   const { question, creatorUsername, slug } = contract
   const { name, avatarUrl, text } = answer
 
-  const marketUrl = `https://manifold.markets/${creatorUsername}/${slug}`
+  const marketUrl = `https://${DOMAIN}/${creatorUsername}/${slug}`
   const unsubscribeUrl = `https://us-central1-${
     isProd ? 'mantic-markets' : 'dev-mantic-markets'
   }.cloudfunctions.net/unsubscribe?id=${userId}&type=market-answer`
