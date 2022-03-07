@@ -5,18 +5,32 @@ import { getProbability } from './calculate'
 import { deductFixedFees } from './calculate-fixed-payouts'
 import { Binary, CPMM, FixedPayouts, FullContract } from './contract'
 import { CREATOR_FEE } from './fees'
+import { LiquidityProvision } from './liquidity-provision'
 
-export const getFixedCancelPayouts = (bets: Bet[]) => {
-  return bets.map((bet) => ({
-    userId: bet.userId,
-    payout: bet.amount,
+export const getFixedCancelPayouts = (
+  contract: FullContract<FixedPayouts, Binary>,
+  bets: Bet[],
+  liquidities: LiquidityProvision[]
+) => {
+  const liquidityPayouts = liquidities.map((lp) => ({
+    userId: lp.userId,
+    payout: lp.amount,
   }))
+
+  return bets
+    .filter((b) => !b.isAnte && !b.isLiquidityProvision)
+    .map((bet) => ({
+      userId: bet.userId,
+      payout: bet.amount,
+    }))
+    .concat(liquidityPayouts)
 }
 
 export const getStandardFixedPayouts = (
   outcome: string,
   contract: FullContract<FixedPayouts, Binary>,
-  bets: Bet[]
+  bets: Bet[],
+  liquidities: LiquidityProvision[]
 ) => {
   const winningBets = bets.filter((bet) => bet.outcome === outcome)
 
@@ -44,20 +58,29 @@ export const getStandardFixedPayouts = (
   return payouts
     .map(({ userId, payout }) => ({ userId, payout }))
     .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
-    .concat(getLiquidityPoolPayouts(contract, outcome))
+    .concat(getLiquidityPoolPayouts(contract, outcome, liquidities))
 }
 
 export const getLiquidityPoolPayouts = (
   contract: FullContract<CPMM, Binary>,
-  outcome: string
+  outcome: string,
+  liquidities: LiquidityProvision[]
 ) => {
-  const { creatorId, pool } = contract
-  return [{ userId: creatorId, payout: pool[outcome] }]
+  const providedLiquidity = _.sumBy(liquidities, (lp) => lp.liquidity)
+
+  const { pool } = contract
+  const finalPool = pool[outcome]
+
+  return liquidities.map((lp) => ({
+    userId: lp.userId,
+    payout: (lp.liquidity / providedLiquidity) * finalPool,
+  }))
 }
 
 export const getMktFixedPayouts = (
   contract: FullContract<FixedPayouts, Binary>,
   bets: Bet[],
+  liquidities: LiquidityProvision[],
   resolutionProbability?: number
 ) => {
   const p =
@@ -90,14 +113,21 @@ export const getMktFixedPayouts = (
   return payouts
     .map(({ userId, payout }) => ({ userId, payout }))
     .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
-    .concat(getLiquidityPoolProbPayouts(contract, p))
+    .concat(getLiquidityPoolProbPayouts(contract, p, liquidities))
 }
 
 export const getLiquidityPoolProbPayouts = (
   contract: FullContract<CPMM, Binary>,
-  p: number
+  p: number,
+  liquidities: LiquidityProvision[]
 ) => {
-  const { creatorId, pool } = contract
-  const payout = p * pool.YES + (1 - p) * pool.NO
-  return [{ userId: creatorId, payout }]
+  const providedLiquidity = _.sumBy(liquidities, (lp) => lp.liquidity)
+
+  const { pool } = contract
+  const finalPool = p * pool.YES + (1 - p) * pool.NO
+
+  return liquidities.map((lp) => ({
+    userId: lp.userId,
+    payout: (lp.liquidity / providedLiquidity) * finalPool,
+  }))
 }

@@ -46,10 +46,7 @@ export type DPM = {
 
 export type CPMM = {
   mechanism: 'cpmm-1'
-
   pool: { [outcome: string]: number }
-  k: number // liquidity constant
-  liquidity: { [userId: string]: { [outcome: string]: number } } // track liquidity providers
 }
 
 export type FixedPayouts = CPMM

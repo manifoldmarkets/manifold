@@ -9,6 +9,7 @@ import { getUser, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
 import { getLoanPayouts, getPayouts } from '../../common/payouts'
 import { removeUndefinedProps } from '../../common/util/object'
+import { LiquidityProvision } from '../../common/liquidity-provision'
 
 export const resolveMarket = functions
   .runWith({ minInstances: 1 })
@@ -94,10 +95,19 @@ export const resolveMarket = functions
       const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
       const openBets = bets.filter((b) => !b.isSold && !b.sale)
 
+      const liquiditiesSnap = await firestore
+        .collection(`contracts/${contractId}/liquidity`)
+        .get()
+
+      const liquidities = liquiditiesSnap.docs.map(
+        (doc) => doc.data() as LiquidityProvision
+      )
+
       const payouts = getPayouts(
         resolutions ?? outcome,
         contract,
         openBets,
+        liquidities,
         resolutionProbability
       )
 

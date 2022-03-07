@@ -1,4 +1,4 @@
-import { calcStartPool, calcStartCpmmPool } from './antes'
+import { PHANTOM_ANTE } from './antes'
 import {
   Binary,
   Contract,
@@ -10,6 +10,8 @@ import {
 import { User } from './user'
 import { parseTags } from './util/parse'
 import { removeUndefinedProps } from './util/object'
+import { calcCpmmInitialPool } from './calculate-cpmm'
+import { calcDpmInitialPool } from './calculate-dpm'
 
 export function getNewContract(
   id: string,
@@ -62,7 +64,7 @@ export function getNewContract(
 
 const getBinaryDpmProps = (initialProb: number, ante: number) => {
   const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
-    calcStartPool(initialProb, ante)
+    calcDpmInitialPool(initialProb, ante, PHANTOM_ANTE)
 
   const system: DPM & Binary = {
     mechanism: 'dpm-2',
@@ -81,15 +83,13 @@ const getBinaryCpmmProps = (
   ante: number,
   userId: string
 ) => {
-  const { poolYes, poolNo, k } = calcStartCpmmPool(initialProb, ante)
+  const { poolYes, poolNo } = calcCpmmInitialPool(initialProb, ante)
   const pool = { YES: poolYes, NO: poolNo }
 
   const system: CPMM & Binary = {
     mechanism: 'cpmm-1',
     outcomeType: 'BINARY',
     pool: pool,
-    k,
-    liquidity: { [userId]: pool },
   }
 
   return system

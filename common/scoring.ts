@@ -1,4 +1,5 @@
 import * as _ from 'lodash'
+
 import { Bet } from './bet'
 import { Binary, Contract, FullContract } from './contract'
 import { getPayouts } from './payouts'
@@ -37,6 +38,7 @@ export function scoreUsersByContract(
     resolution ?? 'MKT',
     contract,
     openBets,
+    [],
     resolutionProbability
   )
 

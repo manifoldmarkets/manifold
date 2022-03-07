@@ -24,11 +24,11 @@ export function calculateCpmmShares(
   pool: {
     [outcome: string]: number
   },
-  k: number,
   bet: number,
   betChoice: string
 ) {
   const { YES: y, NO: n } = pool
+  const k = y * n
   const numerator = bet ** 2 + bet * (y + n) - k + y * n
   const denominator = betChoice === 'YES' ? bet + n : bet + y
   const shares = numerator / denominator
@@ -40,9 +40,9 @@ export function calculateCpmmPurchase(
   bet: number,
   outcome: string
 ) {
-  const { pool, k } = contract
+  const { pool } = contract
 
-  const shares = calculateCpmmShares(pool, k, bet, outcome)
+  const shares = calculateCpmmShares(pool, bet, outcome)
   const { YES: y, NO: n } = pool
 
   const [newY, newN] =
@@ -60,11 +60,11 @@ export function calculateCpmmShareValue(
   shares: number,
   outcome: string
 ) {
-  const { pool, k } = contract
+  const { pool } = contract
   const { YES: y, NO: n } = pool
 
   const poolChange = outcome === 'YES' ? shares + y - n : shares + n - y
-
+  const k = y * n
   const shareValue = 0.5 * (shares + y + n - Math.sqrt(4 * k + poolChange ** 2))
   return shareValue
 }
@@ -100,4 +100,62 @@ export function getCpmmProbabilityAfterSale(
 ) {
   const { newPool } = calculateCpmmSale(contract, bet)
   return getCpmmProbability(newPool)
+}
+
+export const calcCpmmInitialPool = (initialProbInt: number, ante: number) => {
+  const p = initialProbInt / 100.0
+
+  const [poolYes, poolNo] =
+    p >= 0.5 ? [ante * (1 / p - 1), ante] : [ante, ante * (1 / (1 - p) - 1)]
+
+  return { poolYes, poolNo }
+}
+
+export function getCpmmLiquidity(pool: { [outcome: string]: number }) {
+  // For binary contracts only.
+  const { YES, NO } = pool
+  return Math.sqrt(YES * NO)
+}
+
+export function addCpmmLiquidity(
+  contract: FullContract<CPMM, Binary>,
+  amount: number
+) {
+  const { YES, NO } = contract.pool
+  const p = getCpmmProbability({ YES, NO })
+
+  const [newYes, newNo] =
+    p >= 0.5
+      ? [amount * (1 / p - 1), amount]
+      : [amount, amount * (1 / (1 - p) - 1)]
+
+  const betAmount = Math.abs(newYes - newNo)
+  const betOutcome = p >= 0.5 ? 'YES' : 'NO'
+
+  const poolLiquidity = getCpmmLiquidity({ YES, NO })
+  const newPool = { YES: YES + newYes, NO: NO + newNo }
+  const resultingLiquidity = getCpmmLiquidity(newPool)
+  const liquidity = resultingLiquidity - poolLiquidity
+
+  return { newPool, liquidity, betAmount, betOutcome }
+}
+
+export function removeCpmmLiquidity(
+  contract: FullContract<CPMM, Binary>,
+  liquidity: number
+) {
+  const { YES, NO } = contract.pool
+  const poolLiquidity = getCpmmLiquidity({ YES, NO })
+  const p = getCpmmProbability({ YES, NO })
+
+  const f = liquidity / poolLiquidity
+  const [payoutYes, payoutNo] = [f * YES, f * NO]
+
+  const betAmount = Math.abs(payoutYes - payoutNo)
+  const betOutcome = p >= 0.5 ? 'NO' : 'YES' // opposite side as adding liquidity
+  const payout = Math.min(payoutYes, payoutNo)
+
+  const newPool = { YES: YES - payoutYes, NO: NO - payoutNo }
+
+  return { newPool, payout, betAmount, betOutcome }
 }

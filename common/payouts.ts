@@ -2,6 +2,7 @@ import * as _ from 'lodash'
 
 import { Bet } from './bet'
 import { Contract, DPM, FreeResponse, FullContract, Multi } from './contract'
+import { LiquidityProvision } from './liquidity-provision'
 import {
   getDpmCancelPayouts,
   getDpmMktPayouts,
@@ -22,17 +23,23 @@ export const getPayouts = (
       },
   contract: Contract,
   bets: Bet[],
+  liquidities: LiquidityProvision[],
   resolutionProbability?: number
 ) => {
   if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
     switch (outcome) {
       case 'YES':
       case 'NO':
-        return getStandardFixedPayouts(outcome, contract, bets)
+        return getStandardFixedPayouts(outcome, contract, bets, liquidities)
       case 'MKT':
-        return getMktFixedPayouts(contract, bets, resolutionProbability)
+        return getMktFixedPayouts(
+          contract,
+          bets,
+          liquidities,
+          resolutionProbability
+        )
       case 'CANCEL':
-        return getFixedCancelPayouts(bets)
+        return getFixedCancelPayouts(contract, bets, liquidities)
     }
   }
 

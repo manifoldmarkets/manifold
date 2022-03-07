@@ -271,3 +271,23 @@ export const deductDpmFees = (betAmount: number, winnings: number) => {
     ? betAmount + (1 - FEES) * (winnings - betAmount)
     : winnings
 }
+
+export const calcDpmInitialPool = (
+  initialProbInt: number,
+  ante: number,
+  phantomAnte: number
+) => {
+  const p = initialProbInt / 100.0
+  const totalAnte = phantomAnte + ante
+
+  const sharesYes = Math.sqrt(p * totalAnte ** 2)
+  const sharesNo = Math.sqrt(totalAnte ** 2 - sharesYes ** 2)
+
+  const poolYes = p * ante
+  const poolNo = (1 - p) * ante
+
+  const phantomYes = Math.sqrt(p) * phantomAnte
+  const phantomNo = Math.sqrt(1 - p) * phantomAnte
+
+  return { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo }
+}

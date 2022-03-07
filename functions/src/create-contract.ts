@@ -17,6 +17,7 @@ import { getNewContract } from '../../common/new-contract'
 import {
   getAnteBets,
   getCpmmAnteBet,
+  getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   MINIMUM_ANTE,
 } from '../../common/antes'
@@ -127,7 +128,7 @@ export const createContract = functions
 
             const outcome = y > n ? 'NO' : 'YES' // more in YES pool if prob leans NO
 
-            const bet = await getCpmmAnteBet(
+            const bet = getCpmmAnteBet(
               creator,
               contract as FullContract<CPMM, Binary>,
               betDoc.id,
@@ -136,6 +137,19 @@ export const createContract = functions
             )
 
             await betDoc.set(bet)
+
+            const liquidityDoc = firestore
+              .collection(`contracts/${contract.id}/liquidity`)
+              .doc()
+
+            const lp = getCpmmInitialLiquidity(
+              creator,
+              contract as FullContract<CPMM, Binary>,
+              liquidityDoc.id,
+              ante
+            )
+
+            await liquidityDoc.set(lp)
           }
         } else if (outcomeType === 'FREE_RESPONSE') {
           const noneAnswerDoc = firestore

@@ -28,11 +28,12 @@ export function getProbability(contract: FullContract<DPM | CPMM, Binary>) {
     : getDpmProbability(contract.totalShares)
 }
 
+// TODO: Deprecate this function
 export function getInitialProbability(
   contract: FullContract<DPM | CPMM, Binary>
 ) {
   return contract.mechanism === 'cpmm-1'
-    ? getCpmmProbability(contract.liquidity[contract.creatorId])
+    ? getCpmmProbability(contract.pool)
     : getDpmProbability(contract.phantomShares ?? contract.totalShares)
 }
 
@@ -62,7 +63,7 @@ export function calculateShares(
   betChoice: string
 ) {
   return contract.mechanism === 'cpmm-1'
-    ? calculateCpmmShares(contract.pool, contract.k, bet, betChoice)
+    ? calculateCpmmShares(contract.pool, bet, betChoice)
     : calculateDpmShares(contract.totalShares, bet, betChoice)
 }
 
