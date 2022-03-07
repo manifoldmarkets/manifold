@@ -5,6 +5,7 @@ import * as _ from 'lodash'
 import { getValues } from './utils'
 import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
+import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
@@ -17,8 +18,8 @@ export const updateContractMetrics = functions.pubsub
       firestore.collection('contracts')
     )
 
-    await Promise.all(
-      contracts.map(async (contract) => {
+    await batchedWaitAll(
+      contracts.map((contract) => async () => {
         const volume24Hours = await computeVolumeFrom(contract, oneDay)
         const volume7Days = await computeVolumeFrom(contract, oneDay * 7)
 
