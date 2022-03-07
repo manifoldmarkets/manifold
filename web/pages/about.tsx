@@ -118,6 +118,13 @@ function Contents() {
           </p>
         </li>
       </ol>
+      <p>
+        More questions? Check out{' '}
+        <a href="https://outsidetheasylum.blog/manifold-markets-faq/">
+          this community-driven FAQ
+        </a>
+        !
+      </p>
       <h3 id="can-prediction-markets-work-without-real-money-">
         Can prediction markets work without real money?
       </h3>
@@ -148,6 +155,40 @@ function Contents() {
         </a>
         .
       </p>
+
+      <h3 id="why-is-this-important-">Why is this important?</h3>
+      <p>
+        Prediction markets aggregate and reveal crucial information that would
+        not otherwise be known. They are a bottom-up mechanism that can
+        influence everything from politics, economics, and business, to
+        scientific research and education.
+      </p>
+      <p>
+        Prediction markets can predict{' '}
+        <a href="https://www.pnas.org/content/112/50/15343">
+          which research papers will replicate
+        </a>
+        ; which drug is the most effective; which policy would generate the most
+        tax revenue; which charity will be underfunded; or which startup idea is
+        the most promising. By surfacing and quantifying our collective
+        knowledge, we as a society become wiser.
+      </p>
+
+      <h3 id="how-does-betting-work">How does betting work?</h3>
+      <ul>
+        <li>Markets are structured around a question with a binary outcome.</li>
+        <li>
+          Traders can place a bet on either YES or NO. The trader receives some
+          shares of the betting pool. The number of shares depends on the
+          current probability.
+        </li>
+        <li>
+          When the market is resolved, the traders who bet on the correct
+          outcome are paid out of the final pool in proportion to the number of
+          shares they own.
+        </li>
+      </ul>
+
       <h3 id="how-are-markets-resolved-">How are markets resolved?</h3>
       <p>
         The creator of the prediction market decides the outcome and earns{' '}
@@ -166,29 +207,9 @@ function Contents() {
         or even personal. (E.g. &quot;Will I enjoy participating in the
         Metaverse in 2023?&quot;)
       </p>
-      <h3 id="why-is-this-important-">Why is this important?</h3>
-      <p>
-        Prediction markets aggregate and reveal crucial information that would
-        not otherwise be known. They are a bottom-up mechanism that can
-        influence everything from politics, economics, and business, to
-        scientific research and education.
-      </p>
-      <p>
-        Prediction markets can predict{' '}
-        <a href="https://www.pnas.org/content/112/50/15343">
-          which research papers will replicate
-        </a>
-        ; which drug is the most effective; which policy would generate the most
-        tax revenue; which charity will be underfunded; or, which startup idea
-        is the most promising.
-      </p>
-      <p>
-        By surfacing and quantifying our collective knowledge, we as a society
-        become wiser.
-      </p>
-      <h3 id="how-is-this-different-from-metaculus-or-hypermind-">
+      {/* <h3 id="how-is-this-different-from-metaculus-or-hypermind-">
         How is this different from Metaculus or Hypermind?
-      </h3>
+      </h3> */}
       {/* <p>
         We believe that in order to get the best results, you have to have skin
         in the game. We require that people use real money to buy the currency
@@ -199,28 +220,13 @@ function Contents() {
         carefully and can&#39;t rig the outcome by creating multiple accounts.
         The result is more accurate predictions.
       </p> */}
-      <p>
+      {/* <p>
         Manifold Markets is focused on accessibility and allowing anyone to
         quickly create and judge a prediction market. When we all have the power
         to create and share prediction markets in seconds and apply our own
         judgment on the outcome, it leads to a qualitative shift in the number,
         variety, and usefulness of prediction markets.
-      </p>
-
-      <h3 id="how-does-betting-work">How does betting work?</h3>
-      <ul>
-        <li>Markets are structured around a question with a binary outcome.</li>
-        <li>
-          Traders can place a bet on either YES or NO. The trader receives some
-          shares of the betting pool. The number of shares depends on the
-          current probability.
-        </li>
-        <li>
-          When the market is resolved, the traders who bet on the correct
-          outcome are paid out of the final pool in proportion to the number of
-          shares they own.
-        </li>
-      </ul>
+      </p> */}
 
       <h3 id="type-of-market-maker">What kind of betting system do you use?</h3>
       <p>
@@ -247,6 +253,20 @@ function Contents() {
           our technical guide
         </a>{' '}
         to find out more!
+      </p>
+
+      <h3 id="private-markets">Can I create private markets?</h3>
+      <p>
+        Soon! We're running a pilot version of Manifold for Teams - private
+        Manifold instances where you can discuss internal topics and predict on
+        outcomes for your organization.
+      </p>
+      <p>
+        If this sounds like something you’d want,{' '}
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSfM_rxRHemCjKE6KPiYXGyP2nBSInZNKn_wc7yS1-rvlLAVnA/viewform?usp=sf_link">
+          join the waitlist here
+        </a>
+        !
       </p>
 
       <h3 id="who-are-we-">Who are we?</h3>
@@ -297,18 +317,23 @@ function Contents() {
 
       <ul>
         <li>
+          <a href="https://outsidetheasylum.blog/manifold-markets-faq/">
+            An in-depth, unofficial FAQ by Isaac King
+          </a>
+        </li>
+        <li>
           <a href="https://manifoldmarkets.notion.site/Technical-Guide-to-Manifold-Markets-b9b48a09ea1f45b88d991231171730c5">
-            Technical Guide to Manifold Markets
+            How Manifold's market maker works
+          </a>
+        </li>
+        <li>
+          <a href="https://astralcodexten.substack.com/p/play-money-and-reputation-systems">
+            Scott Alexander on play-money prediction markets
           </a>
         </li>
         <li>
           <a href="https://sideways-view.com/2019/10/27/prediction-markets-for-internet-points/">
-            Paul Christiano: Prediction markets for internet points
-          </a>
-        </li>
-        <li>
-          <a href="https://thezvi.wordpress.com/2021/12/02/covid-prediction-markets-at-polymarket/">
-            Zvi Mowshowitz on resolving prediction markets
+            Paul Christiano on prediction markets for internet points
           </a>
         </li>
       </ul>
