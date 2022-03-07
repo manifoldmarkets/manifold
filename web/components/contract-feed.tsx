@@ -43,6 +43,7 @@ import { parseTags } from '../../common/util/parse'
 import { Avatar } from './avatar'
 import { useAdmin } from '../hooks/use-admin'
 import { FreeResponse, FullContract } from '../../common/contract'
+import { getCpmmLiquidity } from '../../common/calculate-cpmm'
 
 function FeedComment(props: {
   activityItem: any
@@ -312,7 +313,7 @@ function FeedQuestion(props: {
   const { contract, showDescription } = props
   const { creatorName, creatorUsername, question, resolution, outcomeType } =
     contract
-  const { truePool } = contractMetrics(contract)
+  const { liquidityLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
 
   const closeMessage =
@@ -340,7 +341,7 @@ function FeedQuestion(props: {
           asked
           {/* Currently hidden on mobile; ideally we'd fit this in somewhere. */}
           <span className="float-right hidden text-gray-400 sm:inline">
-            {formatMoney(truePool)} pool
+            {liquidityLabel}
             {closeMessage}
           </span>
         </div>
