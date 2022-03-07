@@ -138,8 +138,7 @@ export const getPayoutsMultiOutcome = (
     const prob = resolutions[outcome] / probTotal
     const winnings = (shares / sharesByOutcome[outcome]) * prob * poolTotal
     const profit = winnings - amount
-
-    const payout = amount + (1 - FEES) * Math.max(0, profit)
+    const payout = deductFees(amount, winnings)
     return { userId, profit, payout }
   })
 
