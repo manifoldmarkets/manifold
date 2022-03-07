@@ -137,20 +137,20 @@ export const createContract = functions
             )
 
             await betDoc.set(bet)
-
-            const liquidityDoc = firestore
-              .collection(`contracts/${contract.id}/liquidity`)
-              .doc()
-
-            const lp = getCpmmInitialLiquidity(
-              creator,
-              contract as FullContract<CPMM, Binary>,
-              liquidityDoc.id,
-              ante
-            )
-
-            await liquidityDoc.set(lp)
           }
+
+          const liquidityDoc = firestore
+            .collection(`contracts/${contract.id}/liquidity`)
+            .doc()
+
+          const lp = getCpmmInitialLiquidity(
+            creator,
+            contract as FullContract<CPMM, Binary>,
+            liquidityDoc.id,
+            ante
+          )
+
+          await liquidityDoc.set(lp)
         } else if (outcomeType === 'FREE_RESPONSE') {
           const noneAnswerDoc = firestore
             .collection(`contracts/${contract.id}/answers`)
