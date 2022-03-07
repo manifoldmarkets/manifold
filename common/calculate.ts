@@ -28,7 +28,6 @@ export function getProbability(contract: FullContract<DPM | CPMM, Binary>) {
     : getDpmProbability(contract.totalShares)
 }
 
-// TODO: Deprecate this function
 export function getInitialProbability(
   contract: FullContract<DPM | CPMM, Binary>
 ) {
