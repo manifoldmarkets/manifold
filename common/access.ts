@@ -1,7 +1,17 @@
+const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
+
 export function isWhitelisted(email?: string) {
-  return email && (email.endsWith('@theoremone.co') || isAdmin(email))
+  switch (ENV) {
+    case 'THEOREMONE':
+      return email && (email.endsWith('@theoremone.co') || isAdmin(email))
+    case 'PROD':
+    case 'DEV':
+    default:
+      return true
+  }
 }
 
+// TODO: Before open sourcing, we should turn these into env vars
 export function isAdmin(email: string) {
   const ADMINS = [
     'akrolsmir@gmail.com', // Austin
@@ -9,15 +19,10 @@ export function isAdmin(email: string) {
     'taowell@gmail.com', // Stephen
     'manticmarkets@gmail.com', // Manifold
   ]
+  if (ENV === 'THEOREMONE') {
+    ADMINS.push('david.glidden@theoremone.co')
+  }
   return ADMINS.includes(email)
-}
-
-const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
-
-export const DOMAINS = {
-  PROD: 'manifold.markets',
-  DEV: 'manifold.markets',
-  THEOREMONE: 'theoremone.manifold.markets',
 }
 
 export const FIREBASE_CONFIGS = {
@@ -50,6 +55,11 @@ export const FIREBASE_CONFIGS = {
   },
 }
 
+const DOMAINS = {
+  PROD: 'manifold.markets',
+  DEV: 'manifold.markets',
+  THEOREMONE: 'theoremone.manifold.markets',
+}
 // @ts-ignore
 export const DOMAIN = DOMAINS[ENV]
 // @ts-ignore
