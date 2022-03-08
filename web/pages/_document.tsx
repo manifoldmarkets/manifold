@@ -1,10 +1,11 @@
 import { Html, Head, Main, NextScript } from 'next/document'
+import { ENV_CONFIG } from '../../common/access'
 
 export default function Document() {
   return (
     <Html data-theme="mantic" className="min-h-screen">
       <Head>
-        <link rel="icon" href="/theoremone/logo.ico" />
+        <link rel="icon" href={ENV_CONFIG.faviconPath} />
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

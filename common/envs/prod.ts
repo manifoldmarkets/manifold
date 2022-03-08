@@ -11,6 +11,7 @@ export type EnvConfig = {
   moneyMoniker: string // e.g. 'M$'
   faviconPath?: string // Should be a file in /public
   navbarLogoPath?: string
+  newQuestionPlaceholders: string[]
 }
 
 type FirebaseConfig = {
@@ -40,8 +41,15 @@ export const PROD_CONFIG: EnvConfig = {
     'taowell@gmail.com', // Stephen
     'manticmarkets@gmail.com', // Manifold
   ],
-  moneyMoniker: 'M$',
   visibility: 'PUBLIC',
+
+  moneyMoniker: 'M$',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',
+  newQuestionPlaceholders: [
+    'Will anyone I know get engaged this year?',
+    'Will humans set foot on Mars by the end of 2030?',
+    'Will any cryptocurrency eclipse Bitcoin by market cap this year?',
+    'Will the Democrats win the 2024 presidential election?',
+  ],
 }
