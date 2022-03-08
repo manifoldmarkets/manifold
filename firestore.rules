@@ -5,16 +5,14 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      return request.auth.uid == 'OTd2JFY7LOdvQg2ZQGYLUqrXAiD2' // Austin
-        || request.auth.uid == 'czxKSN1Z03Mzu7UqIio3ppM0eDt2' // David
-    }
-
-    function isAuthed() {
-      return request.auth != null
+      return request.auth.uid == 'igi2zGXsfxYPgB0DJTXVJVmwCOr2' // Austin
+        || request.auth.uid == '5LZ4LgYuySdL1huCWe7bti02ghx2' // James
+        || request.auth.uid == 'tlmGNz9kjXc2EteizMORes4qvWl2' // Stephen
+        || request.auth.uid == 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // Manifold
     }
 
     match /users/{userId} {
-      allow read: if isAuthed();
+      allow read;
       allow update: if resource.data.id == request.auth.uid 
         && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle']);
@@ -25,7 +23,7 @@ service cloud.firestore {
     }
 
     match /contracts/{contractId} {
-      allow read: if isAuthed();
+      allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['description', 'closeTime', 'tags', 'lowercaseTags']);
       allow update: if isAdmin();
@@ -33,25 +31,25 @@ service cloud.firestore {
     }
 
     match /{somePath=**}/bets/{betId} {
-      allow read: if isAuthed();
+      allow read;
     }
 
     match /{somePath=**}/comments/{commentId} {
-      allow read: if isAuthed();
+      allow read;
       allow create: if request.auth != null;
     }
 
     match /{somePath=**}/answers/{answerId} {
-      allow read: if isAuthed();
+      allow read;
     }
 
     match /folds/{foldId} {
-      allow read: if isAuthed();
+      allow read;
       allow update, delete: if request.auth.uid == resource.data.curatorId;
     }
 
     match /{somePath=**}/followers/{userId} {
-      allow read: if isAuthed();
+      allow read;
       allow write: if request.auth.uid == userId;
     }
   }
