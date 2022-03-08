@@ -93,7 +93,6 @@ export const resolveMarket = functions
         .get()
 
       const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
-      const openBets = bets.filter((b) => !b.isSold && !b.sale)
 
       const liquiditiesSnap = await firestore
         .collection(`contracts/${contractId}/liquidity`)
@@ -106,11 +105,12 @@ export const resolveMarket = functions
       const payouts = getPayouts(
         resolutions ?? outcome,
         contract,
-        openBets,
+        bets,
         liquidities,
         resolutionProbability
       )
 
+      const openBets = bets.filter((b) => !b.isSold && !b.sale)
       const loanPayouts = getLoanPayouts(openBets)
 
       console.log('payouts:', payouts)

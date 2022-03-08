@@ -22,10 +22,12 @@ export const getPayouts = (
         [outcome: string]: number
       },
   contract: Contract,
-  bets: Bet[],
+  allBets: Bet[],
   liquidities: LiquidityProvision[],
   resolutionProbability?: number
 ) => {
+  const bets = allBets.filter((b) => !b.isSold && !b.sale)
+
   if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
     switch (outcome) {
       case 'YES':
@@ -39,7 +41,7 @@ export const getPayouts = (
           resolutionProbability
         )
       case 'CANCEL':
-        return getFixedCancelPayouts(contract, bets, liquidities)
+        return getFixedCancelPayouts(contract, allBets, liquidities)
     }
   }
 
