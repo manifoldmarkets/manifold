@@ -1,4 +1,4 @@
-import { PROJECT_ID } from '../../../common/access'
+import { PROJECT_ID } from '../../../common/envs/constants'
 
 export const checkoutURL = (
   userId: string,

@@ -14,7 +14,7 @@ import {
   cleanUsername,
 } from '../../common/util/clean-username'
 import { sendWelcomeEmail } from './emails'
-import { isWhitelisted } from '../../common/access'
+import { isWhitelisted } from '../../common/envs/constants'
 
 export const createUser = functions
   .runWith({ minInstances: 1 })

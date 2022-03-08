@@ -1,5 +1,5 @@
 import _ = require('lodash')
-import { DOMAIN, PROJECT_ID } from '../../common/access'
+import { DOMAIN, PROJECT_ID } from '../../common/envs/constants'
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'

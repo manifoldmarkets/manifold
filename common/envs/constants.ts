@@ -1,6 +1,6 @@
-import { DEV_CONFIG } from './envs/dev'
-import { EnvConfig, PROD_CONFIG } from './envs/prod'
-import { THEOREMONE_CONFIG } from './envs/theoremone'
+import { DEV_CONFIG } from './dev'
+import { EnvConfig, PROD_CONFIG } from './prod'
+import { THEOREMONE_CONFIG } from './theoremone'
 
 const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 

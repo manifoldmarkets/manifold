@@ -2,7 +2,7 @@ import Link from 'next/link'
 import clsx from 'clsx'
 
 import { useUser } from '../hooks/use-user'
-import { ENV_CONFIG } from '../../common/access'
+import { ENV_CONFIG } from '../../common/envs/constants'
 
 export function ManifoldLogo(props: {
   className?: string

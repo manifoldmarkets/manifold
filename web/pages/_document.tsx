@@ -1,5 +1,5 @@
 import { Html, Head, Main, NextScript } from 'next/document'
-import { ENV_CONFIG } from '../../common/access'
+import { ENV_CONFIG } from '../../common/envs/constants'
 
 export default function Document() {
   return (

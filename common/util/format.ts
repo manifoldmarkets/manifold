@@ -1,4 +1,4 @@
-import { ENV_CONFIG } from '../access'
+import { ENV_CONFIG } from '../envs/constants'
 
 const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',

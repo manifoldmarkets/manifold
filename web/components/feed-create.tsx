@@ -9,7 +9,7 @@ import { Contract } from '../../common/contract'
 import { Col } from './layout/col'
 import clsx from 'clsx'
 import { Row } from './layout/row'
-import { ENV_CONFIG } from '../../common/access'
+import { ENV_CONFIG } from '../../common/envs/constants'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props

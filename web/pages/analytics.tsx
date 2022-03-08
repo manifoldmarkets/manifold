@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import _ from 'lodash'
-import { IS_PRIVATE_MANIFOLD } from '../../common/access'
+import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
 import { DailyCountChart } from '../components/analytics/charts'
 import { Col } from '../components/layout/col'
 import { Spacer } from '../components/layout/spacer'

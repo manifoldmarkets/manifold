@@ -1,4 +1,4 @@
-import { IS_PRIVATE_MANIFOLD } from '../../common/access'
+import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 

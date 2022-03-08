@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
-import { IS_PRIVATE_MANIFOLD } from '../../common/access'
+import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
 
 type PropzProps = {
   params: any
