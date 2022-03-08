@@ -79,16 +79,15 @@ export default function ContractPage(props: {
   slug: string
   folds: Fold[]
 }) {
-  props = props ??
-    usePropz(getStaticPropz, true) ?? {
-      contract: null,
-      username: '',
-      comments: [],
-      answers: [],
-      bets: [],
-      slug: '',
-      folds: [],
-    }
+  props = usePropz(props, getStaticPropz, true) ?? {
+    contract: null,
+    username: '',
+    comments: [],
+    answers: [],
+    bets: [],
+    slug: '',
+    folds: [],
+  }
   const user = useUser()
 
   const contract = useContractWithPreload(props.slug, props.contract)

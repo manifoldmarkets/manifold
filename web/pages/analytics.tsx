@@ -5,12 +5,13 @@ import { Col } from '../components/layout/col'
 import { Spacer } from '../components/layout/spacer'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
-import { usePropz } from '../hooks/use-propz'
+import { fromPropz, usePropz } from '../hooks/use-propz'
 import { getDailyBets } from '../lib/firebase/bets'
 import { getDailyComments } from '../lib/firebase/comments'
 import { getDailyContracts } from '../lib/firebase/contracts'
 import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
 
+export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
   const numberOfDays = 80
   const today = dayjs(dayjs().format('YYYY-MM-DD'))
@@ -56,7 +57,7 @@ export default function Analytics(props: {
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
 }) {
-  props = usePropz(getStaticPropz) ?? {
+  props = usePropz(props, getStaticPropz) ?? {
     startDate: 0,
     dailyActiveUsers: [],
     dailyBetCounts: [],

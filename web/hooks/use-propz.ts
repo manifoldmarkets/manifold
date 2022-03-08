@@ -11,11 +11,17 @@ type PropzProps = {
 // This allows us to client-side render the page for authenticated users.
 // TODO: Could cache the result using stale-while-revalidate: https://swr.vercel.app/
 export function usePropz(
+  initialProps: Object,
   getStaticPropz: (props: PropzProps) => Promise<any>,
   // Dynamic routes will need the query params from the router
   needParams?: boolean
 ) {
-  // Get params from router
+  // If props were successfully server-side generated, just use those
+  if (!_.isEmpty(initialProps)) {
+    return initialProps
+  }
+
+  // Otherwise, get params from router
   const router = useRouter()
   const params = router.query
 
@@ -29,6 +35,7 @@ export function usePropz(
   return propz
 }
 
+// Conditionally disable SSG for private Manifold instances
 export function fromPropz(getStaticPropz: (props: PropzProps) => Promise<any>) {
-  return IS_PRIVATE_MANIFOLD ? async () => {} : getStaticPropz
+  return IS_PRIVATE_MANIFOLD ? async () => ({ props: {} }) : getStaticPropz
 }

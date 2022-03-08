@@ -43,12 +43,11 @@ const Home = (props: {
   folds: Fold[]
   recentComments: Comment[]
 }) => {
-  props = props ??
-    usePropz(getStaticPropz) ?? {
-      contracts: [],
-      folds: [],
-      recentComments: [],
-    }
+  props = usePropz(props, getStaticPropz) ?? {
+    contracts: [],
+    folds: [],
+    recentComments: [],
+  }
   const { folds } = props
   const user = useUser()
 
