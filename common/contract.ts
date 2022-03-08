@@ -53,6 +53,7 @@ export type FixedPayouts = CPMM
 
 export type Binary = {
   outcomeType: 'BINARY'
+  initialProbability: number
   resolutionProbability?: number // Used for BINARY markets resolved to MKT
 }
 

@@ -32,7 +32,7 @@ export function getNewContract(
 
   const propsByOutcomeType =
     outcomeType === 'BINARY'
-      ? getBinaryCpmmProps(initialProb, ante, creator.id) // getBinaryDpmProps(initialProb, ante)
+      ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
       : getFreeAnswerProps(ante)
 
   const contract = removeUndefinedProps({
@@ -69,6 +69,7 @@ const getBinaryDpmProps = (initialProb: number, ante: number) => {
   const system: DPM & Binary = {
     mechanism: 'dpm-2',
     outcomeType: 'BINARY',
+    initialProbability: initialProb / 100,
     phantomShares: { YES: phantomYes, NO: phantomNo },
     pool: { YES: poolYes, NO: poolNo },
     totalShares: { YES: sharesYes, NO: sharesNo },
@@ -78,17 +79,14 @@ const getBinaryDpmProps = (initialProb: number, ante: number) => {
   return system
 }
 
-const getBinaryCpmmProps = (
-  initialProb: number,
-  ante: number,
-  userId: string
-) => {
+const getBinaryCpmmProps = (initialProb: number, ante: number) => {
   const { poolYes, poolNo } = calcCpmmInitialPool(initialProb, ante)
   const pool = { YES: poolYes, NO: poolNo }
 
   const system: CPMM & Binary = {
     mechanism: 'cpmm-1',
     outcomeType: 'BINARY',
+    initialProbability: initialProb / 100,
     pool: pool,
   }
 
