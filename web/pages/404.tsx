@@ -1,7 +1,6 @@
-import { useEffect } from 'gridjs'
+import { IS_PRIVATE_MANIFOLD } from '../../common/access'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
-import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
 
 export default function Custom404() {
   if (IS_PRIVATE_MANIFOLD) {

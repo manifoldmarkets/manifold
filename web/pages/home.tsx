@@ -23,10 +23,10 @@ import {
   useFindActiveContracts,
 } from '../hooks/use-find-active-contracts'
 import { fromPropz, usePropz } from '../hooks/use-propz'
-import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
 import { useGetRecentBets, useRecentBets } from '../hooks/use-bets'
 import { useActiveContracts } from '../hooks/use-contracts'
 import { useRecentComments } from '../hooks/use-comments'
+import { IS_PRIVATE_MANIFOLD } from '../../common/access'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {

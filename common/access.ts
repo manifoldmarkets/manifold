@@ -27,3 +27,4 @@ export function isAdmin(email: string) {
 export const DOMAIN = ENV_CONFIG.domain
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
 export const PROJECT_ID = ENV_CONFIG.firebaseConfig.projectId
+export const IS_PRIVATE_MANIFOLD = ENV_CONFIG.visibility === 'PRIVATE'

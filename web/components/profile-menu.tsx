@@ -3,7 +3,7 @@ import { formatMoney } from '../../common/util/format'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
 import { MenuButton } from './menu'
-import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
+import { IS_PRIVATE_MANIFOLD } from '../../common/access'
 
 export function ProfileMenu(props: { user: User | undefined }) {
   const { user } = props

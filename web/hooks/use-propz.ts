@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
-import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
+import { IS_PRIVATE_MANIFOLD } from '../../common/access'
 
 type PropzProps = {
   params: any

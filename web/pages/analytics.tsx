@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import _ from 'lodash'
+import { IS_PRIVATE_MANIFOLD } from '../../common/access'
 import { DailyCountChart } from '../components/analytics/charts'
 import { Col } from '../components/layout/col'
 import { Spacer } from '../components/layout/spacer'
@@ -9,7 +10,6 @@ import { fromPropz, usePropz } from '../hooks/use-propz'
 import { getDailyBets } from '../lib/firebase/bets'
 import { getDailyComments } from '../lib/firebase/comments'
 import { getDailyContracts } from '../lib/firebase/contracts'
-import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
