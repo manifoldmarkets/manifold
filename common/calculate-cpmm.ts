@@ -35,7 +35,7 @@ function calculateCpmmShares(
   return shares
 }
 
-export const CPMM_LIQUIDITY_FEE = 0 // 0.02
+export const CPMM_LIQUIDITY_FEE = 0.02
 
 export function getCpmmLiquidityFee(
   contract: FullContract<CPMM, Binary>,

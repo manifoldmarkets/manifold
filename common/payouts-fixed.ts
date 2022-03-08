@@ -42,7 +42,7 @@ export const getStandardFixedPayouts = (
   })
 
   const profits = _.sumBy(payouts, (po) => Math.max(0, po.profit))
-  const creatorPayout = CREATOR_FEE * profits
+  const creatorPayout = 0 // CREATOR_FEE * profits
 
   console.log(
     'resolved',
@@ -97,7 +97,7 @@ export const getMktFixedPayouts = (
   })
 
   const profits = _.sumBy(payouts, (po) => Math.max(0, po.profit))
-  const creatorPayout = CREATOR_FEE * profits
+  const creatorPayout = 0 // CREATOR_FEE * profits
 
   console.log(
     'resolved MKT',
