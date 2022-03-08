@@ -22,12 +22,13 @@ import {
   useFilterYourContracts,
   useFindActiveContracts,
 } from '../hooks/use-find-active-contracts'
-import { usePropz } from '../hooks/use-propz'
+import { fromPropz, usePropz } from '../hooks/use-propz'
 import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
 import { useGetRecentBets, useRecentBets } from '../hooks/use-bets'
 import { useActiveContracts } from '../hooks/use-contracts'
 import { useRecentComments } from '../hooks/use-comments'
 
+export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
   const contractInfo = await getAllContractInfo()
 
@@ -42,11 +43,12 @@ const Home = (props: {
   folds: Fold[]
   recentComments: Comment[]
 }) => {
-  props = usePropz(getStaticPropz) ?? {
-    contracts: [],
-    folds: [],
-    recentComments: [],
-  }
+  props = props ??
+    usePropz(getStaticPropz) ?? {
+      contracts: [],
+      folds: [],
+      recentComments: [],
+    }
   const { folds } = props
   const user = useUser()
 

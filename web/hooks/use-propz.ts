@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
+import { IS_PRIVATE_MANIFOLD } from '../lib/firebase/init'
 
 type PropzProps = {
   params: any
@@ -10,7 +11,7 @@ type PropzProps = {
 // This allows us to client-side render the page for authenticated users.
 // TODO: Could cache the result using stale-while-revalidate: https://swr.vercel.app/
 export function usePropz(
-  getStaticPropz: (props?: PropzProps) => Promise<any>,
+  getStaticPropz: (props: PropzProps) => Promise<any>,
   // Dynamic routes will need the query params from the router
   needParams?: boolean
 ) {
@@ -23,8 +24,11 @@ export function usePropz(
     if (needParams && _.isEmpty(params)) {
       return
     }
-    // @ts-ignore
     getStaticPropz({ params }).then((result) => setPropz(result.props))
   }, [params])
   return propz
+}
+
+export function fromPropz(getStaticPropz: (props: PropzProps) => Promise<any>) {
+  return IS_PRIVATE_MANIFOLD ? async () => {} : getStaticPropz
 }
