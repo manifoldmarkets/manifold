@@ -118,7 +118,7 @@ export default function FoldPage(props: {
   creatorScores: { [userId: string]: number }
   topCreators: User[]
 }) {
-  props = usePropz(props, getStaticPropz, true) ?? {
+  props = usePropz(props, getStaticPropz) ?? {
     fold: null,
     curator: null,
     contracts: [],
