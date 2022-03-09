@@ -5,7 +5,6 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      return true
       return request.auth.uid == 'P0UsBCW7VmSR0co39kFlsjxWgLQ2' // Austin
         // || request.auth.uid == 'czxKSN1Z03Mzu7UqIio3ppM0eDt2' // David
     }
