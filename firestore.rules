@@ -5,14 +5,18 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      return request.auth.uid == 'igi2zGXsfxYPgB0DJTXVJVmwCOr2' // Austin
-        || request.auth.uid == '5LZ4LgYuySdL1huCWe7bti02ghx2' // James
-        || request.auth.uid == 'tlmGNz9kjXc2EteizMORes4qvWl2' // Stephen
-        || request.auth.uid == 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // Manifold
+      return true
+      // return request.auth.uid == 'OTd2JFY7LOdvQg2ZQGYLUqrXAiD2' // Austin
+        // || request.auth.uid == 'czxKSN1Z03Mzu7UqIio3ppM0eDt2' // David
+    }
+
+    function isAuthed() {
+      return true
+      // return request.auth != null
     }
 
     match /users/{userId} {
-      allow read;
+      allow read: if isAuthed();
       allow update: if resource.data.id == request.auth.uid 
         && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle']);
@@ -23,7 +27,7 @@ service cloud.firestore {
     }
 
     match /contracts/{contractId} {
-      allow read;
+      allow read: if isAuthed();
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['description', 'closeTime', 'tags', 'lowercaseTags']);
       allow update: if isAdmin();
@@ -31,25 +35,25 @@ service cloud.firestore {
     }
 
     match /{somePath=**}/bets/{betId} {
-      allow read;
+      allow read: if isAuthed();
     }
 
     match /{somePath=**}/comments/{commentId} {
-      allow read;
+      allow read: if isAuthed();
       allow create: if request.auth != null;
     }
 
     match /{somePath=**}/answers/{answerId} {
-      allow read;
+      allow read: if isAuthed();
     }
 
     match /folds/{foldId} {
-      allow read;
+      allow read: if isAuthed();
       allow update, delete: if request.auth.uid == resource.data.curatorId;
     }
 
     match /{somePath=**}/followers/{userId} {
-      allow read;
+      allow read: if isAuthed();
       allow write: if request.auth.uid == userId;
     }
   }
