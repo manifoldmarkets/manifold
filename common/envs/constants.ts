@@ -1,5 +1,6 @@
 import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
+import { SUPERSYNC_CONFIG } from './supersync'
 import { THEOREMONE_CONFIG } from './theoremone'
 
 const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
@@ -8,6 +9,7 @@ const CONFIGS = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
   THEOREMONE: THEOREMONE_CONFIG,
+  SUPERSYNC: SUPERSYNC_CONFIG,
 }
 // @ts-ignore
 export const ENV_CONFIG: EnvConfig = CONFIGS[ENV]

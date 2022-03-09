@@ -6,13 +6,12 @@ service cloud.firestore {
 
     function isAdmin() {
       return true
-      // return request.auth.uid == 'OTd2JFY7LOdvQg2ZQGYLUqrXAiD2' // Austin
+      return request.auth.uid == 'P0UsBCW7VmSR0co39kFlsjxWgLQ2' // Austin
         // || request.auth.uid == 'czxKSN1Z03Mzu7UqIio3ppM0eDt2' // David
     }
 
     function isAuthed() {
-      return true
-      // return request.auth != null
+      return request.auth != null
     }
 
     match /users/{userId} {
