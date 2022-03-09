@@ -1,8 +1,15 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import * as _ from 'lodash'
 
 import { chargeUser, getUser } from './utils'
-import { Contract, outcomeType } from '../../common/contract'
+import {
+  Contract,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_QUESTION_LENGTH,
+  MAX_TAG_LENGTH,
+  outcomeType,
+} from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 import { getNewContract } from '../../common/new-contract'
@@ -34,10 +41,19 @@ export const createContract = functions
       const creator = await getUser(userId)
       if (!creator) return { status: 'error', message: 'User not found' }
 
-      const { question, description, initialProb, ante, closeTime, tags } = data
+      let { question, description, initialProb, ante, closeTime, tags } = data
 
-      if (!question)
-        return { status: 'error', message: 'Missing question field' }
+      if (!question || typeof question != 'string')
+        return { status: 'error', message: 'Missing or invalid question field' }
+      question = question.slice(0, MAX_QUESTION_LENGTH)
+
+      if (typeof description !== 'string')
+        return { status: 'error', message: 'Invalid description field' }
+      description = description.slice(0, MAX_DESCRIPTION_LENGTH)
+
+      if (tags !== undefined && !_.isArray(tags))
+        return { status: 'error', message: 'Invalid tags field' }
+      tags = tags?.map((tag) => tag.toString().slice(0, MAX_TAG_LENGTH))
 
       let outcomeType = data.outcomeType ?? 'BINARY'
       if (!['BINARY', 'MULTI', 'FREE_RESPONSE'].includes(outcomeType))

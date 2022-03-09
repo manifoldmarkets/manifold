@@ -5,7 +5,7 @@ import { Spacer } from './layout/spacer'
 import { NewContract } from '../pages/create'
 import { firebaseLogin, User } from '../lib/firebase/users'
 import { ContractsGrid } from './contracts-list'
-import { Contract } from '../../common/contract'
+import { Contract, MAX_QUESTION_LENGTH } from '../../common/contract'
 import { Col } from './layout/col'
 import clsx from 'clsx'
 import { Row } from './layout/row'
@@ -121,6 +121,7 @@ export default function FeedCreate(props: {
             placeholder={placeholder}
             value={question}
             rows={question.length > 68 ? 4 : 2}
+            maxLength={MAX_QUESTION_LENGTH}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setQuestion(e.target.value.replace('\n', ''))}
             onFocus={() => setIsExpanded(true)}

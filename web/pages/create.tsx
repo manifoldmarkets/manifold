@@ -18,7 +18,7 @@ import { ProbabilitySelector } from '../components/probability-selector'
 import { parseWordsAsTags } from '../../common/util/parse'
 import { TagsList } from '../components/tags-list'
 import { Row } from '../components/layout/row'
-import { outcomeType } from '../../common/contract'
+import { MAX_DESCRIPTION_LENGTH, outcomeType } from '../../common/contract'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -186,6 +186,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         <Textarea
           className="textarea textarea-bordered w-full"
           rows={3}
+          maxLength={MAX_DESCRIPTION_LENGTH}
           placeholder={descriptionPlaceholder}
           value={description}
           disabled={isSubmitting}
