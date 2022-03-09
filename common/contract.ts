@@ -41,3 +41,7 @@ export type Contract = {
 }
 
 export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE'
+
+export const MAX_QUESTION_LENGTH = 480
+export const MAX_DESCRIPTION_LENGTH = 10000
+export const MAX_TAG_LENGTH = 60
