@@ -16,7 +16,7 @@ export const unsubscribe = functions
       const { name } = user
 
       const update: Partial<PrivateUser> = {
-        ...(type === 'market-resolve' && {
+        ...((type === 'market-resolve' || type === 'market-resolved') && {
           unsubscribedFromResolutionEmails: true,
         }),
         ...(type === 'market-comment' && {
