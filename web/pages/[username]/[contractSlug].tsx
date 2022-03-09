@@ -29,8 +29,10 @@ import { useFoldsWithTags } from '../../hooks/use-fold'
 import { listAllAnswers } from '../../lib/firebase/answers'
 import { Answer } from '../../../common/answer'
 import { AnswersPanel } from '../../components/answers/answers-panel'
+import { fromPropz, usePropz } from '../../hooks/use-propz'
 
-export async function getStaticProps(props: {
+export const getStaticProps = fromPropz(getStaticPropz)
+export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
 }) {
   const { username, contractSlug } = props.params
@@ -77,6 +79,15 @@ export default function ContractPage(props: {
   slug: string
   folds: Fold[]
 }) {
+  props = usePropz(props, getStaticPropz) ?? {
+    contract: null,
+    username: '',
+    comments: [],
+    answers: [],
+    bets: [],
+    slug: '',
+    folds: [],
+  }
   const user = useUser()
 
   const contract = useContractWithPreload(props.slug, props.contract)
@@ -143,7 +154,7 @@ export default function ContractPage(props: {
           <>
             <div className="md:ml-6" />
 
-            <Col className="md:w-[310px] flex-shrink-0">
+            <Col className="flex-shrink-0 md:w-[310px]">
               {allowTrade && (
                 <BetPanel className="hidden lg:flex" contract={contract} />
               )}

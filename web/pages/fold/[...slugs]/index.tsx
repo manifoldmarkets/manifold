@@ -38,12 +38,14 @@ import FeedCreate from '../../../components/feed-create'
 import { SEO } from '../../../components/SEO'
 import { useTaggedContracts } from '../../../hooks/use-contracts'
 import { Linkify } from '../../../components/linkify'
+import { fromPropz, usePropz } from '../../../hooks/use-propz'
 import { filterDefined } from '../../../../common/util/array'
 import { useRecentBets } from '../../../hooks/use-bets'
 import { useRecentComments } from '../../../hooks/use-comments'
 import { LoadingIndicator } from '../../../components/loading-indicator'
 
-export async function getStaticProps(props: { params: { slugs: string[] } }) {
+export const getStaticProps = fromPropz(getStaticPropz)
+export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
   const fold = await getFoldBySlug(slugs[0])
@@ -116,13 +118,25 @@ export default function FoldPage(props: {
   creatorScores: { [userId: string]: number }
   topCreators: User[]
 }) {
+  props = usePropz(props, getStaticPropz) ?? {
+    fold: null,
+    curator: null,
+    contracts: [],
+    activeContracts: [],
+    activeContractBets: [],
+    activeContractComments: [],
+    traderScores: {},
+    topTraders: [],
+    creatorScores: {},
+    topCreators: [],
+  }
   const { curator, traderScores, topTraders, creatorScores, topCreators } =
     props
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
 
-  const page = (slugs[1] ?? 'activity') as typeof foldSubpages[number]
+  const page = (slugs?.[1] ?? 'activity') as typeof foldSubpages[number]
 
   const fold = useFold(props.fold?.id) ?? props.fold
 
