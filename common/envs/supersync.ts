@@ -16,7 +16,8 @@ export const SUPERSYNC_CONFIG: EnvConfig = {
   moneyMoniker: 'S$',
   visibility: 'PRIVATE',
   faviconPath: '/favicon.ico',
-  // navbarLogoPath: '/theoremone/TheoremOne-Logo.svg',
+  navbarLogoPath:
+    'https://supsync.com/content/images/2021/03/supsync-logo-invert-1.svg',
   newQuestionPlaceholders: [
     'Will we have at least 5 new team members by the end of this quarter?',
     'Will we meet or exceed our goals this sprint?',
