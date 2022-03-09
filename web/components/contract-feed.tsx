@@ -93,10 +93,12 @@ function Timestamp(props: { time: number }) {
 
 function FeedBet(props: { activityItem: any; feedType: FeedType }) {
   const { activityItem, feedType } = props
-  const { id, contractId, amount, outcome, createdTime } = activityItem
+  const { id, contractId, amount, outcome, createdTime, contract } =
+    activityItem
   const user = useUser()
   const isSelf = user?.id == activityItem.userId
-  // The creator can comment if the bet was posted in the last hour
+  const isCreator = contract.creatorId == activityItem.userId
+  // You can comment if your bet was posted in the last hour
   const canComment = isSelf && Date.now() - createdTime < 60 * 60 * 1000
 
   const [comment, setComment] = useState('')
@@ -113,6 +115,8 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
       <div>
         {isSelf ? (
           <Avatar avatarUrl={user?.avatarUrl} />
+        ) : isCreator ? (
+          <Avatar avatarUrl={contract.creatorAvatarUrl} />
         ) : (
           <div className="relative px-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
@@ -123,7 +127,10 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
       </div>
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
-          <span>{isSelf ? 'You' : 'A trader'}</span> {bought} {money}
+          <span>
+            {isSelf ? 'You' : isCreator ? contract.creatorName : 'A trader'}
+          </span>{' '}
+          {bought} {money}
           <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
           <Timestamp time={createdTime} />
           {canComment && (
@@ -494,7 +501,7 @@ function FeedClose(props: { contract: Contract }) {
   )
 }
 
-function toFeedBet(bet: Bet) {
+function toFeedBet(bet: Bet, contract: Contract) {
   return {
     id: bet.id,
     contractId: bet.contractId,
@@ -504,6 +511,7 @@ function toFeedBet(bet: Bet) {
     outcome: bet.outcome,
     createdTime: bet.createdTime,
     date: fromNow(bet.createdTime),
+    contract,
   }
 }
 
@@ -533,12 +541,13 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000
 // Group together bets that are:
 // - Within `windowMs` of the first in the group
 // - Do not have a comment
-// - Were not created by this user
+// - Were not created by this user or the contract creator
 // Return a list of ActivityItems
 function groupBets(
   bets: Bet[],
   comments: Comment[],
   windowMs: number,
+  contract: Contract,
   userId?: string
 ) {
   const commentsMap = mapCommentsByBetId(comments)
@@ -548,25 +557,25 @@ function groupBets(
   // Turn the current group into an ActivityItem
   function pushGroup() {
     if (group.length == 1) {
-      items.push(toActivityItem(group[0]))
+      items.push(toActivityItem(group[0], false))
     } else if (group.length > 1) {
       items.push({ type: 'betgroup', bets: [...group], id: group[0].id })
     }
     group = []
   }
 
-  function toActivityItem(bet: Bet) {
+  function toActivityItem(bet: Bet, isPublic: boolean) {
     const comment = commentsMap[bet.id]
-    return comment ? toFeedComment(bet, comment) : toFeedBet(bet)
+    return comment ? toFeedComment(bet, comment) : toFeedBet(bet, contract)
   }
 
   for (const bet of bets) {
-    const isCreator = userId === bet.userId
+    const isCreator = userId === bet.userId || contract.creatorId === bet.userId
 
     if (commentsMap[bet.id] || isCreator) {
       pushGroup()
       // Create a single item for this
-      items.push(toActivityItem(bet))
+      items.push(toActivityItem(bet, true))
     } else {
       if (
         group.length > 0 &&
@@ -801,7 +810,7 @@ export function ContractFeed(props: {
 
   const allItems: ActivityItem[] = [
     { type: 'start', id: '0' },
-    ...groupBets(bets, comments, groupWindow, user?.id),
+    ...groupBets(bets, comments, groupWindow, contract, user?.id),
   ]
   if (contract.closeTime && contract.closeTime <= Date.now()) {
     allItems.push({ type: 'close', id: `${contract.closeTime}` })
@@ -851,7 +860,7 @@ export function ContractActivityFeed(props: {
 
   const allItems: ActivityItem[] = [
     { type: 'start', id: '0' },
-    ...groupBets(bets, comments, DAY_IN_MS, user?.id),
+    ...groupBets(bets, comments, DAY_IN_MS, contract, user?.id),
   ]
   if (contract.closeTime && contract.closeTime <= Date.now()) {
     allItems.push({ type: 'close', id: `${contract.closeTime}` })

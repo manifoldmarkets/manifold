@@ -79,7 +79,7 @@ export default function ContractPage(props: {
   slug: string
   folds: Fold[]
 }) {
-  props = usePropz(props, getStaticPropz, true) ?? {
+  props = usePropz(props, getStaticPropz) ?? {
     contract: null,
     username: '',
     comments: [],

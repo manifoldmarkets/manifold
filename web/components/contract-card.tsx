@@ -334,7 +334,9 @@ const getTweetText = (contract: Contract, isCreator: boolean) => {
         contract
       )} chance, place your bets here:`
     : `Submit your own answer:`
-  const url = `https://manifold.markets${contractPath(contract)}`
+
+  const timeParam = `${Date.now()}`.substring(7)
+  const url = `https://manifold.markets${contractPath(contract)}?t=${timeParam}`
 
   return `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
 }

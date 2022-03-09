@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
 
 type PropzProps = {
+  // Params from the router query
   params: any
 }
 
@@ -12,9 +13,7 @@ type PropzProps = {
 // TODO: Could cache the result using stale-while-revalidate: https://swr.vercel.app/
 export function usePropz(
   initialProps: Object,
-  getStaticPropz: (props: PropzProps) => Promise<any>,
-  // Dynamic routes will need the query params from the router
-  needParams?: boolean
+  getStaticPropz: (props: PropzProps) => Promise<any>
 ) {
   // If props were successfully server-side generated, just use those
   if (!_.isEmpty(initialProps)) {
@@ -27,10 +26,9 @@ export function usePropz(
 
   const [propz, setPropz] = useState<any>(undefined)
   useEffect(() => {
-    if (needParams && _.isEmpty(params)) {
-      return
+    if (router.isReady) {
+      getStaticPropz({ params }).then((result) => setPropz(result.props))
     }
-    getStaticPropz({ params }).then((result) => setPropz(result.props))
   }, [params])
   return propz
 }
