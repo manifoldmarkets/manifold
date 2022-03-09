@@ -22,11 +22,14 @@ import {
   useFilterYourContracts,
   useFindActiveContracts,
 } from '../hooks/use-find-active-contracts'
+import { fromPropz, usePropz } from '../hooks/use-propz'
 import { useGetRecentBets, useRecentBets } from '../hooks/use-bets'
 import { useActiveContracts } from '../hooks/use-contracts'
 import { useRecentComments } from '../hooks/use-comments'
+import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
 
-export async function getStaticProps() {
+export const getStaticProps = fromPropz(getStaticPropz)
+export async function getStaticPropz() {
   const contractInfo = await getAllContractInfo()
 
   return {
@@ -40,6 +43,11 @@ const Home = (props: {
   folds: Fold[]
   recentComments: Comment[]
 }) => {
+  props = usePropz(props, getStaticPropz) ?? {
+    contracts: [],
+    folds: [],
+    recentComments: [],
+  }
   const { folds } = props
   const user = useUser()
 
@@ -77,7 +85,8 @@ const Home = (props: {
           <Spacer h={6} />
 
           {initialFollowedFoldSlugs !== undefined &&
-            initialFollowedFoldSlugs.length === 0 && (
+            initialFollowedFoldSlugs.length === 0 &&
+            !IS_PRIVATE_MANIFOLD && (
               <FastFoldFollowing
                 user={user}
                 followedFoldSlugs={initialFollowedFoldSlugs}

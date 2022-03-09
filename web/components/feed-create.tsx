@@ -9,6 +9,7 @@ import { Contract } from '../../common/contract'
 import { Col } from './layout/col'
 import clsx from 'clsx'
 import { Row } from './layout/row'
+import { ENV_CONFIG } from '../../common/envs/constants'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
@@ -72,16 +73,10 @@ export default function FeedCreate(props: {
   const [isExpanded, setIsExpanded] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement | null>()
 
-  const placeholders = [
-    'Will anyone I know get engaged this year?',
-    'Will humans set foot on Mars by the end of 2030?',
-    'Will any cryptocurrency eclipse Bitcoin by market cap this year?',
-    'Will the Democrats win the 2024 presidential election?',
-  ]
+  const placeholders = ENV_CONFIG.newQuestionPlaceholders
   // Rotate through a new placeholder each day
   // Easter egg idea: click your own name to shuffle the placeholder
   // const daysSinceEpoch = Math.floor(Date.now() / 1000 / 60 / 60 / 24)
-
   const [randIndex] = useState(
     Math.floor(Math.random() * 1e10) % placeholders.length
   )
@@ -90,7 +85,7 @@ export default function FeedCreate(props: {
   return (
     <div
       className={clsx(
-        'mt-2 w-full rounded bg-white p-4 shadow-md cursor-text',
+        'mt-2 w-full cursor-text rounded bg-white p-4 shadow-md',
         isExpanded ? 'ring-2 ring-indigo-300' : '',
         className
       )}

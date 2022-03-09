@@ -1,4 +1,4 @@
-import { isAdmin } from '../../common/access'
+import { isAdmin } from '../../common/envs/constants'
 import { usePrivateUser, useUser } from './use-user'
 
 export const useAdmin = () => {

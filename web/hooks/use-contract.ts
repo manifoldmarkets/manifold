@@ -29,7 +29,7 @@ export const useContractWithPreload = (
   useEffect(() => {
     if (contractId) return listenForContract(contractId, setContract)
 
-    if (contractId !== null)
+    if (contractId !== null && slug)
       getContractFromSlug(slug).then((c) => setContractId(c?.id || null))
   }, [contractId, slug])
 
