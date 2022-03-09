@@ -11,6 +11,7 @@ import {
 } from '../../common/new-bet'
 import { removeUndefinedProps } from '../../common/util/object'
 import { Bet } from '../../common/bet'
+import { redeemShares } from './redeem-shares'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -33,87 +34,92 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
       return { status: 'error', message: 'Invalid outcome' }
 
     // run as transaction to prevent race conditions
-    return await firestore.runTransaction(async (transaction) => {
-      const userDoc = firestore.doc(`users/${userId}`)
-      const userSnap = await transaction.get(userDoc)
-      if (!userSnap.exists)
-        return { status: 'error', message: 'User not found' }
-      const user = userSnap.data() as User
+    return await firestore
+      .runTransaction(async (transaction) => {
+        const userDoc = firestore.doc(`users/${userId}`)
+        const userSnap = await transaction.get(userDoc)
+        if (!userSnap.exists)
+          return { status: 'error', message: 'User not found' }
+        const user = userSnap.data() as User
 
-      const contractDoc = firestore.doc(`contracts/${contractId}`)
-      const contractSnap = await transaction.get(contractDoc)
-      if (!contractSnap.exists)
-        return { status: 'error', message: 'Invalid contract' }
-      const contract = contractSnap.data() as Contract
-
-      const { closeTime, outcomeType, mechanism } = contract
-      if (closeTime && Date.now() > closeTime)
-        return { status: 'error', message: 'Trading is closed' }
-
-      const yourBetsSnap = await transaction.get(
-        contractDoc.collection('bets').where('userId', '==', userId)
-      )
-      const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
-
-      const loanAmount = getLoanAmount(yourBets, amount)
-      if (user.balance < amount - loanAmount)
-        return { status: 'error', message: 'Insufficient balance' }
-
-      if (outcomeType === 'FREE_RESPONSE') {
-        const answerSnap = await transaction.get(
-          contractDoc.collection('answers').doc(outcome)
-        )
-        if (!answerSnap.exists)
+        const contractDoc = firestore.doc(`contracts/${contractId}`)
+        const contractSnap = await transaction.get(contractDoc)
+        if (!contractSnap.exists)
           return { status: 'error', message: 'Invalid contract' }
-      }
+        const contract = contractSnap.data() as Contract
 
-      const newBetDoc = firestore
-        .collection(`contracts/${contractId}/bets`)
-        .doc()
+        const { closeTime, outcomeType, mechanism } = contract
+        if (closeTime && Date.now() > closeTime)
+          return { status: 'error', message: 'Trading is closed' }
 
-      const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
-        outcomeType === 'BINARY'
-          ? mechanism === 'dpm-2'
-            ? getNewBinaryDpmBetInfo(
+        const yourBetsSnap = await transaction.get(
+          contractDoc.collection('bets').where('userId', '==', userId)
+        )
+        const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
+
+        const loanAmount = getLoanAmount(yourBets, amount)
+        if (user.balance < amount - loanAmount)
+          return { status: 'error', message: 'Insufficient balance' }
+
+        if (outcomeType === 'FREE_RESPONSE') {
+          const answerSnap = await transaction.get(
+            contractDoc.collection('answers').doc(outcome)
+          )
+          if (!answerSnap.exists)
+            return { status: 'error', message: 'Invalid contract' }
+        }
+
+        const newBetDoc = firestore
+          .collection(`contracts/${contractId}/bets`)
+          .doc()
+
+        const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
+          outcomeType === 'BINARY'
+            ? mechanism === 'dpm-2'
+              ? getNewBinaryDpmBetInfo(
+                  user,
+                  outcome as 'YES' | 'NO',
+                  amount,
+                  contract,
+                  loanAmount,
+                  newBetDoc.id
+                )
+              : (getNewBinaryCpmmBetInfo(
+                  user,
+                  outcome as 'YES' | 'NO',
+                  amount,
+                  contract,
+                  loanAmount,
+                  newBetDoc.id
+                ) as any)
+            : getNewMultiBetInfo(
                 user,
-                outcome as 'YES' | 'NO',
+                outcome,
                 amount,
-                contract,
+                contract as any,
                 loanAmount,
                 newBetDoc.id
               )
-            : (getNewBinaryCpmmBetInfo(
-                user,
-                outcome as 'YES' | 'NO',
-                amount,
-                contract,
-                loanAmount,
-                newBetDoc.id
-              ) as any)
-          : getNewMultiBetInfo(
-              user,
-              outcome,
-              amount,
-              contract as any,
-              loanAmount,
-              newBetDoc.id
-            )
 
-      transaction.create(newBetDoc, newBet)
+        transaction.create(newBetDoc, newBet)
 
-      transaction.update(
-        contractDoc,
-        removeUndefinedProps({
-          pool: newPool,
-          totalShares: newTotalShares,
-          totalBets: newTotalBets,
-        })
-      )
+        transaction.update(
+          contractDoc,
+          removeUndefinedProps({
+            pool: newPool,
+            totalShares: newTotalShares,
+            totalBets: newTotalBets,
+          })
+        )
 
-      transaction.update(userDoc, { balance: newBalance })
+        transaction.update(userDoc, { balance: newBalance })
 
-      return { status: 'success', betId: newBetDoc.id }
-    })
+        return { status: 'success', betId: newBetDoc.id }
+      })
+      .then(async (result) => {
+        await redeemShares(userId, contractId)
+        return result
+      })
   }
 )
 

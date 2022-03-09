@@ -1,0 +1,81 @@
+import * as admin from 'firebase-admin'
+import * as _ from 'lodash'
+
+import { Bet } from '../../common/bet'
+import { getProbability } from '../../common/calculate'
+
+import { Binary, CPMM, FullContract } from '../../common/contract'
+import { User } from '../../common/user'
+
+export const redeemShares = async (userId: string, contractId: string) => {
+  return await firestore.runTransaction(async (transaction) => {
+    const contractDoc = firestore.doc(`contracts/${contractId}`)
+    const contractSnap = await transaction.get(contractDoc)
+    if (!contractSnap.exists)
+      return { status: 'error', message: 'Invalid contract' }
+
+    const contract = contractSnap.data() as FullContract<CPMM, Binary>
+    if (contract.outcomeType !== 'BINARY' || contract.mechanism !== 'cpmm-1')
+      return { status: 'success' }
+
+    const betsSnap = await transaction.get(
+      firestore
+        .collection(`contracts/${contract.id}/bets`)
+        .where('userId', '==', userId)
+    )
+    const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
+    const [yesBets, noBets] = _.partition(bets, (b) => b.outcome === 'YES')
+    const yesShares = _.sumBy(yesBets, (b) => b.shares)
+    const noShares = _.sumBy(noBets, (b) => b.shares)
+
+    const amount = Math.min(yesShares, noShares)
+    if (amount <= 0) return
+
+    const p = getProbability(contract)
+    const createdTime = Date.now()
+
+    const yesDoc = firestore.collection(`contracts/${contract.id}/bets`).doc()
+    const yesBet: Bet = {
+      id: yesDoc.id,
+      userId: userId,
+      contractId: contract.id,
+      amount: p * -amount,
+      shares: -amount,
+      outcome: 'YES',
+      probBefore: p,
+      probAfter: p,
+      createdTime,
+      isRedemption: true,
+    }
+
+    const noDoc = firestore.collection(`contracts/${contract.id}/bets`).doc()
+    const noBet: Bet = {
+      id: noDoc.id,
+      userId: userId,
+      contractId: contract.id,
+      amount: (1 - p) * -amount,
+      shares: -amount,
+      outcome: 'NO',
+      probBefore: p,
+      probAfter: p,
+      createdTime,
+      isRedemption: true,
+    }
+
+    const userDoc = firestore.doc(`users/${userId}`)
+    const userSnap = await transaction.get(userDoc)
+    if (!userSnap.exists) return { status: 'error', message: 'User not found' }
+
+    const user = userSnap.data() as User
+
+    const newBalance = user.balance + amount
+    transaction.update(userDoc, { balance: newBalance })
+
+    transaction.create(yesDoc, yesBet)
+    transaction.create(noDoc, noBet)
+
+    return { status: 'success' }
+  })
+}
+
+const firestore = admin.firestore()
