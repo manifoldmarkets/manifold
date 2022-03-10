@@ -137,18 +137,20 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
         )}
       </div>
       <div className={clsx('min-w-0 flex-1 pb-1.5', !answer && 'pt-1.5')}>
+        {answer && (
+          <div className="text-neutral mb-2" style={{ fontSize: 15 }}>
+            {answer.text}
+          </div>
+        )}
         <div className="text-sm text-gray-500">
           <span>
             {isSelf ? 'You' : isCreator ? contract.creatorName : 'A trader'}
           </span>{' '}
           {bought} {money}
-          <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
-          <Timestamp time={createdTime} />
-          {answer && (
-            <div className="text-neutral mt-1" style={{ fontSize: 15 }}>
-              {answer.text}
-            </div>
+          {!answer && (
+            <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
           )}
+          <Timestamp time={createdTime} />
           {canComment && (
             // Allow user to comment in an textarea if they are the creator
             <div className="mt-2">
@@ -703,7 +705,7 @@ function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
 // On 'multi' feeds, the outcome is redundant, so we hide it
 function MaybeOutcomeLabel(props: { outcome: string; feedType: FeedType }) {
   const { outcome, feedType } = props
-  return feedType === 'multi' || feedType === 'activity' ? null : (
+  return feedType === 'multi' ? null : (
     <span>
       {' '}
       of <OutcomeLabel outcome={outcome} />
