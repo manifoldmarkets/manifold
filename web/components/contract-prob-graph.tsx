@@ -14,7 +14,9 @@ export function ContractProbGraph(props: {
   const { contract } = props
   const { resolutionTime, closeTime } = contract
 
-  const bets = useBetsWithoutAntes(contract, props.bets)
+  const bets = useBetsWithoutAntes(contract, props.bets).filter(
+    (b) => !b.isRedemption
+  )
 
   const startProb = getInitialProbability(contract)
 
