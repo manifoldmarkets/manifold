@@ -59,7 +59,24 @@ export default function Folds(props: {
         }
       )
     }
-  })
+  }, [curatorsDict])
+
+  const [query, setQuery] = useState('')
+  // Copied from contracts-list.tsx; extract if we copy this again
+  const queryWords = query.toLowerCase().split(' ')
+  function check(corpus: String) {
+    return queryWords.every((word) => corpus.toLowerCase().includes(word))
+  }
+
+  const matches = folds.filter(
+    (f) =>
+      check(f.name) ||
+      check(f.about || '') ||
+      check(curatorsDict[f.curatorId].username) ||
+      check(f.lowercaseTags.map((tag) => `#${tag}`).join(' '))
+  )
+  // Not strictly necessary, but makes the "hold delete" experience less laggy
+  const debouncedQuery = _.debounce(setQuery, 50)
 
   return (
     <Page>
@@ -76,10 +93,17 @@ export default function Folds(props: {
               markets. Follow a community to personalize your feed and receive
               relevant updates.
             </div>
+
+            <input
+              type="text"
+              onChange={(e) => debouncedQuery(e.target.value)}
+              placeholder="Search communities"
+              className="input input-bordered mb-4 w-full"
+            />
           </Col>
 
           <Col className="gap-4">
-            {folds.map((fold) => (
+            {matches.map((fold) => (
               <FoldCard
                 key={fold.id}
                 fold={fold}
