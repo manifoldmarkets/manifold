@@ -25,6 +25,22 @@ export const getAllContractInfo = async () => {
   return { contracts, recentComments, folds }
 }
 
+const defaultSkippedTags = [
+  'meta',
+  'test',
+  'trolling',
+  'spam',
+  'transaction',
+  'personal',
+]
+const includedWithDefaultFeed = (contract: Contract) => {
+  const { tags } = contract
+
+  if (tags.length === 0) return false
+  if (tags.some((tag) => defaultSkippedTags.includes(tag))) return false
+  return true
+}
+
 export const useFilterYourContracts = (
   user: User | undefined | null,
   folds: Fold[],
@@ -54,8 +70,9 @@ export const useFilterYourContracts = (
   // Show no contracts before your info is loaded.
   let yourContracts: Contract[] = []
   if (yourBetContracts && followedFoldIds) {
-    // Show all contracts if no folds are followed.
-    if (followedFoldIds.length === 0) yourContracts = contracts
+    // Show default contracts if no folds are followed.
+    if (followedFoldIds.length === 0)
+      yourContracts = contracts.filter(includedWithDefaultFeed)
     else
       yourContracts = contracts.filter(
         (contract) =>
