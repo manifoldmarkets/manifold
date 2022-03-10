@@ -34,8 +34,9 @@ export function scoreUsersByContract(
     bets,
     (bet) => bet.isSold || bet.sale
   )
-  const resolvePayouts = getPayouts(
-    resolution ?? 'MKT',
+  const [resolvePayouts] = getPayouts(
+    resolution,
+    {},
     contract,
     openBets,
     [],

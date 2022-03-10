@@ -4,6 +4,7 @@ import { getCpmmLiquidity, getCpmmProbability } from './calculate-cpmm'
 import { Binary, CPMM, DPM, FreeResponse, FullContract } from './contract'
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
+import { noFees } from './fees'
 
 export const PHANTOM_ANTE = 0.001
 export const MINIMUM_ANTE = 10
@@ -30,6 +31,7 @@ export function getCpmmAnteBet(
     probAfter: p,
     createdTime,
     isAnte: true,
+    fees: noFees,
   }
 
   return bet
@@ -80,6 +82,7 @@ export function getAnteBets(
     probAfter: p,
     createdTime,
     isAnte: true,
+    fees: noFees,
   }
 
   const noBet: Bet = {
@@ -93,6 +96,7 @@ export function getAnteBets(
     probAfter: p,
     createdTime,
     isAnte: true,
+    fees: noFees,
   }
 
   return { yesBet, noBet }
@@ -120,6 +124,7 @@ export function getFreeAnswerAnte(
     probAfter: 1,
     createdTime,
     isAnte: true,
+    fees: noFees,
   }
 
   return anteBet

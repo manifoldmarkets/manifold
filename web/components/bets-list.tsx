@@ -476,8 +476,6 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     shares,
     isSold,
     isAnte,
-    isLiquidityProvision,
-    isRedemption,
     loanAmount,
   } = bet
 
@@ -512,9 +510,6 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
         {!isCPMM && !isResolved && !isClosed && !isSold && !isAnte && (
           <SellButton contract={contract} bet={bet} />
         )}
-        {/* {isAnte && 'ANTE'}
-        {isLiquidityProvision && !isAnte && 'LIQD'}
-        {isRedemption && 'REDEEM'} */}
       </td>
       <td>
         <OutcomeLabel outcome={outcome} />

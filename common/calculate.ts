@@ -69,7 +69,7 @@ export function calculateShares(
 
 export function calculateSaleAmount(contract: Contract, bet: Bet) {
   return contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY'
-    ? calculateCpmmSale(contract, bet)
+    ? calculateCpmmSale(contract, bet).saleValue
     : calculateDpmSaleAmount(contract, bet)
 }
 
