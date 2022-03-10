@@ -32,6 +32,10 @@ export const redeemShares = async (userId: string, contractId: string) => {
     const amount = Math.min(yesShares, noShares)
     if (amount <= 0) return
 
+    const prevLoanAmount = _.sumBy(bets, (bet) => bet.loanAmount ?? 0)
+    const loanPaid = Math.min(prevLoanAmount, amount)
+    const netAmount = amount - loanPaid
+
     const p = getProbability(contract)
     const createdTime = Date.now()
 
@@ -42,6 +46,7 @@ export const redeemShares = async (userId: string, contractId: string) => {
       contractId: contract.id,
       amount: p * -amount,
       shares: -amount,
+      loanAmount: loanPaid ? -loanPaid / 2 : 0,
       outcome: 'YES',
       probBefore: p,
       probAfter: p,
@@ -57,6 +62,7 @@ export const redeemShares = async (userId: string, contractId: string) => {
       contractId: contract.id,
       amount: (1 - p) * -amount,
       shares: -amount,
+      loanAmount: loanPaid ? -loanPaid / 2 : 0,
       outcome: 'NO',
       probBefore: p,
       probAfter: p,
@@ -71,7 +77,7 @@ export const redeemShares = async (userId: string, contractId: string) => {
 
     const user = userSnap.data() as User
 
-    const newBalance = user.balance + amount
+    const newBalance = user.balance + netAmount
     transaction.update(userDoc, { balance: newBalance })
 
     transaction.create(yesDoc, yesBet)
