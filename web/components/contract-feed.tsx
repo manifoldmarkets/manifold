@@ -44,6 +44,10 @@ import { Avatar } from './avatar'
 import { useAdmin } from '../hooks/use-admin'
 import { Answer } from '../../common/answer'
 
+const canAddComment = (createdTime: number, isSelf: boolean) => {
+  return isSelf && Date.now() - createdTime < 60 * 60 * 1000
+}
+
 function FeedComment(props: {
   activityItem: any
   moreHref: string
@@ -100,7 +104,7 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
   const isSelf = user?.id == activityItem.userId
   const isCreator = contract.creatorId == activityItem.userId
   // You can comment if your bet was posted in the last hour
-  const canComment = isSelf && Date.now() - createdTime < 60 * 60 * 1000
+  const canComment = canAddComment(createdTime, isSelf)
 
   const [comment, setComment] = useState('')
   async function submitComment() {
@@ -132,42 +136,44 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
           </div>
         )}
       </div>
-      <div>
-        <div className={clsx('min-w-0 flex-1 pb-1.5', !answer && 'pt-1.5')}>
-          <div className="text-sm text-gray-500">
-            <span>
-              {isSelf ? 'You' : isCreator ? contract.creatorName : 'A trader'}
-            </span>{' '}
-            {bought} {money}
-            <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
-            <Timestamp time={createdTime} />
-            {canComment && (
-              // Allow user to comment in an textarea if they are the creator
-              <div className="mt-2">
-                <Textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="textarea textarea-bordered w-full"
-                  placeholder="Add a comment..."
-                  rows={3}
-                  maxLength={MAX_COMMENT_LENGTH}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                      submitComment()
-                    }
-                  }}
-                />
-                <button
-                  className="btn btn-outline btn-sm mt-1"
-                  onClick={submitComment}
-                >
-                  Comment
-                </button>
-              </div>
-            )}
-          </div>
+      <div className={clsx('min-w-0 flex-1 pb-1.5', !answer && 'pt-1.5')}>
+        <div className="text-sm text-gray-500">
+          <span>
+            {isSelf ? 'You' : isCreator ? contract.creatorName : 'A trader'}
+          </span>{' '}
+          {bought} {money}
+          <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
+          <Timestamp time={createdTime} />
+          {answer && (
+            <div className="text-neutral mt-1" style={{ fontSize: 15 }}>
+              {answer.text}
+            </div>
+          )}
+          {canComment && (
+            // Allow user to comment in an textarea if they are the creator
+            <div className="mt-2">
+              <Textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="textarea textarea-bordered w-full"
+                placeholder="Add a comment..."
+                rows={3}
+                maxLength={MAX_COMMENT_LENGTH}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    submitComment()
+                  }
+                }}
+              />
+              <button
+                className="btn btn-outline btn-sm mt-1"
+                onClick={submitComment}
+              >
+                Comment
+              </button>
+            </div>
+          )}
         </div>
-        {answer && <div style={{ fontSize: 15 }}>{answer.text}</div>}
       </div>
     </>
   )
@@ -815,10 +821,12 @@ export function ContractFeed(props: {
   if (feedType === 'multi') {
     bets = bets.filter((bet) => bet.outcome === outcome)
   } else if (outcomeType === 'FREE_RESPONSE') {
-    // Keep bets on comments or your own bets.
+    // Keep bets on comments or your bets where you can comment.
     const commentBetIds = new Set(comments.map((comment) => comment.betId))
     bets = bets.filter(
-      (bet) => commentBetIds.has(bet.id) || user?.id === bet.id
+      (bet) =>
+        commentBetIds.has(bet.id) ||
+        canAddComment(bet.createdTime, user?.id === bet.userId)
     )
   }
 
