@@ -76,10 +76,12 @@ export function calculateCpmmPurchase(
   const shares = calculateCpmmShares(pool, remainingBet, outcome)
   const { YES: y, NO: n } = pool
 
+  const { liquidityFee: fee } = fees
+
   const [newY, newN] =
     outcome === 'YES'
-      ? [y - shares + bet, n + bet]
-      : [y + bet, n - shares + bet]
+      ? [y - shares + remainingBet + fee, n + remainingBet + fee]
+      : [y + remainingBet + fee, n - shares + remainingBet + fee]
 
   const newPool = { YES: newY, NO: newN }
 
