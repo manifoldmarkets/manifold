@@ -175,7 +175,6 @@ function BetsSection(props: {
   bets: Bet[]
 }) {
   const { contract, user } = props
-  const isBinary = contract.outcomeType === 'BINARY'
   const bets = useBets(contract.id) ?? props.bets
 
   // Decending creation time.

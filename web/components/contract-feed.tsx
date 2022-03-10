@@ -821,7 +821,7 @@ export function ContractFeed(props: {
 
   let bets = useBets(contract.id) ?? props.bets
   bets = isBinary
-    ? bets.filter((bet) => !bet.isAnte)
+    ? bets.filter((bet) => !bet.isAnte && !bet.isRedemption)
     : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
 
   if (feedType === 'multi') {
@@ -885,7 +885,9 @@ export function ContractActivityFeed(props: {
 
   const user = useUser()
 
-  let bets = props.bets.sort((b1, b2) => b1.createdTime - b2.createdTime)
+  let bets = props.bets
+    .filter((bet) => !bet.isAnte && !bet.isRedemption)
+    .sort((b1, b2) => b1.createdTime - b2.createdTime)
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
   if (contract.outcomeType === 'FREE_RESPONSE') {
