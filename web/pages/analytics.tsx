@@ -1,15 +1,18 @@
 import dayjs from 'dayjs'
 import _ from 'lodash'
+import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
 import { DailyCountChart } from '../components/analytics/charts'
 import { Col } from '../components/layout/col'
 import { Spacer } from '../components/layout/spacer'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
+import { fromPropz, usePropz } from '../hooks/use-propz'
 import { getDailyBets } from '../lib/firebase/bets'
 import { getDailyComments } from '../lib/firebase/comments'
 import { getDailyContracts } from '../lib/firebase/contracts'
 
-export async function getStaticProps() {
+export const getStaticProps = fromPropz(getStaticPropz)
+export async function getStaticPropz() {
   const numberOfDays = 80
   const today = dayjs(dayjs().format('YYYY-MM-DD'))
   const startDate = today.subtract(numberOfDays, 'day')
@@ -54,11 +57,18 @@ export default function Analytics(props: {
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
 }) {
+  props = usePropz(props, getStaticPropz) ?? {
+    startDate: 0,
+    dailyActiveUsers: [],
+    dailyBetCounts: [],
+    dailyContractCounts: [],
+    dailyCommentCounts: [],
+  }
   return (
     <Page>
       <CustomAnalytics {...props} />
       <Spacer h={8} />
-      <FirebaseAnalytics />
+      {!IS_PRIVATE_MANIFOLD && <FirebaseAnalytics />}
     </Page>
   )
 }

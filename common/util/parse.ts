@@ -1,7 +1,9 @@
+import { MAX_TAG_LENGTH } from '../contract'
+
 export function parseTags(text: string) {
   const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
   const matches = (text.match(regex) || []).map((match) =>
-    match.trim().substring(1)
+    match.trim().substring(1).substring(0, MAX_TAG_LENGTH)
   )
   const tagSet = new Set()
   const uniqueTags: string[] = []

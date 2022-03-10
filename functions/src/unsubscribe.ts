@@ -7,8 +7,18 @@ import { PrivateUser } from '../../common/user'
 export const unsubscribe = functions
   .runWith({ minInstances: 1 })
   .https.onRequest(async (req, res) => {
-    const { id, type } = req.query as { id: string; type: string }
-    if (!id || !type) return
+    let { id, type } = req.query as { id: string; type: string }
+    if (!id || !type) {
+      res.status(400).send('Empty id or type parameter.')
+      return
+    }
+
+    if (type === 'market-resolved') type = 'market-resolve'
+
+    if (!['market-resolve', 'market-comment', 'market-answer'].includes(type)) {
+      res.status(400).send('Invalid type parameter.')
+      return
+    }
 
     const user = await getUser(id)
 

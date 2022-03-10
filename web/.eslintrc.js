@@ -4,5 +4,6 @@ module.exports = {
   rules: {
     // Add or disable rules here.
     '@next/next/no-img-element': 'off',
+    '@next/next/no-typos': 'off',
   },
 }

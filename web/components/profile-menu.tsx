@@ -3,6 +3,7 @@ import { formatMoney } from '../../common/util/format'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
 import { MenuButton } from './menu'
+import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
 
 export function ProfileMenu(props: { user: User | undefined }) {
   const { user } = props
@@ -54,22 +55,32 @@ function getNavigationOptions(
       name: 'Your trades',
       href: '/trades',
     },
-    {
-      name: 'Add funds',
-      href: '/add-funds',
-    },
-    {
-      name: 'Leaderboards',
-      href: '/leaderboards',
-    },
-    {
-      name: 'Discord',
-      href: 'https://discord.gg/eHQBNBqXuh',
-    },
-    {
-      name: 'About',
-      href: '/about',
-    },
+    // Disable irrelevant menu options for teams.
+    ...(IS_PRIVATE_MANIFOLD
+      ? [
+          {
+            name: 'Leaderboards',
+            href: '/leaderboards',
+          },
+        ]
+      : [
+          {
+            name: 'Add funds',
+            href: '/add-funds',
+          },
+          {
+            name: 'Leaderboards',
+            href: '/leaderboards',
+          },
+          {
+            name: 'Discord',
+            href: 'https://discord.gg/eHQBNBqXuh',
+          },
+          {
+            name: 'About',
+            href: '/about',
+          },
+        ]),
     {
       name: 'Sign out',
       href: '#',

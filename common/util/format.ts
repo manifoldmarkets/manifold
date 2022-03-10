@@ -1,3 +1,5 @@
+import { ENV_CONFIG } from '../envs/constants'
+
 const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -7,7 +9,9 @@ const formatter = new Intl.NumberFormat('en-US', {
 
 export function formatMoney(amount: number) {
   const newAmount = Math.round(amount) === 0 ? 0 : amount // handle -0 case
-  return 'M$ ' + formatter.format(newAmount).replace('$', '')
+  return (
+    ENV_CONFIG.moneyMoniker + ' ' + formatter.format(newAmount).replace('$', '')
+  )
 }
 
 export function formatWithCommas(amount: number) {
