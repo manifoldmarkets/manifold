@@ -43,6 +43,7 @@ import { parseTags } from '../../common/util/parse'
 import { Avatar } from './avatar'
 import { useAdmin } from '../hooks/use-admin'
 import { Answer } from '../../common/answer'
+import { filterDefined } from '../../common/util/array'
 
 const canAddComment = (createdTime: number, isSelf: boolean) => {
   return isSelf && Date.now() - createdTime < 60 * 60 * 1000
@@ -54,15 +55,26 @@ function FeedComment(props: {
   feedType: FeedType
 }) {
   const { activityItem, moreHref, feedType } = props
-  const { person, text, amount, outcome, createdTime } = activityItem
+  const { person, text, amount, outcome, createdTime, contract } = activityItem
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const money = formatMoney(Math.abs(amount))
+
+  const answer =
+    feedType !== 'multi' &&
+    (contract.answers?.find((answer: Answer) => answer?.id === outcome) as
+      | Answer
+      | undefined)
 
   return (
     <>
       <Avatar username={person.username} avatarUrl={person.avatarUrl} />
       <div className="min-w-0 flex-1">
+        {answer && (
+          <div className="text-neutral mb-2" style={{ fontSize: 15 }}>
+            {answer.text}
+          </div>
+        )}
         <div>
           <p className="mt-0.5 text-sm text-gray-500">
             <UserLink
@@ -723,6 +735,7 @@ type ActivityItem = {
     | 'comment'
     | 'start'
     | 'betgroup'
+    | 'answergroup'
     | 'close'
     | 'resolve'
     | 'expand'
@@ -877,22 +890,52 @@ export function ContractActivityFeed(props: {
   comments: Comment[]
   betRowClassName?: string
 }) {
-  const { contract, betRowClassName, comments } = props
+  const { contract, betRowClassName } = props
 
   const user = useUser()
 
   let bets = props.bets.sort((b1, b2) => b1.createdTime - b2.createdTime)
-  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+  let comments = props.comments.sort(
+    (c1, c2) => c1.createdTime - c2.createdTime
+  )
 
   if (contract.outcomeType === 'FREE_RESPONSE') {
-    // Keep bets on comments, and the last non-comment bet.
-    const commentBetIds = new Set(comments.map((comment) => comment.betId))
-    const [commentBets, nonCommentBets] = _.partition(bets, (bet) =>
-      commentBetIds.has(bet.id)
-    )
-    bets = [...commentBets, ...nonCommentBets.slice(-1)].sort(
-      (b1, b2) => b1.createdTime - b2.createdTime
-    )
+    // Keep last two comments.
+    comments = comments.slice(-2)
+    const lastBet = bets[bets.length - 1]
+
+    // Include up to 2 outcomes from comments and last bet.
+    const outcomes = filterDefined(
+      _.uniq([
+        ...comments.map(
+          (comment) => bets.find((bet) => bet.id === comment.betId)?.outcome
+        ),
+        lastBet?.outcome,
+      ])
+    ).slice(0, 2)
+
+    // Keep bets on selected outcomes.
+    bets = bets.filter((bet) => outcomes.includes(bet.outcome))
+
+    const answerGroups = outcomes.map((outcome) => {
+      const answerBets = bets.filter((bet) => bet.outcome === outcome)
+      const answerComments = comments.filter((comment) =>
+        answerBets.some((bet) => bet.id === comment.betId)
+      )
+      const answer = contract.answers?.find(
+        (answer) => answer.id === outcome
+      ) as Answer
+
+      return {
+        contract,
+        answer,
+        bets: answerBets,
+        comments: answerComments,
+        user,
+      }
+    })
+
+    console.log('comments', comments, 'outcomes', outcomes, 'bets', bets)
   }
 
   const allItems: ActivityItem[] = [
