@@ -84,14 +84,14 @@ const Home = (props: {
           <FeedCreate user={user ?? undefined} />
           <Spacer h={6} />
 
-          {initialFollowedFoldSlugs !== undefined &&
+          {/* {initialFollowedFoldSlugs !== undefined &&
             initialFollowedFoldSlugs.length === 0 &&
             !IS_PRIVATE_MANIFOLD && (
               <FastFoldFollowing
                 user={user}
                 followedFoldSlugs={initialFollowedFoldSlugs}
               />
-            )}
+            )} */}
 
           <Spacer h={5} />
 
