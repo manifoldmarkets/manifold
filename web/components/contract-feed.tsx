@@ -42,6 +42,7 @@ import BetRow from './bet-row'
 import { parseTags } from '../../common/util/parse'
 import { Avatar } from './avatar'
 import { useAdmin } from '../hooks/use-admin'
+import { Answer } from '../../common/answer'
 
 function FeedComment(props: {
   activityItem: any
@@ -110,6 +111,12 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
   const bought = amount >= 0 ? 'bought' : 'sold'
   const money = formatMoney(Math.abs(amount))
 
+  const answer =
+    feedType !== 'multi' &&
+    (contract.answers?.find((answer: Answer) => answer?.id === outcome) as
+      | Answer
+      | undefined)
+
   return (
     <>
       <div>
@@ -125,39 +132,42 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
           </div>
         )}
       </div>
-      <div className="min-w-0 flex-1 py-1.5">
-        <div className="text-sm text-gray-500">
-          <span>
-            {isSelf ? 'You' : isCreator ? contract.creatorName : 'A trader'}
-          </span>{' '}
-          {bought} {money}
-          <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
-          <Timestamp time={createdTime} />
-          {canComment && (
-            // Allow user to comment in an textarea if they are the creator
-            <div className="mt-2">
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="textarea textarea-bordered w-full"
-                placeholder="Add a comment..."
-                rows={3}
-                maxLength={MAX_COMMENT_LENGTH}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    submitComment()
-                  }
-                }}
-              />
-              <button
-                className="btn btn-outline btn-sm mt-1"
-                onClick={submitComment}
-              >
-                Comment
-              </button>
-            </div>
-          )}
+      <div>
+        <div className={clsx('min-w-0 flex-1 pb-1.5', !answer && 'pt-1.5')}>
+          <div className="text-sm text-gray-500">
+            <span>
+              {isSelf ? 'You' : isCreator ? contract.creatorName : 'A trader'}
+            </span>{' '}
+            {bought} {money}
+            <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
+            <Timestamp time={createdTime} />
+            {canComment && (
+              // Allow user to comment in an textarea if they are the creator
+              <div className="mt-2">
+                <Textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="textarea textarea-bordered w-full"
+                  placeholder="Add a comment..."
+                  rows={3}
+                  maxLength={MAX_COMMENT_LENGTH}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      submitComment()
+                    }
+                  }}
+                />
+                <button
+                  className="btn btn-outline btn-sm mt-1"
+                  onClick={submitComment}
+                >
+                  Comment
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+        {answer && <div style={{ fontSize: 15 }}>{answer.text}</div>}
       </div>
     </>
   )
@@ -687,7 +697,7 @@ function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
 // On 'multi' feeds, the outcome is redundant, so we hide it
 function MaybeOutcomeLabel(props: { outcome: string; feedType: FeedType }) {
   const { outcome, feedType } = props
-  return feedType === 'multi' ? null : (
+  return feedType === 'multi' || feedType === 'activity' ? null : (
     <span>
       {' '}
       of <OutcomeLabel outcome={outcome} />
@@ -732,17 +742,12 @@ function FeedItems(props: {
   const { outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
 
-  const filteredItems =
-    outcomeType === 'FREE_RESPONSE' && feedType !== 'multi'
-      ? items.filter((item) => item.type !== 'bet' && item.type !== 'betgroup')
-      : items
-
   return (
     <div className="flow-root pr-2 md:pr-0">
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
-        {filteredItems.map((activityItem, activityItemIdx) => (
+        {items.map((activityItem, activityItemIdx) => (
           <div key={activityItem.id} className="relative pb-6">
-            {activityItemIdx !== filteredItems.length - 1 ? (
+            {activityItemIdx !== items.length - 1 ? (
               <span
                 className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
                 aria-hidden="true"
@@ -800,6 +805,8 @@ export function ContractFeed(props: {
   const [expanded, setExpanded] = useState(false)
   const user = useUser()
 
+  const comments = useComments(id) ?? props.comments
+
   let bets = useBets(contract.id) ?? props.bets
   bets = isBinary
     ? bets.filter((bet) => !bet.isAnte)
@@ -807,9 +814,13 @@ export function ContractFeed(props: {
 
   if (feedType === 'multi') {
     bets = bets.filter((bet) => bet.outcome === outcome)
+  } else if (outcomeType === 'FREE_RESPONSE') {
+    // Keep bets on comments or your own bets.
+    const commentBetIds = new Set(comments.map((comment) => comment.betId))
+    bets = bets.filter(
+      (bet) => commentBetIds.has(bet.id) || user?.id === bet.id
+    )
   }
-
-  const comments = useComments(id) ?? props.comments
 
   const groupWindow = feedType == 'activity' ? 10 * DAY_IN_MS : DAY_IN_MS
 
@@ -856,12 +867,23 @@ export function ContractActivityFeed(props: {
   comments: Comment[]
   betRowClassName?: string
 }) {
-  const { contract, betRowClassName, bets, comments } = props
+  const { contract, betRowClassName, comments } = props
 
   const user = useUser()
 
-  bets.sort((b1, b2) => b1.createdTime - b2.createdTime)
+  let bets = props.bets.sort((b1, b2) => b1.createdTime - b2.createdTime)
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    // Keep bets on comments, and the last non-comment bet.
+    const commentBetIds = new Set(comments.map((comment) => comment.betId))
+    const [commentBets, nonCommentBets] = _.partition(bets, (bet) =>
+      commentBetIds.has(bet.id)
+    )
+    bets = [...commentBets, ...nonCommentBets.slice(-1)].sort(
+      (b1, b2) => b1.createdTime - b2.createdTime
+    )
+  }
 
   const allItems: ActivityItem[] = [
     { type: 'start', id: '0' },
