@@ -16,6 +16,7 @@ import {
   Multi,
 } from './contract'
 import { User } from './user'
+import { noFees } from './fees'
 
 export const getNewBinaryCpmmBetInfo = (
   user: User,
@@ -25,7 +26,11 @@ export const getNewBinaryCpmmBetInfo = (
   loanAmount: number,
   newBetId: string
 ) => {
-  const { shares, newPool } = calculateCpmmPurchase(contract, amount, outcome)
+  const { shares, newPool, fees } = calculateCpmmPurchase(
+    contract,
+    amount,
+    outcome
+  )
 
   const newBalance = user.balance - (amount - loanAmount)
 
@@ -39,13 +44,14 @@ export const getNewBinaryCpmmBetInfo = (
     amount,
     shares,
     outcome,
+    fees,
     loanAmount,
     probBefore,
     probAfter,
     createdTime: Date.now(),
   }
 
-  return { newBet, newPool, newBalance }
+  return { newBet, newPool, newBalance, fees }
 }
 
 export const getNewBinaryDpmBetInfo = (
@@ -93,6 +99,7 @@ export const getNewBinaryDpmBetInfo = (
     probBefore,
     probAfter,
     createdTime: Date.now(),
+    fees: noFees,
   }
 
   const newBalance = user.balance - (amount - loanAmount)
@@ -135,6 +142,7 @@ export const getNewMultiBetInfo = (
     probBefore,
     probAfter,
     createdTime: Date.now(),
+    fees: noFees,
   }
 
   const newBalance = user.balance - (amount - loanAmount)

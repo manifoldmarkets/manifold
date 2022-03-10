@@ -6,7 +6,7 @@ import {
 } from './calculate-dpm'
 import { calculateCpmmSale, getCpmmProbability } from './calculate-cpmm'
 import { Binary, DPM, CPMM, FullContract } from './contract'
-import { CREATOR_FEE } from './fees'
+import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees } from './fees'
 import { User } from './user'
 
 export const getSellBetInfo = (
@@ -33,7 +33,15 @@ export const getSellBetInfo = (
   const probAfter = getDpmProbability(newTotalShares)
 
   const profit = adjShareValue - amount
-  const creatorFee = CREATOR_FEE * Math.max(0, profit)
+
+  const creatorFee = DPM_CREATOR_FEE * Math.max(0, profit)
+  const platformFee = DPM_PLATFORM_FEE * Math.max(0, profit)
+  const fees: Fees = {
+    creatorFee,
+    platformFee,
+    liquidityFee: 0,
+  }
+
   const saleAmount = deductDpmFees(amount, adjShareValue)
 
   console.log(
@@ -60,6 +68,7 @@ export const getSellBetInfo = (
       amount: saleAmount,
       betId,
     },
+    fees,
   }
 
   const newBalance = user.balance + saleAmount - (loanAmount ?? 0)
@@ -70,7 +79,7 @@ export const getSellBetInfo = (
     newTotalShares,
     newTotalBets,
     newBalance,
-    creatorFee,
+    fees,
   }
 }
 
@@ -83,10 +92,7 @@ export const getCpmmSellBetInfo = (
   const { pool } = contract
   const { id: betId, amount, shares, outcome } = bet
 
-  const { saleValue, newPool, creatorFee, saleAmount } = calculateCpmmSale(
-    contract,
-    bet
-  )
+  const { saleValue, newPool, fees } = calculateCpmmSale(contract, bet)
 
   const probBefore = getCpmmProbability(pool)
   const probAfter = getCpmmProbability(newPool)
@@ -96,9 +102,9 @@ export const getCpmmSellBetInfo = (
     amount,
     outcome,
     'for M$',
-    saleAmount,
+    saleValue,
     'creator fee: M$',
-    creatorFee
+    fees.creatorFee
   )
 
   const newBet: Bet = {
@@ -112,17 +118,18 @@ export const getCpmmSellBetInfo = (
     probAfter,
     createdTime: Date.now(),
     sale: {
-      amount: saleAmount,
+      amount: saleValue,
       betId,
     },
+    fees,
   }
 
-  const newBalance = user.balance + saleAmount
+  const newBalance = user.balance + saleValue
 
   return {
     newBet,
     newPool,
     newBalance,
-    creatorFee,
+    fees,
   }
 }

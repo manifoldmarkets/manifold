@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 import { Bet } from './bet'
 import { Binary, DPM, FullContract } from './contract'
-import { FEES } from './fees'
+import { DPM_FEES } from './fees'
 
 export function getDpmProbability(totalShares: { [outcome: string]: number }) {
   // For binary contracts only.
@@ -176,7 +176,7 @@ export function calculateStandardDpmPayout(
 
   const winnings = (shares / total) * poolTotal
   // profit can be negative if using phantom shares
-  return amount + (1 - FEES) * Math.max(0, winnings - amount)
+  return amount + (1 - DPM_FEES) * Math.max(0, winnings - amount)
 }
 
 export function calculateDpmPayoutAfterCorrectBet(
@@ -268,7 +268,7 @@ export function resolvedDpmPayout(contract: FullContract<DPM, any>, bet: Bet) {
 
 export const deductDpmFees = (betAmount: number, winnings: number) => {
   return winnings > betAmount
-    ? betAmount + (1 - FEES) * (winnings - betAmount)
+    ? betAmount + (1 - DPM_FEES) * (winnings - betAmount)
     : winnings
 }
 

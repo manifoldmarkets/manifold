@@ -1,3 +1,5 @@
+import { Fees } from './fees'
+
 export type Bet = {
   id: string
   userId: string
@@ -6,7 +8,7 @@ export type Bet = {
   amount: number // bet size; negative if SELL bet
   loanAmount?: number
   outcome: string
-  shares: number // dynamic parimutuel pool weight; negative if SELL bet
+  shares: number // dynamic parimutuel pool weight or fixed ; negative if SELL bet
 
   probBefore: number
   probAfter: number
@@ -16,6 +18,8 @@ export type Bet = {
     betId: string // id of bet being sold
     // TODO: add sale time?
   }
+
+  fees: Fees
 
   isSold?: boolean // true if this BUY bet has been sold
   isAnte?: boolean

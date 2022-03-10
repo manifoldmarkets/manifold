@@ -1,6 +1,6 @@
 import { Bet } from './bet'
 import {
-  calculateCpmmShareValue,
+  calculateCpmmSale,
   getCpmmProbability,
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbabilityAfterSale,
@@ -16,10 +16,7 @@ import {
   getDpmOutcomeProbabilityAfterBet,
   getDpmProbabilityAfterSale,
 } from './calculate-dpm'
-import {
-  calculateFixedPayout,
-  deductFixedFees,
-} from './calculate-fixed-payouts'
+import { calculateFixedPayout } from './calculate-fixed-payouts'
 import { Binary, Contract, CPMM, DPM, FullContract } from './contract'
 
 export function getProbability(contract: FullContract<DPM | CPMM, Binary>) {
@@ -72,16 +69,13 @@ export function calculateShares(
 
 export function calculateSaleAmount(contract: Contract, bet: Bet) {
   return contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY'
-    ? deductFixedFees(
-        bet.amount,
-        calculateCpmmShareValue(contract, bet.shares, bet.outcome)
-      )
+    ? calculateCpmmSale(contract, bet)
     : calculateDpmSaleAmount(contract, bet)
 }
 
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
   return contract.mechanism === 'cpmm-1'
-    ? deductFixedFees(bet.amount, bet.shares)
+    ? bet.shares
     : calculateDpmPayoutAfterCorrectBet(contract, bet)
 }
 

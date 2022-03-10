@@ -1,4 +1,5 @@
 import { Answer } from './answer'
+import { Fees } from './fees'
 
 export type FullContract<
   M extends DPM | CPMM,
@@ -30,6 +31,8 @@ export type FullContract<
 
   volume24Hours: number
   volume7Days: number
+
+  collectedFees: Fees
 } & M &
   T
 

@@ -1,8 +1,8 @@
 import * as _ from 'lodash'
+
 import { Bet } from './bet'
-import { deductFixedFees } from './calculate-fixed-payouts'
 import { Binary, CPMM, FullContract } from './contract'
-import { CREATOR_FEE } from './fees'
+import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
 
 export function getCpmmProbability(pool: { [outcome: string]: number }) {
   // For binary contracts only.
@@ -35,8 +35,6 @@ function calculateCpmmShares(
   return shares
 }
 
-export const CPMM_LIQUIDITY_FEE = 0.02
-
 export function getCpmmLiquidityFee(
   contract: FullContract<CPMM, Binary>,
   bet: number,
@@ -44,9 +42,16 @@ export function getCpmmLiquidityFee(
 ) {
   const p = getCpmmProbability(contract.pool)
   const betP = outcome === 'YES' ? 1 - p : p
-  const fee = CPMM_LIQUIDITY_FEE * betP * bet
-  const remainingBet = bet - fee
-  return { fee, remainingBet }
+
+  const liquidityFee = LIQUIDITY_FEE * betP * bet
+  const platformFee = PLATFORM_FEE * betP * bet
+  const creatorFee = CREATOR_FEE * betP * bet
+  const fees: Fees = { liquidityFee, platformFee, creatorFee }
+
+  const totalFees = liquidityFee + platformFee + creatorFee
+  const remainingBet = bet - totalFees
+
+  return { remainingBet, fees }
 }
 
 export function calculateCpmmSharesAfterFee(
@@ -66,7 +71,7 @@ export function calculateCpmmPurchase(
   outcome: string
 ) {
   const { pool } = contract
-  const { remainingBet } = getCpmmLiquidityFee(contract, bet, outcome)
+  const { remainingBet, fees } = getCpmmLiquidityFee(contract, bet, outcome)
 
   const shares = calculateCpmmShares(pool, remainingBet, outcome)
   const { YES: y, NO: n } = pool
@@ -78,7 +83,7 @@ export function calculateCpmmPurchase(
 
   const newPool = { YES: newY, NO: newN }
 
-  return { shares, newPool }
+  return { shares, newPool, fees }
 }
 
 export function calculateCpmmShareValue(
@@ -103,7 +108,7 @@ export function calculateCpmmSale(
 
   const rawSaleValue = calculateCpmmShareValue(contract, shares, outcome)
 
-  const { fee, remainingBet: saleValue } = getCpmmLiquidityFee(
+  const { fees, remainingBet: saleValue } = getCpmmLiquidityFee(
     contract,
     rawSaleValue,
     outcome === 'YES' ? 'NO' : 'YES'
@@ -112,6 +117,8 @@ export function calculateCpmmSale(
   const { pool } = contract
   const { YES: y, NO: n } = pool
 
+  const { liquidityFee: fee } = fees
+
   const [newY, newN] =
     outcome === 'YES'
       ? [y + shares - saleValue + fee, n - saleValue + fee]
@@ -119,11 +126,7 @@ export function calculateCpmmSale(
 
   const newPool = { YES: newY, NO: newN }
 
-  const profit = saleValue - bet.amount
-  const creatorFee = CREATOR_FEE * Math.max(0, profit)
-  const saleAmount = deductFixedFees(bet.amount, saleValue)
-
-  return { saleValue, newPool, creatorFee, saleAmount }
+  return { saleValue, newPool, fees }
 }
 
 export function getCpmmProbabilityAfterSale(

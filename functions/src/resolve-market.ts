@@ -5,7 +5,7 @@ import * as _ from 'lodash'
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
-import { getUser, payUser } from './utils'
+import { getUser, isProd, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
 import { getLoanPayouts, getPayouts } from '../../common/payouts'
 import { removeUndefinedProps } from '../../common/util/object'
@@ -75,19 +75,6 @@ export const resolveMarket = functions
         ? Math.min(closeTime, resolutionTime)
         : closeTime
 
-      await contractDoc.update(
-        removeUndefinedProps({
-          isResolved: true,
-          resolution: outcome,
-          resolutionTime,
-          closeTime: newCloseTime,
-          resolutionProbability,
-          resolutions,
-        })
-      )
-
-      console.log('contract ', contractId, 'resolved to:', outcome)
-
       const betsSnap = await firestore
         .collection(`contracts/${contractId}/bets`)
         .get()
@@ -102,18 +89,33 @@ export const resolveMarket = functions
         (doc) => doc.data() as LiquidityProvision
       )
 
-      const payouts = getPayouts(
-        resolutions ?? outcome,
+      const [payouts, collectedFees] = getPayouts(
+        outcome,
+        resolutions ?? {},
         contract,
         bets,
         liquidities,
         resolutionProbability
       )
 
+      await contractDoc.update(
+        removeUndefinedProps({
+          isResolved: true,
+          resolution: outcome,
+          resolutionTime,
+          closeTime: newCloseTime,
+          resolutionProbability,
+          resolutions,
+          collectedFees,
+        })
+      )
+
+      console.log('contract ', contractId, 'resolved to:', outcome)
+
       const openBets = bets.filter((b) => !b.isSold && !b.sale)
       const loanPayouts = getLoanPayouts(openBets)
 
-      console.log('payouts:', payouts)
+      if (!isProd) console.log('payouts:', payouts)
 
       const groups = _.groupBy(
         [...payouts, ...loanPayouts],

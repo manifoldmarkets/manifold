@@ -3,7 +3,14 @@ import * as _ from 'lodash'
 import { Bet } from './bet'
 import { deductDpmFees, getDpmProbability } from './calculate-dpm'
 import { DPM, FreeResponse, FullContract, Multi } from './contract'
-import { CREATOR_FEE, FEES } from './fees'
+import {
+  DPM_CREATOR_FEE,
+  DPM_FEES,
+  DPM_PLATFORM_FEE,
+  Fees,
+  noFees,
+} from './fees'
+import { addObjects } from './util/object'
 
 export const getDpmCancelPayouts = (
   contract: FullContract<DPM, any>,
@@ -15,10 +22,12 @@ export const getDpmCancelPayouts = (
 
   const betSum = _.sumBy(bets, (b) => b.amount)
 
-  return bets.map((bet) => ({
+  const payouts = bets.map((bet) => ({
     userId: bet.userId,
     payout: (bet.amount / betSum) * poolTotal,
   }))
+
+  return [payouts, contract.collectedFees ?? noFees]
 }
 
 export const getDpmStandardPayouts = (
@@ -36,12 +45,21 @@ export const getDpmStandardPayouts = (
     const profit = winnings - amount
 
     // profit can be negative if using phantom shares
-    const payout = amount + (1 - FEES) * Math.max(0, profit)
+    const payout = amount + (1 - DPM_FEES) * Math.max(0, profit)
     return { userId, profit, payout }
   })
 
   const profits = _.sumBy(payouts, (po) => Math.max(0, po.profit))
-  const creatorPayout = CREATOR_FEE * profits
+  const creatorFee = DPM_CREATOR_FEE * profits
+  const platformFee = DPM_PLATFORM_FEE * profits
+
+  const finalFees: Fees = {
+    creatorFee,
+    platformFee,
+    liquidityFee: 0,
+  }
+
+  const fees = addObjects<Fees>(finalFees, contract.collectedFees ?? {})
 
   console.log(
     'resolved',
@@ -51,12 +69,14 @@ export const getDpmStandardPayouts = (
     'profits',
     profits,
     'creator fee',
-    creatorPayout
+    creatorFee
   )
 
-  return payouts
+  const totalPayouts = payouts
     .map(({ userId, payout }) => ({ userId, payout }))
-    .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
+    .concat([{ userId: contract.creatorId, payout: creatorFee }]) // add creator fee
+
+  return [totalPayouts, fees]
 }
 
 export const getDpmMktPayouts = (
@@ -84,7 +104,17 @@ export const getDpmMktPayouts = (
   })
 
   const profits = _.sumBy(payouts, (po) => Math.max(0, po.profit))
-  const creatorPayout = CREATOR_FEE * profits
+
+  const creatorFee = DPM_CREATOR_FEE * profits
+  const platformFee = DPM_PLATFORM_FEE * profits
+
+  const finalFees: Fees = {
+    creatorFee,
+    platformFee,
+    liquidityFee: 0,
+  }
+
+  const fees = addObjects<Fees>(finalFees, contract.collectedFees ?? {})
 
   console.log(
     'resolved MKT',
@@ -93,13 +123,14 @@ export const getDpmMktPayouts = (
     pool,
     'profits',
     profits,
-    'creator fee',
-    creatorPayout
+    'creator fee'
   )
 
-  return payouts
+  const totalPayouts = payouts
     .map(({ userId, payout }) => ({ userId, payout }))
-    .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
+    .concat([{ userId: contract.creatorId, payout: creatorFee }]) // add creator fee
+
+  return [totalPayouts, fees]
 }
 
 export const getPayoutsMultiOutcome = (
@@ -122,12 +153,22 @@ export const getPayoutsMultiOutcome = (
     const winnings = (shares / sharesByOutcome[outcome]) * prob * poolTotal
     const profit = winnings - amount
 
-    const payout = amount + (1 - FEES) * Math.max(0, profit)
+    const payout = amount + (1 - DPM_FEES) * Math.max(0, profit)
     return { userId, profit, payout }
   })
 
   const profits = _.sumBy(payouts, (po) => po.profit)
-  const creatorPayout = CREATOR_FEE * profits
+
+  const creatorFee = DPM_CREATOR_FEE * profits
+  const platformFee = DPM_PLATFORM_FEE * profits
+
+  const finalFees: Fees = {
+    creatorFee,
+    platformFee,
+    liquidityFee: 0,
+  }
+
+  const fees = addObjects<Fees>(finalFees, contract.collectedFees ?? {})
 
   console.log(
     'resolved',
@@ -137,10 +178,12 @@ export const getPayoutsMultiOutcome = (
     'profits',
     profits,
     'creator fee',
-    creatorPayout
+    creatorFee
   )
 
-  return payouts
+  const totalPayouts = payouts
     .map(({ userId, payout }) => ({ userId, payout }))
-    .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
+    .concat([{ userId: contract.creatorId, payout: creatorFee }]) // add creator fee
+
+  return [totalPayouts, fees]
 }

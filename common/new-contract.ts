@@ -35,7 +35,7 @@ export function getNewContract(
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
       : getFreeAnswerProps(ante)
 
-  const contract = removeUndefinedProps({
+  const contract: Contract = removeUndefinedProps({
     id,
     slug,
     ...propsByOutcomeType,
@@ -57,6 +57,12 @@ export function getNewContract(
 
     volume24Hours: 0,
     volume7Days: 0,
+
+    collectedFees: {
+      creatorFee: 0,
+      liquidityFee: 0,
+      platformFee: 0,
+    },
   })
 
   return contract as Contract

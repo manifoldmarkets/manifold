@@ -2,13 +2,10 @@ import * as _ from 'lodash'
 
 import { Bet } from './bet'
 import { getProbability } from './calculate'
-import { deductFixedFees } from './calculate-fixed-payouts'
 import { Binary, CPMM, FixedPayouts, FullContract } from './contract'
-import { CREATOR_FEE } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
 export const getFixedCancelPayouts = (
-  contract: FullContract<FixedPayouts, Binary>,
   bets: Bet[],
   liquidities: LiquidityProvision[]
 ) => {
@@ -34,23 +31,20 @@ export const getStandardFixedPayouts = (
 ) => {
   const winningBets = bets.filter((bet) => bet.outcome === outcome)
 
-  const payouts = winningBets.map(({ userId, amount, shares }) => {
-    const winnings = shares
-    const profit = winnings - amount
-    const payout = deductFixedFees(amount, winnings)
-    return { userId, profit, payout }
-  })
+  const payouts = winningBets.map(({ userId, shares }) => ({
+    userId,
+    payout: shares,
+  }))
 
-  const profits = _.sumBy(payouts, (po) => Math.max(0, po.profit))
-  const creatorPayout = 0 // CREATOR_FEE * profits
+  const creatorPayout = contract.collectedFees.creatorFee
 
   console.log(
     'resolved',
     outcome,
     'pool',
-    contract.pool,
-    'profits',
-    profits,
+    contract.pool[outcome],
+    'payouts',
+    _.sum(payouts),
     'creator fee',
     creatorPayout
   )
@@ -88,24 +82,20 @@ export const getMktFixedPayouts = (
       ? getProbability(contract)
       : resolutionProbability
 
-  const payouts = bets.map(({ userId, outcome, amount, shares }) => {
+  const payouts = bets.map(({ userId, outcome, shares }) => {
     const betP = outcome === 'YES' ? p : 1 - p
-    const winnings = betP * shares
-    const profit = winnings - amount
-    const payout = deductFixedFees(amount, winnings)
-    return { userId, profit, payout }
+    return { userId, payout: betP * shares }
   })
 
-  const profits = _.sumBy(payouts, (po) => Math.max(0, po.profit))
-  const creatorPayout = 0 // CREATOR_FEE * profits
+  const creatorPayout = contract.collectedFees.creatorFee
 
   console.log(
-    'resolved MKT',
+    'resolved PROB',
     p,
     'pool',
-    contract.pool,
-    'profits',
-    profits,
+    p * contract.pool.YES + (1 - p) * contract.pool.NO,
+    'payouts',
+    _.sum(payouts),
     'creator fee',
     creatorPayout
   )

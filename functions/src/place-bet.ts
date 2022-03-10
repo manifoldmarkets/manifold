@@ -9,9 +9,10 @@ import {
   getNewMultiBetInfo,
   getLoanAmount,
 } from '../../common/new-bet'
-import { removeUndefinedProps } from '../../common/util/object'
+import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { Bet } from '../../common/bet'
 import { redeemShares } from './redeem-shares'
+import { Fees } from '../../common/fees'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -48,7 +49,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           return { status: 'error', message: 'Invalid contract' }
         const contract = contractSnap.data() as Contract
 
-        const { closeTime, outcomeType, mechanism } = contract
+        const { closeTime, outcomeType, mechanism, collectedFees } = contract
         if (closeTime && Date.now() > closeTime)
           return { status: 'error', message: 'Trading is closed' }
 
@@ -73,7 +74,14 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           .collection(`contracts/${contractId}/bets`)
           .doc()
 
-        const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
+        const {
+          newBet,
+          newPool,
+          newTotalShares,
+          newTotalBets,
+          newBalance,
+          fees,
+        } =
           outcomeType === 'BINARY'
             ? mechanism === 'dpm-2'
               ? getNewBinaryDpmBetInfo(
@@ -109,6 +117,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
             pool: newPool,
             totalShares: newTotalShares,
             totalBets: newTotalBets,
+            collectedFees: addObjects<Fees>(fees ?? {}, collectedFees ?? {}),
           })
         )
 
