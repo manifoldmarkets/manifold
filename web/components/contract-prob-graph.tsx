@@ -20,12 +20,11 @@ export function ContractProbGraph(props: {
 
   const startProb = getInitialProbability(contract)
 
-  const times = bets
-    ? [contract.createdTime, ...bets.map((bet) => bet.createdTime)].map(
-        (time) => new Date(time)
-      )
-    : []
-  const probs = bets ? [startProb, ...bets.map((bet) => bet.probAfter)] : []
+  const times = [
+    contract.createdTime,
+    ...bets.map((bet) => bet.createdTime),
+  ].map((time) => new Date(time))
+  const probs = [startProb, ...bets.map((bet) => bet.probAfter)]
 
   const isClosed = !!closeTime && Date.now() > closeTime
   const latestTime = dayjs(
