@@ -6,7 +6,8 @@ const formatter = new Intl.NumberFormat('en-US', {
 })
 
 export function formatMoney(amount: number) {
-  return 'M$ ' + formatter.format(amount).replace('$', '')
+  const newAmount = Math.round(amount) === 0 ? 0 : amount // handle -0 case
+  return 'M$ ' + formatter.format(newAmount).replace('$', '')
 }
 
 export function formatWithCommas(amount: number) {
