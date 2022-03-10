@@ -5,6 +5,7 @@ import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
 
 import { Binary, CPMM, FullContract } from '../../common/contract'
+import { noFees } from '../../common/fees'
 import { User } from '../../common/user'
 
 export const redeemShares = async (userId: string, contractId: string) => {
@@ -46,6 +47,7 @@ export const redeemShares = async (userId: string, contractId: string) => {
       probAfter: p,
       createdTime,
       isRedemption: true,
+      fees: noFees,
     }
 
     const noDoc = firestore.collection(`contracts/${contract.id}/bets`).doc()
@@ -60,6 +62,7 @@ export const redeemShares = async (userId: string, contractId: string) => {
       probAfter: p,
       createdTime,
       isRedemption: true,
+      fees: noFees,
     }
 
     const userDoc = firestore.doc(`users/${userId}`)
