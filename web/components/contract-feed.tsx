@@ -732,12 +732,17 @@ function FeedItems(props: {
   const { outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
 
+  const filteredItems =
+    outcomeType === 'FREE_RESPONSE' && feedType !== 'multi'
+      ? items.filter((item) => item.type !== 'bet' && item.type !== 'betgroup')
+      : items
+
   return (
     <div className="flow-root pr-2 md:pr-0">
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
-        {items.map((activityItem, activityItemIdx) => (
+        {filteredItems.map((activityItem, activityItemIdx) => (
           <div key={activityItem.id} className="relative pb-6">
-            {activityItemIdx !== items.length - 1 ? (
+            {activityItemIdx !== filteredItems.length - 1 ? (
               <span
                 className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
                 aria-hidden="true"
