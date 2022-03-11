@@ -139,7 +139,7 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
       <div className={clsx('min-w-0 flex-1 pb-1.5', !answer && 'pt-1.5')}>
         {answer && (
           <div className="text-neutral mb-2" style={{ fontSize: 15 }}>
-            {answer.text}
+            <Linkify text={answer.text} />
           </div>
         )}
         <div className="text-sm text-gray-500">
