@@ -20,7 +20,6 @@ import { randomString } from '../../common/util/random'
 import { getNewContract } from '../../common/new-contract'
 import {
   getAnteBets,
-  getCpmmAnteBet,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   MINIMUM_ANTE,
@@ -131,27 +130,6 @@ export const createContract = functions
           await yesBetDoc.set(yesBet)
           await noBetDoc.set(noBet)
         } else if (outcomeType === 'BINARY') {
-          const { YES: y, NO: n } = contract.pool
-          const anteBet = Math.abs(y - n)
-
-          if (anteBet) {
-            const betDoc = firestore
-              .collection(`contracts/${contract.id}/bets`)
-              .doc()
-
-            const outcome = y > n ? 'NO' : 'YES' // more in YES pool if prob leans NO
-
-            const bet = getCpmmAnteBet(
-              creator,
-              contract as FullContract<CPMM, Binary>,
-              betDoc.id,
-              anteBet,
-              outcome
-            )
-
-            await betDoc.set(bet)
-          }
-
           const liquidityDoc = firestore
             .collection(`contracts/${contract.id}/liquidity`)
             .doc()

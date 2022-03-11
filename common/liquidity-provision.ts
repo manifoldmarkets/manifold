@@ -8,4 +8,5 @@ export type LiquidityProvision = {
 
   amount: number // M$ quantity
   liquidity: number // sqrt(k)
+  probability: number
 }

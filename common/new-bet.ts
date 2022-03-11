@@ -34,8 +34,9 @@ export const getNewBinaryCpmmBetInfo = (
 
   const newBalance = user.balance - (amount - loanAmount)
 
-  const probBefore = getCpmmProbability(contract.pool)
-  const probAfter = getCpmmProbability(newPool)
+  const { pool, p } = contract
+  const probBefore = getCpmmProbability(pool, p)
+  const probAfter = getCpmmProbability(newPool, p)
 
   const newBet: Bet = {
     id: newBetId,

@@ -20,7 +20,6 @@ import { Avatar } from './avatar'
 import { Spacer } from './layout/spacer'
 import { useState } from 'react'
 import { TweetButton } from './tweet-button'
-import { getCpmmLiquidity } from '../../common/calculate-cpmm'
 
 export function ContractCard(props: {
   contract: Contract

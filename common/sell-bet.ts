@@ -89,13 +89,13 @@ export const getCpmmSellBetInfo = (
   contract: FullContract<CPMM, Binary>,
   newBetId: string
 ) => {
-  const { pool } = contract
+  const { pool, p } = contract
   const { id: betId, amount, shares, outcome } = bet
 
   const { saleValue, newPool, fees } = calculateCpmmSale(contract, bet)
 
-  const probBefore = getCpmmProbability(pool)
-  const probAfter = getCpmmProbability(newPool)
+  const probBefore = getCpmmProbability(pool, p)
+  const probAfter = getCpmmProbability(newPool, p)
 
   console.log(
     'SELL M$',

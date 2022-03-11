@@ -43,17 +43,17 @@ export function contractMetrics(contract: Contract) {
   const liquidityLabel =
     contract.mechanism === 'dpm-2'
       ? `${formatMoney(truePool)} pool`
-      : `${formatMoney(getCpmmLiquidity(contract.pool))} liquidity`
+      : `${formatMoney(getCpmmLiquidity(pool, contract.p))} liquidity`
 
   return { truePool, liquidityLabel, createdDate, resolvedDate }
 }
 
 export function getBinaryProbPercent(contract: FullContract<any, Binary>) {
-  const { totalShares, pool, resolutionProbability, mechanism } = contract
+  const { totalShares, pool, p, resolutionProbability, mechanism } = contract
 
   const prob =
     resolutionProbability ?? mechanism === 'cpmm-1'
-      ? getCpmmProbability(pool)
+      ? getCpmmProbability(pool, p)
       : getDpmProbability(totalShares)
 
   const probPercent = Math.round(prob * 100) + '%'

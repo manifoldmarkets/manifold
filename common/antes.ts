@@ -1,6 +1,6 @@
 import { Bet } from './bet'
 import { getDpmProbability } from './calculate-dpm'
-import { getCpmmLiquidity, getCpmmProbability } from './calculate-cpmm'
+import { getCpmmProbability } from './calculate-cpmm'
 import { Binary, CPMM, DPM, FreeResponse, FullContract } from './contract'
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
@@ -9,42 +9,13 @@ import { noFees } from './fees'
 export const PHANTOM_ANTE = 0.001
 export const MINIMUM_ANTE = 10
 
-export function getCpmmAnteBet(
-  creator: User,
-  contract: FullContract<CPMM, Binary>,
-  anteId: string,
-  amount: number,
-  outcome: 'YES' | 'NO'
-) {
-  const p = getCpmmProbability(contract.pool)
-
-  const { createdTime } = contract
-
-  const bet: Bet = {
-    id: anteId,
-    userId: creator.id,
-    contractId: contract.id,
-    amount: amount,
-    shares: amount,
-    outcome,
-    probBefore: p,
-    probAfter: p,
-    createdTime,
-    isAnte: true,
-    fees: noFees,
-  }
-
-  return bet
-}
-
 export function getCpmmInitialLiquidity(
   creator: User,
   contract: FullContract<CPMM, Binary>,
   anteId: string,
   amount: number
 ) {
-  const { createdTime, pool } = contract
-  const liquidity = getCpmmLiquidity(pool)
+  const { createdTime, pool, p } = contract
 
   const lp: LiquidityProvision = {
     id: anteId,
@@ -54,7 +25,8 @@ export function getCpmmInitialLiquidity(
     isAnte: true,
 
     amount: amount,
-    liquidity,
+    liquidity: amount,
+    probability: getCpmmProbability(pool, p),
   }
 
   return lp

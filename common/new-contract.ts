@@ -10,7 +10,6 @@ import {
 import { User } from './user'
 import { parseTags } from './util/parse'
 import { removeUndefinedProps } from './util/object'
-import { calcCpmmInitialPool } from './calculate-cpmm'
 import { calcDpmInitialPool } from './calculate-dpm'
 
 export function getNewContract(
@@ -86,13 +85,14 @@ const getBinaryDpmProps = (initialProb: number, ante: number) => {
 }
 
 const getBinaryCpmmProps = (initialProb: number, ante: number) => {
-  const { poolYes, poolNo } = calcCpmmInitialPool(initialProb, ante)
-  const pool = { YES: poolYes, NO: poolNo }
+  const pool = { YES: ante, NO: ante }
+  const p = initialProb / 100
 
   const system: CPMM & Binary = {
     mechanism: 'cpmm-1',
     outcomeType: 'BINARY',
-    initialProbability: initialProb / 100,
+    initialProbability: p,
+    p,
     pool: pool,
   }
 
