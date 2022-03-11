@@ -12,13 +12,13 @@ import { Row } from './layout/row'
 import { Linkify } from './linkify'
 import clsx from 'clsx'
 import { ContractDetails, ResolutionOrChance } from './contract-card'
-import { ContractFeed } from './contract-feed'
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
 import { RevealableTagsInput, TagsInput } from './tags-input'
 import BetRow from './bet-row'
 import { Fold } from '../../common/fold'
 import { FoldTagList } from './tags-list'
+import { ContractActivity } from './feed/contract-activity'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -119,11 +119,11 @@ export const ContractOverview = (props: {
 
       <Spacer h={12} />
 
-      <ContractFeed
+      <ContractActivity
         contract={contract}
         bets={bets}
         comments={comments}
-        feedType="market"
+        user={user}
         betRowClassName="!mt-0"
       />
     </Col>
