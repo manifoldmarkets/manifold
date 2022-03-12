@@ -9,27 +9,70 @@ import { filterDefined } from '../../../common/util/array'
 import { canAddComment, mapCommentsByBetId } from '../../lib/firebase/comments'
 import { fromNow } from '../../lib/util/time'
 
-export type ActivityItem = {
+export type ActivityItem =
+  | DescriptionItem
+  | QuestionItem
+  | BetItem
+  | CommentItem
+  | CreateAnswerItem
+  | BetGroupItem
+  | AnswerGroupItem
+  | CloseItem
+  | ResolveItem
+
+type BaseActivityItem = {
   id: string
-  type:
-    | 'bet'
-    | 'comment'
-    | 'start'
-    | 'betgroup'
-    | 'answergroup'
-    | 'close'
-    | 'resolve'
-    | 'expand'
-    | undefined
+  contract: Contract
 }
 
-export type FeedAnswerGroupItem = ActivityItem & {
+export type DescriptionItem = BaseActivityItem & {
+  type: 'description'
+}
+
+export type QuestionItem = BaseActivityItem & {
+  type: 'question'
+  showDescription: boolean
+}
+
+export type BetItem = BaseActivityItem & {
+  type: 'bet'
+  bet: Bet
+  hideOutcome: boolean
+}
+
+export type CommentItem = BaseActivityItem & {
+  type: 'comment'
+  comment: Comment
+  bet: Bet
+  showOutcomeLabel: boolean
+  truncate: boolean
+}
+
+export type CreateAnswerItem = BaseActivityItem & {
+  type: 'createanswer'
+  answer: Answer
+}
+
+export type BetGroupItem = BaseActivityItem & {
+  type: 'betgroup'
+  bets: Bet[]
+  hideOutcome: boolean
+}
+
+export type AnswerGroupItem = BaseActivityItem & {
   type: 'answergroup'
-  contract: Contract
   bets: Bet[]
   comments: Comment[]
   answer: Answer
   user: User | null | undefined
+}
+
+export type CloseItem = BaseActivityItem & {
+  type: 'close'
+}
+
+export type ResolveItem = BaseActivityItem & {
+  type: 'resolve'
 }
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -47,22 +90,38 @@ function groupBets(
   userId?: string
 ) {
   const commentsMap = mapCommentsByBetId(comments)
-  const items: any[] = []
+  const items: ActivityItem[] = []
   let group: Bet[] = []
 
   // Turn the current group into an ActivityItem
   function pushGroup() {
     if (group.length == 1) {
-      items.push(toActivityItem(group[0], false))
+      items.push(toActivityItem(group[0]))
     } else if (group.length > 1) {
-      items.push({ type: 'betgroup', bets: [...group], id: group[0].id })
+      items.push({
+        type: 'betgroup',
+        bets: [...group],
+        id: group[0].id,
+        contract,
+        hideOutcome: false,
+      })
     }
     group = []
   }
 
-  function toActivityItem(bet: Bet, isPublic: boolean) {
+  function toActivityItem(bet: Bet) {
     const comment = commentsMap[bet.id]
-    return comment ? toFeedComment(bet, comment) : toFeedBet(bet, contract)
+    return comment
+      ? {
+          type: 'comment' as const,
+          id: bet.id,
+          comment,
+          bet,
+          contract,
+          showOutcomeLabel: true,
+          truncate: true,
+        }
+      : { type: 'bet' as const, id: bet.id, bet, contract, hideOutcome: false }
   }
 
   for (const bet of bets) {
@@ -71,7 +130,7 @@ function groupBets(
     if (commentsMap[bet.id] || isCreator) {
       pushGroup()
       // Create a single item for this
-      items.push(toActivityItem(bet, true))
+      items.push(toActivityItem(bet))
     } else {
       if (
         group.length > 0 &&
@@ -86,7 +145,7 @@ function groupBets(
   if (group.length > 0) {
     pushGroup()
   }
-  return items as ActivityItem[]
+  return items
 }
 
 function getAnswerGroups(
@@ -135,41 +194,6 @@ function getAnswerGroups(
   return answerGroups
 }
 
-function toFeedBet(bet: Bet, contract: Contract) {
-  return {
-    id: bet.id,
-    contractId: bet.contractId,
-    userId: bet.userId,
-    type: 'bet',
-    amount: bet.sale ? -bet.sale.amount : bet.amount,
-    outcome: bet.outcome,
-    createdTime: bet.createdTime,
-    date: fromNow(bet.createdTime),
-    contract,
-  }
-}
-
-function toFeedComment(bet: Bet, comment: Comment) {
-  return {
-    id: bet.id,
-    contractId: bet.contractId,
-    userId: bet.userId,
-    type: 'comment',
-    amount: bet.sale ? -bet.sale.amount : bet.amount,
-    outcome: bet.outcome,
-    createdTime: bet.createdTime,
-    date: fromNow(bet.createdTime),
-
-    // Invariant: bet.comment exists
-    text: comment.text,
-    person: {
-      username: comment.userUsername,
-      name: comment.userName,
-      avatarUrl: comment.userAvatarUrl,
-    },
-  }
-}
-
 export function getAllContractActivityItems(
   contract: Contract,
   bets: Bet[],
@@ -184,8 +208,10 @@ export function getAllContractActivityItems(
     ? bets.filter((bet) => !bet.isAnte)
     : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
 
+  let answer: Answer | undefined
   if (outcome) {
     bets = bets.filter((bet) => bet.outcome === outcome)
+    answer = contract.answers?.find((answer) => answer.id === outcome)
   } else if (outcomeType === 'FREE_RESPONSE') {
     // Keep bets on comments or your bets where you can comment.
     const commentBetIds = new Set(comments.map((comment) => comment.betId))
@@ -196,19 +222,18 @@ export function getAllContractActivityItems(
     )
   }
 
-  const items: ActivityItem[] = outcome ? [] : [{ type: 'start', id: '0' }]
+  const items: ActivityItem[] =
+    outcome && answer
+      ? [{ type: 'createanswer', id: answer.id, contract, answer }]
+      : [{ type: 'description', id: '0', contract }]
 
   items.push(...groupBets(bets, comments, DAY_IN_MS, contract, user?.id))
 
   if (contract.closeTime && contract.closeTime <= Date.now()) {
-    items.push({ type: 'close', id: `${contract.closeTime}` })
+    items.push({ type: 'close', id: `${contract.closeTime}`, contract })
   }
   if (contract.resolution) {
-    items.push({ type: 'resolve', id: `${contract.resolutionTime}` })
-  }
-  if (outcome) {
-    // Hack to add some more padding above the 'multi' feedType, by adding a null item.
-    items.unshift({ type: undefined, id: '-1' })
+    items.push({ type: 'resolve', id: `${contract.resolutionTime}`, contract })
   }
 
   return items
@@ -223,19 +248,12 @@ export function getRecentContractActivityItems(
   bets = bets.sort((b1, b2) => b1.createdTime - b2.createdTime)
   comments = comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
-  const items: ActivityItem[] = [{ type: 'start', id: '0' }]
+  const items: ActivityItem[] = []
   items.push(
     ...(contract.outcomeType === 'FREE_RESPONSE'
       ? getAnswerGroups(contract, bets, comments, user)
       : groupBets(bets, comments, DAY_IN_MS, contract, user?.id))
   )
-
-  if (contract.closeTime && contract.closeTime <= Date.now()) {
-    items.push({ type: 'close', id: `${contract.closeTime}` })
-  }
-  if (contract.resolution) {
-    items.push({ type: 'resolve', id: `${contract.resolutionTime}` })
-  }
 
   // Remove all but last bet group.
   const betGroups = items.filter((item) => item.type === 'betgroup')
@@ -244,6 +262,16 @@ export function getRecentContractActivityItems(
     (item) => item.type !== 'betgroup' || item.id === lastBetGroup?.id
   )
 
-  // Only show the first item plus the last three items.
-  return filtered.length > 3 ? [filtered[0], ...filtered.slice(-3)] : filtered
+  const questionItem: QuestionItem = {
+    type: 'question',
+    id: '0',
+    contract,
+    showDescription: false,
+  }
+
+  return [
+    questionItem,
+    // Only take the last three items.
+    ...filtered.slice(-3),
+  ]
 }
