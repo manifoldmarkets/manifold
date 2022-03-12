@@ -131,6 +131,7 @@ const Home = (props: {
                 contracts={activeContracts}
                 recentBets={recentBets}
                 recentComments={recentComments}
+                mode="only-recent"
               />
             ) : (
               <LoadingIndicator className="mt-4" />

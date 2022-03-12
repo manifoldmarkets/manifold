@@ -90,7 +90,8 @@ export function AnswerItem(props: {
             bets={[]}
             comments={[]}
             user={user}
-            outcome={answer.id}
+            filterToOutcome={answer.id}
+            mode="all"
           />
         )}
       </Col>

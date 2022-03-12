@@ -246,7 +246,7 @@ export default function FoldPage(props: {
                     contracts={activeContracts}
                     recentBets={recentBets ?? []}
                     recentComments={recentComments ?? []}
-                    loadBetAndCommentHistory
+                    mode="abbreviated"
                   />
                   {activeContracts.length === 0 && (
                     <div className="mx-2 mt-4 text-gray-500 lg:mx-0">

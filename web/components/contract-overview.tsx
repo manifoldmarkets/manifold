@@ -124,6 +124,7 @@ export const ContractOverview = (props: {
         bets={bets}
         comments={comments}
         user={user}
+        mode="all"
         betRowClassName="!mt-0"
       />
     </Col>

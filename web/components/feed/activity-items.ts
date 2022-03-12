@@ -87,7 +87,8 @@ function groupBets(
   comments: Comment[],
   windowMs: number,
   contract: Contract,
-  userId?: string
+  userId: string | undefined,
+  hideOutcome: boolean
 ) {
   const commentsMap = mapCommentsByBetId(comments)
   const items: ActivityItem[] = []
@@ -103,7 +104,7 @@ function groupBets(
         bets: [...group],
         id: group[0].id,
         contract,
-        hideOutcome: false,
+        hideOutcome,
       })
     }
     group = []
@@ -118,10 +119,10 @@ function groupBets(
           comment,
           bet,
           contract,
-          showOutcomeLabel: true,
+          showOutcomeLabel: !hideOutcome,
           truncate: true,
         }
-      : { type: 'bet' as const, id: bet.id, bet, contract, hideOutcome: false }
+      : { type: 'bet' as const, id: bet.id, bet, contract, hideOutcome }
   }
 
   for (const bet of bets) {
@@ -227,7 +228,9 @@ export function getAllContractActivityItems(
       ? [{ type: 'createanswer', id: answer.id, contract, answer }]
       : [{ type: 'description', id: '0', contract }]
 
-  items.push(...groupBets(bets, comments, DAY_IN_MS, contract, user?.id))
+  items.push(
+    ...groupBets(bets, comments, DAY_IN_MS, contract, user?.id, !!outcome)
+  )
 
   if (contract.closeTime && contract.closeTime <= Date.now()) {
     items.push({ type: 'close', id: `${contract.closeTime}`, contract })
@@ -248,12 +251,10 @@ export function getRecentContractActivityItems(
   bets = bets.sort((b1, b2) => b1.createdTime - b2.createdTime)
   comments = comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
-  const items: ActivityItem[] = []
-  items.push(
-    ...(contract.outcomeType === 'FREE_RESPONSE'
+  const items: ActivityItem[] =
+    contract.outcomeType === 'FREE_RESPONSE'
       ? getAnswerGroups(contract, bets, comments, user)
-      : groupBets(bets, comments, DAY_IN_MS, contract, user?.id))
-  )
+      : groupBets(bets, comments, DAY_IN_MS, contract, user?.id, false)
 
   // Remove all but last bet group.
   const betGroups = items.filter((item) => item.type === 'betgroup')

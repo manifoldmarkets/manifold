@@ -48,24 +48,13 @@ import { Answer } from '../../../common/answer'
 import { ActivityItem } from './activity-items'
 import { User } from '../../../common/user'
 
-export type FeedType =
-  // Main homepage/fold feed,
-  | 'activity'
-  // Comments feed on a market
-  | 'market'
-  // Grouped for a multi-category outcome
-  | 'multi'
-
 export function FeedItems(props: {
   contract: Contract
   items: ActivityItem[]
-  feedType: FeedType
-  outcome?: string // Which multi-category outcome to filter
   betRowClassName?: string
 }) {
-  const { contract, items, feedType, outcome, betRowClassName } = props
+  const { contract, items, betRowClassName } = props
   const { outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
 
   return (
     <div className="flow-root pr-2 md:pr-0">
@@ -102,7 +91,7 @@ export function FeedItems(props: {
           </div>
         ))}
       </div>
-      {isBinary && tradingAllowed(contract) && (
+      {outcomeType === 'BINARY' && tradingAllowed(contract) && (
         <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
       )}
     </div>
@@ -529,8 +518,7 @@ function FeedCreateAnswer(props: { contract: Contract; answer: Answer }) {
             name={answer.name}
             username={answer.username}
           />{' '}
-          submitted answer <OutcomeLabel outcome={answer.id} />{' '}
-          <Timestamp time={contract.createdTime} />
+          submitted this answer <Timestamp time={answer.createdTime} />
         </div>
       </div>
     </>
@@ -729,17 +717,5 @@ function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
         </div>
       </button>
     </>
-  )
-}
-
-// On 'multi' feeds, the outcome is redundant, so we hide it
-function MaybeOutcomeLabel(props: { outcome: string; feedType: FeedType }) {
-  const { outcome, feedType } = props
-  return feedType === 'multi' ? null : (
-    <span>
-      {' '}
-      of <OutcomeLabel outcome={outcome} />
-      {/* TODO: Link to the correct e.g. #23 */}
-    </span>
   )
 }

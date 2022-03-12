@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _, { update } from 'lodash'
 
 import { Contract } from '../../lib/firebase/contracts'
 import { Comment } from '../../lib/firebase/comments'
@@ -17,24 +17,33 @@ export function ContractActivity(props: {
   bets: Bet[]
   comments: Comment[]
   user: User | null | undefined
-  outcome?: string // Which multi-category outcome to filter
-  abbreviated?: boolean
+  mode: 'only-recent' | 'abbreviated' | 'all'
+  filterToOutcome?: string // Which multi-category outcome to filter
   betRowClassName?: string
 }) {
-  const { contract, user, outcome, abbreviated, betRowClassName } = props
+  const { contract, user, filterToOutcome, mode, betRowClassName } = props
 
-  const comments = useComments(contract.id) ?? props.comments
-  const bets = useBets(contract.id) ?? props.bets
+  const updatedComments =
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    mode === 'only-recent' ? undefined : useComments(contract.id)
+  const comments = updatedComments ?? props.comments
 
-  let items = getAllContractActivityItems(
-    contract,
-    bets,
-    comments,
-    user,
-    outcome
-  )
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const updatedBets = mode === 'only-recent' ? undefined : useBets(contract.id)
+  const bets = updatedBets ?? props.bets
 
-  if (abbreviated) {
+  let items =
+    mode === 'only-recent'
+      ? getRecentContractActivityItems(contract, bets, comments, user)
+      : getAllContractActivityItems(
+          contract,
+          bets,
+          comments,
+          user,
+          filterToOutcome
+        )
+
+  if (mode === 'abbreviated') {
     items = [items[0], ...items.slice(-3)]
   }
 
@@ -42,29 +51,6 @@ export function ContractActivity(props: {
     <FeedItems
       contract={contract}
       items={items}
-      feedType={abbreviated ? 'activity' : 'market'}
-      betRowClassName={betRowClassName}
-      outcome={outcome}
-    />
-  )
-}
-
-export function RecentContractActivity(props: {
-  contract: Contract
-  bets: Bet[]
-  comments: Comment[]
-  user: User | null | undefined
-  betRowClassName?: string
-}) {
-  const { contract, bets, comments, user, betRowClassName } = props
-
-  const items = getRecentContractActivityItems(contract, bets, comments, user)
-
-  return (
-    <FeedItems
-      contract={contract}
-      items={items}
-      feedType="activity"
       betRowClassName={betRowClassName}
     />
   )

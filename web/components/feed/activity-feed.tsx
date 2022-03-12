@@ -8,16 +8,15 @@ import { Bet } from '../../../common/bet'
 import { useUser } from '../../hooks/use-user'
 import BetRow from '../bet-row'
 import { FeedQuestion } from './feed-items'
-import { ContractActivity, RecentContractActivity } from './contract-activity'
+import { ContractActivity } from './contract-activity'
 
 export function ActivityFeed(props: {
   contracts: Contract[]
   recentBets: Bet[]
   recentComments: Comment[]
-  loadBetAndCommentHistory?: boolean
+  mode: 'only-recent' | 'abbreviated' | 'all'
 }) {
-  const { contracts, recentBets, recentComments, loadBetAndCommentHistory } =
-    props
+  const { contracts, recentBets, recentComments, mode } = props
 
   const user = useUser()
 
@@ -30,24 +29,15 @@ export function ActivityFeed(props: {
   return (
     <FeedContainer
       contracts={contracts}
-      renderContract={(contract) =>
-        loadBetAndCommentHistory ? (
-          <ContractActivity
-            user={user}
-            contract={contract}
-            bets={groupedBets[contract.id] ?? []}
-            comments={groupedComments[contract.id] ?? []}
-            abbreviated
-          />
-        ) : (
-          <RecentContractActivity
-            user={user}
-            contract={contract}
-            bets={groupedBets[contract.id] ?? []}
-            comments={groupedComments[contract.id] ?? []}
-          />
-        )
-      }
+      renderContract={(contract) => (
+        <ContractActivity
+          user={user}
+          contract={contract}
+          bets={groupedBets[contract.id] ?? []}
+          comments={groupedComments[contract.id] ?? []}
+          mode={mode}
+        />
+      )}
     />
   )
 }
