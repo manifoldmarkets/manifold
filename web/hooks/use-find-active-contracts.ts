@@ -25,7 +25,7 @@ export const getAllContractInfo = async () => {
   return { contracts, recentComments, folds }
 }
 
-const defaultSkippedTags = [
+const defaultExcludedTags = [
   'meta',
   'test',
   'trolling',
@@ -34,10 +34,11 @@ const defaultSkippedTags = [
   'personal',
 ]
 const includedWithDefaultFeed = (contract: Contract) => {
-  const { tags } = contract
+  const { lowercaseTags } = contract
 
-  if (tags.length === 0) return false
-  if (tags.some((tag) => defaultSkippedTags.includes(tag))) return false
+  if (lowercaseTags.length === 0) return false
+  if (lowercaseTags.some((tag) => defaultExcludedTags.includes(tag)))
+    return false
   return true
 }
 
