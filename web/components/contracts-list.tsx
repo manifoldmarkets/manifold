@@ -305,6 +305,7 @@ export function CreatorContractsList(props: { creator: User }) {
 
   const { query, setQuery, sort, setSort } = useQueryAndSortParams({
     defaultSort: 'all',
+    shouldLoadFromStorage: false,
   })
 
   useEffect(() => {
