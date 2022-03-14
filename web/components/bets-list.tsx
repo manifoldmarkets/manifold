@@ -506,10 +506,11 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
 
   return (
     <tr>
-      <td className="text-neutral">
+      <td>
         {!isCPMM && !isResolved && !isClosed && !isSold && !isAnte && (
           <SellButton contract={contract} bet={bet} />
         )}
+        {isCPMM && isAnte && 'ANTE'}
       </td>
       <td>
         <OutcomeLabel outcome={outcome} />
