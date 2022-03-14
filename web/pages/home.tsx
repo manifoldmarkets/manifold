@@ -6,7 +6,10 @@ import _ from 'lodash'
 
 import { Contract } from '../lib/firebase/contracts'
 import { Page } from '../components/page'
-import { ActivityFeed, SummaryActivityFeed } from '../components/activity-feed'
+import {
+  ActivityFeed,
+  SummaryActivityFeed,
+} from '../components/feed/activity-feed'
 import { Comment } from '../lib/firebase/comments'
 import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
@@ -128,6 +131,7 @@ const Home = (props: {
                 contracts={activeContracts}
                 recentBets={recentBets}
                 recentComments={recentComments}
+                mode="only-recent"
               />
             ) : (
               <LoadingIndicator className="mt-4" />
