@@ -12,6 +12,23 @@ export function getCpmmProbability(
   return (p * NO) / ((1 - p) * YES + p * NO)
 }
 
+export function getCpmmProbabilityAfterBetBeforeFees(
+  contract: FullContract<CPMM, Binary>,
+  outcome: string,
+  bet: number
+) {
+  const { pool, p } = contract
+  const shares = calculateCpmmShares(pool, p, bet, outcome)
+  const { YES: y, NO: n } = pool
+
+  const [newY, newN] =
+    outcome === 'YES'
+      ? [y - shares + bet, n + bet]
+      : [y + bet, n - shares + bet]
+
+  return getCpmmProbability({ YES: newY, NO: newN }, p)
+}
+
 export function getCpmmOutcomeProbabilityAfterBet(
   contract: FullContract<CPMM, Binary>,
   outcome: string,
@@ -46,6 +63,7 @@ export function getCpmmLiquidityFee(
   outcome: string
 ) {
   const p = getCpmmProbability(contract.pool, contract.p)
+  // const p = getCpmmProbabilityAfterBetBeforeFees(contract, outcome, bet)
   const betP = outcome === 'YES' ? 1 - p : p
 
   const liquidityFee = LIQUIDITY_FEE * betP * bet
@@ -65,9 +83,9 @@ export function calculateCpmmSharesAfterFee(
   outcome: string
 ) {
   const { pool, p } = contract
-  // const { remainingBet } = getCpmmLiquidityFee(contract, bet, outcome)
+  const { remainingBet } = getCpmmLiquidityFee(contract, bet, outcome)
 
-  return calculateCpmmShares(pool, p, bet, outcome)
+  return calculateCpmmShares(pool, p, remainingBet, outcome)
 }
 
 export function calculateCpmmPurchase(
@@ -90,10 +108,16 @@ export function calculateCpmmPurchase(
       ? [y - shares + remainingBet + fee, n + remainingBet + fee]
       : [y + remainingBet + fee, n - shares + remainingBet + fee]
 
-  const newPool = { YES: newY, NO: newN }
-  // console.log(getCpmmLiquidity(pool, p), getCpmmLiquidity(newPool, p))
+  const postBetPool = { YES: newY, NO: newN }
 
-  return { shares, newPool, fees }
+  const { newPool, liquidity, newP } = addCpmmLiquidity(postBetPool, p, fee)
+  const prob = getCpmmProbability(postBetPool, p)
+  const newProb = getCpmmProbability(newPool, newP)
+  // console.log(shares)
+  // console.log(fee, liquidity, newP, newPool)
+  console.log(pool, postBetPool, shares)
+
+  return { shares, newPool, newP, fees }
 }
 
 export function calculateCpmmShareValue(
@@ -156,29 +180,27 @@ export function getCpmmLiquidity(
   return YES ** (1 - p) * NO ** p
 }
 
-// TODO: use new pricing equation
-// export function addCpmmLiquidity(
-//   contract: FullContract<CPMM, Binary>,
-//   amount: number
-// ) {
-//   const { YES, NO } = contract.pool
-//   const p = getCpmmProbability({ YES, NO }, contract.p)
+export function addCpmmLiquidity(
+  pool: { [outcome: string]: number },
+  p: number,
+  amount: number
+) {
+  const prob = getCpmmProbability(pool, p)
 
-//   const [newYes, newNo] =
-//     p >= 0.5
-//       ? [amount * (1 / p - 1), amount]
-//       : [amount, amount * (1 / (1 - p) - 1)]
+  //https://www.wolframalpha.com/input?i=p%28n%2Bb%29%2F%28%281-p%29%28y%2Bb%29%2Bp%28n%2Bb%29%29%3Dq%2C+solve+p
+  const { YES: y, NO: n } = pool
+  const numerator = prob * (amount + y)
+  const denominator = amount - n * (prob - 1) + prob * y
+  const newP = numerator / denominator
 
-//   const betAmount = Math.abs(newYes - newNo)
-//   const betOutcome = p >= 0.5 ? 'YES' : 'NO'
+  const newPool = { YES: y + amount, NO: n + amount }
 
-//   const poolLiquidity = getCpmmLiquidity({ YES, NO })
-//   const newPool = { YES: YES + newYes, NO: NO + newNo }
-//   const resultingLiquidity = getCpmmLiquidity(newPool)
-//   const liquidity = resultingLiquidity - poolLiquidity
+  const oldLiquidity = getCpmmLiquidity(pool, newP)
+  const newLiquidity = getCpmmLiquidity(newPool, newP)
+  const liquidity = newLiquidity - oldLiquidity
 
-//   return { newPool, liquidity, betAmount, betOutcome }
-// }
+  return { newPool, liquidity, newP }
+}
 
 // export function removeCpmmLiquidity(
 //   contract: FullContract<CPMM, Binary>,

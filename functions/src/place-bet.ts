@@ -81,6 +81,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           newTotalBets,
           newBalance,
           fees,
+          newP,
         } =
           outcomeType === 'BINARY'
             ? mechanism === 'dpm-2'
@@ -115,6 +116,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           contractDoc,
           removeUndefinedProps({
             pool: newPool,
+            p: newP,
             totalShares: newTotalShares,
             totalBets: newTotalBets,
             collectedFees: addObjects<Fees>(fees ?? {}, collectedFees ?? {}),

@@ -26,7 +26,7 @@ export const getNewBinaryCpmmBetInfo = (
   loanAmount: number,
   newBetId: string
 ) => {
-  const { shares, newPool, fees } = calculateCpmmPurchase(
+  const { shares, newPool, newP, fees } = calculateCpmmPurchase(
     contract,
     amount,
     outcome
@@ -36,7 +36,7 @@ export const getNewBinaryCpmmBetInfo = (
 
   const { pool, p } = contract
   const probBefore = getCpmmProbability(pool, p)
-  const probAfter = getCpmmProbability(newPool, p)
+  const probAfter = getCpmmProbability(newPool, newP)
 
   const newBet: Bet = {
     id: newBetId,
@@ -52,7 +52,7 @@ export const getNewBinaryCpmmBetInfo = (
     createdTime: Date.now(),
   }
 
-  return { newBet, newPool, newBalance, fees }
+  return { newBet, newPool, newP, newBalance, fees }
 }
 
 export const getNewBinaryDpmBetInfo = (
