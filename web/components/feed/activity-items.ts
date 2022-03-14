@@ -7,7 +7,6 @@ import { Contract } from '../../../common/contract'
 import { User } from '../../../common/user'
 import { filterDefined } from '../../../common/util/array'
 import { canAddComment, mapCommentsByBetId } from '../../lib/firebase/comments'
-import { fromNow } from '../../lib/util/time'
 
 export type ActivityItem =
   | DescriptionItem
@@ -61,10 +60,8 @@ export type BetGroupItem = BaseActivityItem & {
 
 export type AnswerGroupItem = BaseActivityItem & {
   type: 'answergroup'
-  bets: Bet[]
-  comments: Comment[]
   answer: Answer
-  user: User | null | undefined
+  items: ActivityItem[]
 }
 
 export type CloseItem = BaseActivityItem & {
@@ -181,13 +178,21 @@ function getAnswerGroups(
       (answer) => answer.id === outcome
     ) as Answer
 
+    const answerItems = groupBets(
+      answerBets,
+      answerComments,
+      DAY_IN_MS,
+      contract,
+      user?.id,
+      true
+    )
+
     return {
       id: outcome,
       type: 'answergroup' as const,
       contract,
       answer,
-      bets: answerBets,
-      comments: answerComments,
+      items: answerItems,
       user,
     }
   })

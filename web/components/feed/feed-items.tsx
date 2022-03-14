@@ -8,6 +8,7 @@ import {
   LockClosedIcon,
   UserIcon,
   UsersIcon,
+  PencilAltIcon,
   XIcon,
 } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
@@ -46,7 +47,6 @@ import { Avatar } from '../avatar'
 import { useAdmin } from '../../hooks/use-admin'
 import { Answer } from '../../../common/answer'
 import { ActivityItem } from './activity-items'
-import { User } from '../../../common/user'
 
 export function FeedItems(props: {
   contract: Contract
@@ -61,32 +61,15 @@ export function FeedItems(props: {
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
           <div key={item.id} className="relative pb-6">
-            {activityItemIdx !== items.length - 1 ? (
+            {activityItemIdx !== items.length - 1 ||
+            item.type === 'answergroup' ? (
               <span
                 className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
                 aria-hidden="true"
               />
             ) : null}
             <div className="relative flex items-start space-x-3">
-              {item.type === 'question' ? (
-                <FeedQuestion {...item} />
-              ) : item.type === 'description' ? (
-                <FeedDescription {...item} />
-              ) : item.type === 'createanswer' ? (
-                <FeedCreateAnswer {...item} />
-              ) : item.type === 'comment' ? (
-                <FeedComment {...item} />
-              ) : item.type === 'bet' ? (
-                <FeedBet {...item} />
-              ) : item.type === 'betgroup' ? (
-                <FeedBetGroup {...item} />
-              ) : item.type === 'answergroup' ? (
-                <FeedAnswerGroup {...item} />
-              ) : item.type === 'close' ? (
-                <FeedClose {...item} />
-              ) : item.type === 'resolve' ? (
-                <FeedResolve {...item} />
-              ) : null}
+              <FeedItem item={item} />
             </div>
           </div>
         ))}
@@ -98,6 +81,31 @@ export function FeedItems(props: {
   )
 }
 
+function FeedItem(props: { item: ActivityItem }) {
+  const { item } = props
+
+  switch (item.type) {
+    case 'question':
+      return <FeedQuestion {...item} />
+    case 'description':
+      return <FeedDescription {...item} />
+    case 'comment':
+      return <FeedComment {...item} />
+    case 'bet':
+      return <FeedBet {...item} />
+    case 'createanswer':
+      return <FeedCreateAnswer {...item} />
+    case 'betgroup':
+      return <FeedBetGroup {...item} />
+    case 'answergroup':
+      return <FeedAnswerGroup {...item} />
+    case 'close':
+      return <FeedClose {...item} />
+    case 'resolve':
+      return <FeedResolve {...item} />
+  }
+}
+
 function FeedComment(props: {
   contract: Contract
   comment: Comment
@@ -106,28 +114,16 @@ function FeedComment(props: {
   truncate: boolean
 }) {
   const { contract, comment, bet, showOutcomeLabel, truncate } = props
-  const { createdTime } = contract
   const { amount, outcome } = bet
-  const { text, userUsername, userName, userAvatarUrl } = comment
+  const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const money = formatMoney(Math.abs(amount))
-
-  // const answer =
-  //   feedType !== 'multi' &&
-  //   (contract.answers?.find((answer: Answer) => answer?.id === outcome) as
-  //     | Answer
-  //     | undefined)
 
   return (
     <>
       <Avatar username={userUsername} avatarUrl={userAvatarUrl} />
       <div className="min-w-0 flex-1">
-        {/* {answer && (
-          <div className="text-neutral mb-2" style={{ fontSize: 15 }}>
-            {answer.text}
-          </div>
-        )} */}
         <div>
           <p className="mt-0.5 text-sm text-gray-500">
             <UserLink
@@ -142,7 +138,7 @@ function FeedComment(props: {
                 of <OutcomeLabel outcome={outcome} />
               </>
             )}
-            <Timestamp time={createdTime} />
+            <RelativeTimestamp time={createdTime} />
           </p>
         </div>
         <TruncatedComment
@@ -155,7 +151,7 @@ function FeedComment(props: {
   )
 }
 
-function Timestamp(props: { time: number }) {
+function RelativeTimestamp(props: { time: number }) {
   const { time } = props
   return (
     <DateTimeTooltip time={time}>
@@ -227,7 +223,7 @@ function FeedBet(props: {
               of <OutcomeLabel outcome={outcome} />
             </>
           )}
-          <Timestamp time={createdTime} />
+          <RelativeTimestamp time={createdTime} />
           {canComment && (
             // Allow user to comment in an textarea if they are the creator
             <div className="mt-2">
@@ -421,7 +417,7 @@ export function FeedQuestion(props: {
       <>
         <span className="mx-2">•</span>
         {contract.closeTime > Date.now() ? 'Closes' : 'Closed'}
-        <Timestamp time={contract.closeTime || 0} />
+        <RelativeTimestamp time={contract.closeTime || 0} />
       </>
     )
 
@@ -497,7 +493,7 @@ function FeedDescription(props: { contract: Contract }) {
             name={creatorName}
             username={creatorUsername}
           />{' '}
-          created this market <Timestamp time={contract.createdTime} />
+          created this market <RelativeTimestamp time={contract.createdTime} />
         </div>
         <ContractDescription contract={contract} isCreator={isCreator} />
       </div>
@@ -518,7 +514,7 @@ function FeedCreateAnswer(props: { contract: Contract; answer: Answer }) {
             name={answer.name}
             username={answer.username}
           />{' '}
-          submitted this answer <Timestamp time={answer.createdTime} />
+          submitted this answer <RelativeTimestamp time={answer.createdTime} />
         </div>
       </div>
     </>
@@ -561,7 +557,7 @@ function FeedResolve(props: { contract: Contract }) {
             username={creatorUsername}
           />{' '}
           resolved this market to <OutcomeLabel outcome={resolution} />{' '}
-          <Timestamp time={contract.resolutionTime || 0} />
+          <RelativeTimestamp time={contract.resolutionTime || 0} />
         </div>
       </div>
     </>
@@ -586,7 +582,7 @@ function FeedClose(props: { contract: Contract }) {
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
           Trading closed in this market{' '}
-          <Timestamp time={contract.closeTime || 0} />
+          <RelativeTimestamp time={contract.closeTime || 0} />
         </div>
       </div>
     </>
@@ -653,7 +649,7 @@ function FeedBetGroup(props: {
               {index !== outcomes.length - 1 && <br />}
             </Fragment>
           ))}
-          <Timestamp time={createdTime} />
+          <RelativeTimestamp time={createdTime} />
         </div>
       </div>
     </>
@@ -663,33 +659,50 @@ function FeedBetGroup(props: {
 function FeedAnswerGroup(props: {
   contract: Contract
   answer: Answer
-  bets: Bet[]
-  comments: Comment[]
-  user: User | null | undefined
+  items: ActivityItem[]
 }) {
-  const { contract, answer, bets, comments, user } = props
-
-  const betGroups = _.groupBy(bets, (bet) => bet.outcome)
-  const outcomes = Object.keys(betGroups)
-
-  // Use the time of the last bet for the entire group
-  const createdTime = bets[bets.length - 1].createdTime
+  const { answer, items } = props
 
   return (
-    <>
-      <div>
-        <div className="relative px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-            <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+    <Col className="gap-2">
+      <Row className="gap-2 mb-2">
+        <div>
+          <div className="relative px-1">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+              <PencilAltIcon
+                className="h-5 w-5 text-gray-500"
+                aria-hidden="true"
+              />
+            </div>
           </div>
         </div>
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-neutral mb-2" style={{ fontSize: 15 }}>
-          {answer.text}
+        <div className="min-w-0 flex-1 mt-1">
+          <div className="text-neutral" style={{ fontSize: 15 }}>
+            <Linkify text={answer.text} />
+          </div>
         </div>
-      </div>
-    </>
+      </Row>
+
+      {items.map((item, index) => (
+        <div
+          key={item.id}
+          className={clsx(
+            'relative ml-8',
+            index !== items.length - 1 && 'pb-4'
+          )}
+        >
+          {index !== items.length - 1 ? (
+            <span
+              className="absolute top-5 left-5 -ml-px h-[calc(100%-1rem)] w-0.5 bg-gray-200"
+              aria-hidden="true"
+            />
+          ) : null}
+          <div className="relative flex items-start space-x-3">
+            <FeedItem item={item} />
+          </div>
+        </div>
+      ))}
+    </Col>
   )
 }
 
