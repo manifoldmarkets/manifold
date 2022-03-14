@@ -658,7 +658,7 @@ function FeedBetGroup(props: {
           </div>
         </div>
       </div>
-      <div className="min-w-0 flex-1">
+      <div className={clsx('min-w-0 flex-1', outcomes.length === 1 && 'mt-1')}>
         <div className="text-sm text-gray-500">
           {outcomes.map((outcome, index) => (
             <Fragment key={outcome}>

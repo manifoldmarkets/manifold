@@ -77,14 +77,14 @@ export type ResolveItem = BaseActivityItem & {
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 
 // Group together bets that are:
-// - Within `windowMs` of the first in the group
+// - Within a day of the first in the group
+//  (Unless the bets are older: then are grouped by 7-days.)
 // - Do not have a comment
 // - Were not created by this user or the contract creator
 // Return a list of ActivityItems
 function groupBets(
   bets: Bet[],
   comments: Comment[],
-  windowMs: number,
   contract: Contract,
   userId: string | undefined,
   options: {
@@ -140,6 +140,12 @@ function groupBets(
 
   for (const bet of bets) {
     const isCreator = userId === bet.userId
+
+    // If first bet in group is older than 3 days, group by 7 days. Otherwise, group by 1 day.
+    const windowMs =
+      Date.now() - (group[0]?.createdTime ?? bet.createdTime) > DAY_IN_MS * 3
+        ? DAY_IN_MS * 7
+        : DAY_IN_MS
 
     if (commentsMap[bet.id] || isCreator) {
       pushGroup()
@@ -212,14 +218,11 @@ function getAnswerGroups(
         (answer) => answer.id === outcome
       ) as Answer
 
-      let items = groupBets(
-        answerBets,
-        answerComments,
-        DAY_IN_MS,
-        contract,
-        user?.id,
-        { hideOutcome: true, abbreviated, smallAvatar: true }
-      )
+      let items = groupBets(answerBets, answerComments, contract, user?.id, {
+        hideOutcome: true,
+        abbreviated,
+        smallAvatar: true,
+      })
 
       if (abbreviated) items = items.slice(-2)
 
@@ -274,7 +277,7 @@ export function getAllContractActivityItems(
           sortByProb: true,
           abbreviated,
         })
-      : groupBets(bets, comments, DAY_IN_MS, contract, user?.id, {
+      : groupBets(bets, comments, contract, user?.id, {
           hideOutcome: !!filterToOutcome,
           abbreviated,
           smallAvatar: !!filterToOutcome,
@@ -313,7 +316,7 @@ export function getRecentContractActivityItems(
           sortByProb: false,
           abbreviated: true,
         })
-      : groupBets(bets, comments, DAY_IN_MS, contract, user?.id, {
+      : groupBets(bets, comments, contract, user?.id, {
           hideOutcome: false,
           abbreviated: true,
           smallAvatar: false,
