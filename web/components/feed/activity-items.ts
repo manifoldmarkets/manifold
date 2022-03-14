@@ -283,51 +283,16 @@ export function getRecentContractActivityItems(
     showDescription: false,
   }
 
-  const items: ActivityItem[] = []
+  const answerItems =
+    contract.outcomeType === 'FREE_RESPONSE'
+      ? getAnswerGroups(contract, bets, comments, user, {
+          sortByProb: false,
+          abbreviated: true,
+        })
+      : groupBets(bets, comments, DAY_IN_MS, contract, user?.id, {
+          hideOutcome: false,
+          abbreviated: true,
+        })
 
-  if (contract.outcomeType === 'FREE_RESPONSE') {
-    // Keep last three comments.
-    comments = comments.slice(-3)
-    const outcomeToComments = _.groupBy(comments, (c) => {
-      const bet = bets.find((bet) => bet.id === c.betId)
-      return bet?.outcome
-    })
-    delete outcomeToComments['undefined']
-
-    // Include up to 2 outcomes from comments and last bet.
-    const lastBet = bets[bets.length - 1]
-    const outcomes = filterDefined(
-      _.uniq([...Object.keys(outcomeToComments), lastBet?.outcome])
-    ).slice(-2)
-
-    // Keep bets on selected outcomes.
-    bets = bets.filter((bet) => outcomes.includes(bet.outcome))
-    // Filter out bets before comments.
-    bets = bets.filter((bet) => {
-      const comments = outcomeToComments[bet.outcome]
-      if (
-        !comments ||
-        comments.length === 0 ||
-        comments.some((c) => c.betId === bet.id)
-      )
-        return true
-      return comments.every((c) => c.createdTime <= bet.createdTime)
-    })
-
-    items.push(
-      ...getAnswerGroups(contract, bets, comments, user, {
-        sortByProb: false,
-        abbreviated: true,
-      })
-    )
-  } else {
-    items.push(
-      ...groupBets(bets, comments, DAY_IN_MS, contract, user?.id, {
-        hideOutcome: false,
-        abbreviated: true,
-      })
-    )
-  }
-
-  return [questionItem, ...items]
+  return [questionItem, ...answerItems]
 }
