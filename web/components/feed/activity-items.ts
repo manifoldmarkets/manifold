@@ -181,35 +181,37 @@ function getAnswerGroups(
     )
   }
 
-  const answerGroups = outcomes.map((outcome) => {
-    const answerBets = bets.filter((bet) => bet.outcome === outcome)
-    const answerComments = comments.filter((comment) =>
-      answerBets.some((bet) => bet.id === comment.betId)
-    )
-    const answer = contract.answers?.find(
-      (answer) => answer.id === outcome
-    ) as Answer
+  const answerGroups = outcomes
+    .map((outcome) => {
+      const answerBets = bets.filter((bet) => bet.outcome === outcome)
+      const answerComments = comments.filter((comment) =>
+        answerBets.some((bet) => bet.id === comment.betId)
+      )
+      const answer = contract.answers?.find(
+        (answer) => answer.id === outcome
+      ) as Answer
 
-    let items = groupBets(
-      answerBets,
-      answerComments,
-      DAY_IN_MS,
-      contract,
-      user?.id,
-      { hideOutcome: true, abbreviated }
-    )
+      let items = groupBets(
+        answerBets,
+        answerComments,
+        DAY_IN_MS,
+        contract,
+        user?.id,
+        { hideOutcome: true, abbreviated }
+      )
 
-    if (abbreviated) items = items.slice(-2)
+      if (abbreviated) items = items.slice(-2)
 
-    return {
-      id: outcome,
-      type: 'answergroup' as const,
-      contract,
-      answer,
-      items,
-      user,
-    }
-  })
+      return {
+        id: outcome,
+        type: 'answergroup' as const,
+        contract,
+        answer,
+        items,
+        user,
+      }
+    })
+    .filter((group) => group.answer)
 
   return answerGroups
 }
