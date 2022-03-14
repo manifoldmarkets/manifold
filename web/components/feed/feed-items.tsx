@@ -110,10 +110,10 @@ function FeedComment(props: {
   contract: Contract
   comment: Comment
   bet: Bet
-  showOutcomeLabel: boolean
+  hideOutcome: boolean
   truncate: boolean
 }) {
-  const { contract, comment, bet, showOutcomeLabel, truncate } = props
+  const { contract, comment, bet, hideOutcome, truncate } = props
   const { amount, outcome } = bet
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
 
@@ -132,7 +132,7 @@ function FeedComment(props: {
               name={userName}
             />{' '}
             {bought} {money}
-            {showOutcomeLabel && (
+            {!hideOutcome && (
               <>
                 {' '}
                 of <OutcomeLabel outcome={outcome} />
@@ -615,7 +615,6 @@ function BetGroupSpan(props: { bets: Bet[]; outcome?: string }) {
   )
 }
 
-// TODO: Make this expandable to show all grouped bets?
 function FeedBetGroup(props: {
   contract: Contract
   bets: Bet[]

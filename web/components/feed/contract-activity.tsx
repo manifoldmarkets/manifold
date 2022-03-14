@@ -1,4 +1,4 @@
-import _, { update } from 'lodash'
+import _ from 'lodash'
 
 import { Contract } from '../../lib/firebase/contracts'
 import { Comment } from '../../lib/firebase/comments'

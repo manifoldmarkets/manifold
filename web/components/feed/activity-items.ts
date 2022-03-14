@@ -2,11 +2,12 @@ import _ from 'lodash'
 
 import { Answer } from '../../../common/answer'
 import { Bet } from '../../../common/bet'
+import { getOutcomeProbability } from '../../../common/calculate'
 import { Comment } from '../../../common/comment'
 import { Contract } from '../../../common/contract'
 import { User } from '../../../common/user'
 import { filterDefined } from '../../../common/util/array'
-import { canAddComment, mapCommentsByBetId } from '../../lib/firebase/comments'
+import { mapCommentsByBetId } from '../../lib/firebase/comments'
 
 export type ActivityItem =
   | DescriptionItem
@@ -43,7 +44,7 @@ export type CommentItem = BaseActivityItem & {
   type: 'comment'
   comment: Comment
   bet: Bet
-  showOutcomeLabel: boolean
+  hideOutcome: boolean
   truncate: boolean
 }
 
@@ -85,8 +86,13 @@ function groupBets(
   windowMs: number,
   contract: Contract,
   userId: string | undefined,
-  hideOutcome: boolean
+  options: {
+    hideOutcome: boolean
+    truncateComments: boolean
+  }
 ) {
+  const { hideOutcome, truncateComments } = options
+
   const commentsMap = mapCommentsByBetId(comments)
   const items: ActivityItem[] = []
   let group: Bet[] = []
@@ -107,7 +113,7 @@ function groupBets(
     group = []
   }
 
-  function toActivityItem(bet: Bet) {
+  function toActivityItem(bet: Bet): ActivityItem {
     const comment = commentsMap[bet.id]
     return comment
       ? {
@@ -116,10 +122,16 @@ function groupBets(
           comment,
           bet,
           contract,
-          showOutcomeLabel: !hideOutcome,
-          truncate: true,
+          hideOutcome,
+          truncate: truncateComments,
         }
-      : { type: 'bet' as const, id: bet.id, bet, contract, hideOutcome }
+      : {
+          type: 'bet' as const,
+          id: bet.id,
+          bet,
+          contract,
+          hideOutcome,
+        }
   }
 
   for (const bet of bets) {
@@ -150,24 +162,23 @@ function getAnswerGroups(
   contract: Contract,
   bets: Bet[],
   comments: Comment[],
-  user: User | undefined | null
+  user: User | undefined | null,
+  options: {
+    truncateComments: boolean
+    sortByProb: boolean
+  }
 ) {
-  // Keep last two comments.
-  comments = comments.slice(-2)
-  const lastBet = bets[bets.length - 1]
+  const { truncateComments, sortByProb } = options
 
-  // Include up to 2 outcomes from comments and last bet.
-  const outcomes = filterDefined(
-    _.uniq([
-      ...comments.map(
-        (comment) => bets.find((bet) => bet.id === comment.betId)?.outcome
-      ),
-      lastBet?.outcome,
-    ])
-  ).slice(0, 2)
-
-  // Keep bets on selected outcomes.
-  bets = bets.filter((bet) => outcomes.includes(bet.outcome))
+  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
+    (outcome) => getOutcomeProbability(contract.totalShares, outcome) > 0.01
+  )
+  if (sortByProb) {
+    outcomes = _.sortBy(
+      outcomes,
+      (outcome) => -1 * getOutcomeProbability(contract.totalShares, outcome)
+    )
+  }
 
   const answerGroups = outcomes.map((outcome) => {
     const answerBets = bets.filter((bet) => bet.outcome === outcome)
@@ -178,13 +189,13 @@ function getAnswerGroups(
       (answer) => answer.id === outcome
     ) as Answer
 
-    const answerItems = groupBets(
+    const items = groupBets(
       answerBets,
       answerComments,
       DAY_IN_MS,
       contract,
       user?.id,
-      true
+      { hideOutcome: true, truncateComments }
     )
 
     return {
@@ -192,7 +203,7 @@ function getAnswerGroups(
       type: 'answergroup' as const,
       contract,
       answer,
-      items: answerItems,
+      items,
       user,
     }
   })
@@ -208,24 +219,16 @@ export function getAllContractActivityItems(
   outcome?: string
 ) {
   const { outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
 
-  bets = isBinary
-    ? bets.filter((bet) => !bet.isAnte)
-    : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
+  bets =
+    outcomeType === 'BINARY'
+      ? bets.filter((bet) => !bet.isAnte)
+      : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
 
   let answer: Answer | undefined
   if (outcome) {
     bets = bets.filter((bet) => bet.outcome === outcome)
     answer = contract.answers?.find((answer) => answer.id === outcome)
-  } else if (outcomeType === 'FREE_RESPONSE') {
-    // Keep bets on comments or your bets where you can comment.
-    const commentBetIds = new Set(comments.map((comment) => comment.betId))
-    bets = bets.filter(
-      (bet) =>
-        commentBetIds.has(bet.id) ||
-        canAddComment(bet.createdTime, user?.id === bet.userId)
-    )
   }
 
   const items: ActivityItem[] =
@@ -234,7 +237,15 @@ export function getAllContractActivityItems(
       : [{ type: 'description', id: '0', contract }]
 
   items.push(
-    ...groupBets(bets, comments, DAY_IN_MS, contract, user?.id, !!outcome)
+    ...(outcomeType === 'FREE_RESPONSE' && !outcome
+      ? getAnswerGroups(contract, bets, comments, user, {
+          truncateComments: false,
+          sortByProb: true,
+        })
+      : groupBets(bets, comments, DAY_IN_MS, contract, user?.id, {
+          hideOutcome: !!outcome,
+          truncateComments: false,
+        }))
   )
 
   if (contract.closeTime && contract.closeTime <= Date.now()) {
@@ -256,18 +267,6 @@ export function getRecentContractActivityItems(
   bets = bets.sort((b1, b2) => b1.createdTime - b2.createdTime)
   comments = comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
-  const items: ActivityItem[] =
-    contract.outcomeType === 'FREE_RESPONSE'
-      ? getAnswerGroups(contract, bets, comments, user)
-      : groupBets(bets, comments, DAY_IN_MS, contract, user?.id, false)
-
-  // Remove all but last bet group.
-  const betGroups = items.filter((item) => item.type === 'betgroup')
-  const lastBetGroup = betGroups[betGroups.length - 1]
-  const filtered = items.filter(
-    (item) => item.type !== 'betgroup' || item.id === lastBetGroup?.id
-  )
-
   const questionItem: QuestionItem = {
     type: 'question',
     id: '0',
@@ -275,9 +274,52 @@ export function getRecentContractActivityItems(
     showDescription: false,
   }
 
-  return [
-    questionItem,
-    // Only take the last three items.
-    ...filtered.slice(-3),
-  ]
+  let items: ActivityItem[] = []
+
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    // Keep last two comments.
+    comments = comments.slice(-2)
+    const lastBet = bets[bets.length - 1]
+
+    const outcomeToComments = _.groupBy(comments, (c) => {
+      const bet = bets.find((bet) => bet.id === c.betId)
+      return bet?.outcome
+    })
+    delete outcomeToComments['undefined']
+
+    // Include up to 2 outcomes from comments and last bet.
+    const outcomes = filterDefined(
+      _.uniq([...Object.keys(outcomeToComments), lastBet?.outcome])
+    ).slice(-2)
+
+    // Keep bets on selected outcomes.
+    bets = bets.filter((bet) => outcomes.includes(bet.outcome))
+    // Filter out bets before comments.
+    bets = bets.filter((bet) => {
+      const comments = outcomeToComments[bet.outcome]
+      if (
+        !comments ||
+        comments.length === 0 ||
+        comments.some((c) => c.betId === bet.id)
+      )
+        return true
+      return comments.every((c) => c.createdTime <= bet.createdTime)
+    })
+
+    items.push(
+      ...getAnswerGroups(contract, bets, comments, user, {
+        truncateComments: true,
+        sortByProb: false,
+      })
+    )
+  } else {
+    items.push(
+      ...groupBets(bets, comments, DAY_IN_MS, contract, user?.id, {
+        hideOutcome: false,
+        truncateComments: true,
+      })
+    )
+  }
+
+  return [questionItem, ...items.slice(-3)]
 }
