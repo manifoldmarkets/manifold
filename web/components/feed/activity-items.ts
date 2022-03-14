@@ -6,7 +6,6 @@ import { getOutcomeProbability } from '../../../common/calculate'
 import { Comment } from '../../../common/comment'
 import { Contract } from '../../../common/contract'
 import { User } from '../../../common/user'
-import { filterDefined } from '../../../common/util/array'
 import { mapCommentsByBetId } from '../../lib/firebase/comments'
 
 export type ActivityItem =
@@ -173,11 +172,28 @@ function getAnswerGroups(
   let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
     (outcome) => getOutcomeProbability(contract.totalShares, outcome) > 0.01
   )
-  if (abbreviated) outcomes = outcomes.slice(-2)
+  if (abbreviated) {
+    const lastComment = _.last(comments)
+    const lastCommentOutcome = bets.find(
+      (bet) => bet.id === lastComment?.betId
+    )?.outcome
+    if (lastCommentOutcome) {
+      outcomes = [
+        ...outcomes.filter((outcome) => outcome !== lastCommentOutcome),
+        lastCommentOutcome,
+      ]
+    }
+    outcomes = outcomes.slice(-2)
+  }
   if (sortByProb) {
     outcomes = _.sortBy(
       outcomes,
       (outcome) => -1 * getOutcomeProbability(contract.totalShares, outcome)
+    )
+  } else {
+    // Sort by recent bet.
+    outcomes = _.sortBy(outcomes, (outcome) =>
+      _.findLastIndex(bets, (bet) => bet.outcome === outcome)
     )
   }
 
@@ -285,7 +301,7 @@ export function getRecentContractActivityItems(
     showDescription: false,
   }
 
-  const answerItems =
+  const items =
     contract.outcomeType === 'FREE_RESPONSE'
       ? getAnswerGroups(contract, bets, comments, user, {
           sortByProb: false,
@@ -296,5 +312,5 @@ export function getRecentContractActivityItems(
           abbreviated: true,
         })
 
-  return [questionItem, ...answerItems]
+  return [questionItem, ...items]
 }
