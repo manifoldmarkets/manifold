@@ -86,6 +86,7 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
           key={answer.id}
           answer={answer}
           contract={contract}
+          user={user}
           showChoice={showChoice}
           chosenProb={chosenAnswers[answer.id]}
           totalChosenProb={chosenTotal}
