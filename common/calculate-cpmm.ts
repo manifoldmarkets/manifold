@@ -62,8 +62,7 @@ export function getCpmmLiquidityFee(
   bet: number,
   outcome: string
 ) {
-  const prob = getCpmmProbability(contract.pool, contract.p)
-  // const prob = getCpmmProbabilityAfterBetBeforeFees(contract, outcome, bet)
+  const prob = getCpmmProbabilityAfterBetBeforeFees(contract, outcome, bet)
   const betP = outcome === 'YES' ? 1 - prob : prob
 
   const liquidityFee = LIQUIDITY_FEE * betP * bet
@@ -83,9 +82,9 @@ export function calculateCpmmSharesAfterFee(
   outcome: string
 ) {
   const { pool, p } = contract
-  // const { remainingBet } = getCpmmLiquidityFee(contract, bet, outcome)
+  const { remainingBet } = getCpmmLiquidityFee(contract, bet, outcome)
 
-  return calculateCpmmShares(pool, p, bet, outcome)
+  return calculateCpmmShares(pool, p, remainingBet, outcome)
 }
 
 export function calculateCpmmPurchase(
@@ -94,9 +93,9 @@ export function calculateCpmmPurchase(
   outcome: string
 ) {
   const { pool, p } = contract
-  // const { remainingBet, fees } = getCpmmLiquidityFee(contract, bet, outcome)
-  const remainingBet = bet
-  const fees = noFees
+  const { remainingBet, fees } = getCpmmLiquidityFee(contract, bet, outcome)
+  // const remainingBet = bet
+  // const fees = noFees
 
   const shares = calculateCpmmShares(pool, p, remainingBet, outcome)
   const { YES: y, NO: n } = pool
@@ -110,14 +109,8 @@ export function calculateCpmmPurchase(
 
   const postBetPool = { YES: newY, NO: newN }
 
-  const { newPool, liquidity, newP } = addCpmmLiquidity(postBetPool, p, fee)
-  // const prob = getCpmmProbability(postBetPool, p)
-  // const newProb = getCpmmProbability(newPool, newP)
-  // console.log(prob, newProb)
-  // console.log(fee, liquidity, newP, newPool)
-  console.log(getCpmmLiquidity(pool, p), getCpmmLiquidity(newPool, newP))
-  console.log(pool, postBetPool, newPool)
-  // console.log(pool, postBetPool, shares)
+  const { newPool, newP } = addCpmmLiquidity(postBetPool, p, fee)
+  // console.log(fee, getCpmmLiquidity(pool, p), getCpmmLiquidity(newPool, newP))
 
   return { shares, newPool, newP, fees }
 }
