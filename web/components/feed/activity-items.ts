@@ -277,10 +277,8 @@ export function getRecentContractActivityItems(
   let items: ActivityItem[] = []
 
   if (contract.outcomeType === 'FREE_RESPONSE') {
-    // Keep last two comments.
-    comments = comments.slice(-2)
-    const lastBet = bets[bets.length - 1]
-
+    // Keep last three comments.
+    comments = comments.slice(-3)
     const outcomeToComments = _.groupBy(comments, (c) => {
       const bet = bets.find((bet) => bet.id === c.betId)
       return bet?.outcome
@@ -288,6 +286,7 @@ export function getRecentContractActivityItems(
     delete outcomeToComments['undefined']
 
     // Include up to 2 outcomes from comments and last bet.
+    const lastBet = bets[bets.length - 1]
     const outcomes = filterDefined(
       _.uniq([...Object.keys(outcomeToComments), lastBet?.outcome])
     ).slice(-2)

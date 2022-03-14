@@ -8,7 +8,6 @@ import {
   LockClosedIcon,
   UserIcon,
   UsersIcon,
-  PencilAltIcon,
   XIcon,
 } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
@@ -195,9 +194,12 @@ function FeedBet(props: {
     <>
       <div>
         {isSelf ? (
-          <Avatar avatarUrl={user?.avatarUrl} />
+          <Avatar avatarUrl={user.avatarUrl} username={user.username} />
         ) : isCreator ? (
-          <Avatar avatarUrl={contract.creatorAvatarUrl} />
+          <Avatar
+            avatarUrl={contract.creatorAvatarUrl}
+            username={contract.creatorUsername}
+          />
         ) : (
           <div className="relative px-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
@@ -661,25 +663,22 @@ function FeedAnswerGroup(props: {
   items: ActivityItem[]
 }) {
   const { answer, items } = props
+  const { username, avatarUrl, userId, name, text } = answer
 
   return (
-    <Col className="gap-2">
-      <Row className="gap-2 mb-2">
-        <div>
-          <div className="relative px-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-              <PencilAltIcon
-                className="h-5 w-5 text-gray-500"
-                aria-hidden="true"
-              />
-            </div>
+    <Col className="gap-2 flex-1">
+      <Row className="gap-3 mb-4">
+        <div className="px-1">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+            <Avatar username={username} avatarUrl={avatarUrl} />
           </div>
         </div>
-        <div className="min-w-0 flex-1 mt-1">
-          <div className="text-neutral" style={{ fontSize: 15 }}>
-            <Linkify text={answer.text} />
+        <Col className="min-w-0 flex-1 gap-2">
+          <div className="text-sm text-gray-500">
+            <UserLink username={userId} name={name} /> answered
           </div>
-        </div>
+          <Linkify text={text} />
+        </Col>
       </Row>
 
       {items.map((item, index) => (
