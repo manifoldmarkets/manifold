@@ -111,8 +111,9 @@ function FeedComment(props: {
   bet: Bet
   hideOutcome: boolean
   truncate: boolean
+  smallAvatar: boolean
 }) {
-  const { contract, comment, bet, hideOutcome, truncate } = props
+  const { contract, comment, bet, hideOutcome, truncate, smallAvatar } = props
   const { amount, outcome } = bet
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
 
@@ -121,7 +122,12 @@ function FeedComment(props: {
 
   return (
     <>
-      <Avatar username={userUsername} avatarUrl={userAvatarUrl} />
+      <Avatar
+        className={clsx(smallAvatar && 'ml-1')}
+        size={smallAvatar ? 'sm' : undefined}
+        username={userUsername}
+        avatarUrl={userAvatarUrl}
+      />
       <div className="min-w-0 flex-1">
         <div>
           <p className="mt-0.5 text-sm text-gray-500">
@@ -165,8 +171,9 @@ function FeedBet(props: {
   contract: Contract
   bet: Bet
   hideOutcome: boolean
+  smallAvatar: boolean
 }) {
-  const { contract, bet, hideOutcome } = props
+  const { contract, bet, hideOutcome, smallAvatar } = props
   const { id, amount, outcome, createdTime, userId } = bet
   const user = useUser()
   const isSelf = user?.id === userId
@@ -194,9 +201,16 @@ function FeedBet(props: {
     <>
       <div>
         {isSelf ? (
-          <Avatar avatarUrl={user.avatarUrl} username={user.username} />
+          <Avatar
+            className={clsx(smallAvatar && 'ml-1')}
+            size={smallAvatar ? 'sm' : undefined}
+            avatarUrl={user.avatarUrl}
+            username={user.username}
+          />
         ) : isCreator ? (
           <Avatar
+            className={clsx(smallAvatar && 'ml-1')}
+            size={smallAvatar ? 'sm' : undefined}
             avatarUrl={contract.creatorAvatarUrl}
             username={contract.creatorUsername}
           />
@@ -504,11 +518,16 @@ function FeedDescription(props: { contract: Contract }) {
 }
 
 function FeedCreateAnswer(props: { contract: Contract; answer: Answer }) {
-  const { contract, answer } = props
+  const { answer } = props
 
   return (
     <>
-      <Avatar username={answer.username} avatarUrl={answer.avatarUrl} />
+      <Avatar
+        className="ml-1"
+        size="sm"
+        username={answer.username}
+        avatarUrl={answer.avatarUrl}
+      />
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
           <UserLink
