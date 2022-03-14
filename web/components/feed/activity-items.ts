@@ -88,10 +88,10 @@ function groupBets(
   userId: string | undefined,
   options: {
     hideOutcome: boolean
-    truncateComments: boolean
+    abbreviated: boolean
   }
 ) {
-  const { hideOutcome, truncateComments } = options
+  const { hideOutcome, abbreviated } = options
 
   const commentsMap = mapCommentsByBetId(comments)
   const items: ActivityItem[] = []
@@ -123,7 +123,7 @@ function groupBets(
           bet,
           contract,
           hideOutcome,
-          truncate: truncateComments,
+          truncate: abbreviated,
         }
       : {
           type: 'bet' as const,
@@ -155,7 +155,7 @@ function groupBets(
   if (group.length > 0) {
     pushGroup()
   }
-  return items
+  return abbreviated ? items.slice(-3) : items
 }
 
 function getAnswerGroups(
@@ -164,15 +164,16 @@ function getAnswerGroups(
   comments: Comment[],
   user: User | undefined | null,
   options: {
-    truncateComments: boolean
     sortByProb: boolean
+    abbreviated: boolean
   }
 ) {
-  const { truncateComments, sortByProb } = options
+  const { sortByProb, abbreviated } = options
 
   let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
     (outcome) => getOutcomeProbability(contract.totalShares, outcome) > 0.01
   )
+  if (abbreviated) outcomes = outcomes.slice(-2)
   if (sortByProb) {
     outcomes = _.sortBy(
       outcomes,
@@ -189,14 +190,16 @@ function getAnswerGroups(
       (answer) => answer.id === outcome
     ) as Answer
 
-    const items = groupBets(
+    let items = groupBets(
       answerBets,
       answerComments,
       DAY_IN_MS,
       contract,
       user?.id,
-      { hideOutcome: true, truncateComments }
+      { hideOutcome: true, abbreviated }
     )
+
+    if (abbreviated) items = items.slice(-2)
 
     return {
       id: outcome,
@@ -216,8 +219,12 @@ export function getAllContractActivityItems(
   bets: Bet[],
   comments: Comment[],
   user: User | null | undefined,
-  outcome?: string
+  filterToOutcome: string | undefined,
+  options: {
+    abbreviated: boolean
+  }
 ) {
+  const { abbreviated } = options
   const { outcomeType } = contract
 
   bets =
@@ -226,25 +233,27 @@ export function getAllContractActivityItems(
       : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
 
   let answer: Answer | undefined
-  if (outcome) {
-    bets = bets.filter((bet) => bet.outcome === outcome)
-    answer = contract.answers?.find((answer) => answer.id === outcome)
+  if (filterToOutcome) {
+    bets = bets.filter((bet) => bet.outcome === filterToOutcome)
+    answer = contract.answers?.find((answer) => answer.id === filterToOutcome)
   }
 
   const items: ActivityItem[] =
-    outcome && answer
+    filterToOutcome && answer
       ? [{ type: 'createanswer', id: answer.id, contract, answer }]
+      : abbreviated
+      ? [{ type: 'question', id: '0', contract, showDescription: false }]
       : [{ type: 'description', id: '0', contract }]
 
   items.push(
-    ...(outcomeType === 'FREE_RESPONSE' && !outcome
+    ...(outcomeType === 'FREE_RESPONSE' && !filterToOutcome
       ? getAnswerGroups(contract, bets, comments, user, {
-          truncateComments: false,
           sortByProb: true,
+          abbreviated,
         })
       : groupBets(bets, comments, DAY_IN_MS, contract, user?.id, {
-          hideOutcome: !!outcome,
-          truncateComments: false,
+          hideOutcome: !!filterToOutcome,
+          abbreviated,
         }))
   )
 
@@ -274,7 +283,7 @@ export function getRecentContractActivityItems(
     showDescription: false,
   }
 
-  let items: ActivityItem[] = []
+  const items: ActivityItem[] = []
 
   if (contract.outcomeType === 'FREE_RESPONSE') {
     // Keep last three comments.
@@ -307,18 +316,18 @@ export function getRecentContractActivityItems(
 
     items.push(
       ...getAnswerGroups(contract, bets, comments, user, {
-        truncateComments: true,
         sortByProb: false,
+        abbreviated: true,
       })
     )
   } else {
     items.push(
       ...groupBets(bets, comments, DAY_IN_MS, contract, user?.id, {
         hideOutcome: false,
-        truncateComments: true,
+        abbreviated: true,
       })
     )
   }
 
-  return [questionItem, ...items.slice(-3)]
+  return [questionItem, ...items]
 }

@@ -32,7 +32,7 @@ export function ContractActivity(props: {
   const updatedBets = mode === 'only-recent' ? undefined : useBets(contract.id)
   const bets = updatedBets ?? props.bets
 
-  let items =
+  const items =
     mode === 'only-recent'
       ? getRecentContractActivityItems(contract, bets, comments, user)
       : getAllContractActivityItems(
@@ -40,12 +40,9 @@ export function ContractActivity(props: {
           bets,
           comments,
           user,
-          filterToOutcome
+          filterToOutcome,
+          { abbreviated: mode === 'abbreviated' }
         )
-
-  if (mode === 'abbreviated') {
-    items = [items[0], ...items.slice(-3)]
-  }
 
   return (
     <FeedItems
