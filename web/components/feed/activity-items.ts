@@ -135,7 +135,7 @@ function groupBets(
   }
 
   for (const bet of bets) {
-    const isCreator = userId === bet.userId || contract.creatorId === bet.userId
+    const isCreator = userId === bet.userId
 
     if (commentsMap[bet.id] || isCreator) {
       pushGroup()
