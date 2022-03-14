@@ -37,6 +37,7 @@ export type BetItem = BaseActivityItem & {
   type: 'bet'
   bet: Bet
   hideOutcome: boolean
+  smallAvatar: boolean
 }
 
 export type CommentItem = BaseActivityItem & {
@@ -45,6 +46,7 @@ export type CommentItem = BaseActivityItem & {
   bet: Bet
   hideOutcome: boolean
   truncate: boolean
+  smallAvatar: boolean
 }
 
 export type CreateAnswerItem = BaseActivityItem & {
@@ -88,9 +90,10 @@ function groupBets(
   options: {
     hideOutcome: boolean
     abbreviated: boolean
+    smallAvatar: boolean
   }
 ) {
-  const { hideOutcome, abbreviated } = options
+  const { hideOutcome, abbreviated, smallAvatar } = options
 
   const commentsMap = mapCommentsByBetId(comments)
   const items: ActivityItem[] = []
@@ -123,6 +126,7 @@ function groupBets(
           contract,
           hideOutcome,
           truncate: abbreviated,
+          smallAvatar,
         }
       : {
           type: 'bet' as const,
@@ -130,6 +134,7 @@ function groupBets(
           bet,
           contract,
           hideOutcome,
+          smallAvatar,
         }
   }
 
@@ -213,7 +218,7 @@ function getAnswerGroups(
         DAY_IN_MS,
         contract,
         user?.id,
-        { hideOutcome: true, abbreviated }
+        { hideOutcome: true, abbreviated, smallAvatar: true }
       )
 
       if (abbreviated) items = items.slice(-2)
@@ -272,6 +277,7 @@ export function getAllContractActivityItems(
       : groupBets(bets, comments, DAY_IN_MS, contract, user?.id, {
           hideOutcome: !!filterToOutcome,
           abbreviated,
+          smallAvatar: !!filterToOutcome,
         }))
   )
 
@@ -310,6 +316,7 @@ export function getRecentContractActivityItems(
       : groupBets(bets, comments, DAY_IN_MS, contract, user?.id, {
           hideOutcome: false,
           abbreviated: true,
+          smallAvatar: false,
         })
 
   return [questionItem, ...items]
