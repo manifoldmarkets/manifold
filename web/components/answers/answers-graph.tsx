@@ -43,10 +43,7 @@ export function AnswersGraph(props: {
 
   const colors = ['#2a81e3', '#c72ae3', '#b91111', '#f3ad28', '#11b981']
 
-  const maxProb = _.max(
-    Object.values(probsByOutcome).map((probs) => Math.max(...probs))
-  )
-  const yMax = Math.min(100, Math.max(50, (maxProb ?? 0) * 100 * 1.2))
+  const yMax = 100
 
   const times = _.sortBy([
     contract.createdTime,
@@ -100,7 +97,7 @@ export function AnswersGraph(props: {
     >
       <ResponsiveLine
         data={data}
-        yScale={{ min: 0, max: yMax, type: 'linear' }}
+        yScale={{ min: 0, max: yMax, type: 'linear', stacked: true }}
         yFormat={formatPercent}
         gridYValues={yTickValues}
         axisLeft={{
@@ -117,11 +114,12 @@ export function AnswersGraph(props: {
           tickValues: numXTickValues,
           format: (time) => formatTime(+time, lessThanAWeek),
         }}
-        colors={{ datum: 'color' }}
+        colors={{ scheme: 'pastel1' }}
         pointSize={0}
         enableSlices="x"
         enableGridX={!!width && width >= 800}
         enableArea
+        areaOpacity={1}
         margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
       />
     </div>
