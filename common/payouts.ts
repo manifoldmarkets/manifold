@@ -112,27 +112,24 @@ export const getDpmPayouts = (
       ]
 
     case 'MKT':
-      return getDpmMktPayouts(contract, openBets, resolutionProbability) as [
-        Payout[],
-        Fees
-      ]
-
+      return contract.outcomeType === 'FREE_RESPONSE'
+        ? (getPayoutsMultiOutcome(
+            resolutions,
+            contract as FullContract<DPM, Multi | FreeResponse>,
+            openBets
+          ) as [Payout[], Fees])
+        : (getDpmMktPayouts(contract, openBets, resolutionProbability) as [
+            Payout[],
+            Fees
+          ])
     case 'CANCEL':
       return getDpmCancelPayouts(contract, openBets) as [Payout[], Fees]
 
     default:
-      if (outcome)
-        // single outcome free response
-        return getDpmStandardPayouts(outcome, contract, openBets) as [
-          Payout[],
-          Fees
-        ]
-
-      // Multi outcome.
-      return getPayoutsMultiOutcome(
-        resolutions,
-        contract as FullContract<DPM, Multi | FreeResponse>,
-        openBets
-      ) as [Payout[], Fees]
+      // Outcome is a free response answer id.
+      return getDpmStandardPayouts(outcome, contract, openBets) as [
+        Payout[],
+        Fees
+      ]
   }
 }
