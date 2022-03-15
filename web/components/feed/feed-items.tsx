@@ -460,7 +460,7 @@ export function FeedQuestion(props: {
                 href={contractPath(contract)}
                 className="relative top-4 self-end text-sm sm:self-start"
               >
-                <div className="pb-1.5 text-gray-500">See more...</div>
+                <div className="pb-1.5 text-gray-400">See more...</div>
               </SiteLink>
             )}
           </Col>
@@ -675,11 +675,11 @@ function FeedAnswerGroup(props: {
   items: ActivityItem[]
 }) {
   const { answer, items } = props
-  const { username, avatarUrl, userId, name, text } = answer
+  const { username, avatarUrl, name, text } = answer
 
   return (
-    <Col className="gap-2 flex-1">
-      <Row className="gap-3 mb-4">
+    <Col className="flex-1 gap-2">
+      <Row className="my-4 gap-3">
         <div className="px-1">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
             <Avatar username={username} avatarUrl={avatarUrl} />
@@ -687,9 +687,11 @@ function FeedAnswerGroup(props: {
         </div>
         <Col className="min-w-0 flex-1 gap-2">
           <div className="text-sm text-gray-500">
-            <UserLink username={userId} name={name} /> answered
+            <UserLink username={username} name={name} /> answered
           </div>
-          <Linkify text={text} />
+          <span className="text-lg">
+            <Linkify text={text} />
+          </span>
         </Col>
       </Row>
 

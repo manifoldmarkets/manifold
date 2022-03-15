@@ -62,7 +62,7 @@ export function ContractProbGraph(props: {
 
   return (
     <div
-      className="w-full"
+      className="w-full overflow-hidden"
       style={{ height: !width || width >= 800 ? 400 : 250 }}
     >
       <ResponsiveLine
