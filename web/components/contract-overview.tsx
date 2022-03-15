@@ -19,6 +19,7 @@ import BetRow from './bet-row'
 import { Fold } from '../../common/fold'
 import { FoldTagList } from './tags-list'
 import { ContractActivity } from './feed/contract-activity'
+import { AnswersGraph } from './answers/answers-graph'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -77,7 +78,11 @@ export const ContractOverview = (props: {
 
       <Spacer h={4} />
 
-      {isBinary && <ContractProbGraph contract={contract} bets={bets} />}
+      {isBinary ? (
+        <ContractProbGraph contract={contract} bets={bets} />
+      ) : (
+        <AnswersGraph contract={contract} bets={bets} />
+      )}
 
       {children}
 
