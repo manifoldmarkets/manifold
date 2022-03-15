@@ -39,5 +39,5 @@ const computeVolumeFrom = async (contract: Contract, timeAgoMs: number) => {
       .where('createdTime', '>', Date.now() - timeAgoMs)
   )
 
-  return _.sumBy(bets, (bet) => Math.abs(bet.amount))
+  return _.sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
 }
