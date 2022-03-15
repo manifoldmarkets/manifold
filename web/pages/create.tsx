@@ -236,10 +236,9 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
-          <span>Market ante</span>
+          <span>Market subsidy</span>
           <InfoTooltip
-            text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
-              You earn ${CREATOR_FEE * 100}% of trader profits.`}
+            text={`Provide liquidity to encourage traders to participate.`}
           />
         </label>
         <AmountInput

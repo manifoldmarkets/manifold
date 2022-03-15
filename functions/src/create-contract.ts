@@ -4,7 +4,12 @@ import * as _ from 'lodash'
 
 import { chargeUser, getUser } from './utils'
 import {
+  Binary,
   Contract,
+  CPMM,
+  DPM,
+  FreeResponse,
+  FullContract,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
@@ -15,6 +20,7 @@ import { randomString } from '../../common/util/random'
 import { getNewContract } from '../../common/new-contract'
 import {
   getAnteBets,
+  getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   MINIMUM_ANTE,
 } from '../../common/antes'
@@ -105,7 +111,7 @@ export const createContract = functions
       await contractRef.create(contract)
 
       if (ante) {
-        if (outcomeType === 'BINARY') {
+        if (outcomeType === 'BINARY' && contract.mechanism === 'dpm-2') {
           const yesBetDoc = firestore
             .collection(`contracts/${contract.id}/bets`)
             .doc()
@@ -116,23 +122,43 @@ export const createContract = functions
 
           const { yesBet, noBet } = getAnteBets(
             creator,
-            contract,
+            contract as FullContract<DPM, Binary>,
             yesBetDoc.id,
             noBetDoc.id
           )
+
           await yesBetDoc.set(yesBet)
           await noBetDoc.set(noBet)
+        } else if (outcomeType === 'BINARY') {
+          const liquidityDoc = firestore
+            .collection(`contracts/${contract.id}/liquidity`)
+            .doc()
+
+          const lp = getCpmmInitialLiquidity(
+            creator,
+            contract as FullContract<CPMM, Binary>,
+            liquidityDoc.id,
+            ante
+          )
+
+          await liquidityDoc.set(lp)
         } else if (outcomeType === 'FREE_RESPONSE') {
           const noneAnswerDoc = firestore
             .collection(`contracts/${contract.id}/answers`)
             .doc('0')
+
           const noneAnswer = getNoneAnswer(contract.id, creator)
           await noneAnswerDoc.set(noneAnswer)
 
           const anteBetDoc = firestore
             .collection(`contracts/${contract.id}/bets`)
             .doc()
-          const anteBet = getFreeAnswerAnte(creator, contract, anteBetDoc.id)
+
+          const anteBet = getFreeAnswerAnte(
+            creator,
+            contract as FullContract<DPM, FreeResponse>,
+            anteBetDoc.id
+          )
           await anteBetDoc.set(anteBet)
         }
       }

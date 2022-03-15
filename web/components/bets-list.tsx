@@ -22,6 +22,12 @@ import {
 } from '../lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
+import { sellBet } from '../lib/firebase/api-call'
+import { ConfirmationButton } from './confirmation-button'
+import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
+import { filterDefined } from '../../common/util/array'
+import { LoadingIndicator } from './loading-indicator'
+import { SiteLink } from './site-link'
 import {
   calculatePayout,
   calculateSaleAmount,
@@ -30,12 +36,6 @@ import {
   getProbabilityAfterSale,
   resolvedPayout,
 } from '../../common/calculate'
-import { sellBet } from '../lib/firebase/api-call'
-import { ConfirmationButton } from './confirmation-button'
-import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
-import { filterDefined } from '../../common/util/array'
-import { LoadingIndicator } from './loading-indicator'
-import { SiteLink } from './site-link'
 
 type BetSort = 'newest' | 'profit' | 'settled' | 'value'
 type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
@@ -400,7 +400,7 @@ export function MyBetsSummary(props: {
                     <>
                       Payout at{' '}
                       <span className="text-blue-400">
-                        {formatPercent(getProbability(contract.totalShares))}
+                        {formatPercent(getProbability(contract))}
                       </span>
                     </>
                   ) : (
@@ -427,28 +427,46 @@ export function ContractBetsTable(props: {
   const { contract, bets, className } = props
 
   const [sales, buys] = _.partition(bets, (bet) => bet.sale)
+
   const salesDict = _.fromPairs(
     sales.map((sale) => [sale.sale?.betId ?? '', sale])
   )
 
-  const { isResolved } = contract
+  const [redemptions, normalBets] = _.partition(buys, (b) => b.isRedemption)
+  const amountRedeemed = Math.floor(
+    -0.5 * _.sumBy(redemptions, (b) => b.shares)
+  )
+
+  const { isResolved, mechanism } = contract
+  const isCPMM = mechanism === 'cpmm-1'
+
   return (
     <div className={clsx('overflow-x-auto', className)}>
+      {amountRedeemed > 0 && (
+        <>
+          <div className="text-gray-500 text-sm pl-2">
+            {amountRedeemed} YES shares and {amountRedeemed} NO shares
+            automatically redeemed for {formatMoney(amountRedeemed)}.
+          </div>
+          <Spacer h={4} />
+        </>
+      )}
+
       <table className="table-zebra table-compact table w-full text-gray-500">
         <thead>
           <tr className="p-2">
             <th></th>
             <th>Outcome</th>
             <th>Amount</th>
-            <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
-            {!isResolved && <th>Payout if chosen</th>}
-            <th>Probability</th>
+            {!isCPMM && <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>}
+            {!isCPMM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
+            <th>Probability</th>
             <th>Date</th>
           </tr>
         </thead>
         <tbody>
-          {buys.map((bet) => (
+          {normalBets.map((bet) => (
             <BetRow
               key={bet.id}
               bet={bet}
@@ -476,8 +494,11 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     loanAmount,
   } = bet
 
-  const { isResolved, closeTime } = contract
+  const { isResolved, closeTime, mechanism } = contract
+
   const isClosed = closeTime && Date.now() > closeTime
+
+  const isCPMM = mechanism === 'cpmm-1'
 
   const saleAmount = saleBet?.sale?.amount
 
@@ -501,7 +522,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   return (
     <tr>
       <td className="text-neutral">
-        {!isResolved && !isClosed && !isSold && !isAnte && (
+        {!isCPMM && !isResolved && !isClosed && !isSold && !isAnte && (
           <SellButton contract={contract} bet={bet} />
         )}
       </td>
@@ -512,12 +533,12 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
         {formatMoney(amount)}
         {loanAmount ? ` (${formatMoney(loanAmount ?? 0)} loan)` : ''}
       </td>
-      <td>{saleDisplay}</td>
-      {!isResolved && <td>{payoutIfChosenDisplay}</td>}
+      {!isCPMM && <td>{saleDisplay}</td>}
+      {!isCPMM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
+      <td>{formatWithCommas(shares)}</td>
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
-      <td>{formatWithCommas(shares)}</td>
       <td>{dayjs(createdTime).format('MMM D, h:mma')}</td>
     </tr>
   )
@@ -535,15 +556,11 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const initialProb = getOutcomeProbability(
-    contract.totalShares,
+    contract,
     outcome === 'NO' ? 'YES' : outcome
   )
 
-  const outcomeProb = getProbabilityAfterSale(
-    contract.totalShares,
-    outcome,
-    shares
-  )
+  const outcomeProb = getProbabilityAfterSale(contract, outcome, shares)
 
   const saleAmount = calculateSaleAmount(contract, bet)
   const profit = saleAmount - bet.amount

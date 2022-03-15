@@ -1,7 +1,7 @@
 import { Bet } from '../../../../common/bet'
-import { getProbability } from '../../../../common/calculate'
+import { getDpmProbability } from '../../../../common/calculate-dpm'
 import { Comment } from '../../../../common/comment'
-import { Contract } from '../../../../common/contract'
+import { DPM, FullContract } from '../../../../common/contract'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -56,7 +56,7 @@ export function toLiteMarket({
   isResolved,
   resolution,
   resolutionTime,
-}: Contract): LiteMarket {
+}: FullContract<DPM, any>): LiteMarket {
   return {
     id,
     creatorUsername,
@@ -72,7 +72,7 @@ export function toLiteMarket({
     tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
     pool: pool.YES + pool.NO,
-    probability: getProbability(totalShares),
+    probability: getDpmProbability(totalShares),
     volume7Days,
     volume24Hours,
     isResolved,

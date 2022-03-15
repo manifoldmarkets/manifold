@@ -4,20 +4,28 @@ import dayjs from 'dayjs'
 import _ from 'lodash'
 
 import { Bet } from '../../../common/bet'
-import { Contract } from '../../../common/contract'
+import {
+  Contract,
+  DPM,
+  FreeResponse,
+  FullContract,
+} from '../../../common/contract'
 import { getOutcomeProbability } from '../../../common/calculate'
 import { useBets } from '../../hooks/use-bets'
 import { useWindowSize } from '../../hooks/use-window-size'
 
-export function AnswersGraph(props: { contract: Contract; bets: Bet[] }) {
+export function AnswersGraph(props: {
+  contract: FullContract<DPM, FreeResponse>
+  bets: Bet[]
+}) {
   const { contract } = props
-  const { resolutionTime, closeTime, answers, totalShares } = contract
+  const { resolutionTime, closeTime, answers } = contract
 
   const bets = (useBets(contract.id) ?? props.bets).filter((bet) => !bet.sale)
 
   const { probsByOutcome, sortedOutcomes } = computeProbsByOutcome(
     bets,
-    totalShares
+    contract
   )
 
   const isClosed = !!closeTime && Date.now() > closeTime
@@ -134,10 +142,7 @@ function formatTime(time: number, includeTime: boolean) {
   return dayjs(time).format('MMM D')
 }
 
-const computeProbsByOutcome = (
-  bets: Bet[],
-  totalShares: { [outcome: string]: number }
-) => {
+const computeProbsByOutcome = (bets: Bet[], contract: Contract) => {
   const betsByOutcome = _.groupBy(bets, (bet) => bet.outcome)
   const outcomes = Object.keys(betsByOutcome).filter((outcome) => {
     const maxProb = Math.max(
@@ -148,7 +153,7 @@ const computeProbsByOutcome = (
 
   const trackedOutcomes = _.sortBy(
     outcomes,
-    (outcome) => -1 * getOutcomeProbability(totalShares, outcome)
+    (outcome) => -1 * getOutcomeProbability(contract, outcome)
   ).slice(0, 5)
 
   const probsByOutcome = _.fromPairs(

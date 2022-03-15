@@ -5,14 +5,11 @@ import * as _ from 'lodash'
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
-import { getUser, payUser } from './utils'
+import { getUser, isProd, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
-import {
-  getLoanPayouts,
-  getPayouts,
-  getPayoutsMultiOutcome,
-} from '../../common/payouts'
+import { getLoanPayouts, getPayouts } from '../../common/payouts'
 import { removeUndefinedProps } from '../../common/util/object'
+import { LiquidityProvision } from '../../common/liquidity-provision'
 
 export const resolveMarket = functions
   .runWith({ minInstances: 1 })
@@ -78,6 +75,29 @@ export const resolveMarket = functions
         ? Math.min(closeTime, resolutionTime)
         : closeTime
 
+      const betsSnap = await firestore
+        .collection(`contracts/${contractId}/bets`)
+        .get()
+
+      const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
+
+      const liquiditiesSnap = await firestore
+        .collection(`contracts/${contractId}/liquidity`)
+        .get()
+
+      const liquidities = liquiditiesSnap.docs.map(
+        (doc) => doc.data() as LiquidityProvision
+      )
+
+      const [payouts, collectedFees] = getPayouts(
+        outcome,
+        resolutions ?? {},
+        contract,
+        bets,
+        liquidities,
+        resolutionProbability
+      )
+
       await contractDoc.update(
         removeUndefinedProps({
           isResolved: true,
@@ -86,26 +106,16 @@ export const resolveMarket = functions
           closeTime: newCloseTime,
           resolutionProbability,
           resolutions,
+          collectedFees,
         })
       )
 
       console.log('contract ', contractId, 'resolved to:', outcome)
 
-      const betsSnap = await firestore
-        .collection(`contracts/${contractId}/bets`)
-        .get()
-
-      const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
       const openBets = bets.filter((b) => !b.isSold && !b.sale)
-
-      const payouts =
-        outcomeType === 'FREE_RESPONSE' && resolutions
-          ? getPayoutsMultiOutcome(resolutions, contract, openBets)
-          : getPayouts(outcome, contract, openBets, resolutionProbability)
-
       const loanPayouts = getLoanPayouts(openBets)
 
-      console.log('payouts:', payouts)
+      if (!isProd) console.log('payouts:', payouts)
 
       const groups = _.groupBy(
         [...payouts, ...loanPayouts],

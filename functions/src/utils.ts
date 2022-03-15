@@ -53,6 +53,11 @@ const updateUserBalance = (
 
     const newUserBalance = user.balance + delta
 
+    // if (newUserBalance < 0)
+    //   throw new Error(
+    //     `User (${userId}) balance cannot be negative: ${newUserBalance}`
+    //   )
+
     if (isDeposit) {
       const newTotalDeposits = (user.totalDeposits || 0) + delta
       transaction.update(userDoc, { totalDeposits: newTotalDeposits })

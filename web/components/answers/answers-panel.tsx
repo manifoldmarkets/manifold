@@ -2,18 +2,21 @@ import _ from 'lodash'
 import { useLayoutEffect, useState } from 'react'
 
 import { Answer } from '../../../common/answer'
-import { Contract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { Col } from '../layout/col'
 import { formatPercent } from '../../../common/util/format'
 import { useUser } from '../../hooks/use-user'
-import { getOutcomeProbability } from '../../../common/calculate'
+import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
 import { useAnswers } from '../../hooks/use-answers'
 import { tradingAllowed } from '../../lib/firebase/contracts'
 import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 
-export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
+export function AnswersPanel(props: {
+  contract: FullContract<DPM, FreeResponse>
+  answers: Answer[]
+}) {
   const { contract } = props
   const { creatorId, resolution, resolutions, totalBets } = contract
 
@@ -31,7 +34,7 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
     ),
     ..._.sortBy(
       otherAnswers,
-      (answer) => -1 * getOutcomeProbability(contract.totalShares, answer.id)
+      (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
     ),
   ]
 
@@ -100,7 +103,7 @@ export function AnswersPanel(props: { contract: Contract; answers: Answer[] }) {
       ) : (
         <div className="self-end p-4 text-gray-500">
           None of the above:{' '}
-          {formatPercent(getOutcomeProbability(contract.totalShares, '0'))}
+          {formatPercent(getDpmOutcomeProbability(contract.totalShares, '0'))}
         </div>
       )}
 

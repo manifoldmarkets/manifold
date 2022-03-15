@@ -1,7 +1,12 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract } from '../../common/contract'
+import {
+  Contract,
+  DPM,
+  FreeResponse,
+  FullContract,
+} from '../../common/contract'
 import { User } from '../../common/user'
 import { getLoanAmount, getNewMultiBetInfo } from '../../common/new-bet'
 import { Answer } from '../../common/answer'
@@ -105,8 +110,8 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
           user,
           answerId,
           amount,
+          contract as FullContract<DPM, FreeResponse>,
           loanAmount,
-          contract,
           newBetDoc.id
         )
 

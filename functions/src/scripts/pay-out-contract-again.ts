@@ -6,13 +6,8 @@ initAdmin('james')
 
 import { Bet } from '../../../common/bet'
 import { Contract } from '../../../common/contract'
-import {
-  getLoanPayouts,
-  getPayouts,
-  getPayoutsMultiOutcome,
-} from '../../../common/payouts'
+import { getLoanPayouts, getPayouts } from '../../../common/payouts'
 import { filterDefined } from '../../../common/util/array'
-import { payUser } from '../utils'
 
 type DocRef = admin.firestore.DocumentReference
 
@@ -28,12 +23,15 @@ async function checkIfPayOutAgain(contractRef: DocRef, contract: Contract) {
   const loanedBets = openBets.filter((bet) => bet.loanAmount)
 
   if (loanedBets.length && contract.resolution) {
-    const { resolution, outcomeType, resolutions, resolutionProbability } =
-      contract
-    const payouts =
-      outcomeType === 'FREE_RESPONSE' && resolutions
-        ? getPayoutsMultiOutcome(resolutions, contract, openBets)
-        : getPayouts(resolution, contract, openBets, resolutionProbability)
+    const { resolution, resolutions, resolutionProbability } = contract as any
+    const [payouts] = getPayouts(
+      resolution,
+      resolutions,
+      contract,
+      openBets,
+      [],
+      resolutionProbability
+    )
 
     const loanPayouts = getLoanPayouts(openBets)
     const groups = _.groupBy(

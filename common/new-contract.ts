@@ -1,8 +1,16 @@
-import { calcStartPool } from './antes'
-import { Contract, outcomeType } from './contract'
+import { PHANTOM_ANTE } from './antes'
+import {
+  Binary,
+  Contract,
+  CPMM,
+  DPM,
+  FreeResponse,
+  outcomeType,
+} from './contract'
 import { User } from './user'
 import { parseTags } from './util/parse'
 import { removeUndefinedProps } from './util/object'
+import { calcDpmInitialPool } from './calculate-dpm'
 
 export function getNewContract(
   id: string,
@@ -23,14 +31,12 @@ export function getNewContract(
 
   const propsByOutcomeType =
     outcomeType === 'BINARY'
-      ? getBinaryProps(initialProb, ante)
+      ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
       : getFreeAnswerProps(ante)
 
   const contract: Contract = removeUndefinedProps({
     id,
     slug,
-    mechanism: 'dpm-2',
-    outcomeType,
     ...propsByOutcomeType,
 
     creatorId: creator.id,
@@ -50,30 +56,61 @@ export function getNewContract(
 
     volume24Hours: 0,
     volume7Days: 0,
+
+    collectedFees: {
+      creatorFee: 0,
+      liquidityFee: 0,
+      platformFee: 0,
+    },
   })
 
-  return contract
+  return contract as Contract
 }
 
-const getBinaryProps = (initialProb: number, ante: number) => {
+const getBinaryDpmProps = (initialProb: number, ante: number) => {
   const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
-    calcStartPool(initialProb, ante)
+    calcDpmInitialPool(initialProb, ante, PHANTOM_ANTE)
 
-  return {
+  const system: DPM & Binary = {
+    mechanism: 'dpm-2',
+    outcomeType: 'BINARY',
+    initialProbability: initialProb / 100,
     phantomShares: { YES: phantomYes, NO: phantomNo },
     pool: { YES: poolYes, NO: poolNo },
     totalShares: { YES: sharesYes, NO: sharesNo },
     totalBets: { YES: poolYes, NO: poolNo },
   }
+
+  return system
+}
+
+const getBinaryCpmmProps = (initialProb: number, ante: number) => {
+  const pool = { YES: ante, NO: ante }
+  const p = initialProb / 100
+
+  const system: CPMM & Binary = {
+    mechanism: 'cpmm-1',
+    outcomeType: 'BINARY',
+    totalLiquidity: ante,
+    initialProbability: p,
+    p,
+    pool: pool,
+  }
+
+  return system
 }
 
 const getFreeAnswerProps = (ante: number) => {
-  return {
+  const system: DPM & FreeResponse = {
+    mechanism: 'dpm-2',
+    outcomeType: 'FREE_RESPONSE',
     pool: { '0': ante },
     totalShares: { '0': ante },
     totalBets: { '0': ante },
     answers: [],
   }
+
+  return system
 }
 
 const getMultiProps = (

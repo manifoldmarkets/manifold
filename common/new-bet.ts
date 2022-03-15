@@ -1,19 +1,69 @@
 import * as _ from 'lodash'
+
 import { Bet, MAX_LOAN_PER_CONTRACT } from './bet'
 import {
-  calculateShares,
-  getProbability,
-  getOutcomeProbability,
-} from './calculate'
-import { Contract } from './contract'
+  calculateDpmShares,
+  getDpmProbability,
+  getDpmOutcomeProbability,
+} from './calculate-dpm'
+import { calculateCpmmPurchase, getCpmmProbability } from './calculate-cpmm'
+import {
+  Binary,
+  CPMM,
+  DPM,
+  FreeResponse,
+  FullContract,
+  Multi,
+} from './contract'
 import { User } from './user'
+import { noFees } from './fees'
 
-export const getNewBinaryBetInfo = (
+export const getNewBinaryCpmmBetInfo = (
   user: User,
   outcome: 'YES' | 'NO',
   amount: number,
+  contract: FullContract<CPMM, Binary>,
   loanAmount: number,
-  contract: Contract,
+  newBetId: string
+) => {
+  const { shares, newPool, newP, fees } = calculateCpmmPurchase(
+    contract,
+    amount,
+    outcome
+  )
+
+  const newBalance = user.balance - (amount - loanAmount)
+
+  const { pool, p, totalLiquidity } = contract
+  const probBefore = getCpmmProbability(pool, p)
+  const probAfter = getCpmmProbability(newPool, newP)
+
+  const newBet: Bet = {
+    id: newBetId,
+    userId: user.id,
+    contractId: contract.id,
+    amount,
+    shares,
+    outcome,
+    fees,
+    loanAmount,
+    probBefore,
+    probAfter,
+    createdTime: Date.now(),
+  }
+
+  const { liquidityFee } = fees
+  const newTotalLiquidity = (totalLiquidity ?? 0) + liquidityFee
+
+  return { newBet, newPool, newP, newBalance, newTotalLiquidity, fees }
+}
+
+export const getNewBinaryDpmBetInfo = (
+  user: User,
+  outcome: 'YES' | 'NO',
+  amount: number,
+  contract: FullContract<DPM, Binary>,
+  loanAmount: number,
   newBetId: string
 ) => {
   const { YES: yesPool, NO: noPool } = contract.pool
@@ -23,7 +73,7 @@ export const getNewBinaryBetInfo = (
       ? { YES: yesPool + amount, NO: noPool }
       : { YES: yesPool, NO: noPool + amount }
 
-  const shares = calculateShares(contract.totalShares, amount, outcome)
+  const shares = calculateDpmShares(contract.totalShares, amount, outcome)
 
   const { YES: yesShares, NO: noShares } = contract.totalShares
 
@@ -39,8 +89,8 @@ export const getNewBinaryBetInfo = (
       ? { YES: yesBets + amount, NO: noBets }
       : { YES: yesBets, NO: noBets + amount }
 
-  const probBefore = getProbability(contract.totalShares)
-  const probAfter = getProbability(newTotalShares)
+  const probBefore = getDpmProbability(contract.totalShares)
+  const probAfter = getDpmProbability(newTotalShares)
 
   const newBet: Bet = {
     id: newBetId,
@@ -53,6 +103,7 @@ export const getNewBinaryBetInfo = (
     probBefore,
     probAfter,
     createdTime: Date.now(),
+    fees: noFees,
   }
 
   const newBalance = user.balance - (amount - loanAmount)
@@ -64,8 +115,8 @@ export const getNewMultiBetInfo = (
   user: User,
   outcome: string,
   amount: number,
+  contract: FullContract<DPM, Multi | FreeResponse>,
   loanAmount: number,
-  contract: Contract,
   newBetId: string
 ) => {
   const { pool, totalShares, totalBets } = contract
@@ -73,7 +124,7 @@ export const getNewMultiBetInfo = (
   const prevOutcomePool = pool[outcome] ?? 0
   const newPool = { ...pool, [outcome]: prevOutcomePool + amount }
 
-  const shares = calculateShares(contract.totalShares, amount, outcome)
+  const shares = calculateDpmShares(contract.totalShares, amount, outcome)
 
   const prevShares = totalShares[outcome] ?? 0
   const newTotalShares = { ...totalShares, [outcome]: prevShares + shares }
@@ -81,8 +132,8 @@ export const getNewMultiBetInfo = (
   const prevTotalBets = totalBets[outcome] ?? 0
   const newTotalBets = { ...totalBets, [outcome]: prevTotalBets + amount }
 
-  const probBefore = getOutcomeProbability(totalShares, outcome)
-  const probAfter = getOutcomeProbability(newTotalShares, outcome)
+  const probBefore = getDpmOutcomeProbability(totalShares, outcome)
+  const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
 
   const newBet: Bet = {
     id: newBetId,
@@ -95,6 +146,7 @@ export const getNewMultiBetInfo = (
     probBefore,
     probAfter,
     createdTime: Date.now(),
+    fees: noFees,
   }
 
   const newBalance = user.balance - (amount - loanAmount)

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from '../../../common/answer'
-import { Contract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { AmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { placeBet } from '../../lib/firebase/api-call'
@@ -18,17 +18,17 @@ import {
 import { InfoTooltip } from '../info-tooltip'
 import { useUser } from '../../hooks/use-user'
 import {
-  getProbabilityAfterBet,
-  getOutcomeProbability,
-  calculateShares,
-  calculatePayoutAfterCorrectBet,
-} from '../../../common/calculate'
+  getDpmOutcomeProbability,
+  calculateDpmShares,
+  calculateDpmPayoutAfterCorrectBet,
+  getDpmOutcomeProbabilityAfterBet,
+} from '../../../common/calculate-dpm'
 import { firebaseLogin } from '../../lib/firebase/users'
 import { Bet } from '../../../common/bet'
 
 export function AnswerBetPanel(props: {
   answer: Answer
-  contract: Contract
+  contract: FullContract<DPM, FreeResponse>
   closePanel: () => void
   className?: string
 }) {
@@ -71,18 +71,22 @@ export function AnswerBetPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getOutcomeProbability(contract.totalShares, answer.id)
+  const initialProb = getDpmOutcomeProbability(contract.totalShares, answer.id)
 
-  const resultProb = getProbabilityAfterBet(
+  const resultProb = getDpmOutcomeProbabilityAfterBet(
     contract.totalShares,
     answerId,
     betAmount ?? 0
   )
 
-  const shares = calculateShares(contract.totalShares, betAmount ?? 0, answerId)
+  const shares = calculateDpmShares(
+    contract.totalShares,
+    betAmount ?? 0,
+    answerId
+  )
 
   const currentPayout = betAmount
-    ? calculatePayoutAfterCorrectBet(contract, {
+    ? calculateDpmPayoutAfterCorrectBet(contract, {
         outcome: answerId,
         amount: betAmount,
         shares,

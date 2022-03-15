@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
-import { Contract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { AmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { createAnswer } from '../../lib/firebase/api-call'
@@ -16,14 +16,16 @@ import {
 import { InfoTooltip } from '../info-tooltip'
 import { useUser } from '../../hooks/use-user'
 import {
-  getProbabilityAfterBet,
-  calculateShares,
-  calculatePayoutAfterCorrectBet,
-} from '../../../common/calculate'
+  calculateDpmShares,
+  calculateDpmPayoutAfterCorrectBet,
+  getDpmOutcomeProbabilityAfterBet,
+} from '../../../common/calculate-dpm'
 import { firebaseLogin } from '../../lib/firebase/users'
 import { Bet } from '../../../common/bet'
 
-export function CreateAnswerPanel(props: { contract: Contract }) {
+export function CreateAnswerPanel(props: {
+  contract: FullContract<DPM, FreeResponse>
+}) {
   const { contract } = props
   const user = useUser()
   const [text, setText] = useState('')
@@ -53,16 +55,16 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
     }
   }
 
-  const resultProb = getProbabilityAfterBet(
+  const resultProb = getDpmOutcomeProbabilityAfterBet(
     contract.totalShares,
     'new',
     betAmount ?? 0
   )
 
-  const shares = calculateShares(contract.totalShares, betAmount ?? 0, 'new')
+  const shares = calculateDpmShares(contract.totalShares, betAmount ?? 0, 'new')
 
   const currentPayout = betAmount
-    ? calculatePayoutAfterCorrectBet(contract, {
+    ? calculateDpmPayoutAfterCorrectBet(contract, {
         outcome: 'new',
         amount: betAmount,
         shares,

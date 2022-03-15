@@ -5,13 +5,16 @@ import { initAdmin } from './script-init'
 initAdmin('stephen')
 
 import { Bet } from '../../../common/bet'
-import { getProbability } from '../../../common/calculate'
-import { Contract } from '../../../common/contract'
+import { getDpmProbability } from '../../../common/calculate-dpm'
+import { Binary, Contract, DPM, FullContract } from '../../../common/contract'
 
 type DocRef = admin.firestore.DocumentReference
 const firestore = admin.firestore()
 
-async function migrateContract(contractRef: DocRef, contract: Contract) {
+async function migrateContract(
+  contractRef: DocRef,
+  contract: FullContract<DPM, Binary>
+) {
   const bets = await contractRef
     .collection('bets')
     .get()
@@ -19,7 +22,7 @@ async function migrateContract(contractRef: DocRef, contract: Contract) {
 
   const lastBet = _.sortBy(bets, (bet) => -bet.createdTime)[0]
   if (lastBet) {
-    const probAfter = getProbability(contract.totalShares)
+    const probAfter = getDpmProbability(contract.totalShares)
 
     await firestore
       .doc(`contracts/${contract.id}/bets/${lastBet.id}`)
@@ -31,7 +34,9 @@ async function migrateContract(contractRef: DocRef, contract: Contract) {
 
 async function migrateContracts() {
   const snapshot = await firestore.collection('contracts').get()
-  const contracts = snapshot.docs.map((doc) => doc.data() as Contract)
+  const contracts = snapshot.docs.map(
+    (doc) => doc.data() as FullContract<DPM, Binary>
+  )
 
   console.log('Loaded contracts', contracts.length)
 

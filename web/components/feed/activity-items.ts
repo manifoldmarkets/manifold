@@ -4,7 +4,12 @@ import { Answer } from '../../../common/answer'
 import { Bet } from '../../../common/bet'
 import { getOutcomeProbability } from '../../../common/calculate'
 import { Comment } from '../../../common/comment'
-import { Contract } from '../../../common/contract'
+import {
+  Contract,
+  DPM,
+  FreeResponse,
+  FullContract,
+} from '../../../common/contract'
 import { User } from '../../../common/user'
 import { mapCommentsByBetId } from '../../lib/firebase/comments'
 
@@ -169,7 +174,7 @@ function groupBets(
 }
 
 function getAnswerGroups(
-  contract: Contract,
+  contract: FullContract<DPM, FreeResponse>,
   bets: Bet[],
   comments: Comment[],
   user: User | undefined | null,
@@ -181,7 +186,7 @@ function getAnswerGroups(
   const { sortByProb, abbreviated } = options
 
   let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
-    (outcome) => getOutcomeProbability(contract.totalShares, outcome) > 0.01
+    (outcome) => getOutcomeProbability(contract, outcome) > 0.01
   )
   if (abbreviated) {
     const lastComment = _.last(comments)
@@ -204,7 +209,7 @@ function getAnswerGroups(
   if (sortByProb) {
     outcomes = _.sortBy(
       outcomes,
-      (outcome) => -1 * getOutcomeProbability(contract.totalShares, outcome)
+      (outcome) => -1 * getOutcomeProbability(contract, outcome)
     )
   } else {
     // Sort by recent bet.
@@ -266,7 +271,9 @@ export function getAllContractActivityItems(
   let answer: Answer | undefined
   if (filterToOutcome) {
     bets = bets.filter((bet) => bet.outcome === filterToOutcome)
-    answer = contract.answers?.find((answer) => answer.id === filterToOutcome)
+    answer = (contract as FullContract<DPM, FreeResponse>).answers?.find(
+      (answer) => answer.id === filterToOutcome
+    )
   }
 
   const items: ActivityItem[] =
@@ -278,10 +285,16 @@ export function getAllContractActivityItems(
 
   items.push(
     ...(outcomeType === 'FREE_RESPONSE' && !filterToOutcome
-      ? getAnswerGroups(contract, bets, comments, user, {
-          sortByProb: true,
-          abbreviated,
-        })
+      ? getAnswerGroups(
+          contract as FullContract<DPM, FreeResponse>,
+          bets,
+          comments,
+          user,
+          {
+            sortByProb: true,
+            abbreviated,
+          }
+        )
       : groupBets(bets, comments, contract, user?.id, {
           hideOutcome: !!filterToOutcome,
           abbreviated,
@@ -317,10 +330,16 @@ export function getRecentContractActivityItems(
 
   const items =
     contract.outcomeType === 'FREE_RESPONSE'
-      ? getAnswerGroups(contract, bets, comments, user, {
-          sortByProb: false,
-          abbreviated: true,
-        })
+      ? getAnswerGroups(
+          contract as FullContract<DPM, FreeResponse>,
+          bets,
+          comments,
+          user,
+          {
+            sortByProb: false,
+            abbreviated: true,
+          }
+        )
       : groupBets(bets, comments, contract, user?.id, {
           hideOutcome: false,
           abbreviated: true,

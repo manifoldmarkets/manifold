@@ -17,9 +17,12 @@ import _ from 'lodash'
 
 import { app } from './init'
 import { getValues, listenForValue, listenForValues } from './utils'
-import { Contract } from '../../../common/contract'
-import { getProbability } from '../../../common/calculate'
+import { Binary, Contract, FullContract } from '../../../common/contract'
+import { getDpmProbability } from '../../../common/calculate-dpm'
 import { createRNG, shuffle } from '../../../common/util/random'
+import { getCpmmProbability } from '../../../common/calculate-cpmm'
+import { formatMoney } from '../../../common/util/format'
+import { getCpmmLiquidity } from '../../../common/calculate-cpmm'
 export type { Contract }
 
 export function contractPath(contract: Contract) {
@@ -37,15 +40,25 @@ export function contractMetrics(contract: Contract) {
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
 
-  return { truePool, createdDate, resolvedDate }
+  const liquidityLabel =
+    contract.mechanism === 'dpm-2'
+      ? `${formatMoney(truePool)} pool`
+      : `${formatMoney(
+          contract.totalLiquidity ?? getCpmmLiquidity(pool, contract.p)
+        )} liquidity`
+
+  return { truePool, liquidityLabel, createdDate, resolvedDate }
 }
 
-export function getBinaryProbPercent(contract: Contract) {
-  const { totalShares, resolutionProbability } = contract
+export function getBinaryProbPercent(contract: FullContract<any, Binary>) {
+  const { totalShares, pool, p, resolutionProbability, mechanism } = contract
 
-  const prob = resolutionProbability ?? getProbability(totalShares)
+  const prob =
+    resolutionProbability ?? mechanism === 'cpmm-1'
+      ? getCpmmProbability(pool, p)
+      : getDpmProbability(totalShares)
+
   const probPercent = Math.round(prob * 100) + '%'
-
   return probPercent
 }
 
