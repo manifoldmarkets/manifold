@@ -12,10 +12,7 @@ import {
   getFoldBySlug,
   getFoldContracts,
 } from '../../../lib/firebase/folds'
-import {
-  ActivityFeed,
-  findActiveContracts,
-} from '../../../components/activity-feed'
+import { ActivityFeed } from '../../../components/feed/activity-feed'
 import { TagsList } from '../../../components/tags-list'
 import { Row } from '../../../components/layout/row'
 import { UserLink } from '../../../components/user-page'
@@ -43,6 +40,7 @@ import { filterDefined } from '../../../../common/util/array'
 import { useRecentBets } from '../../../hooks/use-bets'
 import { useRecentComments } from '../../../hooks/use-comments'
 import { LoadingIndicator } from '../../../components/loading-indicator'
+import { findActiveContracts } from '../../../components/feed/find-active-contracts'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -248,7 +246,7 @@ export default function FoldPage(props: {
                     contracts={activeContracts}
                     recentBets={recentBets ?? []}
                     recentComments={recentComments ?? []}
-                    loadBetAndCommentHistory
+                    mode="abbreviated"
                   />
                   {activeContracts.length === 0 && (
                     <div className="mx-2 mt-4 text-gray-500 lg:mx-0">

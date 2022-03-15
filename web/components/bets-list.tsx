@@ -38,6 +38,7 @@ import {
 } from '../../common/calculate'
 
 type BetSort = 'newest' | 'profit' | 'settled' | 'value'
+type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -46,6 +47,7 @@ export function BetsList(props: { user: User }) {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   const [sort, setSort] = useState<BetSort>('value')
+  const [filter, setFilter] = useState<BetFilter>('open')
 
   useEffect(() => {
     if (bets) {
@@ -69,11 +71,10 @@ export function BetsList(props: { user: User }) {
   }
 
   if (bets.length === 0) return <NoBets />
-
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
-
   const contractBets = _.groupBy(bets, 'contractId')
+  const contractsById = _.fromPairs(contracts.map((c) => [c.id, c]))
 
   const contractsCurrentValue = _.mapValues(
     contractBets,
@@ -81,7 +82,7 @@ export function BetsList(props: { user: User }) {
       return _.sumBy(bets, (bet) => {
         if (bet.isSold || bet.sale) return 0
 
-        const contract = contracts.find((c) => c.id === contractId)
+        const contract = contractsById[contractId]
         const payout = contract ? calculatePayout(contract, bet, 'MKT') : 0
         return payout - (bet.loanAmount ?? 0)
       })
@@ -94,28 +95,29 @@ export function BetsList(props: { user: User }) {
     })
   })
 
-  let sortedContracts = contracts
-  if (sort === 'profit') {
-    sortedContracts = _.sortBy(
-      contracts,
-      (c) => -1 * (contractsCurrentValue[c.id] - contractsInvestment[c.id])
-    )
-  } else if (sort === 'value') {
-    sortedContracts = _.sortBy(contracts, (c) => -contractsCurrentValue[c.id])
-  } else if (sort === 'newest')
-    sortedContracts = _.sortBy(
-      contracts,
-      (c) => -1 * Math.max(...contractBets[c.id].map((bet) => bet.createdTime))
-    )
-  else if (sort === 'settled')
-    sortedContracts = _.sortBy(contracts, (c) => -1 * (c.resolutionTime ?? 0))
+  const FILTERS: Record<BetFilter, (c: Contract) => boolean> = {
+    resolved: (c) => !!c.resolutionTime,
+    closed: (c) =>
+      !FILTERS.resolved(c) && (c.closeTime ?? Infinity) < Date.now(),
+    open: (c) => !(FILTERS.closed(c) || FILTERS.resolved(c)),
+    all: () => true,
+    // Pepe notes: most users want "settled", to see when their bets or sold; or "realized profit"
+  }
+  const SORTS: Record<BetSort, (c: Contract) => number> = {
+    profit: (c) => contractsCurrentValue[c.id] - contractsInvestment[c.id],
+    value: (c) => contractsCurrentValue[c.id],
+    newest: (c) =>
+      Math.max(...contractBets[c.id].map((bet) => bet.createdTime)),
+    settled: (c) => c.resolutionTime ?? 0,
+  }
+  const displayedContracts = _.sortBy(contracts, SORTS[sort])
+    .reverse()
+    .filter(FILTERS[filter])
 
   const [settled, unsettled] = _.partition(
-    sortedContracts,
+    contracts,
     (c) => c.isResolved || contractsInvestment[c.id] === 0
   )
-
-  const displayedContracts = sort === 'settled' ? settled : unsettled
 
   const currentInvestment = _.sumBy(unsettled, (c) => contractsInvestment[c.id])
 
@@ -151,16 +153,29 @@ export function BetsList(props: { user: User }) {
           </Col>
         </Row>
 
-        <select
-          className="select select-bordered self-start"
-          value={sort}
-          onChange={(e) => setSort(e.target.value as BetSort)}
-        >
-          <option value="value">By value</option>
-          <option value="profit">By profit</option>
-          <option value="newest">Most recent</option>
-          <option value="settled">Resolved</option>
-        </select>
+        <Row className="gap-8">
+          <select
+            className="select select-bordered self-start"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as BetFilter)}
+          >
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+            <option value="resolved">Resolved</option>
+            <option value="all">All</option>
+          </select>
+
+          <select
+            className="select select-bordered self-start"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as BetSort)}
+          >
+            <option value="value">By value</option>
+            <option value="profit">By profit</option>
+            <option value="newest">Most recent</option>
+            <option value="settled">By resolution time</option>
+          </select>
+        </Row>
       </Col>
 
       {displayedContracts.length === 0 ? (

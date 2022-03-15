@@ -10,7 +10,7 @@ export type Comment = {
   createdTime: number
 
   // Denormalized, for rendering comments
-  userName?: string
-  userUsername?: string
+  userName: string
+  userUsername: string
   userAvatarUrl?: string
 }

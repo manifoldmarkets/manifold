@@ -14,79 +14,150 @@ import dayjs from 'dayjs'
 import clsx from 'clsx'
 import Textarea from 'react-expanding-textarea'
 
-import { OutcomeLabel } from './outcome-label'
+import { OutcomeLabel } from '../outcome-label'
 import {
   contractMetrics,
   Contract,
   contractPath,
   updateContract,
   tradingAllowed,
-} from '../lib/firebase/contracts'
-import { useUser } from '../hooks/use-user'
-import { Linkify } from './linkify'
-import { Row } from './layout/row'
-import { createComment, MAX_COMMENT_LENGTH } from '../lib/firebase/comments'
-import { useComments } from '../hooks/use-comments'
-import { formatMoney } from '../../common/util/format'
-import { ResolutionOrChance } from './contract-card'
-import { SiteLink } from './site-link'
-import { Col } from './layout/col'
-import { UserLink } from './user-page'
-import { DateTimeTooltip } from './datetime-tooltip'
-import { useBets } from '../hooks/use-bets'
-import { Bet } from '../lib/firebase/bets'
-import { Comment, mapCommentsByBetId } from '../lib/firebase/comments'
-import { JoinSpans } from './join-spans'
-import { fromNow } from '../lib/util/time'
-import BetRow from './bet-row'
-import { parseTags } from '../../common/util/parse'
-import { Avatar } from './avatar'
-import { useAdmin } from '../hooks/use-admin'
-import { FreeResponse, FullContract } from '../../common/contract'
-import { Answer } from '../../common/answer'
+} from '../../lib/firebase/contracts'
+import { useUser } from '../../hooks/use-user'
+import { Linkify } from '../linkify'
+import { Row } from '../layout/row'
+import {
+  canAddComment,
+  createComment,
+  MAX_COMMENT_LENGTH,
+} from '../../lib/firebase/comments'
+import { formatMoney } from '../../../common/util/format'
+import { Comment } from '../../../common/comment'
+import { ResolutionOrChance } from '../contract-card'
+import { SiteLink } from '../site-link'
+import { Col } from '../layout/col'
+import { UserLink } from '../user-page'
+import { DateTimeTooltip } from '../datetime-tooltip'
+import { Bet } from '../../lib/firebase/bets'
+import { JoinSpans } from '../join-spans'
+import { fromNow } from '../../lib/util/time'
+import BetRow from '../bet-row'
+import { parseTags } from '../../../common/util/parse'
+import { Avatar } from '../avatar'
+import { useAdmin } from '../../hooks/use-admin'
+import { Answer } from '../../../common/answer'
+import { ActivityItem } from './activity-items'
+import { FreeResponse, FullContract } from '../../../common/contract'
 
-const canAddComment = (createdTime: number, isSelf: boolean) => {
-  return isSelf && Date.now() - createdTime < 60 * 60 * 1000
+export function FeedItems(props: {
+  contract: Contract
+  items: ActivityItem[]
+  betRowClassName?: string
+}) {
+  const { contract, items, betRowClassName } = props
+  const { outcomeType } = contract
+
+  return (
+    <div className="flow-root pr-2 md:pr-0">
+      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
+        {items.map((item, activityItemIdx) => (
+          <div key={item.id} className="relative pb-6">
+            {activityItemIdx !== items.length - 1 ||
+            item.type === 'answergroup' ? (
+              <span
+                className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+                aria-hidden="true"
+              />
+            ) : null}
+            <div className="relative flex items-start space-x-3">
+              <FeedItem item={item} />
+            </div>
+          </div>
+        ))}
+      </div>
+      {outcomeType === 'BINARY' && tradingAllowed(contract) && (
+        <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
+      )}
+    </div>
+  )
+}
+
+function FeedItem(props: { item: ActivityItem }) {
+  const { item } = props
+
+  switch (item.type) {
+    case 'question':
+      return <FeedQuestion {...item} />
+    case 'description':
+      return <FeedDescription {...item} />
+    case 'comment':
+      return <FeedComment {...item} />
+    case 'bet':
+      return <FeedBet {...item} />
+    case 'createanswer':
+      return <FeedCreateAnswer {...item} />
+    case 'betgroup':
+      return <FeedBetGroup {...item} />
+    case 'answergroup':
+      return <FeedAnswerGroup {...item} />
+    case 'close':
+      return <FeedClose {...item} />
+    case 'resolve':
+      return <FeedResolve {...item} />
+  }
 }
 
 function FeedComment(props: {
-  activityItem: any
-  moreHref: string
-  feedType: FeedType
+  contract: Contract
+  comment: Comment
+  bet: Bet
+  hideOutcome: boolean
+  truncate: boolean
+  smallAvatar: boolean
 }) {
-  const { activityItem, moreHref, feedType } = props
-  const { person, text, amount, outcome, createdTime } = activityItem
+  const { contract, comment, bet, hideOutcome, truncate, smallAvatar } = props
+  const { amount, outcome } = bet
+  const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const money = formatMoney(Math.abs(amount))
 
   return (
     <>
-      <Avatar username={person.username} avatarUrl={person.avatarUrl} />
+      <Avatar
+        className={clsx(smallAvatar && 'ml-1')}
+        size={smallAvatar ? 'sm' : undefined}
+        username={userUsername}
+        avatarUrl={userAvatarUrl}
+      />
       <div className="min-w-0 flex-1">
         <div>
           <p className="mt-0.5 text-sm text-gray-500">
             <UserLink
               className="text-gray-500"
-              username={person.username}
-              name={person.name}
+              username={userUsername}
+              name={userName}
             />{' '}
             {bought} {money}
-            <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
-            <Timestamp time={createdTime} />
+            {!hideOutcome && (
+              <>
+                {' '}
+                of <OutcomeLabel outcome={outcome} />
+              </>
+            )}
+            <RelativeTimestamp time={createdTime} />
           </p>
         </div>
         <TruncatedComment
           comment={text}
-          moreHref={moreHref}
-          shouldTruncate={feedType == 'activity'}
+          moreHref={contractPath(contract)}
+          shouldTruncate={truncate}
         />
       </div>
     </>
   )
 }
 
-function Timestamp(props: { time: number }) {
+function RelativeTimestamp(props: { time: number }) {
   const { time } = props
   return (
     <DateTimeTooltip time={time}>
@@ -97,38 +168,47 @@ function Timestamp(props: { time: number }) {
   )
 }
 
-function FeedBet(props: { activityItem: any; feedType: FeedType }) {
-  const { activityItem, feedType } = props
-  const { id, contractId, amount, outcome, createdTime, contract } =
-    activityItem
+function FeedBet(props: {
+  contract: Contract
+  bet: Bet
+  hideOutcome: boolean
+  smallAvatar: boolean
+}) {
+  const { contract, bet, hideOutcome, smallAvatar } = props
+  const { id, amount, outcome, createdTime, userId } = bet
   const user = useUser()
-  const isSelf = user?.id == activityItem.userId
-  const isCreator = contract.creatorId == activityItem.userId
+  const isSelf = user?.id === userId
+  const isCreator = contract.creatorId === userId
+
   // You can comment if your bet was posted in the last hour
   const canComment = canAddComment(createdTime, isSelf)
 
   const [comment, setComment] = useState('')
   async function submitComment() {
     if (!user || !comment) return
-    await createComment(contractId, id, comment, user)
+    await createComment(contract.id, id, comment, user)
   }
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const money = formatMoney(Math.abs(amount))
 
-  const answer =
-    feedType !== 'multi' &&
-    (contract.answers?.find((answer: Answer) => answer?.id === outcome) as
-      | Answer
-      | undefined)
-
   return (
     <>
       <div>
         {isSelf ? (
-          <Avatar avatarUrl={user?.avatarUrl} />
+          <Avatar
+            className={clsx(smallAvatar && 'ml-1')}
+            size={smallAvatar ? 'sm' : undefined}
+            avatarUrl={user.avatarUrl}
+            username={user.username}
+          />
         ) : isCreator ? (
-          <Avatar avatarUrl={contract.creatorAvatarUrl} />
+          <Avatar
+            className={clsx(smallAvatar && 'ml-1')}
+            size={smallAvatar ? 'sm' : undefined}
+            avatarUrl={contract.creatorAvatarUrl}
+            username={contract.creatorUsername}
+          />
         ) : (
           <div className="relative px-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
@@ -137,21 +217,19 @@ function FeedBet(props: { activityItem: any; feedType: FeedType }) {
           </div>
         )}
       </div>
-      <div className={clsx('min-w-0 flex-1 pb-1.5', !answer && 'pt-1.5')}>
-        {answer && (
-          <div className="text-neutral mb-2" style={{ fontSize: 15 }}>
-            {answer.text}
-          </div>
-        )}
+      <div className={'min-w-0 flex-1 pb-1.5'}>
         <div className="text-sm text-gray-500">
           <span>
             {isSelf ? 'You' : isCreator ? contract.creatorName : 'A trader'}
           </span>{' '}
           {bought} {money}
-          {!answer && (
-            <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />
+          {!hideOutcome && (
+            <>
+              {' '}
+              of <OutcomeLabel outcome={outcome} />
+            </>
           )}
-          <Timestamp time={createdTime} />
+          <RelativeTimestamp time={createdTime} />
           {canComment && (
             // Allow user to comment in an textarea if they are the creator
             <div className="mt-2">
@@ -330,7 +408,7 @@ function TruncatedComment(props: {
   )
 }
 
-function FeedQuestion(props: {
+export function FeedQuestion(props: {
   contract: Contract
   showDescription?: boolean
 }) {
@@ -345,7 +423,7 @@ function FeedQuestion(props: {
       <>
         <span className="mx-2">•</span>
         {contract.closeTime > Date.now() ? 'Closes' : 'Closed'}
-        <Timestamp time={contract.closeTime || 0} />
+        <RelativeTimestamp time={contract.closeTime || 0} />
       </>
     )
 
@@ -421,7 +499,7 @@ function FeedDescription(props: { contract: Contract }) {
             name={creatorName}
             username={creatorUsername}
           />{' '}
-          created this market <Timestamp time={contract.createdTime} />
+          created this market <RelativeTimestamp time={contract.createdTime} />
         </div>
         <ContractDescription contract={contract} isCreator={isCreator} />
       </div>
@@ -429,17 +507,20 @@ function FeedDescription(props: { contract: Contract }) {
   )
 }
 
-function FeedAnswer(props: {
+function FeedCreateAnswer(props: {
   contract: FullContract<any, FreeResponse>
-  outcome: string
+  answer: Answer
 }) {
-  const { contract, outcome } = props
-  const answer = contract?.answers?.[Number(outcome) - 1]
-  if (!answer) return null
+  const { answer } = props
 
   return (
     <>
-      <Avatar username={answer.username} avatarUrl={answer.avatarUrl} />
+      <Avatar
+        className="ml-1"
+        size="sm"
+        username={answer.username}
+        avatarUrl={answer.avatarUrl}
+      />
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
           <UserLink
@@ -447,8 +528,7 @@ function FeedAnswer(props: {
             name={answer.name}
             username={answer.username}
           />{' '}
-          submitted answer <OutcomeLabel outcome={outcome} />{' '}
-          <Timestamp time={contract.createdTime} />
+          submitted this answer <RelativeTimestamp time={answer.createdTime} />
         </div>
       </div>
     </>
@@ -491,7 +571,7 @@ function FeedResolve(props: { contract: Contract }) {
             username={creatorUsername}
           />{' '}
           resolved this market to <OutcomeLabel outcome={resolution} />{' '}
-          <Timestamp time={contract.resolutionTime || 0} />
+          <RelativeTimestamp time={contract.resolutionTime || 0} />
         </div>
       </div>
     </>
@@ -516,111 +596,15 @@ function FeedClose(props: { contract: Contract }) {
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
           Trading closed in this market{' '}
-          <Timestamp time={contract.closeTime || 0} />
+          <RelativeTimestamp time={contract.closeTime || 0} />
         </div>
       </div>
     </>
   )
 }
 
-function toFeedBet(bet: Bet, contract: Contract) {
-  return {
-    id: bet.id,
-    contractId: bet.contractId,
-    userId: bet.userId,
-    type: 'bet',
-    amount: bet.sale ? -bet.sale.amount : bet.amount,
-    outcome: bet.outcome,
-    createdTime: bet.createdTime,
-    date: fromNow(bet.createdTime),
-    contract,
-  }
-}
-
-function toFeedComment(bet: Bet, comment: Comment) {
-  return {
-    id: bet.id,
-    contractId: bet.contractId,
-    userId: bet.userId,
-    type: 'comment',
-    amount: bet.sale ? -bet.sale.amount : bet.amount,
-    outcome: bet.outcome,
-    createdTime: bet.createdTime,
-    date: fromNow(bet.createdTime),
-
-    // Invariant: bet.comment exists
-    text: comment.text,
-    person: {
-      username: comment.userUsername,
-      name: comment.userName,
-      avatarUrl: comment.userAvatarUrl,
-    },
-  }
-}
-
-const DAY_IN_MS = 24 * 60 * 60 * 1000
-
-// Group together bets that are:
-// - Within `windowMs` of the first in the group
-// - Do not have a comment
-// - Were not created by this user or the contract creator
-// Return a list of ActivityItems
-function groupBets(
-  bets: Bet[],
-  comments: Comment[],
-  windowMs: number,
-  contract: Contract,
-  userId?: string
-) {
-  const commentsMap = mapCommentsByBetId(comments)
-  const items: any[] = []
-  let group: Bet[] = []
-
-  // Turn the current group into an ActivityItem
-  function pushGroup() {
-    if (group.length == 1) {
-      items.push(toActivityItem(group[0], false))
-    } else if (group.length > 1) {
-      items.push({ type: 'betgroup', bets: [...group], id: group[0].id })
-    }
-    group = []
-  }
-
-  function toActivityItem(bet: Bet, isPublic: boolean) {
-    const comment = commentsMap[bet.id]
-    return comment ? toFeedComment(bet, comment) : toFeedBet(bet, contract)
-  }
-
-  for (const bet of bets) {
-    const isCreator = userId === bet.userId || contract.creatorId === bet.userId
-
-    if (commentsMap[bet.id] || isCreator) {
-      pushGroup()
-      // Create a single item for this
-      items.push(toActivityItem(bet, true))
-    } else {
-      if (
-        group.length > 0 &&
-        bet.createdTime - group[0].createdTime > windowMs
-      ) {
-        // More than `windowMs` has passed; start a new group
-        pushGroup()
-      }
-      group.push(bet)
-    }
-  }
-  if (group.length > 0) {
-    pushGroup()
-  }
-  return items as ActivityItem[]
-}
-
-function BetGroupSpan(props: {
-  bets: Bet[]
-  outcome: string
-  feedType: FeedType
-}) {
-  const { bets, outcome, feedType } = props
+function BetGroupSpan(props: { bets: Bet[]; outcome?: string }) {
+  const { bets, outcome } = props
 
   const numberTraders = _.uniqBy(bets, (b) => b.userId).length
 
@@ -635,15 +619,22 @@ function BetGroupSpan(props: {
         {buyTotal > 0 && <>bought {formatMoney(buyTotal)} </>}
         {sellTotal > 0 && <>sold {formatMoney(sellTotal)} </>}
       </JoinSpans>
-      <MaybeOutcomeLabel outcome={outcome} feedType={feedType} />{' '}
+      {outcome && (
+        <>
+          {' '}
+          of <OutcomeLabel outcome={outcome} />
+        </>
+      )}{' '}
     </span>
   )
 }
 
-// TODO: Make this expandable to show all grouped bets?
-function FeedBetGroup(props: { activityItem: any; feedType: FeedType }) {
-  const { activityItem, feedType } = props
-  const bets: Bet[] = activityItem.bets
+function FeedBetGroup(props: {
+  contract: Contract
+  bets: Bet[]
+  hideOutcome: boolean
+}) {
+  const { bets, hideOutcome } = props
 
   const betGroups = _.groupBy(bets, (bet) => bet.outcome)
   const outcomes = Object.keys(betGroups)
@@ -660,22 +651,68 @@ function FeedBetGroup(props: { activityItem: any; feedType: FeedType }) {
           </div>
         </div>
       </div>
-      <div className="min-w-0 flex-1">
+      <div className={clsx('min-w-0 flex-1', outcomes.length === 1 && 'mt-1')}>
         <div className="text-sm text-gray-500">
           {outcomes.map((outcome, index) => (
             <Fragment key={outcome}>
               <BetGroupSpan
-                outcome={outcome}
+                outcome={hideOutcome ? undefined : outcome}
                 bets={betGroups[outcome]}
-                feedType={feedType}
               />
               {index !== outcomes.length - 1 && <br />}
             </Fragment>
           ))}
-          <Timestamp time={createdTime} />
+          <RelativeTimestamp time={createdTime} />
         </div>
       </div>
     </>
+  )
+}
+
+function FeedAnswerGroup(props: {
+  contract: FullContract<any, FreeResponse>
+  answer: Answer
+  items: ActivityItem[]
+}) {
+  const { answer, items } = props
+  const { username, avatarUrl, userId, name, text } = answer
+
+  return (
+    <Col className="gap-2 flex-1">
+      <Row className="gap-3 mb-4">
+        <div className="px-1">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+            <Avatar username={username} avatarUrl={avatarUrl} />
+          </div>
+        </div>
+        <Col className="min-w-0 flex-1 gap-2">
+          <div className="text-sm text-gray-500">
+            <UserLink username={userId} name={name} /> answered
+          </div>
+          <Linkify text={text} />
+        </Col>
+      </Row>
+
+      {items.map((item, index) => (
+        <div
+          key={item.id}
+          className={clsx(
+            'relative ml-8',
+            index !== items.length - 1 && 'pb-4'
+          )}
+        >
+          {index !== items.length - 1 ? (
+            <span
+              className="absolute top-5 left-5 -ml-px h-[calc(100%-1rem)] w-0.5 bg-gray-200"
+              aria-hidden="true"
+            />
+          ) : null}
+          <div className="relative flex items-start space-x-3">
+            <FeedItem item={item} />
+          </div>
+        </div>
+      ))}
+    </Col>
   )
 }
 
@@ -703,257 +740,5 @@ function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
         </div>
       </button>
     </>
-  )
-}
-
-// On 'multi' feeds, the outcome is redundant, so we hide it
-function MaybeOutcomeLabel(props: { outcome: string; feedType: FeedType }) {
-  const { outcome, feedType } = props
-  return feedType === 'multi' ? null : (
-    <span>
-      {' '}
-      of <OutcomeLabel outcome={outcome} />
-      {/* TODO: Link to the correct e.g. #23 */}
-    </span>
-  )
-}
-
-// Missing feed items:
-// - Bet sold?
-type ActivityItem = {
-  id: string
-  type:
-    | 'bet'
-    | 'comment'
-    | 'start'
-    | 'betgroup'
-    | 'close'
-    | 'resolve'
-    | 'expand'
-    | undefined
-}
-
-type FeedType =
-  // Main homepage/fold feed,
-  | 'activity'
-  // Comments feed on a market
-  | 'market'
-  // Grouped for a multi-category outcome
-  | 'multi'
-
-function FeedItems(props: {
-  contract: Contract
-  items: ActivityItem[]
-  feedType: FeedType
-  setExpanded: (expanded: boolean) => void
-  outcome?: string // Which multi-category outcome to filter
-  betRowClassName?: string
-}) {
-  const { contract, items, feedType, outcome, setExpanded, betRowClassName } =
-    props
-  const { outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-
-  return (
-    <div className="flow-root pr-2 md:pr-0">
-      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
-        {items.map((activityItem, activityItemIdx) => (
-          <div key={activityItem.id} className="relative pb-6">
-            {activityItemIdx !== items.length - 1 ? (
-              <span
-                className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
-                aria-hidden="true"
-              />
-            ) : null}
-            <div className="relative flex items-start space-x-3">
-              {activityItem.type === 'start' ? (
-                feedType === 'activity' ? (
-                  <FeedQuestion contract={contract} />
-                ) : feedType === 'market' ? (
-                  <FeedDescription contract={contract} />
-                ) : feedType === 'multi' ? (
-                  <FeedAnswer contract={contract} outcome={outcome || '0'} />
-                ) : null
-              ) : activityItem.type === 'comment' ? (
-                <FeedComment
-                  activityItem={activityItem}
-                  moreHref={contractPath(contract)}
-                  feedType={feedType}
-                />
-              ) : activityItem.type === 'bet' ? (
-                <FeedBet activityItem={activityItem} feedType={feedType} />
-              ) : activityItem.type === 'betgroup' ? (
-                <FeedBetGroup activityItem={activityItem} feedType={feedType} />
-              ) : activityItem.type === 'close' ? (
-                <FeedClose contract={contract} />
-              ) : activityItem.type === 'resolve' ? (
-                <FeedResolve contract={contract} />
-              ) : activityItem.type === 'expand' ? (
-                <FeedExpand setExpanded={setExpanded} />
-              ) : null}
-            </div>
-          </div>
-        ))}
-      </div>
-      {isBinary && tradingAllowed(contract) && (
-        <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
-      )}
-    </div>
-  )
-}
-
-export function ContractFeed(props: {
-  contract: Contract
-  bets: Bet[]
-  comments: Comment[]
-  feedType: FeedType
-  outcome?: string // Which multi-category outcome to filter
-  betRowClassName?: string
-}) {
-  const { contract, feedType, outcome, betRowClassName } = props
-  const { id, outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-
-  const [expanded, setExpanded] = useState(false)
-  const user = useUser()
-
-  const comments = useComments(id) ?? props.comments
-
-  let bets = useBets(contract.id) ?? props.bets
-  bets = isBinary
-    ? bets.filter((bet) => !bet.isAnte && !bet.isRedemption)
-    : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
-
-  if (feedType === 'multi') {
-    bets = bets.filter((bet) => bet.outcome === outcome)
-  } else if (outcomeType === 'FREE_RESPONSE') {
-    // Keep bets on comments or your bets where you can comment.
-    const commentBetIds = new Set(comments.map((comment) => comment.betId))
-    bets = bets.filter(
-      (bet) =>
-        commentBetIds.has(bet.id) ||
-        canAddComment(bet.createdTime, user?.id === bet.userId)
-    )
-  }
-
-  const groupWindow = feedType == 'activity' ? 10 * DAY_IN_MS : DAY_IN_MS
-
-  const allItems: ActivityItem[] = [
-    { type: 'start', id: '0' },
-    ...groupBets(bets, comments, groupWindow, contract, user?.id),
-  ]
-  if (contract.closeTime && contract.closeTime <= Date.now()) {
-    allItems.push({ type: 'close', id: `${contract.closeTime}` })
-  }
-  if (contract.resolution) {
-    allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
-  }
-  if (feedType === 'multi') {
-    // Hack to add some more padding above the 'multi' feedType, by adding a null item
-    allItems.unshift({ type: undefined, id: '-1' })
-  }
-
-  // If there are more than 5 items, only show the first, an expand item, and last 3
-  let items = allItems
-  if (!expanded && allItems.length > 5 && feedType == 'activity') {
-    items = [
-      allItems[0],
-      { type: 'expand', id: 'expand' },
-      ...allItems.slice(-3),
-    ]
-  }
-
-  return (
-    <FeedItems
-      contract={contract}
-      items={items}
-      feedType={feedType}
-      setExpanded={setExpanded}
-      betRowClassName={betRowClassName}
-      outcome={outcome}
-    />
-  )
-}
-
-export function ContractActivityFeed(props: {
-  contract: Contract
-  bets: Bet[]
-  comments: Comment[]
-  betRowClassName?: string
-}) {
-  const { contract, betRowClassName, comments } = props
-
-  const user = useUser()
-
-  let bets = props.bets
-    .filter((bet) => !bet.isAnte && !bet.isRedemption)
-    .sort((b1, b2) => b1.createdTime - b2.createdTime)
-  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-
-  if (contract.outcomeType === 'FREE_RESPONSE') {
-    // Keep bets on comments, and the last non-comment bet.
-    const commentBetIds = new Set(comments.map((comment) => comment.betId))
-    const [commentBets, nonCommentBets] = _.partition(bets, (bet) =>
-      commentBetIds.has(bet.id)
-    )
-    bets = [...commentBets, ...nonCommentBets.slice(-1)].sort(
-      (b1, b2) => b1.createdTime - b2.createdTime
-    )
-  }
-
-  const allItems: ActivityItem[] = [
-    { type: 'start', id: '0' },
-    ...groupBets(bets, comments, DAY_IN_MS, contract, user?.id),
-  ]
-  if (contract.closeTime && contract.closeTime <= Date.now()) {
-    allItems.push({ type: 'close', id: `${contract.closeTime}` })
-  }
-  if (contract.resolution) {
-    allItems.push({ type: 'resolve', id: `${contract.resolutionTime}` })
-  }
-
-  // Remove all but last bet group.
-  const betGroups = allItems.filter((item) => item.type === 'betgroup')
-  const lastBetGroup = betGroups[betGroups.length - 1]
-  const filtered = allItems.filter(
-    (item) => item.type !== 'betgroup' || item.id === lastBetGroup?.id
-  )
-
-  // Only show the first item plus the last three items.
-  const items =
-    filtered.length > 3 ? [filtered[0], ...filtered.slice(-3)] : filtered
-
-  return (
-    <FeedItems
-      contract={contract}
-      items={items}
-      feedType="activity"
-      setExpanded={() => {}}
-      betRowClassName={betRowClassName}
-    />
-  )
-}
-
-export function ContractSummaryFeed(props: {
-  contract: Contract
-  betRowClassName?: string
-}) {
-  const { contract, betRowClassName } = props
-  const { outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-
-  return (
-    <div className="flow-root pr-2 md:pr-0">
-      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
-        <div className="relative pb-8">
-          <div className="relative flex items-start space-x-3">
-            <FeedQuestion contract={contract} showDescription />
-          </div>
-        </div>
-      </div>
-      {isBinary && tradingAllowed(contract) && (
-        <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
-      )}
-    </div>
   )
 }

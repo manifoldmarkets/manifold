@@ -6,11 +6,11 @@ export function Avatar(props: {
   username?: string
   avatarUrl?: string
   noLink?: boolean
-  size?: number
+  size?: number | 'xs' | 'sm'
   className?: string
 }) {
   const { username, avatarUrl, noLink, size, className } = props
-  const s = size || 10
+  const s = size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
 
   const onClick =
     noLink && username

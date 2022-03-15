@@ -13,12 +13,14 @@ import { formatPercent } from '../../../common/util/format'
 import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
 import { tradingAllowed } from '../../lib/firebase/contracts'
 import { AnswerBetPanel } from './answer-bet-panel'
-import { ContractFeed } from '../contract-feed'
 import { Linkify } from '../linkify'
+import { User } from '../../../common/user'
+import { ContractActivity } from '../feed/contract-activity'
 
 export function AnswerItem(props: {
   answer: Answer
   contract: FullContract<DPM, FreeResponse>
+  user: User | null | undefined
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined
   totalChosenProb?: number
@@ -28,6 +30,7 @@ export function AnswerItem(props: {
   const {
     answer,
     contract,
+    user,
     showChoice,
     chosenProb,
     totalChosenProb,
@@ -82,12 +85,13 @@ export function AnswerItem(props: {
         </Row>
 
         {isBetting && (
-          <ContractFeed
+          <ContractActivity
             contract={contract}
             bets={[]}
             comments={[]}
-            feedType="multi"
-            outcome={answer.id}
+            user={user}
+            filterToOutcome={answer.id}
+            mode="all"
           />
         )}
       </Col>

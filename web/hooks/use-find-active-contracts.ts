@@ -4,11 +4,11 @@ import { useMemo, useRef } from 'react'
 import { Fold } from '../../common/fold'
 import { User } from '../../common/user'
 import { filterDefined } from '../../common/util/array'
+import { findActiveContracts } from '../components/feed/find-active-contracts'
 import { Bet } from '../lib/firebase/bets'
 import { Comment, getRecentComments } from '../lib/firebase/comments'
 import { Contract, getActiveContracts } from '../lib/firebase/contracts'
 import { listAllFolds } from '../lib/firebase/folds'
-import { findActiveContracts } from '../components/activity-feed'
 import { useInactiveContracts } from './use-contracts'
 import { useFollowedFolds } from './use-fold'
 import { useUserBetContracts } from './use-user-bets'
@@ -25,7 +25,7 @@ export const getAllContractInfo = async () => {
   return { contracts, recentComments, folds }
 }
 
-const defaultSkippedTags = [
+const defaultExcludedTags = [
   'meta',
   'test',
   'trolling',
@@ -34,10 +34,11 @@ const defaultSkippedTags = [
   'personal',
 ]
 const includedWithDefaultFeed = (contract: Contract) => {
-  const { tags } = contract
+  const { lowercaseTags } = contract
 
-  if (tags.length === 0) return false
-  if (tags.some((tag) => defaultSkippedTags.includes(tag))) return false
+  if (lowercaseTags.length === 0) return false
+  if (lowercaseTags.some((tag) => defaultExcludedTags.includes(tag)))
+    return false
   return true
 }
 
