@@ -49,8 +49,9 @@ export type DPM = {
 
 export type CPMM = {
   mechanism: 'cpmm-1'
-  p: number // probability constant in y^(1-p) * n^p = k
   pool: { [outcome: string]: number }
+  p: number // probability constant in y^p * n^(1-p) = k
+  totalLiquidity: number // in M$
 }
 
 export type FixedPayouts = CPMM

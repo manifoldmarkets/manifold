@@ -91,6 +91,7 @@ const getBinaryCpmmProps = (initialProb: number, ante: number) => {
   const system: CPMM & Binary = {
     mechanism: 'cpmm-1',
     outcomeType: 'BINARY',
+    totalLiquidity: ante,
     initialProbability: p,
     p,
     pool: pool,

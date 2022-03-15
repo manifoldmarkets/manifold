@@ -34,7 +34,7 @@ export const getNewBinaryCpmmBetInfo = (
 
   const newBalance = user.balance - (amount - loanAmount)
 
-  const { pool, p } = contract
+  const { pool, p, totalLiquidity } = contract
   const probBefore = getCpmmProbability(pool, p)
   const probAfter = getCpmmProbability(newPool, newP)
 
@@ -52,7 +52,10 @@ export const getNewBinaryCpmmBetInfo = (
     createdTime: Date.now(),
   }
 
-  return { newBet, newPool, newP, newBalance, fees }
+  const { liquidityFee } = fees
+  const newTotalLiquidity = (totalLiquidity ?? 0) + liquidityFee
+
+  return { newBet, newPool, newP, newBalance, newTotalLiquidity, fees }
 }
 
 export const getNewBinaryDpmBetInfo = (

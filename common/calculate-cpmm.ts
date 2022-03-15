@@ -110,7 +110,6 @@ export function calculateCpmmPurchase(
   const postBetPool = { YES: newY, NO: newN }
 
   const { newPool, newP } = addCpmmLiquidity(postBetPool, p, fee)
-  // console.log(fee, getCpmmLiquidity(pool, p), getCpmmLiquidity(newPool, newP))
 
   return { shares, newPool, newP, fees }
 }

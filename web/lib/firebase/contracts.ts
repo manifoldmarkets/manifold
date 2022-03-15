@@ -43,7 +43,9 @@ export function contractMetrics(contract: Contract) {
   const liquidityLabel =
     contract.mechanism === 'dpm-2'
       ? `${formatMoney(truePool)} pool`
-      : `${formatMoney(getCpmmLiquidity(pool, contract.p))} liquidity`
+      : `${formatMoney(
+          contract.totalLiquidity ?? getCpmmLiquidity(pool, contract.p)
+        )} liquidity`
 
   return { truePool, liquidityLabel, createdDate, resolvedDate }
 }
