@@ -11,10 +11,14 @@ import { useWindowSize } from '../../hooks/use-window-size'
 
 export function AnswersGraph(props: { contract: Contract; bets: Bet[] }) {
   const { contract } = props
-  const { resolutionTime, closeTime, answers } = contract
+  const { resolutionTime, closeTime, answers, totalShares } = contract
 
   const bets = (useBets(contract.id) ?? props.bets).filter((bet) => !bet.sale)
-  const betsByOutcome = _.groupBy(bets, (bet) => bet.outcome)
+
+  const { probsByOutcome, sortedOutcomes } = computeProbsByOutcome(
+    bets,
+    totalShares
+  )
 
   const isClosed = !!closeTime && Date.now() > closeTime
   const latestTime = dayjs(
@@ -25,46 +29,25 @@ export function AnswersGraph(props: { contract: Contract; bets: Bet[] }) {
       : resolutionTime ?? Date.now()
   )
 
-  const outcomes = Object.keys(betsByOutcome).filter((outcome) => {
-    const maxProb = Math.max(
-      ...betsByOutcome[outcome].map((bet) => bet.probAfter)
-    )
-    return outcome !== '0' && maxProb > 0.05
-  })
-
   const { width } = useWindowSize()
 
   const labelLength = !width || width > 800 ? 75 : 20
 
-  const sortedOutcomes = _.sortBy(
-    outcomes,
-    (outcome) => -1 * getOutcomeProbability(totalShares, outcome)
-  ).slice(0, 5)
-
   const colors = ['#2a81e3', '#c72ae3', '#b91111', '#f3ad28', '#11b981']
 
-  const times = _.sortBy(bets.map((bet) => bet.createdTime))
-  const porbs = []
-  const totalShares = { '0': contract.totalShares['0'] }
-  for (const bet of bets) {
-  }
+  const maxProb = _.max(
+    Object.values(probsByOutcome).map((probs) => Math.max(...probs))
+  )
+  const yMax = Math.min(100, Math.max(50, (maxProb ?? 0) * 100 * 1.2))
 
+  const times = _.sortBy([
+    contract.createdTime,
+    ...bets.map((bet) => bet.createdTime),
+  ])
   const dateTimes = times.map((time) => new Date(time))
 
   const data = sortedOutcomes.map((outcome, i) => {
-    const bets = _.sortBy(betsByOutcome[outcome], (bet) => bet.createdTime)
-
-    const probs: number[] = []
-    let betIndex: number = 0
-    for (const time of times) {
-      if (betIndex === bets.length) probs.push(bets[betIndex - 1].probAfter)
-      else if (time < bets[betIndex].createdTime) {
-        probs.push(betIndex === 0 ? 0 : bets[betIndex - 1].probAfter)
-      } else {
-        probs.push(bets[betIndex].probAfter)
-        betIndex++
-      }
-    }
+    const probs = probsByOutcome[outcome]
 
     if (resolutionTime || isClosed) {
       dateTimes.push(latestTime.toDate())
@@ -78,15 +61,16 @@ export function AnswersGraph(props: { contract: Contract; bets: Bet[] }) {
 
     const points = probs.map((prob, i) => ({
       x: dateTimes[i],
-      y: prob * 100,
+      y: Math.round(prob * 100),
     }))
 
     const answer =
       answers?.find((answer) => answer.id === outcome)?.text ?? 'None'
-
     const answerText =
       answer.slice(0, labelLength) + (answer.length > labelLength ? '...' : '')
-    return { id: answerText, data: points, color: colors[i] }
+    const id = `#${outcome}: ${answerText}`
+
+    return { id, data: points, color: colors[i] }
   })
 
   data.reverse()
@@ -104,11 +88,11 @@ export function AnswersGraph(props: { contract: Contract; bets: Bet[] }) {
   return (
     <div
       className="w-full overflow-hidden"
-      style={{ height: !width || width >= 800 ? 350 : 250 }}
+      style={{ height: !width || width >= 800 ? 350 : 225 }}
     >
       <ResponsiveLine
         data={data}
-        yScale={{ min: 0, max: 100, type: 'linear' }}
+        yScale={{ min: 0, max: yMax, type: 'linear' }}
         yFormat={formatPercent}
         gridYValues={yTickValues}
         axisLeft={{
@@ -148,4 +132,46 @@ function formatTime(time: number, includeTime: boolean) {
   if (includeTime) return dayjs(time).format('MMM D, ha')
 
   return dayjs(time).format('MMM D')
+}
+
+const computeProbsByOutcome = (
+  bets: Bet[],
+  totalShares: { [outcome: string]: number }
+) => {
+  const betsByOutcome = _.groupBy(bets, (bet) => bet.outcome)
+  const outcomes = Object.keys(betsByOutcome).filter((outcome) => {
+    const maxProb = Math.max(
+      ...betsByOutcome[outcome].map((bet) => bet.probAfter)
+    )
+    return outcome !== '0' && maxProb > 0.05
+  })
+
+  const trackedOutcomes = _.sortBy(
+    outcomes,
+    (outcome) => -1 * getOutcomeProbability(totalShares, outcome)
+  ).slice(0, 5)
+
+  const probsByOutcome = _.fromPairs(
+    trackedOutcomes.map((outcome) => [outcome, [0]])
+  )
+  const sharesByOutcome = _.fromPairs(
+    Object.keys(betsByOutcome).map((outcome) => [outcome, 0])
+  )
+
+  for (const bet of bets) {
+    const { outcome, shares } = bet
+    sharesByOutcome[outcome] += shares
+
+    const sharesSquared = _.sumBy(
+      Object.values(sharesByOutcome).map((shares) => shares ** 2)
+    )
+
+    for (const outcome of trackedOutcomes) {
+      probsByOutcome[outcome].push(
+        sharesByOutcome[outcome] ** 2 / sharesSquared
+      )
+    }
+  }
+
+  return { probsByOutcome, sortedOutcomes: trackedOutcomes }
 }
