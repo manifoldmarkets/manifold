@@ -31,7 +31,7 @@ export function AnswersGraph(props: { contract: Contract; bets: Bet[] }) {
 
   const { width } = useWindowSize()
 
-  const labelLength = !width || width > 800 ? 75 : 20
+  const labelLength = !width || width > 800 ? 50 : 20
 
   const colors = ['#2a81e3', '#c72ae3', '#b91111', '#f3ad28', '#11b981']
 
