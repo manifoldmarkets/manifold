@@ -125,7 +125,7 @@ function AbbrContractDetails(props: {
 }) {
   const { contract, showHotVolume, showCloseTime } = props
   const { volume24Hours, creatorName, creatorUsername, closeTime } = contract
-  const { truePool } = contractMetrics(contract)
+  const { liquidityLabel } = contractMetrics(contract)
 
   return (
     <Col className={clsx('gap-2 text-sm text-gray-500')}>
@@ -156,7 +156,7 @@ function AbbrContractDetails(props: {
         ) : (
           <Row className="gap-1">
             {/* <DatabaseIcon className="h-5 w-5" /> */}
-            {formatMoney(truePool)} pool
+            {liquidityLabel}
           </Row>
         )}
       </Row>
@@ -170,7 +170,8 @@ export function ContractDetails(props: {
 }) {
   const { contract, isCreator } = props
   const { closeTime, creatorName, creatorUsername } = contract
-  const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
+  const { liquidityLabel, createdDate, resolvedDate } =
+    contractMetrics(contract)
 
   const tweetText = getTweetText(contract, !!isCreator)
 
@@ -224,7 +225,7 @@ export function ContractDetails(props: {
         <Row className="items-center gap-1">
           <DatabaseIcon className="h-5 w-5" />
 
-          <div className="whitespace-nowrap">{formatMoney(truePool)} pool</div>
+          <div className="whitespace-nowrap">{liquidityLabel}</div>
         </Row>
 
         <TweetButton className={'self-end'} tweetText={tweetText} />
@@ -236,7 +237,8 @@ export function ContractDetails(props: {
 // String version of the above, to send to the OpenGraph image generator
 export function contractTextDetails(contract: Contract) {
   const { closeTime, tags } = contract
-  const { truePool, createdDate, resolvedDate } = contractMetrics(contract)
+  const { createdDate, resolvedDate, liquidityLabel } =
+    contractMetrics(contract)
 
   const hashtags = tags.map((tag) => `#${tag}`)
 
@@ -247,7 +249,7 @@ export function contractTextDetails(contract: Contract) {
           closeTime
         ).format('MMM D, h:mma')}`
       : '') +
-    ` • ${formatMoney(truePool)} pool` +
+    ` • ${liquidityLabel}` +
     (hashtags.length > 0 ? ` • ${hashtags.join(' ')}` : '')
   )
 }

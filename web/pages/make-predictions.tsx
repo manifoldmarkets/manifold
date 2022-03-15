@@ -3,11 +3,12 @@ import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
+
 import { getProbability } from '../../common/calculate'
+import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 import { parseWordsAsTags } from '../../common/util/parse'
 import { AmountInput } from '../components/amount-input'
 import { InfoTooltip } from '../components/info-tooltip'
-
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { Spacer } from '../components/layout/spacer'
@@ -16,7 +17,7 @@ import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
 import { createContract } from '../lib/firebase/api-call'
-import { Contract, contractPath } from '../lib/firebase/contracts'
+import { contractPath } from '../lib/firebase/contracts'
 
 type Prediction = {
   question: string
@@ -25,8 +26,8 @@ type Prediction = {
   createdUrl?: string
 }
 
-function toPrediction(contract: Contract): Prediction {
-  const startProb = getProbability(contract.totalShares)
+function toPrediction(contract: FullContract<DPM | CPMM, Binary>): Prediction {
+  const startProb = getProbability(contract)
   return {
     question: contract.question,
     description: contract.description,
@@ -101,7 +102,9 @@ export default function MakePredictions() {
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [createdContracts, setCreatedContracts] = useState<Contract[]>([])
+  const [createdContracts, setCreatedContracts] = useState<
+    FullContract<DPM | CPMM, Binary>[]
+  >([])
 
   const [ante, setAnte] = useState<number | undefined>(100)
   const [anteError, setAnteError] = useState<string | undefined>()

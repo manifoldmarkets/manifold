@@ -1,6 +1,6 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
 import { Fragment, useState } from 'react'
-import _ from 'lodash'
+import * as _ from 'lodash'
 import {
   BanIcon,
   CheckIcon,
@@ -46,6 +46,7 @@ import { Avatar } from '../avatar'
 import { useAdmin } from '../../hooks/use-admin'
 import { Answer } from '../../../common/answer'
 import { ActivityItem } from './activity-items'
+import { FreeResponse, FullContract } from '../../../common/contract'
 
 export function FeedItems(props: {
   contract: Contract
@@ -191,12 +192,6 @@ function FeedBet(props: {
   const bought = amount >= 0 ? 'bought' : 'sold'
   const money = formatMoney(Math.abs(amount))
 
-  const answer =
-    !hideOutcome &&
-    (contract.answers?.find((answer: Answer) => answer?.id === outcome) as
-      | Answer
-      | undefined)
-
   return (
     <>
       <div>
@@ -222,18 +217,13 @@ function FeedBet(props: {
           </div>
         )}
       </div>
-      <div className={clsx('min-w-0 flex-1 pb-1.5', !answer && 'pt-1.5')}>
-        {answer && (
-          <div className="text-neutral mb-2" style={{ fontSize: 15 }}>
-            <Linkify text={answer.text} />
-          </div>
-        )}
+      <div className={'min-w-0 flex-1 pb-1.5'}>
         <div className="text-sm text-gray-500">
           <span>
             {isSelf ? 'You' : isCreator ? contract.creatorName : 'A trader'}
           </span>{' '}
           {bought} {money}
-          {!answer && !hideOutcome && (
+          {!hideOutcome && (
             <>
               {' '}
               of <OutcomeLabel outcome={outcome} />
@@ -425,7 +415,7 @@ export function FeedQuestion(props: {
   const { contract, showDescription } = props
   const { creatorName, creatorUsername, question, resolution, outcomeType } =
     contract
-  const { truePool } = contractMetrics(contract)
+  const { liquidityLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
 
   const closeMessage =
@@ -453,7 +443,7 @@ export function FeedQuestion(props: {
           asked
           {/* Currently hidden on mobile; ideally we'd fit this in somewhere. */}
           <span className="float-right hidden text-gray-400 sm:inline">
-            {formatMoney(truePool)} pool
+            {liquidityLabel}
             {closeMessage}
           </span>
         </div>
@@ -517,7 +507,10 @@ function FeedDescription(props: { contract: Contract }) {
   )
 }
 
-function FeedCreateAnswer(props: { contract: Contract; answer: Answer }) {
+function FeedCreateAnswer(props: {
+  contract: FullContract<any, FreeResponse>
+  answer: Answer
+}) {
   const { answer } = props
 
   return (
@@ -677,7 +670,7 @@ function FeedBetGroup(props: {
 }
 
 function FeedAnswerGroup(props: {
-  contract: Contract
+  contract: FullContract<any, FreeResponse>
   answer: Answer
   items: ActivityItem[]
 }) {

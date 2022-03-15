@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import _ from 'lodash'
 import { useState } from 'react'
 
-import { Contract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { Col } from '../layout/col'
 import { resolveMarket } from '../../lib/firebase/api-call'
 import { Row } from '../layout/row'
@@ -11,7 +11,7 @@ import { ResolveConfirmationButton } from '../confirmation-button'
 import { removeUndefinedProps } from '../../../common/util/object'
 
 export function AnswerResolvePanel(props: {
-  contract: Contract
+  contract: FullContract<DPM, FreeResponse>
   resolveOption: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   setResolveOption: (
     option: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined

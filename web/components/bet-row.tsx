@@ -1,14 +1,15 @@
 import clsx from 'clsx'
 import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { Contract } from '../lib/firebase/contracts'
+
 import { BetPanel } from './bet-panel'
 import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
+import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
 export default function BetRow(props: {
-  contract: Contract
+  contract: FullContract<DPM | CPMM, Binary>
   className?: string
   labelClassName?: string
 }) {

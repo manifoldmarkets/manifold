@@ -1,6 +1,7 @@
 import * as _ from 'lodash'
+
 import { Bet } from './bet'
-import { Contract } from './contract'
+import { Binary, Contract, FullContract } from './contract'
 import { getPayouts } from './payouts'
 
 export function scoreCreators(contracts: Contract[], bets: Bet[][]) {
@@ -23,17 +24,22 @@ export function scoreTraders(contracts: Contract[], bets: Bet[][]) {
   return userScores
 }
 
-export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
+export function scoreUsersByContract(
+  contract: FullContract<any, Binary>,
+  bets: Bet[]
+) {
   const { resolution, resolutionProbability } = contract
 
   const [closedBets, openBets] = _.partition(
     bets,
     (bet) => bet.isSold || bet.sale
   )
-  const resolvePayouts = getPayouts(
-    resolution ?? 'MKT',
+  const [resolvePayouts] = getPayouts(
+    resolution,
+    {},
     contract,
     openBets,
+    [],
     resolutionProbability
   )
 

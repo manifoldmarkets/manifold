@@ -4,7 +4,9 @@ import * as functions from 'firebase-functions'
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
-import { getSellBetInfo } from '../../common/sell-bet'
+import { getCpmmSellBetInfo, getSellBetInfo } from '../../common/sell-bet'
+import { addObjects, removeUndefinedProps } from '../../common/util/object'
+import { Fees } from '../../common/fees'
 
 export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -33,7 +35,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
         return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
 
-      const { closeTime } = contract
+      const { closeTime, mechanism, collectedFees } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
@@ -54,31 +56,30 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
         newTotalShares,
         newTotalBets,
         newBalance,
-        creatorFee,
-      } = getSellBetInfo(user, bet, contract, newBetDoc.id)
+        fees,
+      } =
+        mechanism === 'dpm-2'
+          ? getSellBetInfo(user, bet, contract, newBetDoc.id)
+          : (getCpmmSellBetInfo(
+              user,
+              bet,
+              contract as any,
+              newBetDoc.id
+            ) as any)
 
-      if (contract.creatorId === userId) {
-        transaction.update(userDoc, { balance: newBalance + creatorFee })
-      } else {
-        const creatorDoc = firestore.doc(`users/${contract.creatorId}`)
-        const creatorSnap = await transaction.get(creatorDoc)
-
-        if (creatorSnap.exists) {
-          const creator = creatorSnap.data() as User
-          const creatorNewBalance = creator.balance + creatorFee
-          transaction.update(creatorDoc, { balance: creatorNewBalance })
-        }
-
-        transaction.update(userDoc, { balance: newBalance })
-      }
+      transaction.update(userDoc, { balance: newBalance })
 
       transaction.update(betDoc, { isSold: true })
       transaction.create(newBetDoc, newBet)
-      transaction.update(contractDoc, {
-        pool: newPool,
-        totalShares: newTotalShares,
-        totalBets: newTotalBets,
-      })
+      transaction.update(
+        contractDoc,
+        removeUndefinedProps({
+          pool: newPool,
+          totalShares: newTotalShares,
+          totalBets: newTotalBets,
+          collectedFees: addObjects<Fees>(fees ?? {}, collectedFees ?? {}),
+        })
+      )
 
       return { status: 'success' }
     })

@@ -3,14 +3,14 @@ import _ from 'lodash'
 import { useState } from 'react'
 
 import { Answer } from '../../../common/answer'
-import { Contract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../avatar'
 import { SiteLink } from '../site-link'
 import { BuyButton } from '../yes-no-selector'
 import { formatPercent } from '../../../common/util/format'
-import { getOutcomeProbability } from '../../../common/calculate'
+import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
 import { tradingAllowed } from '../../lib/firebase/contracts'
 import { AnswerBetPanel } from './answer-bet-panel'
 import { Linkify } from '../linkify'
@@ -19,7 +19,7 @@ import { ContractActivity } from '../feed/contract-activity'
 
 export function AnswerItem(props: {
   answer: Answer
-  contract: Contract
+  contract: FullContract<DPM, FreeResponse>
   user: User | null | undefined
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined
@@ -41,7 +41,7 @@ export function AnswerItem(props: {
   const { username, avatarUrl, name, number, text } = answer
   const isChosen = chosenProb !== undefined
 
-  const prob = getOutcomeProbability(totalShares, answer.id)
+  const prob = getDpmOutcomeProbability(totalShares, answer.id)
   const roundedProb = Math.round(prob * 100)
   const probPercent = formatPercent(prob)
   const wasResolvedTo =

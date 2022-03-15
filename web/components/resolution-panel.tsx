@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 
-import { Contract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Title } from './title'
 import { User } from '../lib/firebase/users'
@@ -10,12 +9,14 @@ import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { resolveMarket } from '../lib/firebase/api-call'
 import { ProbabilitySelector } from './probability-selector'
+import { DPM_CREATOR_FEE } from '../../common/fees'
 import { getProbability } from '../../common/calculate'
-import { CREATOR_FEE } from '../../common/fees'
+import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
+import { formatMoney } from '../../common/util/format'
 
 export function ResolutionPanel(props: {
   creator: User
-  contract: Contract
+  contract: FullContract<DPM | CPMM, Binary>
   className?: string
 }) {
   useEffect(() => {
@@ -25,11 +26,16 @@ export function ResolutionPanel(props: {
 
   const { contract, className } = props
 
+  const earnedFees =
+    contract.mechanism === 'dpm-2'
+      ? `${DPM_CREATOR_FEE * 100}% of trader profits`
+      : `${formatMoney(contract.collectedFees.creatorFee)} in fees`
+
   const [outcome, setOutcome] = useState<
     'YES' | 'NO' | 'MKT' | 'CANCEL' | undefined
   >()
 
-  const [prob, setProb] = useState(getProbability(contract.totalShares) * 100)
+  const [prob, setProb] = useState(getProbability(contract) * 100)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
@@ -85,14 +91,14 @@ export function ResolutionPanel(props: {
             Winnings will be paid out to YES bettors.
             <br />
             <br />
-            You earn {CREATOR_FEE * 100}% of trader profits.
+            You will earn {earnedFees}.
           </>
         ) : outcome === 'NO' ? (
           <>
             Winnings will be paid out to NO bettors.
             <br />
             <br />
-            You earn {CREATOR_FEE * 100}% of trader profits.
+            You will earn {earnedFees}.
           </>
         ) : outcome === 'CANCEL' ? (
           <>The pool will be returned to traders with no fees.</>
@@ -103,7 +109,7 @@ export function ResolutionPanel(props: {
               probabilityInt={Math.round(prob)}
               setProbabilityInt={setProb}
             />
-            <div>You earn {CREATOR_FEE * 100}% of trader profits.</div>
+            You will earn {earnedFees}.
           </Col>
         ) : (
           <>Resolving this market will immediately pay out traders.</>

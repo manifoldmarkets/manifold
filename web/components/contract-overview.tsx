@@ -20,6 +20,7 @@ import { Fold } from '../../common/fold'
 import { FoldTagList } from './tags-list'
 import { ContractActivity } from './feed/contract-activity'
 import { AnswersGraph } from './answers/answers-graph'
+import { DPM, FreeResponse, FullContract } from '../../common/contract'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -81,7 +82,10 @@ export const ContractOverview = (props: {
       {isBinary ? (
         <ContractProbGraph contract={contract} bets={bets} />
       ) : (
-        <AnswersGraph contract={contract} bets={bets} />
+        <AnswersGraph
+          contract={contract as FullContract<DPM, FreeResponse>}
+          bets={bets}
+        />
       )}
 
       {children}

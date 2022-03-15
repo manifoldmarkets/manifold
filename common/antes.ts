@@ -1,34 +1,44 @@
 import { Bet } from './bet'
-import { getProbability } from './calculate'
-import { Contract } from './contract'
+import { getDpmProbability } from './calculate-dpm'
+import { Binary, CPMM, DPM, FreeResponse, FullContract } from './contract'
 import { User } from './user'
+import { LiquidityProvision } from './liquidity-provision'
+import { noFees } from './fees'
 
 export const PHANTOM_ANTE = 0.001
 export const MINIMUM_ANTE = 10
 
-export const calcStartPool = (initialProbInt: number, ante = 0) => {
-  const p = initialProbInt / 100.0
-  const totalAnte = PHANTOM_ANTE + ante
+export function getCpmmInitialLiquidity(
+  creator: User,
+  contract: FullContract<CPMM, Binary>,
+  anteId: string,
+  amount: number
+) {
+  const { createdTime, p } = contract
 
-  const sharesYes = Math.sqrt(p * totalAnte ** 2)
-  const sharesNo = Math.sqrt(totalAnte ** 2 - sharesYes ** 2)
+  const lp: LiquidityProvision = {
+    id: anteId,
+    userId: creator.id,
+    contractId: contract.id,
+    createdTime,
+    isAnte: true,
 
-  const poolYes = p * ante
-  const poolNo = (1 - p) * ante
+    amount: amount,
+    liquidity: amount,
+    p: p,
+    pool: { YES: 0, NO: 0 },
+  }
 
-  const phantomYes = Math.sqrt(p) * PHANTOM_ANTE
-  const phantomNo = Math.sqrt(1 - p) * PHANTOM_ANTE
-
-  return { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo }
+  return lp
 }
 
 export function getAnteBets(
   creator: User,
-  contract: Contract,
+  contract: FullContract<DPM, Binary>,
   yesAnteId: string,
   noAnteId: string
 ) {
-  const p = getProbability(contract.totalShares)
+  const p = getDpmProbability(contract.totalShares)
   const ante = contract.totalBets.YES + contract.totalBets.NO
 
   const { createdTime } = contract
@@ -44,6 +54,7 @@ export function getAnteBets(
     probAfter: p,
     createdTime,
     isAnte: true,
+    fees: noFees,
   }
 
   const noBet: Bet = {
@@ -57,6 +68,7 @@ export function getAnteBets(
     probAfter: p,
     createdTime,
     isAnte: true,
+    fees: noFees,
   }
 
   return { yesBet, noBet }
@@ -64,7 +76,7 @@ export function getAnteBets(
 
 export function getFreeAnswerAnte(
   creator: User,
-  contract: Contract,
+  contract: FullContract<DPM, FreeResponse>,
   anteBetId: string
 ) {
   const { totalBets, totalShares } = contract
@@ -84,6 +96,7 @@ export function getFreeAnswerAnte(
     probAfter: 1,
     createdTime,
     isAnte: true,
+    fees: noFees,
   }
 
   return anteBet

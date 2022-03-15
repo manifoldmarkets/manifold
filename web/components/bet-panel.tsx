@@ -1,8 +1,8 @@
 import clsx from 'clsx'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { useUser } from '../hooks/use-user'
-import { Contract } from '../../common/contract'
+import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
@@ -13,31 +13,22 @@ import {
   formatWithCommas,
 } from '../../common/util/format'
 import { Title } from './title'
-import {
-  getProbability,
-  calculateShares,
-  getProbabilityAfterBet,
-  calculatePayoutAfterCorrectBet,
-} from '../../common/calculate'
 import { firebaseLogin } from '../lib/firebase/users'
 import { Bet } from '../../common/bet'
 import { placeBet } from '../lib/firebase/api-call'
 import { AmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { OutcomeLabel } from './outcome-label'
-
-// Focus helper from https://stackoverflow.com/a/54159564/1222351
-function useFocus(): [React.RefObject<HTMLElement>, () => void] {
-  const htmlElRef = useRef<HTMLElement>(null)
-  const setFocus = () => {
-    htmlElRef.current && htmlElRef.current.focus()
-  }
-
-  return [htmlElRef, setFocus]
-}
+import {
+  calculatePayoutAfterCorrectBet,
+  calculateShares,
+  getProbability,
+  getOutcomeProbabilityAfterBet,
+} from '../../common/calculate'
+import { useFocus } from '../hooks/use-focus'
 
 export function BetPanel(props: {
-  contract: Contract
+  contract: FullContract<DPM | CPMM, Binary>
   className?: string
   title?: string // Set if BetPanel is on a feed modal
   selected?: 'YES' | 'NO'
@@ -49,7 +40,6 @@ export function BetPanel(props: {
   }, [])
 
   const { contract, className, title, selected, onBetSuccess } = props
-  const { totalShares, phantomShares } = contract
 
   const user = useUser()
 
@@ -102,20 +92,16 @@ export function BetPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getProbability(contract.totalShares)
+  const initialProb = getProbability(contract)
 
-  const outcomeProb = getProbabilityAfterBet(
-    contract.totalShares,
+  const outcomeProb = getOutcomeProbabilityAfterBet(
+    contract,
     betChoice || 'YES',
     betAmount ?? 0
   )
   const resultProb = betChoice === 'NO' ? 1 - outcomeProb : outcomeProb
 
-  const shares = calculateShares(
-    contract.totalShares,
-    betAmount ?? 0,
-    betChoice || 'YES'
-  )
+  const shares = calculateShares(contract, betAmount ?? 0, betChoice || 'YES')
 
   const currentPayout = betAmount
     ? calculatePayoutAfterCorrectBet(contract, {
@@ -127,10 +113,22 @@ export function BetPanel(props: {
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
+
   const panelTitle = title ?? 'Place a trade'
   if (title) {
     focusAmountInput()
   }
+
+  const tooltip =
+    contract.mechanism === 'dpm-2'
+      ? `Current payout for ${formatWithCommas(shares)} / ${formatWithCommas(
+          shares +
+            contract.totalShares[betChoice ?? 'YES'] -
+            (contract.phantomShares
+              ? contract.phantomShares[betChoice ?? 'YES']
+              : 0)
+        )} ${betChoice} shares`
+      : undefined
 
   return (
     <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
@@ -172,15 +170,8 @@ export function BetPanel(props: {
             <div>
               Payout if <OutcomeLabel outcome={betChoice ?? 'YES'} />
             </div>
-            <InfoTooltip
-              text={`Current payout for ${formatWithCommas(
-                shares
-              )} / ${formatWithCommas(
-                shares +
-                  totalShares[betChoice ?? 'YES'] -
-                  (phantomShares ? phantomShares[betChoice ?? 'YES'] : 0)
-              )} ${betChoice} shares`}
-            />
+
+            {tooltip && <InfoTooltip text={tooltip} />}
           </Row>
           <Row className="flex-wrap items-end justify-end gap-2">
             <span className="whitespace-nowrap">

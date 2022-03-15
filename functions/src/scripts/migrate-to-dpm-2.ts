@@ -4,9 +4,12 @@ import * as _ from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin('stephenDev')
 
-import { Contract } from '../../../common/contract'
+import { Binary, Contract, DPM, FullContract } from '../../../common/contract'
 import { Bet } from '../../../common/bet'
-import { calculateShares, getProbability } from '../../../common/calculate'
+import {
+  calculateDpmShares,
+  getDpmProbability,
+} from '../../../common/calculate-dpm'
 import { getSellBetInfo } from '../../../common/sell-bet'
 import { User } from '../../../common/user'
 
@@ -29,7 +32,7 @@ async function recalculateContract(
 
   await firestore.runTransaction(async (transaction) => {
     const contractDoc = await transaction.get(contractRef)
-    const contract = contractDoc.data() as Contract
+    const contract = contractDoc.data() as FullContract<DPM, Binary>
 
     const betDocs = await transaction.get(contractRef.collection('bets'))
     const bets = _.sortBy(
@@ -126,7 +129,7 @@ async function recalculateContract(
         continue
       }
 
-      const shares = calculateShares(totalShares, bet.amount, bet.outcome)
+      const shares = calculateDpmShares(totalShares, bet.amount, bet.outcome)
       const probBefore = p
       const ind = bet.outcome === 'YES' ? 1 : 0
 
@@ -145,7 +148,7 @@ async function recalculateContract(
         NO: totalBets.NO + (1 - ind) * bet.amount,
       }
 
-      p = getProbability(totalShares)
+      p = getDpmProbability(totalShares)
 
       const probAfter = p
 

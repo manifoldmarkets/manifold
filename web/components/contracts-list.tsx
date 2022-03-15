@@ -13,6 +13,7 @@ import { Col } from './layout/col'
 import { SiteLink } from './site-link'
 import { ContractCard } from './contract-card'
 import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
+import { Answer } from '../../common/answer'
 
 export function ContractsGrid(props: {
   contracts: Contract[]
@@ -217,7 +218,11 @@ export function SearchableGrid(props: {
       check(c.creatorName) ||
       check(c.creatorUsername) ||
       check(c.lowercaseTags.map((tag) => `#${tag}`).join(' ')) ||
-      check((c.answers ?? []).map((answer) => answer.text).join(' '))
+      check(
+        ((c as any).answers ?? [])
+          .map((answer: Answer) => answer.text)
+          .join(' ')
+      )
   )
 
   if (sort === 'newest' || sort === 'all') {
