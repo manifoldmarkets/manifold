@@ -110,6 +110,13 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
                 newBetDoc.id
               )
 
+        if (newP !== undefined && !isFinite(newP)) {
+          return {
+            status: 'error',
+            message: 'Trade rejected due to overflow error.',
+          }
+        }
+
         transaction.create(newBetDoc, newBet)
 
         transaction.update(
