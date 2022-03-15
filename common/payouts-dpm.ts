@@ -168,7 +168,7 @@ export const getPayoutsMultiOutcome = (
     liquidityFee: 0,
   }
 
-  const fees = addObjects<Fees>(finalFees, contract.collectedFees ?? {})
+  const fees = addObjects<Fees>(finalFees, contract.collectedFees ?? noFees)
 
   console.log(
     'resolved',

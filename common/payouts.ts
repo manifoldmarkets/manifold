@@ -110,14 +110,24 @@ export const getDpmPayouts = (
         Payout[],
         Fees
       ]
+
     case 'MKT':
       return getDpmMktPayouts(contract, openBets, resolutionProbability) as [
         Payout[],
         Fees
       ]
+
     case 'CANCEL':
       return getDpmCancelPayouts(contract, openBets) as [Payout[], Fees]
+
     default:
+      if (outcome)
+        // single outcome free response
+        return getDpmStandardPayouts(outcome, contract, openBets) as [
+          Payout[],
+          Fees
+        ]
+
       // Multi outcome.
       return getPayoutsMultiOutcome(
         resolutions,
