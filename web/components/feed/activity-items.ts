@@ -188,11 +188,16 @@ function getAnswerGroups(
     const lastCommentOutcome = bets.find(
       (bet) => bet.id === lastComment?.betId
     )?.outcome
-    if (lastCommentOutcome) {
-      outcomes = [
-        ...outcomes.filter((outcome) => outcome !== lastCommentOutcome),
+    const lastBetOutcome = _.last(bets)?.outcome
+    if (lastCommentOutcome && lastBetOutcome) {
+      outcomes = _.uniq([
+        ...outcomes.filter(
+          (outcome) =>
+            outcome !== lastCommentOutcome && outcome !== lastBetOutcome
+        ),
         lastCommentOutcome,
-      ]
+        lastBetOutcome,
+      ])
     }
     outcomes = outcomes.slice(-2)
   }
