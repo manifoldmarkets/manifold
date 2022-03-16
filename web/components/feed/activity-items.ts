@@ -265,7 +265,7 @@ export function getAllContractActivityItems(
 
   bets =
     outcomeType === 'BINARY'
-      ? bets.filter((bet) => !bet.isAnte)
+      ? bets.filter((bet) => !bet.isAnte && !bet.isRedemption)
       : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
 
   let answer: Answer | undefined
@@ -318,7 +318,9 @@ export function getRecentContractActivityItems(
   comments: Comment[],
   user: User | null | undefined
 ) {
-  bets = bets.sort((b1, b2) => b1.createdTime - b2.createdTime)
+  bets = bets
+    .filter((bet) => !bet.isRedemption)
+    .sort((b1, b2) => b1.createdTime - b2.createdTime)
   comments = comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
   const questionItem: QuestionItem = {
