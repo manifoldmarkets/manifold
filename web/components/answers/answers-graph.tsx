@@ -4,24 +4,21 @@ import dayjs from 'dayjs'
 import _ from 'lodash'
 
 import { Bet } from '../../../common/bet'
-import {
-  Contract,
-  DPM,
-  FreeResponse,
-  FullContract,
-} from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { getOutcomeProbability } from '../../../common/calculate'
 import { useBets } from '../../hooks/use-bets'
 import { useWindowSize } from '../../hooks/use-window-size'
+
+const NUM_LINES = 6
 
 export function AnswersGraph(props: {
   contract: FullContract<DPM, FreeResponse>
   bets: Bet[]
 }) {
   const { contract } = props
-  const { resolutionTime, closeTime, answers } = contract
+  const { createdTime, resolutionTime, closeTime, answers } = contract
 
-  const bets = (useBets(contract.id) ?? props.bets).filter((bet) => !bet.sale)
+  const bets = useBets(contract.id) ?? props.bets
 
   const { probsByOutcome, sortedOutcomes } = computeProbsByOutcome(
     bets,
@@ -41,28 +38,24 @@ export function AnswersGraph(props: {
 
   const labelLength = !width || width > 800 ? 50 : 20
 
-  const colors = ['#2a81e3', '#c72ae3', '#b91111', '#f3ad28', '#11b981']
-
-  const yMax = 100
+  const endTime =
+    resolutionTime || isClosed
+      ? latestTime.valueOf()
+      : // Add a fake datapoint in future so the line continues horizontally
+        // to the right.
+        latestTime.add(1, 'month').valueOf()
 
   const times = _.sortBy([
-    contract.createdTime,
+    createdTime,
     ...bets.map((bet) => bet.createdTime),
+    endTime,
   ])
   const dateTimes = times.map((time) => new Date(time))
 
-  const data = sortedOutcomes.map((outcome, i) => {
-    const probs = probsByOutcome[outcome]
-
-    if (resolutionTime || isClosed) {
-      dateTimes.push(latestTime.toDate())
-      probs.push(probs[probs.length - 1])
-    } else {
-      // Add a fake datapoint in future so the line continues horizontally
-      // to the right.
-      dateTimes.push(latestTime.add(1, 'month').toDate())
-      probs.push(probs[probs.length - 1])
-    }
+  const data = sortedOutcomes.map((outcome) => {
+    const betProbs = probsByOutcome[outcome]
+    // Add extra point for contract start and end.
+    const probs = [0, ...betProbs, betProbs[betProbs.length - 1]]
 
     const points = probs.map((prob, i) => ({
       x: dateTimes[i],
@@ -75,7 +68,7 @@ export function AnswersGraph(props: {
       answer.slice(0, labelLength) + (answer.length > labelLength ? '...' : '')
     const id = `#${outcome}: ${answerText}`
 
-    return { id, data: points, color: colors[i] }
+    return { id, data: points }
   })
 
   data.reverse()
@@ -97,7 +90,7 @@ export function AnswersGraph(props: {
     >
       <ResponsiveLine
         data={data}
-        yScale={{ min: 0, max: yMax, type: 'linear', stacked: true }}
+        yScale={{ min: 0, max: 100, type: 'linear', stacked: true }}
         yFormat={formatPercent}
         gridYValues={yTickValues}
         axisLeft={{
@@ -140,7 +133,10 @@ function formatTime(time: number, includeTime: boolean) {
   return dayjs(time).format('MMM D')
 }
 
-const computeProbsByOutcome = (bets: Bet[], contract: Contract) => {
+const computeProbsByOutcome = (
+  bets: Bet[],
+  contract: FullContract<DPM, FreeResponse>
+) => {
   const betsByOutcome = _.groupBy(bets, (bet) => bet.outcome)
   const outcomes = Object.keys(betsByOutcome).filter((outcome) => {
     const maxProb = Math.max(
@@ -152,10 +148,10 @@ const computeProbsByOutcome = (bets: Bet[], contract: Contract) => {
   const trackedOutcomes = _.sortBy(
     outcomes,
     (outcome) => -1 * getOutcomeProbability(contract, outcome)
-  ).slice(0, 5)
+  ).slice(0, NUM_LINES)
 
   const probsByOutcome = _.fromPairs(
-    trackedOutcomes.map((outcome) => [outcome, [0]])
+    trackedOutcomes.map((outcome) => [outcome, [] as number[]])
   )
   const sharesByOutcome = _.fromPairs(
     Object.keys(betsByOutcome).map((outcome) => [outcome, 0])
