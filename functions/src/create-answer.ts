@@ -122,6 +122,11 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         totalBets: newTotalBets,
         answers: [...(contract.answers ?? []), answer],
       })
+
+      if (!isFinite(newBalance)) {
+        throw new Error('Invalid user balance for ' + user.username)
+      }
+
       transaction.update(userDoc, { balance: newBalance })
 
       return { status: 'success', answerId, betId: newBetDoc.id, answer }

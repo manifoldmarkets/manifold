@@ -78,6 +78,11 @@ export const redeemShares = async (userId: string, contractId: string) => {
     const user = userSnap.data() as User
 
     const newBalance = user.balance + netAmount
+
+    if (!isFinite(newBalance)) {
+      throw new Error('Invalid user balance for ' + user.username)
+    }
+
     transaction.update(userDoc, { balance: newBalance })
 
     transaction.create(yesDoc, yesBet)

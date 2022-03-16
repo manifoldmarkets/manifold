@@ -132,6 +132,10 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           })
         )
 
+        if (!isFinite(newBalance)) {
+          throw new Error('Invalid user balance for ' + user.username)
+        }
+
         transaction.update(userDoc, { balance: newBalance })
 
         return { status: 'success', betId: newBetDoc.id }
