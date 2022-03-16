@@ -67,6 +67,9 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
               newBetDoc.id
             ) as any)
 
+      if (!isFinite(newBalance)) {
+        throw new Error('Invalid user balance for ' + user.username)
+      }
       transaction.update(userDoc, { balance: newBalance })
 
       transaction.update(betDoc, { isSold: true })
