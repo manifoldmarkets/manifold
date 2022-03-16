@@ -437,6 +437,8 @@ export function ContractBetsTable(props: {
     -0.5 * _.sumBy(redemptions, (b) => b.shares)
   )
 
+  const amountLoaned = _.sumBy(bets, (bet) => bet.loanAmount ?? 0)
+
   const { isResolved, mechanism } = contract
   const isCPMM = mechanism === 'cpmm-1'
 
@@ -447,6 +449,15 @@ export function ContractBetsTable(props: {
           <div className="text-gray-500 text-sm pl-2">
             {amountRedeemed} YES shares and {amountRedeemed} NO shares
             automatically redeemed for {formatMoney(amountRedeemed)}.
+          </div>
+          <Spacer h={4} />
+        </>
+      )}
+
+      {!isResolved && amountLoaned > 0 && (
+        <>
+          <div className="text-gray-500 text-sm pl-2">
+            You currently have a loan of {formatMoney(amountLoaned)}.
           </div>
           <Spacer h={4} />
         </>
@@ -529,10 +540,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
       <td>
         <OutcomeLabel outcome={outcome} />
       </td>
-      <td>
-        {formatMoney(amount)}
-        {loanAmount ? ` (${formatMoney(loanAmount ?? 0)} loan)` : ''}
-      </td>
+      <td>{formatMoney(amount)}</td>
       {!isCPMM && <td>{saleDisplay}</td>}
       {!isCPMM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>{formatWithCommas(shares)}</td>
