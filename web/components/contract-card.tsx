@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ClockIcon, DatabaseIcon, PencilIcon } from '@heroicons/react/outline'
 import { TrendingUpIcon } from '@heroicons/react/solid'
 import { Row } from '../components/layout/row'
-import { formatMoney } from '../../common/util/format'
+import { formatMoney, formatPercent } from '../../common/util/format'
 import { UserLink } from './user-page'
 import {
   Contract,
@@ -20,6 +20,7 @@ import { Avatar } from './avatar'
 import { Spacer } from './layout/spacer'
 import { useState } from 'react'
 import { TweetButton } from './tweet-button'
+import { getProbability } from '../../common/calculate'
 
 export function ContractCard(props: {
   contract: Contract
@@ -88,7 +89,11 @@ export function ResolutionOrChance(props: {
     {
       YES: 'YES',
       NO: 'NO',
-      MKT: isBinary ? getBinaryProbPercent(contract) : 'MULTI',
+      MKT: isBinary
+        ? formatPercent(
+            contract.resolutionProbability ?? getProbability(contract)
+          )
+        : 'MULTI',
       CANCEL: 'N/A',
       '': '',
     }[resolution || ''] ?? `#${resolution}`
