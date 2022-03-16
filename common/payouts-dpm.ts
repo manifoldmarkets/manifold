@@ -123,7 +123,8 @@ export const getDpmMktPayouts = (
     pool,
     'profits',
     profits,
-    'creator fee'
+    'creator fee',
+    creatorFee
   )
 
   const totalPayouts = payouts
