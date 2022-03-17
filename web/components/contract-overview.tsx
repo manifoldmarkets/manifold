@@ -1,12 +1,7 @@
-import {
-  Contract,
-  deleteContract,
-  tradingAllowed,
-} from '../lib/firebase/contracts'
+import { Contract, tradingAllowed } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
-import router from 'next/router'
 import { useUser } from '../hooks/use-user'
 import { Row } from './layout/row'
 import { Linkify } from './linkify'
@@ -108,22 +103,6 @@ export const ContractOverview = (props: {
 
       {folds.length > 0 && (
         <RevealableTagsInput className="mt-4" contract={contract} />
-      )}
-
-      {/* Show a delete button for contracts without any trading */}
-      {isCreator && bets.length === 0 && (
-        <>
-          <button
-            className="btn btn-xs btn-error btn-outline mt-1 max-w-fit self-end"
-            onClick={async (e) => {
-              e.preventDefault()
-              await deleteContract(contract.id)
-              router.push('/markets')
-            }}
-          >
-            Delete
-          </button>
-        </>
       )}
 
       <Spacer h={12} />
