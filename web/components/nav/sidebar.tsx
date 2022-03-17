@@ -3,14 +3,19 @@ import {
   FireIcon,
   UserGroupIcon,
   TrendingUpIcon,
+  SearchIcon,
+  CollectionIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 
 const navigation = [
-  { name: 'Home', href: '#', icon: HomeIcon, current: true },
-  { name: 'Popular', href: '#', icon: FireIcon, current: false },
-  { name: 'Communities', href: '#', icon: UserGroupIcon, current: false },
-  { name: 'Trending', href: '#', icon: TrendingUpIcon, current: false },
+  { name: 'Home', href: '/home', icon: HomeIcon },
+  { name: 'Markets', href: '/markets', icon: SearchIcon },
+  { name: 'Communities', href: '/folds', icon: UserGroupIcon },
+  { name: 'Trades', href: '/trades', icon: CollectionIcon },
+  // { name: 'Trending', href: '#', icon: TrendingUpIcon, current: false },
 ]
 
 const communities = [
@@ -25,32 +30,37 @@ const communities = [
 ]
 
 export default function Sidebar() {
+  const router = useRouter()
+  const currentPage = router.pathname
+
   return (
     <nav aria-label="Sidebar" className="sticky top-4 divide-y divide-gray-300">
       <div className="space-y-1 pb-8">
         {navigation.map((item) => (
-          <a
-            key={item.name}
-            href={item.href}
-            className={clsx(
-              item.current
-                ? 'bg-gray-200 text-gray-900'
-                : 'text-gray-600 hover:bg-gray-50',
-              'group flex items-center rounded-md px-3 py-2 text-sm font-medium'
-            )}
-            aria-current={item.current ? 'page' : undefined}
-          >
-            <item.icon
+          <Link href={item.href} key={item.name}>
+            <a
+              key={item.name}
+              href={item.href}
               className={clsx(
-                item.current
-                  ? 'text-gray-500'
-                  : 'text-gray-400 group-hover:text-gray-500',
-                '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
+                item.href == currentPage
+                  ? 'bg-gray-200 text-gray-900'
+                  : 'text-gray-600 hover:bg-gray-50',
+                'group flex items-center rounded-md px-3 py-2 text-sm font-medium'
               )}
-              aria-hidden="true"
-            />
-            <span className="truncate">{item.name}</span>
-          </a>
+              aria-current={item.href == currentPage ? 'page' : undefined}
+            >
+              <item.icon
+                className={clsx(
+                  item.href == currentPage
+                    ? 'text-gray-500'
+                    : 'text-gray-400 group-hover:text-gray-500',
+                  '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
+                )}
+                aria-hidden="true"
+              />
+              <span className="truncate">{item.name}</span>
+            </a>
+          </Link>
         ))}
       </div>
       <div className="pt-10">
