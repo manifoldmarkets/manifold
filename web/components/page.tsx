@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { NavBar } from './nav/nav-bar'
-import SideNavBar, { Sidebar } from './nav/side-nav-bar'
+import Sidebar from './nav/sidebar'
 
 export function Page(props: {
   wide?: boolean
