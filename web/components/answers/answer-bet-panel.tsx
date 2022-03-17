@@ -31,8 +31,9 @@ export function AnswerBetPanel(props: {
   contract: FullContract<DPM, FreeResponse>
   closePanel: () => void
   className?: string
+  isModal?: boolean
 }) {
-  const { answer, contract, closePanel, className } = props
+  const { answer, contract, closePanel, className, isModal } = props
   const { id: answerId } = answer
 
   const user = useUser()
@@ -99,11 +100,18 @@ export function AnswerBetPanel(props: {
   return (
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
       <Row className="items-center justify-between self-stretch">
-        <div className="text-xl">Buy this answer</div>
+        <div className="text-xl">
+          Buy {isModal ? `"${answer.text}"` : 'this answer'}
+        </div>
 
-        <button className="btn-ghost btn-circle" onClick={closePanel}>
-          <XIcon className="mx-auto h-8 w-8 text-gray-500" aria-hidden="true" />
-        </button>
+        {!isModal && (
+          <button className="btn-ghost btn-circle" onClick={closePanel}>
+            <XIcon
+              className="mx-auto h-8 w-8 text-gray-500"
+              aria-hidden="true"
+            />
+          </button>
+        )}
       </Row>
       <div className="my-3 text-left text-sm text-gray-500">Amount </div>
       <AmountInput

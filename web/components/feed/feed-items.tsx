@@ -26,7 +26,7 @@ import { useUser } from '../../hooks/use-user'
 import { Linkify } from '../linkify'
 import { Row } from '../layout/row'
 import { createComment, MAX_COMMENT_LENGTH } from '../../lib/firebase/comments'
-import { formatMoney } from '../../../common/util/format'
+import { formatMoney, formatPercent } from '../../../common/util/format'
 import { Comment } from '../../../common/comment'
 import { ResolutionOrChance } from '../contract-card'
 import { SiteLink } from '../site-link'
@@ -36,13 +36,18 @@ import { DateTimeTooltip } from '../datetime-tooltip'
 import { Bet } from '../../lib/firebase/bets'
 import { JoinSpans } from '../join-spans'
 import { fromNow } from '../../lib/util/time'
-import BetRow from '../bet-row'
+import BetRow, { Modal } from '../bet-row'
 import { parseTags } from '../../../common/util/parse'
 import { Avatar } from '../avatar'
 import { useAdmin } from '../../hooks/use-admin'
 import { Answer } from '../../../common/answer'
 import { ActivityItem } from './activity-items'
 import { FreeResponse, FullContract } from '../../../common/contract'
+import { BuyButton } from '../yes-no-selector'
+import { AnswerItem } from '../answers/answer-item'
+import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
+import { BetPanel } from '../bet-panel'
+import { AnswerBetPanel } from '../answers/answer-bet-panel'
 
 export function FeedItems(props: {
   contract: Contract
@@ -659,11 +664,25 @@ function FeedAnswerGroup(props: {
   answer: Answer
   items: ActivityItem[]
 }) {
-  const { answer, items } = props
+  const { answer, items, contract } = props
   const { username, avatarUrl, name, text } = answer
+
+  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
+  const probPercent = formatPercent(prob)
+  const [open, setOpen] = useState(false)
 
   return (
     <Col className="flex-1 gap-2">
+      <Modal open={open} setOpen={setOpen}>
+        <AnswerBetPanel
+          answer={answer}
+          contract={contract}
+          closePanel={() => setOpen(false)}
+          className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
+          isModal={true}
+        />
+      </Modal>
+
       <Row className="my-4 gap-3">
         <div className="px-1">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
@@ -674,9 +693,29 @@ function FeedAnswerGroup(props: {
           <div className="text-sm text-gray-500">
             <UserLink username={username} name={name} /> answered
           </div>
-          <span className="text-lg">
-            <Linkify text={text} />
-          </span>
+
+          <Row className="align-items justify-between gap-4">
+            <span className="text-lg">
+              <Linkify text={text} />
+            </span>
+
+            <Row className="align-items justify-end gap-4">
+              <span
+                className={clsx(
+                  'text-2xl',
+                  tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
+                )}
+              >
+                {probPercent}
+              </span>
+              <BuyButton
+                className="btn-sm hidden flex-initial !px-6 sm:flex"
+                onClick={() => {
+                  setOpen(true)
+                }}
+              />
+            </Row>
+          </Row>
         </Col>
       </Row>
 
@@ -699,6 +738,15 @@ function FeedAnswerGroup(props: {
           </div>
         </div>
       ))}
+
+      <div className="ml-10 mt-4">
+        <BuyButton
+          className="btn-sm !px-6 sm:hidden"
+          onClick={() => {
+            setOpen(true)
+          }}
+        />
+      </div>
     </Col>
   )
 }
