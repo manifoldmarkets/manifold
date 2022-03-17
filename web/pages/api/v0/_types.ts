@@ -1,7 +1,8 @@
 import { Bet } from '../../../../common/bet'
-import { getDpmProbability } from '../../../../common/calculate-dpm'
+import { getProbability } from '../../../../common/calculate'
 import { Comment } from '../../../../common/comment'
-import { DPM, FullContract } from '../../../../common/contract'
+import { Contract } from '../../../../common/contract'
+import { removeUndefinedProps } from '../../../../common/util/object'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -19,11 +20,16 @@ export type LiteMarket = {
   description: string
   tags: string[]
   url: string
+  mechanism: string
 
   pool: number
-  probability: number
+  probability?: number
+  p?: number
+  totalLiquidity?: number
+
   volume7Days: number
   volume24Hours: number
+
   isResolved: boolean
   resolution?: string
   resolutionTime?: number
@@ -38,26 +44,33 @@ export type ApiError = {
   error: string
 }
 
-export function toLiteMarket({
-  id,
-  creatorUsername,
-  creatorName,
-  createdTime,
-  creatorAvatarUrl,
-  closeTime,
-  question,
-  description,
-  tags,
-  slug,
-  pool,
-  totalShares,
-  volume7Days,
-  volume24Hours,
-  isResolved,
-  resolution,
-  resolutionTime,
-}: FullContract<DPM, any>): LiteMarket {
-  return {
+export function toLiteMarket(contract: Contract): LiteMarket {
+  const {
+    id,
+    creatorUsername,
+    creatorName,
+    createdTime,
+    creatorAvatarUrl,
+    closeTime,
+    question,
+    description,
+    tags,
+    slug,
+    pool,
+    mechanism,
+    volume7Days,
+    volume24Hours,
+    isResolved,
+    resolution,
+    resolutionTime,
+  } = contract
+
+  const { p, totalLiquidity } = contract as any
+
+  const probability =
+    contract.outcomeType === 'BINARY' ? getProbability(contract) : undefined
+
+  return removeUndefinedProps({
     id,
     creatorUsername,
     creatorName,
@@ -72,11 +85,14 @@ export function toLiteMarket({
     tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
     pool: pool.YES + pool.NO,
-    probability: getDpmProbability(totalShares),
+    probability,
+    p,
+    totalLiquidity,
+    mechanism,
     volume7Days,
     volume24Hours,
     isResolved,
     resolution,
     resolutionTime,
-  }
+  })
 }
