@@ -158,10 +158,18 @@ export function FundsSelector(props: {
 
 export function BuyButton(props: { className?: string; onClick?: () => void }) {
   const { className, onClick } = props
+  // Note: styles coppied from YesNoSelector
   return (
-    <Button className={className} onClick={onClick} color="green">
-      BUY
-    </Button>
+    <button
+      className={clsx(
+        'hover:bg-primary-focus border-primary hover:border-primary-focus inline-flex flex-1  items-center justify-center rounded-lg border-2 p-2 hover:text-white',
+        'text-primary bg-transparent text-lg',
+        className
+      )}
+      onClick={onClick}
+    >
+      Buy
+    </button>
   )
 }
 
