@@ -101,7 +101,7 @@ export function ResolutionPanel(props: {
             You will earn {earnedFees}.
           </>
         ) : outcome === 'CANCEL' ? (
-          <>The pool will be returned to traders with no fees.</>
+          <>All trades will be returned with no fees.</>
         ) : outcome === 'MKT' ? (
           <Col className="gap-6">
             <div>Traders will be paid out at the probability you specify:</div>
