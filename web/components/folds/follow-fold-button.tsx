@@ -1,8 +1,8 @@
 import clsx from 'clsx'
-import { Fold } from '../../common/fold'
-import { useFollowedFolds } from '../hooks/use-fold'
-import { useUser } from '../hooks/use-user'
-import { followFold, unfollowFold } from '../lib/firebase/folds'
+import { Fold } from '../../../common/fold'
+import { useFollowedFolds } from '../../hooks/use-fold'
+import { useUser } from '../../hooks/use-user'
+import { followFold, unfollowFold } from '../../lib/firebase/folds'
 
 export function FollowFoldButton(props: { fold: Fold; className?: string }) {
   const { fold, className } = props
