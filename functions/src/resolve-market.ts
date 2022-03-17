@@ -174,7 +174,7 @@ const sendResolutionEmails = async (
     ...nonWinners.map((userId) => [userId, 0] as const),
   ].map(([userId, payout]) => ({
     userId,
-    investment: investedByUser[userId],
+    investment: investedByUser[userId] ?? 0,
     payout,
   }))
 
