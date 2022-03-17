@@ -40,10 +40,6 @@ export async function createComment(
   return await setDoc(ref, comment)
 }
 
-export const canAddComment = (createdTime: number, isSelf: boolean) => {
-  return isSelf && Date.now() - createdTime < 60 * 60 * 1000
-}
-
 function getCommentsCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'comments')
 }
