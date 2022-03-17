@@ -10,7 +10,7 @@ import {
 import { firebaseLogin } from '../lib/firebase/users'
 import { ContractsGrid } from '../components/contracts-list'
 import { Col } from '../components/layout/col'
-import { NavBar } from '../components/nav-bar'
+import { NavBar } from '../components/nav/nav-bar'
 import Link from 'next/link'
 import { Contract } from '../lib/firebase/contracts'
 

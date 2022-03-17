@@ -1,9 +1,9 @@
-import { firebaseLogout, User } from '../lib/firebase/users'
-import { formatMoney } from '../../common/util/format'
-import { Avatar } from './avatar'
-import { Col } from './layout/col'
+import { firebaseLogout, User } from '../../lib/firebase/users'
+import { formatMoney } from '../../../common/util/format'
+import { Avatar } from '../avatar'
+import { Col } from '../layout/col'
 import { MenuButton } from './menu'
-import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
+import { IS_PRIVATE_MANIFOLD } from '../../../common/envs/constants'
 
 export function ProfileMenu(props: { user: User | undefined }) {
   const { user } = props
