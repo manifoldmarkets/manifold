@@ -3,12 +3,12 @@ import _ from 'lodash'
 import clsx from 'clsx'
 import { PencilIcon } from '@heroicons/react/outline'
 
-import { Fold } from '../../common/fold'
-import { parseWordsAsTags } from '../../common/util/parse'
-import { deleteFold, updateFold } from '../lib/firebase/folds'
-import { toCamelCase } from '../../common/util/format'
-import { Spacer } from './layout/spacer'
-import { TagsList } from './tags-list'
+import { Fold } from '../../../common/fold'
+import { parseWordsAsTags } from '../../../common/util/parse'
+import { deleteFold, updateFold } from '../../lib/firebase/folds'
+import { toCamelCase } from '../../../common/util/format'
+import { Spacer } from '../layout/spacer'
+import { TagsList } from '../tags-list'
 import { useRouter } from 'next/router'
 
 export function EditFoldButton(props: { fold: Fold; className?: string }) {

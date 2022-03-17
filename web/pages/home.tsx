@@ -18,7 +18,7 @@ import { useUser } from '../hooks/use-user'
 import { Fold } from '../../common/fold'
 import { LoadingIndicator } from '../components/loading-indicator'
 import { Row } from '../components/layout/row'
-import { FastFoldFollowing } from '../components/fast-fold-following'
+import { FastFoldFollowing } from '../components/folds/fast-fold-following'
 import {
   getAllContractInfo,
   useExploreContracts,

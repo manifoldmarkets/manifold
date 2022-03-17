@@ -2,10 +2,13 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import { SearchIcon } from '@heroicons/react/outline'
 
-import { User } from '../../common/user'
-import { followFoldFromSlug, unfollowFoldFromSlug } from '../lib/firebase/folds'
-import { Row } from './layout/row'
-import { Spacer } from './layout/spacer'
+import { User } from '../../../common/user'
+import {
+  followFoldFromSlug,
+  unfollowFoldFromSlug,
+} from '../../lib/firebase/folds'
+import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
 
 function FollowFoldButton(props: {
   fold: { slug: string; name: string }
