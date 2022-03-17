@@ -1,9 +1,9 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 
-import { useUser } from '../hooks/use-user'
-import { Row } from './layout/row'
-import { firebaseLogin, User } from '../lib/firebase/users'
+import { useUser } from '../../hooks/use-user'
+import { Row } from '../layout/row'
+import { firebaseLogin, User } from '../../lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileMenu } from './profile-menu'
 import {

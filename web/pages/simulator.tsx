@@ -3,7 +3,7 @@ import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 
 import { Entry, makeEntries } from '../lib/simulator/entries'
-import { NavBar } from '../components/nav-bar'
+import { NavBar } from '../components/nav/nav-bar'
 import { Col } from '../components/layout/col'
 
 function TableBody(props: { entries: Entry[] }) {
