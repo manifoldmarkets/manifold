@@ -85,7 +85,7 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000
 // - Within a day of the first in the group
 //  (Unless the bets are older: then are grouped by 7-days.)
 // - Do not have a comment
-// - Were not created by this user or the contract creator
+// - Were not created by this user
 // Return a list of ActivityItems
 function groupBets(
   bets: Bet[],
