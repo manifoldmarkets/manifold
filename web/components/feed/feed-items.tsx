@@ -1,5 +1,5 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import { Fragment, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import * as _ from 'lodash'
 import {
   BanIcon,
@@ -44,10 +44,9 @@ import { Answer } from '../../../common/answer'
 import { ActivityItem } from './activity-items'
 import { FreeResponse, FullContract } from '../../../common/contract'
 import { BuyButton } from '../yes-no-selector'
-import { AnswerItem } from '../answers/answer-item'
 import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
-import { BetPanel } from '../bet-panel'
 import { AnswerBetPanel } from '../answers/answer-bet-panel'
+import { useSaveSeenContract } from '../../hooks/use-seen-contracts'
 
 export function FeedItems(props: {
   contract: Contract
@@ -57,8 +56,11 @@ export function FeedItems(props: {
   const { contract, items, betRowClassName } = props
   const { outcomeType } = contract
 
+  const ref = useRef<HTMLDivElement | null>(null)
+  useSaveSeenContract(ref, contract)
+
   return (
-    <div className="flow-root pr-2 md:pr-0">
+    <div className="flow-root pr-2 md:pr-0" ref={ref}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
           <div key={item.id} className="relative pb-6">
