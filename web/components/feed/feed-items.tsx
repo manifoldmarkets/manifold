@@ -178,7 +178,6 @@ function FeedBet(props: {
   const { id, amount, outcome, createdTime, userId } = bet
   const user = useUser()
   const isSelf = user?.id === userId
-  const isCreator = contract.creatorId === userId
 
   // You can comment if your bet was posted in the last hour
   const canComment = canAddComment(createdTime, isSelf)
@@ -202,13 +201,6 @@ function FeedBet(props: {
             avatarUrl={user.avatarUrl}
             username={user.username}
           />
-        ) : isCreator ? (
-          <Avatar
-            className={clsx(smallAvatar && 'ml-1')}
-            size={smallAvatar ? 'sm' : undefined}
-            avatarUrl={contract.creatorAvatarUrl}
-            username={contract.creatorUsername}
-          />
         ) : (
           <div className="relative px-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
@@ -219,10 +211,7 @@ function FeedBet(props: {
       </div>
       <div className={'min-w-0 flex-1 pb-1.5'}>
         <div className="text-sm text-gray-500">
-          <span>
-            {isSelf ? 'You' : isCreator ? contract.creatorName : 'A trader'}
-          </span>{' '}
-          {bought} {money}
+          <span>{isSelf ? 'You' : 'A trader'}</span> {bought} {money}
           {!hideOutcome && (
             <>
               {' '}
