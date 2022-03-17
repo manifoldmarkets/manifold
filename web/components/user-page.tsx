@@ -33,13 +33,12 @@ export function UserPage(props: { user: User; currentUser?: User }) {
   const { user, currentUser } = props
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
-  const placeholderBio = `I... haven't gotten around to writing a bio yet 😛`
 
   return (
     <Page>
       <SEO
         title={`${user.name} (@${user.username})`}
-        description={user.bio ?? placeholderBio}
+        description={user.bio ?? ''}
         url={`/${user.username}`}
       />
 
@@ -75,12 +74,13 @@ export function UserPage(props: { user: User; currentUser?: User }) {
       <Col className="mx-4 -mt-6">
         <span className="text-2xl font-bold">{user.name}</span>
         <span className="text-gray-500">@{user.username}</span>
-        <Spacer h={4} />
 
-        <div>
-          <Linkify text={user.bio || placeholderBio}></Linkify>
-        </div>
-        <Spacer h={4} />
+        {user.bio && (
+          <div>
+            <Spacer h={4} />
+            <Linkify text={user.bio}></Linkify>
+          </div>
+        )}
 
         <Col className="sm:flex-row sm:gap-4">
           {user.website && (
