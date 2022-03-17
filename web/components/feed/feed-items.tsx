@@ -25,11 +25,7 @@ import {
 import { useUser } from '../../hooks/use-user'
 import { Linkify } from '../linkify'
 import { Row } from '../layout/row'
-import {
-  canAddComment,
-  createComment,
-  MAX_COMMENT_LENGTH,
-} from '../../lib/firebase/comments'
+import { createComment, MAX_COMMENT_LENGTH } from '../../lib/firebase/comments'
 import { formatMoney } from '../../../common/util/format'
 import { Comment } from '../../../common/comment'
 import { ResolutionOrChance } from '../contract-card'
@@ -180,11 +176,11 @@ function FeedBet(props: {
   const isSelf = user?.id === userId
 
   // You can comment if your bet was posted in the last hour
-  const canComment = canAddComment(createdTime, isSelf)
+  const canComment = isSelf && Date.now() - createdTime < 60 * 60 * 1000
 
   const [comment, setComment] = useState('')
   async function submitComment() {
-    if (!user || !comment) return
+    if (!user || !comment || !canComment) return
     await createComment(contract.id, id, comment, user)
   }
 
@@ -219,8 +215,7 @@ function FeedBet(props: {
             </>
           )}
           <RelativeTimestamp time={createdTime} />
-          {canComment && (
-            // Allow user to comment in an textarea if they are the creator
+          {(canComment || comment) && (
             <div className="mt-2">
               <Textarea
                 value={comment}
@@ -238,6 +233,7 @@ function FeedBet(props: {
               <button
                 className="btn btn-outline btn-sm mt-1"
                 onClick={submitComment}
+                disabled={!canComment}
               >
                 Comment
               </button>
