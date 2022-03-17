@@ -24,7 +24,8 @@ function lastActivityTime(contract: Contract) {
 export function findActiveContracts(
   allContracts: Contract[],
   recentComments: Comment[],
-  recentBets: Bet[]
+  recentBets: Bet[],
+  seenContracts: { [contractId: string]: number }
 ) {
   const idToActivityTime = new Map<string, number>()
   function record(contractId: string, time: number) {
@@ -64,5 +65,34 @@ export function findActiveContracts(
     activeContracts,
     (c) => -(idToActivityTime.get(c.id) ?? 0)
   )
-  return activeContracts.slice(0, MAX_ACTIVE_CONTRACTS)
+
+  const contractComments = _.groupBy(
+    recentComments,
+    (comment) => comment.contractId
+  )
+  const contractMostRecentComment = _.mapValues(
+    contractComments,
+    (comments) => _.maxBy(comments, (c) => c.createdTime) as Comment
+  )
+
+  const prioritizedContracts = _.sortBy(activeContracts, (c) => {
+    const seenTime = seenContracts[c.id]
+    if (!seenTime) {
+      return 0
+    }
+
+    const lastCommentTime = contractMostRecentComment[c.id]?.createdTime
+    if (lastCommentTime && lastCommentTime > seenTime) {
+      return 1
+    }
+
+    const lastBetTime = contractMostRecentBet[c.id]?.createdTime
+    if (lastBetTime && lastBetTime > seenTime) {
+      return 2
+    }
+
+    return seenTime
+  })
+
+  return prioritizedContracts.slice(0, MAX_ACTIVE_CONTRACTS)
 }

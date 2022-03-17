@@ -11,6 +11,7 @@ import { Contract, getActiveContracts } from '../lib/firebase/contracts'
 import { listAllFolds } from '../lib/firebase/folds'
 import { useInactiveContracts } from './use-contracts'
 import { useFollowedFolds } from './use-fold'
+import { useSeenContracts } from './use-seen-contracts'
 import { useUserBetContracts } from './use-user-bets'
 
 // used in static props
@@ -95,10 +96,13 @@ export const useFindActiveContracts = (props: {
 }) => {
   const { contracts, recentBets, recentComments } = props
 
+  const seenContracts = useSeenContracts()
+
   const activeContracts = findActiveContracts(
     contracts,
     recentComments,
-    recentBets
+    recentBets,
+    seenContracts
   )
 
   const betsByContract = _.groupBy(recentBets, (bet) => bet.contractId)

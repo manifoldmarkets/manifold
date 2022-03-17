@@ -55,7 +55,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     contracts.map((contract) => listAllBets(contract.id))
   )
 
-  let activeContracts = findActiveContracts(contracts, [], _.flatten(bets))
+  let activeContracts = findActiveContracts(contracts, [], _.flatten(bets), {})
   const [resolved, unresolved] = _.partition(
     activeContracts,
     ({ isResolved }) => isResolved
