@@ -1,6 +1,6 @@
 import * as _ from 'lodash'
 import { Bet } from './bet'
-import { Binary, DPM, FullContract } from './contract'
+import { Binary, DPM, FreeResponse, FullContract } from './contract'
 import { DPM_FEES } from './fees'
 
 export function getDpmProbability(totalShares: { [outcome: string]: number }) {
@@ -213,24 +213,27 @@ function calculateMktDpmPayout(contract: FullContract<DPM, any>, bet: Bet) {
   if (contract.outcomeType === 'BINARY')
     return calculateBinaryMktDpmPayout(contract, bet)
 
-  const { totalShares, pool } = contract
+  const { totalShares, pool, resolutions } = contract as FullContract<
+    DPM,
+    FreeResponse
+  >
+
+  if (!resolutions)
+    throw new Error(
+      'resolutions required for MKT payout of free response market'
+    )
 
   const totalPool = _.sum(Object.values(pool))
-  const sharesSquareSum = _.sumBy(
-    Object.values(totalShares) as number[],
-    (shares) => shares ** 2
-  )
+  const probTotal = _.sum(Object.values(resolutions))
 
-  const weightedShareTotal = _.sumBy(Object.keys(totalShares), (outcome) => {
-    // Avoid O(n^2) by reusing sharesSquareSum for prob.
-    const shares = totalShares[outcome]
-    const prob = shares ** 2 / sharesSquareSum
-    return prob * shares
+  const weightedShareTotal = _.sumBy(Object.keys(resolutions), (outcome) => {
+    const prob = resolutions[outcome] / probTotal
+    return prob * totalShares[outcome]
   })
 
   const { outcome, amount, shares } = bet
 
-  const betP = getDpmOutcomeProbability(totalShares, outcome)
+  const betP = (resolutions[outcome] ?? 0) / probTotal
   const winnings = ((betP * shares) / weightedShareTotal) * totalPool
 
   return deductDpmFees(amount, winnings)
