@@ -6,9 +6,10 @@ export function Page(props: {
   wide?: boolean
   margin?: boolean
   assertUser?: 'signed-in' | 'signed-out'
+  rightSidebar?: React.ReactNode
   children?: any
 }) {
-  const { wide, margin, assertUser, children } = props
+  const { wide, margin, assertUser, children, rightSidebar } = props
 
   return (
     <div>
@@ -16,7 +17,7 @@ export function Page(props: {
 
       <div
         className={clsx(
-          'mx-auto w-full pb-16 lg:grid lg:max-w-7xl lg:grid-cols-12 lg:gap-8',
+          'mx-auto w-full pb-16 lg:grid lg:grid-cols-12 lg:gap-8 xl:max-w-7xl',
           wide ? 'max-w-6xl' : 'max-w-4xl',
           margin && 'px-4'
         )}
@@ -24,9 +25,9 @@ export function Page(props: {
         <div className="hidden lg:col-span-3 lg:block xl:col-span-2">
           <Sidebar />
         </div>
-        <main className="lg:col-span-9 xl:col-span-8">{children}</main>
+        <main className="lg:col-span-9 xl:col-span-7">{children}</main>
         <aside className="hidden xl:col-span-3 xl:block">
-          <div className="sticky top-4 space-y-4"></div>
+          <div className="sticky top-4 space-y-4">{rightSidebar}</div>
         </aside>
       </div>
     </div>
