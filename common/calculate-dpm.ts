@@ -218,23 +218,30 @@ function calculateMktDpmPayout(contract: FullContract<DPM, any>, bet: Bet) {
     FreeResponse
   >
 
-  if (!resolutions)
-    throw new Error(
-      'resolutions required for MKT payout of free response market'
+  let probs: { [outcome: string]: number }
+
+  if (resolutions) {
+    const probTotal = _.sum(Object.values(resolutions))
+    probs = _.mapValues(
+      totalShares,
+      (_, outcome) => (resolutions[outcome] ?? 0) / probTotal
     )
+  } else {
+    const squareSum = _.sum(
+      Object.values(totalShares).map((shares) => shares ** 2)
+    )
+    probs = _.mapValues(totalShares, (shares) => shares ** 2 / squareSum)
+  }
 
-  const totalPool = _.sum(Object.values(pool))
-  const probTotal = _.sum(Object.values(resolutions))
-
-  const weightedShareTotal = _.sumBy(Object.keys(resolutions), (outcome) => {
-    const prob = resolutions[outcome] / probTotal
-    return prob * totalShares[outcome]
+  const weightedShareTotal = _.sumBy(Object.keys(totalShares), (outcome) => {
+    return probs[outcome] * totalShares[outcome]
   })
 
   const { outcome, amount, shares } = bet
 
-  const betP = (resolutions[outcome] ?? 0) / probTotal
-  const winnings = ((betP * shares) / weightedShareTotal) * totalPool
+  const totalPool = _.sum(Object.values(pool))
+  const poolFrac = (probs[outcome] * shares) / weightedShareTotal
+  const winnings = poolFrac * totalPool
 
   return deductDpmFees(amount, winnings)
 }
