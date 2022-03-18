@@ -711,10 +711,11 @@ function FeedAnswerGroup(props: {
                 {probPercent}
               </span>
               <BuyButton
-                className="btn-sm hidden flex-initial !px-6 sm:flex"
-                onClick={() => {
-                  setOpen(true)
-                }}
+                className={clsx(
+                  'btn-sm hidden flex-initial !px-6 sm:flex',
+                  tradingAllowed(contract) ? '' : '!hidden'
+                )}
+                onClick={() => setOpen(true)}
               />
             </Row>
           </Row>
@@ -741,12 +742,12 @@ function FeedAnswerGroup(props: {
         </div>
       ))}
 
-      <div className="ml-10 mt-4">
+      <div
+        className={clsx('ml-10 mt-4', tradingAllowed(contract) ? '' : 'hidden')}
+      >
         <BuyButton
           className="btn-sm !px-6 sm:hidden"
-          onClick={() => {
-            setOpen(true)
-          }}
+          onClick={() => setOpen(true)}
         />
       </div>
     </Col>
