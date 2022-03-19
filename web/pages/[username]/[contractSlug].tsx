@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { useContractWithPreload } from '../../hooks/use-contract'
 import { ContractOverview } from '../../components/contract-overview'
@@ -10,7 +10,7 @@ import { ContractBetsTable, MyBetsSummary } from '../../components/bets-list'
 import { useBets } from '../../hooks/use-bets'
 import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
-import { User } from '../../lib/firebase/users'
+import { listUsers, User } from '../../lib/firebase/users'
 import {
   Contract,
   getContractFromSlug,
@@ -30,6 +30,10 @@ import { listAllAnswers } from '../../lib/firebase/answers'
 import { Answer } from '../../../common/answer'
 import { AnswersPanel } from '../../components/answers/answers-panel'
 import { fromPropz, usePropz } from '../../hooks/use-propz'
+import { Leaderboard } from '../../components/leaderboard'
+import _ from 'lodash'
+import { calculatePayout, resolvedPayout } from '../../../common/calculate'
+import { formatMoney } from '../../../common/util/format'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -147,6 +151,9 @@ export default function ContractPage(props: {
             )}
           </ContractOverview>
 
+          {contract.isResolved && (
+            <ContractLeaderboard contract={contract} bets={bets} />
+          )}
           <BetsSection contract={contract} user={user ?? null} bets={bets} />
         </div>
 
@@ -192,6 +199,44 @@ function BetsSection(props: {
       <ContractBetsTable contract={contract} bets={userBets} />
       <Spacer h={12} />
     </div>
+  )
+}
+
+function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
+  const [users, setUsers] = useState<User[]>()
+
+  // Create a map of userIds to total profits
+  // TODO: Are we supposed to include sales...?
+  const betsWithoutSales = bets.filter((bet) => !(bet.isSold || bet.sale))
+  const betsByUser = _.groupBy(betsWithoutSales, 'userId')
+  const userProfits = _.mapValues(betsByUser, (bets) =>
+    _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
+  )
+
+  // Find the 5 users with the most profit
+  const topUsers = _.entries(userProfits).sort(([i1, p1], [i2, p2]) => p2 - p1)
+  const top5Ids = topUsers.slice(0, 5).map(([userId]) => userId)
+
+  useEffect(() => {
+    listUsers(top5Ids).then((users) => {
+      const sortedUsers = _.sortBy(users, (user) => -userProfits[user.id])
+      setUsers(sortedUsers)
+    })
+  }, [])
+
+  return (
+    <Leaderboard
+      title="Top Traders"
+      users={users || []}
+      columns={[
+        {
+          header: 'Total profit',
+          renderCell: (user) => formatMoney(userProfits[user.id] || 0),
+        },
+      ]}
+      className="mt-12 max-w-sm"
+    />
   )
 }
 
