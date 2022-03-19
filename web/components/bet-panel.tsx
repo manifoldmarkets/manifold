@@ -112,7 +112,7 @@ export function BetPanel(props: {
     : 0
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
-  const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
+  const currentReturnPercent = formatPercent(currentReturn)
 
   const panelTitle = title ?? 'Place a trade'
   if (title) {
