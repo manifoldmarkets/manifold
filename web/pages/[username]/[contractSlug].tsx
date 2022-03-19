@@ -214,18 +214,23 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
     _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
   )
 
-  // Find the 5 users with the most profit
-  const topUsers = _.entries(userProfits).sort(([i1, p1], [i2, p2]) => p2 - p1)
-  const top5Ids = topUsers.slice(0, 5).map(([userId]) => userId)
+  // Find the 5 users with the most profits
+  const top5Ids = _.entries(userProfits)
+    .sort(([i1, p1], [i2, p2]) => p2 - p1)
+    .filter(([, p]) => p > 0)
+    .slice(0, 5)
+    .map(([id]) => id)
 
   useEffect(() => {
-    listUsers(top5Ids).then((users) => {
-      const sortedUsers = _.sortBy(users, (user) => -userProfits[user.id])
-      setUsers(sortedUsers)
-    })
+    if (top5Ids.length > 0) {
+      listUsers(top5Ids).then((users) => {
+        const sortedUsers = _.sortBy(users, (user) => -userProfits[user.id])
+        setUsers(sortedUsers)
+      })
+    }
   }, [])
 
-  return (
+  return users && users.length > 0 ? (
     <Leaderboard
       title="Top Traders"
       users={users || []}
@@ -237,7 +242,7 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
       ]}
       className="mt-12 max-w-sm"
     />
-  )
+  ) : null
 }
 
 const getOpenGraphProps = (contract: Contract) => {
