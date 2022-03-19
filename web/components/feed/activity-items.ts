@@ -186,7 +186,7 @@ function getAnswerGroups(
   const { sortByProb, abbreviated } = options
 
   let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
-    (outcome) => getOutcomeProbability(contract, outcome) > 0.01
+    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
   )
   if (abbreviated) {
     const lastComment = _.last(comments)
