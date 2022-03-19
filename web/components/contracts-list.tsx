@@ -241,7 +241,8 @@ export function SearchableGrid(props: {
     matches = _.sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
     matches = _.sortBy(
       matches,
-      (contract) => -1 * (contract.closeTime ?? Infinity)
+      (contract) =>
+        (sort === 'closed' ? -1 : 1) * (contract.closeTime ?? Infinity)
     )
     const hideClosed = sort === 'closed'
     matches = matches.filter(
