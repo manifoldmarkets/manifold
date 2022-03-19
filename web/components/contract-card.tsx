@@ -233,7 +233,7 @@ export function ContractDetails(props: {
           <div className="whitespace-nowrap">{liquidityLabel}</div>
         </Row>
 
-        <TweetButton className={'self-end'} tweetText={tweetText} />
+        <TweetButton className="self-end" tweetText={tweetText} />
       </Row>
     </Col>
   )
