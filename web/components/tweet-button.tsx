@@ -9,18 +9,17 @@ export function TweetButton(props: { className?: string; tweetText?: string }) {
         'btn btn-xs flex flex-row flex-nowrap border-none normal-case',
         className
       )}
-      style={{ backgroundColor: '#1da1f2' }}
+      style={{
+        backgroundColor: 'white',
+        border: '2px solid #1da1f2',
+        color: '#1da1f2',
+      }}
       href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
         tweetText ?? ''
       )}`}
       target="_blank"
     >
-      <img
-        className="mr-2"
-        src={'/twitter-icon-white.svg'}
-        width={15}
-        height={15}
-      />
+      <img className="mr-2" src={'/twitter-logo.svg'} width={15} height={15} />
       <div>Tweet</div>
     </a>
   )
