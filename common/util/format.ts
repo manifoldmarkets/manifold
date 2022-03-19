@@ -19,7 +19,9 @@ export function formatWithCommas(amount: number) {
 }
 
 export function formatPercent(zeroToOne: number) {
-  return Math.round(zeroToOne * 100) + '%'
+  // Show 1 decimal place if <2% or >99%
+  const decimalPlaces = zeroToOne < 0.02 || zeroToOne > 0.99 ? 1 : 0
+  return (zeroToOne * 100).toFixed(decimalPlaces) + '%'
 }
 
 export function toCamelCase(words: string) {

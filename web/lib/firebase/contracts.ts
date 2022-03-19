@@ -21,7 +21,7 @@ import { Binary, Contract, FullContract } from '../../../common/contract'
 import { getDpmProbability } from '../../../common/calculate-dpm'
 import { createRNG, shuffle } from '../../../common/util/random'
 import { getCpmmProbability } from '../../../common/calculate-cpmm'
-import { formatMoney } from '../../../common/util/format'
+import { formatMoney, formatPercent } from '../../../common/util/format'
 import { getCpmmLiquidity } from '../../../common/calculate-cpmm'
 export type { Contract }
 
@@ -58,8 +58,7 @@ export function getBinaryProbPercent(contract: FullContract<any, Binary>) {
       ? getCpmmProbability(pool, p)
       : getDpmProbability(totalShares)
 
-  const probPercent = Math.round(prob * 100) + '%'
-  return probPercent
+  return formatPercent(prob)
 }
 
 export function tradingAllowed(contract: Contract) {
