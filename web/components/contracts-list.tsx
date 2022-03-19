@@ -258,6 +258,11 @@ export function SearchableGrid(props: {
     matches = matches.filter((c) =>
       sort === 'resolved' ? c.resolution : !c.resolution
     )
+
+    // Filter out closed contracts.
+    if (sort !== 'closed' && sort !== 'resolved') {
+      matches = matches.filter((c) => !c.closeTime || c.closeTime > Date.now())
+    }
   }
 
   return (
