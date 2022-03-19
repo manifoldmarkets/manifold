@@ -21,6 +21,7 @@ export function useQueryAndSortParams(options?: {
   shouldLoadFromStorage?: boolean
 }) {
   const { defaultSort, shouldLoadFromStorage } = _.defaults(options, {
+    defaultSort: '24-hour-vol',
     shouldLoadFromStorage: true,
   })
   const router = useRouter()
@@ -65,7 +66,7 @@ export function useQueryAndSortParams(options?: {
 
   useEffect(() => {
     // If there's no sort option, then set the one from localstorage
-    if (!sort && shouldLoadFromStorage) {
+    if (router.isReady && !sort && shouldLoadFromStorage) {
       const localSort = localStorage.getItem(MARKETS_SORT) as Sort
       if (localSort) {
         setSort(localSort)
@@ -74,7 +75,7 @@ export function useQueryAndSortParams(options?: {
   })
 
   return {
-    sort: sort ?? defaultSort ?? '24-hour-vol',
+    sort: sort ?? defaultSort,
     query: queryState ?? '',
     setSort,
     setQuery,
