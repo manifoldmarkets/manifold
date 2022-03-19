@@ -7,6 +7,8 @@ import {
   contractMetrics,
   Contract,
   listContracts,
+  getBinaryProbPercent,
+  getBinaryProb,
 } from '../lib/firebase/contracts'
 import { User } from '../lib/firebase/users'
 import { Col } from './layout/col'
@@ -14,6 +16,7 @@ import { SiteLink } from './site-link'
 import { ContractCard } from './contract-card'
 import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 import { Answer } from '../../common/answer'
+import { getProbability } from '../../common/calculate'
 
 export function ContractsGrid(props: {
   contracts: Contract[]
@@ -254,6 +257,12 @@ export function SearchableGrid(props: {
     matches = _.sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
   } else if (sort === 'creator' || sort === 'tag') {
     matches.sort((a, b) => b.volume7Days - a.volume7Days)
+  } else if (sort === 'most-likely') {
+    matches = _.sortBy(matches, (contract) => -getBinaryProb(contract))
+  } else if (sort === 'least-likely') {
+    // Exclude non-binary contracts
+    matches = matches.filter((contract) => getBinaryProb(contract) !== 0)
+    matches = _.sortBy(matches, (contract) => getBinaryProb(contract))
   }
 
   if (sort !== 'all') {
@@ -290,6 +299,8 @@ export function SearchableGrid(props: {
           <option value="closed">Closed</option>
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
+          <option value="most-likely">Most likely</option>
+          <option value="least-likely">Least likely</option>
 
           <option value="tag">By tag</option>
           {!byOneCreator && <option value="creator">By creator</option>}
