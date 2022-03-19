@@ -95,7 +95,7 @@ export function AnswerBetPanel(props: {
     : 0
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
-  const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
+  const currentReturnPercent = formatPercent(currentReturn)
 
   return (
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
