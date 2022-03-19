@@ -206,10 +206,8 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
   const [users, setUsers] = useState<User[]>()
 
-  // Create a map of userIds to total profits
-  // TODO: Are we supposed to include sales...?
-  const betsWithoutSales = bets.filter((bet) => !(bet.isSold || bet.sale))
-  const betsByUser = _.groupBy(betsWithoutSales, 'userId')
+  // Create a map of userIds to total profits (including sales)
+  const betsByUser = _.groupBy(bets, 'userId')
   const userProfits = _.mapValues(betsByUser, (bets) =>
     _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
   )
