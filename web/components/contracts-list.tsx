@@ -236,7 +236,10 @@ export function SearchableGrid(props: {
     matches.sort((a, b) => a.createdTime - b.createdTime)
   } else if (sort === 'close-date' || sort === 'closed') {
     matches = _.sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
-    matches = _.sortBy(matches, (contract) => contract.closeTime)
+    matches = _.sortBy(
+      matches,
+      (contract) => -1 * (contract.closeTime ?? Infinity)
+    )
     const hideClosed = sort === 'closed'
     matches = matches.filter(
       ({ closeTime }) => closeTime && closeTime > Date.now() !== hideClosed
