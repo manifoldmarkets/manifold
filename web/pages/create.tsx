@@ -8,7 +8,7 @@ import { Spacer } from '../components/layout/spacer'
 import { useUser } from '../hooks/use-user'
 import { Contract, contractPath } from '../lib/firebase/contracts'
 import { createContract } from '../lib/firebase/api-call'
-import { AmountInput } from '../components/amount-input'
+import { BuyAmountInput } from '../components/amount-input'
 import { MINIMUM_ANTE } from '../../common/antes'
 import { InfoTooltip } from '../components/info-tooltip'
 import { CREATOR_FEE } from '../../common/fees'
@@ -241,7 +241,7 @@ export function NewContract(props: { question: string; tag?: string }) {
             text={`Provide liquidity to encourage traders to participate.`}
           />
         </label>
-        <AmountInput
+        <BuyAmountInput
           amount={ante ?? undefined}
           minimumAmount={MINIMUM_ANTE}
           onChange={setAnte}

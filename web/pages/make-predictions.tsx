@@ -7,7 +7,7 @@ import Textarea from 'react-expanding-textarea'
 import { getProbability } from '../../common/calculate'
 import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 import { parseWordsAsTags } from '../../common/util/parse'
-import { AmountInput } from '../components/amount-input'
+import { BuyAmountInput } from '../components/amount-input'
 import { InfoTooltip } from '../components/info-tooltip'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
@@ -241,7 +241,7 @@ ${TEST_VALUE}
               You earn ${0.01 * 100}% of trading volume.`}
             />
           </label>
-          <AmountInput
+          <BuyAmountInput
             amount={ante}
             minimumAmount={10}
             onChange={setAnte}

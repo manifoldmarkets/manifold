@@ -5,7 +5,7 @@ import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from '../../../common/answer'
 import { DPM, FreeResponse, FullContract } from '../../../common/contract'
-import { AmountInput } from '../amount-input'
+import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { placeBet } from '../../lib/firebase/api-call'
 import { Row } from '../layout/row'
@@ -114,7 +114,7 @@ export function AnswerBetPanel(props: {
         )}
       </Row>
       <div className="my-3 text-left text-sm text-gray-500">Amount </div>
-      <AmountInput
+      <BuyAmountInput
         inputClassName="w-full"
         amount={betAmount}
         onChange={setBetAmount}

@@ -16,7 +16,7 @@ import { Title } from './title'
 import { firebaseLogin } from '../lib/firebase/users'
 import { Bet } from '../../common/bet'
 import { placeBet } from '../lib/firebase/api-call'
-import { AmountInput } from './amount-input'
+import { BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { OutcomeLabel } from './outcome-label'
 import {
@@ -144,7 +144,7 @@ export function BetPanel(props: {
       />
 
       <div className="my-3 text-left text-sm text-gray-500">Amount </div>
-      <AmountInput
+      <BuyAmountInput
         inputClassName="w-full"
         amount={betAmount}
         onChange={onBetChange}

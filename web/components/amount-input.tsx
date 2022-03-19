@@ -13,6 +13,74 @@ export function AmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
   error: string | undefined
+  disabled?: boolean
+  className?: string
+  inputClassName?: string
+  // Needed to focus the amount input
+  inputRef?: React.MutableRefObject<any>
+  children?: any
+}) {
+  const {
+    amount,
+    onChange,
+    error,
+    disabled,
+    className,
+    inputClassName,
+    inputRef,
+    children,
+  } = props
+
+  const onAmountChange = (str: string) => {
+    if (str.includes('-')) {
+      onChange(undefined)
+      return
+    }
+    const amount = parseInt(str.replace(/[^\d]/, ''))
+
+    if (str && isNaN(amount)) return
+    if (amount >= 10 ** 9) return
+
+    onChange(str ? amount : undefined)
+  }
+
+  return (
+    <Col className={className}>
+      <label className="input-group">
+        <span className="bg-gray-200 text-sm">M$</span>
+        <input
+          className={clsx(
+            'input input-bordered',
+            error && 'input-error',
+            inputClassName
+          )}
+          ref={inputRef}
+          type="number"
+          placeholder="0"
+          maxLength={9}
+          value={amount ?? ''}
+          disabled={disabled}
+          onChange={(e) => onAmountChange(e.target.value)}
+        />
+      </label>
+
+      <Spacer h={4} />
+
+      {error && (
+        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+          {error}
+        </div>
+      )}
+
+      {children}
+    </Col>
+  )
+}
+
+export function BuyAmountInput(props: {
+  amount: number | undefined
+  onChange: (newAmount: number | undefined) => void
+  error: string | undefined
   setError: (error: string | undefined) => void
   contractIdForLoan: string | undefined
   minimumAmount?: number
@@ -45,62 +113,36 @@ export function AmountInput(props: {
     ? Math.min(amount ?? 0, MAX_LOAN_PER_CONTRACT - prevLoanAmount)
     : 0
 
-  const onAmountChange = (str: string) => {
-    if (str.includes('-')) {
-      onChange(undefined)
-      return
-    }
-    const amount = parseInt(str.replace(/[^\d]/, ''))
-
-    if (str && isNaN(amount)) return
-    if (amount >= 10 ** 9) return
-
-    onChange(str ? amount : undefined)
-
-    const loanAmount = contractIdForLoan
-      ? Math.min(amount, MAX_LOAN_PER_CONTRACT - prevLoanAmount)
-      : 0
-    const amountNetLoan = amount - loanAmount
-
-    if (user && user.balance < amountNetLoan) {
-      setError('Insufficient balance')
-    } else if (minimumAmount && amount < minimumAmount) {
-      setError('Minimum amount: ' + formatMoney(minimumAmount))
-    } else {
-      setError(undefined)
-    }
-  }
-
   const amountNetLoan = (amount ?? 0) - loanAmount
   const remainingBalance = Math.max(0, (user?.balance ?? 0) - amountNetLoan)
 
+  const onAmountChange = (amount: number | undefined) => {
+    onChange(amount)
+
+    // Check for errors.
+    if (amount !== undefined) {
+      const amountNetLoan = amount - loanAmount
+
+      if (user && user.balance < amountNetLoan) {
+        setError('Insufficient balance')
+      } else if (minimumAmount && amount < minimumAmount) {
+        setError('Minimum amount: ' + formatMoney(minimumAmount))
+      } else {
+        setError(undefined)
+      }
+    }
+  }
+
   return (
-    <Col className={className}>
-      <label className="input-group">
-        <span className="bg-gray-200 text-sm">M$</span>
-        <input
-          className={clsx(
-            'input input-bordered',
-            error && 'input-error',
-            inputClassName
-          )}
-          ref={inputRef}
-          type="number"
-          placeholder="0"
-          maxLength={9}
-          value={amount ?? ''}
-          disabled={disabled}
-          onChange={(e) => onAmountChange(e.target.value)}
-        />
-      </label>
-
-      <Spacer h={4} />
-
-      {error && (
-        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
-          {error}
-        </div>
-      )}
+    <AmountInput
+      amount={amount}
+      onChange={onAmountChange}
+      error={error}
+      disabled={disabled}
+      className={className}
+      inputClassName={inputClassName}
+      inputRef={inputRef}
+    >
       {user && (
         <Col className="gap-3 text-sm">
           {contractIdForLoan && (
@@ -124,6 +166,6 @@ export function AmountInput(props: {
           </Row>
         </Col>
       )}
-    </Col>
+    </AmountInput>
   )
 }
