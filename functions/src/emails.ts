@@ -96,6 +96,7 @@ const toDisplayResolution = (
   }
 
   if (resolution === 'MKT' && resolutions) return 'MULTI'
+  if (resolution === 'CANCEL') return 'N/A'
 
   return `#${resolution}`
 }
