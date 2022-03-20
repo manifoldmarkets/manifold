@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export const SiteLink = (props: {
   href: string
-  children: any
+  children?: any
   className?: string
 }) => {
   const { href, children, className } = props

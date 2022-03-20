@@ -5,6 +5,7 @@ import {
   FreeResponse,
   FullContract,
 } from '../../../../common/contract'
+import { DOMAIN } from '../../../../common/envs/constants'
 import { AnswersGraph } from '../../../components/answers/answers-graph'
 import {
   ResolutionOrChance,
@@ -15,10 +16,14 @@ import { Col } from '../../../components/layout/col'
 import { Row } from '../../../components/layout/row'
 import { Spacer } from '../../../components/layout/spacer'
 import { Linkify } from '../../../components/linkify'
+import { SiteLink } from '../../../components/site-link'
 import { useContractWithPreload } from '../../../hooks/use-contract'
 import { fromPropz, usePropz } from '../../../hooks/use-propz'
 import { listAllBets } from '../../../lib/firebase/bets'
-import { getContractFromSlug } from '../../../lib/firebase/contracts'
+import {
+  contractPath,
+  getContractFromSlug,
+} from '../../../lib/firebase/contracts'
 import Custom404 from '../../404'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -78,8 +83,15 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
   const isBinary = outcomeType === 'BINARY'
 
+  const href = `https://${DOMAIN}${contractPath(contract)}`
+
   return (
-    <Col className="w-full flex-1 bg-white py-2">
+    <Col className="w-full flex-1 bg-white py-2 relative">
+      <SiteLink
+        className="absolute top-0 left-0 w-full h-full z-20"
+        href={href}
+      />
+
       <div className="px-3 text-xl md:text-2xl text-indigo-700">
         <Linkify text={question} />
       </div>
