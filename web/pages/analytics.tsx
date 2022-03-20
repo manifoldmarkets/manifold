@@ -13,7 +13,7 @@ import { getDailyContracts } from '../lib/firebase/contracts'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
-  const numberOfDays = 80
+  const numberOfDays = 90
   const today = dayjs(dayjs().format('YYYY-MM-DD'))
   const startDate = today.subtract(numberOfDays, 'day')
 
@@ -29,14 +29,25 @@ export async function getStaticPropz() {
   )
   const dailyCommentCounts = dailyComments.map((comments) => comments.length)
 
-  const dailyActiveUsers = _.zip(dailyContracts, dailyBets, dailyComments).map(
+  const dailyUserIds = _.zip(dailyContracts, dailyBets, dailyComments).map(
     ([contracts, bets, comments]) => {
       const creatorIds = (contracts ?? []).map((c) => c.creatorId)
       const betUserIds = (bets ?? []).map((bet) => bet.userId)
       const commentUserIds = (comments ?? []).map((comment) => comment.userId)
-      return _.uniq([...creatorIds, ...betUserIds, commentUserIds]).length
+      return _.uniq([...creatorIds, ...betUserIds, ...commentUserIds])
     }
   )
+
+  const dailyActiveUsers = dailyUserIds.map((userIds) => userIds.length)
+
+  const monthlyActiveUsers = dailyUserIds.map((_, i) => {
+    const start = Math.max(0, i - 30)
+    const end = i
+    const uniques = new Set<string>()
+    for (let j = start; j <= end; j++)
+      dailyUserIds[j].forEach((userId) => uniques.add(userId))
+    return uniques.size
+  })
 
   return {
     props: {
@@ -45,6 +56,7 @@ export async function getStaticPropz() {
       dailyBetCounts,
       dailyContractCounts,
       dailyCommentCounts,
+      monthlyActiveUsers,
     },
     revalidate: 12 * 60 * 60, // regenerate after half a day
   }
@@ -56,6 +68,7 @@ export default function Analytics(props: {
   dailyBetCounts: number[]
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
+  monthlyActiveUsers: number[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     startDate: 0,
@@ -75,6 +88,7 @@ export default function Analytics(props: {
 
 function CustomAnalytics(props: {
   startDate: number
+  monthlyActiveUsers: number[]
   dailyActiveUsers: number[]
   dailyBetCounts: number[]
   dailyContractCounts: number[]
@@ -82,6 +96,7 @@ function CustomAnalytics(props: {
 }) {
   const {
     startDate,
+    monthlyActiveUsers,
     dailyActiveUsers,
     dailyBetCounts,
     dailyContractCounts,
@@ -89,7 +104,10 @@ function CustomAnalytics(props: {
   } = props
   return (
     <Col>
-      <Title text="Active users" />
+      <Title text="Monthly Active users" />
+      <DailyCountChart dailyCounts={monthlyActiveUsers} startDate={startDate} />
+
+      <Title text="Daily Active users" />
       <DailyCountChart dailyCounts={dailyActiveUsers} startDate={startDate} />
 
       <Title text="Bets count" />
