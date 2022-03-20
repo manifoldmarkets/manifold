@@ -36,7 +36,7 @@ export function DailyCountChart(props: {
           format: (date) => dayjs(date).format('MMM DD'),
         }}
         colors={{ datum: 'color' }}
-        pointSize={width && width >= 800 ? 10 : 0}
+        pointSize={0}
         pointBorderWidth={1}
         pointBorderColor="#fff"
         enableSlices="x"
