@@ -172,8 +172,9 @@ function AbbrContractDetails(props: {
 export function ContractDetails(props: {
   contract: Contract
   isCreator?: boolean
+  hideTweetBtn?: boolean
 }) {
-  const { contract, isCreator } = props
+  const { contract, isCreator, hideTweetBtn } = props
   const { closeTime, creatorName, creatorUsername } = contract
   const { liquidityLabel, createdDate, resolvedDate } =
     contractMetrics(contract)
@@ -233,7 +234,9 @@ export function ContractDetails(props: {
           <div className="whitespace-nowrap">{liquidityLabel}</div>
         </Row>
 
-        <TweetButton className="self-end" tweetText={tweetText} />
+        {!hideTweetBtn && (
+          <TweetButton className="self-end" tweetText={tweetText} />
+        )}
       </Row>
     </Col>
   )
