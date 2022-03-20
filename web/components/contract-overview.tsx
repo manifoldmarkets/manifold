@@ -62,7 +62,7 @@ export const ContractOverview = (props: {
         </Col>
 
         {(isBinary || resolution) && (
-          <Col className="hidden items-end justify-between md:flex">
+          <Col className="hidden md:flex items-end justify-between">
             <ResolutionOrChance
               className="items-end"
               contract={contract}
