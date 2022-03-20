@@ -221,7 +221,7 @@ export function FeedBet(props: {
           </div>
         )}
       </div>
-      <div className={'min-w-0 flex-1 pb-1.5'}>
+      <div className={'min-w-0 flex-1 py-1.5'}>
         <div className="text-sm text-gray-500">
           <span>{isSelf ? 'You' : bettor ? bettor.name : 'A trader'}</span>{' '}
           {bought} {money}
