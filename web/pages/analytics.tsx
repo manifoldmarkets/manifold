@@ -86,7 +86,7 @@ export default function Analytics(props: {
   )
 }
 
-function CustomAnalytics(props: {
+export function CustomAnalytics(props: {
   startDate: number
   monthlyActiveUsers: number[]
   dailyActiveUsers: number[]
@@ -104,27 +104,27 @@ function CustomAnalytics(props: {
   } = props
   return (
     <Col>
-      <Title text="Monthly Active users" />
+      <Title text="Monthly Active Users" />
       <DailyCountChart dailyCounts={monthlyActiveUsers} startDate={startDate} />
 
-      <Title text="Daily Active users" />
+      <Title text="Daily Active Users" />
       <DailyCountChart dailyCounts={dailyActiveUsers} startDate={startDate} />
 
-      <Title text="Bets count" />
+      <Title text="Trades" />
       <DailyCountChart
         dailyCounts={dailyBetCounts}
         startDate={startDate}
         small
       />
 
-      <Title text="Markets count" />
+      <Title text="Markets created" />
       <DailyCountChart
         dailyCounts={dailyContractCounts}
         startDate={startDate}
         small
       />
 
-      <Title text="Comments count" />
+      <Title text="Comments" />
       <DailyCountChart
         dailyCounts={dailyCommentCounts}
         startDate={startDate}
@@ -134,7 +134,7 @@ function CustomAnalytics(props: {
   )
 }
 
-function FirebaseAnalytics() {
+export function FirebaseAnalytics() {
   // Edit dashboard at https://datastudio.google.com/u/0/reporting/faeaf3a4-c8da-4275-b157-98dad017d305/page/Gg3/edit
   return (
     <iframe

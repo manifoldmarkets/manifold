@@ -80,7 +80,7 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
   return (
     <Col className="w-full flex-1 bg-white py-2">
-      <div className="px-3 text-xl text-indigo-700">
+      <div className="px-3 text-xl md:text-2xl text-indigo-700">
         <Linkify text={question} />
       </div>
 
