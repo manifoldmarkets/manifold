@@ -86,25 +86,29 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
   return (
-    <Col className="w-full flex-1 bg-white py-2 relative">
-      <SiteLink
-        className="absolute top-0 left-0 w-full h-full z-20"
-        href={href}
-      />
+    <Col className="w-full flex-1 bg-white py-2">
+      <Col className="relative">
+        <SiteLink
+          className="absolute top-0 left-0 w-full h-full z-20"
+          href={href}
+        />
 
-      <div className="px-3 text-xl md:text-2xl text-indigo-700">
-        <Linkify text={question} />
-      </div>
+        <div className="px-3 text-xl md:text-2xl text-indigo-700">
+          <Linkify text={question} />
+        </div>
 
-      <Spacer h={3} />
+        <Spacer h={3} />
 
-      <Row className="items-center justify-between gap-4 px-2">
-        <ContractDetails contract={contract} isCreator={false} hideTweetBtn />
+        <Row className="items-center justify-between gap-4 px-2">
+          <ContractDetails contract={contract} isCreator={false} hideTweetBtn />
 
-        {(isBinary || resolution) && <ResolutionOrChance contract={contract} />}
-      </Row>
+          {(isBinary || resolution) && (
+            <ResolutionOrChance contract={contract} />
+          )}
+        </Row>
 
-      <Spacer h={2} />
+        <Spacer h={2} />
+      </Col>
 
       <div className="mx-1">
         {isBinary ? (
