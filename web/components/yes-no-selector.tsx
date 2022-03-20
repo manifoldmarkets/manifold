@@ -12,11 +12,15 @@ export function YesNoSelector(props: {
 }) {
   const { selected, onSelect, className, btnClassName } = props
 
+  const commonClassNames =
+    'inline-flex flex-1  items-center justify-center rounded-3xl border-2 p-2'
+
   return (
     <Row className={clsx('space-x-3', className)}>
       <button
         className={clsx(
-          'hover:bg-primary-focus border-primary hover:border-primary-focus inline-flex flex-1  items-center justify-center rounded-lg border-2 p-2 hover:text-white',
+          commonClassNames,
+          'hover:bg-primary-focus border-primary hover:border-primary-focus hover:text-white',
           selected == 'YES'
             ? 'bg-primary text-white'
             : 'text-primary bg-transparent',
@@ -24,11 +28,12 @@ export function YesNoSelector(props: {
         )}
         onClick={() => onSelect('YES')}
       >
-        Buy YES
+        YES
       </button>
       <button
         className={clsx(
-          'inline-flex flex-1 items-center justify-center rounded-lg  border-2 border-red-400 p-2 hover:border-red-500 hover:bg-red-500 hover:text-white',
+          commonClassNames,
+          'border-red-400 hover:border-red-500 hover:bg-red-500 hover:text-white',
           selected == 'NO'
             ? 'bg-red-400 text-white'
             : 'bg-transparent text-red-400',
@@ -36,7 +41,7 @@ export function YesNoSelector(props: {
         )}
         onClick={() => onSelect('NO')}
       >
-        Buy NO
+        NO
       </button>
     </Row>
   )
@@ -50,7 +55,7 @@ export function YesNoCancelSelector(props: {
 }) {
   const { selected, onSelect } = props
 
-  const btnClassName = clsx('px-6 flex-1', props.btnClassName)
+  const btnClassName = clsx('px-6 flex-1 rounded-3xl', props.btnClassName)
 
   return (
     <Col className="gap-2">

@@ -4,15 +4,17 @@ import { useUser } from '../hooks/use-user'
 import { formatMoney } from '../../common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { useUserContractBets } from '../hooks/use-user-bets'
-import { MAX_LOAN_PER_CONTRACT } from '../../common/bet'
+import { Bet, MAX_LOAN_PER_CONTRACT } from '../../common/bet'
 import { InfoTooltip } from './info-tooltip'
 import { Spacer } from './layout/spacer'
+import { calculateCpmmSale } from '../../common/calculate-cpmm'
+import { Binary, CPMM, FullContract } from '../../common/contract'
 
 export function AmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
   error: string | undefined
+  label: string
   disabled?: boolean
   className?: string
   inputClassName?: string
@@ -24,6 +26,7 @@ export function AmountInput(props: {
     amount,
     onChange,
     error,
+    label,
     disabled,
     className,
     inputClassName,
@@ -47,7 +50,7 @@ export function AmountInput(props: {
   return (
     <Col className={className}>
       <label className="input-group">
-        <span className="bg-gray-200 text-sm">M$</span>
+        <span className="bg-gray-200 text-sm">{label}</span>
         <input
           className={clsx(
             'input input-bordered',
@@ -83,6 +86,7 @@ export function BuyAmountInput(props: {
   error: string | undefined
   setError: (error: string | undefined) => void
   contractIdForLoan: string | undefined
+  userBets: Bet[]
   minimumAmount?: number
   disabled?: boolean
   className?: string
@@ -93,6 +97,7 @@ export function BuyAmountInput(props: {
   const {
     amount,
     onChange,
+    userBets,
     error,
     setError,
     contractIdForLoan,
@@ -105,7 +110,6 @@ export function BuyAmountInput(props: {
 
   const user = useUser()
 
-  const userBets = useUserContractBets(user?.id, contractIdForLoan) ?? []
   const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
   const prevLoanAmount = _.sumBy(openUserBets, (bet) => bet.loanAmount ?? 0)
 
@@ -137,6 +141,7 @@ export function BuyAmountInput(props: {
     <AmountInput
       amount={amount}
       onChange={onAmountChange}
+      label="M$"
       error={error}
       disabled={disabled}
       className={className}
@@ -145,6 +150,12 @@ export function BuyAmountInput(props: {
     >
       {user && (
         <Col className="gap-3 text-sm">
+          <Row className="items-center justify-between gap-2 text-gray-500">
+            Remaining balance{' '}
+            <span className="text-neutral">
+              {formatMoney(Math.floor(remainingBalance))}
+            </span>
+          </Row>
           {contractIdForLoan && (
             <Row className="items-center justify-between gap-2 text-gray-500">
               <Row className="items-center gap-2">
@@ -158,12 +169,92 @@ export function BuyAmountInput(props: {
               <span className="text-neutral">{formatMoney(loanAmount)}</span>{' '}
             </Row>
           )}
+        </Col>
+      )}
+    </AmountInput>
+  )
+}
+
+export function SellAmountInput(props: {
+  contract: FullContract<CPMM, Binary>
+  amount: number | undefined
+  onChange: (newAmount: number | undefined) => void
+  userBets: Bet[]
+  error: string | undefined
+  setError: (error: string | undefined) => void
+  minimumAmount?: number
+  disabled?: boolean
+  className?: string
+  inputClassName?: string
+  // Needed to focus the amount input
+  inputRef?: React.MutableRefObject<any>
+}) {
+  const {
+    contract,
+    amount,
+    onChange,
+    userBets,
+    error,
+    setError,
+    disabled,
+    className,
+    inputClassName,
+    minimumAmount,
+    inputRef,
+  } = props
+
+  const user = useUser()
+
+  const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
+  const [yesBets, noBets] = _.partition(
+    openUserBets,
+    (bet) => bet.outcome === 'YES'
+  )
+  const [yesShares, noShares] = [
+    _.sumBy(yesBets, (bet) => bet.shares),
+    _.sumBy(noBets, (bet) => bet.shares),
+  ]
+
+  const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
+
+  const prevLoanAmount = _.sumBy(openUserBets, (bet) => bet.loanAmount ?? 0)
+
+  const sharesSold = Math.min(amount ?? 0, yesShares || noShares)
+  const sellAmount = calculateCpmmSale(contract, {
+    shares: sharesSold,
+    outcome: sellOutcome,
+  } as Bet).saleValue
+
+  const loanRepaid = Math.min(prevLoanAmount, sellAmount)
+
+  return (
+    <AmountInput
+      amount={amount}
+      onChange={onChange}
+      label="Shares"
+      error={error}
+      disabled={disabled}
+      className={className}
+      inputClassName={inputClassName}
+      inputRef={inputRef}
+    >
+      {user && (
+        <Col className="gap-3 text-sm">
           <Row className="items-center justify-between gap-2 text-gray-500">
-            Remaining balance{' '}
-            <span className="text-neutral">
-              {formatMoney(Math.floor(remainingBalance))}
-            </span>
+            Sale amount{' '}
+            <span className="text-neutral">{formatMoney(sellAmount)}</span>
           </Row>
+          {prevLoanAmount && (
+            <Row className="items-center justify-between gap-2 text-gray-500">
+              <Row className="items-center gap-2">
+                Loan repaid{' '}
+                <InfoTooltip
+                  text={`Sold shares go toward paying off loans for this market first.`}
+                />
+              </Row>
+              <span className="text-neutral">{formatMoney(loanRepaid)}</span>{' '}
+            </Row>
+          )}
         </Col>
       )}
     </AmountInput>
