@@ -34,6 +34,8 @@ import { Leaderboard } from '../../components/leaderboard'
 import _ from 'lodash'
 import { calculatePayout, resolvedPayout } from '../../../common/calculate'
 import { formatMoney } from '../../../common/util/format'
+import { FeedBet, FeedComment } from '../../components/feed/feed-items'
+import { useUserById } from '../../hooks/use-users'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -152,7 +154,17 @@ export default function ContractPage(props: {
           </ContractOverview>
 
           {contract.isResolved && (
-            <ContractLeaderboard contract={contract} bets={bets} />
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2">
+                <ContractLeaderboard contract={contract} bets={bets} />
+                <ContractTopTrades
+                  contract={contract}
+                  bets={bets}
+                  comments={comments}
+                />
+              </div>
+              <Spacer h={12} />
+            </>
           )}
           <BetsSection contract={contract} user={user ?? null} bets={bets} />
         </div>
@@ -241,6 +253,76 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
       className="mt-12 max-w-sm"
     />
   ) : null
+}
+
+function ContractTopTrades(props: {
+  contract: Contract
+  bets: Bet[]
+  comments: Comment[]
+}) {
+  const { contract, bets, comments } = props
+
+  // Also find the highest-profit comment (by profit? by percent?).
+  // This could be a resolved buy,
+  // Harder: a sold bet (have to link sold )
+  // (not sure how to account for CFMM share redemptions...?)
+
+  // If 'id2' is the sale of 'id1', both are logged with (id2 - id1) of profit
+  // Otherwise, we record the profit at resolution time
+  const commentsById = _.keyBy(comments, 'id')
+  const betsById = _.keyBy(bets, 'id')
+  const profitById: Record<string, number> = {}
+  for (const bet of bets) {
+    if (bet.sale) {
+      const originalBet = betsById[bet.sale.betId]
+      const profit = bet.sale.amount - originalBet.amount
+      profitById[bet.id] = profit
+      profitById[originalBet.id] = profit
+    } else {
+      profitById[bet.id] = resolvedPayout(contract, bet) - bet.amount
+    }
+  }
+
+  // Now find the betId with the highest profit
+  const topBetId = _.sortBy(bets, (b) => -profitById[b.id])[0].id
+  const topBettor = useUserById(betsById[topBetId].userId)
+
+  // And also the betId of the comment with the highest profit
+  const topCommentId = _.sortBy(comments, (c) => -profitById[c.id])[0].id
+
+  // TODO: If they're the same, only show the comment; otherwise show both
+  return (
+    <div className="mt-12 max-w-sm">
+      <Title text="💬 Top comment" className="!mt-0" />
+      <div className="relative flex items-start space-x-3">
+        <FeedComment
+          contract={contract}
+          comment={commentsById[topCommentId]}
+          bet={betsById[topCommentId]}
+          hideOutcome={false}
+          truncate={false}
+          smallAvatar={false}
+        />
+      </div>
+      <div className="mt-4 text-sm text-gray-600">
+        (And made {formatMoney(profitById[topCommentId] || 0)})
+      </div>
+      <Spacer h={16} />
+      <Title text="💸 Top trade" className="!mt-0" />
+      <div className="relative flex items-start space-x-3">
+        <FeedBet
+          contract={contract}
+          bet={betsById[topBetId]}
+          hideOutcome={false}
+          smallAvatar={false}
+          bettor={topBettor}
+        />
+      </div>
+      <div className="mt-4 text-sm text-gray-600">
+        (And made {formatMoney(profitById[topBetId] || 0)})
+      </div>
+    </div>
+  )
 }
 
 const getOpenGraphProps = (contract: Contract) => {

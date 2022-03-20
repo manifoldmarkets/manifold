@@ -47,6 +47,7 @@ import { BuyButton } from '../yes-no-selector'
 import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
 import { AnswerBetPanel } from '../answers/answer-bet-panel'
 import { useSaveSeenContract } from '../../hooks/use-seen-contracts'
+import { User } from '../../../common/user'
 
 export function FeedItems(props: {
   contract: Contract
@@ -109,7 +110,7 @@ function FeedItem(props: { item: ActivityItem }) {
   }
 }
 
-function FeedComment(props: {
+export function FeedComment(props: {
   contract: Contract
   comment: Comment
   bet: Bet
@@ -171,13 +172,14 @@ function RelativeTimestamp(props: { time: number }) {
   )
 }
 
-function FeedBet(props: {
+export function FeedBet(props: {
   contract: Contract
   bet: Bet
   hideOutcome: boolean
   smallAvatar: boolean
+  bettor?: User // If set: reveal bettor identity
 }) {
-  const { contract, bet, hideOutcome, smallAvatar } = props
+  const { contract, bet, hideOutcome, smallAvatar, bettor } = props
   const { id, amount, outcome, createdTime, userId } = bet
   const user = useUser()
   const isSelf = user?.id === userId
@@ -204,6 +206,13 @@ function FeedBet(props: {
             avatarUrl={user.avatarUrl}
             username={user.username}
           />
+        ) : bettor ? (
+          <Avatar
+            className={clsx(smallAvatar && 'ml-1')}
+            size={smallAvatar ? 'sm' : undefined}
+            avatarUrl={bettor.avatarUrl}
+            username={bettor.username}
+          />
         ) : (
           <div className="relative px-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
@@ -214,7 +223,8 @@ function FeedBet(props: {
       </div>
       <div className={'min-w-0 flex-1 pb-1.5'}>
         <div className="text-sm text-gray-500">
-          <span>{isSelf ? 'You' : 'A trader'}</span> {bought} {money}
+          <span>{isSelf ? 'You' : bettor ? bettor.name : 'A trader'}</span>{' '}
+          {bought} {money}
           {!hideOutcome && (
             <>
               {' '}
