@@ -16,11 +16,13 @@ export const useUsers = () => {
   return users
 }
 
-export const useUserById = (userId: string) => {
+export const useUserById = (userId?: string) => {
   const [user, setUser] = useState<User | undefined>(undefined)
 
   useEffect(() => {
-    getUser(userId).then(setUser)
+    if (userId) {
+      getUser(userId).then(setUser)
+    }
   }, [userId])
 
   return user
