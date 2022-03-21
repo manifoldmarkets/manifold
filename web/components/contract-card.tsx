@@ -184,7 +184,7 @@ export function ContractDetails(props: {
 
   return (
     <Col className="gap-2 text-sm text-gray-500 sm:flex-row sm:flex-wrap">
-      <Row className="flex-wrap items-center gap-x-4 gap-y-2">
+      <Row className="flex-wrap items-center gap-x-3 gap-y-3">
         <Row className="items-center gap-2">
           <Avatar
             username={creatorUsername}

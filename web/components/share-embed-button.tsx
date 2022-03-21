@@ -20,7 +20,7 @@ export function ShareEmbedButton(props: { contract: Contract }) {
   return (
     <Menu as="div" className="relative z-40 flex-shrink-0" onClick={copyEmbed}>
       <Menu.Button
-        className="btn btn-xs btn-outline hover:bg-white hover:text-neutral"
+        className="btn btn-xs btn-outline normal-case hover:bg-white hover:text-neutral"
         onClick={copyEmbed}
       >
         <CodeIcon className="w-4 h-4 text-gray-500 mr-1.5" aria-hidden="true" />
