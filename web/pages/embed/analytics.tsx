@@ -1,7 +1,8 @@
+import { FirstArgument } from '../../../common/util/types'
 import { Col } from '../../components/layout/col'
 import { Spacer } from '../../components/layout/spacer'
 import { fromPropz } from '../../hooks/use-propz'
-import {
+import Analytics, {
   CustomAnalytics,
   FirebaseAnalytics,
   getStaticPropz,
@@ -9,14 +10,7 @@ import {
 
 export const getStaticProps = fromPropz(getStaticPropz)
 
-export default function AnalyticsEmbed(props: {
-  startDate: number
-  dailyActiveUsers: number[]
-  dailyBetCounts: number[]
-  dailyContractCounts: number[]
-  dailyCommentCounts: number[]
-  monthlyActiveUsers: number[]
-}) {
+export default function AnalyticsEmbed(props: FirstArgument<typeof Analytics>) {
   return (
     <Col className="w-full px-2 bg-white">
       <CustomAnalytics {...props} />

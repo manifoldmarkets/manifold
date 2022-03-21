@@ -40,6 +40,15 @@ export async function getStaticPropz() {
 
   const dailyActiveUsers = dailyUserIds.map((userIds) => userIds.length)
 
+  const weeklyActiveUsers = dailyUserIds.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i
+    const uniques = new Set<string>()
+    for (let j = start; j <= end; j++)
+      dailyUserIds[j].forEach((userId) => uniques.add(userId))
+    return uniques.size
+  })
+
   const monthlyActiveUsers = dailyUserIds.map((_, i) => {
     const start = Math.max(0, i - 30)
     const end = i
@@ -53,10 +62,11 @@ export async function getStaticPropz() {
     props: {
       startDate: startDate.valueOf(),
       dailyActiveUsers,
+      weeklyActiveUsers,
+      monthlyActiveUsers,
       dailyBetCounts,
       dailyContractCounts,
       dailyCommentCounts,
-      monthlyActiveUsers,
     },
     revalidate: 12 * 60 * 60, // regenerate after half a day
   }
@@ -65,14 +75,17 @@ export async function getStaticPropz() {
 export default function Analytics(props: {
   startDate: number
   dailyActiveUsers: number[]
+  weeklyActiveUsers: number[]
+  monthlyActiveUsers: number[]
   dailyBetCounts: number[]
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
-  monthlyActiveUsers: number[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     startDate: 0,
     dailyActiveUsers: [],
+    weeklyActiveUsers: [],
+    monthlyActiveUsers: [],
     dailyBetCounts: [],
     dailyContractCounts: [],
     dailyCommentCounts: [],
@@ -88,27 +101,44 @@ export default function Analytics(props: {
 
 export function CustomAnalytics(props: {
   startDate: number
-  monthlyActiveUsers: number[]
   dailyActiveUsers: number[]
+  weeklyActiveUsers: number[]
+  monthlyActiveUsers: number[]
   dailyBetCounts: number[]
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
 }) {
   const {
     startDate,
-    monthlyActiveUsers,
     dailyActiveUsers,
     dailyBetCounts,
     dailyContractCounts,
     dailyCommentCounts,
+    weeklyActiveUsers,
+    monthlyActiveUsers,
   } = props
   return (
     <Col>
-      <Title text="Monthly Active Users" />
-      <DailyCountChart dailyCounts={monthlyActiveUsers} startDate={startDate} />
-
       <Title text="Daily Active Users" />
-      <DailyCountChart dailyCounts={dailyActiveUsers} startDate={startDate} />
+      <DailyCountChart
+        dailyCounts={dailyActiveUsers}
+        startDate={startDate}
+        small
+      />
+
+      <Title text="Weekly Active Users" />
+      <DailyCountChart
+        dailyCounts={weeklyActiveUsers}
+        startDate={startDate}
+        small
+      />
+
+      <Title text="Monthly Active Users" />
+      <DailyCountChart
+        dailyCounts={monthlyActiveUsers}
+        startDate={startDate}
+        small
+      />
 
       <Title text="Trades" />
       <DailyCountChart
