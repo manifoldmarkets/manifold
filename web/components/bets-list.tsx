@@ -91,7 +91,7 @@ export function BetsList(props: { user: User }) {
   const contractsInvestment = _.mapValues(contractBets, (bets) => {
     return _.sumBy(bets, (bet) => {
       if (bet.isSold || bet.sale) return 0
-      return bet.amount
+      return bet.amount - (bet.loanAmount ?? 0)
     })
   })
 
