@@ -4,6 +4,7 @@ import { Menu, Transition } from '@headlessui/react'
 import { Contract } from '../../common/contract'
 import { contractPath } from '../lib/firebase/contracts'
 import { DOMAIN } from '../../common/envs/constants'
+import { copyToClipboard } from '../lib/util/copy'
 
 export function ShareEmbedButton(props: { contract: Contract }) {
   const { contract } = props
@@ -14,15 +15,16 @@ export function ShareEmbedButton(props: { contract: Contract }) {
 
     const embedCode = `<iframe width="560" height="405" src="${src}" title="${title}" frameborder="0"></iframe>`
 
-    if (navigator.clipboard) navigator.clipboard.writeText(embedCode)
+    copyToClipboard(embedCode)
   }
 
   return (
-    <Menu as="div" className="relative z-40 flex-shrink-0" onClick={copyEmbed}>
-      <Menu.Button
-        className="btn btn-xs btn-outline normal-case hover:bg-white hover:text-neutral"
-        onClick={copyEmbed}
-      >
+    <Menu
+      as="div"
+      className="relative z-40 flex-shrink-0"
+      onMouseUp={copyEmbed}
+    >
+      <Menu.Button className="btn btn-xs btn-outline normal-case hover:bg-white hover:text-neutral">
         <CodeIcon className="w-4 h-4 text-gray-500 mr-1.5" aria-hidden="true" />
         Embed
       </Menu.Button>
