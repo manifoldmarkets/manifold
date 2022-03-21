@@ -21,6 +21,7 @@ import { Spacer } from './layout/spacer'
 import { useState } from 'react'
 import { TweetButton } from './tweet-button'
 import { getProbability } from '../../common/calculate'
+import { ShareEmbedButton } from './share-embed-button'
 
 export function ContractCard(props: {
   contract: Contract
@@ -172,9 +173,9 @@ function AbbrContractDetails(props: {
 export function ContractDetails(props: {
   contract: Contract
   isCreator?: boolean
-  hideTweetBtn?: boolean
+  hideShareButtons?: boolean
 }) {
-  const { contract, isCreator, hideTweetBtn } = props
+  const { contract, isCreator, hideShareButtons } = props
   const { closeTime, creatorName, creatorUsername } = contract
   const { liquidityLabel, createdDate, resolvedDate } =
     contractMetrics(contract)
@@ -234,8 +235,11 @@ export function ContractDetails(props: {
           <div className="whitespace-nowrap">{liquidityLabel}</div>
         </Row>
 
-        {!hideTweetBtn && (
-          <TweetButton className="self-end" tweetText={tweetText} />
+        {!hideShareButtons && (
+          <>
+            <TweetButton className="self-end" tweetText={tweetText} />
+            <ShareEmbedButton contract={contract} />
+          </>
         )}
       </Row>
     </Col>
