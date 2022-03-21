@@ -24,8 +24,15 @@ export function ShareEmbedButton(props: { contract: Contract }) {
       className="relative z-40 flex-shrink-0"
       onMouseUp={copyEmbed}
     >
-      <Menu.Button className="btn btn-xs btn-outline normal-case hover:bg-white hover:text-neutral">
-        <CodeIcon className="w-4 h-4 text-gray-500 mr-1.5" aria-hidden="true" />
+      <Menu.Button
+        className="btn btn-xs normal-case"
+        style={{
+          backgroundColor: 'white',
+          border: '2px solid #9ca3af',
+          color: '#9ca3af', // text-gray-400
+        }}
+      >
+        <CodeIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
         Embed
       </Menu.Button>
 
@@ -38,7 +45,7 @@ export function ShareEmbedButton(props: { contract: Contract }) {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute left-0 mt-2 w-40 origin-top-center rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <Menu.Items className="origin-top-center absolute left-0 mt-2 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
           <Menu.Item>
             <div className="px-2 py-1">Embed code copied!</div>
           </Menu.Item>
