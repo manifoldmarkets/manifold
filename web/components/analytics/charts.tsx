@@ -47,3 +47,51 @@ export function DailyCountChart(props: {
     </div>
   )
 }
+
+export function DailyPercentChart(props: {
+  startDate: number
+  dailyPercent: number[]
+  small?: boolean
+}) {
+  const { dailyPercent, startDate, small } = props
+  const { width } = useWindowSize()
+
+  const dates = dailyPercent.map((_, i) =>
+    dayjs(startDate).add(i, 'day').toDate()
+  )
+
+  const points = _.zip(dates, dailyPercent).map(([date, betCount]) => ({
+    x: date,
+    y: betCount,
+  }))
+  const data = [{ id: 'Percent', data: points, color: '#11b981' }]
+
+  return (
+    <div
+      className="w-full"
+      style={{ height: !small && (!width || width >= 800) ? 400 : 250 }}
+    >
+      <ResponsiveLine
+        data={data}
+        yScale={{ type: 'linear', stacked: false }}
+        xScale={{
+          type: 'time',
+        }}
+        axisLeft={{
+          format: (value) => `${value}%`,
+        }}
+        axisBottom={{
+          format: (date) => dayjs(date).format('MMM DD'),
+        }}
+        colors={{ datum: 'color' }}
+        pointSize={0}
+        pointBorderWidth={1}
+        pointBorderColor="#fff"
+        enableSlices="x"
+        enableGridX={!!width && width >= 800}
+        enableArea
+        margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+      />
+    </div>
+  )
+}
