@@ -21,7 +21,7 @@ export function ShareEmbedButton(props: { contract: Contract }) {
   return (
     <Menu
       as="div"
-      className="relative z-40 flex-shrink-0"
+      className="relative z-10 flex-shrink-0"
       onMouseUp={copyEmbed}
     >
       <Menu.Button
