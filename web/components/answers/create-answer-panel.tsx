@@ -117,9 +117,11 @@ export function CreateAnswerPanel(props: {
                   </Row>
                 </Row>
 
-                <Row className="justify-between gap-2 text-sm">
+                <Row className="justify-between gap-4 text-sm items-center">
                   <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-                    <div>Payout if chosen</div>
+                    <div>
+                      Estimated <br /> payout if chosen
+                    </div>
                     <InfoTooltip
                       text={`Current payout for ${formatWithCommas(
                         shares
