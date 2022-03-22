@@ -137,12 +137,14 @@ const computeProbsByOutcome = (
   bets: Bet[],
   contract: FullContract<DPM, FreeResponse>
 ) => {
+  const { totalBets } = contract
+
   const betsByOutcome = _.groupBy(bets, (bet) => bet.outcome)
   const outcomes = Object.keys(betsByOutcome).filter((outcome) => {
     const maxProb = Math.max(
       ...betsByOutcome[outcome].map((bet) => bet.probAfter)
     )
-    return outcome !== '0' && maxProb > 0.05
+    return outcome !== '0' && maxProb > 0.02 && totalBets[outcome] > 0.000000001
   })
 
   const trackedOutcomes = _.sortBy(
