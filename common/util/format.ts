@@ -18,20 +18,10 @@ export function formatWithCommas(amount: number) {
   return formatter.format(amount).replace('$', '')
 }
 
-const decimalPlaces = (x: number) => Math.ceil(-Math.log10(x)) - 2
-
-export function formatPercent(decimalPercent: number) {
-  const displayedFigs =
-    (decimalPercent >= 0.02 && decimalPercent <= 0.98) ||
-    decimalPercent <= 0 ||
-    decimalPercent >= 1
-      ? 0
-      : Math.max(
-          decimalPlaces(decimalPercent),
-          decimalPlaces(1 - decimalPercent)
-        )
-
-  return (decimalPercent * 100).toFixed(displayedFigs) + '%'
+export function formatPercent(zeroToOne: number) {
+  // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
+  const decimalPlaces = zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
+  return (zeroToOne * 100).toFixed(decimalPlaces) + '%'
 }
 
 export function toCamelCase(words: string) {
