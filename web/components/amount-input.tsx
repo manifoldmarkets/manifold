@@ -249,7 +249,7 @@ export function SellAmountInput(props: {
               <Row className="items-center gap-2">
                 Loan repaid{' '}
                 <InfoTooltip
-                  text={`Sold shares go toward paying off loans for this market first.`}
+                  text={`Sold shares go toward paying off loans first.`}
                 />
               </Row>
               <span className="text-neutral">{formatMoney(loanRepaid)}</span>{' '}

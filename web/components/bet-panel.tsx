@@ -197,7 +197,7 @@ export function BetPanel(props: {
       ) : sellOutcome ? (
         <>
           <div className="mb-3 text-left ">
-            You have {Math.round(yesShares || noShares)}{' '}
+            You have {formatWithCommas(yesShares || noShares)}{' '}
             <OutcomeLabel outcome={sellOutcome} /> shares
           </div>
 
