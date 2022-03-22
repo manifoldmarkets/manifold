@@ -1,5 +1,7 @@
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import _ from 'lodash'
+import { useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
 import {
   DailyCountChart,
@@ -152,68 +154,176 @@ export function CustomAnalytics(props: {
   } = props
   return (
     <Col>
-      <Title text="Daily Active Users" />
-      <DailyCountChart
-        dailyCounts={dailyActiveUsers}
-        startDate={startDate}
-        small
-      />
+      <Title text="Active users" />
+      <p className="text-gray-500">
+        An active user is a user who has traded in, commented on, or created a
+        market.
+      </p>
+      <Spacer h={4} />
 
-      <Title text="Weekly Active Users" />
-      <DailyCountChart
-        dailyCounts={weeklyActiveUsers}
-        startDate={startDate}
-        small
+      <Tabs
+        defaultIndex={1}
+        tabs={[
+          {
+            title: 'Daily',
+            content: (
+              <DailyCountChart
+                dailyCounts={dailyActiveUsers}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Weekly',
+            content: (
+              <DailyCountChart
+                dailyCounts={weeklyActiveUsers}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Monthly',
+            content: (
+              <DailyCountChart
+                dailyCounts={monthlyActiveUsers}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+        ]}
       />
-
-      <Title text="Monthly Active Users" />
-      <DailyCountChart
-        dailyCounts={monthlyActiveUsers}
-        startDate={startDate}
-        small
-      />
+      <Spacer h={8} />
 
       <Title text="Week-on-week retention" />
+      <p className="text-gray-500">
+        Out of all active users 2 weeks ago, how many came back last week?
+      </p>
       <DailyPercentChart
         dailyPercent={weekOnWeekRetention}
         startDate={startDate}
         small
       />
+      <Spacer h={8} />
 
-      <Title text="Trades" />
-      <DailyCountChart
-        dailyCounts={dailyBetCounts}
-        startDate={startDate}
-        small
+      <Title text="Daily activity" />
+      <Tabs
+        defaultIndex={0}
+        tabs={[
+          {
+            title: 'Trades',
+            content: (
+              <DailyCountChart
+                dailyCounts={dailyBetCounts}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Markets created',
+            content: (
+              <DailyCountChart
+                dailyCounts={dailyContractCounts}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Comments',
+            content: (
+              <DailyCountChart
+                dailyCounts={dailyCommentCounts}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+        ]}
       />
-
-      <Title text="Markets created" />
-      <DailyCountChart
-        dailyCounts={dailyContractCounts}
-        startDate={startDate}
-        small
-      />
-
-      <Title text="Comments" />
-      <DailyCountChart
-        dailyCounts={dailyCommentCounts}
-        startDate={startDate}
-        small
-      />
+      <Spacer h={8} />
     </Col>
+  )
+}
+
+type Tab = {
+  title: string
+  content: JSX.Element
+}
+
+function Tabs(props: { tabs: Tab[]; defaultIndex: number }) {
+  const { tabs, defaultIndex } = props
+  const [activeTab, setActiveTab] = useState(tabs[defaultIndex])
+
+  return (
+    <div>
+      <div className="sm:hidden">
+        <label htmlFor="tabs" className="sr-only">
+          Select a tab
+        </label>
+        {/* Use an "onChange" listener to redirect the user to the selected tab URL. */}
+        <select
+          id="tabs"
+          name="tabs"
+          className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+          defaultValue={activeTab.title}
+        >
+          {tabs.map((tab) => (
+            <option key={tab.title}>{tab.title}</option>
+          ))}
+        </select>
+      </div>
+      <div className="hidden sm:block">
+        <nav className="flex space-x-4" aria-label="Tabs">
+          {tabs.map((tab) => (
+            <a
+              key={tab.title}
+              href="#"
+              className={clsx(
+                tab.title === activeTab.title
+                  ? 'bg-gray-100 text-gray-700'
+                  : 'text-gray-500 hover:text-gray-700',
+                'rounded-md px-3 py-2 text-sm font-medium'
+              )}
+              aria-current={tab.title === activeTab.title ? 'page' : undefined}
+              onClick={(e) => {
+                e.preventDefault()
+                setActiveTab(tab)
+              }}
+            >
+              {tab.title}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      <div className="mt-4">{activeTab.content}</div>
+    </div>
   )
 }
 
 export function FirebaseAnalytics() {
   // Edit dashboard at https://datastudio.google.com/u/0/reporting/faeaf3a4-c8da-4275-b157-98dad017d305/page/Gg3/edit
+
   return (
-    <iframe
-      className="w-full"
-      height={2200}
-      src="https://datastudio.google.com/embed/reporting/faeaf3a4-c8da-4275-b157-98dad017d305/page/Gg3"
-      frameBorder="0"
-      style={{ border: 0 }}
-      allowFullScreen
-    />
+    <>
+      <Title text="Google Analytics" />
+      <p className="text-gray-500">
+        Less accurate; includes all viewers (not just signed-in users).
+      </p>
+      <Spacer h={4} />
+      <iframe
+        className="w-full"
+        height={2200}
+        src="https://datastudio.google.com/embed/reporting/faeaf3a4-c8da-4275-b157-98dad017d305/page/Gg3"
+        frameBorder="0"
+        style={{ border: 0 }}
+        allowFullScreen
+      />
+    </>
   )
 }
