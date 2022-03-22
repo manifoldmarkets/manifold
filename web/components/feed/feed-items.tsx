@@ -707,7 +707,7 @@ function FeedAnswerGroup(props: {
           </div>
 
           <Row className="align-items justify-between gap-4">
-            <span className="text-lg">
+            <span className="text-lg whitespace-pre-line">
               <Linkify text={text} />
             </span>
 
