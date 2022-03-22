@@ -134,9 +134,11 @@ export function AnswerBetPanel(props: {
           </Row>
         </Row>
 
-        <Row className="items-start justify-between gap-2 text-sm">
+        <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-            <div>Payout if chosen</div>
+            <div>
+              Estimated <br /> payout if chosen
+            </div>
             <InfoTooltip
               text={`Current payout for ${formatWithCommas(
                 shares
