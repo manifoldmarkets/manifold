@@ -1,7 +1,10 @@
 import dayjs from 'dayjs'
 import _ from 'lodash'
 import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
-import { DailyCountChart } from '../components/analytics/charts'
+import {
+  DailyCountChart,
+  DailyPercentChart,
+} from '../components/analytics/charts'
 import { Col } from '../components/layout/col'
 import { Spacer } from '../components/layout/spacer'
 import { Page } from '../components/page'
@@ -58,6 +61,31 @@ export async function getStaticPropz() {
     return uniques.size
   })
 
+  const weekOnWeekRetention = dailyUserIds.map((_userId, i) => {
+    const twoWeeksAgo = {
+      start: Math.max(0, i - 13),
+      end: Math.max(0, i - 7),
+    }
+    const lastWeek = {
+      start: Math.max(0, i - 6),
+      end: i,
+    }
+
+    const activeTwoWeeksAgo = new Set<string>()
+    for (let j = twoWeeksAgo.start; j <= twoWeeksAgo.end; j++) {
+      dailyUserIds[j].forEach((userId) => activeTwoWeeksAgo.add(userId))
+    }
+    const activeLastWeek = new Set<string>()
+    for (let j = lastWeek.start; j <= lastWeek.end; j++) {
+      dailyUserIds[j].forEach((userId) => activeLastWeek.add(userId))
+    }
+    const retainedCount = _.sumBy(Array.from(activeTwoWeeksAgo), (userId) =>
+      activeLastWeek.has(userId) ? 1 : 0
+    )
+    const retainedFrac = retainedCount / activeTwoWeeksAgo.size
+    return Math.round(retainedFrac * 100 * 100) / 100
+  })
+
   return {
     props: {
       startDate: startDate.valueOf(),
@@ -67,6 +95,7 @@ export async function getStaticPropz() {
       dailyBetCounts,
       dailyContractCounts,
       dailyCommentCounts,
+      weekOnWeekRetention,
     },
     revalidate: 12 * 60 * 60, // regenerate after half a day
   }
@@ -80,6 +109,7 @@ export default function Analytics(props: {
   dailyBetCounts: number[]
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
+  weekOnWeekRetention: number[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     startDate: 0,
@@ -89,6 +119,7 @@ export default function Analytics(props: {
     dailyBetCounts: [],
     dailyContractCounts: [],
     dailyCommentCounts: [],
+    weekOnWeekRetention: [],
   }
   return (
     <Page>
@@ -107,6 +138,7 @@ export function CustomAnalytics(props: {
   dailyBetCounts: number[]
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
+  weekOnWeekRetention: number[]
 }) {
   const {
     startDate,
@@ -116,6 +148,7 @@ export function CustomAnalytics(props: {
     dailyCommentCounts,
     weeklyActiveUsers,
     monthlyActiveUsers,
+    weekOnWeekRetention,
   } = props
   return (
     <Col>
@@ -136,6 +169,13 @@ export function CustomAnalytics(props: {
       <Title text="Monthly Active Users" />
       <DailyCountChart
         dailyCounts={monthlyActiveUsers}
+        startDate={startDate}
+        small
+      />
+
+      <Title text="Week-on-week retention" />
+      <DailyPercentChart
+        dailyPercent={weekOnWeekRetention}
         startDate={startDate}
         small
       />
