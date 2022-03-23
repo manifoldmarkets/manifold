@@ -153,7 +153,7 @@ export function CustomAnalytics(props: {
     weekOnWeekRetention,
   } = props
   return (
-    <Col>
+    <Col className="px-2 sm:px-0">
       <Title text="Active users" />
       <p className="text-gray-500">
         An active user is a user who has traded in, commented on, or created a
