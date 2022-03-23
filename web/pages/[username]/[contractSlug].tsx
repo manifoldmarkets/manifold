@@ -287,7 +287,7 @@ function ContractTopTrades(props: {
 
   return (
     <div className="mt-12 max-w-sm">
-      {topCommentId && (
+      {topCommentId && profitById[topCommentId] > 0 && (
         <>
           <Title text="💬 Proven correct" className="!mt-0" />
           <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
@@ -309,7 +309,7 @@ function ContractTopTrades(props: {
       )}
 
       {/* If they're the same, only show the comment; otherwise show both */}
-      {topBettor && topBetId !== topCommentId && (
+      {topBettor && topBetId !== topCommentId && profitById[topBetId] > 0 && (
         <>
           <Title text="💸 Smartest money" className="!mt-0" />
           <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
