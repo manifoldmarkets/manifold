@@ -39,10 +39,7 @@ export function contractMetrics(contract: Contract) {
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
 
-  const volumeLabel =
-    contract.mechanism === 'dpm-2'
-      ? `${formatMoney(truePool)} pool`
-      : `${formatMoney(contract.volume)} volume`
+  const volumeLabel = `${formatMoney(contract.volume)} volume`
 
   return { truePool, volumeLabel, createdDate, resolvedDate }
 }
