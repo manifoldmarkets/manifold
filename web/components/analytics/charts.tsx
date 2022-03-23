@@ -21,9 +21,11 @@ export function DailyCountChart(props: {
   }))
   const data = [{ id: 'Count', data: points, color: '#11b981' }]
 
+  const bottomAxisTicks = width && width < 600 ? 6 : undefined
+
   return (
     <div
-      className="w-full"
+      className="w-full overflow-hidden"
       style={{ height: !small && (!width || width >= 800) ? 400 : 250 }}
     >
       <ResponsiveLine
@@ -33,6 +35,7 @@ export function DailyCountChart(props: {
           type: 'time',
         }}
         axisBottom={{
+          tickValues: bottomAxisTicks,
           format: (date) => dayjs(date).format('MMM DD'),
         }}
         colors={{ datum: 'color' }}
@@ -66,9 +69,11 @@ export function DailyPercentChart(props: {
   }))
   const data = [{ id: 'Percent', data: points, color: '#11b981' }]
 
+  const bottomAxisTicks = width && width < 600 ? 6 : undefined
+
   return (
     <div
-      className="w-full"
+      className="w-full overflow-hidden"
       style={{ height: !small && (!width || width >= 800) ? 400 : 250 }}
     >
       <ResponsiveLine
@@ -81,6 +86,7 @@ export function DailyPercentChart(props: {
           format: (value) => `${value}%`,
         }}
         axisBottom={{
+          tickValues: bottomAxisTicks,
           format: (date) => dayjs(date).format('MMM DD'),
         }}
         colors={{ datum: 'color' }}
