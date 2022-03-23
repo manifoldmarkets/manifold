@@ -417,7 +417,7 @@ export function FeedQuestion(props: {
   const { contract, showDescription } = props
   const { creatorName, creatorUsername, question, resolution, outcomeType } =
     contract
-  const { liquidityLabel } = contractMetrics(contract)
+  const { volumeLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
 
   const closeMessage =
@@ -445,7 +445,7 @@ export function FeedQuestion(props: {
           asked
           {/* Currently hidden on mobile; ideally we'd fit this in somewhere. */}
           <span className="float-right hidden text-gray-400 sm:inline">
-            {liquidityLabel}
+            {volumeLabel}
             {closeMessage}
           </span>
         </div>

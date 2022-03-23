@@ -131,7 +131,7 @@ function AbbrContractDetails(props: {
 }) {
   const { contract, showHotVolume, showCloseTime } = props
   const { volume24Hours, creatorName, creatorUsername, closeTime } = contract
-  const { liquidityLabel } = contractMetrics(contract)
+  const { volumeLabel } = contractMetrics(contract)
 
   return (
     <Col className={clsx('gap-2 text-sm text-gray-500')}>
@@ -162,7 +162,7 @@ function AbbrContractDetails(props: {
         ) : (
           <Row className="gap-1">
             {/* <DatabaseIcon className="h-5 w-5" /> */}
-            {liquidityLabel}
+            {volumeLabel}
           </Row>
         )}
       </Row>
@@ -177,8 +177,7 @@ export function ContractDetails(props: {
 }) {
   const { contract, isCreator, hideShareButtons } = props
   const { closeTime, creatorName, creatorUsername } = contract
-  const { liquidityLabel, createdDate, resolvedDate } =
-    contractMetrics(contract)
+  const { volumeLabel, createdDate, resolvedDate } = contractMetrics(contract)
 
   const tweetText = getTweetText(contract, !!isCreator)
 
@@ -232,7 +231,7 @@ export function ContractDetails(props: {
         <Row className="items-center gap-1">
           <DatabaseIcon className="h-5 w-5" />
 
-          <div className="whitespace-nowrap">{liquidityLabel}</div>
+          <div className="whitespace-nowrap">{volumeLabel}</div>
         </Row>
 
         {!hideShareButtons && (
@@ -249,8 +248,7 @@ export function ContractDetails(props: {
 // String version of the above, to send to the OpenGraph image generator
 export function contractTextDetails(contract: Contract) {
   const { closeTime, tags } = contract
-  const { createdDate, resolvedDate, liquidityLabel } =
-    contractMetrics(contract)
+  const { createdDate, resolvedDate, volumeLabel } = contractMetrics(contract)
 
   const hashtags = tags.map((tag) => `#${tag}`)
 
@@ -261,7 +259,7 @@ export function contractTextDetails(contract: Contract) {
           closeTime
         ).format('MMM D, h:mma')}`
       : '') +
-    ` • ${liquidityLabel}` +
+    ` • ${volumeLabel}` +
     (hashtags.length > 0 ? ` • ${hashtags.join(' ')}` : '')
   )
 }
