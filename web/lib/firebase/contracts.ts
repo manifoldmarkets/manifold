@@ -29,9 +29,7 @@ export function contractPath(contract: Contract) {
 }
 
 export function contractMetrics(contract: Contract) {
-  const { pool, createdTime, resolutionTime, isResolved } = contract
-
-  const truePool = _.sum(Object.values(pool))
+  const { createdTime, resolutionTime, isResolved } = contract
 
   const createdDate = dayjs(createdTime).format('MMM D')
 
@@ -41,7 +39,7 @@ export function contractMetrics(contract: Contract) {
 
   const volumeLabel = `${formatMoney(contract.volume)} volume`
 
-  return { truePool, volumeLabel, createdDate, resolvedDate }
+  return { volumeLabel, createdDate, resolvedDate }
 }
 
 export function getBinaryProb(contract: FullContract<any, Binary>) {
