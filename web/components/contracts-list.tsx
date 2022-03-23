@@ -7,7 +7,6 @@ import {
   contractMetrics,
   Contract,
   listContracts,
-  getBinaryProbPercent,
   getBinaryProb,
 } from '../lib/firebase/contracts'
 import { User } from '../lib/firebase/users'
@@ -16,7 +15,6 @@ import { SiteLink } from './site-link'
 import { ContractCard } from './contract-card'
 import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 import { Answer } from '../../common/answer'
-import { getProbability } from '../../common/calculate'
 
 export function ContractsGrid(props: {
   contracts: Contract[]
@@ -249,9 +247,7 @@ export function SearchableGrid(props: {
       ({ closeTime }) => closeTime && closeTime > Date.now() !== hideClosed
     )
   } else if (sort === 'most-traded') {
-    matches.sort(
-      (a, b) => contractMetrics(b).truePool - contractMetrics(a).truePool
-    )
+    matches.sort((a, b) => b.volume - a.volume)
   } else if (sort === '24-hour-vol') {
     // Use lodash for stable sort, so previous sort breaks all ties.
     matches = _.sortBy(matches, ({ volume7Days }) => -1 * volume7Days)
