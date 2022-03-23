@@ -34,6 +34,8 @@ export function getNewContract(
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
       : getFreeAnswerProps(ante)
 
+  const volume = outcomeType === 'BINARY' ? 0 : ante
+
   const contract: Contract = removeUndefinedProps({
     id,
     slug,
@@ -54,6 +56,7 @@ export function getNewContract(
     lastUpdatedTime: Date.now(),
     closeTime,
 
+    volume,
     volume24Hours: 0,
     volume7Days: 0,
 

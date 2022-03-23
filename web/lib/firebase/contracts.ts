@@ -22,7 +22,6 @@ import { getDpmProbability } from '../../../common/calculate-dpm'
 import { createRNG, shuffle } from '../../../common/util/random'
 import { getCpmmProbability } from '../../../common/calculate-cpmm'
 import { formatMoney, formatPercent } from '../../../common/util/format'
-import { getCpmmLiquidity } from '../../../common/calculate-cpmm'
 export type { Contract }
 
 export function contractPath(contract: Contract) {
@@ -43,9 +42,7 @@ export function contractMetrics(contract: Contract) {
   const liquidityLabel =
     contract.mechanism === 'dpm-2'
       ? `${formatMoney(truePool)} pool`
-      : `${formatMoney(
-          contract.totalLiquidity ?? getCpmmLiquidity(pool, contract.p)
-        )} liquidity`
+      : `${formatMoney(contract.volume ?? contract.volume7Days)} volume`
 
   return { truePool, liquidityLabel, createdDate, resolvedDate }
 }
