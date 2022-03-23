@@ -57,7 +57,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
           message: 'Requires a free response contract',
         }
 
-      const { closeTime } = contract
+      const { closeTime, volume } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
@@ -121,6 +121,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         totalShares: newTotalShares,
         totalBets: newTotalBets,
         answers: [...(contract.answers ?? []), answer],
+        volume: (volume ?? 0) + amount,
       })
 
       if (!isFinite(newBalance)) {
