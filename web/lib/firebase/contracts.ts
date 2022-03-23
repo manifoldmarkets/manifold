@@ -39,12 +39,12 @@ export function contractMetrics(contract: Contract) {
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
 
-  const liquidityLabel =
+  const volumeLabel =
     contract.mechanism === 'dpm-2'
       ? `${formatMoney(truePool)} pool`
-      : `${formatMoney(contract.volume ?? contract.volume7Days)} volume`
+      : `${formatMoney(contract.volume)} volume`
 
-  return { truePool, liquidityLabel, createdDate, resolvedDate }
+  return { truePool, volumeLabel, createdDate, resolvedDate }
 }
 
 export function getBinaryProb(contract: FullContract<any, Binary>) {
