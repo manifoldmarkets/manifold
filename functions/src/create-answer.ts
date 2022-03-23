@@ -121,7 +121,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         totalShares: newTotalShares,
         totalBets: newTotalBets,
         answers: [...(contract.answers ?? []), answer],
-        volume: (volume ?? 0) + amount,
+        volume: volume + amount,
       })
 
       if (!isFinite(newBalance)) {

@@ -81,7 +81,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
           totalShares: newTotalShares,
           totalBets: newTotalBets,
           collectedFees: addObjects<Fees>(fees ?? {}, collectedFees ?? {}),
-          volume: (volume ?? 0) + bet.amount,
+          volume: volume + bet.amount,
         })
       )
 

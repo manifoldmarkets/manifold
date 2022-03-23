@@ -130,7 +130,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
             totalBets: newTotalBets,
             totalLiquidity: newTotalLiquidity,
             collectedFees: addObjects<Fees>(fees ?? {}, collectedFees ?? {}),
-            volume: (volume ?? 0) + Math.abs(amount),
+            volume: volume + Math.abs(amount),
           })
         )
 

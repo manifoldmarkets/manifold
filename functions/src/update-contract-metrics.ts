@@ -22,11 +22,9 @@ export const updateContractMetrics = functions.pubsub
       contracts.map((contract) => async () => {
         const volume24Hours = await computeVolumeFrom(contract, oneDay)
         const volume7Days = await computeVolumeFrom(contract, oneDay * 7)
-        const volume = await computeVolumeFrom(contract, oneDay * 365)
 
         const contractRef = firestore.doc(`contracts/${contract.id}`)
         return contractRef.update({
-          volume,
           volume24Hours,
           volume7Days,
         })
