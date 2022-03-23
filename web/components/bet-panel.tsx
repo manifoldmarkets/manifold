@@ -127,7 +127,7 @@ export function BetPanel(props: {
             (contract.phantomShares
               ? contract.phantomShares[betChoice ?? 'YES']
               : 0)
-        )} ${betChoice} shares`
+        )} ${betChoice ?? 'YES'} shares`
       : undefined
 
   return (
