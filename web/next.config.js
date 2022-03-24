@@ -1,5 +1,4 @@
-const API_DOCS_URL =
-  'https://manifoldmarkets.notion.site/Manifold-Markets-API-5e7d0aef4dcf452bb04b319e178fabc5'
+const API_DOCS_URL = 'https://docs.manifold.markets/api'
 
 /** @type {import('next').NextConfig} */
 module.exports = {
