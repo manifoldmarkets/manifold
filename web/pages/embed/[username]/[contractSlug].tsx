@@ -18,7 +18,9 @@ import { Spacer } from '../../../components/layout/spacer'
 import { Linkify } from '../../../components/linkify'
 import { SiteLink } from '../../../components/site-link'
 import { useContractWithPreload } from '../../../hooks/use-contract'
+import { useMeasureSize } from '../../../hooks/use-measure-size'
 import { fromPropz, usePropz } from '../../../hooks/use-propz'
+import { useWindowSize } from '../../../hooks/use-window-size'
 import { listAllBets } from '../../../lib/firebase/bets'
 import {
   contractPath,
@@ -85,9 +87,18 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
+  const { height: windowHeight } = useWindowSize()
+  const { setElem, height: topSectionHeight } = useMeasureSize()
+  const paddingBottom = 8
+
+  const graphHeight =
+    windowHeight && topSectionHeight
+      ? windowHeight - topSectionHeight - paddingBottom
+      : 0
+
   return (
-    <Col className="w-full flex-1 bg-white py-2">
-      <Col className="relative">
+    <Col className="w-full flex-1 bg-white">
+      <div className="flex flex-col relative pt-2" ref={setElem}>
         <SiteLink
           className="absolute top-0 left-0 w-full h-full z-20"
           href={href}
@@ -112,15 +123,20 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         </Row>
 
         <Spacer h={2} />
-      </Col>
+      </div>
 
-      <div className="mx-1">
+      <div className="mx-1" style={{ paddingBottom }}>
         {isBinary ? (
-          <ContractProbGraph contract={contract} bets={bets} />
+          <ContractProbGraph
+            contract={contract}
+            bets={bets}
+            height={graphHeight}
+          />
         ) : (
           <AnswersGraph
             contract={contract as FullContract<DPM, FreeResponse>}
             bets={bets}
+            height={graphHeight}
           />
         )}
       </div>

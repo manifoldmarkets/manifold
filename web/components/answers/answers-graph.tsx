@@ -14,8 +14,9 @@ const NUM_LINES = 6
 export function AnswersGraph(props: {
   contract: FullContract<DPM, FreeResponse>
   bets: Bet[]
+  height?: number
 }) {
-  const { contract } = props
+  const { contract, height } = props
   const { createdTime, resolutionTime, closeTime, answers } = contract
 
   const bets = useBets(contract.id) ?? props.bets
@@ -86,7 +87,7 @@ export function AnswersGraph(props: {
   return (
     <div
       className="w-full overflow-hidden"
-      style={{ height: !width || width >= 800 ? 350 : 225 }}
+      style={{ height: height ?? (!width || width >= 800 ? 350 : 225) }}
     >
       <ResponsiveLine
         data={data}
