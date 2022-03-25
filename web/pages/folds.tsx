@@ -93,8 +93,7 @@ export default function Folds(props: {
 
             <div className="mb-6 text-gray-500">
               Communities on Manifold are centered around a collection of
-              markets. Follow a community to personalize your feed and receive
-              relevant updates.
+              markets. Follow a community to personalize your feed!
             </div>
 
             <input
