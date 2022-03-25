@@ -237,7 +237,7 @@ export function FeedBet(props: {
               <Textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                className="textarea textarea-bordered w-full"
+                className="textarea textarea-bordered w-full resize-none"
                 placeholder="Add a comment..."
                 rows={3}
                 maxLength={MAX_COMMENT_LENGTH}
@@ -278,7 +278,7 @@ function EditContract(props: {
   return editing ? (
     <div className="mt-4">
       <Textarea
-        className="textarea textarea-bordered mb-1 h-24 w-full"
+        className="textarea textarea-bordered mb-1 h-24 w-full resize-none"
         rows={3}
         value={text}
         onChange={(e) => setText(e.target.value || '')}
@@ -707,7 +707,7 @@ function FeedAnswerGroup(props: {
           </div>
 
           <Row className="align-items justify-between gap-4">
-            <span className="text-lg whitespace-pre-line">
+            <span className="whitespace-pre-line text-lg">
               <Linkify text={text} />
             </span>
 
