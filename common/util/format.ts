@@ -7,10 +7,22 @@ const formatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 0,
 })
 
+// E.g. 1234 => "M$ 1,234"; 23456 => "M$ 23k"
 export function formatMoney(amount: number) {
-  const newAmount = Math.round(amount) === 0 ? 0 : amount // handle -0 case
+  let newAmount = Math.round(amount) === 0 ? 0 : amount // handle -0 case
+  let suffix = ''
+  if (newAmount > 10 * 1000) {
+    suffix = 'k'
+    newAmount /= 1000
+  } else if (newAmount > 10 * 1000 * 1000) {
+    suffix = 'm'
+    newAmount /= 1000 * 1000
+  }
   return (
-    ENV_CONFIG.moneyMoniker + ' ' + formatter.format(newAmount).replace('$', '')
+    ENV_CONFIG.moneyMoniker +
+    ' ' +
+    formatter.format(newAmount).replace('$', '') +
+    suffix
   )
 }
 
