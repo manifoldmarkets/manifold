@@ -63,7 +63,7 @@ export function AnswerBetPanel(props: {
 
     if (result?.status === 'success') {
       setIsSubmitting(false)
-      closePanel()
+      setBetAmount(undefined)
     } else {
       setError(result?.error || 'Error placing bet')
       setIsSubmitting(false)
