@@ -41,7 +41,7 @@ function EditUserField(props: {
 
       {field === 'bio' ? (
         <Textarea
-          className="textarea textarea-bordered w-full"
+          className="textarea textarea-bordered w-full resize-none"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onBlur={updateField}

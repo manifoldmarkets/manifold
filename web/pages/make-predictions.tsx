@@ -195,7 +195,7 @@ ${TEST_VALUE}
 
           <Textarea
             placeholder="e.g. This market is part of the ACX predictions for 2022..."
-            className="input"
+            className="input resize-none"
             value={description}
             onChange={(e) => setDescription(e.target.value || '')}
           />
