@@ -223,7 +223,7 @@ function BuyPanel(props: {
     focusAmountInput()
   }, [focusAmountInput])
 
-  const tooltip =
+  const dpmTooltip =
     contract.mechanism === 'dpm-2'
       ? `Current payout for ${formatWithCommas(shares)} / ${formatWithCommas(
           shares +
@@ -231,7 +231,7 @@ function BuyPanel(props: {
             (contract.phantomShares
               ? contract.phantomShares[betChoice ?? 'YES']
               : 0)
-        )} ${betChoice} shares`
+        )} ${betChoice ?? 'YES'} shares`
       : undefined
   return (
     <>
@@ -263,13 +263,22 @@ function BuyPanel(props: {
           </Row>
         </Row>
 
-        <Row className="items-start justify-between gap-2 text-sm">
+        <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
             <div>
-              Payout if <OutcomeLabel outcome={betChoice ?? 'YES'} />
+              {contract.mechanism === 'dpm-2' ? (
+                <>
+                  Estimated
+                  <br /> payout if <OutcomeLabel outcome={betChoice ?? 'YES'} />
+                </>
+              ) : (
+                <>
+                  Payout if <OutcomeLabel outcome={betChoice ?? 'YES'} />
+                </>
+              )}
             </div>
 
-            {tooltip && <InfoTooltip text={tooltip} />}
+            {dpmTooltip && <InfoTooltip text={dpmTooltip} />}
           </Row>
           <Row className="flex-wrap items-end justify-end gap-2">
             <span className="whitespace-nowrap">

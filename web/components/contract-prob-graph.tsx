@@ -10,8 +10,9 @@ import { useWindowSize } from '../hooks/use-window-size'
 export function ContractProbGraph(props: {
   contract: FullContract<DPM | CPMM, Binary>
   bets: Bet[]
+  height?: number
 }) {
-  const { contract } = props
+  const { contract, height } = props
   const { resolutionTime, closeTime } = contract
 
   const bets = useBetsWithoutAntes(contract, props.bets).filter(
@@ -63,7 +64,7 @@ export function ContractProbGraph(props: {
   return (
     <div
       className="w-full overflow-hidden"
-      style={{ height: !width || width >= 800 ? 400 : 250 }}
+      style={{ height: height ?? (!width || width >= 800 ? 400 : 250) }}
     >
       <ResponsiveLine
         data={data}

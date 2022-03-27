@@ -35,7 +35,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
         return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
 
-      const { closeTime, mechanism, collectedFees } = contract
+      const { closeTime, mechanism, collectedFees, volume } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
@@ -81,6 +81,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
           totalShares: newTotalShares,
           totalBets: newTotalBets,
           collectedFees: addObjects<Fees>(fees ?? {}, collectedFees ?? {}),
+          volume: volume + bet.amount,
         })
       )
 

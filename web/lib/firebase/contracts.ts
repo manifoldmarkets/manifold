@@ -22,7 +22,6 @@ import { getDpmProbability } from '../../../common/calculate-dpm'
 import { createRNG, shuffle } from '../../../common/util/random'
 import { getCpmmProbability } from '../../../common/calculate-cpmm'
 import { formatMoney, formatPercent } from '../../../common/util/format'
-import { getCpmmLiquidity } from '../../../common/calculate-cpmm'
 export type { Contract }
 
 export function contractPath(contract: Contract) {
@@ -30,9 +29,7 @@ export function contractPath(contract: Contract) {
 }
 
 export function contractMetrics(contract: Contract) {
-  const { pool, createdTime, resolutionTime, isResolved } = contract
-
-  const truePool = _.sum(Object.values(pool))
+  const { createdTime, resolutionTime, isResolved } = contract
 
   const createdDate = dayjs(createdTime).format('MMM D')
 
@@ -40,14 +37,9 @@ export function contractMetrics(contract: Contract) {
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
 
-  const liquidityLabel =
-    contract.mechanism === 'dpm-2'
-      ? `${formatMoney(truePool)} pool`
-      : `${formatMoney(
-          contract.totalLiquidity ?? getCpmmLiquidity(pool, contract.p)
-        )} liquidity`
+  const volumeLabel = `${formatMoney(contract.volume)} volume`
 
-  return { truePool, liquidityLabel, createdDate, resolvedDate }
+  return { volumeLabel, createdDate, resolvedDate }
 }
 
 export function getBinaryProb(contract: FullContract<any, Binary>) {

@@ -47,6 +47,7 @@ import { BuyButton } from '../yes-no-selector'
 import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
 import { AnswerBetPanel } from '../answers/answer-bet-panel'
 import { useSaveSeenContract } from '../../hooks/use-seen-contracts'
+import { User } from '../../../common/user'
 
 export function FeedItems(props: {
   contract: Contract
@@ -109,7 +110,7 @@ function FeedItem(props: { item: ActivityItem }) {
   }
 }
 
-function FeedComment(props: {
+export function FeedComment(props: {
   contract: Contract
   comment: Comment
   bet: Bet
@@ -171,13 +172,14 @@ function RelativeTimestamp(props: { time: number }) {
   )
 }
 
-function FeedBet(props: {
+export function FeedBet(props: {
   contract: Contract
   bet: Bet
   hideOutcome: boolean
   smallAvatar: boolean
+  bettor?: User // If set: reveal bettor identity
 }) {
-  const { contract, bet, hideOutcome, smallAvatar } = props
+  const { contract, bet, hideOutcome, smallAvatar, bettor } = props
   const { id, amount, outcome, createdTime, userId } = bet
   const user = useUser()
   const isSelf = user?.id === userId
@@ -204,6 +206,13 @@ function FeedBet(props: {
             avatarUrl={user.avatarUrl}
             username={user.username}
           />
+        ) : bettor ? (
+          <Avatar
+            className={clsx(smallAvatar && 'ml-1')}
+            size={smallAvatar ? 'sm' : undefined}
+            avatarUrl={bettor.avatarUrl}
+            username={bettor.username}
+          />
         ) : (
           <div className="relative px-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
@@ -212,9 +221,10 @@ function FeedBet(props: {
           </div>
         )}
       </div>
-      <div className={'min-w-0 flex-1 pb-1.5'}>
+      <div className={'min-w-0 flex-1 py-1.5'}>
         <div className="text-sm text-gray-500">
-          <span>{isSelf ? 'You' : 'A trader'}</span> {bought} {money}
+          <span>{isSelf ? 'You' : bettor ? bettor.name : 'A trader'}</span>{' '}
+          {bought} {money}
           {!hideOutcome && (
             <>
               {' '}
@@ -227,7 +237,7 @@ function FeedBet(props: {
               <Textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                className="textarea textarea-bordered w-full"
+                className="textarea textarea-bordered w-full resize-none"
                 placeholder="Add a comment..."
                 rows={3}
                 maxLength={MAX_COMMENT_LENGTH}
@@ -268,7 +278,7 @@ function EditContract(props: {
   return editing ? (
     <div className="mt-4">
       <Textarea
-        className="textarea textarea-bordered mb-1 h-24 w-full"
+        className="textarea textarea-bordered mb-1 h-24 w-full resize-none"
         rows={3}
         value={text}
         onChange={(e) => setText(e.target.value || '')}
@@ -407,7 +417,7 @@ export function FeedQuestion(props: {
   const { contract, showDescription } = props
   const { creatorName, creatorUsername, question, resolution, outcomeType } =
     contract
-  const { liquidityLabel } = contractMetrics(contract)
+  const { volumeLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
 
   const closeMessage =
@@ -435,7 +445,7 @@ export function FeedQuestion(props: {
           asked
           {/* Currently hidden on mobile; ideally we'd fit this in somewhere. */}
           <span className="float-right hidden text-gray-400 sm:inline">
-            {liquidityLabel}
+            {volumeLabel}
             {closeMessage}
           </span>
         </div>
@@ -697,7 +707,7 @@ function FeedAnswerGroup(props: {
           </div>
 
           <Row className="align-items justify-between gap-4">
-            <span className="text-lg">
+            <span className="whitespace-pre-line text-lg">
               <Linkify text={text} />
             </span>
 

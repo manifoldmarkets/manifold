@@ -14,6 +14,7 @@ export function Leaderboard(props: {
   }[]
   className?: string
 }) {
+  // TODO: Ideally, highlight your own entry on the leaderboard
   const { title, users, columns, className } = props
   return (
     <div className={clsx('w-full px-1', className)}>

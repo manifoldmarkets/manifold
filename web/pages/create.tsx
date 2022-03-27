@@ -184,7 +184,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           <InfoTooltip text="Optional. Describe how you will resolve this market." />
         </label>
         <Textarea
-          className="textarea textarea-bordered w-full"
+          className="textarea textarea-bordered w-full resize-none"
           rows={3}
           maxLength={MAX_DESCRIPTION_LENGTH}
           placeholder={descriptionPlaceholder}

@@ -21,6 +21,7 @@ import { Spacer } from './layout/spacer'
 import { useState } from 'react'
 import { TweetButton } from './tweet-button'
 import { getProbability } from '../../common/calculate'
+import { ShareEmbedButton } from './share-embed-button'
 
 export function ContractCard(props: {
   contract: Contract
@@ -130,7 +131,7 @@ function AbbrContractDetails(props: {
 }) {
   const { contract, showHotVolume, showCloseTime } = props
   const { volume24Hours, creatorName, creatorUsername, closeTime } = contract
-  const { liquidityLabel } = contractMetrics(contract)
+  const { volumeLabel } = contractMetrics(contract)
 
   return (
     <Col className={clsx('gap-2 text-sm text-gray-500')}>
@@ -161,7 +162,7 @@ function AbbrContractDetails(props: {
         ) : (
           <Row className="gap-1">
             {/* <DatabaseIcon className="h-5 w-5" /> */}
-            {liquidityLabel}
+            {volumeLabel}
           </Row>
         )}
       </Row>
@@ -172,17 +173,17 @@ function AbbrContractDetails(props: {
 export function ContractDetails(props: {
   contract: Contract
   isCreator?: boolean
+  hideShareButtons?: boolean
 }) {
-  const { contract, isCreator } = props
+  const { contract, isCreator, hideShareButtons } = props
   const { closeTime, creatorName, creatorUsername } = contract
-  const { liquidityLabel, createdDate, resolvedDate } =
-    contractMetrics(contract)
+  const { volumeLabel, createdDate, resolvedDate } = contractMetrics(contract)
 
   const tweetText = getTweetText(contract, !!isCreator)
 
   return (
     <Col className="gap-2 text-sm text-gray-500 sm:flex-row sm:flex-wrap">
-      <Row className="flex-wrap items-center gap-x-4 gap-y-2">
+      <Row className="flex-wrap items-center gap-x-4 gap-y-3">
         <Row className="items-center gap-2">
           <Avatar
             username={creatorUsername}
@@ -230,10 +231,15 @@ export function ContractDetails(props: {
         <Row className="items-center gap-1">
           <DatabaseIcon className="h-5 w-5" />
 
-          <div className="whitespace-nowrap">{liquidityLabel}</div>
+          <div className="whitespace-nowrap">{volumeLabel}</div>
         </Row>
 
-        <TweetButton className="self-end" tweetText={tweetText} />
+        {!hideShareButtons && (
+          <>
+            <TweetButton className="self-end" tweetText={tweetText} />
+            <ShareEmbedButton contract={contract} />
+          </>
+        )}
       </Row>
     </Col>
   )
@@ -242,8 +248,7 @@ export function ContractDetails(props: {
 // String version of the above, to send to the OpenGraph image generator
 export function contractTextDetails(contract: Contract) {
   const { closeTime, tags } = contract
-  const { createdDate, resolvedDate, liquidityLabel } =
-    contractMetrics(contract)
+  const { createdDate, resolvedDate, volumeLabel } = contractMetrics(contract)
 
   const hashtags = tags.map((tag) => `#${tag}`)
 
@@ -254,7 +259,7 @@ export function contractTextDetails(contract: Contract) {
           closeTime
         ).format('MMM D, h:mma')}`
       : '') +
-    ` • ${liquidityLabel}` +
+    ` • ${volumeLabel}` +
     (hashtags.length > 0 ? ` • ${hashtags.join(' ')}` : '')
   )
 }

@@ -74,7 +74,10 @@ export const useFilterYourContracts = (
   if (yourBetContracts && followedFoldIds) {
     // Show default contracts if no folds are followed.
     if (followedFoldIds.length === 0)
-      yourContracts = contracts.filter(includedWithDefaultFeed)
+      yourContracts = contracts.filter(
+        (contract) =>
+          includedWithDefaultFeed(contract) || yourBetContracts.has(contract.id)
+      )
     else
       yourContracts = contracts.filter(
         (contract) =>

@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { PrivateUser, User } from '../../common/user'
-import { listenForAllUsers, listenForPrivateUsers } from '../lib/firebase/users'
+import {
+  getUser,
+  listenForAllUsers,
+  listenForPrivateUsers,
+} from '../lib/firebase/users'
 
 export const useUsers = () => {
   const [users, setUsers] = useState<User[]>([])
@@ -10,6 +14,18 @@ export const useUsers = () => {
   }, [])
 
   return users
+}
+
+export const useUserById = (userId?: string) => {
+  const [user, setUser] = useState<User | undefined>(undefined)
+
+  useEffect(() => {
+    if (userId) {
+      getUser(userId).then(setUser)
+    }
+  }, [userId])
+
+  return user
 }
 
 export const usePrivateUsers = () => {

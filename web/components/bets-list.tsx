@@ -37,7 +37,7 @@ import {
   resolvedPayout,
 } from '../../common/calculate'
 
-type BetSort = 'newest' | 'profit' | 'settled' | 'value'
+type BetSort = 'newest' | 'profit' | 'resolutionTime' | 'value' | 'closeTime'
 type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
 
 export function BetsList(props: { user: User }) {
@@ -91,7 +91,7 @@ export function BetsList(props: { user: User }) {
   const contractsInvestment = _.mapValues(contractBets, (bets) => {
     return _.sumBy(bets, (bet) => {
       if (bet.isSold || bet.sale) return 0
-      return bet.amount
+      return bet.amount - (bet.loanAmount ?? 0)
     })
   })
 
@@ -108,7 +108,8 @@ export function BetsList(props: { user: User }) {
     value: (c) => contractsCurrentValue[c.id],
     newest: (c) =>
       Math.max(...contractBets[c.id].map((bet) => bet.createdTime)),
-    settled: (c) => c.resolutionTime ?? 0,
+    resolutionTime: (c) => -(c.resolutionTime ?? c.closeTime ?? Infinity),
+    closeTime: (c) => -(c.closeTime ?? Infinity),
   }
   const displayedContracts = _.sortBy(contracts, SORTS[sort])
     .reverse()
@@ -173,7 +174,8 @@ export function BetsList(props: { user: User }) {
             <option value="value">By value</option>
             <option value="profit">By profit</option>
             <option value="newest">Most recent</option>
-            <option value="settled">By resolution time</option>
+            <option value="closeTime">Closing soonest</option>
+            <option value="resolutionTime">Resolved soonest</option>
           </select>
         </Row>
       </Col>
@@ -449,7 +451,7 @@ export function ContractBetsTable(props: {
     <div className={clsx('overflow-x-auto', className)}>
       {amountRedeemed > 0 && (
         <>
-          <div className="text-gray-500 text-sm pl-2">
+          <div className="pl-2 text-sm text-gray-500">
             {amountRedeemed} YES shares and {amountRedeemed} NO shares
             automatically redeemed for {formatMoney(amountRedeemed)}.
           </div>
@@ -459,7 +461,7 @@ export function ContractBetsTable(props: {
 
       {!isResolved && amountLoaned > 0 && (
         <>
-          <div className="text-gray-500 text-sm pl-2">
+          <div className="pl-2 text-sm text-gray-500">
             You currently have a loan of {formatMoney(amountLoaned)}.
           </div>
           <Spacer h={4} />
@@ -505,7 +507,6 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     shares,
     isSold,
     isAnte,
-    loanAmount,
   } = bet
 
   const { isResolved, closeTime, mechanism } = contract

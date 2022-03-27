@@ -126,6 +126,16 @@ export async function uploadData(
   return await getDownloadURL(uploadRef)
 }
 
+export async function listUsers(userIds: string[]) {
+  if (userIds.length > 10) {
+    throw new Error('Too many users requested at once; Firestore limits to 10')
+  }
+  const userCollection = collection(db, 'users')
+  const q = query(userCollection, where('id', 'in', userIds))
+  const docs = await getDocs(q)
+  return docs.docs.map((doc) => doc.data() as User)
+}
+
 export async function listAllUsers() {
   const userCollection = collection(db, 'users')
   const q = query(userCollection)

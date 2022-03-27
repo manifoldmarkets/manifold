@@ -34,43 +34,33 @@ export const ContractOverview = (props: {
 
   return (
     <Col className={clsx('mb-6', className)}>
-      <Row className="justify-between gap-4 px-2">
-        <Col className="gap-4">
+      <Col className="gap-4 px-2">
+        <Row className="justify-between gap-4">
           <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
           </div>
 
-          <Row className="items-center justify-between gap-4">
-            {(isBinary || resolution) && (
-              <ResolutionOrChance
-                className="md:hidden"
-                contract={contract}
-                large
-              />
-            )}
-
-            {isBinary && tradingAllowed(contract) && (
-              <BetRow
-                contract={contract}
-                className="md:hidden"
-                labelClassName="hidden"
-              />
-            )}
-          </Row>
-
-          <ContractDetails contract={contract} isCreator={isCreator} />
-        </Col>
-
-        {(isBinary || resolution) && (
-          <Col className="hidden items-end justify-between md:flex">
+          {(isBinary || resolution) && (
             <ResolutionOrChance
-              className="items-end"
+              className="hidden md:flex items-end"
               contract={contract}
               large
             />
-          </Col>
-        )}
-      </Row>
+          )}
+        </Row>
+
+        <Row className="md:hidden items-center justify-between gap-4">
+          {(isBinary || resolution) && (
+            <ResolutionOrChance contract={contract} />
+          )}
+
+          {isBinary && tradingAllowed(contract) && (
+            <BetRow contract={contract} labelClassName="hidden" />
+          )}
+        </Row>
+
+        <ContractDetails contract={contract} isCreator={isCreator} />
+      </Col>
 
       <Spacer h={4} />
 

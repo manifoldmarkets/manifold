@@ -81,7 +81,7 @@ export function CreateAnswerPanel(props: {
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="textarea textarea-bordered w-full"
+          className="textarea textarea-bordered w-full resize-none"
           placeholder="Type your answer..."
           rows={1}
           maxLength={10000}
@@ -117,9 +117,11 @@ export function CreateAnswerPanel(props: {
                   </Row>
                 </Row>
 
-                <Row className="justify-between gap-2 text-sm">
+                <Row className="items-center justify-between gap-4 text-sm">
                   <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-                    <div>Payout if chosen</div>
+                    <div>
+                      Estimated <br /> payout if chosen
+                    </div>
                     <InfoTooltip
                       text={`Current payout for ${formatWithCommas(
                         shares
