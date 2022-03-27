@@ -14,7 +14,7 @@ import {
   formatWithCommas,
 } from '../../common/util/format'
 import { Title } from './title'
-import { firebaseLogin } from '../lib/firebase/users'
+import { firebaseLogin, User } from '../lib/firebase/users'
 import { Bet } from '../../common/bet'
 import { placeBet } from '../lib/firebase/api-call'
 import { BuyAmountInput, SellAmountInput } from './amount-input'
@@ -28,6 +28,10 @@ import {
 } from '../../common/calculate'
 import { useFocus } from '../hooks/use-focus'
 import { useUserContractBets } from '../hooks/use-user-bets'
+import {
+  calculateCpmmSale,
+  getCpmmProbability,
+} from '../../common/calculate-cpmm'
 
 export function BetPanel(props: {
   contract: FullContract<DPM | CPMM, Binary>
@@ -36,15 +40,13 @@ export function BetPanel(props: {
   selected?: 'YES' | 'NO'
   onBetSuccess?: () => void
 }) {
-  useEffect(() => {
-    // warm up cloud function
-    placeBet({}).catch()
-  }, [])
-
   const { contract, className, title, selected, onBetSuccess } = props
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id) ?? []
+
+  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
+
   const [yesBets, noBets] = _.partition(
     userBets,
     (bet) => bet.outcome === 'YES'
@@ -54,9 +56,93 @@ export function BetPanel(props: {
     _.sumBy(noBets, (bet) => bet.shares),
   ]
 
-  const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
+  const sharesOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
 
-  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
+  return (
+    <Col>
+      {sharesOutcome && (
+        <Col className="rounded-t-md px-6 py-6 bg-gray-100">
+          <Row className="justify-between items-center gap-2">
+            <div>
+              You have {formatWithCommas(Math.floor(yesShares || noShares))}{' '}
+              <OutcomeLabel outcome={sharesOutcome} /> shares
+            </div>
+
+            <button
+              className="btn btn-sm"
+              style={{
+                backgroundColor: 'white',
+                border: '2px solid',
+                color: '#3D4451',
+              }}
+              onClick={() =>
+                tradeType === 'BUY' ? setTradeType('SELL') : setTradeType('BUY')
+              }
+            >
+              {tradeType === 'BUY' ? 'Sell' : 'Buy'}
+            </button>
+          </Row>
+        </Col>
+      )}
+
+      <Col
+        className={clsx(
+          'rounded-b-md bg-white px-8 py-6',
+          !sharesOutcome && 'rounded-t-md',
+          className
+        )}
+      >
+        <Title
+          className={clsx(
+            '!mt-0',
+            tradeType === 'BUY' && title ? '!text-xl' : ''
+          )}
+          text={tradeType === 'BUY' ? title ?? 'Buy' : 'Sell'}
+        />
+
+        {tradeType === 'SELL' && user && sharesOutcome && (
+          <SellPanel
+            contract={contract as FullContract<CPMM, Binary>}
+            shares={yesShares || noShares}
+            sharesOutcome={sharesOutcome}
+            user={user}
+            userBets={userBets}
+            onSellSuccess={onBetSuccess}
+          />
+        )}
+
+        {tradeType === 'BUY' && (
+          <BuyPanel
+            contract={contract}
+            user={user}
+            userBets={userBets}
+            selected={selected}
+            onBuySuccess={onBetSuccess}
+          />
+        )}
+
+        {user === null && (
+          <button
+            className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
+            onClick={firebaseLogin}
+          >
+            Sign in to trade!
+          </button>
+        )}
+      </Col>
+    </Col>
+  )
+}
+
+function BuyPanel(props: {
+  contract: FullContract<DPM | CPMM, Binary>
+  user: User | null | undefined
+  userBets: Bet[]
+  selected?: 'YES' | 'NO'
+  onBuySuccess?: () => void
+}) {
+  const { contract, user, userBets, selected, onBuySuccess } = props
+
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
   const [inputRef, focusAmountInput] = useFocus()
@@ -64,6 +150,11 @@ export function BetPanel(props: {
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
+
+  useEffect(() => {
+    // warm up cloud function
+    placeBet({}).catch()
+  }, [])
 
   function onBetChoice(choice: 'YES' | 'NO') {
     setBetChoice(choice)
@@ -97,7 +188,7 @@ export function BetPanel(props: {
       setIsSubmitting(false)
       setWasSubmitted(true)
       setBetAmount(undefined)
-      if (onBetSuccess) onBetSuccess()
+      if (onBuySuccess) onBuySuccess()
     } else {
       setError(result?.error || 'Error placing bet')
       setIsSubmitting(false)
@@ -128,10 +219,9 @@ export function BetPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const panelTitle = title ?? 'Place a trade'
-  if (title) {
+  useEffect(() => {
     focusAmountInput()
-  }
+  }, [focusAmountInput])
 
   const tooltip =
     contract.mechanism === 'dpm-2'
@@ -143,84 +233,25 @@ export function BetPanel(props: {
               : 0)
         )} ${betChoice} shares`
       : undefined
-
   return (
-    <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
-      <Title
-        className={clsx('!mt-0', title ? '!text-xl' : '')}
-        text={panelTitle}
+    <>
+      <YesNoSelector
+        className="mb-4"
+        selected={betChoice}
+        onSelect={(choice) => onBetChoice(choice)}
       />
-
-      {contract.mechanism === 'cpmm-1' && (
-        <Row className="gap-2 w-full tabs mb-6">
-          <div
-            className={clsx(
-              'tab gap-2 tab-bordered flex-1',
-              tradeType === 'BUY' && 'tab-active'
-            )}
-            onClick={() => setTradeType('BUY')}
-          >
-            BUY
-          </div>
-          <div
-            className={clsx(
-              'tab gap-2 tab-bordered flex-1',
-              tradeType === 'SELL' && 'tab-active'
-            )}
-            onClick={() => setTradeType('SELL')}
-          >
-            SELL
-          </div>
-        </Row>
-      )}
-
-      {tradeType === 'BUY' ? (
-        <>
-          <YesNoSelector
-            className="mb-4"
-            selected={betChoice}
-            onSelect={(choice) => onBetChoice(choice)}
-          />
-          <div className="my-3 text-left text-sm text-gray-500">Buy amount</div>
-          <BuyAmountInput
-            inputClassName="w-full"
-            amount={betAmount}
-            onChange={onBetChange}
-            userBets={userBets}
-            error={error}
-            setError={setError}
-            disabled={isSubmitting}
-            inputRef={inputRef}
-            contractIdForLoan={contract.id}
-          />
-        </>
-      ) : sellOutcome ? (
-        <>
-          <div className="mb-3 text-left ">
-            You have {formatWithCommas(yesShares || noShares)}{' '}
-            <OutcomeLabel outcome={sellOutcome} /> shares
-          </div>
-
-          <div className="my-3 text-left text-sm text-gray-500">
-            Sell quantity
-          </div>
-          <SellAmountInput
-            inputClassName="w-full"
-            contract={contract as FullContract<CPMM, Binary>}
-            amount={betAmount}
-            onChange={onBetChange}
-            userBets={userBets}
-            error={error}
-            setError={setError}
-            disabled={isSubmitting}
-            inputRef={inputRef}
-          />
-        </>
-      ) : (
-        <div className="mb-3 text-left text-gray-500">
-          You have don't have any shares to sell.
-        </div>
-      )}
+      <div className="my-3 text-left text-sm text-gray-500">Amount</div>
+      <BuyAmountInput
+        inputClassName="w-full"
+        amount={betAmount}
+        onChange={onBetChange}
+        userBets={userBets}
+        error={error}
+        setError={setError}
+        disabled={isSubmitting}
+        inputRef={inputRef}
+        contractIdForLoan={contract.id}
+      />
 
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
@@ -232,23 +263,21 @@ export function BetPanel(props: {
           </Row>
         </Row>
 
-        {tradeType === 'BUY' && (
-          <Row className="items-start justify-between gap-2 text-sm">
-            <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-              <div>
-                Payout if <OutcomeLabel outcome={betChoice ?? 'YES'} />
-              </div>
+        <Row className="items-start justify-between gap-2 text-sm">
+          <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+            <div>
+              Payout if <OutcomeLabel outcome={betChoice ?? 'YES'} />
+            </div>
 
-              {tooltip && <InfoTooltip text={tooltip} />}
-            </Row>
-            <Row className="flex-wrap items-end justify-end gap-2">
-              <span className="whitespace-nowrap">
-                {formatMoney(currentPayout)}
-              </span>
-              <span>(+{currentReturnPercent})</span>
-            </Row>
+            {tooltip && <InfoTooltip text={tooltip} />}
           </Row>
-        )}
+          <Row className="flex-wrap items-end justify-end gap-2">
+            <span className="whitespace-nowrap">
+              {formatMoney(currentPayout)}
+            </span>
+            <span>(+{currentReturnPercent})</span>
+          </Row>
+        </Row>
       </Col>
 
       <Spacer h={8} />
@@ -266,19 +295,107 @@ export function BetPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit trade'}
-        </button>
-      )}
-      {user === null && (
-        <button
-          className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-          onClick={firebaseLogin}
-        >
-          Sign in to trade!
+          {isSubmitting ? 'Submitting...' : 'Submit Buy'}
         </button>
       )}
 
-      {wasSubmitted && <div className="mt-4">Trade submitted!</div>}
-    </Col>
+      {wasSubmitted && <div className="mt-4">Buy submitted!</div>}
+    </>
+  )
+}
+
+function SellPanel(props: {
+  contract: FullContract<CPMM, Binary>
+  userBets: Bet[]
+  shares: number
+  sharesOutcome: 'YES' | 'NO'
+  user: User
+  onSellSuccess?: () => void
+}) {
+  const { contract, shares, sharesOutcome, userBets, user, onSellSuccess } =
+    props
+
+  const [amount, setAmount] = useState<number | undefined>(Math.floor(shares))
+  const [error, setError] = useState<string | undefined>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wasSubmitted, setWasSubmitted] = useState(false)
+
+  const betDisabled = isSubmitting || !amount || error
+
+  async function submitSell() {
+    if (!user || !amount) return
+
+    setError(undefined)
+    setIsSubmitting(true)
+
+    const result = await placeBet({
+      shares: amount,
+      outcome: sharesOutcome,
+      contractId: contract.id,
+    }).then((r) => r.data as any)
+
+    console.log('placed bet. Result:', result)
+
+    if (result?.status === 'success') {
+      setIsSubmitting(false)
+      setWasSubmitted(true)
+      setAmount(undefined)
+      if (onSellSuccess) onSellSuccess()
+    } else {
+      setError(result?.error || 'Error selling')
+      setIsSubmitting(false)
+    }
+  }
+
+  const initialProb = getProbability(contract)
+  const { newPool } = calculateCpmmSale(contract, {
+    shares: amount ?? 0,
+    outcome: sharesOutcome,
+  } as Bet)
+  const resultProb = getCpmmProbability(newPool, contract.p)
+
+  return (
+    <>
+      <SellAmountInput
+        inputClassName="w-full"
+        contract={contract}
+        amount={amount}
+        onChange={setAmount}
+        userBets={userBets}
+        error={error}
+        setError={setError}
+        disabled={isSubmitting}
+      />
+
+      <Col className="mt-3 w-full gap-3">
+        <Row className="items-center justify-between text-sm">
+          <div className="text-gray-500">Probability</div>
+          <Row>
+            <div>{formatPercent(initialProb)}</div>
+            <div className="mx-2">→</div>
+            <div>{formatPercent(resultProb)}</div>
+          </Row>
+        </Row>
+      </Col>
+
+      <Spacer h={8} />
+
+      <button
+        className={clsx(
+          'btn flex-1',
+          betDisabled
+            ? 'btn-disabled'
+            : sharesOutcome === 'YES'
+            ? 'btn-primary'
+            : 'border-none bg-red-400 hover:bg-red-500',
+          isSubmitting ? 'loading' : ''
+        )}
+        onClick={betDisabled ? undefined : submitSell}
+      >
+        {isSubmitting ? 'Submitting...' : 'Submit sell'}
+      </button>
+
+      {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
+    </>
   )
 }

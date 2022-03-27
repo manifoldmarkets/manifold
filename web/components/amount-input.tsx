@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import _ from 'lodash'
 import { useUser } from '../hooks/use-user'
-import { formatMoney } from '../../common/util/format'
+import { formatMoney, formatWithCommas } from '../../common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Bet, MAX_LOAN_PER_CONTRACT } from '../../common/bet'
@@ -86,7 +86,7 @@ export function BuyAmountInput(props: {
   error: string | undefined
   setError: (error: string | undefined) => void
   contractIdForLoan: string | undefined
-  userBets: Bet[]
+  userBets?: Bet[]
   minimumAmount?: number
   disabled?: boolean
   className?: string
@@ -110,7 +110,9 @@ export function BuyAmountInput(props: {
 
   const user = useUser()
 
-  const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
+  const openUserBets = (userBets ?? []).filter(
+    (bet) => !bet.isSold && !bet.sale
+  )
   const prevLoanAmount = _.sumBy(openUserBets, (bet) => bet.loanAmount ?? 0)
 
   const loanAmount = contractIdForLoan
@@ -182,7 +184,6 @@ export function SellAmountInput(props: {
   userBets: Bet[]
   error: string | undefined
   setError: (error: string | undefined) => void
-  minimumAmount?: number
   disabled?: boolean
   className?: string
   inputClassName?: string
@@ -199,7 +200,6 @@ export function SellAmountInput(props: {
     disabled,
     className,
     inputClassName,
-    minimumAmount,
     inputRef,
   } = props
 
@@ -216,6 +216,7 @@ export function SellAmountInput(props: {
   ]
 
   const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
+  const shares = yesShares || noShares
 
   const prevLoanAmount = _.sumBy(openUserBets, (bet) => bet.loanAmount ?? 0)
 
@@ -227,10 +228,24 @@ export function SellAmountInput(props: {
 
   const loanRepaid = Math.min(prevLoanAmount, sellAmount)
 
+  const onAmountChange = (amount: number | undefined) => {
+    onChange(amount)
+
+    // Check for errors.
+    if (amount !== undefined) {
+      console.log(shares, amount)
+      if (amount > shares) {
+        setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
+      } else {
+        setError(undefined)
+      }
+    }
+  }
+
   return (
     <AmountInput
       amount={amount}
-      onChange={onChange}
+      onChange={onAmountChange}
       label="Shares"
       error={error}
       disabled={disabled}
@@ -241,7 +256,7 @@ export function SellAmountInput(props: {
       {user && (
         <Col className="gap-3 text-sm">
           <Row className="items-center justify-between gap-2 text-gray-500">
-            Sale amount{' '}
+            Sale proceeds{' '}
             <span className="text-neutral">{formatMoney(sellAmount)}</span>
           </Row>
           {prevLoanAmount && (
