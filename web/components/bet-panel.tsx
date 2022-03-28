@@ -45,19 +45,13 @@ export function BetPanel(props: {
   const { mechanism } = contract
 
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id) ?? []
+  const userBets = useUserContractBets(user?.id, contract.id)
 
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
 
-  const [yesBets, noBets] = _.partition(
-    userBets,
-    (bet) => bet.outcome === 'YES'
-  )
-  const [yesShares, noShares] = [
-    _.sumBy(yesBets, (bet) => bet.shares),
-    _.sumBy(noBets, (bet) => bet.shares),
-  ]
+  const { yesShares, noShares } = useSaveShares(contract, userBets)
 
+  const shares = yesShares || noShares
   const sharesOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
 
   useEffect(() => {
@@ -73,7 +67,7 @@ export function BetPanel(props: {
         <Col className="rounded-t-md bg-gray-100 px-6 py-6">
           <Row className="items-center justify-between gap-2">
             <div>
-              You have {formatWithCommas(Math.floor(yesShares || noShares))}{' '}
+              You have {formatWithCommas(Math.floor(shares))}{' '}
               <OutcomeLabel outcome={sharesOutcome} /> shares
             </div>
 
@@ -115,7 +109,7 @@ export function BetPanel(props: {
             shares={yesShares || noShares}
             sharesOutcome={sharesOutcome}
             user={user}
-            userBets={userBets}
+            userBets={userBets ?? []}
             onSellSuccess={onBetSuccess}
           />
         )}
@@ -124,7 +118,7 @@ export function BetPanel(props: {
           <BuyPanel
             contract={contract}
             user={user}
-            userBets={userBets}
+            userBets={userBets ?? []}
             selected={selected}
             onBuySuccess={onBetSuccess}
           />
@@ -416,4 +410,41 @@ function SellPanel(props: {
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
     </>
   )
+}
+
+const useSaveShares = (
+  contract: FullContract<CPMM | DPM, Binary>,
+  userBets: Bet[] | undefined
+) => {
+  const [savedShares, setSavedShares] = useState<
+    { yesShares: number; noShares: number } | undefined
+  >()
+
+  const [yesBets, noBets] = _.partition(
+    userBets ?? [],
+    (bet) => bet.outcome === 'YES'
+  )
+  const [yesShares, noShares] = [
+    _.sumBy(yesBets, (bet) => bet.shares),
+    _.sumBy(noBets, (bet) => bet.shares),
+  ]
+
+  useEffect(() => {
+    // Save yes and no shares to local storage.
+    const savedShares = localStorage.getItem(`${contract.id}-shares`)
+    if (!userBets && savedShares) {
+      setSavedShares(JSON.parse(savedShares))
+    }
+
+    if (userBets) {
+      const updatedShares = { yesShares, noShares }
+      localStorage.setItem(
+        `${contract.id}-shares`,
+        JSON.stringify(updatedShares)
+      )
+    }
+  }, [contract.id, userBets, noShares, yesShares])
+
+  if (userBets) return { yesShares, noShares }
+  return savedShares ?? { yesShares: 0, noShares: 0 }
 }
