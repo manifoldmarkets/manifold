@@ -237,7 +237,7 @@ export function SellAmountInput(props: {
     <AmountInput
       amount={amount}
       onChange={onAmountChange}
-      label="Shares"
+      label="Qty"
       error={error}
       disabled={disabled}
       className={className}

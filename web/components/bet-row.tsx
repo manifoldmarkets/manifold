@@ -28,7 +28,6 @@ export default function BetRow(props: {
           </div>
           <YesNoSelector
             btnClassName="btn-sm w-20"
-            showBuyLabel
             onSelect={(choice) => {
               setOpen(true)
               setBetChoice(choice)

@@ -7,11 +7,10 @@ import { Row } from './layout/row'
 export function YesNoSelector(props: {
   selected?: 'YES' | 'NO'
   onSelect: (selected: 'YES' | 'NO') => void
-  showBuyLabel?: boolean
   className?: string
   btnClassName?: string
 }) {
-  const { selected, onSelect, showBuyLabel, className, btnClassName } = props
+  const { selected, onSelect, className, btnClassName } = props
 
   const commonClassNames =
     'inline-flex flex-1  items-center justify-center rounded-3xl border-2 p-2'
@@ -29,7 +28,7 @@ export function YesNoSelector(props: {
         )}
         onClick={() => onSelect('YES')}
       >
-        {showBuyLabel ? 'Buy' : ''} YES
+        Buy YES
       </button>
       <button
         className={clsx(
@@ -42,7 +41,7 @@ export function YesNoSelector(props: {
         )}
         onClick={() => onSelect('NO')}
       >
-        {showBuyLabel ? 'Buy' : ''} NO
+        Buy NO
       </button>
     </Row>
   )

@@ -42,6 +42,8 @@ export function BetPanel(props: {
 }) {
   const { contract, className, title, selected, onBetSuccess } = props
 
+  const { mechanism } = contract
+
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id) ?? []
 
@@ -59,10 +61,10 @@ export function BetPanel(props: {
   const sharesOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
 
   return (
-    <Col>
-      {sharesOutcome && (
-        <Col className="rounded-t-md px-6 py-6 bg-gray-100">
-          <Row className="justify-between items-center gap-2">
+    <Col className={className}>
+      {sharesOutcome && mechanism === 'cpmm-1' && (
+        <Col className="rounded-t-md bg-gray-100 px-6 py-6">
+          <Row className="items-center justify-between gap-2">
             <div>
               You have {formatWithCommas(Math.floor(yesShares || noShares))}{' '}
               <OutcomeLabel outcome={sharesOutcome} /> shares
@@ -97,7 +99,7 @@ export function BetPanel(props: {
             '!mt-0',
             tradeType === 'BUY' && title ? '!text-xl' : ''
           )}
-          text={tradeType === 'BUY' ? title ?? 'Buy' : 'Sell'}
+          text={tradeType === 'BUY' ? title ?? 'Place a trade' : 'Sell shares'}
         />
 
         {tradeType === 'SELL' && user && sharesOutcome && (
@@ -145,16 +147,20 @@ function BuyPanel(props: {
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
-  const [inputRef, focusAmountInput] = useFocus()
-
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
+
+  const [inputRef, focusAmountInput] = useFocus()
 
   useEffect(() => {
     // warm up cloud function
     placeBet({}).catch()
   }, [])
+
+  useEffect(() => {
+    if (selected) focusAmountInput()
+  }, [selected, focusAmountInput])
 
   function onBetChoice(choice: 'YES' | 'NO') {
     setBetChoice(choice)
@@ -218,10 +224,6 @@ function BuyPanel(props: {
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
-
-  useEffect(() => {
-    focusAmountInput()
-  }, [focusAmountInput])
 
   const dpmTooltip =
     contract.mechanism === 'dpm-2'
