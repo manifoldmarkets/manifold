@@ -60,6 +60,13 @@ export function BetPanel(props: {
 
   const sharesOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
 
+  useEffect(() => {
+    // Switch back to BUY if the user has sold all their shares.
+    if (tradeType === 'SELL' && sharesOutcome === undefined) {
+      setTradeType('BUY')
+    }
+  }, [tradeType, sharesOutcome])
+
   return (
     <Col className={className}>
       {sharesOutcome && mechanism === 'cpmm-1' && (
@@ -326,7 +333,7 @@ function SellPanel(props: {
   const { contract, shares, sharesOutcome, userBets, user, onSellSuccess } =
     props
 
-  const [amount, setAmount] = useState<number | undefined>(Math.floor(shares))
+  const [amount, setAmount] = useState<number | undefined>(shares)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -370,7 +377,7 @@ function SellPanel(props: {
       <SellAmountInput
         inputClassName="w-full"
         contract={contract}
-        amount={amount}
+        amount={amount ? Math.floor(amount) : undefined}
         onChange={setAmount}
         userBets={userBets}
         error={error}
