@@ -119,9 +119,6 @@ export function BuyAmountInput(props: {
     ? Math.min(amount ?? 0, MAX_LOAN_PER_CONTRACT - prevLoanAmount)
     : 0
 
-  const amountNetLoan = (amount ?? 0) - loanAmount
-  const remainingBalance = Math.max(0, (user?.balance ?? 0) - amountNetLoan)
-
   const onAmountChange = (amount: number | undefined) => {
     onChange(amount)
 
@@ -152,12 +149,6 @@ export function BuyAmountInput(props: {
     >
       {user && (
         <Col className="gap-3 text-sm">
-          <Row className="items-center justify-between gap-2 text-gray-500">
-            Remaining balance{' '}
-            <span className="text-neutral">
-              {formatMoney(Math.floor(remainingBalance))}
-            </span>
-          </Row>
           {contractIdForLoan && (
             <Row className="items-center justify-between gap-2 text-gray-500">
               <Row className="items-center gap-2">
