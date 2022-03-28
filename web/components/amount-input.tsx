@@ -212,12 +212,12 @@ export function SellAmountInput(props: {
   const prevLoanAmount = _.sumBy(openUserBets, (bet) => bet.loanAmount ?? 0)
 
   const sharesSold = Math.min(amount ?? 0, yesShares || noShares)
-  const sellAmount = calculateCpmmSale(contract, {
+  const { saleValue } = calculateCpmmSale(contract, {
     shares: sharesSold,
-    outcome: sellOutcome,
-  } as Bet).saleValue
+    outcome: sellOutcome as 'YES' | 'NO',
+  })
 
-  const loanRepaid = Math.min(prevLoanAmount, sellAmount)
+  const loanRepaid = Math.min(prevLoanAmount, saleValue)
 
   const onAmountChange = (amount: number | undefined) => {
     onChange(amount)
@@ -248,7 +248,7 @@ export function SellAmountInput(props: {
         <Col className="gap-3 text-sm">
           <Row className="items-center justify-between gap-2 text-gray-500">
             Sale proceeds{' '}
-            <span className="text-neutral">{formatMoney(sellAmount)}</span>
+            <span className="text-neutral">{formatMoney(saleValue)}</span>
           </Row>
           {prevLoanAmount && (
             <Row className="items-center justify-between gap-2 text-gray-500">

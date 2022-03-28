@@ -16,7 +16,7 @@ import {
 import { Title } from './title'
 import { firebaseLogin, User } from '../lib/firebase/users'
 import { Bet } from '../../common/bet'
-import { placeBet } from '../lib/firebase/api-call'
+import { placeBet, sellShares } from '../lib/firebase/api-call'
 import { BuyAmountInput, SellAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { OutcomeLabel } from './outcome-label'
@@ -196,7 +196,7 @@ function BuyPanel(props: {
       setBetAmount(undefined)
       if (onBuySuccess) onBuySuccess()
     } else {
-      setError(result?.error || 'Error placing bet')
+      setError(result?.message || 'Error placing bet')
       setIsSubmitting(false)
     }
   }
@@ -339,13 +339,13 @@ function SellPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    const result = await placeBet({
+    const result = await sellShares({
       shares: amount,
       outcome: sharesOutcome,
       contractId: contract.id,
-    }).then((r) => r.data as any)
+    }).then((r) => r.data)
 
-    console.log('placed bet. Result:', result)
+    console.log('Sold shares. Result:', result)
 
     if (result?.status === 'success') {
       setIsSubmitting(false)
@@ -353,7 +353,7 @@ function SellPanel(props: {
       setAmount(undefined)
       if (onSellSuccess) onSellSuccess()
     } else {
-      setError(result?.error || 'Error selling')
+      setError(result?.message || 'Error selling')
       setIsSubmitting(false)
     }
   }
@@ -362,7 +362,7 @@ function SellPanel(props: {
   const { newPool } = calculateCpmmSale(contract, {
     shares: amount ?? 0,
     outcome: sharesOutcome,
-  } as Bet)
+  })
   const resultProb = getCpmmProbability(newPool, contract.p)
 
   return (

@@ -131,7 +131,7 @@ export function calculateCpmmShareValue(
 
 export function calculateCpmmSale(
   contract: FullContract<CPMM, Binary>,
-  bet: Bet
+  bet: { shares: number; outcome: string }
 ) {
   const { shares, outcome } = bet
 
