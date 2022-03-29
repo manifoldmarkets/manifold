@@ -1,7 +1,9 @@
+import _ from 'lodash'
 import { useEffect, useState } from 'react'
 import { Fold } from '../../common/fold'
 import { User } from '../../common/user'
 import {
+  listAllFolds,
   listenForFold,
   listenForFolds,
   listenForFoldsWithTags,
@@ -49,7 +51,7 @@ export const useFollowingFold = (fold: Fold, user: User | null | undefined) => {
   return following
 }
 
-// Note: We cache FollowedFolds in localstorage to speed up the initial load
+// Note: We cache followedFoldIds in localstorage to speed up the initial load
 export const useFollowedFoldIds = (user: User | null | undefined) => {
   const [followedFoldIds, setFollowedFoldIds] = useState<string[] | undefined>(
     undefined
@@ -71,4 +73,39 @@ export const useFollowedFoldIds = (user: User | null | undefined) => {
   }, [user])
 
   return followedFoldIds
+}
+
+// We also cache followedFolds directly in JSON.
+// TODO: Extract out localStorage caches to a utility
+export const useFollowedFolds = (user: User | null | undefined) => {
+  const [followedFolds, setFollowedFolds] = useState<Fold[] | undefined>()
+  const ids = useFollowedFoldIds(user)
+
+  useEffect(() => {
+    if (user && ids) {
+      const key = `followed-full-folds-${user.id}`
+      const followedFoldJson = localStorage.getItem(key)
+      if (followedFoldJson) {
+        setFollowedFolds(JSON.parse(followedFoldJson))
+        // Exit early if ids and followedFoldIds have all the same elements.
+        if (
+          _.isEqual(
+            _.sortBy(ids),
+            _.sortBy(JSON.parse(followedFoldJson).map((f: Fold) => f.id))
+          )
+        ) {
+          return
+        }
+      }
+
+      // Otherwise, fetch the full contents of all folds
+      listAllFolds().then((folds) => {
+        const followedFolds = folds.filter((fold) => ids.includes(fold.id))
+        setFollowedFolds(followedFolds)
+        localStorage.setItem(key, JSON.stringify(followedFolds))
+      })
+    }
+  }, [user, ids])
+
+  return followedFolds
 }

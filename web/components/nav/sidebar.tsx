@@ -5,8 +5,11 @@ import {
   BookOpenIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import _ from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useFollowedFolds } from '../../hooks/use-fold'
+import { useUser } from '../../hooks/use-user'
 
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
@@ -65,6 +68,10 @@ export default function Sidebar() {
   const router = useRouter()
   const currentPage = router.pathname
 
+  const user = useUser()
+  let folds = useFollowedFolds(user) || []
+  folds = _.sortBy(folds, 'followCount').reverse()
+
   return (
     <nav aria-label="Sidebar" className="sticky top-4 divide-y divide-gray-300">
       <div className="space-y-1 pb-8">
@@ -79,13 +86,13 @@ export default function Sidebar() {
         />
 
         <div className="mt-3 space-y-2">
-          {communities.map((community) => (
+          {folds.map((fold) => (
             <a
-              key={community.name}
-              href={community.href}
+              key={fold.name}
+              href={`/fold/${fold.slug}`}
               className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             >
-              <span className="truncate">&nbsp; {community.name}</span>
+              <span className="truncate">&nbsp; {fold.name}</span>
             </a>
           ))}
         </div>
