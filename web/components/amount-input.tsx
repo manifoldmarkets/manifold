@@ -224,7 +224,6 @@ export function SellAmountInput(props: {
 
     // Check for errors.
     if (amount !== undefined) {
-      console.log(shares, amount)
       if (amount > shares) {
         setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
       } else {

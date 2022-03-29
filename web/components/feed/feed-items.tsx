@@ -36,7 +36,7 @@ import { DateTimeTooltip } from '../datetime-tooltip'
 import { Bet } from '../../lib/firebase/bets'
 import { JoinSpans } from '../join-spans'
 import { fromNow } from '../../lib/util/time'
-import BetRow, { Modal } from '../bet-row'
+import BetRow from '../bet-row'
 import { parseTags } from '../../../common/util/parse'
 import { Avatar } from '../avatar'
 import { useAdmin } from '../../hooks/use-admin'
@@ -48,6 +48,7 @@ import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
 import { AnswerBetPanel } from '../answers/answer-bet-panel'
 import { useSaveSeenContract } from '../../hooks/use-seen-contracts'
 import { User } from '../../../common/user'
+import { Modal } from '../layout/modal'
 
 export function FeedItems(props: {
   contract: Contract
