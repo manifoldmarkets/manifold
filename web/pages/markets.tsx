@@ -3,7 +3,6 @@ import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
 import { useContracts } from '../hooks/use-contracts'
-import { useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 import { Contract, listAllContracts } from '../lib/firebase/contracts'
 
 export async function getStaticProps() {
@@ -21,8 +20,6 @@ export async function getStaticProps() {
 export default function Markets(props: { contracts: Contract[] }) {
   const contracts = useContracts() ?? props.contracts ?? []
 
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
-
   return (
     <Page>
       <SEO
@@ -35,13 +32,7 @@ export default function Markets(props: { contracts: Contract[] }) {
       <ClosingSoonMarkets contracts={closingSoonContracts} />
       <Spacer h={10} /> */}
 
-      <SearchableGrid
-        contracts={contracts}
-        query={query}
-        setQuery={setQuery}
-        sort={sort}
-        setSort={setSort}
-      />
+      <SearchableGrid contracts={contracts} />
     </Page>
   )
 }
