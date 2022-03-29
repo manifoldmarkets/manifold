@@ -199,13 +199,16 @@ const MAX_CONTRACTS_DISPLAYED = 99
 
 export function SearchableGrid(props: {
   contracts: Contract[]
-  query: string
-  setQuery: (query: string) => void
-  sort: Sort
-  setSort: (sort: Sort) => void
   byOneCreator?: boolean
+  querySortOptions?: {
+    defaultSort: Sort
+    shouldLoadFromStorage?: boolean
+  }
 }) {
-  const { contracts, query, setQuery, sort, setSort, byOneCreator } = props
+  const { contracts, byOneCreator, querySortOptions } = props
+
+  const { query, setQuery, sort, setSort } =
+    useQueryAndSortParams(querySortOptions)
 
   const queryWords = query.toLowerCase().split(' ')
   function check(corpus: String) {
@@ -324,11 +327,6 @@ export function CreatorContractsList(props: { creator: User }) {
   const { creator } = props
   const [contracts, setContracts] = useState<Contract[] | 'loading'>('loading')
 
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams({
-    defaultSort: 'all',
-    shouldLoadFromStorage: false,
-  })
-
   useEffect(() => {
     if (creator?.id) {
       // TODO: stream changes from firestore
@@ -342,10 +340,10 @@ export function CreatorContractsList(props: { creator: User }) {
     <SearchableGrid
       contracts={contracts}
       byOneCreator
-      query={query}
-      setQuery={setQuery}
-      sort={sort}
-      setSort={setSort}
+      querySortOptions={{
+        defaultSort: 'all',
+        shouldLoadFromStorage: false,
+      }}
     />
   )
 }
