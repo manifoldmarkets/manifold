@@ -25,7 +25,14 @@ export function Page(props: {
         <div className="hidden lg:col-span-3 lg:block xl:col-span-2">
           <Sidebar />
         </div>
-        <main className="lg:col-span-9 xl:col-span-7">{children}</main>
+        <main
+          className={clsx(
+            'lg:col-span-9',
+            rightSidebar ? 'xl:col-span-7' : 'xl:col-span-8'
+          )}
+        >
+          {children}
+        </main>
         <aside className="hidden xl:col-span-3 xl:block">
           <div className="sticky top-4 space-y-4">{rightSidebar}</div>
         </aside>
