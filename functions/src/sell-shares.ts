@@ -48,7 +48,7 @@ export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
-      const { newBet, newPool, newBalance, fees } = getCpmmSellBetInfo(
+      const { newBet, newPool, newP, newBalance, fees } = getCpmmSellBetInfo(
         user,
         shares,
         outcome,
@@ -56,15 +56,24 @@ export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
         newBetDoc.id
       )
 
+      if (!isFinite(newP)) {
+        return {
+          status: 'error',
+          message: 'Trade rejected due to overflow error.',
+        }
+      }
+
       if (!isFinite(newBalance)) {
         throw new Error('Invalid user balance for ' + user.username)
       }
+
       transaction.update(userDoc, { balance: newBalance })
       transaction.create(newBetDoc, newBet)
       transaction.update(
         contractDoc,
         removeUndefinedProps({
           pool: newPool,
+          p: newP,
           collectedFees: addObjects(fees ?? {}, collectedFees ?? {}),
           volume: volume + Math.abs(newBet.amount),
         })

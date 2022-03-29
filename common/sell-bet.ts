@@ -92,7 +92,7 @@ export const getCpmmSellBetInfo = (
 ) => {
   const { pool, p } = contract
 
-  const { saleValue, newPool, fees } = calculateCpmmSale(contract, {
+  const { saleValue, newPool, newP, fees } = calculateCpmmSale(contract, {
     shares,
     outcome,
   })
@@ -128,6 +128,7 @@ export const getCpmmSellBetInfo = (
   return {
     newBet,
     newPool,
+    newP,
     newBalance,
     fees,
   }
