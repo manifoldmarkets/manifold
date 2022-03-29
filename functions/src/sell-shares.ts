@@ -61,7 +61,7 @@ export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
       ]
 
       const maxShares = outcome === 'YES' ? yesShares : noShares
-      if (shares > maxShares) {
+      if (shares > maxShares + 0.000000000001) {
         return {
           status: 'error',
           message: `You can only sell ${maxShares} shares`,
