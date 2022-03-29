@@ -1,3 +1,4 @@
+import * as _ from 'lodash'
 import * as admin from 'firebase-admin'
 import * as functions from 'firebase-functions'
 
@@ -5,6 +6,8 @@ import { Binary, CPMM, FullContract } from '../../common/contract'
 import { User } from '../../common/user'
 import { getCpmmSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
+import { getValues } from './utils'
+import { Bet } from '../../common/bet'
 
 export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -43,6 +46,27 @@ export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
 
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
+
+      const userBets = await getValues<Bet>(
+        contractDoc.collection('bets').where('userId', '==', userId)
+      )
+
+      const [yesBets, noBets] = _.partition(
+        userBets ?? [],
+        (bet) => bet.outcome === 'YES'
+      )
+      const [yesShares, noShares] = [
+        _.sumBy(yesBets, (bet) => bet.shares),
+        _.sumBy(noBets, (bet) => bet.shares),
+      ]
+
+      const maxShares = outcome === 'YES' ? yesShares : noShares
+      if (shares > maxShares) {
+        return {
+          status: 'error',
+          message: `You can only sell ${maxShares} shares`,
+        }
+      }
 
       const newBetDoc = firestore
         .collection(`contracts/${contractId}/bets`)
