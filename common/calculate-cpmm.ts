@@ -114,28 +114,60 @@ export function calculateCpmmPurchase(
   return { shares, newPool, newP, fees }
 }
 
-export function calculateCpmmShareValue(
+function computeK(y: number, n: number, p: number) {
+  return y ** p * n ** (1 - p)
+}
+
+function sellSharesK(
+  y: number,
+  n: number,
+  p: number,
+  s: number,
+  outcome: 'YES' | 'NO',
+  b: number
+) {
+  return outcome === 'YES'
+    ? computeK(y - b + s, n - b, p)
+    : computeK(y - b, n - b + s, p)
+}
+
+function calculateCpmmShareValue(
   contract: FullContract<CPMM, Binary>,
   shares: number,
-  outcome: string
+  outcome: 'YES' | 'NO'
 ) {
-  const { pool } = contract
-  const { YES: y, NO: n } = pool
+  const { pool, p } = contract
 
-  // TODO: calculate using new function
-  const poolChange = outcome === 'YES' ? shares + y - n : shares + n - y
-  const k = y * n
-  const shareValue = 0.5 * (shares + y + n - Math.sqrt(4 * k + poolChange ** 2))
-  return shareValue
+  const k = computeK(pool.YES, pool.NO, p)
+
+  // Find bet amount that preserves k after selling shares.
+  let lowAmount = 0
+  let highAmount = shares
+  let mid = 0
+  let kGuess = 0
+  while (Math.abs(k - kGuess) > 0.00000000001) {
+    mid = lowAmount + (highAmount - lowAmount) / 2
+    kGuess = sellSharesK(pool.YES, pool.NO, p, shares, outcome, mid)
+    if (kGuess < k) {
+      highAmount = mid
+    } else {
+      lowAmount = mid
+    }
+  }
+  return mid
 }
 
 export function calculateCpmmSale(
   contract: FullContract<CPMM, Binary>,
-  bet: Bet
+  bet: { shares: number; outcome: string }
 ) {
   const { shares, outcome } = bet
 
-  const rawSaleValue = calculateCpmmShareValue(contract, shares, outcome)
+  const rawSaleValue = calculateCpmmShareValue(
+    contract,
+    Math.abs(shares),
+    outcome as 'YES' | 'NO'
+  )
 
   const { fees, remainingBet: saleValue } = getCpmmLiquidityFee(
     contract,
@@ -153,9 +185,11 @@ export function calculateCpmmSale(
       ? [y + shares - saleValue + fee, n - saleValue + fee]
       : [y - saleValue + fee, n + shares - saleValue + fee]
 
-  const newPool = { YES: newY, NO: newN }
+  const postBetPool = { YES: newY, NO: newN }
 
-  return { saleValue, newPool, fees }
+  const { newPool, newP } = addCpmmLiquidity(postBetPool, contract.p, fee)
+
+  return { saleValue, newPool, newP, fees }
 }
 
 export function getCpmmProbabilityAfterSale(

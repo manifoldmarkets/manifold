@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
 import { DPM, FreeResponse, FullContract } from '../../../common/contract'
-import { AmountInput } from '../amount-input'
+import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { createAnswer } from '../../lib/firebase/api-call'
 import { Row } from '../layout/row'
@@ -97,7 +97,7 @@ export function CreateAnswerPanel(props: {
             <>
               <Col className="mt-1 gap-2">
                 <div className="text-sm text-gray-500">Buy amount</div>
-                <AmountInput
+                <BuyAmountInput
                   amount={betAmount}
                   onChange={setBetAmount}
                   error={amountError}

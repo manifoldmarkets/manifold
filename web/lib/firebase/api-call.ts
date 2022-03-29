@@ -18,6 +18,13 @@ export const createFold = cloudFunction<
 
 export const placeBet = cloudFunction('placeBet')
 
+export const sellBet = cloudFunction('sellBet')
+
+export const sellShares = cloudFunction<
+  { contractId: string; shares: number; outcome: 'YES' | 'NO' },
+  { status: 'error' | 'success'; message?: string }
+>('sellShares')
+
 export const createAnswer = cloudFunction<
   { contractId: string; text: string; amount: number },
   {
@@ -37,8 +44,6 @@ export const resolveMarket = cloudFunction<
   },
   { status: 'error' | 'success'; message?: string }
 >('resolveMarket')
-
-export const sellBet = cloudFunction('sellBet')
 
 export const createUser: () => Promise<User | null> = () => {
   let deviceToken = window.localStorage.getItem('device-token')
