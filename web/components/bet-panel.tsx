@@ -340,8 +340,11 @@ function SellPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
+    // Sell all shares if remaining shares would be < 1
+    const sellAmount = amount === Math.floor(shares) ? shares : amount
+
     const result = await sellShares({
-      shares: amount,
+      shares: sellAmount,
       outcome: sharesOutcome,
       contractId: contract.id,
     }).then((r) => r.data)

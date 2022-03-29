@@ -472,6 +472,7 @@ export function ContractBetsTable(props: {
         <thead>
           <tr className="p-2">
             <th></th>
+            {isCPMM && <th>Type</th>}
             <th>Outcome</th>
             <th>Amount</th>
             {!isCPMM && <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>}
@@ -541,13 +542,14 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
           <SellButton contract={contract} bet={bet} />
         )}
       </td>
+      {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
         <OutcomeLabel outcome={outcome} />
       </td>
-      <td>{formatMoney(amount)}</td>
+      <td>{formatMoney(Math.abs(amount))}</td>
       {!isCPMM && <td>{saleDisplay}</td>}
       {!isCPMM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
-      <td>{formatWithCommas(shares)}</td>
+      <td>{formatWithCommas(Math.abs(shares))}</td>
       <td>
         {formatPercent(probBefore)} → {formatPercent(probAfter)}
       </td>
