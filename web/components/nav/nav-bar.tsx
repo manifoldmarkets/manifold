@@ -127,28 +127,6 @@ function NavOptions(props: {
         </Link>
       )}
 
-      <Link href="/folds">
-        <a
-          className={clsx(
-            'hidden whitespace-nowrap text-base md:block',
-            themeClasses
-          )}
-        >
-          Communities
-        </a>
-      </Link>
-
-      <Link href="/markets">
-        <a
-          className={clsx(
-            'hidden whitespace-nowrap text-base md:block',
-            themeClasses
-          )}
-        >
-          Markets
-        </a>
-      </Link>
-
       {showSignedOut && (
         <>
           <button
