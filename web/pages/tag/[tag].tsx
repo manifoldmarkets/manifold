@@ -3,7 +3,6 @@ import { SearchableGrid } from '../../components/contracts-list'
 import { Page } from '../../components/page'
 import { Title } from '../../components/title'
 import { useContracts } from '../../hooks/use-contracts'
-import { useQueryAndSortParams } from '../../hooks/use-sort-and-query-params'
 import { Contract, listAllContracts } from '../../lib/firebase/contracts'
 
 export async function getStaticProps() {
@@ -31,18 +30,10 @@ export default function TagPage(props: { contracts: Contract[] }) {
     contract.lowercaseTags.includes(tag.toLowerCase())
   )
 
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
-
   return (
     <Page>
       <Title text={`#${tag}`} />
-      <SearchableGrid
-        contracts={taggedContracts}
-        query={query}
-        setQuery={setQuery}
-        sort={sort}
-        setSort={setSort}
-      />
+      <SearchableGrid contracts={taggedContracts} />
     </Page>
   )
 }

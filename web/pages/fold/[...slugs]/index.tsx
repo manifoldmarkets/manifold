@@ -22,7 +22,6 @@ import { Col } from '../../../components/layout/col'
 import { useUser } from '../../../hooks/use-user'
 import { useFold } from '../../../hooks/use-fold'
 import { SearchableGrid } from '../../../components/contracts-list'
-import { useQueryAndSortParams } from '../../../hooks/use-sort-and-query-params'
 import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { scoreCreators, scoreTraders } from '../../../../common/scoring'
@@ -137,8 +136,6 @@ export default function FoldPage(props: {
   const page = (slugs?.[1] ?? 'activity') as typeof foldSubpages[number]
 
   const fold = useFold(props.fold?.id) ?? props.fold
-
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams()
 
   const user = useUser()
   const isCurator = user && fold && user.id === fold.curatorId
@@ -259,13 +256,7 @@ export default function FoldPage(props: {
                 <LoadingIndicator className="mt-4" />
               )
             ) : (
-              <SearchableGrid
-                contracts={contracts}
-                query={query}
-                setQuery={setQuery}
-                sort={sort}
-                setSort={setSort}
-              />
+              <SearchableGrid contracts={contracts} />
             )}
           </Col>
           <Col className="hidden w-full max-w-xs gap-12 md:flex">
