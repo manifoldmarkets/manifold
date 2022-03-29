@@ -4,7 +4,7 @@ import * as functions from 'firebase-functions'
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
-import { getCpmmSellBetInfo, getSellBetInfo } from '../../common/sell-bet'
+import { getSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { Fees } from '../../common/fees'
 
@@ -34,8 +34,14 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
       if (!contractSnap.exists)
         return { status: 'error', message: 'Invalid contract' }
       const contract = contractSnap.data() as Contract
-
       const { closeTime, mechanism, collectedFees, volume } = contract
+
+      if (mechanism !== 'dpm-2')
+        return {
+          status: 'error',
+          message: 'Sell shares only works with mechanism dpm-2',
+        }
+
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
@@ -57,15 +63,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
         newTotalBets,
         newBalance,
         fees,
-      } =
-        mechanism === 'dpm-2'
-          ? getSellBetInfo(user, bet, contract, newBetDoc.id)
-          : (getCpmmSellBetInfo(
-              user,
-              bet,
-              contract as any,
-              newBetDoc.id
-            ) as any)
+      } = getSellBetInfo(user, bet, contract, newBetDoc.id)
 
       if (!isFinite(newBalance)) {
         throw new Error('Invalid user balance for ' + user.username)
@@ -81,7 +79,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
           totalShares: newTotalShares,
           totalBets: newTotalBets,
           collectedFees: addObjects<Fees>(fees ?? {}, collectedFees ?? {}),
-          volume: volume + bet.amount,
+          volume: volume + Math.abs(newBet.amount),
         })
       )
 
