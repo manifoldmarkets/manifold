@@ -250,7 +250,7 @@ export function SellAmountInput(props: {
             Sale proceeds{' '}
             <span className="text-neutral">{formatMoney(saleValue)}</span>
           </Row>
-          {prevLoanAmount && (
+          {!!prevLoanAmount && (
             <Row className="items-center justify-between gap-2 text-gray-500">
               <Row className="items-center gap-2">
                 Loan repaid{' '}

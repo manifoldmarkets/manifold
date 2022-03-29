@@ -364,7 +364,7 @@ function SellPanel(props: {
 
   const initialProb = getProbability(contract)
   const { newPool } = calculateCpmmSale(contract, {
-    shares: amount ?? 0,
+    shares: Math.min(amount ?? 0, shares),
     outcome: sharesOutcome,
   })
   const resultProb = getCpmmProbability(newPool, contract.p)
