@@ -50,7 +50,7 @@ export const useFollowingFold = (fold: Fold, user: User | null | undefined) => {
 }
 
 // Note: We cache FollowedFolds in localstorage to speed up the initial load
-export const useFollowedFolds = (user: User | null | undefined) => {
+export const useFollowedFoldIds = (user: User | null | undefined) => {
   const [followedFoldIds, setFollowedFoldIds] = useState<string[] | undefined>(
     undefined
   )
