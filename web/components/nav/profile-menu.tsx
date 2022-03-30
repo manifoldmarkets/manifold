@@ -5,25 +5,6 @@ import { Col } from '../layout/col'
 import { MenuButton } from './menu'
 import { IS_PRIVATE_MANIFOLD } from '../../../common/envs/constants'
 
-export function ProfileMenu(props: { user: User | undefined }) {
-  const { user } = props
-
-  return (
-    <>
-      <MenuButton
-        className="hidden md:block"
-        menuItems={getNavigationOptions(user, { mobile: false })}
-        buttonContent={<ProfileSummary user={user} />}
-      />
-
-      <MenuButton
-        className="mr-2 md:hidden"
-        menuItems={getNavigationOptions(user, { mobile: true })}
-        buttonContent={<ProfileSummary user={user} />}
-      />
-    </>
-  )
-}
 
 function getNavigationOptions(
   user: User | undefined,

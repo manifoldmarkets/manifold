@@ -2,58 +2,13 @@ import clsx from 'clsx'
 import Link from 'next/link'
 
 import { useUser } from '../../hooks/use-user'
-import { Row } from '../layout/row'
 import { firebaseLogin, User } from '../../lib/firebase/users'
-import { ManifoldLogo } from './manifold-logo'
-import { ProfileMenu } from './profile-menu'
 import {
   CollectionIcon,
   HomeIcon,
   SearchIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
-
-// Deprecated. TODO: Remove this entirely.
-export function NavBar(props: {
-  darkBackground?: boolean
-  wide?: boolean
-  assertUser?: 'signed-in' | 'signed-out'
-  className?: string
-}) {
-  const { darkBackground, wide, assertUser, className } = props
-
-  const user = useUser()
-
-  const hoverClasses =
-    'hover:underline hover:decoration-indigo-400 hover:decoration-2'
-  const themeClasses = clsx(darkBackground && 'text-white', hoverClasses)
-
-  return (
-    <>
-      <nav className={clsx('mb-4 w-full p-4', className)} aria-label="Global">
-        <Row
-          className={clsx(
-            'mx-auto items-center justify-between sm:px-4',
-            wide ? 'max-w-6xl' : 'max-w-4xl'
-          )}
-        >
-          <ManifoldLogo className="my-1" darkBackground={darkBackground} />
-
-          <Row className="ml-6 items-center gap-6 sm:gap-8">
-            {(user || user === null || assertUser) && (
-              <NavOptions
-                user={user}
-                assertUser={assertUser}
-                themeClasses={themeClasses}
-              />
-            )}
-          </Row>
-        </Row>
-      </nav>
-      <BottomNavBar />
-    </>
-  )
-}
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
 export function BottomNavBar() {
