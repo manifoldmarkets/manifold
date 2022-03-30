@@ -10,6 +10,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from '../../hooks/use-fold'
 import { useUser } from '../../hooks/use-user'
+import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
+import { ManifoldLogo } from './manifold-logo'
+import { NavOptions } from './nav-bar'
 
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
@@ -64,10 +68,18 @@ export default function Sidebar() {
   return (
     <nav aria-label="Sidebar" className="sticky top-4 divide-y divide-gray-300">
       <div className="space-y-1 pb-8">
+        <ManifoldLogo hideText />
+        <Spacer h={4} />
+
         {navigation.map((item) => (
           <SidebarItem item={item} currentPage={currentPage} />
         ))}
       </div>
+
+      <Row className="items-center gap-6 py-6 sm:gap-8">
+        {(user || user === null) && <NavOptions user={user} />}
+      </Row>
+
       <div className="pt-10">
         <SidebarItem
           item={{ name: 'Communities', href: '/folds', icon: UserGroupIcon }}

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { NavBar } from './nav/nav-bar'
+import { BottomNavBar } from './nav/nav-bar'
 import Sidebar from './nav/sidebar'
 
 export function Page(props: {
@@ -13,8 +13,6 @@ export function Page(props: {
 
   return (
     <div>
-      <NavBar wide={wide} assertUser={assertUser} />
-
       <div
         className={clsx(
           'mx-auto w-full pb-16 lg:grid lg:grid-cols-12 lg:gap-8 xl:max-w-7xl',
@@ -27,7 +25,7 @@ export function Page(props: {
         </div>
         <main
           className={clsx(
-            'lg:col-span-9',
+            'mt-6 lg:col-span-9',
             rightSidebar ? 'xl:col-span-7' : 'xl:col-span-8'
           )}
         >
@@ -37,6 +35,8 @@ export function Page(props: {
           <div className="sticky top-4 space-y-4">{rightSidebar}</div>
         </aside>
       </div>
+
+      <BottomNavBar />
     </div>
   )
 }

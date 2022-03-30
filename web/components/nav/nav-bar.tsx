@@ -13,6 +13,7 @@ import {
   UserGroupIcon,
 } from '@heroicons/react/outline'
 
+// Deprecated. TODO: Remove this entirely.
 export function NavBar(props: {
   darkBackground?: boolean
   wide?: boolean
@@ -49,14 +50,17 @@ export function NavBar(props: {
           </Row>
         </Row>
       </nav>
-      {user && <BottomNavBar user={user} />}
+      <BottomNavBar />
     </>
   )
 }
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
-function BottomNavBar(props: { user: User }) {
-  const { user } = props
+export function BottomNavBar() {
+  const user = useUser()
+  if (!user) {
+    return null
+  }
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 md:hidden">
       <Link href="/home">
@@ -89,6 +93,7 @@ function BottomNavBar(props: { user: User }) {
         </a>
       </Link>
 
+      {/* TODO: replace with a link to your own profile */}
       <Link href="/trades">
         <a
           href="#"
@@ -102,10 +107,10 @@ function BottomNavBar(props: { user: User }) {
   )
 }
 
-function NavOptions(props: {
+export function NavOptions(props: {
   user: User | null | undefined
-  assertUser: 'signed-in' | 'signed-out' | undefined
-  themeClasses: string
+  assertUser?: 'signed-in' | 'signed-out'
+  themeClasses?: string
 }) {
   const { user, assertUser, themeClasses } = props
   const showSignedIn = assertUser === 'signed-in' || !!user
