@@ -4,39 +4,24 @@ import { Avatar } from '../avatar'
 import { IS_PRIVATE_MANIFOLD } from '../../../common/envs/constants'
 import { Row } from '../layout/row'
 
-export function getNavigationOptions() {
+export function getNavigationOptions(user?: User | null) {
+  if (IS_PRIVATE_MANIFOLD) {
+    return [{ name: 'Leaderboards', href: '/leaderboards' }]
+  }
+
+  if (!user) {
+    return [
+      { name: 'Leaderboards', href: '/leaderboards' },
+      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    ]
+  }
+
   return [
-    {
-      name: 'Your trades',
-      href: '/trades',
-    },
-    // Disable irrelevant menu options for teams.
-    ...(IS_PRIVATE_MANIFOLD
-      ? [
-          {
-            name: 'Leaderboards',
-            href: '/leaderboards',
-          },
-        ]
-      : [
-          {
-            name: 'Add funds',
-            href: '/add-funds',
-          },
-          {
-            name: 'Leaderboards',
-            href: '/leaderboards',
-          },
-          {
-            name: 'Discord',
-            href: 'https://discord.gg/eHQBNBqXuh',
-          },
-        ]),
-    {
-      name: 'Sign out',
-      href: '#',
-      onClick: () => firebaseLogout(),
-    },
+    { name: 'Your trades', href: '/trades' },
+    { name: 'Add funds', href: '/add-funds' },
+    { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
   ]
 }
 

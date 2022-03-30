@@ -107,7 +107,7 @@ export default function Sidebar() {
         ))}
 
         <MenuButton
-          menuItems={getNavigationOptions()}
+          menuItems={getNavigationOptions(user)}
           buttonContent={<MoreButton />}
         />
       </div>
