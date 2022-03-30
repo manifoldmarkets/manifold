@@ -159,13 +159,16 @@ function calculateCpmmShareValue(
 
 export function calculateCpmmSale(
   contract: FullContract<CPMM, Binary>,
-  bet: { shares: number; outcome: string }
+  shares: number,
+  outcome: string
 ) {
-  const { shares, outcome } = bet
+  if (shares < 0) {
+    throw new Error('Cannot sell non-positive shares')
+  }
 
   const rawSaleValue = calculateCpmmShareValue(
     contract,
-    Math.abs(shares),
+    shares,
     outcome as 'YES' | 'NO'
   )
 
@@ -185,6 +188,20 @@ export function calculateCpmmSale(
       ? [y + shares - saleValue + fee, n - saleValue + fee]
       : [y - saleValue + fee, n + shares - saleValue + fee]
 
+  if (newY < 0 || newN < 0) {
+    console.log('calculateCpmmSale', {
+      newY,
+      newN,
+      y,
+      n,
+      shares,
+      saleValue,
+      fee,
+      outcome,
+    })
+    throw new Error('Cannot sell more than in pool')
+  }
+
   const postBetPool = { YES: newY, NO: newN }
 
   const { newPool, newP } = addCpmmLiquidity(postBetPool, contract.p, fee)
@@ -194,9 +211,10 @@ export function calculateCpmmSale(
 
 export function getCpmmProbabilityAfterSale(
   contract: FullContract<CPMM, Binary>,
-  bet: Bet
+  shares: number,
+  outcome: 'YES' | 'NO'
 ) {
-  const { newPool } = calculateCpmmSale(contract, bet)
+  const { newPool } = calculateCpmmSale(contract, shares, outcome)
   return getCpmmProbability(newPool, contract.p)
 }
 

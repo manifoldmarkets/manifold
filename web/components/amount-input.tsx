@@ -212,10 +212,11 @@ export function SellAmountInput(props: {
   const prevLoanAmount = _.sumBy(openUserBets, (bet) => bet.loanAmount ?? 0)
 
   const sharesSold = Math.min(amount ?? 0, yesShares || noShares)
-  const { saleValue } = calculateCpmmSale(contract, {
-    shares: sharesSold,
-    outcome: sellOutcome as 'YES' | 'NO',
-  })
+  const { saleValue } = calculateCpmmSale(
+    contract,
+    sharesSold,
+    sellOutcome as 'YES' | 'NO'
+  )
 
   const loanRepaid = Math.min(prevLoanAmount, saleValue)
 

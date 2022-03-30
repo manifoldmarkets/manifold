@@ -92,10 +92,11 @@ export const getCpmmSellBetInfo = (
 ) => {
   const { pool, p } = contract
 
-  const { saleValue, newPool, newP, fees } = calculateCpmmSale(contract, {
+  const { saleValue, newPool, newP, fees } = calculateCpmmSale(
+    contract,
     shares,
-    outcome,
-  })
+    outcome
+  )
 
   const probBefore = getCpmmProbability(pool, p)
   const probAfter = getCpmmProbability(newPool, p)
