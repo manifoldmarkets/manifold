@@ -3,6 +3,7 @@ import {
   UserGroupIcon,
   SearchIcon,
   BookOpenIcon,
+  DotsHorizontalIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import _ from 'lodash'
@@ -10,10 +11,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from '../../hooks/use-fold'
 import { useUser } from '../../hooks/use-user'
-import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { ManifoldLogo } from './manifold-logo'
-import { NavOptions } from './nav-bar'
+import { MenuButton } from './menu'
+import { getNavigationOptions, ProfileSummary } from './profile-menu'
 
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
@@ -32,8 +33,6 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
   return (
     <Link href={item.href} key={item.name}>
       <a
-        key={item.name}
-        href={item.href}
         className={clsx(
           item.href == currentPage
             ? 'bg-gray-200 text-gray-900'
@@ -57,6 +56,18 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
   )
 }
 
+function MoreButton() {
+  return (
+    <a className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:cursor-pointer hover:bg-gray-50">
+      <DotsHorizontalIcon
+        className="-ml-1 mr-3 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
+        aria-hidden="true"
+      />
+      <span className="truncate">More</span>
+    </a>
+  )
+}
+
 export default function Sidebar() {
   const router = useRouter()
   const currentPage = router.pathname
@@ -74,11 +85,22 @@ export default function Sidebar() {
         {navigation.map((item) => (
           <SidebarItem item={item} currentPage={currentPage} />
         ))}
+
+        <MenuButton
+          menuItems={getNavigationOptions()}
+          buttonContent={<MoreButton />}
+        />
       </div>
 
-      <Row className="items-center gap-6 py-6 sm:gap-8">
-        {(user || user === null) && <NavOptions user={user} />}
-      </Row>
+      {user && (
+        <div>
+          <Link href={`/${user.username}`}>
+            <a>
+              <ProfileSummary user={user} />
+            </a>
+          </Link>
+        </div>
+      )}
 
       <div className="pt-10">
         <SidebarItem

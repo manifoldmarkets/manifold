@@ -1,37 +1,11 @@
 import { firebaseLogout, User } from '../../lib/firebase/users'
 import { formatMoney } from '../../../common/util/format'
 import { Avatar } from '../avatar'
-import { Col } from '../layout/col'
-import { MenuButton } from './menu'
 import { IS_PRIVATE_MANIFOLD } from '../../../common/envs/constants'
+import { Row } from '../layout/row'
 
-
-function getNavigationOptions(
-  user: User | undefined,
-  options: { mobile: boolean }
-) {
-  const { mobile } = options
+export function getNavigationOptions() {
   return [
-    {
-      name: 'Home',
-      href: user ? '/home' : '/',
-    },
-    ...(mobile
-      ? [
-          {
-            name: 'Markets',
-            href: '/markets',
-          },
-          {
-            name: 'Communities',
-            href: '/folds',
-          },
-        ]
-      : []),
-    {
-      name: `Your profile`,
-      href: `/${user?.username}`,
-    },
     {
       name: 'Your trades',
       href: '/trades',
@@ -57,10 +31,6 @@ function getNavigationOptions(
             name: 'Discord',
             href: 'https://discord.gg/eHQBNBqXuh',
           },
-          {
-            name: 'About',
-            href: '/about',
-          },
         ]),
     {
       name: 'Sign out',
@@ -70,18 +40,18 @@ function getNavigationOptions(
   ]
 }
 
-function ProfileSummary(props: { user: User | undefined }) {
+export function ProfileSummary(props: { user: User | undefined }) {
   const { user } = props
   return (
-    <Col className="avatar items-center gap-2 sm:flex-row sm:gap-4">
+    <Row className="group avatar items-center gap-4 py-6 text-gray-600">
       <Avatar avatarUrl={user?.avatarUrl} username={user?.username} noLink />
 
       <div className="truncate text-left sm:w-32">
         <div className="hidden sm:flex">{user?.name}</div>
-        <div className="text-sm text-gray-700">
+        <div className="text-sm">
           {user ? formatMoney(Math.floor(user.balance)) : ' '}
         </div>
       </div>
-    </Col>
+    </Row>
   )
 }
