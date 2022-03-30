@@ -15,9 +15,9 @@ export function ManifoldLogo(props: {
 
   return (
     <Link href={user ? '/home' : '/'}>
-      <a className={clsx('flex flex-shrink-0 flex-row gap-4', className)}>
+      <a className={clsx('group flex flex-shrink-0 flex-row gap-4', className)}>
         <img
-          className="transition-all hover:rotate-12"
+          className="transition-all group-hover:rotate-12"
           src={darkBackground ? '/logo-white.svg' : '/logo.svg'}
           width={45}
           height={45}

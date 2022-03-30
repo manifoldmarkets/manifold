@@ -11,7 +11,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from '../../hooks/use-fold'
 import { useUser } from '../../hooks/use-user'
-import { Spacer } from '../layout/spacer'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
@@ -78,10 +77,21 @@ export default function Sidebar() {
 
   return (
     <nav aria-label="Sidebar" className="sticky top-4 divide-y divide-gray-300">
-      <div className="space-y-1 pb-8">
+      <div className="space-y-1 pb-6">
         <ManifoldLogo hideText />
-        <Spacer h={4} />
+      </div>
 
+      {user && (
+        <div>
+          <Link href={`/${user.username}`}>
+            <a className="group">
+              <ProfileSummary user={user} />
+            </a>
+          </Link>
+        </div>
+      )}
+
+      <div className="space-y-1 py-6">
         {navigation.map((item) => (
           <SidebarItem item={item} currentPage={currentPage} />
         ))}
@@ -92,17 +102,7 @@ export default function Sidebar() {
         />
       </div>
 
-      {user && (
-        <div>
-          <Link href={`/${user.username}`}>
-            <a>
-              <ProfileSummary user={user} />
-            </a>
-          </Link>
-        </div>
-      )}
-
-      <div className="pt-10">
+      <div className="pt-6">
         <SidebarItem
           item={{ name: 'Communities', href: '/folds', icon: UserGroupIcon }}
           currentPage={currentPage}
