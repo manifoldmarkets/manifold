@@ -16,7 +16,7 @@
     "postbuild": "next-sitemap"
   },
   "dependencies": {
-    "@headlessui/react": "1.4.2",
+    "@headlessui/react": "1.5.0",
     "@heroicons/react": "1.0.5",
     "@nivo/core": "0.74.0",
     "@nivo/line": "0.74.0",
@@ -24,20 +24,20 @@
     "daisyui": "1.16.4",
     "dayjs": "1.10.7",
     "firebase": "9.6.0",
-    "gridjs": "^5.0.2",
-    "gridjs-react": "^5.0.2",
+    "gridjs": "5.0.2",
+    "gridjs-react": "5.0.2",
     "lodash": "4.17.21",
-    "next": "12.0.7",
+    "next": "12.1.2",
     "react": "17.0.2",
     "react-dom": "17.0.2",
-    "react-expanding-textarea": "^2.3.4"
+    "react-expanding-textarea": "2.3.5"
   },
   "devDependencies": {
     "@tailwindcss/forms": "0.4.0",
     "@tailwindcss/typography": "^0.5.1",
     "@types/lodash": "4.14.178",
     "@types/node": "16.11.11",
-    "@types/react": "17.0.37",
+    "@types/react": "17.0.43",
     "autoprefixer": "10.2.6",
     "concurrently": "6.5.1",
     "critters": "0.0.16",
