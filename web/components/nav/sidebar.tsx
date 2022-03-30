@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from '../../hooks/use-fold'
 import { useUser } from '../../hooks/use-user'
+import { firebaseLogin } from '../../lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
@@ -81,15 +82,24 @@ export default function Sidebar() {
         <ManifoldLogo hideText />
       </div>
 
-      {user && (
-        <div>
+      <div>
+        {user ? (
           <Link href={`/${user.username}`}>
             <a className="group">
               <ProfileSummary user={user} />
             </a>
           </Link>
-        </div>
-      )}
+        ) : (
+          <div className="py-6 text-center">
+            <button
+              className="btn border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
+              onClick={firebaseLogin}
+            >
+              Sign in
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="space-y-1 py-6">
         {navigation.map((item) => (
