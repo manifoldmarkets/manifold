@@ -23,7 +23,7 @@ export function Page(props: {
         )}
       >
         <div className="hidden lg:col-span-3 lg:block xl:col-span-2">
-          <Sidebar />
+          {assertUser !== 'signed-out' && <Sidebar />}
         </div>
         <main
           className={clsx(
