@@ -1,6 +1,5 @@
 import * as _ from 'lodash'
 
-import { Bet } from './bet'
 import { Binary, CPMM, FullContract } from './contract'
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, noFees, PLATFORM_FEE } from './fees'
 
@@ -138,11 +137,16 @@ function calculateCpmmShareValue(
 ) {
   const { pool, p } = contract
 
-  const k = computeK(pool.YES, pool.NO, p)
-
   // Find bet amount that preserves k after selling shares.
+  const k = computeK(pool.YES, pool.NO, p)
+  const otherPool = outcome === 'YES' ? pool.NO : pool.YES
+
   let lowAmount = 0
-  let highAmount = shares
+  // Constrain the max sale value to the lessor of 1. shares and 2. the other pool.
+  // This is because 1. the max value per share is M$ 1,
+  // and 2. The other pool cannot go negative and the sale value is subtracted from it.
+  // (Without this, there are multiple solutions for the same k.)
+  let highAmount = Math.min(shares, otherPool)
   let mid = 0
   let kGuess = 0
   while (Math.abs(k - kGuess) > 0.00000000001) {
