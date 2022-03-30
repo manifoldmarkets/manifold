@@ -122,7 +122,7 @@ export default function ContractPage(props: {
   const ogCardProps = getOpenGraphProps(contract)
 
   const rightSidebar = hasSidePanel ? (
-    <Col>
+    <Col className="gap-4">
       {allowTrade && (
         <BetPanel className="hidden lg:flex" contract={contract} />
       )}
