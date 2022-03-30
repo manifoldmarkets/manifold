@@ -23,17 +23,6 @@ type Item = {
   icon: React.ComponentType<{ className?: string }>
 }
 
-const communities = [
-  { name: 'Movies', href: '#' },
-  { name: 'Food', href: '#' },
-  { name: 'Sports', href: '#' },
-  { name: 'Animals', href: '#' },
-  { name: 'Science', href: '#' },
-  { name: 'Dinosaurs', href: '#' },
-  { name: 'Talents', href: '#' },
-  { name: 'Gaming', href: '#' },
-]
-
 function SidebarItem(props: { item: Item; currentPage: string }) {
   const { item, currentPage } = props
   return (
