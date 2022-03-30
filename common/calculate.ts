@@ -72,7 +72,7 @@ export function calculateShares(
 
 export function calculateSaleAmount(contract: Contract, bet: Bet) {
   return contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY'
-    ? calculateCpmmSale(contract, bet).saleValue
+    ? calculateCpmmSale(contract, Math.abs(bet.shares), bet.outcome).saleValue
     : calculateDpmSaleAmount(contract, bet)
 }
 
@@ -90,7 +90,8 @@ export function getProbabilityAfterSale(
   return contract.mechanism === 'cpmm-1'
     ? getCpmmProbabilityAfterSale(
         contract as FullContract<CPMM, Binary>,
-        { shares, outcome } as Bet
+        shares,
+        outcome as 'YES' | 'NO'
       )
     : getDpmProbabilityAfterSale(contract.totalShares, outcome, shares)
 }
