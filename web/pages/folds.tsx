@@ -7,11 +7,10 @@ import { FollowFoldButton } from '../components/folds/follow-fold-button'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { Page } from '../components/page'
-import { SiteLink } from '../components/site-link'
 import { TagsList } from '../components/tags-list'
 import { Title } from '../components/title'
 import { UserLink } from '../components/user-page'
-import { useFolds, useFollowedFolds } from '../hooks/use-fold'
+import { useFolds, useFollowedFoldIds } from '../hooks/use-fold'
 import { useUser } from '../hooks/use-user'
 import { foldPath, listAllFolds } from '../lib/firebase/folds'
 import { getUser, User } from '../lib/firebase/users'
@@ -44,7 +43,7 @@ export default function Folds(props: {
 
   let folds = useFolds() ?? props.folds
   const user = useUser()
-  const followedFoldIds = useFollowedFolds(user) || []
+  const followedFoldIds = useFollowedFoldIds(user) || []
   // First sort by follower count, then list followed folds first
   folds = _.sortBy(folds, (fold) => -1 * fold.followCount)
   folds = _.sortBy(folds, (fold) => !followedFoldIds.includes(fold.id))

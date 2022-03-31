@@ -121,8 +121,17 @@ export default function ContractPage(props: {
 
   const ogCardProps = getOpenGraphProps(contract)
 
+  const rightSidebar = hasSidePanel ? (
+    <Col className="gap-4">
+      {allowTrade && (
+        <BetPanel className="hidden lg:flex" contract={contract} />
+      )}
+      {allowResolve && <ResolutionPanel creator={user} contract={contract} />}
+    </Col>
+  ) : null
+
   return (
-    <Page wide={hasSidePanel}>
+    <Page rightSidebar={rightSidebar}>
       {ogCardProps && (
         <SEO
           title={question}
@@ -168,21 +177,6 @@ export default function ContractPage(props: {
           )}
           <BetsSection contract={contract} user={user ?? null} bets={bets} />
         </div>
-
-        {hasSidePanel && (
-          <>
-            <div className="md:ml-6" />
-
-            <Col className="flex-shrink-0 md:w-[310px]">
-              {allowTrade && (
-                <BetPanel className="hidden lg:flex" contract={contract} />
-              )}
-              {allowResolve && (
-                <ResolutionPanel creator={user} contract={contract} />
-              )}
-            </Col>
-          </>
-        )}
       </Col>
     </Page>
   )
