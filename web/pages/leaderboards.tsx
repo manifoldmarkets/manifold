@@ -68,14 +68,17 @@ function Explanation() {
       <ol>
         <li>
           Every slot has an &quot;assessed value&quot;: what the current holder
-          thinks the slot is worth.
+          thinks their slot is worth.
         </li>
-        <li>Slot holders pay a 10% per hour tax to Manafold on the value.</li>
+        <li>Slot holders pay a continuous fee of 10% per hour to Manafold.</li>
         <li>
-          At any time, you can buy a leaderboard slot from the current holder
-          for its value.
+          At any time, you can pay the assessed value of a slot to buy it from
+          the current holder.
         </li>
-        <li>Then, you can reassess it to a new value!</li>
+        <li>
+          The slot is now yours! You can customize the message, or reassess it
+          to a new value.
+        </li>
       </ol>
       <p>
         <em>

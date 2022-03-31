@@ -29,29 +29,38 @@ export function Manaboard(props: {
           <table className="table-zebra table-compact table w-full text-gray-500">
             <thead>
               <tr className="p-2">
-                <th>#</th>
+                <th>
+                  <div className="pl-2">#</div>
+                </th>
                 <th>Name</th>
+                <th>Value</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {users.map((user, index) => (
                 <tr key={user.id}>
-                  <td>{index + 1}</td>
-                  <td style={{ maxWidth: 190 }}>
+                  <td>
+                    <div className="pl-2">{index + 1}</div>
+                  </td>
+                  <td className="w-full" style={{ maxWidth: 190 }}>
                     <Row className="items-center gap-4">
                       <Avatar avatarUrl={user.avatarUrl} size={8} />
                       <div className="truncate">{user.name}</div>
                     </Row>
                   </td>
                   <td>
-                    <BuySlotModal
-                      slot={index + 1}
-                      title={`${title}`}
-                      holder={user}
-                      value={100}
-                    />
+                    <Row className="items-center gap-4">
+                      {formatMoney(100 - 5 * index)}
+                      <BuySlotModal
+                        slot={index + 1}
+                        title={`${title}`}
+                        holder={user}
+                        value={100 - 5 * index}
+                      />
+                    </Row>
                   </td>
+                  <td></td>
                 </tr>
               ))}
             </tbody>
@@ -94,23 +103,13 @@ export function BuySlotModal(props: {
           />
 
           <Label>Current value: {formatMoney(value)}</Label>
-          <Row className="items-center gap-4 rounded-md bg-gray-100 p-2">
-            <div>#{slot}</div>
-            <Avatar avatarUrl={holder.avatarUrl} size={8} />
-            <div className="truncate">{holder.name}</div>
-          </Row>
-
-          <Label>Reassess value</Label>
-          <AmountInput
-            amount={newValue}
-            onChange={(amount) => setNewValue(amount ?? 0)}
-            error={''}
-            // error="You don't have enough mana"
-            label={ENV_CONFIG.moneyMoniker}
-          />
-          <div className="-mt-5 text-sm">
-            Tax: {formatMoney(newValue / 10)} per hour
-          </div>
+          {user && (
+            <Row className="items-center gap-4 rounded-md bg-gray-100 p-2">
+              <div>#{slot}</div>
+              <Avatar avatarUrl={user.avatarUrl} size={8} />
+              <div className="truncate">{message}</div>
+            </Row>
+          )}
 
           <Label>(Optional) set message</Label>
           <input
@@ -122,21 +121,26 @@ export function BuySlotModal(props: {
             value={message}
           />
 
-          <Label>Preview</Label>
-          {user && (
-            <Row className="items-center gap-4 rounded-md bg-gray-100 p-2">
-              <div>#{slot}</div>
-              <Avatar avatarUrl={user.avatarUrl} size={8} />
-              <div className="truncate">{message}</div>
-            </Row>
-          )}
+          <Label>Reassess value</Label>
+          <AmountInput
+            amount={newValue}
+            onChange={(amount) => setNewValue(amount ?? 0)}
+            error=""
+            label={ENV_CONFIG.moneyMoniker}
+          />
 
           <button className="btn btn-primary">
             Buy Slot ({formatMoney(value)})
           </button>
+          <div className="-mt-2 text-sm">
+            Additional fees: {formatMoney(newValue / 10)} per hour
+          </div>
         </Col>
       </Modal>
-      <button className="btn btn-outline btn-sm" onClick={() => setOpen(true)}>
+      <button
+        className="btn btn-outline btn-sm normal-case"
+        onClick={() => setOpen(true)}
+      >
         Buy
       </button>
     </>
