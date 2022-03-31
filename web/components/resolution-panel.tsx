@@ -123,7 +123,7 @@ export function ResolutionPanel(props: {
       <ResolveConfirmationButton
         onResolve={resolve}
         isSubmitting={isSubmitting}
-        openModelButtonClass={clsx('w-full mt-2', submitButtonClass)}
+        openModalButtonClass={clsx('w-full mt-2', submitButtonClass)}
         submitButtonClass={submitButtonClass}
       />
     </Col>
