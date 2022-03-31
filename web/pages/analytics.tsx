@@ -9,6 +9,7 @@ import {
 } from '../components/analytics/charts'
 import { Col } from '../components/layout/col'
 import { Spacer } from '../components/layout/spacer'
+import { Tabs } from '../components/layout/tabs'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { fromPropz, usePropz } from '../hooks/use-propz'
@@ -247,45 +248,6 @@ export function CustomAnalytics(props: {
       />
       <Spacer h={8} />
     </Col>
-  )
-}
-
-type Tab = {
-  title: string
-  content: JSX.Element
-}
-
-function Tabs(props: { tabs: Tab[]; defaultIndex: number }) {
-  const { tabs, defaultIndex } = props
-  const [activeTab, setActiveTab] = useState(tabs[defaultIndex])
-
-  return (
-    <div>
-      <nav className="flex space-x-4" aria-label="Tabs">
-        {tabs.map((tab) => (
-          <a
-            key={tab.title}
-            href="#"
-            className={clsx(
-              tab.title === activeTab.title
-                ? 'bg-gray-100 text-gray-700'
-                : 'text-gray-500 hover:text-gray-700',
-              'rounded-md px-3 py-2 text-sm font-medium'
-            )}
-            aria-current={tab.title === activeTab.title ? 'page' : undefined}
-            onClick={(e) => {
-              console.log('clicked')
-              e.preventDefault()
-              setActiveTab(tab)
-            }}
-          >
-            {tab.title}
-          </a>
-        ))}
-      </nav>
-
-      <div className="mt-4">{activeTab.content}</div>
-    </div>
   )
 }
 
