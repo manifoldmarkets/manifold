@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { Fold } from '../../../common/fold'
-import { useFollowedFoldIds } from '../../hooks/use-fold'
+import { useFollowedFolds } from '../../hooks/use-fold'
 import { useUser } from '../../hooks/use-user'
 import { followFold, unfollowFold } from '../../lib/firebase/folds'
 
@@ -9,7 +9,7 @@ export function FollowFoldButton(props: { fold: Fold; className?: string }) {
 
   const user = useUser()
 
-  const followedFoldIds = useFollowedFoldIds(user)
+  const followedFoldIds = useFollowedFolds(user)
   const following = followedFoldIds
     ? followedFoldIds.includes(fold.id)
     : undefined

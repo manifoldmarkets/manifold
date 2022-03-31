@@ -85,7 +85,7 @@ export default function FeedCreate(props: {
   return (
     <div
       className={clsx(
-        'w-full cursor-text rounded bg-white p-4 shadow-md',
+        'mt-2 w-full cursor-text rounded bg-white p-4 shadow-md',
         isExpanded ? 'ring-2 ring-indigo-300' : '',
         className
       )}
