@@ -11,7 +11,7 @@ export function MenuButton(props: {
   return (
     <Menu as="div" className={clsx('relative z-40 flex-shrink-0', className)}>
       <div>
-        <Menu.Button className="flex rounded-full">
+        <Menu.Button className="w-full rounded-full">
           <span className="sr-only">Open user menu</span>
           {buttonContent}
         </Menu.Button>

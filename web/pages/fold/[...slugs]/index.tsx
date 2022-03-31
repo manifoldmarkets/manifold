@@ -159,8 +159,28 @@ export default function FoldPage(props: {
     return <Custom404 />
   }
 
+  const rightSidebar = (
+    <Col className="mt-6 gap-12">
+      <Row className="justify-end">
+        {isCurator ? (
+          <EditFoldButton className="ml-1" fold={fold} />
+        ) : (
+          <FollowFoldButton className="ml-1" fold={fold} />
+        )}
+      </Row>
+      <FoldOverview fold={fold} curator={curator} />
+      <FoldLeaderboards
+        traderScores={traderScores}
+        creatorScores={creatorScores}
+        topTraders={topTraders}
+        topCreators={topCreators}
+        user={user}
+      />
+    </Col>
+  )
+
   return (
-    <Page wide>
+    <Page rightSidebar={rightSidebar}>
       <SEO
         title={fold.name}
         description={`Curated by ${curator.name}. ${fold.about}`}
@@ -170,11 +190,6 @@ export default function FoldPage(props: {
       <div className="px-3 lg:px-1">
         <Row className="mb-6 justify-between">
           <Title className="!m-0" text={fold.name} />
-          {isCurator ? (
-            <EditFoldButton className="ml-1" fold={fold} />
-          ) : (
-            <FollowFoldButton className="ml-1" fold={fold} />
-          )}
         </Row>
 
         <Col className="mb-6 gap-2 text-gray-500 md:hidden">
@@ -258,16 +273,6 @@ export default function FoldPage(props: {
             ) : (
               <SearchableGrid contracts={contracts} />
             )}
-          </Col>
-          <Col className="hidden w-full max-w-xs gap-12 md:flex">
-            <FoldOverview fold={fold} curator={curator} />
-            <FoldLeaderboards
-              traderScores={traderScores}
-              creatorScores={creatorScores}
-              topTraders={topTraders}
-              topCreators={topCreators}
-              user={user}
-            />
           </Col>
         </Row>
       )}

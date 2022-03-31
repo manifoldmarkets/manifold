@@ -1,165 +1,128 @@
-import clsx from 'clsx'
 import Link from 'next/link'
 
 import { useUser } from '../../hooks/use-user'
-import { Row } from '../layout/row'
-import { firebaseLogin, User } from '../../lib/firebase/users'
-import { ManifoldLogo } from './manifold-logo'
-import { ProfileMenu } from './profile-menu'
 import {
-  CollectionIcon,
   HomeIcon,
+  MenuAlt3Icon,
   SearchIcon,
   UserGroupIcon,
+  XIcon,
 } from '@heroicons/react/outline'
-
-export function NavBar(props: {
-  darkBackground?: boolean
-  wide?: boolean
-  assertUser?: 'signed-in' | 'signed-out'
-  className?: string
-}) {
-  const { darkBackground, wide, assertUser, className } = props
-
-  const user = useUser()
-
-  const hoverClasses =
-    'hover:underline hover:decoration-indigo-400 hover:decoration-2'
-  const themeClasses = clsx(darkBackground && 'text-white', hoverClasses)
-
-  return (
-    <>
-      <nav className={clsx('mb-4 w-full p-4', className)} aria-label="Global">
-        <Row
-          className={clsx(
-            'mx-auto items-center justify-between sm:px-4',
-            wide ? 'max-w-6xl' : 'max-w-4xl'
-          )}
-        >
-          <ManifoldLogo className="my-1" darkBackground={darkBackground} />
-
-          <Row className="ml-6 items-center gap-6 sm:gap-8">
-            {(user || user === null || assertUser) && (
-              <NavOptions
-                user={user}
-                assertUser={assertUser}
-                themeClasses={themeClasses}
-              />
-            )}
-          </Row>
-        </Row>
-      </nav>
-      {user && <BottomNavBar user={user} />}
-    </>
-  )
-}
+import { Transition, Dialog } from '@headlessui/react'
+import { useState, Fragment } from 'react'
+import Sidebar from './sidebar'
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
-function BottomNavBar(props: { user: User }) {
-  const { user } = props
+export function BottomNavBar() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const user = useUser()
+  if (!user) {
+    return null
+  }
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
       <Link href="/home">
-        <a
-          href="#"
-          className="block w-full py-2 px-3 text-center transition duration-300 hover:bg-indigo-200 hover:text-indigo-700"
-        >
+        <a className="block w-full py-2 px-3 text-center transition duration-300 hover:bg-indigo-200 hover:text-indigo-700">
           <HomeIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
           {/* Home */}
         </a>
       </Link>
 
       <Link href="/markets">
-        <a
-          href="#"
-          className="block w-full py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
-        >
+        <a className="block w-full py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
           <SearchIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
           {/* Explore */}
         </a>
       </Link>
 
       <Link href="/folds">
-        <a
-          href="#"
-          className="block w-full py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
-        >
+        <a className="block w-full py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
           <UserGroupIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
           {/* Folds */}
         </a>
       </Link>
 
-      <Link href="/trades">
-        <a
-          href="#"
-          className="block w-full py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700"
-        >
-          <CollectionIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
-          {/* Your Trades */}
-        </a>
-      </Link>
+      <span
+        className="block w-full py-2 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
+        onClick={() => setSidebarOpen(true)}
+      >
+        <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
+        {/* Menu */}
+      </span>
+
+      <MobileSidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+      />
     </nav>
   )
 }
 
-function NavOptions(props: {
-  user: User | null | undefined
-  assertUser: 'signed-in' | 'signed-out' | undefined
-  themeClasses: string
+// Sidebar that slides out on mobile
+export function MobileSidebar(props: {
+  sidebarOpen: boolean
+  setSidebarOpen: (open: boolean) => void
 }) {
-  const { user, assertUser, themeClasses } = props
-  const showSignedIn = assertUser === 'signed-in' || !!user
-  const showSignedOut =
-    !showSignedIn && (assertUser === 'signed-out' || user === null)
-
+  const { sidebarOpen, setSidebarOpen } = props
   return (
-    <>
-      {showSignedOut && (
-        <Link href="/about">
-          <a
-            className={clsx(
-              'hidden whitespace-nowrap text-base md:block',
-              themeClasses
-            )}
-          >
-            About
-          </a>
-        </Link>
-      )}
-
-      <Link href="/folds">
-        <a
-          className={clsx(
-            'hidden whitespace-nowrap text-base md:block',
-            themeClasses
-          )}
+    <div>
+      <Transition.Root show={sidebarOpen} as={Fragment}>
+        <Dialog
+          as="div"
+          className="fixed inset-0 z-40 flex"
+          onClose={setSidebarOpen}
         >
-          Communities
-        </a>
-      </Link>
-
-      <Link href="/markets">
-        <a
-          className={clsx(
-            'hidden whitespace-nowrap text-base md:block',
-            themeClasses
-          )}
-        >
-          Markets
-        </a>
-      </Link>
-
-      {showSignedOut && (
-        <>
-          <button
-            className="btn btn-sm btn-outline bg-gradient-to-r px-6 text-base font-medium normal-case"
-            onClick={firebaseLogin}
+          <Transition.Child
+            as={Fragment}
+            enter="transition-opacity ease-linear duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="transition-opacity ease-linear duration-300"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
           >
-            Sign in
-          </button>
-        </>
-      )}
-      {showSignedIn && <ProfileMenu user={user ?? undefined} />}
-    </>
+            <Dialog.Overlay className="fixed inset-0 bg-gray-600 bg-opacity-75" />
+          </Transition.Child>
+          <Transition.Child
+            as={Fragment}
+            enter="transition ease-in-out duration-300 transform"
+            enterFrom="-translate-x-full"
+            enterTo="translate-x-0"
+            leave="transition ease-in-out duration-300 transform"
+            leaveFrom="translate-x-0"
+            leaveTo="-translate-x-full"
+          >
+            <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-in-out duration-300"
+                enterFrom="opacity-0"
+                enterTo="opacity-100"
+                leave="ease-in-out duration-300"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+              >
+                <div className="absolute top-0 right-0 -mr-12 pt-2">
+                  <button
+                    type="button"
+                    className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <span className="sr-only">Close sidebar</span>
+                    <XIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                  </button>
+                </div>
+              </Transition.Child>
+              <div className="mx-2 mt-5 h-0 flex-1 overflow-y-auto">
+                <Sidebar />
+              </div>
+            </div>
+          </Transition.Child>
+          <div className="w-14 flex-shrink-0" aria-hidden="true">
+            {/* Dummy element to force sidebar to shrink to fit close icon */}
+          </div>
+        </Dialog>
+      </Transition.Root>
+    </div>
   )
 }
