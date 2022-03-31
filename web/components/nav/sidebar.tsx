@@ -108,7 +108,7 @@ export default function Sidebar() {
 
       <div className="space-y-1 py-6">
         {navigation.map((item) => (
-          <SidebarItem item={item} currentPage={currentPage} />
+          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
 
         <MenuButton

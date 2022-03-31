@@ -2,7 +2,7 @@ import clsx from 'clsx'
 
 export function ConfirmationButton(props: {
   id: string
-  openModelBtn: {
+  openModalBtn: {
     label: string
     icon?: any
     className?: string
@@ -18,15 +18,15 @@ export function ConfirmationButton(props: {
   onSubmit: () => void
   children: any
 }) {
-  const { id, openModelBtn, cancelBtn, submitBtn, onSubmit, children } = props
+  const { id, openModalBtn, cancelBtn, submitBtn, onSubmit, children } = props
 
   return (
     <>
       <label
         htmlFor={id}
-        className={clsx('btn modal-button', openModelBtn.className)}
+        className={clsx('btn modal-button', openModalBtn.className)}
       >
-        {openModelBtn.icon} {openModelBtn.label}
+        {openModalBtn.icon} {openModalBtn.label}
       </label>
       <input type="checkbox" id={id} className="modal-toggle" />
 
@@ -55,18 +55,18 @@ export function ConfirmationButton(props: {
 export function ResolveConfirmationButton(props: {
   onResolve: () => void
   isSubmitting: boolean
-  openModelButtonClass?: string
+  openModalButtonClass?: string
   submitButtonClass?: string
 }) {
-  const { onResolve, isSubmitting, openModelButtonClass, submitButtonClass } =
+  const { onResolve, isSubmitting, openModalButtonClass, submitButtonClass } =
     props
   return (
     <ConfirmationButton
       id="resolution-modal"
-      openModelBtn={{
+      openModalBtn={{
         className: clsx(
           'border-none self-start',
-          openModelButtonClass,
+          openModalButtonClass,
           isSubmitting && 'btn-disabled loading'
         ),
         label: 'Resolve',

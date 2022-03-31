@@ -99,7 +99,7 @@ export function AnswerResolvePanel(props: {
           <ResolveConfirmationButton
             onResolve={onResolve}
             isSubmitting={isSubmitting}
-            openModelButtonClass={resolutionButtonClass}
+            openModalButtonClass={resolutionButtonClass}
             submitButtonClass={resolutionButtonClass}
           />
         </Row>

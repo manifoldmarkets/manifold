@@ -582,7 +582,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   return (
     <ConfirmationButton
       id={`sell-${bet.id}`}
-      openModelBtn={{
+      openModalBtn={{
         className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
         label: 'Sell',
       }}
