@@ -4,6 +4,7 @@ import {
   SearchIcon,
   BookOpenIcon,
   DotsHorizontalIcon,
+  ChartSquareBarIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import _ from 'lodash'
@@ -19,6 +20,7 @@ import { getNavigationOptions, ProfileSummary } from './profile-menu'
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Markets', href: '/markets', icon: SearchIcon },
+  { name: 'Leaderboards', href: '/leaderboards', icon: ChartSquareBarIcon },
   { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
 ]
 
