@@ -36,7 +36,7 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
         className={clsx(
           item.href == currentPage
             ? 'bg-gray-200 text-gray-900'
-            : 'text-gray-600 hover:bg-gray-50',
+            : 'text-gray-600 hover:bg-gray-100',
           'group flex items-center rounded-md px-3 py-2 text-sm font-medium'
         )}
         aria-current={item.href == currentPage ? 'page' : undefined}
@@ -58,7 +58,7 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
 
 function MoreButton() {
   return (
-    <a className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:cursor-pointer hover:bg-gray-50">
+    <a className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:cursor-pointer hover:bg-gray-100">
       <DotsHorizontalIcon
         className="-ml-1 mr-3 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
         aria-hidden="true"
@@ -128,7 +128,7 @@ export default function Sidebar() {
             <a
               key={fold.name}
               href={`/fold/${fold.slug}`}
-              className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
             >
               <span className="truncate">&nbsp; {fold.name}</span>
             </a>
