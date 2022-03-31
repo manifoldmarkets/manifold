@@ -31,8 +31,8 @@ export function ProfileSummary(props: { user: User | undefined }) {
     <Row className="group avatar items-center gap-4 py-6 text-gray-600 group-hover:text-gray-900">
       <Avatar avatarUrl={user?.avatarUrl} username={user?.username} noLink />
 
-      <div className="truncate text-left sm:w-32">
-        <div className="hidden sm:flex">{user?.name}</div>
+      <div className="truncate text-left">
+        <div>{user?.name}</div>
         <div className="text-sm">
           {user ? formatMoney(Math.floor(user.balance)) : ' '}
         </div>
