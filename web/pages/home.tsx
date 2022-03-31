@@ -1,7 +1,6 @@
-import React, { useState } from 'react'
+import React from 'react'
 import Router from 'next/router'
 import { SparklesIcon, GlobeAltIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
 import _ from 'lodash'
 
 import { Contract } from '../lib/firebase/contracts'
@@ -17,8 +16,6 @@ import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
 import { Fold } from '../../common/fold'
 import { LoadingIndicator } from '../components/loading-indicator'
-import { Row } from '../components/layout/row'
-import { FastFoldFollowing } from '../components/folds/fast-fold-following'
 import {
   getAllContractInfo,
   useExploreContracts,
@@ -29,7 +26,7 @@ import { fromPropz, usePropz } from '../hooks/use-propz'
 import { useGetRecentBets, useRecentBets } from '../hooks/use-bets'
 import { useActiveContracts } from '../hooks/use-contracts'
 import { useRecentComments } from '../hooks/use-comments'
-import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
+import { Tabs } from '../components/layout/tabs'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -73,12 +70,21 @@ const Home = (props: {
 
   const exploreContracts = useExploreContracts()
 
-  const [feedMode, setFeedMode] = useState<'activity' | 'explore'>('activity')
-
   if (user === null) {
     Router.replace('/')
     return <></>
   }
+
+  const activityContent = recentBets ? (
+    <ActivityFeed
+      contracts={activeContracts}
+      recentBets={recentBets}
+      recentComments={recentComments}
+      mode="only-recent"
+    />
+  ) : (
+    <LoadingIndicator className="mt-4" />
+  )
 
   return (
     <Page assertUser="signed-in">
@@ -98,51 +104,28 @@ const Home = (props: {
 
           <Spacer h={5} />
 
-          <Col className="mb-3 gap-2 text-sm text-gray-800 sm:flex-row">
-            <Row className="gap-2">
-              <div className="tabs">
-                <div
-                  className={clsx(
-                    'tab gap-2',
-                    feedMode === 'activity' && 'tab-active'
-                  )}
-                  onClick={() => setFeedMode('activity')}
-                >
+          <Tabs
+            tabs={[
+              {
+                title: 'Recent activity',
+                tabIcon: (
                   <SparklesIcon className="inline h-5 w-5" aria-hidden="true" />
-                  Recent activity
-                </div>
-                <div
-                  className={clsx(
-                    'tab gap-2',
-                    feedMode === 'explore' && 'tab-active'
-                  )}
-                  onClick={() => setFeedMode('explore')}
-                >
+                ),
+                content: activityContent,
+              },
+              {
+                title: 'Explore',
+                tabIcon: (
                   <GlobeAltIcon className="inline h-5 w-5" aria-hidden="true" />
-                  Explore
-                </div>
-              </div>
-            </Row>
-          </Col>
-
-          {feedMode === 'activity' &&
-            (recentBets ? (
-              <ActivityFeed
-                contracts={activeContracts}
-                recentBets={recentBets}
-                recentComments={recentComments}
-                mode="only-recent"
-              />
-            ) : (
-              <LoadingIndicator className="mt-4" />
-            ))}
-
-          {feedMode === 'explore' &&
-            (exploreContracts ? (
-              <SummaryActivityFeed contracts={exploreContracts} />
-            ) : (
-              <LoadingIndicator className="mt-4" />
-            ))}
+                ),
+                content: exploreContracts ? (
+                  <SummaryActivityFeed contracts={exploreContracts} />
+                ) : (
+                  <LoadingIndicator className="mt-4" />
+                ),
+              },
+            ]}
+          />
         </Col>
       </Col>
     </Page>
