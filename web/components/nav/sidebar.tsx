@@ -77,19 +77,22 @@ export default function Sidebar() {
   folds = _.sortBy(folds, 'followCount').reverse()
 
   return (
-    <nav aria-label="Sidebar" className="sticky top-4 divide-y divide-gray-300">
+    <nav
+      aria-label="Sidebar"
+      className="sticky top-4 mt-4 divide-y divide-gray-300"
+    >
       <div className="space-y-1 pb-6">
         <ManifoldLogo hideText />
       </div>
 
-      <div>
+      <div style={{ minHeight: 93 }}>
         {user ? (
           <Link href={`/${user.username}`}>
             <a className="group">
               <ProfileSummary user={user} />
             </a>
           </Link>
-        ) : (
+        ) : user === null ? (
           <div className="py-6 text-center">
             <button
               className="btn border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
@@ -98,6 +101,8 @@ export default function Sidebar() {
               Sign in
             </button>
           </div>
+        ) : (
+          <div />
         )}
       </div>
 
