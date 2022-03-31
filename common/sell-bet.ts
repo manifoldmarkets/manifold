@@ -88,6 +88,7 @@ export const getCpmmSellBetInfo = (
   shares: number,
   outcome: 'YES' | 'NO',
   contract: FullContract<CPMM, Binary>,
+  prevLoanAmount: number,
   newBetId: string
 ) => {
   const { pool, p } = contract
@@ -97,6 +98,9 @@ export const getCpmmSellBetInfo = (
     shares,
     outcome
   )
+
+  const loanPaid = Math.min(prevLoanAmount, saleValue)
+  const netAmount = saleValue - loanPaid
 
   const probBefore = getCpmmProbability(pool, p)
   const probAfter = getCpmmProbability(newPool, p)
@@ -121,10 +125,11 @@ export const getCpmmSellBetInfo = (
     probBefore,
     probAfter,
     createdTime: Date.now(),
+    loanAmount: -loanPaid,
     fees,
   }
 
-  const newBalance = user.balance + saleValue
+  const newBalance = user.balance + netAmount
 
   return {
     newBet,
