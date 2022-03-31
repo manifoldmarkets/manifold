@@ -25,7 +25,7 @@ export function Page(props: {
         </div>
         <main
           className={clsx(
-            'mt-6 lg:col-span-9',
+            'pt-6 lg:col-span-9',
             rightSidebar ? 'xl:col-span-7' : 'xl:col-span-8'
           )}
         >
