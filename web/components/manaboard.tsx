@@ -1,7 +1,8 @@
 import clsx from 'clsx'
-import { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ENV_CONFIG } from '../../common/envs/constants'
 import { User } from '../../common/user'
+import { formatMoney } from '../../common/util/format'
 import { useUser } from '../hooks/use-user'
 import { AmountInput } from './amount-input'
 import { Avatar } from './avatar'
@@ -48,6 +49,7 @@ export function Manaboard(props: {
                       slot={index + 1}
                       title={`${title}`}
                       holder={user}
+                      value={100}
                     />
                   </td>
                 </tr>
@@ -60,50 +62,78 @@ export function Manaboard(props: {
   )
 }
 
+function Label(props: { children: React.ReactNode }) {
+  return <label className="-mb-3 text-sm">{props.children}</label>
+}
+
 export function BuySlotModal(props: {
   title: string
   holder: User
   slot: number
+  value: number
 }) {
-  const { slot, title, holder } = props
+  const { slot, title, holder, value } = props
   const user = useUser()
 
   const [open, setOpen] = useState(false)
+  const [newValue, setNewValue] = useState(value)
+  const [message, setMessage] = useState('')
+  useEffect(() => {
+    if (user?.name) {
+      setMessage(user.name)
+    }
+  }, [user])
+
   return (
     <>
       <Modal open={open} setOpen={setOpen}>
-        <Col className="gap-4 rounded-md bg-white p-6 text-gray-500">
+        <Col className="gap-5 rounded-md bg-white p-6 text-gray-500">
           <Title
             text={`Buy #${slot} on ${title}`}
             className="!mt-0 !text-2xl"
           />
 
-          <div className="text-sm">Currently</div>
+          <Label>Current value: {formatMoney(value)}</Label>
           <Row className="items-center gap-4 rounded-md bg-gray-100 p-2">
             <div>#{slot}</div>
             <Avatar avatarUrl={holder.avatarUrl} size={8} />
             <div className="truncate">{holder.name}</div>
           </Row>
 
-          <div className="text-sm">After purchasing</div>
-          {user && (
-            <Row className="items-center gap-4 rounded-md bg-gray-100 p-2">
-              <div>#{slot}</div>
-              <Avatar avatarUrl={user.avatarUrl} size={8} />
-              <div className="truncate">{user.name}</div>
-            </Row>
-          )}
-
-          <div className="text-sm">Assess value</div>
+          <Label>Reassess value</Label>
           <AmountInput
-            amount={100}
-            onChange={() => {}}
+            amount={newValue}
+            onChange={(amount) => setNewValue(amount ?? 0)}
             error={''}
             // error="You don't have enough mana"
             label={ENV_CONFIG.moneyMoniker}
           />
+          <div className="-mt-5 text-sm">
+            Tax: {formatMoney(newValue / 10)} per hour
+          </div>
 
-          <button className="btn btn-primary">Buy Slot</button>
+          <Label>(Optional) set message</Label>
+          <input
+            type="text"
+            className="input input-bordered w-full max-w-xs"
+            onChange={(e) => {
+              setMessage(e.target.value)
+            }}
+            value={message}
+          />
+
+          <Label>Preview</Label>
+          {user && (
+            <Row className="items-center gap-4 rounded-md bg-gray-100 p-2">
+              <div>#{slot}</div>
+              <Avatar avatarUrl={user.avatarUrl} size={8} />
+              <div className="truncate">{message}</div>
+            </Row>
+          )}
+
+          <button className="btn btn-primary">
+            Buy Slot ({formatMoney(value)})
+          </button>
         </Col>
       </Modal>
       <button className="btn btn-outline btn-sm" onClick={() => setOpen(true)}>
