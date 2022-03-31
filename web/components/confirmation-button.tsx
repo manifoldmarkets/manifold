@@ -1,4 +1,8 @@
 import clsx from 'clsx'
+import { useState } from 'react'
+import { Col } from './layout/col'
+import { Modal } from './layout/modal'
+import { Row } from './layout/row'
 
 export function ConfirmationButton(props: {
   id: string
@@ -20,34 +24,35 @@ export function ConfirmationButton(props: {
 }) {
   const { id, openModalBtn, cancelBtn, submitBtn, onSubmit, children } = props
 
+  const [open, setOpen] = useState(false)
+
   return (
     <>
-      <label
-        htmlFor={id}
-        className={clsx('btn modal-button', openModalBtn.className)}
-      >
-        {openModalBtn.icon} {openModalBtn.label}
-      </label>
-      <input type="checkbox" id={id} className="modal-toggle" />
-
-      <div className="modal">
-        <div className="modal-box whitespace-normal">
+      <Modal open={open} setOpen={setOpen}>
+        <Col className="gap-4 rounded-md bg-white px-8 py-6">
           {children}
-
-          <div className="modal-action">
-            <label htmlFor={id} className={clsx('btn', cancelBtn?.className)}>
+          <Row className="gap-4">
+            <button
+              className={clsx('btn', cancelBtn?.className)}
+              onClick={() => setOpen(false)}
+            >
               {cancelBtn?.label ?? 'Cancel'}
-            </label>
-            <label
-              htmlFor={id}
+            </button>
+            <button
               className={clsx('btn', submitBtn?.className)}
               onClick={onSubmit}
             >
               {submitBtn?.label ?? 'Submit'}
-            </label>
-          </div>
-        </div>
-      </div>
+            </button>
+          </Row>
+        </Col>
+      </Modal>
+      <button
+        className={clsx('btn', openModalBtn.className)}
+        onClick={() => setOpen(true)}
+      >
+        {openModalBtn.label}
+      </button>
     </>
   )
 }
