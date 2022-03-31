@@ -3,6 +3,7 @@ import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 
 import { Entry, makeEntries } from '../lib/simulator/entries'
+import { NavBar } from '../components/nav/nav-bar'
 import { Col } from '../components/layout/col'
 
 function TableBody(props: { entries: Entry[] }) {
@@ -253,6 +254,7 @@ export default function Simulator() {
 
   return (
     <Col>
+      <NavBar />
       <div className="mx-auto mt-8 grid w-full grid-cols-1 gap-4 p-2 text-center xl:grid-cols-2">
         {/* Left column */}
         <div>

@@ -1,42 +1,106 @@
 import { firebaseLogout, User } from '../../lib/firebase/users'
 import { formatMoney } from '../../../common/util/format'
 import { Avatar } from '../avatar'
+import { Col } from '../layout/col'
+import { MenuButton } from './menu'
 import { IS_PRIVATE_MANIFOLD } from '../../../common/envs/constants'
-import { Row } from '../layout/row'
 
-export function getNavigationOptions(user?: User | null) {
-  if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards' }]
-  }
+export function ProfileMenu(props: { user: User | undefined }) {
+  const { user } = props
 
-  if (!user) {
-    return [
-      { name: 'Leaderboards', href: '/leaderboards' },
-      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    ]
-  }
+  return (
+    <>
+      <MenuButton
+        className="hidden md:block"
+        menuItems={getNavigationOptions(user, { mobile: false })}
+        buttonContent={<ProfileSummary user={user} />}
+      />
 
+      <MenuButton
+        className="mr-2 md:hidden"
+        menuItems={getNavigationOptions(user, { mobile: true })}
+        buttonContent={<ProfileSummary user={user} />}
+      />
+    </>
+  )
+}
+
+function getNavigationOptions(
+  user: User | undefined,
+  options: { mobile: boolean }
+) {
+  const { mobile } = options
   return [
-    { name: 'Your trades', href: '/trades' },
-    { name: 'Add funds', href: '/add-funds' },
-    { name: 'Leaderboards', href: '/leaderboards' },
-    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
+    {
+      name: 'Home',
+      href: user ? '/home' : '/',
+    },
+    ...(mobile
+      ? [
+          {
+            name: 'Markets',
+            href: '/markets',
+          },
+          {
+            name: 'Communities',
+            href: '/folds',
+          },
+        ]
+      : []),
+    {
+      name: `Your profile`,
+      href: `/${user?.username}`,
+    },
+    {
+      name: 'Your trades',
+      href: '/trades',
+    },
+    // Disable irrelevant menu options for teams.
+    ...(IS_PRIVATE_MANIFOLD
+      ? [
+          {
+            name: 'Leaderboards',
+            href: '/leaderboards',
+          },
+        ]
+      : [
+          {
+            name: 'Add funds',
+            href: '/add-funds',
+          },
+          {
+            name: 'Leaderboards',
+            href: '/leaderboards',
+          },
+          {
+            name: 'Discord',
+            href: 'https://discord.gg/eHQBNBqXuh',
+          },
+          {
+            name: 'About',
+            href: '/about',
+          },
+        ]),
+    {
+      name: 'Sign out',
+      href: '#',
+      onClick: () => firebaseLogout(),
+    },
   ]
 }
 
-export function ProfileSummary(props: { user: User | undefined }) {
+function ProfileSummary(props: { user: User | undefined }) {
   const { user } = props
   return (
-    <Row className="group avatar items-center gap-4 py-6 text-gray-600 group-hover:text-gray-900">
+    <Col className="avatar items-center gap-2 sm:flex-row sm:gap-4">
       <Avatar avatarUrl={user?.avatarUrl} username={user?.username} noLink />
 
       <div className="truncate text-left sm:w-32">
         <div className="hidden sm:flex">{user?.name}</div>
-        <div className="text-sm">
+        <div className="text-sm text-gray-700">
           {user ? formatMoney(Math.floor(user.balance)) : ' '}
         </div>
       </div>
-    </Row>
+    </Col>
   )
 }

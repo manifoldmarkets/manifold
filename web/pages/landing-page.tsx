@@ -10,6 +10,7 @@ import {
 import { firebaseLogin } from '../lib/firebase/users'
 import { ContractsGrid } from '../components/contracts-list'
 import { Col } from '../components/layout/col'
+import { NavBar } from '../components/nav/nav-bar'
 import Link from 'next/link'
 import { Contract } from '../lib/firebase/contracts'
 
@@ -33,6 +34,7 @@ const scrollToAbout = () => {
 function Hero() {
   return (
     <div className="bg-world-trading h-screen overflow-hidden bg-gray-900 bg-cover bg-center lg:bg-left">
+      <NavBar darkBackground />
       <main>
         <div className="pt-32 sm:pt-8 lg:overflow-hidden lg:pt-0 lg:pb-14">
           <div className="mx-auto max-w-7xl lg:px-8 xl:px-0">

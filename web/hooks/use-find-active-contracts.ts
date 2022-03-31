@@ -10,7 +10,7 @@ import { Comment, getRecentComments } from '../lib/firebase/comments'
 import { Contract, getActiveContracts } from '../lib/firebase/contracts'
 import { listAllFolds } from '../lib/firebase/folds'
 import { useInactiveContracts } from './use-contracts'
-import { useFollowedFoldIds } from './use-fold'
+import { useFollowedFolds } from './use-fold'
 import { useSeenContracts } from './use-seen-contracts'
 import { useUserBetContracts } from './use-user-bets'
 
@@ -48,7 +48,7 @@ export const useFilterYourContracts = (
   folds: Fold[],
   contracts: Contract[]
 ) => {
-  const followedFoldIds = useFollowedFoldIds(user)
+  const followedFoldIds = useFollowedFolds(user)
 
   const followedFolds = filterDefined(
     (followedFoldIds ?? []).map((id) => folds.find((fold) => fold.id === id))

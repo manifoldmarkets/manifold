@@ -2,7 +2,10 @@ import clsx from 'clsx'
 import Link from 'next/link'
 
 import { useUser } from '../../hooks/use-user'
+import { Row } from '../layout/row'
 import { firebaseLogin, User } from '../../lib/firebase/users'
+import { ManifoldLogo } from './manifold-logo'
+import { ProfileMenu } from './profile-menu'
 import {
   CollectionIcon,
   HomeIcon,
@@ -10,12 +13,50 @@ import {
   UserGroupIcon,
 } from '@heroicons/react/outline'
 
-// From https://codepen.io/chris__sev/pen/QWGvYbL
-export function BottomNavBar() {
+export function NavBar(props: {
+  darkBackground?: boolean
+  wide?: boolean
+  assertUser?: 'signed-in' | 'signed-out'
+  className?: string
+}) {
+  const { darkBackground, wide, assertUser, className } = props
+
   const user = useUser()
-  if (!user) {
-    return null
-  }
+
+  const hoverClasses =
+    'hover:underline hover:decoration-indigo-400 hover:decoration-2'
+  const themeClasses = clsx(darkBackground && 'text-white', hoverClasses)
+
+  return (
+    <>
+      <nav className={clsx('mb-4 w-full p-4', className)} aria-label="Global">
+        <Row
+          className={clsx(
+            'mx-auto items-center justify-between sm:px-4',
+            wide ? 'max-w-6xl' : 'max-w-4xl'
+          )}
+        >
+          <ManifoldLogo className="my-1" darkBackground={darkBackground} />
+
+          <Row className="ml-6 items-center gap-6 sm:gap-8">
+            {(user || user === null || assertUser) && (
+              <NavOptions
+                user={user}
+                assertUser={assertUser}
+                themeClasses={themeClasses}
+              />
+            )}
+          </Row>
+        </Row>
+      </nav>
+      {user && <BottomNavBar user={user} />}
+    </>
+  )
+}
+
+// From https://codepen.io/chris__sev/pen/QWGvYbL
+function BottomNavBar(props: { user: User }) {
+  const { user } = props
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 md:hidden">
       <Link href="/home">
@@ -48,7 +89,6 @@ export function BottomNavBar() {
         </a>
       </Link>
 
-      {/* TODO: replace with a link to your own profile */}
       <Link href="/trades">
         <a
           href="#"
@@ -59,5 +99,67 @@ export function BottomNavBar() {
         </a>
       </Link>
     </nav>
+  )
+}
+
+function NavOptions(props: {
+  user: User | null | undefined
+  assertUser: 'signed-in' | 'signed-out' | undefined
+  themeClasses: string
+}) {
+  const { user, assertUser, themeClasses } = props
+  const showSignedIn = assertUser === 'signed-in' || !!user
+  const showSignedOut =
+    !showSignedIn && (assertUser === 'signed-out' || user === null)
+
+  return (
+    <>
+      {showSignedOut && (
+        <Link href="/about">
+          <a
+            className={clsx(
+              'hidden whitespace-nowrap text-base md:block',
+              themeClasses
+            )}
+          >
+            About
+          </a>
+        </Link>
+      )}
+
+      <Link href="/folds">
+        <a
+          className={clsx(
+            'hidden whitespace-nowrap text-base md:block',
+            themeClasses
+          )}
+        >
+          Communities
+        </a>
+      </Link>
+
+      <Link href="/markets">
+        <a
+          className={clsx(
+            'hidden whitespace-nowrap text-base md:block',
+            themeClasses
+          )}
+        >
+          Markets
+        </a>
+      </Link>
+
+      {showSignedOut && (
+        <>
+          <button
+            className="btn btn-sm btn-outline bg-gradient-to-r px-6 text-base font-medium normal-case"
+            onClick={firebaseLogin}
+          >
+            Sign in
+          </button>
+        </>
+      )}
+      {showSignedIn && <ProfileMenu user={user ?? undefined} />}
+    </>
   )
 }
