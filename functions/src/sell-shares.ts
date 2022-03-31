@@ -51,6 +51,8 @@ export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
         contractDoc.collection('bets').where('userId', '==', userId)
       )
 
+      const prevLoanAmount = _.sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+
       const [yesBets, noBets] = _.partition(
         userBets ?? [],
         (bet) => bet.outcome === 'YES'
@@ -77,6 +79,7 @@ export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
         shares,
         outcome,
         contract,
+        prevLoanAmount,
         newBetDoc.id
       )
 
