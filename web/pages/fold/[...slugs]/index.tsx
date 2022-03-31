@@ -40,6 +40,7 @@ import { useRecentBets } from '../../../hooks/use-bets'
 import { useRecentComments } from '../../../hooks/use-comments'
 import { LoadingIndicator } from '../../../components/loading-indicator'
 import { findActiveContracts } from '../../../components/feed/find-active-contracts'
+import { Tabs } from '../../../components/layout/tabs'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -169,6 +170,47 @@ export default function FoldPage(props: {
         )}
       </Row>
       <FoldOverview fold={fold} curator={curator} />
+      <YourPerformance
+        traderScores={traderScores}
+        creatorScores={creatorScores}
+        user={user}
+      />
+    </Col>
+  )
+
+  const activityTab = (
+    <Col className="flex-1">
+      {user !== null && !fold.disallowMarketCreation && (
+        <FeedCreate
+          className={clsx('border-b-2')}
+          user={user}
+          tag={toCamelCase(fold.name)}
+          placeholder={`Type your question about ${fold.name}`}
+        />
+      )}
+      {recentBets && recentComments ? (
+        <>
+          <ActivityFeed
+            contracts={activeContracts}
+            recentBets={recentBets ?? []}
+            recentComments={recentComments ?? []}
+            mode="abbreviated"
+          />
+          {activeContracts.length === 0 && (
+            <div className="mx-2 mt-4 text-gray-500 lg:mx-0">
+              No activity from matching markets.{' '}
+              {isCurator && 'Try editing to add more tags!'}
+            </div>
+          )}
+        </>
+      ) : (
+        <LoadingIndicator className="mt-4" />
+      )}
+    </Col>
+  )
+
+  const leaderboardsTab = (
+    <Col className="gap-8 px-4 lg:flex-row">
       <FoldLeaderboards
         traderScores={traderScores}
         creatorScores={creatorScores}
@@ -205,90 +247,25 @@ export default function FoldPage(props: {
         </Col>
       </div>
 
-      <div className="tabs mb-2">
-        <Link href={foldPath(fold)} shallow>
-          <a
-            className={clsx(
-              'tab tab-bordered',
-              page === 'activity' && 'tab-active'
-            )}
-          >
-            Activity
-          </a>
-        </Link>
-
-        <Link href={foldPath(fold, 'markets')} shallow>
-          <a
-            className={clsx(
-              'tab tab-bordered',
-              page === 'markets' && 'tab-active'
-            )}
-          >
-            Markets
-          </a>
-        </Link>
-        <Link href={foldPath(fold, 'leaderboards')} shallow>
-          <a
-            className={clsx(
-              'tab tab-bordered',
-              page === 'leaderboards' && 'tab-active',
-              page !== 'leaderboards' && 'md:hidden'
-            )}
-          >
-            Leaderboards
-          </a>
-        </Link>
-      </div>
-
-      {(page === 'activity' || page === 'markets') && (
-        <Row className={clsx(page === 'activity' ? 'gap-16' : 'gap-8')}>
-          <Col className="flex-1">
-            {user !== null && !fold.disallowMarketCreation && (
-              <FeedCreate
-                className={clsx('border-b-2', page !== 'activity' && 'hidden')}
-                user={user}
-                tag={toCamelCase(fold.name)}
-                placeholder={`Type your question about ${fold.name}`}
-              />
-            )}
-            {page === 'activity' ? (
-              recentBets && recentComments ? (
-                <>
-                  <ActivityFeed
-                    contracts={activeContracts}
-                    recentBets={recentBets ?? []}
-                    recentComments={recentComments ?? []}
-                    mode="abbreviated"
-                  />
-                  {activeContracts.length === 0 && (
-                    <div className="mx-2 mt-4 text-gray-500 lg:mx-0">
-                      No activity from matching markets.{' '}
-                      {isCurator && 'Try editing to add more tags!'}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <LoadingIndicator className="mt-4" />
-              )
-            ) : (
-              <SearchableGrid contracts={contracts} />
-            )}
-          </Col>
-        </Row>
-      )}
-
-      {page === 'leaderboards' && (
-        <Col className="gap-8 px-4 lg:flex-row">
-          <FoldLeaderboards
-            traderScores={traderScores}
-            creatorScores={creatorScores}
-            topTraders={topTraders}
-            topCreators={topCreators}
-            user={user}
-            yourPerformanceClassName="lg:hidden"
-          />
-        </Col>
-      )}
+      <Tabs
+        tabs={[
+          {
+            title: 'Activity',
+            content: activityTab,
+            href: foldPath(fold),
+          },
+          {
+            title: 'Markets',
+            content: <SearchableGrid contracts={contracts} />,
+            href: foldPath(fold, 'markets'),
+          },
+          {
+            title: 'Leaderboards',
+            content: leaderboardsTab,
+            href: foldPath(fold, 'leaderboards'),
+          },
+        ]}
+      />
     </Page>
   )
 }
@@ -333,55 +310,56 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
   )
 }
 
+function YourPerformance(props: {
+  traderScores: { [userId: string]: number }
+  creatorScores: { [userId: string]: number }
+
+  user: User | null | undefined
+}) {
+  const { traderScores, creatorScores, user } = props
+
+  const yourTraderScore = user ? traderScores[user.id] : undefined
+  const yourCreatorScore = user ? creatorScores[user.id] : undefined
+
+  return user ? (
+    <Col>
+      <div className="rounded bg-indigo-500 px-4 py-3 text-sm text-white">
+        Your performance
+      </div>
+      <div className="bg-white p-2">
+        <table className="table-compact table w-full text-gray-500">
+          <tbody>
+            <tr>
+              <td>Trading profit</td>
+              <td>{formatMoney(yourTraderScore ?? 0)}</td>
+            </tr>
+            {yourCreatorScore && (
+              <tr>
+                <td>Created market vol</td>
+                <td>{formatMoney(yourCreatorScore)}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Col>
+  ) : null
+}
+
 function FoldLeaderboards(props: {
   traderScores: { [userId: string]: number }
   creatorScores: { [userId: string]: number }
   topTraders: User[]
   topCreators: User[]
   user: User | null | undefined
-  yourPerformanceClassName?: string
 }) {
-  const {
-    traderScores,
-    creatorScores,
-    topTraders,
-    topCreators,
-    user,
-    yourPerformanceClassName,
-  } = props
-
-  const yourTraderScore = user ? traderScores[user.id] : undefined
-  const yourCreatorScore = user ? creatorScores[user.id] : undefined
+  const { traderScores, creatorScores, topTraders, topCreators } = props
 
   const topTraderScores = topTraders.map((user) => traderScores[user.id])
   const topCreatorScores = topCreators.map((user) => creatorScores[user.id])
 
   return (
     <>
-      {user && (
-        <Col className={yourPerformanceClassName}>
-          <div className="rounded bg-indigo-500 px-4 py-3 text-sm text-white">
-            Your performance
-          </div>
-          <div className="bg-white p-2">
-            <table className="table-compact table w-full text-gray-500">
-              <tbody>
-                <tr>
-                  <td>Trading profit</td>
-                  <td>{formatMoney(yourTraderScore ?? 0)}</td>
-                </tr>
-                {yourCreatorScore && (
-                  <tr>
-                    <td>Created market vol</td>
-                    <td>{formatMoney(yourCreatorScore)}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Col>
-      )}
-
       <Leaderboard
         className="max-w-xl"
         title="🏅 Top traders"
