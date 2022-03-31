@@ -3,20 +3,18 @@ import { BottomNavBar } from './nav/nav-bar'
 import Sidebar from './nav/sidebar'
 
 export function Page(props: {
-  wide?: boolean
   margin?: boolean
   assertUser?: 'signed-in' | 'signed-out'
   rightSidebar?: React.ReactNode
   children?: any
 }) {
-  const { wide, margin, assertUser, children, rightSidebar } = props
+  const { margin, assertUser, children, rightSidebar } = props
 
   return (
     <div>
       <div
         className={clsx(
           'mx-auto w-full pb-16 lg:grid lg:grid-cols-12 lg:gap-8 xl:max-w-7xl',
-          wide ? 'max-w-6xl' : 'max-w-4xl',
           margin && 'px-4'
         )}
       >

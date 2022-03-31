@@ -205,7 +205,7 @@ function ContractsTable() {
 
 export default function Admin() {
   return useAdmin() ? (
-    <Page wide>
+    <Page>
       <UsersTable />
       <ContractsTable />
     </Page>

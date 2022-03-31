@@ -131,7 +131,7 @@ export default function ContractPage(props: {
   ) : null
 
   return (
-    <Page wide={hasSidePanel} rightSidebar={rightSidebar}>
+    <Page rightSidebar={rightSidebar}>
       {ogCardProps && (
         <SEO
           title={question}
