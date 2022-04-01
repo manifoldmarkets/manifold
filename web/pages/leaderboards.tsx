@@ -252,7 +252,7 @@ function TransactionsTable(props: { txns: Transaction[] }) {
   return (
     <Grid
       data={txns}
-      search={true}
+      search
       // sort={true}
       pagination={{
         enabled: true,
@@ -267,12 +267,28 @@ function TransactionsTable(props: { txns: Transaction[] }) {
         {
           id: 'category',
           name: 'Type',
-          formatter: (cell) =>
-            cell === 'BUY_LEADERBOARD_SLOT' ? 'Buy' : 'Tax',
+          formatter: (cell, row) => {
+            if (cell === 'LEADERBOARD_TAX') {
+              return 'Tax'
+            }
+
+            // If newValue === 0
+            // @ts-ignore
+            if (row.cells[6].data?.newValue === 0) {
+              return 'Sell'
+            }
+
+            // If fromUser === toUser
+            if (row.cells[3].data === row.cells[4].data) {
+              return 'Edit'
+            }
+
+            return 'Buy'
+          },
         },
         {
           id: 'amount',
-          name: 'Amount',
+          name: 'Transfer',
           formatter: (cell) => formatMoney(cell as number),
         },
         {
@@ -289,6 +305,12 @@ function TransactionsTable(props: { txns: Transaction[] }) {
                 'h:mma'
               )}</span>`
             ),
+        },
+        {
+          hidden: true,
+          id: 'data',
+          name: 'New Value',
+          formatter: (cell) => (cell as SlotData).newValue ?? '',
         },
       ]}
     />
