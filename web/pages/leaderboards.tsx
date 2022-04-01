@@ -15,6 +15,7 @@ import { Grid, _ as r } from 'gridjs-react'
 import 'gridjs/dist/theme/mermaid.css'
 import { html } from 'gridjs'
 import dayjs from 'dayjs'
+import { useUser } from '../hooks/use-user'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -96,6 +97,24 @@ function Explanation() {
           !
         </em>
       </p>
+
+      <h3 id="where-did-manafold-s-mana-go-">
+        Where did Manafold&#39;s mana go?
+      </h3>
+      <p>
+        Honestly, we&#39;re as puzzled as you are. Leading theories include:
+      </p>
+      <ul>
+        <li>Leaky abstractions in our manabase</li>
+        <li>One too many floating-point rounding errors</li>
+        <li>
+          Our newest user <code>Robert&#39;);DROP TABLE Balances;--</code>
+        </li>
+      </ul>
+      <p>
+        We&#39;d be happy to pay a bounty to anyone who can help us solve this
+        riddle... oh wait.
+      </p>
     </div>
   )
 }
@@ -114,6 +133,7 @@ export default function Manaboards(props: {
     topCreators: [],
   }
   const { topTraders, topCreators } = props
+  const user = useUser()
 
   const values = Array.from(Array(topTraders.length).keys())
     .map((i) => i + 1)
@@ -152,9 +172,11 @@ export default function Manaboards(props: {
     }
   }
 
+  const MANIFOLD_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2'
+
   return (
     <Page margin rightSidebar={<Explanation />}>
-      <Title text={'🏅 Leaderboards'} />
+      <Title text={'🏅 Leaderboard slots, for sale!'} />
       {/* <div className="absolute right-[700px] top-8">
         <img
           className="h-18 mx-auto w-24 object-cover transition hover:rotate-12"
@@ -163,9 +185,9 @@ export default function Manaboards(props: {
       </div> */}
       <div className="prose mb-8 text-gray-600">
         <p>
-          Manafold Markets is running low on mana, so we&#39;re selling our
-          leaderboard slots to make up the deficit. Buy one now for ephemeral
-          glory, and help keep Manafold afloat!
+          Manafold Markets is running out of mana... so we&#39;re selling our
+          leaderboard slots to recoup our losses. Buy one now to earn fleeting
+          glory and keep Manafold afloat!
         </p>
       </div>
 
@@ -179,12 +201,22 @@ export default function Manaboards(props: {
         {/* <Manaboard title="🏅 Top creators" users={topCreators} /> */}
 
         <div className="text-sm">
-          <Title text={'Transaction log'} />
+          <Title text={'Transaction history'} />
+          {user && <p>Your balance: {userProfits(user.id, transactions)}</p>}
+          <p>Manifold's earnings: {userProfits(MANIFOLD_ID, transactions)}</p>
           <TransactionsTable txns={_.reverse(sortedTxns)} />
         </div>
       </Col>
     </Page>
   )
+}
+
+function userProfits(userId: string, txns: Transaction[]) {
+  const losses = txns.filter((txn) => txn.fromId === userId)
+  const loss = _.sumBy(losses, (txn) => txn.amount)
+  const profits = txns.filter((txn) => txn.toId === userId)
+  const profit = _.sumBy(profits, (txn) => txn.amount)
+  return formatMoney(profit - loss)
 }
 
 function TransactionsTable(props: { txns: Transaction[] }) {
