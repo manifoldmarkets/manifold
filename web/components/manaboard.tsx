@@ -178,7 +178,7 @@ export function BuySlotModal(props: {
             Buy Slot ({formatMoney(value)})
           </button>
           <div className="-mt-2 text-sm">
-            Additional fees: {formatMoney(newValue / 10)} per hour
+            Additional fees: {formatMoney(newValue * 0.25)} per hour
           </div>
         </Col>
       </Modal>
@@ -232,7 +232,7 @@ function taxTransaction(options: {
   const APRIL_FOOLS_PT = 1648796400000
   const elapsedMs = Date.now() - (createdTime || APRIL_FOOLS_PT)
   const elapsedHours = elapsedMs / 1000 / 60 / 60
-  const tax = elapsedHours * (value / 10)
+  const tax = elapsedHours * value * 0.25
 
   return {
     id: '',

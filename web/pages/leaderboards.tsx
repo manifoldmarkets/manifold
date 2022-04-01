@@ -77,7 +77,7 @@ function Explanation() {
           Every slot has an &quot;assessed value&quot;: what the current holder
           thinks their slot is worth.
         </li>
-        <li>Slot holders pay a continuous fee of 10% per hour to Manafold.</li>
+        <li>Slot holders pay a continuous fee of 25% per hour to Manafold.</li>
         <li>
           At any time, you can pay the assessed value of a slot to buy it from
           the current holder.
