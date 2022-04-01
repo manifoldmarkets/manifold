@@ -5,6 +5,7 @@ import { User } from '../../common/user'
 import { formatMoney } from '../../common/util/format'
 import { useUser } from '../hooks/use-user'
 import { buyLeaderboardSlot } from '../lib/firebase/api-call'
+import { Transaction, writeTransaction } from '../lib/firebase/transactions'
 import { AmountInput } from './amount-input'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
@@ -104,10 +105,7 @@ export function BuySlotModal(props: {
     <>
       <Modal open={open} setOpen={setOpen}>
         <Col className="gap-5 rounded-md bg-white p-6 text-gray-500">
-          <Title
-            text={`Buy #${slot} on ${title}`}
-            className="!mt-0 !text-2xl"
-          />
+          <Title text={`Buy slot #${slot}`} className="!mt-0" />
 
           <Label>Current value: {formatMoney(value)}</Label>
           {user && (
@@ -136,7 +134,15 @@ export function BuySlotModal(props: {
             label={ENV_CONFIG.moneyMoniker}
           />
 
-          <button className="btn btn-primary">
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              if (user) {
+                buySlot({ holder, buyer: user, amount: value, slot, message })
+                setOpen(false)
+              }
+            }}
+          >
             Buy Slot ({formatMoney(value)})
           </button>
           <div className="-mt-2 text-sm">
@@ -152,4 +158,66 @@ export function BuySlotModal(props: {
       </button>
     </>
   )
+}
+
+async function buySlot(options: {
+  holder: User
+  buyer: User
+  amount: number
+  slot: number
+  message: string
+}) {
+  const { holder, buyer, amount, slot, message } = options
+  const createdTime = Date.now()
+  const buyTransaction: Transaction = {
+    id: '',
+    createdTime,
+
+    fromId: buyer.id,
+    fromName: buyer.name,
+    fromUsername: buyer.username,
+    fromAvatarUrl: buyer.avatarUrl,
+
+    toId: holder.id,
+    toName: holder.name,
+    toUsername: holder.username,
+    toAvatarUrl: holder.avatarUrl,
+
+    amount: amount,
+
+    category: 'BUY_LEADERBOARD_SLOT',
+    description: `${buyer.name} bought a slot from ${holder.name}`,
+    data: {
+      slot,
+      message,
+    },
+  }
+
+  const feeTransaction: Transaction = {
+    id: '',
+    createdTime,
+
+    fromId: holder.id,
+    fromName: holder.name,
+    fromUsername: holder.username,
+    fromAvatarUrl: holder.avatarUrl,
+
+    // Send fee to Manifold Markets official account
+    toId: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
+    toName: 'Manifold Markets',
+    toUsername: 'ManifoldMarkets',
+    toAvatarUrl: 'https://manifold.markets/logo-bg-white.png',
+
+    amount: 10, // TODO: Calculate fee
+    category: 'LEADERBOARD_TAX',
+    description: `${holder.name} paid M$ 10 in fees`,
+    data: {
+      slot,
+    },
+  }
+
+  await Promise.all([
+    writeTransaction(buyTransaction),
+    writeTransaction(feeTransaction),
+  ])
 }
