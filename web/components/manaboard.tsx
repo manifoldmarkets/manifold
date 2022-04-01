@@ -5,7 +5,11 @@ import { User } from '../../common/user'
 import { formatMoney } from '../../common/util/format'
 import { useUser } from '../hooks/use-user'
 import { buyLeaderboardSlot } from '../lib/firebase/api-call'
-import { Transaction, writeTransaction } from '../lib/firebase/transactions'
+import {
+  SlotData,
+  Transaction,
+  writeTransaction,
+} from '../lib/firebase/transactions'
 import { AmountInput } from './amount-input'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
@@ -18,10 +22,11 @@ export function Manaboard(props: {
   title: string
   users: User[]
   values: number[]
+  createdTimes: number[]
   className?: string
 }) {
   // TODO: Ideally, highlight your own entry on the leaderboard
-  let { title, users, className, values } = props
+  let { title, users, className, values, createdTimes } = props
 
   const [expanded, setExpanded] = useState(false)
   if (!expanded) {
@@ -67,6 +72,7 @@ export function Manaboard(props: {
                         title={`${title}`}
                         holder={user}
                         value={values[index]}
+                        createdTime={createdTimes[index]}
                       />
                     </Row>
                   </td>
@@ -96,8 +102,9 @@ export function BuySlotModal(props: {
   holder: User
   slot: number
   value: number
+  createdTime: number
 }) {
-  const { slot, title, holder, value } = props
+  const { slot, title, holder, value, createdTime } = props
   const user = useUser()
 
   const [open, setOpen] = useState(false)
@@ -109,10 +116,29 @@ export function BuySlotModal(props: {
     }
   }, [user])
 
-  const onBuy = async () => {
-    // Feel free to change this. - James
-    const slotId = `${title}-${slot}`
-    await buyLeaderboardSlot({ slotId, reassessValue: newValue })
+  // const onBuy = async () => {
+  //   // Feel free to change this. - James
+  //   const slotId = `${title}-${slot}`
+  //   await buyLeaderboardSlot({ slotId, reassessValue: newValue })
+  // }
+
+  async function onBuy() {
+    if (user) {
+      // Start transactions, but don't block
+      const buyData = { slot, newValue, message }
+      const buyTxn = buyTransaction({
+        buyer: user,
+        holder,
+        amount: value,
+        buyData,
+      })
+      await Promise.all([
+        writeTransaction(buyTxn),
+        writeTransaction(taxTransaction({ holder, slot, value, createdTime })),
+      ])
+
+      setOpen(false)
+    }
   }
 
   return (
@@ -148,22 +174,7 @@ export function BuySlotModal(props: {
             label={ENV_CONFIG.moneyMoniker}
           />
 
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              if (user) {
-                buySlot({
-                  holder,
-                  buyer: user,
-                  amount: value,
-                  slot,
-                  message,
-                  newValue,
-                })
-                setOpen(false)
-              }
-            }}
-          >
+          <button className="btn btn-primary" onClick={onBuy}>
             Buy Slot ({formatMoney(value)})
           </button>
           <div className="-mt-2 text-sm">
@@ -181,19 +192,16 @@ export function BuySlotModal(props: {
   )
 }
 
-async function buySlot(options: {
-  holder: User
+function buyTransaction(options: {
   buyer: User
+  holder: User
+  buyData: SlotData
   amount: number
-  slot: number
-  message: string
-  newValue: number
-}) {
-  const { holder, buyer, amount, slot, message, newValue } = options
-  const createdTime = Date.now()
-  const buyTransaction: Transaction = {
+}): Transaction {
+  const { buyer, holder, buyData, amount } = options
+  return {
     id: '',
-    createdTime,
+    createdTime: Date.now(),
 
     fromId: buyer.id,
     fromName: buyer.name,
@@ -205,20 +213,30 @@ async function buySlot(options: {
     toUsername: holder.username,
     toAvatarUrl: holder.avatarUrl,
 
-    amount: amount,
+    amount,
 
     category: 'BUY_LEADERBOARD_SLOT',
     description: `${buyer.name} bought a slot from ${holder.name}`,
-    data: {
-      slot,
-      message,
-      newValue,
-    },
+    data: buyData,
   }
+}
 
-  const feeTransaction: Transaction = {
+function taxTransaction(options: {
+  holder: User
+  slot: number
+  value: number
+  createdTime: number
+}): Transaction {
+  const { holder, slot, value, createdTime } = options
+
+  const APRIL_FOOLS_PT = 1648796400000
+  const elapsedMs = Date.now() - (createdTime || APRIL_FOOLS_PT)
+  const elapsedHours = elapsedMs / 1000 / 60 / 60
+  const tax = elapsedHours * (value / 10)
+
+  return {
     id: '',
-    createdTime,
+    createdTime: Date.now(),
 
     fromId: holder.id,
     fromName: holder.name,
@@ -231,16 +249,12 @@ async function buySlot(options: {
     toUsername: 'ManifoldMarkets',
     toAvatarUrl: 'https://manifold.markets/logo-bg-white.png',
 
-    amount: 10, // TODO: Calculate fee
+    amount: tax,
+
     category: 'LEADERBOARD_TAX',
     description: `${holder.name} paid M$ 10 in fees`,
     data: {
       slot,
     },
   }
-
-  await Promise.all([
-    writeTransaction(buyTransaction),
-    writeTransaction(feeTransaction),
-  ])
 }

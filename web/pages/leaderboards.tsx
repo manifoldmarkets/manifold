@@ -11,6 +11,11 @@ import { Title } from '../components/title'
 import { useTransactions } from '../hooks/use-transactions'
 import { SlotData, Transaction } from '../lib/firebase/transactions'
 
+import { Grid, _ as r } from 'gridjs-react'
+import 'gridjs/dist/theme/mermaid.css'
+import { html } from 'gridjs'
+import dayjs from 'dayjs'
+
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
   const [topTraders, topCreators] = await Promise.all([
@@ -94,11 +99,12 @@ function Explanation() {
     </div>
   )
 }
+
 // TODOs
-// [ ] Correctly calculate tax
-// [ ] List history of purchases at the bottom
-// [ ] Restrict to at most buying one slot per user?
 // [ ] Deduct amount from user's balance, either in UX or for real
+// [ ] Draw attention to leaderboard
+// [ ] Show total returned to Manifold
+// [ ] Restrict to at most buying one slot per user?
 export default function Manaboards(props: {
   topTraders: User[]
   topCreators: User[]
@@ -112,6 +118,7 @@ export default function Manaboards(props: {
   const values = Array.from(Array(topTraders.length).keys())
     .map((i) => i + 1)
     .reverse()
+  const createdTimes = new Array(topTraders.length).fill(0)
 
   // Find the most recent purchases of each slot, and replace the entries in topTraders
   const transactions = useTransactions() ?? []
@@ -124,6 +131,7 @@ export default function Manaboards(props: {
       const slot = data.slot
       topTraders[slot - 1] = buyer
       values[slot - 1] = data.newValue
+      createdTimes[slot - 1] = txn.createdTime
     }
   }
 
@@ -161,10 +169,68 @@ export default function Manaboards(props: {
         </p>
       </div>
 
-      <Col className="mt-6 items-center gap-10">
-        <Manaboard title="" users={topTraders} values={values} />
+      <Col className="mt-6 gap-10">
+        <Manaboard
+          title=""
+          users={topTraders}
+          values={values}
+          createdTimes={createdTimes}
+        />
         {/* <Manaboard title="🏅 Top creators" users={topCreators} /> */}
+
+        <div className="text-sm">
+          <Title text={'Transaction log'} />
+          <TransactionsTable txns={_.reverse(sortedTxns)} />
+        </div>
       </Col>
     </Page>
+  )
+}
+
+function TransactionsTable(props: { txns: Transaction[] }) {
+  const { txns } = props
+  return (
+    <Grid
+      data={txns}
+      search={true}
+      // sort={true}
+      pagination={{
+        enabled: true,
+        limit: 25,
+      }}
+      columns={[
+        {
+          id: 'data',
+          name: 'Slot',
+          formatter: (cell) => (cell as SlotData).slot,
+        },
+        {
+          id: 'category',
+          name: 'Type',
+          formatter: (cell) =>
+            cell === 'BUY_LEADERBOARD_SLOT' ? 'Buy' : 'Tax',
+        },
+        {
+          id: 'amount',
+          name: 'Amount',
+          formatter: (cell) => formatMoney(cell as number),
+        },
+        {
+          id: 'fromUsername',
+          name: 'From',
+        },
+        { id: 'toUsername', name: 'To' },
+        {
+          id: 'createdTime',
+          name: 'Time',
+          formatter: (cell) =>
+            html(
+              `<span class="whitespace-nowrap">${dayjs(cell as number).format(
+                'h:mma'
+              )}</span>`
+            ),
+        },
+      ]}
+    />
   )
 }
