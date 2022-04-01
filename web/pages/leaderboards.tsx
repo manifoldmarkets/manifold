@@ -179,7 +179,7 @@ export default function Manaboards(props: {
   }
 
   return (
-    <Page margin rightSidebar={<Explanation />}>
+    <Page margin>
       <Title text={'🏅 Leaderboard slots, for sale!'} />
       {/* <div className="absolute right-[700px] top-8">
         <img
