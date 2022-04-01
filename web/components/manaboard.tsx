@@ -84,6 +84,7 @@ export function Manaboard(props: {
                         holder={user}
                         value={values[index]}
                         createdTime={createdTimes[index]}
+                        allSlots={users}
                       />
                     </Row>
                   </td>
@@ -114,8 +115,9 @@ export function BuySlotModal(props: {
   slot: number
   value: number
   createdTime: number
+  allSlots: User[]
 }) {
-  const { slot, title, holder, value, createdTime } = props
+  const { slot, allSlots, holder, value, createdTime } = props
   const user = useUser()
 
   const [open, setOpen] = useState(false)
@@ -132,6 +134,14 @@ export function BuySlotModal(props: {
   //   const slotId = `${title}-${slot}`
   //   await buyLeaderboardSlot({ slotId, reassessValue: newValue })
   // }
+
+  // If the user already exists in a different slot, forbid them from buying this one
+  const userExists = allSlots.find(
+    (u, index) => u.id === user?.id && index + 1 !== slot
+  )
+  const errorMsg = userExists
+    ? 'Sell your other slot first (by revaluing it to M$ 0)'
+    : ''
 
   async function onBuy() {
     if (user) {
@@ -187,7 +197,7 @@ export function BuySlotModal(props: {
             onChange={(amount) =>
               setNewValue(amount && amount >= 1 ? amount : 0)
             }
-            error=""
+            error={errorMsg}
             label={ENV_CONFIG.moneyMoniker}
           />
 
@@ -200,7 +210,11 @@ export function BuySlotModal(props: {
             </div>
           ) : (
             <Col>
-              <button className="btn btn-primary" onClick={onBuy}>
+              <button
+                className="btn btn-primary"
+                onClick={onBuy}
+                disabled={!!errorMsg}
+              >
                 Buy Slot ({formatMoney(value)})
               </button>
               <div className="mt-2 text-sm">

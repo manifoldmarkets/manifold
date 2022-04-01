@@ -156,7 +156,7 @@ export default function Manaboards(props: {
       // If new value is 0, that's a sell; reset to topTrader
       if (data.newValue === 0) {
         slots[slot - 1] = topTraders[slot - 1]
-        values[slot - 1] = slot
+        values[slot - 1] = 50 - slot
         createdTimes[slot - 1] = 0
       }
     }
