@@ -8,7 +8,7 @@ import { formatMoney } from '../../common/util/format'
 import { fromPropz, usePropz } from '../hooks/use-propz'
 import { Manaboard } from '../components/manaboard'
 import { Title } from '../components/title'
-import { saveFakeBalance, useTransactions } from '../hooks/use-transactions'
+import { useTransactions } from '../hooks/use-transactions'
 import { SlotData, Transaction } from '../lib/firebase/transactions'
 
 import { Grid, _ as r } from 'gridjs-react'
