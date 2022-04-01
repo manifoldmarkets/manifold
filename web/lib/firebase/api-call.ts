@@ -66,3 +66,8 @@ export const changeUserInfo = (data: {
     .then((r) => r.data as { status: string; message?: string })
     .catch((e) => ({ status: 'error', message: e.message }))
 }
+
+export const buyLeaderboardSlot = cloudFunction<
+  { slotId: string; reassessValue: number },
+  { status: 'success' | 'error'; message?: string }
+>('buyLeaderboardSlot')

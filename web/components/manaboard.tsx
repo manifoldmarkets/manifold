@@ -4,6 +4,7 @@ import { ENV_CONFIG } from '../../common/envs/constants'
 import { User } from '../../common/user'
 import { formatMoney } from '../../common/util/format'
 import { useUser } from '../hooks/use-user'
+import { buyLeaderboardSlot } from '../lib/firebase/api-call'
 import { AmountInput } from './amount-input'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
@@ -92,6 +93,12 @@ export function BuySlotModal(props: {
       setMessage(user.name)
     }
   }, [user])
+
+  const onBuy = async () => {
+    // Feel free to change this. - James
+    const slotId = `${title}-${slot}`
+    await buyLeaderboardSlot({ slotId, reassessValue: newValue })
+  }
 
   return (
     <>
