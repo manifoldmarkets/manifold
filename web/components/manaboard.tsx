@@ -54,7 +54,7 @@ export function Manaboard(props: {
             </thead>
             <tbody>
               {users.map((user, index) => (
-                <tr key={user.id}>
+                <tr key={user.id + index}>
                   <td>
                     <div className="pl-2">{index + 1}</div>
                   </td>
