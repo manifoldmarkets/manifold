@@ -8,7 +8,7 @@ import { formatMoney } from '../../common/util/format'
 import { fromPropz, usePropz } from '../hooks/use-propz'
 import { Manaboard } from '../components/manaboard'
 import { Title } from '../components/title'
-import { useTransactions } from '../hooks/use-transactions'
+import { saveFakeBalance, useTransactions } from '../hooks/use-transactions'
 import { SlotData, Transaction } from '../lib/firebase/transactions'
 
 import { Grid, _ as r } from 'gridjs-react'
@@ -120,9 +120,10 @@ function Explanation() {
 }
 
 // TODOs
-// [ ] Deduct amount from user's balance, either in UX or for real
+// [ ] Expandable text for explainer
 // [ ] Draw attention to leaderboard
 // [ ] Show total returned to Manifold
+// [ ] Restrict buying to your fake balance
 // [ ] Restrict to at most buying one slot per user?
 export default function Manaboards(props: {
   topTraders: User[]
@@ -141,9 +142,9 @@ export default function Manaboards(props: {
   const createdTimes = new Array(topTraders.length).fill(0)
 
   // Find the most recent purchases of each slot, and replace the entries in topTraders
-  const transactions = useTransactions() ?? []
+  const txns = useTransactions() ?? []
   // Iterate from oldest to newest transactions, so recent purchases overwrite older ones
-  const sortedTxns = _.sortBy(transactions, 'createdTime')
+  const sortedTxns = _.sortBy(txns, 'createdTime')
   for (const txn of sortedTxns) {
     if (txn.category === 'BUY_LEADERBOARD_SLOT') {
       const buyer = userFromBuy(txn)
@@ -173,6 +174,9 @@ export default function Manaboards(props: {
   }
 
   const MANIFOLD_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2'
+  if (user?.balance) {
+    saveFakeBalance(userProfits(user.id, txns) + user.balance)
+  }
 
   return (
     <Page margin rightSidebar={<Explanation />}>
@@ -202,8 +206,12 @@ export default function Manaboards(props: {
 
         <div className="text-sm">
           <Title text={'Transaction history'} />
-          {user && <p>Your balance: {userProfits(user.id, transactions)}</p>}
-          <p>Manifold's earnings: {userProfits(MANIFOLD_ID, transactions)}</p>
+          {user && (
+            <p>Your earnings: {formatMoney(userProfits(user.id, txns))}</p>
+          )}
+          <p>
+            Manafold's earnings: {formatMoney(userProfits(MANIFOLD_ID, txns))}
+          </p>
           <TransactionsTable txns={_.reverse(sortedTxns)} />
         </div>
       </Col>
@@ -216,7 +224,18 @@ function userProfits(userId: string, txns: Transaction[]) {
   const loss = _.sumBy(losses, (txn) => txn.amount)
   const profits = txns.filter((txn) => txn.toId === userId)
   const profit = _.sumBy(profits, (txn) => txn.amount)
-  return formatMoney(profit - loss)
+  return profit - loss
+}
+
+// Cache user's transaction profits to localStorage
+const FAKE_BALANCE_KEY = 'fake-balance'
+export function saveFakeBalance(profit: number) {
+  localStorage.setItem(FAKE_BALANCE_KEY, JSON.stringify(profit))
+}
+
+export function loadFakeBalance() {
+  const profit = localStorage.getItem(FAKE_BALANCE_KEY)
+  return profit ? JSON.parse(profit) : 0
 }
 
 function TransactionsTable(props: { txns: Transaction[] }) {

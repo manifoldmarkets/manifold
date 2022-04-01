@@ -3,6 +3,7 @@ import { formatMoney } from '../../../common/util/format'
 import { Avatar } from '../avatar'
 import { IS_PRIVATE_MANIFOLD } from '../../../common/envs/constants'
 import { Row } from '../layout/row'
+import { loadFakeBalance } from '../../pages/leaderboards'
 
 export function getNavigationOptions(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
@@ -34,7 +35,7 @@ export function ProfileSummary(props: { user: User | undefined }) {
       <div className="truncate text-left">
         <div>{user?.name}</div>
         <div className="text-sm">
-          {user ? formatMoney(Math.floor(user.balance)) : ' '}
+          {user ? formatMoney(Math.floor(loadFakeBalance())) : ' '}
         </div>
       </div>
     </Row>
