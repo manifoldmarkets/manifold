@@ -199,6 +199,9 @@ export default function Manaboards(props: {
           leaderboard slots to recoup our losses. Buy one now to earn fleeting
           glory and keep Manafold afloat!
         </p>
+        <p className="alert alert-success">
+          Mana replenished: {formatMoney(userProfits(MANIFOLD_ID, txns))}
+        </p>
       </div>
 
       <Col className="mt-6 gap-10">
@@ -215,9 +218,6 @@ export default function Manaboards(props: {
           {user && (
             <p>Your earnings: {formatMoney(userProfits(user.id, txns))}</p>
           )}
-          <p>
-            Manafold's earnings: {formatMoney(userProfits(MANIFOLD_ID, txns))}
-          </p>
           <TransactionsTable txns={_.reverse(sortedTxns)} />
         </div>
       </Col>
