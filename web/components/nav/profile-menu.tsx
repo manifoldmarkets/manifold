@@ -35,7 +35,9 @@ export function ProfileSummary(props: { user: User | undefined }) {
       <div className="truncate text-left">
         <div>{user?.name}</div>
         <div className="text-sm">
-          {user ? formatMoney(Math.floor(loadFakeBalance())) : ' '}
+          {user
+            ? formatMoney(Math.floor(loadFakeBalance() || user.balance))
+            : ' '}
         </div>
       </div>
     </Row>
