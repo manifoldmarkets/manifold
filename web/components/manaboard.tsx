@@ -135,14 +135,18 @@ export function BuySlotModal(props: {
   //   await buyLeaderboardSlot({ slotId, reassessValue: newValue })
   // }
 
-  // If the user already exists in a different slot, forbid them from buying this one
-  const userExists = allSlots.find(
-    (u, index) => u.id === user?.id && index + 1 !== slot
-  )
-  // Hm, existing leaderboard users may not be able to participate atm.
-  const errorMsg = userExists
-    ? 'Sell your other slot first (by revaluing it to M$ 0)'
-    : ''
+  // Find all slots the user currently owns
+  const existingSlots = []
+  for (let i = 0; i < allSlots.length; i++) {
+    if (allSlots[i].id === user?.id) {
+      existingSlots.push(i + 1)
+    }
+  }
+  // Prevent them from holding more than three slots at once
+  let errorMsg = ''
+  if (existingSlots.length >= 3 && !existingSlots.includes(slot)) {
+    errorMsg = 'Sell another slot first (by re-valuing it to M$ 0)'
+  }
 
   async function onBuy() {
     if (user) {
