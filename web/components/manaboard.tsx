@@ -62,7 +62,13 @@ export function Manaboard(props: {
                   </td>
                   <td className="w-full" style={{ maxWidth: 190 }}>
                     <Row className="items-center gap-4">
-                      <Avatar avatarUrl={user.avatarUrl} size={8} />
+                      <SiteLink href={`/${user.username}`}>
+                        <Avatar
+                          username={user.username}
+                          avatarUrl={user.avatarUrl}
+                          size={8}
+                        />
+                      </SiteLink>
                       <div
                         className={clsx(
                           'truncate',
