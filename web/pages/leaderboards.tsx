@@ -16,6 +16,7 @@ import 'gridjs/dist/theme/mermaid.css'
 import { html } from 'gridjs'
 import dayjs from 'dayjs'
 import { useUser } from '../hooks/use-user'
+import { useState } from 'react'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -113,7 +114,7 @@ function Explanation() {
       </ul>
       <p>
         We&#39;d be happy to pay a bounty to anyone who can help us solve this
-        riddle... oh wait.
+        riddle! Oh wait...
       </p>
     </div>
   )
@@ -184,6 +185,8 @@ export default function Manaboards(props: {
     saveFakeBalance(userProfits(user.id, txns) + user.balance)
   }
 
+  const [expandInfo, setExpandInfo] = useState(false)
+
   return (
     <Page margin>
       <Title text={'🏅 Leaderboard slots, for sale!'} />
@@ -199,9 +202,16 @@ export default function Manaboards(props: {
           leaderboard slots to recoup our losses. Buy one now to earn fleeting
           glory and keep Manafold afloat!
         </p>
-        <p className="alert alert-success">
+        <div className="alert alert-success">
           Mana replenished: {formatMoney(userProfits(MANIFOLD_ID, txns))}
-        </p>
+          <button
+            className="btn btn-outline btn-sm normal-case"
+            onClick={() => setExpandInfo(!expandInfo)}
+          >
+            More info
+          </button>
+        </div>
+        {expandInfo && <Explanation />}
       </div>
 
       <Col className="mt-6 gap-10">
