@@ -184,7 +184,9 @@ export function BuySlotModal(props: {
           <Label>Reassess value</Label>
           <AmountInput
             amount={newValue}
-            onChange={(amount) => setNewValue(amount ?? 0)}
+            onChange={(amount) =>
+              setNewValue(amount && amount >= 1 ? amount : 0)
+            }
             error=""
             label={ENV_CONFIG.moneyMoniker}
           />

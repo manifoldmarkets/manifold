@@ -122,8 +122,6 @@ function Explanation() {
 // TODOs
 // [ ] Expandable text for explainer
 // [ ] Draw attention to leaderboard
-// [ ] Show total returned to Manifold
-// [ ] Restrict buying to your fake balance
 // [ ] Restrict to at most buying one slot per user?
 export default function Manaboards(props: {
   topTraders: User[]
@@ -134,14 +132,15 @@ export default function Manaboards(props: {
     topCreators: [],
   }
   const { topTraders, topCreators } = props
+  const slots = _.clone(topTraders)
   const user = useUser()
 
-  const values = Array.from(Array(topTraders.length).keys())
+  const values = Array.from(Array(slots.length).keys())
     .map((i) => i + 1)
     .reverse()
-  const createdTimes = new Array(topTraders.length).fill(0)
+  const createdTimes = new Array(slots.length).fill(0)
 
-  // Find the most recent purchases of each slot, and replace the entries in topTraders
+  // Find the most recent purchases of each slot, and replace the entries in slots
   const txns = useTransactions() ?? []
   // Iterate from oldest to newest transactions, so recent purchases overwrite older ones
   const sortedTxns = _.sortBy(txns, 'createdTime')
@@ -150,9 +149,16 @@ export default function Manaboards(props: {
       const buyer = userFromBuy(txn)
       const data = txn.data as SlotData
       const slot = data.slot
-      topTraders[slot - 1] = buyer
+      slots[slot - 1] = buyer
       values[slot - 1] = data.newValue
       createdTimes[slot - 1] = txn.createdTime
+
+      // If new value is 0, that's a sell; reset to topTrader
+      if (data.newValue === 0) {
+        slots[slot - 1] = topTraders[slot - 1]
+        values[slot - 1] = slot
+        createdTimes[slot - 1] = 0
+      }
     }
   }
 
@@ -198,7 +204,7 @@ export default function Manaboards(props: {
       <Col className="mt-6 gap-10">
         <Manaboard
           title=""
-          users={topTraders}
+          users={slots}
           values={values}
           createdTimes={createdTimes}
         />
