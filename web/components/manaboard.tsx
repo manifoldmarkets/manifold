@@ -111,8 +111,8 @@ export function BuySlotModal(props: {
 
           <Label>Current value: {formatMoney(value)}</Label>
           {user && (
-            <Row className="items-center gap-4 rounded-md bg-gray-100 p-2">
-              <div>#{slot}</div>
+            <Row className="items-center gap-4 rounded-md bg-gray-100 p-2 text-sm">
+              <div className="pl-2">{slot}</div>
               <Avatar avatarUrl={user.avatarUrl} size={8} />
               <div className="truncate">{message}</div>
             </Row>
