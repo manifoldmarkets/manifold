@@ -255,8 +255,8 @@ function taxTransaction(options: {
 }): Transaction {
   const { holder, slot, value, createdTime } = options
 
-  const APRIL_FOOLS_PT = 1648796400000
-  const elapsedMs = Date.now() - (createdTime || APRIL_FOOLS_PT)
+  const APRIL_FOOLS_9AM_PT = 1648828800000
+  const elapsedMs = Date.now() - (createdTime || APRIL_FOOLS_9AM_PT)
   const elapsedHours = elapsedMs / 1000 / 60 / 60
   const tax = elapsedHours * value * 0.25
 
