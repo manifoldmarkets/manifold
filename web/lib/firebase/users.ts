@@ -160,12 +160,12 @@ export function listenForPrivateUsers(
 const topTradersQuery = query(
   collection(db, 'users'),
   orderBy('totalPnLCached', 'desc'),
-  limit(21)
+  limit(51)
 )
 
 export async function getTopTraders() {
   const users = await getValues<User>(topTradersQuery)
-  return users.slice(0, 20)
+  return users.slice(0, 50)
 }
 
 const topCreatorsQuery = query(

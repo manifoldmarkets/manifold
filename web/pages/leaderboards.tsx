@@ -98,7 +98,6 @@ function Explanation() {
 // [ ] Correctly calculate tax
 // [ ] List history of purchases at the bottom
 // [ ] Restrict to at most buying one slot per user?
-// [ ] Set to 50 top traders
 // [ ] Deduct amount from user's balance, either in UX or for real
 export default function Manaboards(props: {
   topTraders: User[]

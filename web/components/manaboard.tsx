@@ -21,7 +21,14 @@ export function Manaboard(props: {
   className?: string
 }) {
   // TODO: Ideally, highlight your own entry on the leaderboard
-  const { title, users, className, values } = props
+  let { title, users, className, values } = props
+
+  const [expanded, setExpanded] = useState(false)
+  if (!expanded) {
+    users = users.slice(0, 25)
+    values = values.slice(0, 25)
+  }
+
   return (
     <div className={clsx('w-full px-1', className)}>
       <Title text={title} className="!mt-0" />
@@ -68,6 +75,12 @@ export function Manaboard(props: {
               ))}
             </tbody>
           </table>
+          <button
+            className="btn btn-sm btn-outline m-2"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? 'Hide' : 'Show more'}
+          </button>
         </div>
       )}
     </div>
