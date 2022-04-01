@@ -234,8 +234,11 @@ export function saveFakeBalance(profit: number) {
 }
 
 export function loadFakeBalance() {
-  const profit = localStorage.getItem(FAKE_BALANCE_KEY)
-  return profit ? JSON.parse(profit) : 0
+  if (typeof window !== 'undefined') {
+    const profit = localStorage.getItem(FAKE_BALANCE_KEY)
+    return profit ? JSON.parse(profit) : 0
+  }
+  return 0
 }
 
 function TransactionsTable(props: { txns: Transaction[] }) {

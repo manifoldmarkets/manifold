@@ -10,6 +10,8 @@ import {
   Transaction,
   writeTransaction,
 } from '../lib/firebase/transactions'
+import { loadFakeBalance } from '../pages/leaderboards'
+import { AddFundsButton } from './add-funds-button'
 import { AmountInput } from './amount-input'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
@@ -150,6 +152,10 @@ export function BuySlotModal(props: {
     }
   }
 
+  const fakeBalance = loadFakeBalance()
+  const noFundsMsg =
+    value > fakeBalance ? `You only have ${formatMoney(fakeBalance)}!` : ''
+
   return (
     <>
       <Modal open={open} setOpen={setOpen}>
@@ -183,12 +189,23 @@ export function BuySlotModal(props: {
             label={ENV_CONFIG.moneyMoniker}
           />
 
-          <button className="btn btn-primary" onClick={onBuy}>
-            Buy Slot ({formatMoney(value)})
-          </button>
-          <div className="-mt-2 text-sm">
-            Additional fees: {formatMoney(newValue * 0.25)} per hour
-          </div>
+          {noFundsMsg ? (
+            <div className="alert alert-error">
+              {noFundsMsg}{' '}
+              <span className="!text-gray-600">
+                <AddFundsButton />
+              </span>
+            </div>
+          ) : (
+            <Col>
+              <button className="btn btn-primary" onClick={onBuy}>
+                Buy Slot ({formatMoney(value)})
+              </button>
+              <div className="mt-2 text-sm">
+                Additional fees: {formatMoney(newValue * 0.25)} per hour
+              </div>
+            </Col>
+          )}
         </Col>
       </Modal>
       <button
