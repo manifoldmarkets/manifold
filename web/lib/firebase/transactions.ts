@@ -25,12 +25,13 @@ export type Transaction = {
   data?: SlotData | TaxData
 }
 
-type SlotData = {
+export type SlotData = {
   slot: number
+  newValue: number
   message: string
 }
 
-type TaxData = {
+export type TaxData = {
   slot: number
 }
 

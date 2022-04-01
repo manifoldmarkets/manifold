@@ -17,10 +17,11 @@ import { Title } from './title'
 export function Manaboard(props: {
   title: string
   users: User[]
+  values: number[]
   className?: string
 }) {
   // TODO: Ideally, highlight your own entry on the leaderboard
-  const { title, users, className } = props
+  const { title, users, className, values } = props
   return (
     <div className={clsx('w-full px-1', className)}>
       <Title text={title} className="!mt-0" />
@@ -53,12 +54,12 @@ export function Manaboard(props: {
                   </td>
                   <td>
                     <Row className="items-center gap-4">
-                      {formatMoney(100 - 5 * index)}
+                      {formatMoney(values[index])}
                       <BuySlotModal
                         slot={index + 1}
                         title={`${title}`}
                         holder={user}
-                        value={100 - 5 * index}
+                        value={values[index]}
                       />
                     </Row>
                   </td>
@@ -138,7 +139,14 @@ export function BuySlotModal(props: {
             className="btn btn-primary"
             onClick={() => {
               if (user) {
-                buySlot({ holder, buyer: user, amount: value, slot, message })
+                buySlot({
+                  holder,
+                  buyer: user,
+                  amount: value,
+                  slot,
+                  message,
+                  newValue,
+                })
                 setOpen(false)
               }
             }}
@@ -166,8 +174,9 @@ async function buySlot(options: {
   amount: number
   slot: number
   message: string
+  newValue: number
 }) {
-  const { holder, buyer, amount, slot, message } = options
+  const { holder, buyer, amount, slot, message, newValue } = options
   const createdTime = Date.now()
   const buyTransaction: Transaction = {
     id: '',
@@ -190,6 +199,7 @@ async function buySlot(options: {
     data: {
       slot,
       message,
+      newValue,
     },
   }
 

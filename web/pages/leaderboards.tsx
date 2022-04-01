@@ -9,7 +9,7 @@ import { fromPropz, usePropz } from '../hooks/use-propz'
 import { Manaboard } from '../components/manaboard'
 import { Title } from '../components/title'
 import { useTransactions } from '../hooks/use-transactions'
-import { Transaction } from '../lib/firebase/transactions'
+import { SlotData, Transaction } from '../lib/firebase/transactions'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -110,6 +110,10 @@ export default function Manaboards(props: {
   }
   const { topTraders, topCreators } = props
 
+  const values = Array.from(Array(topTraders.length).keys())
+    .map((i) => i + 1)
+    .reverse()
+
   // Find the most recent purchases of each slot, and replace the entries in topTraders
   const transactions = useTransactions() ?? []
   // Iterate from oldest to newest transactions, so recent purchases overwrite older ones
@@ -117,12 +121,12 @@ export default function Manaboards(props: {
   for (const txn of sortedTxns) {
     if (txn.category === 'BUY_LEADERBOARD_SLOT') {
       const buyer = userFromBuy(txn)
-      const slot = txn.data?.slot ?? 0
+      const data = txn.data as SlotData
+      const slot = data.slot
       topTraders[slot - 1] = buyer
+      values[slot - 1] = data.newValue
     }
   }
-
-  console.log('sorted txn', sortedTxns)
 
   function userFromBuy(txn: Transaction): User {
     return {
@@ -159,7 +163,7 @@ export default function Manaboards(props: {
       </div>
 
       <Col className="mt-6 items-center gap-10">
-        <Manaboard title="" users={topTraders} />
+        <Manaboard title="" users={topTraders} values={values} />
         {/* <Manaboard title="🏅 Top creators" users={topCreators} /> */}
       </Col>
     </Page>
