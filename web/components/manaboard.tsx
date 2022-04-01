@@ -61,7 +61,16 @@ export function Manaboard(props: {
                   <td className="w-full" style={{ maxWidth: 190 }}>
                     <Row className="items-center gap-4">
                       <Avatar avatarUrl={user.avatarUrl} size={8} />
-                      <div className="truncate">{user.name}</div>
+                      <div
+                        className={clsx(
+                          'truncate',
+                          createdTimes[index]
+                            ? 'text-gray-600'
+                            : 'text-gray-300'
+                        )}
+                      >
+                        {user.name}
+                      </div>
                     </Row>
                   </td>
                   <td>
@@ -85,7 +94,7 @@ export function Manaboard(props: {
             className="btn btn-sm btn-outline m-2"
             onClick={() => setExpanded(!expanded)}
           >
-            {expanded ? 'Hide' : 'Show more'}
+            {expanded ? 'Fewer slots' : 'More slots'}
           </button>
         </div>
       )}
