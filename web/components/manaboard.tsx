@@ -139,6 +139,7 @@ export function BuySlotModal(props: {
   const userExists = allSlots.find(
     (u, index) => u.id === user?.id && index + 1 !== slot
   )
+  // Hm, existing leaderboard users may not be able to participate atm.
   const errorMsg = userExists
     ? 'Sell your other slot first (by revaluing it to M$ 0)'
     : ''
@@ -164,7 +165,9 @@ export function BuySlotModal(props: {
 
   const fakeBalance = loadFakeBalance()
   const noFundsMsg =
-    value > fakeBalance ? `You only have ${formatMoney(fakeBalance)}!` : ''
+    value > fakeBalance && holder.id !== user?.id
+      ? `You only have ${formatMoney(fakeBalance)}!`
+      : ''
 
   return (
     <>
