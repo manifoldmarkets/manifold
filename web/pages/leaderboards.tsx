@@ -17,6 +17,7 @@ import { html } from 'gridjs'
 import dayjs from 'dayjs'
 import { useUser } from '../hooks/use-user'
 import { useState } from 'react'
+import WidgetBot from '@widgetbot/react-embed'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -188,7 +189,7 @@ export default function Manaboards(props: {
   const [expandInfo, setExpandInfo] = useState(false)
 
   return (
-    <Page margin>
+    <Page margin rightSidebar={<DiscordWidget />}>
       <Title text={'🏅 Leaderboard slots, for sale!'} />
       {/* <div className="absolute right-[700px] top-8">
         <img
@@ -323,6 +324,16 @@ function TransactionsTable(props: { txns: Transaction[] }) {
           formatter: (cell) => (cell as SlotData).newValue ?? '',
         },
       ]}
+    />
+  )
+}
+
+function DiscordWidget() {
+  return typeof window === 'undefined' ? null : (
+    <WidgetBot
+      className="mt-4 h-[80vh]"
+      server="915138780216823849"
+      channel="959499868089507930"
     />
   )
 }

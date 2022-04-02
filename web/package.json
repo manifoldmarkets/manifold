@@ -20,6 +20,7 @@
     "@heroicons/react": "1.0.5",
     "@nivo/core": "0.74.0",
     "@nivo/line": "0.74.0",
+    "@widgetbot/react-embed": "^1.4.0",
     "clsx": "1.1.1",
     "daisyui": "1.16.4",
     "dayjs": "1.10.7",
