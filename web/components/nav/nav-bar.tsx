@@ -15,10 +15,6 @@ import Sidebar from './sidebar'
 // From https://codepen.io/chris__sev/pen/QWGvYbL
 export function BottomNavBar() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const user = useUser()
-  if (!user) {
-    return null
-  }
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
       <Link href="/home">
