@@ -14,16 +14,16 @@ export function Page(props: {
     <div>
       <div
         className={clsx(
-          'mx-auto w-full pb-16 lg:grid lg:grid-cols-12 lg:gap-8 xl:max-w-7xl',
+          'mx-auto w-full pb-16 pt-6 lg:grid lg:grid-cols-12 lg:gap-8 xl:max-w-7xl',
           margin && 'px-4'
         )}
       >
-        <div className="hidden lg:col-span-3 lg:block xl:col-span-2">
+        <div className="hidden lg:col-span-2 lg:block">
           {assertUser !== 'signed-out' && <Sidebar />}
         </div>
         <main
           className={clsx(
-            'pt-6 lg:col-span-9',
+            'lg:col-span-8',
             rightSidebar ? 'xl:col-span-7' : 'xl:col-span-8'
           )}
         >
@@ -33,7 +33,7 @@ export function Page(props: {
           <div className="block xl:hidden">{rightSidebar}</div>
         </main>
         <aside className="hidden xl:col-span-3 xl:block">
-          <div className="sticky top-4 space-y-4">{rightSidebar}</div>
+          <div className="sticky space-y-4">{rightSidebar}</div>
         </aside>
       </div>
 
