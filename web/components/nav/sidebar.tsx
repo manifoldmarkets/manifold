@@ -86,11 +86,8 @@ export default function Sidebar() {
   const navigationOptions = user === null ? signedOutNavigation : navigation
 
   return (
-    <nav
-      aria-label="Sidebar"
-      className="sticky top-4 mt-4 divide-y divide-gray-300"
-    >
-      <div className="space-y-1 pb-6">
+    <nav aria-label="Sidebar" className="sticky divide-y divide-gray-300">
+      <div className="mt-2 space-y-1 pb-6">
         <ManifoldLogo hideText />
       </div>
 

@@ -141,42 +141,40 @@ export default function ContractPage(props: {
         />
       )}
 
-      <Col className="w-full justify-between md:flex-row">
-        <div className="flex-1 rounded border-0 border-gray-100 bg-white px-2 py-6 md:px-6 md:py-8">
-          <ContractOverview
-            contract={contract}
-            bets={bets ?? []}
-            comments={comments ?? []}
-            folds={folds}
-          >
-            {contract.outcomeType === 'FREE_RESPONSE' && (
-              <>
-                <Spacer h={4} />
-                <AnswersPanel
-                  contract={contract as any}
-                  answers={props.answers}
-                />
-                <Spacer h={4} />
-                <div className="divider before:bg-gray-300 after:bg-gray-300" />
-              </>
-            )}
-          </ContractOverview>
-
-          {contract.isResolved && (
+      <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white px-2 py-6 md:px-6 md:py-8">
+        <ContractOverview
+          contract={contract}
+          bets={bets ?? []}
+          comments={comments ?? []}
+          folds={folds}
+        >
+          {contract.outcomeType === 'FREE_RESPONSE' && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2">
-                <ContractLeaderboard contract={contract} bets={bets} />
-                <ContractTopTrades
-                  contract={contract}
-                  bets={bets}
-                  comments={comments}
-                />
-              </div>
-              <Spacer h={12} />
+              <Spacer h={4} />
+              <AnswersPanel
+                contract={contract as any}
+                answers={props.answers}
+              />
+              <Spacer h={4} />
+              <div className="divider before:bg-gray-300 after:bg-gray-300" />
             </>
           )}
-          <BetsSection contract={contract} user={user ?? null} bets={bets} />
-        </div>
+        </ContractOverview>
+
+        {contract.isResolved && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2">
+              <ContractLeaderboard contract={contract} bets={bets} />
+              <ContractTopTrades
+                contract={contract}
+                bets={bets}
+                comments={comments}
+              />
+            </div>
+            <Spacer h={12} />
+          </>
+        )}
+        <BetsSection contract={contract} user={user ?? null} bets={bets} />
       </Col>
     </Page>
   )
