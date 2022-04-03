@@ -17,10 +17,10 @@ export function getNavigationOptions(user?: User | null) {
   }
 
   return [
-    { name: 'Your trades', href: '/trades' },
     { name: 'Add funds', href: '/add-funds' },
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    { name: 'About', href: 'https://docs.manifold.markets' },
     { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
   ]
 }
