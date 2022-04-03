@@ -80,13 +80,13 @@ export function BetsList(props: { user: User }) {
     contractBets,
     (bets, contractId) => {
       return _.sumBy(bets, (bet) => {
-        if (bet.isSold || bet.sale || bet.isRedemption) return 0
-
         const contract = contractsById[contractId]
-        if (contract.resolution)
-          return calculatePayout(contract, bet, contract.resolution)
+        if (!contract) return 0
+        if (bet.isSold || bet.sale) return 0
 
-        return contract ? calculatePayout(contract, bet, 'MKT') : 0
+        return contract.resolution
+          ? calculatePayout(contract, bet, contract.resolution)
+          : calculatePayout(contract, bet, 'MKT')
       })
     }
   )
