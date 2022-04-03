@@ -5,7 +5,7 @@ import {
   HomeIcon,
   MenuAlt3Icon,
   SearchIcon,
-  UserGroupIcon,
+  TableIcon,
   XIcon,
 } from '@heroicons/react/outline'
 import { Transition, Dialog } from '@headlessui/react'
@@ -18,32 +18,32 @@ export function BottomNavBar() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
       <Link href="/home">
-        <a className="block w-full py-2 px-3 text-center transition duration-300 hover:bg-indigo-200 hover:text-indigo-700">
+        <a className="block w-full py-1 px-3 text-center transition duration-300 hover:bg-indigo-200 hover:text-indigo-700">
           <HomeIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
-          {/* Home */}
+          Home
         </a>
       </Link>
 
       <Link href="/markets">
-        <a className="block w-full py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
+        <a className="block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
           <SearchIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
-          {/* Explore */}
+          Search
         </a>
       </Link>
 
-      <Link href="/folds">
-        <a className="block w-full py-2 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
-          <UserGroupIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
-          {/* Folds */}
+      <Link href="/portfolio">
+        <a className="block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
+          <TableIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
+          Portfolio
         </a>
       </Link>
 
       <span
-        className="block w-full py-2 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
+        className="block w-full py-1 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
         onClick={() => setSidebarOpen(true)}
       >
         <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
-        {/* Menu */}
+        More
       </span>
 
       <MobileSidebar
