@@ -33,7 +33,7 @@ export function Page(props: {
           <div className="block xl:hidden">{rightSidebar}</div>
         </main>
         <aside className="hidden xl:col-span-3 xl:block">
-          <div className="sticky space-y-4">{rightSidebar}</div>
+          <div className="sticky top-4 space-y-4">{rightSidebar}</div>
         </aside>
       </div>
 

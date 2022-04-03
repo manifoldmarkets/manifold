@@ -42,14 +42,14 @@ export const ContractOverview = (props: {
 
           {(isBinary || resolution) && (
             <ResolutionOrChance
-              className="hidden md:flex items-end"
+              className="hidden items-end xl:flex"
               contract={contract}
               large
             />
           )}
         </Row>
 
-        <Row className="md:hidden items-center justify-between gap-4">
+        <Row className="items-center justify-between gap-4 xl:hidden">
           {(isBinary || resolution) && (
             <ResolutionOrChance contract={contract} />
           )}
@@ -103,7 +103,7 @@ export const ContractOverview = (props: {
         comments={comments}
         user={user}
         mode="all"
-        betRowClassName="!mt-0"
+        betRowClassName="!mt-0 xl:hidden"
       />
     </Col>
   )

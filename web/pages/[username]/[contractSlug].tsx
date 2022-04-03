@@ -124,7 +124,7 @@ export default function ContractPage(props: {
   const rightSidebar = hasSidePanel ? (
     <Col className="gap-4">
       {allowTrade && (
-        <BetPanel className="hidden lg:flex" contract={contract} />
+        <BetPanel className="hidden xl:flex" contract={contract} />
       )}
       {allowResolve && <ResolutionPanel creator={user} contract={contract} />}
     </Col>
