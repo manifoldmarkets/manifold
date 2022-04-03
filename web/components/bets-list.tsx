@@ -80,18 +80,29 @@ export function BetsList(props: { user: User }) {
     contractBets,
     (bets, contractId) => {
       return _.sumBy(bets, (bet) => {
-        if (bet.isSold || bet.sale) return 0
+        if (bet.isSold || bet.sale || bet.isRedemption) return 0
 
         const contract = contractsById[contractId]
-        const payout = contract ? calculatePayout(contract, bet, 'MKT') : 0
-        return payout - (bet.loanAmount ?? 0)
+        if (contract.resolution)
+          return calculatePayout(contract, bet, contract.resolution)
+
+        return contract ? calculatePayout(contract, bet, 'MKT') : 0
       })
     }
   )
   const contractsInvestment = _.mapValues(contractBets, (bets) => {
     return _.sumBy(bets, (bet) => {
-      if (bet.isSold || bet.sale) return 0
-      return bet.amount - (bet.loanAmount ?? 0)
+      if (bet.isSold || bet.sale || bet.isRedemption) return 0
+      return bet.amount
+    })
+  })
+
+  const contractsSaleOrRedemption = _.mapValues(contractBets, (bets) => {
+    return _.sumBy(bets, (bet) => {
+      if (bet.isSold) return -1 * bet.amount
+      if (bet.sale) return bet.sale.amount
+      if (bet.isRedemption) return -1 * bet.amount
+      return 0
     })
   })
 
@@ -104,8 +115,11 @@ export function BetsList(props: { user: User }) {
     // Pepe notes: most users want "settled", to see when their bets or sold; or "realized profit"
   }
   const SORTS: Record<BetSort, (c: Contract) => number> = {
-    profit: (c) => contractsCurrentValue[c.id] - contractsInvestment[c.id],
-    value: (c) => contractsCurrentValue[c.id],
+    profit: (c) =>
+      contractsCurrentValue[c.id] -
+      contractsInvestment[c.id] +
+      contractsSaleOrRedemption[c.id],
+    value: (c) => contractsCurrentValue[c.id] + contractsSaleOrRedemption[c.id],
     newest: (c) =>
       Math.max(...contractBets[c.id].map((bet) => bet.createdTime)),
     resolutionTime: (c) => -(c.resolutionTime ?? c.closeTime ?? Infinity),
@@ -126,8 +140,18 @@ export function BetsList(props: { user: User }) {
     unsettled,
     (c) => contractsCurrentValue[c.id]
   )
+  const currentBetsValueMinusLoans = _.sumBy(
+    unsettled,
+    (c) =>
+      contractsCurrentValue[c.id] -
+      // Subtract loans you haven't paid.
+      _.sumBy(contractBets[c.id], (bet) => {
+        if (bet.isSold || bet.sale) return 0
+        return bet.loanAmount ?? 0
+      })
+  )
 
-  const totalPortfolio = currentBetsValue + user.balance
+  const totalPortfolio = currentBetsValueMinusLoans + user.balance
 
   const totalPnl = totalPortfolio - user.totalDeposits
   const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
@@ -141,7 +165,7 @@ export function BetsList(props: { user: User }) {
           <Col>
             <div className="text-sm text-gray-500">Investment value</div>
             <div className="text-lg">
-              {formatMoney(currentBetsValue)}{' '}
+              {formatMoney(currentBetsValueMinusLoans)}{' '}
               <ProfitBadge profitPercent={investedProfitPercent} />
             </div>
           </Col>
@@ -188,6 +212,7 @@ export function BetsList(props: { user: User }) {
             key={contract.id}
             contract={contract}
             bets={contractBets[contract.id] ?? []}
+            metric={sort === 'profit' ? 'profit' : 'value'}
           />
         ))
       )}
@@ -206,8 +231,12 @@ const NoBets = () => {
   )
 }
 
-function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
-  const { bets, contract } = props
+function MyContractBets(props: {
+  contract: Contract
+  bets: Bet[]
+  metric: 'profit' | 'value'
+}) {
+  const { bets, contract, metric } = props
   const { resolution, outcomeType } = contract
 
   const [collapsed, setCollapsed] = useState(true)
@@ -267,7 +296,7 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
           className="mr-5 justify-end sm:mr-8"
           contract={contract}
           bets={bets}
-          onlyMKT
+          onlyMetric={metric}
         />
       </Row>
 
@@ -294,15 +323,26 @@ function MyContractBets(props: { contract: Contract; bets: Bet[] }) {
 export function MyBetsSummary(props: {
   contract: Contract
   bets: Bet[]
-  onlyMKT?: boolean
+  onlyMetric?: 'value' | 'profit'
   className?: string
 }) {
-  const { bets, contract, onlyMKT, className } = props
+  const { bets, contract, onlyMetric, className } = props
   const { resolution, outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
 
   const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-  const betsTotal = _.sumBy(excludeSales, (bet) => bet.amount)
+  const excludeRedemptions = bets.filter((b) => !b.isRedemption)
+  const excludeSalesAndRedemptions = excludeSales.filter((b) => !b.isRedemption)
+  const betsTotal = _.sumBy(excludeSalesAndRedemptions, (bet) => bet.amount)
+  const invested = _.sumBy(excludeSalesAndRedemptions, (bet) =>
+    bet.amount > 0 ? bet.amount : 0
+  )
+  const investedIncludingSales = _.sumBy(excludeRedemptions, (bet) =>
+    bet.amount > 0 ? bet.amount : 0
+  )
+  const redemptionValue = _.sumBy(bets, (bet) =>
+    bet.isRedemption ? -bet.amount : 0
+  )
 
   const betsPayout = resolution
     ? _.sumBy(excludeSales, (bet) => resolvedPayout(contract, bet))
@@ -314,58 +354,52 @@ export function MyBetsSummary(props: {
   const noWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
-
-  // const p = getProbability(contract.totalShares)
-  // const expectation = p * yesWinnings + (1 - p) * noWinnings
-
   const marketWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'MKT')
   )
+  const salesWinnings = _.sumBy(bets, (bet) =>
+    bet.isSold ? -bet.amount : bet.sale ? bet.sale.amount : 0
+  )
 
   const currentValue = resolution ? betsPayout : marketWinnings
-  const pnl = currentValue - betsTotal
-  const profit = (pnl / betsTotal) * 100
-
-  const valueCol = (
-    <Col>
-      <div className="whitespace-nowrap text-right text-lg">
-        {formatMoney(currentValue)}
-      </div>
-      <div className="text-right">
-        <ProfitBadge profitPercent={profit} />
-      </div>
-    </Col>
-  )
-
-  const payoutCol = (
-    <Col>
-      <div className="text-sm text-gray-500">Payout</div>
-      <div className="whitespace-nowrap">
-        {formatMoney(betsPayout)} <ProfitBadge profitPercent={profit} />
-      </div>
-    </Col>
-  )
+  const totalValue = currentValue + redemptionValue + salesWinnings
+  const pnl = totalValue - betsTotal
+  const profit = (pnl / investedIncludingSales) * 100
 
   return (
     <Row
       className={clsx(
         'gap-4 sm:gap-6',
-        !onlyMKT && 'flex-wrap sm:flex-nowrap',
+        !onlyMetric && 'flex-wrap sm:flex-nowrap',
         className
       )}
     >
-      {onlyMKT ? (
-        <Row className="gap-4 sm:gap-6">{valueCol}</Row>
+      {onlyMetric ? (
+        <Row className="gap-4 sm:gap-6">
+          <Col>
+            <div className="whitespace-nowrap text-right text-lg">
+              {formatMoney(onlyMetric === 'profit' ? pnl : totalValue)}
+            </div>
+            <div className="text-right">
+              <ProfitBadge profitPercent={profit} />
+            </div>
+          </Col>
+        </Row>
       ) : (
         <Row className="gap-4 sm:gap-6">
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">
               Invested
             </div>
-            <div className="whitespace-nowrap">{formatMoney(betsTotal)}</div>
+            <div className="whitespace-nowrap">{formatMoney(invested)}</div>
           </Col>
           {resolution ? (
-            payoutCol
+            <Col>
+              <div className="text-sm text-gray-500">Payout</div>
+              <div className="whitespace-nowrap">
+                {formatMoney(betsPayout)} <ProfitBadge profitPercent={profit} />
+              </div>
+            </Col>
           ) : (
             <>
               {/* <Col>
