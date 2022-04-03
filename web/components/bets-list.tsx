@@ -34,7 +34,9 @@ import {
   getOutcomeProbability,
   getProbability,
   getProbabilityAfterSale,
+  getContractBetMetrics,
   resolvedPayout,
+  getContractBetNullMetrics,
 } from '../../common/calculate'
 
 type BetSort = 'newest' | 'profit' | 'resolutionTime' | 'value' | 'closeTime'
@@ -76,34 +78,10 @@ export function BetsList(props: { user: User }) {
   const contractBets = _.groupBy(bets, 'contractId')
   const contractsById = _.fromPairs(contracts.map((c) => [c.id, c]))
 
-  const contractsCurrentValue = _.mapValues(
-    contractBets,
-    (bets, contractId) => {
-      return _.sumBy(bets, (bet) => {
-        const contract = contractsById[contractId]
-        if (!contract) return 0
-        if (bet.isSold || bet.sale) return 0
-
-        return contract.resolution
-          ? calculatePayout(contract, bet, contract.resolution)
-          : calculatePayout(contract, bet, 'MKT')
-      })
-    }
-  )
-  const contractsInvestment = _.mapValues(contractBets, (bets) => {
-    return _.sumBy(bets, (bet) => {
-      if (bet.isSold || bet.sale || bet.isRedemption) return 0
-      return bet.amount
-    })
-  })
-
-  const contractsSaleOrRedemption = _.mapValues(contractBets, (bets) => {
-    return _.sumBy(bets, (bet) => {
-      if (bet.isSold) return -1 * bet.amount
-      if (bet.sale) return bet.sale.amount
-      if (bet.isRedemption) return -1 * bet.amount
-      return 0
-    })
+  const contractsMetrics = _.mapValues(contractBets, (bets, contractId) => {
+    const contract = contractsById[contractId]
+    if (!contract) return getContractBetNullMetrics()
+    return getContractBetMetrics(contract, bets)
   })
 
   const FILTERS: Record<BetFilter, (c: Contract) => boolean> = {
@@ -115,11 +93,8 @@ export function BetsList(props: { user: User }) {
     // Pepe notes: most users want "settled", to see when their bets or sold; or "realized profit"
   }
   const SORTS: Record<BetSort, (c: Contract) => number> = {
-    profit: (c) =>
-      contractsCurrentValue[c.id] -
-      contractsInvestment[c.id] +
-      contractsSaleOrRedemption[c.id],
-    value: (c) => contractsCurrentValue[c.id] + contractsSaleOrRedemption[c.id],
+    profit: (c) => contractsMetrics[c.id].profit,
+    value: (c) => contractsMetrics[c.id].totalValue,
     newest: (c) =>
       Math.max(...contractBets[c.id].map((bet) => bet.createdTime)),
     resolutionTime: (c) => -(c.resolutionTime ?? c.closeTime ?? Infinity),
@@ -131,32 +106,28 @@ export function BetsList(props: { user: User }) {
 
   const [settled, unsettled] = _.partition(
     contracts,
-    (c) => c.isResolved || contractsInvestment[c.id] === 0
+    (c) => c.isResolved || contractsMetrics[c.id].invested === 0
   )
 
-  const currentInvestment = _.sumBy(unsettled, (c) => contractsInvestment[c.id])
-
+  const currentInvested = _.sumBy(
+    unsettled,
+    (c) => contractsMetrics[c.id].invested
+  )
   const currentBetsValue = _.sumBy(
     unsettled,
-    (c) => contractsCurrentValue[c.id]
+    (c) => contractsMetrics[c.id].payout
   )
-  const currentBetsValueMinusLoans = _.sumBy(
+  const currentNetInvestment = _.sumBy(
     unsettled,
-    (c) =>
-      contractsCurrentValue[c.id] -
-      // Subtract loans you haven't paid.
-      _.sumBy(contractBets[c.id], (bet) => {
-        if (bet.isSold || bet.sale) return 0
-        return bet.loanAmount ?? 0
-      })
+    (c) => contractsMetrics[c.id].netInvestment
   )
 
-  const totalPortfolio = currentBetsValueMinusLoans + user.balance
+  const totalPortfolio = currentNetInvestment + user.balance
 
   const totalPnl = totalPortfolio - user.totalDeposits
   const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
   const investedProfitPercent =
-    ((currentBetsValue - currentInvestment) / currentInvestment) * 100
+    ((currentBetsValue - currentInvested) / currentInvested) * 100
 
   return (
     <Col className="mt-6 gap-4 sm:gap-6">
@@ -165,7 +136,7 @@ export function BetsList(props: { user: User }) {
           <Col>
             <div className="text-sm text-gray-500">Investment value</div>
             <div className="text-lg">
-              {formatMoney(currentBetsValueMinusLoans)}{' '}
+              {formatMoney(currentNetInvestment)}{' '}
               <ProfitBadge profitPercent={investedProfitPercent} />
             </div>
           </Col>
@@ -244,6 +215,11 @@ function MyContractBets(props: {
   const isBinary = outcomeType === 'BINARY'
   const probPercent = getBinaryProbPercent(contract)
 
+  const { totalValue, profit, profitPercent } = getContractBetMetrics(
+    contract,
+    bets
+  )
+
   return (
     <div
       tabIndex={0}
@@ -292,12 +268,16 @@ function MyContractBets(props: {
           </Row>
         </Col>
 
-        <MyBetsSummary
-          className="mr-5 justify-end sm:mr-8"
-          contract={contract}
-          bets={bets}
-          onlyMetric={metric}
-        />
+        <Row className="mr-5 justify-end sm:mr-8">
+          <Col>
+            <div className="whitespace-nowrap text-right text-lg">
+              {formatMoney(metric === 'profit' ? profit : totalValue)}
+            </div>
+            <div className="text-right">
+              <ProfitBadge profitPercent={profitPercent} />
+            </div>
+          </Col>
+        </Row>
       </Row>
 
       <div
@@ -323,134 +303,83 @@ function MyContractBets(props: {
 export function MyBetsSummary(props: {
   contract: Contract
   bets: Bet[]
-  onlyMetric?: 'value' | 'profit'
   className?: string
 }) {
-  const { bets, contract, onlyMetric, className } = props
+  const { bets, contract, className } = props
   const { resolution, outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
 
   const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-  const excludeRedemptions = bets.filter((b) => !b.isRedemption)
-  const excludeSalesAndRedemptions = excludeSales.filter((b) => !b.isRedemption)
-  const betsTotal = _.sumBy(excludeSalesAndRedemptions, (bet) => bet.amount)
-  const invested = _.sumBy(excludeSalesAndRedemptions, (bet) =>
-    bet.amount > 0 ? bet.amount : 0
-  )
-  const investedIncludingSales = _.sumBy(excludeRedemptions, (bet) =>
-    bet.amount > 0 ? bet.amount : 0
-  )
-  const redemptionValue = _.sumBy(bets, (bet) =>
-    bet.isRedemption ? -bet.amount : 0
-  )
-
-  const betsPayout = resolution
-    ? _.sumBy(excludeSales, (bet) => resolvedPayout(contract, bet))
-    : 0
-
   const yesWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'YES')
   )
   const noWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
-  const marketWinnings = _.sumBy(excludeSales, (bet) =>
-    calculatePayout(contract, bet, 'MKT')
-  )
-  const salesWinnings = _.sumBy(bets, (bet) =>
-    bet.isSold ? -bet.amount : bet.sale ? bet.sale.amount : 0
+  const { invested, profitPercent, payout } = getContractBetMetrics(
+    contract,
+    bets
   )
 
-  const currentValue = resolution ? betsPayout : marketWinnings
-  const totalValue = currentValue + redemptionValue + salesWinnings
-  const pnl = totalValue - betsTotal
-  const profit = (pnl / investedIncludingSales) * 100
+  console.log(getContractBetMetrics(contract, bets))
 
   return (
-    <Row
-      className={clsx(
-        'gap-4 sm:gap-6',
-        !onlyMetric && 'flex-wrap sm:flex-nowrap',
-        className
-      )}
-    >
-      {onlyMetric ? (
-        <Row className="gap-4 sm:gap-6">
+    <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>
+      <Row className="gap-4 sm:gap-6">
+        <Col>
+          <div className="whitespace-nowrap text-sm text-gray-500">
+            Invested
+          </div>
+          <div className="whitespace-nowrap">{formatMoney(invested)}</div>
+        </Col>
+        {resolution ? (
           <Col>
-            <div className="whitespace-nowrap text-right text-lg">
-              {formatMoney(onlyMetric === 'profit' ? pnl : totalValue)}
-            </div>
-            <div className="text-right">
-              <ProfitBadge profitPercent={profit} />
+            <div className="text-sm text-gray-500">Payout</div>
+            <div className="whitespace-nowrap">
+              {formatMoney(payout)}{' '}
+              <ProfitBadge profitPercent={profitPercent} />
             </div>
           </Col>
-        </Row>
-      ) : (
-        <Row className="gap-4 sm:gap-6">
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Invested
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(invested)}</div>
-          </Col>
-          {resolution ? (
+        ) : (
+          <>
+            {isBinary && (
+              <>
+                <Col>
+                  <div className="whitespace-nowrap text-sm text-gray-500">
+                    Payout if <YesLabel />
+                  </div>
+                  <div className="whitespace-nowrap">
+                    {formatMoney(yesWinnings)}
+                  </div>
+                </Col>
+                <Col>
+                  <div className="whitespace-nowrap text-sm text-gray-500">
+                    Payout if <NoLabel />
+                  </div>
+                  <div className="whitespace-nowrap">
+                    {formatMoney(noWinnings)}
+                  </div>
+                </Col>
+              </>
+            )}
             <Col>
-              <div className="text-sm text-gray-500">Payout</div>
-              <div className="whitespace-nowrap">
-                {formatMoney(betsPayout)} <ProfitBadge profitPercent={profit} />
+              <div className="whitespace-nowrap text-sm text-gray-500">
+                {isBinary ? (
+                  <>
+                    Payout at{' '}
+                    <span className="text-blue-400">
+                      {formatPercent(getProbability(contract))}
+                    </span>
+                  </>
+                ) : (
+                  <>Current payout</>
+                )}
               </div>
+              <div className="whitespace-nowrap">{formatMoney(payout)}</div>
             </Col>
-          ) : (
-            <>
-              {/* <Col>
-                <div className="whitespace-nowrap text-sm text-gray-500">
-                  Expectation
-                </div>
-                <div className="whitespace-nowrap">
-                  {formatMoney(expectation)}
-                </div>
-              </Col> */}
-              {isBinary && (
-                <>
-                  <Col>
-                    <div className="whitespace-nowrap text-sm text-gray-500">
-                      Payout if <YesLabel />
-                    </div>
-                    <div className="whitespace-nowrap">
-                      {formatMoney(yesWinnings)}
-                    </div>
-                  </Col>
-                  <Col>
-                    <div className="whitespace-nowrap text-sm text-gray-500">
-                      Payout if <NoLabel />
-                    </div>
-                    <div className="whitespace-nowrap">
-                      {formatMoney(noWinnings)}
-                    </div>
-                  </Col>
-                </>
-              )}
-              <Col>
-                <div className="whitespace-nowrap text-sm text-gray-500">
-                  {isBinary ? (
-                    <>
-                      Payout at{' '}
-                      <span className="text-blue-400">
-                        {formatPercent(getProbability(contract))}
-                      </span>
-                    </>
-                  ) : (
-                    <>Current payout</>
-                  )}
-                </div>
-                <div className="whitespace-nowrap">
-                  {formatMoney(marketWinnings)}
-                </div>
-              </Col>
-            </>
-          )}
-        </Row>
-      )}
+          </>
+        )}
+      </Row>
     </Row>
   )
 }
