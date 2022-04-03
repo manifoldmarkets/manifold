@@ -1,24 +1,17 @@
 import Router from 'next/router'
+import { useEffect } from 'react'
 
-import { BetsList } from '../components/bets-list'
-import { Page } from '../components/page'
-import { SEO } from '../components/SEO'
-import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
 
+// Deprecated: redirects to /portfolio.
+// Eventually, this will be removed.
 export default function TradesPage() {
   const user = useUser()
 
-  if (user === null) {
-    Router.replace('/')
-    return <></>
-  }
+  useEffect(() => {
+    if (user === null) Router.replace('/')
+    else Router.replace('/portfolio')
+  })
 
-  return (
-    <Page>
-      <SEO title="Your trades" description="Your trades" url="/trades" />
-      <Title className="mx-4 md:mx-0" text="Your trades" />
-      {user && <BetsList user={user} />}
-    </Page>
-  )
+  return <></>
 }

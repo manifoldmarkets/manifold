@@ -15,5 +15,5 @@
 <url><loc>https://manifold.markets/markets</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
 <url><loc>https://manifold.markets/profile</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
 <url><loc>https://manifold.markets/simulator</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/trades</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
+<url><loc>https://manifold.markets/portfolio</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
 </urlset>

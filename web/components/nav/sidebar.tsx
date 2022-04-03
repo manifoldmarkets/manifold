@@ -3,6 +3,7 @@ import {
   UserGroupIcon,
   SearchIcon,
   BookOpenIcon,
+  TableIcon,
   DotsHorizontalIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
@@ -17,6 +18,12 @@ import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
 
 const navigation = [
+  { name: 'Home', href: '/home', icon: HomeIcon },
+  { name: 'Markets', href: '/markets', icon: SearchIcon },
+  { name: 'Portfolio', href: '/portfolio', icon: TableIcon },
+]
+
+const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Markets', href: '/markets', icon: SearchIcon },
   { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
@@ -76,6 +83,8 @@ export default function Sidebar() {
   let folds = useFollowedFolds(user) || []
   folds = _.sortBy(folds, 'followCount').reverse()
 
+  const navigationOptions = user === null ? signedOutNavigation : navigation
+
   return (
     <nav
       aria-label="Sidebar"
@@ -107,7 +116,7 @@ export default function Sidebar() {
       </div>
 
       <div className="space-y-1 py-6">
-        {navigation.map((item) => (
+        {navigationOptions.map((item) => (
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
 
