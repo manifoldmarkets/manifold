@@ -28,13 +28,13 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
           <div className="font-semibold">
             every{' '}
             <span className="bg-gradient-to-r from-teal-400 to-green-400 bg-clip-text font-bold text-transparent">
-              prediction
+              question
             </span>
           </div>
         </h1>
         <Spacer h={6} />
         <div className="mb-4 text-gray-500">
-          Find prediction markets on any topic imaginable. Or create your own!
+          Find markets on any topic imaginable. Or create your own!
           <br />
           Sign up to get M$ 1,000 and start trading.
           <br />
