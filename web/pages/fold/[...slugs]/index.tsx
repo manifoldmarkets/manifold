@@ -248,6 +248,7 @@ export default function FoldPage(props: {
       </div>
 
       <Tabs
+        defaultIndex={page === 'leaderboards' ? 2 : page === 'markets' ? 1 : 0}
         tabs={[
           {
             title: 'Activity',
