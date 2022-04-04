@@ -30,7 +30,7 @@ export function getNavigationOptions(user?: User | null) {
 export function ProfileSummary(props: { user: User | undefined }) {
   const { user } = props
   return (
-    <Row className="group avatar my-3 items-center gap-4 rounded-md py-3 text-gray-600 group-hover:bg-gray-100 group-hover:text-gray-900">
+    <Row className="group avatar items-center gap-4 rounded-md py-3 text-gray-600 group-hover:bg-gray-100 group-hover:text-gray-900">
       <Avatar avatarUrl={user?.avatarUrl} username={user?.username} noLink />
 
       <div className="truncate text-left">

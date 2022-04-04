@@ -14,7 +14,7 @@ export function Page(props: {
     <div>
       <div
         className={clsx(
-          'mx-auto w-full pb-16 pt-6 lg:grid lg:grid-cols-12 lg:gap-8 xl:max-w-7xl',
+          'mx-auto w-full pb-14 lg:grid lg:grid-cols-12 lg:gap-8 lg:pt-6 xl:max-w-7xl',
           margin && 'px-4'
         )}
       >
