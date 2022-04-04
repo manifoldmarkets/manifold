@@ -16,8 +16,8 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
 
   return (
     <>
-      <Col className="m-6 mb-1 text-center sm:m-12">
-        <h1 className="mt-4 text-4xl sm:mt-5 sm:text-6xl lg:mt-6 xl:text-6xl">
+      <Col className="my-6 rounded-xl bg-white py-12 text-center sm:m-12">
+        <h1 className="text-4xl sm:text-6xl xl:text-6xl">
           <div className="font-semibold sm:mb-2">
             A{' '}
             <span className="bg-gradient-to-r from-teal-400 to-green-400 bg-clip-text font-bold text-transparent">
@@ -47,8 +47,6 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
           Sign up for free
         </button>{' '}
       </Col>
-
-      <Spacer h={12} />
 
       <Row className="m-4 mb-6 items-center gap-1 text-xl font-semibold text-gray-800">
         <SparklesIcon className="inline h-5 w-5" aria-hidden="true" />
