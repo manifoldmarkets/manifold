@@ -1,6 +1,5 @@
 import Link from 'next/link'
 
-import { useUser } from '../../hooks/use-user'
 import {
   HomeIcon,
   MenuAlt3Icon,
@@ -27,7 +26,7 @@ export function BottomNavBar() {
       <Link href="/markets">
         <a className="block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
           <SearchIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
-          Search
+          Explore
         </a>
       </Link>
 
