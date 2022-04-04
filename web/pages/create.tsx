@@ -195,7 +195,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         />
       </div>
 
-      <Spacer h={4} />
+      {/* <Spacer h={4} />
 
       <div className="form-control max-w-sm items-start">
         <label className="label gap-2">
@@ -210,7 +210,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           value={tagText}
           onChange={(e) => setTagText(e.target.value || '')}
         />
-      </div>
+      </div> */}
 
       <Spacer h={4} />
       <TagsList tags={tags} noLink noLabel />
