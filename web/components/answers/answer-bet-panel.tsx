@@ -25,6 +25,7 @@ import {
 } from '../../../common/calculate-dpm'
 import { firebaseLogin } from '../../lib/firebase/users'
 import { Bet } from '../../../common/bet'
+import { useUserContractBets } from '../../hooks/use-user-bets'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -37,6 +38,7 @@ export function AnswerBetPanel(props: {
   const { id: answerId } = answer
 
   const user = useUser()
+  const userBets = useUserContractBets(user?.id, contract.id)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
 
   const [error, setError] = useState<string | undefined>()
@@ -123,6 +125,7 @@ export function AnswerBetPanel(props: {
         disabled={isSubmitting}
         inputRef={inputRef}
         contractIdForLoan={contract.id}
+        userBets={userBets}
       />
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
