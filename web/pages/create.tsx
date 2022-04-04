@@ -72,7 +72,7 @@ export function NewContract(props: { question: string; tag?: string }) {
   const [ante, setAnte] = useState<number | undefined | null>(null)
   useEffect(() => {
     if (ante === null && creator) {
-      const initialAnte = creator.balance < 100 ? 10 : 100
+      const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
       setAnte(initialAnte)
     }
   }, [ante, creator])

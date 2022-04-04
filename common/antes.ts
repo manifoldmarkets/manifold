@@ -6,7 +6,7 @@ import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
 
 export const PHANTOM_ANTE = 0.001
-export const MINIMUM_ANTE = 10
+export const MINIMUM_ANTE = 50
 
 export function getCpmmInitialLiquidity(
   creator: User,
