@@ -118,7 +118,12 @@ export default function Sidebar() {
         ) : user === null ? (
           <div className="py-6 text-center">
             <button
-              className="btn border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
+              className="btn btn-sm px-6 font-medium normal-case "
+              style={{
+                backgroundColor: 'white',
+                border: '2px solid',
+                color: '#3D4451',
+              }}
               onClick={firebaseLogin}
             >
               Sign in
