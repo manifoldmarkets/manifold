@@ -30,21 +30,13 @@ export function ManifoldLogo(props: {
             <>
               <div
                 className={clsx(
-                  'font-major-mono mt-1 text-lg lowercase sm:hidden',
+                  'font-major-mono mt-1 text-lg lowercase text-gray-900',
                   darkBackground && 'text-white'
                 )}
               >
                 Manifold
                 <br />
                 Markets
-              </div>
-              <div
-                className={clsx(
-                  'font-major-mono mt-1 hidden lowercase sm:flex sm:text-2xl md:whitespace-nowrap',
-                  darkBackground && 'text-white'
-                )}
-              >
-                Manifold Markets
               </div>
             </>
           ))}
