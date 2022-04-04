@@ -8,8 +8,10 @@ export function Avatar(props: {
   noLink?: boolean
   size?: number | 'xs' | 'sm'
   className?: string
+  containerClassName?: string
 }) {
-  const { username, avatarUrl, noLink, size, className } = props
+  const { username, avatarUrl, noLink, size, className, containerClassName } =
+    props
   const s = size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
 
   const onClick =
@@ -20,7 +22,12 @@ export function Avatar(props: {
           Router.push(`/${username}`)
         }
   return (
-    <div className={`flex-shrink-0 rounded-full bg-white w-${s} h-${s}`}>
+    <div
+      className={clsx(
+        `flex-shrink-0 rounded-full bg-white w-${s} h-${s}`,
+        containerClassName
+      )}
+    >
       {avatarUrl ? (
         <img
           className={clsx(
