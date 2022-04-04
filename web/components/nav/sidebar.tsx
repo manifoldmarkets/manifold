@@ -104,11 +104,11 @@ export default function Sidebar() {
 
   return (
     <nav aria-label="Sidebar" className="sticky top-4 divide-gray-300 pl-2">
-      <div className="space-y-1 pb-4">
+      <div className="space-y-1 pb-6">
         <ManifoldLogo hideText />
       </div>
 
-      <div style={{ minHeight: 93 }}>
+      <div className="mb-2" style={{ minHeight: 80 }}>
         {user ? (
           <Link href={`/${user.username}`}>
             <a className="group">
