@@ -6,7 +6,7 @@ import { Page } from '../components/page'
 import { FeedPromo } from '../components/feed-create'
 import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
-import { SiteLink } from '../components/site-link'
+import { ManifoldLogo } from '../components/nav/manifold-logo'
 
 export async function getStaticProps() {
   const hotContracts = (await getHotContracts().catch(() => [])) ?? []
@@ -29,15 +29,18 @@ const Home = (props: { hotContracts: Contract[] }) => {
 
   return (
     <Page assertUser="signed-out">
+      <div className="px-4 pt-2 md:mt-0 lg:hidden">
+        <ManifoldLogo />
+      </div>
       <Col className="items-center">
         <Col className="max-w-3xl">
           <FeedPromo hotContracts={hotContracts ?? []} />
-          <p className="mt-6 text-gray-500">
+          {/* <p className="mt-6 text-gray-500">
             View{' '}
             <SiteLink href="/markets" className="font-bold text-gray-700">
               all markets
             </SiteLink>
-          </p>
+          </p> */}
         </Col>
       </Col>
     </Page>

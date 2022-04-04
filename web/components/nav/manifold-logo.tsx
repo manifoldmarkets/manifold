@@ -8,8 +8,9 @@ export function ManifoldLogo(props: {
   className?: string
   darkBackground?: boolean
   hideText?: boolean
+  twoLine?: boolean
 }) {
-  const { darkBackground, className, hideText } = props
+  const { darkBackground, className, hideText, twoLine } = props
 
   const user = useUser()
 
@@ -26,19 +27,26 @@ export function ManifoldLogo(props: {
         {!hideText &&
           (ENV_CONFIG.navbarLogoPath ? (
             <img src={ENV_CONFIG.navbarLogoPath} width={245} height={45} />
+          ) : twoLine ? (
+            <div
+              className={clsx(
+                'font-major-mono mt-1 text-lg lowercase text-gray-900',
+                darkBackground && 'text-white'
+              )}
+            >
+              Manifold
+              <br />
+              Markets
+            </div>
           ) : (
-            <>
-              <div
-                className={clsx(
-                  'font-major-mono mt-1 text-lg lowercase text-gray-900',
-                  darkBackground && 'text-white'
-                )}
-              >
-                Manifold
-                <br />
-                Markets
-              </div>
-            </>
+            <div
+              className={clsx(
+                'font-major-mono mt-2 text-2xl lowercase text-gray-900 md:whitespace-nowrap',
+                darkBackground && 'text-white'
+              )}
+            >
+              Manifold Markets
+            </div>
           ))}
       </a>
     </Link>
