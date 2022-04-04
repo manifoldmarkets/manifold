@@ -1,10 +1,13 @@
 import {
   HomeIcon,
   UserGroupIcon,
+  CakeIcon,
   SearchIcon,
+  ChatIcon,
   BookOpenIcon,
   TableIcon,
   DotsHorizontalIcon,
+  CashIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import _ from 'lodash'
@@ -12,21 +15,33 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from '../../hooks/use-fold'
 import { useUser } from '../../hooks/use-user'
-import { firebaseLogin } from '../../lib/firebase/users'
+import { firebaseLogin, firebaseLogout } from '../../lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
 
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
-  { name: 'Markets', href: '/markets', icon: SearchIcon },
+  { name: 'Explore', href: '/markets', icon: SearchIcon },
   { name: 'Portfolio', href: '/portfolio', icon: TableIcon },
 ]
 
 const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
-  { name: 'Markets', href: '/markets', icon: SearchIcon },
+  { name: 'Explore', href: '/markets', icon: SearchIcon },
   { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
+]
+
+const signedOutMobileNavigation = [
+  { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
+  { name: 'Communities', href: '/folds', icon: UserGroupIcon },
+  { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
+  { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
+]
+
+const mobileNavigation = [
+  { name: 'Add funds', href: '/add-funds', icon: CashIcon },
+  ...signedOutMobileNavigation,
 ]
 
 type Item = {
@@ -84,10 +99,12 @@ export default function Sidebar() {
   folds = _.sortBy(folds, 'followCount').reverse()
 
   const navigationOptions = user === null ? signedOutNavigation : navigation
+  const mobileNavigationOptions =
+    user === null ? signedOutMobileNavigation : mobileNavigation
 
   return (
-    <nav aria-label="Sidebar" className="sticky top-4 divide-y divide-gray-300">
-      <div className="space-y-1 pb-6">
+    <nav aria-label="Sidebar" className="sticky top-4 divide-gray-300 pl-2">
+      <div className="space-y-1 pb-4">
         <ManifoldLogo hideText />
       </div>
 
@@ -112,7 +129,22 @@ export default function Sidebar() {
         )}
       </div>
 
-      <div className="space-y-1 py-6">
+      <div className="space-y-1 lg:hidden">
+        {mobileNavigationOptions.map((item) => (
+          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
+        ))}
+
+        {user && (
+          <MenuButton
+            menuItems={[
+              { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
+            ]}
+            buttonContent={<MoreButton />}
+          />
+        )}
+      </div>
+
+      <div className="hidden space-y-1 lg:block">
         {navigationOptions.map((item) => (
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
@@ -121,25 +153,6 @@ export default function Sidebar() {
           menuItems={getNavigationOptions(user)}
           buttonContent={<MoreButton />}
         />
-      </div>
-
-      <div className="pt-6">
-        <SidebarItem
-          item={{ name: 'Communities', href: '/folds', icon: UserGroupIcon }}
-          currentPage={currentPage}
-        />
-
-        <div className="mt-3 space-y-2">
-          {folds.map((fold) => (
-            <a
-              key={fold.name}
-              href={`/fold/${fold.slug}`}
-              className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-            >
-              <span className="truncate">&nbsp; {fold.name}</span>
-            </a>
-          ))}
-        </div>
       </div>
     </nav>
   )
