@@ -174,7 +174,7 @@ export function AnswerBetPanel(props: {
           className="btn self-stretch whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
           onClick={firebaseLogin}
         >
-          Sign in to trade!
+          Sign up to trade!
         </button>
       )}
     </Col>
