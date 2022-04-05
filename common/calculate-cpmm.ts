@@ -151,6 +151,8 @@ function calculateCpmmShareValue(
   let kGuess = 0
   while (Math.abs(k - kGuess) > 0.00000000001) {
     mid = lowAmount + (highAmount - lowAmount) / 2
+    if (mid === lowAmount || mid === highAmount) break
+
     kGuess = sellSharesK(pool.YES, pool.NO, p, shares, outcome, mid)
     if (kGuess < k) {
       highAmount = mid
