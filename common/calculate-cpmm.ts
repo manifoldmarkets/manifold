@@ -141,16 +141,18 @@ function calculateCpmmShareValue(
   const k = computeK(pool.YES, pool.NO, p)
   const otherPool = outcome === 'YES' ? pool.NO : pool.YES
 
-  let lowAmount = 0
   // Constrain the max sale value to the lessor of 1. shares and 2. the other pool.
   // This is because 1. the max value per share is M$ 1,
   // and 2. The other pool cannot go negative and the sale value is subtracted from it.
   // (Without this, there are multiple solutions for the same k.)
   let highAmount = Math.min(shares, otherPool)
+  let lowAmount = 0
   let mid = 0
   let kGuess = 0
-  while (Math.abs(k - kGuess) > 0.00000000001) {
+  while (true) {
     mid = lowAmount + (highAmount - lowAmount) / 2
+
+    // Break once we've reached max precision.
     if (mid === lowAmount || mid === highAmount) break
 
     kGuess = sellSharesK(pool.YES, pool.NO, p, shares, outcome, mid)
