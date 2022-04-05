@@ -22,6 +22,10 @@ service cloud.firestore {
       allow read: if resource.data.id == request.auth.uid || isAdmin();
     }
 
+    match /private-users/{userId}/views/{viewId} {
+      allow create: if userId == request.auth.uid;
+    }
+
     match /contracts/{contractId} {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()

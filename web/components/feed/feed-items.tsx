@@ -52,14 +52,15 @@ import { Modal } from '../layout/modal'
 
 export function FeedItems(props: {
   contract: Contract
+  user: User | null | undefined
   items: ActivityItem[]
   betRowClassName?: string
 }) {
-  const { contract, items, betRowClassName } = props
+  const { contract, user, items, betRowClassName } = props
   const { outcomeType } = contract
 
   const ref = useRef<HTMLDivElement | null>(null)
-  useSaveSeenContract(ref, contract)
+  useSaveSeenContract(ref, contract, user)
 
   return (
     <div className="flow-root pr-2 md:pr-0" ref={ref}>
