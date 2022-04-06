@@ -1,13 +1,14 @@
 import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
+import { memo } from 'react'
 import { Bet } from '../../common/bet'
 import { getInitialProbability } from '../../common/calculate'
 import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 import { useBetsWithoutAntes } from '../hooks/use-bets'
 import { useWindowSize } from '../hooks/use-window-size'
 
-export function ContractProbGraph(props: {
+export const ContractProbGraph = memo(function ContractProbGraph(props: {
   contract: FullContract<DPM | CPMM, Binary>
   bets: Bet[]
   height?: number
@@ -64,7 +65,7 @@ export function ContractProbGraph(props: {
   return (
     <div
       className="w-full overflow-hidden"
-      style={{ height: height ?? (!width || width >= 800 ? 400 : 250) }}
+      style={{ height: height ?? (!width || width >= 800 ? 350 : 250) }}
     >
       <ResponsiveLine
         data={data}
@@ -96,7 +97,7 @@ export function ContractProbGraph(props: {
       />
     </div>
   )
-}
+})
 
 function formatPercent(y: DatumValue) {
   return `${Math.round(+y.toString())}%`
