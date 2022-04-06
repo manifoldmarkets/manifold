@@ -34,9 +34,12 @@ export const useFolds = () => {
 export const useFoldsWithTags = (tags: string[] | undefined) => {
   const [folds, setFolds] = useState<Fold[] | undefined>()
 
+  const tagsKey = tags?.join(',')
+
   useEffect(() => {
     if (tags && tags.length > 0) return listenForFoldsWithTags(tags, setFolds)
-  }, [tags])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tagsKey])
 
   return folds
 }
@@ -44,9 +47,12 @@ export const useFoldsWithTags = (tags: string[] | undefined) => {
 export const useFollowingFold = (fold: Fold, user: User | null | undefined) => {
   const [following, setFollowing] = useState<boolean | undefined>()
 
+  const foldId = fold?.id
+  const userId = user?.id
+
   useEffect(() => {
-    if (user) return listenForFollow(fold, user, setFollowing)
-  }, [fold, user])
+    if (userId) return listenForFollow(foldId, userId, setFollowing)
+  }, [foldId, userId])
 
   return following
 }
