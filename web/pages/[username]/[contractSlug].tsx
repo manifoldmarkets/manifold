@@ -96,7 +96,7 @@ export default function ContractPage(props: {
   }
   const user = useUser()
 
-  const contract = useContractWithPreload(props.slug, props.contract)
+  const contract = useContractWithPreload(props.contract)
   const { bets, comments } = props
 
   // Sort for now to see if bug is fixed.

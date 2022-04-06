@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  Contract,
-  getContractFromSlug,
-  listenForContract,
-} from '../lib/firebase/contracts'
+import { Contract, listenForContract } from '../lib/firebase/contracts'
 
 export const useContract = (contractId: string) => {
   const [contract, setContract] = useState<Contract | null | 'loading'>(
@@ -17,21 +13,13 @@ export const useContract = (contractId: string) => {
   return contract
 }
 
-export const useContractWithPreload = (
-  slug: string,
-  initial: Contract | null
-) => {
+export const useContractWithPreload = (initial: Contract | null) => {
   const [contract, setContract] = useState<Contract | null>(initial)
-  const [contractId, setContractId] = useState<string | undefined | null>(
-    initial?.id
-  )
+  const contractId = initial?.id
 
   useEffect(() => {
     if (contractId) return listenForContract(contractId, setContract)
-
-    if (contractId !== null && slug)
-      getContractFromSlug(slug).then((c) => setContractId(c?.id || null))
-  }, [contractId, slug])
+  }, [contractId])
 
   return contract
 }
