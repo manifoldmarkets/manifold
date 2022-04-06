@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { useEffect, useState } from 'react'
 import { PrivateUser } from '../../common/user'
 import {
@@ -6,17 +7,20 @@ import {
   listenForUser,
   User,
 } from '../lib/firebase/users'
+import { useStateCheckEquality } from './use-state-check-equality'
 
 export const useUser = () => {
-  const [user, setUser] = useState<User | null | undefined>(undefined)
+  const [user, setUser] = useStateCheckEquality<User | null | undefined>(
+    undefined
+  )
 
-  useEffect(() => listenForLogin(setUser), [])
+  useEffect(() => listenForLogin(setUser), [setUser])
 
   const userId = user?.id
 
   useEffect(() => {
     if (userId) return listenForUser(userId, setUser)
-  }, [userId])
+  }, [userId, setUser])
 
   return user
 }
