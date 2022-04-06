@@ -54,16 +54,17 @@ export function FeedItems(props: {
   contract: Contract
   user: User | null | undefined
   items: ActivityItem[]
+  className?: string
   betRowClassName?: string
 }) {
-  const { contract, user, items, betRowClassName } = props
+  const { contract, user, items, className, betRowClassName } = props
   const { outcomeType } = contract
 
   const ref = useRef<HTMLDivElement | null>(null)
   useSaveSeenContract(ref, contract, user)
 
   return (
-    <div className="flow-root pr-2 md:pr-0" ref={ref}>
+    <div className={clsx('flow-root pr-2 md:pr-0', className)} ref={ref}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
           <div key={item.id} className="relative pb-6">

@@ -86,6 +86,7 @@ export function AnswerItem(props: {
 
         {isBetting && (
           <ContractActivity
+            className="hidden md:flex"
             contract={contract}
             bets={[]}
             comments={[]}
