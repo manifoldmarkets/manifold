@@ -2,6 +2,7 @@ import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
 import _ from 'lodash'
+import { memo } from 'react'
 
 import { Bet } from '../../../common/bet'
 import { DPM, FreeResponse, FullContract } from '../../../common/contract'
@@ -11,7 +12,7 @@ import { useWindowSize } from '../../hooks/use-window-size'
 
 const NUM_LINES = 6
 
-export function AnswersGraph(props: {
+export const AnswersGraph = memo(function AnswersGraph(props: {
   contract: FullContract<DPM, FreeResponse>
   bets: Bet[]
   height?: number
@@ -118,7 +119,7 @@ export function AnswersGraph(props: {
       />
     </div>
   )
-}
+})
 
 function formatPercent(y: DatumValue) {
   return `${Math.round(+y.toString())}%`
