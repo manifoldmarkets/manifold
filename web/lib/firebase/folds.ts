@@ -148,11 +148,11 @@ export async function unfollowFoldFromSlug(slug: string, userId: string) {
 }
 
 export function listenForFollow(
-  fold: Fold,
-  user: User,
+  foldId: string,
+  userId: string,
   setFollow: (following: boolean) => void
 ) {
-  const followDoc = doc(foldCollection, fold.id, 'followers', user.id)
+  const followDoc = doc(foldCollection, foldId, 'followers', userId)
   return listenForValue(followDoc, (value) => {
     setFollow(!!value)
   })
