@@ -67,7 +67,7 @@ export default function ContractEmbedPage(props: {
     slug: '',
   }
 
-  const contract = useContractWithPreload(props.slug, props.contract)
+  const contract = useContractWithPreload(props.contract)
   const { bets } = props
 
   bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
@@ -98,13 +98,13 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
   return (
     <Col className="w-full flex-1 bg-white">
-      <div className="flex flex-col relative pt-2" ref={setElem}>
+      <div className="relative flex flex-col pt-2" ref={setElem}>
         <SiteLink
-          className="absolute top-0 left-0 w-full h-full z-20"
+          className="absolute top-0 left-0 z-20 h-full w-full"
           href={href}
         />
 
-        <div className="px-3 text-xl md:text-2xl text-indigo-700">
+        <div className="px-3 text-xl text-indigo-700 md:text-2xl">
           <Linkify text={question} />
         </div>
 
