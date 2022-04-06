@@ -9,23 +9,23 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>Manifold Markets — A market for every prediction</title>
+        <title>Manifold Markets — A market for every question</title>
 
         <meta
           property="og:title"
           name="twitter:title"
-          content="Manifold Markets — A market for every prediction"
+          content="Manifold Markets — A market for every question"
           key="title"
         />
         <meta
           name="description"
-          content="Manifold Markets lets you create a prediction market in under two minutes. Come trade on politics, memes, or anything that comes to mind."
+          content="Manifold Markets lets you create a market on any question. Sign up in 30 seconds and start trading on politics, sports, or anything that interests you."
           key="description1"
         />
         <meta
           property="og:description"
           name="twitter:description"
-          content="Manifold Markets lets you create a prediction market in under two minutes. Come trade on politics, memes, or anything that comes to mind."
+          content="Manifold Markets lets you create a market on any question. Sign up in 30 seconds and start trading on politics, sports, or anything that interests you."
           key="description2"
         />
         <meta property="og:url" content="https://manifold.markets" key="url" />
