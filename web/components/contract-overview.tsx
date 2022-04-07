@@ -13,6 +13,7 @@ import BetRow from './bet-row'
 import { ContractActivity } from './feed/contract-activity'
 import { AnswersGraph } from './answers/answers-graph'
 import { DPM, FreeResponse, FullContract } from '../../common/contract'
+import { ContractDescription } from './feed/feed-items'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -70,6 +71,14 @@ export const ContractOverview = (props: {
       )}
 
       {children}
+
+      <Spacer h={6} />
+
+      <ContractDescription
+        className="px-2"
+        contract={contract}
+        isCreator={isCreator}
+      />
 
       <Spacer h={12} />
 

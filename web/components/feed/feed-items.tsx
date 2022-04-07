@@ -326,8 +326,9 @@ function EditContract(props: {
 export function ContractDescription(props: {
   contract: Contract
   isCreator: boolean
+  className?: string
 }) {
-  const { contract, isCreator } = props
+  const { contract, isCreator, className } = props
   const descriptionTimestamp = () => `${dayjs().format('MMM D, h:mma')}: `
   const isAdmin = useAdmin()
 
@@ -348,7 +349,12 @@ export function ContractDescription(props: {
   if (!isCreator && !contract.description.trim()) return null
 
   return (
-    <div className="mt-2 whitespace-pre-line break-words text-gray-700">
+    <div
+      className={clsx(
+        'mt-2 whitespace-pre-line break-words text-gray-700',
+        className
+      )}
+    >
       <Linkify text={contract.description} />
       <br />
       {isCreator && (
@@ -506,7 +512,6 @@ function FeedDescription(props: { contract: Contract }) {
           />{' '}
           created this market <RelativeTimestamp time={contract.createdTime} />
         </div>
-        <ContractDescription contract={contract} isCreator={isCreator} />
       </div>
     </>
   )
