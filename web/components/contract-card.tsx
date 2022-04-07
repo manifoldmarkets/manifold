@@ -19,9 +19,8 @@ import { fromNow } from '../lib/util/time'
 import { Avatar } from './avatar'
 import { Spacer } from './layout/spacer'
 import { useState } from 'react'
-import { TweetButton } from './tweet-button'
 import { getProbability } from '../../common/calculate'
-import { ShareEmbedButton } from './share-embed-button'
+import { ContractInfoDialog } from './contract-info-dialog'
 
 export function ContractCard(props: {
   contract: Contract
@@ -179,11 +178,9 @@ export function ContractDetails(props: {
   const { closeTime, creatorName, creatorUsername } = contract
   const { volumeLabel, createdDate, resolvedDate } = contractMetrics(contract)
 
-  const tweetText = getTweetText(contract, !!isCreator)
-
   return (
     <Col className="gap-2 text-sm text-gray-500 sm:flex-row sm:flex-wrap">
-      <Row className="flex-wrap items-center gap-x-4 gap-y-3">
+      <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-3">
         <Row className="items-center gap-2">
           <Avatar
             username={creatorUsername}
@@ -236,8 +233,8 @@ export function ContractDetails(props: {
 
         {!hideShareButtons && (
           <>
-            <TweetButton className="self-end" tweetText={tweetText} />
-            <ShareEmbedButton contract={contract} />
+            <div className="flex-1" />
+            <ContractInfoDialog contract={contract} />
           </>
         )}
       </Row>
@@ -330,25 +327,4 @@ function EditableCloseDate(props: {
         ))}
     </>
   )
-}
-
-const getTweetText = (contract: Contract, isCreator: boolean) => {
-  const { question, creatorName, resolution, outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-
-  const tweetQuestion = isCreator
-    ? question
-    : `${question} Asked by ${creatorName}.`
-  const tweetDescription = resolution
-    ? `Resolved ${resolution}!`
-    : isBinary
-    ? `Currently ${getBinaryProbPercent(
-        contract
-      )} chance, place your bets here:`
-    : `Submit your own answer:`
-
-  const timeParam = `${Date.now()}`.substring(7)
-  const url = `https://manifold.markets${contractPath(contract)}?t=${timeParam}`
-
-  return `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
 }

@@ -6,23 +6,23 @@ import { contractPath } from '../lib/firebase/contracts'
 import { DOMAIN } from '../../common/envs/constants'
 import { copyToClipboard } from '../lib/util/copy'
 
+function copyEmbedCode(contract: Contract) {
+  const title = contract.question
+  const src = `https://${DOMAIN}/embed${contractPath(contract)}`
+
+  const embedCode = `<iframe width="560" height="405" src="${src}" title="${title}" frameborder="0"></iframe>`
+
+  copyToClipboard(embedCode)
+}
+
 export function ShareEmbedButton(props: { contract: Contract }) {
   const { contract } = props
-
-  const copyEmbed = () => {
-    const title = contract.question
-    const src = `https://${DOMAIN}/embed${contractPath(contract)}`
-
-    const embedCode = `<iframe width="560" height="405" src="${src}" title="${title}" frameborder="0"></iframe>`
-
-    copyToClipboard(embedCode)
-  }
 
   return (
     <Menu
       as="div"
       className="relative z-10 flex-shrink-0"
-      onMouseUp={copyEmbed}
+      onMouseUp={() => copyEmbedCode(contract)}
     >
       <Menu.Button
         className="btn btn-xs normal-case"

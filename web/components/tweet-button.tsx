@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 
-export function TweetButton(props: { className?: string; tweetText?: string }) {
+export function TweetButton(props: { className?: string; tweetText: string }) {
   const { tweetText, className } = props
 
   return (
@@ -11,13 +11,17 @@ export function TweetButton(props: { className?: string; tweetText?: string }) {
         border: '2px solid #1da1f2',
         color: '#1da1f2',
       }}
-      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
-        tweetText ?? ''
-      )}`}
+      href={getTweetHref(tweetText)}
       target="_blank"
     >
       <img className="mr-2" src={'/twitter-logo.svg'} width={15} height={15} />
       <div>Tweet</div>
     </a>
   )
+}
+
+function getTweetHref(tweetText: string) {
+  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+    tweetText ?? ''
+  )}`
 }
