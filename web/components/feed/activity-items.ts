@@ -309,6 +309,8 @@ export function getAllContractActivityItems(
     items.push({ type: 'resolve', id: `${contract.resolutionTime}`, contract })
   }
 
+  if (!abbreviated) items.reverse()
+
   return items
 }
 
