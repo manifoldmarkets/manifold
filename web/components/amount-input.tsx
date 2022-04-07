@@ -35,16 +35,9 @@ export function AmountInput(props: {
   } = props
 
   const onAmountChange = (str: string) => {
-    if (str.includes('-')) {
-      onChange(undefined)
-      return
-    }
-    const amount = parseInt(str.replace(/[^\d]/, ''))
-
-    if (str && isNaN(amount)) return
-    if (amount >= 10 ** 9) return
-
-    onChange(str ? amount : undefined)
+    const amount = parseInt(str.replace(/\D/g, ''))
+    const isInvalid = !str || isNaN(amount)
+    onChange(isInvalid ? undefined : amount)
   }
 
   return (
@@ -58,9 +51,11 @@ export function AmountInput(props: {
             inputClassName
           )}
           ref={inputRef}
-          type="number"
+          type="text"
+          pattern="[0-9]*"
+          inputMode="numeric"
           placeholder="0"
-          maxLength={9}
+          maxLength={6}
           value={amount ?? ''}
           disabled={disabled}
           onChange={(e) => onAmountChange(e.target.value)}
