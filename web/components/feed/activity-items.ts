@@ -309,7 +309,14 @@ export function getAllContractActivityItems(
     items.push({ type: 'resolve', id: `${contract.resolutionTime}`, contract })
   }
 
-  if (!abbreviated) items.reverse()
+  if (!abbreviated) {
+    items.reverse()
+    for (const item of items) {
+      if (item.type === 'answergroup') {
+        item.items.reverse()
+      }
+    }
+  }
 
   return items
 }
