@@ -8,7 +8,7 @@ import {
 } from '@heroicons/react/outline'
 
 import { firebaseLogin } from '../lib/firebase/users'
-import { ContractsGrid } from '../components/contracts-list'
+import { ContractsGrid } from '../components/contract/contracts-list'
 import { Col } from '../components/layout/col'
 import Link from 'next/link'
 import { Contract } from '../lib/firebase/contracts'

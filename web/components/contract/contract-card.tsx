@@ -2,24 +2,24 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { ClockIcon, DatabaseIcon, PencilIcon } from '@heroicons/react/outline'
 import { TrendingUpIcon } from '@heroicons/react/solid'
-import { Row } from '../components/layout/row'
-import { formatMoney, formatPercent } from '../../common/util/format'
-import { UserLink } from './user-page'
+import { Row } from '../layout/row'
+import { formatMoney, formatPercent } from '../../../common/util/format'
+import { UserLink } from '../user-page'
 import {
   Contract,
   contractMetrics,
   contractPath,
   getBinaryProbPercent,
   updateContract,
-} from '../lib/firebase/contracts'
-import { Col } from './layout/col'
+} from '../../lib/firebase/contracts'
+import { Col } from '../layout/col'
 import dayjs from 'dayjs'
-import { DateTimeTooltip } from './datetime-tooltip'
-import { fromNow } from '../lib/util/time'
-import { Avatar } from './avatar'
-import { Spacer } from './layout/spacer'
+import { DateTimeTooltip } from '../datetime-tooltip'
+import { fromNow } from '../../lib/util/time'
+import { Avatar } from '../avatar'
+import { Spacer } from '../layout/spacer'
 import { useState } from 'react'
-import { getProbability } from '../../common/calculate'
+import { getProbability } from '../../../common/calculate'
 import { ContractInfoDialog } from './contract-info-dialog'
 
 export function ContractCard(props: {

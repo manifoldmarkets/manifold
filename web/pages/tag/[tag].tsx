@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { SearchableGrid } from '../../components/contracts-list'
+import { SearchableGrid } from '../../components/contract/contracts-list'
 import { Page } from '../../components/page'
 import { Title } from '../../components/title'
 import { useContracts } from '../../hooks/use-contracts'

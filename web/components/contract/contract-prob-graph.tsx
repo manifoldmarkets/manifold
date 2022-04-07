@@ -2,11 +2,11 @@ import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
 import { memo } from 'react'
-import { Bet } from '../../common/bet'
-import { getInitialProbability } from '../../common/calculate'
-import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
-import { useBetsWithoutAntes } from '../hooks/use-bets'
-import { useWindowSize } from '../hooks/use-window-size'
+import { Bet } from '../../../common/bet'
+import { getInitialProbability } from '../../../common/calculate'
+import { Binary, CPMM, DPM, FullContract } from '../../../common/contract'
+import { useBetsWithoutAntes } from '../../hooks/use-bets'
+import { useWindowSize } from '../../hooks/use-window-size'
 
 export const ContractProbGraph = memo(function ContractProbGraph(props: {
   contract: FullContract<DPM | CPMM, Binary>

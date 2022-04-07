@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { User } from '../lib/firebase/users'
-import { CreatorContractsList } from './contracts-list'
+import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
 import { Page } from './page'
 import { SiteLink } from './site-link'

@@ -8,13 +8,16 @@ import {
   Contract,
   listContracts,
   getBinaryProb,
-} from '../lib/firebase/contracts'
-import { User } from '../lib/firebase/users'
-import { Col } from './layout/col'
-import { SiteLink } from './site-link'
+} from '../../lib/firebase/contracts'
+import { User } from '../../lib/firebase/users'
+import { Col } from '../layout/col'
+import { SiteLink } from '../site-link'
 import { ContractCard } from './contract-card'
-import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
-import { Answer } from '../../common/answer'
+import {
+  Sort,
+  useQueryAndSortParams,
+} from '../../hooks/use-sort-and-query-params'
+import { Answer } from '../../../common/answer'
 
 export function ContractsGrid(props: {
   contracts: Contract[]
