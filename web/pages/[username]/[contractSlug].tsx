@@ -151,7 +151,6 @@ export default function ContractPage(props: {
                 answers={props.answers}
               />
               <Spacer h={4} />
-              <div className="divider before:bg-gray-300 after:bg-gray-300" />
             </>
           )}
         </ContractOverview>

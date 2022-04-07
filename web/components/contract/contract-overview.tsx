@@ -70,8 +70,6 @@ export const ContractOverview = (props: {
         />
       )}
 
-      {children}
-
       <Spacer h={6} />
 
       <ContractDescription
@@ -80,7 +78,11 @@ export const ContractOverview = (props: {
         isCreator={isCreator}
       />
 
-      <Spacer h={12} />
+      <Spacer h={4} />
+
+      {children}
+
+      <Spacer h={4} />
 
       <ContractActivity
         contract={contract}
