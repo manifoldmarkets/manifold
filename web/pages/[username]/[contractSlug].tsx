@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
 import { useContractWithPreload } from '../../hooks/use-contract'
-import { ContractOverview } from '../../components/contract-overview'
+import { ContractOverview } from '../../components/contract/contract-overview'
 import { BetPanel } from '../../components/bet-panel'
 import { Col } from '../../components/layout/col'
 import { useUser } from '../../hooks/use-user'
@@ -19,7 +19,7 @@ import {
 } from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
-import { contractTextDetails } from '../../components/contract-card'
+import { contractTextDetails } from '../../components/contract/contract-card'
 import { Bet, listAllBets } from '../../lib/firebase/bets'
 import { Comment, listAllComments } from '../../lib/firebase/comments'
 import Custom404 from '../404'

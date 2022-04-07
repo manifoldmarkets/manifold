@@ -1,18 +1,21 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useState } from 'react'
-import { Contract } from '../../common/contract'
-import { useFoldsWithTags } from '../hooks/use-fold'
-import { useUser } from '../hooks/use-user'
-import { contractPath, getBinaryProbPercent } from '../lib/firebase/contracts'
-import { Col } from './layout/col'
-import { Modal } from './layout/modal'
-import { Row } from './layout/row'
-import { ShareEmbedButton } from './share-embed-button'
-import { TagsInput } from './tags-input'
-import { FoldTagList } from './tags-list'
-import { Title } from './title'
-import { TweetButton } from './tweet-button'
+import { Contract } from '../../../common/contract'
+import { useFoldsWithTags } from '../../hooks/use-fold'
+import { useUser } from '../../hooks/use-user'
+import {
+  contractPath,
+  getBinaryProbPercent,
+} from '../../lib/firebase/contracts'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Row } from '../layout/row'
+import { ShareEmbedButton } from '../share-embed-button'
+import { TagsInput } from '../tags-input'
+import { FoldTagList } from '../tags-list'
+import { Title } from '../title'
+import { TweetButton } from '../tweet-button'
 
 export function ContractInfoDialog(props: { contract: Contract }) {
   const { contract } = props

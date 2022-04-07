@@ -10,8 +10,8 @@ import { AnswersGraph } from '../../../components/answers/answers-graph'
 import {
   ResolutionOrChance,
   ContractDetails,
-} from '../../../components/contract-card'
-import { ContractProbGraph } from '../../../components/contract-prob-graph'
+} from '../../../components/contract/contract-card'
+import { ContractProbGraph } from '../../../components/contract/contract-prob-graph'
 import { Col } from '../../../components/layout/col'
 import { Row } from '../../../components/layout/row'
 import { Spacer } from '../../../components/layout/spacer'

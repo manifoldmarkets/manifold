@@ -1,4 +1,7 @@
-import { ContractsGrid, SearchableGrid } from '../components/contracts-list'
+import {
+  ContractsGrid,
+  SearchableGrid,
+} from '../components/contract/contracts-list'
 import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
