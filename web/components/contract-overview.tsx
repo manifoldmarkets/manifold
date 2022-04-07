@@ -31,6 +31,7 @@ export const ContractOverview = (props: {
   const user = useUser()
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
+  const allowTrade = tradingAllowed(contract)
 
   return (
     <Col className={clsx('mb-6', className)}>
@@ -42,20 +43,10 @@ export const ContractOverview = (props: {
 
           {(isBinary || resolution) && (
             <ResolutionOrChance
-              className="hidden items-end xl:flex"
+              className="items-end xl:flex"
               contract={contract}
               large
             />
-          )}
-        </Row>
-
-        <Row className="items-center justify-between gap-4 xl:hidden">
-          {(isBinary || resolution) && (
-            <ResolutionOrChance contract={contract} />
-          )}
-
-          {isBinary && tradingAllowed(contract) && (
-            <BetRow contract={contract} labelClassName="hidden" />
           )}
         </Row>
 
@@ -63,6 +54,17 @@ export const ContractOverview = (props: {
       </Col>
 
       <Spacer h={4} />
+
+      {isBinary && allowTrade && (
+        <Row className="my-6 items-center justify-between gap-4 lg:justify-center">
+          {(isBinary || resolution) && (
+            <ResolutionOrChance contract={contract} className="lg:hidden" />
+          )}
+          {isBinary && tradingAllowed(contract) && (
+            <BetRow large contract={contract} labelClassName="hidden" />
+          )}
+        </Row>
+      )}
 
       {isBinary ? (
         <ContractProbGraph contract={contract} bets={bets} />

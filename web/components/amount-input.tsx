@@ -9,6 +9,7 @@ import { InfoTooltip } from './info-tooltip'
 import { Spacer } from './layout/spacer'
 import { calculateCpmmSale } from '../../common/calculate-cpmm'
 import { Binary, CPMM, FullContract } from '../../common/contract'
+import { ENV_CONFIG } from '../../common/envs/constants'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -50,10 +51,10 @@ export function AmountInput(props: {
   return (
     <Col className={className}>
       <label className="input-group">
-        <span className="bg-gray-200 text-sm">{label}</span>
+        <span className="bg-gray-200 text-lg">{label}</span>
         <input
           className={clsx(
-            'input input-bordered',
+            'input input-bordered text-lg',
             error && 'input-error',
             inputClassName
           )}
@@ -119,6 +120,10 @@ export function BuyAmountInput(props: {
     ? Math.min(amount ?? 0, MAX_LOAN_PER_CONTRACT - prevLoanAmount)
     : 0
 
+  const remainingBalance = Math.floor(
+    (user?.balance ?? 0) - (amount ?? 0) + loanAmount
+  )
+
   const onAmountChange = (amount: number | undefined) => {
     onChange(amount)
 
@@ -140,7 +145,7 @@ export function BuyAmountInput(props: {
     <AmountInput
       amount={amount}
       onChange={onAmountChange}
-      label="M$"
+      label={ENV_CONFIG.moneyMoniker}
       error={error}
       disabled={disabled}
       className={className}
@@ -148,10 +153,10 @@ export function BuyAmountInput(props: {
       inputRef={inputRef}
     >
       {user && (
-        <Col className="gap-3 text-sm">
+        <Col className="gap-3">
           {contractIdForLoan && (
             <Row className="items-center justify-between gap-2 text-gray-500">
-              <Row className="items-center gap-2">
+              <Row className="items-center gap-2 text-sm">
                 Amount loaned{' '}
                 <InfoTooltip
                   text={`In every market, you get an interest-free loan on the first ${formatMoney(

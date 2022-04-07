@@ -94,7 +94,7 @@ export function BetPanel(props: {
           className
         )}
       >
-        <Title className={clsx('!mt-0')} text="Place a trade" />
+        <div className={clsx('mb-6 text-2xl')}> Place a trade</div>
 
         <BuyPanel contract={contract} user={user} userBets={userBets ?? []} />
 
@@ -304,6 +304,12 @@ function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
+  const averagePrice = betAmount
+    ? betAmount / currentPayout
+    : betChoice === 'NO'
+    ? 1 - initialProb
+    : initialProb
+
   const dpmTooltip =
     contract.mechanism === 'dpm-2'
       ? `Current payout for ${formatWithCommas(shares)} / ${formatWithCommas(
@@ -335,8 +341,15 @@ function BuyPanel(props: {
       />
 
       <Col className="mt-3 w-full gap-3">
-        <Row className="items-center justify-between text-sm">
-          <div className="text-gray-500">Probability</div>
+        {/* <Row className="items-center justify-between">
+          <div className="text-sm text-gray-500">Average price</div>
+          <Row>
+            <div>{formatCents(averagePrice)}</div>
+          </Row>
+        </Row> */}
+
+        <Row className="items-center justify-between">
+          <div className="text-sm text-gray-500">Probability change</div>
           <Row>
             <div>{formatPercent(initialProb)}</div>
             <div className="mx-2">→</div>
@@ -344,9 +357,9 @@ function BuyPanel(props: {
           </Row>
         </Row>
 
-        <Row className="items-center justify-between gap-2 text-sm">
+        <Row className="items-center justify-between gap-2">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-            <div>
+            <div className="text-sm">
               {contract.mechanism === 'dpm-2' ? (
                 <>
                   Estimated

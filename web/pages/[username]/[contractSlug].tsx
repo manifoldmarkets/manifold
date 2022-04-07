@@ -115,18 +115,14 @@ export default function ContractPage(props: {
 
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
-  const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
-  const hasSidePanel = isBinary && (allowTrade || allowResolve)
+  const hasSidePanel = isBinary && allowResolve
 
   const ogCardProps = getOpenGraphProps(contract)
 
   const rightSidebar = hasSidePanel ? (
     <Col className="gap-4">
-      {allowTrade && (
-        <BetPanel className="hidden xl:flex" contract={contract} />
-      )}
-      {allowResolve && <ResolutionPanel creator={user} contract={contract} />}
+      <ResolutionPanel creator={user} contract={contract} />
     </Col>
   ) : null
 

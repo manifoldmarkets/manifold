@@ -7,41 +7,40 @@ import { Row } from './layout/row'
 export function YesNoSelector(props: {
   selected?: 'YES' | 'NO'
   onSelect: (selected: 'YES' | 'NO') => void
+  large?: boolean
   className?: string
   btnClassName?: string
 }) {
-  const { selected, onSelect, className, btnClassName } = props
+  const { selected, onSelect, large, className, btnClassName } = props
 
-  const commonClassNames =
-    'inline-flex flex-1  items-center justify-center rounded-3xl border-2 p-2'
+  const commonClassNames = clsx(
+    'inline-flex flex-1  items-center justify-center rounded-3xl p-2 border-2 border-gray-300 shadow',
+    large && 'text-lg w-32'
+  )
 
   return (
     <Row className={clsx('space-x-3', className)}>
       <button
         className={clsx(
           commonClassNames,
-          'hover:bg-primary-focus border-primary hover:border-primary-focus hover:text-white',
-          selected == 'YES'
-            ? 'bg-primary text-white'
-            : 'text-primary bg-transparent',
+          'border-primary hover:bg-primary-focus hover:border-primary-focus hover:text-white',
+          selected == 'YES' ? 'bg-primary text-white' : 'text-primary bg-white',
           btnClassName
         )}
         onClick={() => onSelect('YES')}
       >
-        Buy YES
+        Bet YES
       </button>
       <button
         className={clsx(
           commonClassNames,
           'border-red-400 hover:border-red-500 hover:bg-red-500 hover:text-white',
-          selected == 'NO'
-            ? 'bg-red-400 text-white'
-            : 'bg-transparent text-red-400',
+          selected == 'NO' ? 'bg-red-400 text-white' : 'bg-white text-red-400',
           btnClassName
         )}
         onClick={() => onSelect('NO')}
       >
-        Buy NO
+        Bet NO
       </button>
     </Row>
   )
@@ -173,7 +172,7 @@ export function BuyButton(props: { className?: string; onClick?: () => void }) {
       )}
       onClick={onClick}
     >
-      Buy
+      Bet
     </button>
   )
 }

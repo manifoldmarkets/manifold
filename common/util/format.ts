@@ -7,10 +7,25 @@ const formatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 0,
 })
 
+const formatterCents = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 2,
+})
+
 export function formatMoney(amount: number) {
   const newAmount = Math.round(amount) === 0 ? 0 : amount // handle -0 case
   return (
     ENV_CONFIG.moneyMoniker + ' ' + formatter.format(newAmount).replace('$', '')
+  )
+}
+export function formatCents(probability: number) {
+  const newAmount = Math.round(probability * 100) === 0 ? 0 : probability // handle -0 case
+  return (
+    ENV_CONFIG.moneyMoniker +
+    ' ' +
+    formatterCents.format(newAmount).replace('$', '')
   )
 }
 

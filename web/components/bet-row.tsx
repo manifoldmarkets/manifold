@@ -10,10 +10,11 @@ import { Modal } from './layout/modal'
 // Inline version of a bet panel. Opens BetPanel in a new modal.
 export default function BetRow(props: {
   contract: FullContract<DPM | CPMM, Binary>
+  large?: boolean
   className?: string
   labelClassName?: string
 }) {
-  const { className, labelClassName } = props
+  const { large, className, labelClassName } = props
   const [open, setOpen] = useState(false)
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
     undefined
@@ -27,7 +28,8 @@ export default function BetRow(props: {
             Place a trade
           </div>
           <YesNoSelector
-            btnClassName="btn-sm w-24"
+            btnClassName={clsx('btn-sm w-20', large && 'w-32 h-10')}
+            large={large}
             onSelect={(choice) => {
               setOpen(true)
               setBetChoice(choice)
