@@ -103,10 +103,6 @@ export default function ContractPage(props: {
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
   bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
 
-  const folds = (useFoldsWithTags(contract?.tags) ?? props.folds).filter(
-    (fold) => fold.followCount > 1 || user?.id === fold.curatorId
-  )
-
   if (!contract) {
     return <Custom404 />
   }
@@ -146,7 +142,6 @@ export default function ContractPage(props: {
           contract={contract}
           bets={bets ?? []}
           comments={comments ?? []}
-          folds={folds}
         >
           {contract.outcomeType === 'FREE_RESPONSE' && (
             <>

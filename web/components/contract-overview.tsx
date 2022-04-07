@@ -9,10 +9,7 @@ import clsx from 'clsx'
 import { ContractDetails, ResolutionOrChance } from './contract-card'
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
-import { RevealableTagsInput, TagsInput } from './tags-input'
 import BetRow from './bet-row'
-import { Fold } from '../../common/fold'
-import { FoldTagList } from './tags-list'
 import { ContractActivity } from './feed/contract-activity'
 import { AnswersGraph } from './answers/answers-graph'
 import { DPM, FreeResponse, FullContract } from '../../common/contract'
@@ -21,11 +18,10 @@ export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
   comments: Comment[]
-  folds: Fold[]
   children?: any
   className?: string
 }) => {
-  const { contract, bets, comments, folds, children, className } = props
+  const { contract, bets, comments, children, className } = props
   const { question, resolution, creatorId, outcomeType } = contract
 
   const user = useUser()
@@ -74,26 +70,6 @@ export const ContractOverview = (props: {
       )}
 
       {children}
-
-      <Row className="mt-6 hidden items-center justify-between gap-4 sm:flex">
-        {folds.length === 0 ? (
-          <TagsInput className={clsx('mx-4')} contract={contract} />
-        ) : (
-          <FoldTagList folds={folds} />
-        )}
-      </Row>
-
-      <Col className="mt-6 gap-4 sm:hidden">
-        {folds.length === 0 ? (
-          <TagsInput contract={contract} />
-        ) : (
-          <FoldTagList folds={folds} />
-        )}
-      </Col>
-
-      {folds.length > 0 && (
-        <RevealableTagsInput className="mt-4" contract={contract} />
-      )}
 
       <Spacer h={12} />
 

@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { Col } from './layout/col'
 
 import { Row } from './layout/row'
 import { SiteLink } from './site-link'
@@ -70,15 +71,17 @@ export function FoldTagList(props: {
 }) {
   const { folds, noLabel, className } = props
   return (
-    <Row className={clsx('flex-wrap items-center gap-2', className)}>
-      {folds.length > 0 && (
-        <>
-          {!noLabel && <div className="mr-1 text-gray-500">Communities</div>}
-          {folds.map((fold) => (
-            <FoldTag key={fold.slug} fold={fold} />
-          ))}
-        </>
-      )}
-    </Row>
+    <Col className="gap-2">
+      {!noLabel && <div className="mr-1 text-gray-500">Communities</div>}
+      <Row className={clsx('flex-wrap items-center gap-2', className)}>
+        {folds.length > 0 && (
+          <>
+            {folds.map((fold) => (
+              <FoldTag key={fold.slug} fold={fold} />
+            ))}
+          </>
+        )}
+      </Row>
+    </Col>
   )
 }
