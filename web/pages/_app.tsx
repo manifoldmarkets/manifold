@@ -41,6 +41,10 @@ function MyApp({ Component, pageProps }: AppProps) {
           content="https://manifold.markets/logo-bg-white.png"
           key="image2"
         />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1"
+        />
       </Head>
 
       <Component {...pageProps} />
