@@ -6,8 +6,6 @@ import { BetPanel } from '../../components/bet-panel'
 import { Col } from '../../components/layout/col'
 import { useUser } from '../../hooks/use-user'
 import { ResolutionPanel } from '../../components/resolution-panel'
-import { ContractBetsTable, MyBetsSummary } from '../../components/bets-list'
-import { useBets } from '../../hooks/use-bets'
 import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
 import { listUsers, User } from '../../lib/firebase/users'
@@ -25,17 +23,17 @@ import { Comment, listAllComments } from '../../lib/firebase/comments'
 import Custom404 from '../404'
 import { getFoldsByTags } from '../../lib/firebase/folds'
 import { Fold } from '../../../common/fold'
-import { useFoldsWithTags } from '../../hooks/use-fold'
 import { listAllAnswers } from '../../lib/firebase/answers'
 import { Answer } from '../../../common/answer'
 import { AnswersPanel } from '../../components/answers/answers-panel'
 import { fromPropz, usePropz } from '../../hooks/use-propz'
 import { Leaderboard } from '../../components/leaderboard'
 import _ from 'lodash'
-import { calculatePayout, resolvedPayout } from '../../../common/calculate'
+import { resolvedPayout } from '../../../common/calculate'
 import { formatMoney } from '../../../common/util/format'
 import { FeedBet, FeedComment } from '../../components/feed/feed-items'
 import { useUserById } from '../../hooks/use-users'
+import { ContractTabs } from '../../components/contract/contract-tabs'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -168,35 +166,15 @@ export default function ContractPage(props: {
             <Spacer h={12} />
           </>
         )}
-        <BetsSection contract={contract} user={user ?? null} bets={bets} />
+
+        <ContractTabs
+          contract={contract}
+          user={user}
+          bets={bets}
+          comments={comments}
+        />
       </Col>
     </Page>
-  )
-}
-
-function BetsSection(props: {
-  contract: Contract
-  user: User | null
-  bets: Bet[]
-}) {
-  const { contract, user } = props
-  const bets = useBets(contract.id) ?? props.bets
-
-  // Decending creation time.
-  bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
-
-  const userBets = user && bets.filter((bet) => bet.userId === user.id)
-
-  if (!userBets || userBets.length === 0) return <></>
-
-  return (
-    <div>
-      <Title className="px-2" text="Your trades" />
-      <MyBetsSummary className="px-2" contract={contract} bets={userBets} />
-      <Spacer h={6} />
-      <ContractBetsTable contract={contract} bets={userBets} />
-      <Spacer h={12} />
-    </div>
   )
 }
 
