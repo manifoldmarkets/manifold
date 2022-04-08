@@ -9,6 +9,7 @@ import { useBets } from '../../hooks/use-bets'
 import { ContractActivity } from '../feed/contract-activity'
 import { ContractBetsTable, MyBetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
+import { Tabs } from '../layout/tabs'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -17,8 +18,6 @@ export function ContractTabs(props: {
   comments: Comment[]
 }) {
   const { contract, user, comments } = props
-
-  const [tab, setTab] = useState('timeline')
 
   const bets = useBets(contract.id) ?? props.bets
   // Decending creation time.
@@ -48,31 +47,11 @@ export function ContractTabs(props: {
   )
 
   return (
-    <>
-      <div className="tabs">
-        <a
-          className={clsx(
-            'tab tab-bordered',
-            tab === 'timeline' && 'tab-active'
-          )}
-          onClick={() => setTab('timeline')}
-        >
-          Timeline
-        </a>
-        <a
-          className={clsx(
-            'tab tab-bordered',
-            tab === 'your-trades' && 'tab-active'
-          )}
-          onClick={() => setTab('your-trades')}
-        >
-          Your trades
-        </a>
-      </div>
-
-      <Spacer h={4} />
-
-      {tab === 'timeline' ? activity : yourTrades}
-    </>
+    <Tabs
+      tabs={[
+        { title: 'Timeline', content: activity },
+        { title: 'Your trades', content: yourTrades },
+      ]}
+    />
   )
 }
