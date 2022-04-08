@@ -194,36 +194,38 @@ export function ContractDetails(props: {
           />
         </Row>
 
-        <Row className="items-center gap-1">
-          <ClockIcon className="h-5 w-5" />
+        {(!!closeTime || !!resolvedDate) && (
+          <Row className="items-center gap-1">
+            <ClockIcon className="h-5 w-5" />
 
-          <DateTimeTooltip text="Market created:" time={contract.createdTime}>
+            {/* <DateTimeTooltip text="Market created:" time={contract.createdTime}>
             {createdDate}
-          </DateTimeTooltip>
+          </DateTimeTooltip> */}
 
-          {resolvedDate && contract.resolutionTime ? (
-            <>
-              {' - '}
-              <DateTimeTooltip
-                text="Market resolved:"
-                time={contract.resolutionTime}
-              >
-                {resolvedDate}
-              </DateTimeTooltip>
-            </>
-          ) : null}
+            {resolvedDate && contract.resolutionTime ? (
+              <>
+                {/* {' - '} */}
+                <DateTimeTooltip
+                  text="Market resolved:"
+                  time={contract.resolutionTime}
+                >
+                  {resolvedDate}
+                </DateTimeTooltip>
+              </>
+            ) : null}
 
-          {!resolvedDate && closeTime && (
-            <>
-              {' - '}{' '}
-              <EditableCloseDate
-                closeTime={closeTime}
-                contract={contract}
-                isCreator={isCreator ?? false}
-              />
-            </>
-          )}
-        </Row>
+            {!resolvedDate && closeTime && (
+              <>
+                {/* {' - '}{' '} */}
+                <EditableCloseDate
+                  closeTime={closeTime}
+                  contract={contract}
+                  isCreator={isCreator ?? false}
+                />
+              </>
+            )}
+          </Row>
+        )}
 
         <Row className="items-center gap-1">
           <DatabaseIcon className="h-5 w-5" />
@@ -231,12 +233,7 @@ export function ContractDetails(props: {
           <div className="whitespace-nowrap">{volumeLabel}</div>
         </Row>
 
-        {!hideShareButtons && (
-          <>
-            <div className="flex-1" />
-            <ContractInfoDialog contract={contract} />
-          </>
-        )}
+        {!hideShareButtons && <ContractInfoDialog contract={contract} />}
       </Row>
     </Col>
   )
