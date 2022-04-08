@@ -83,15 +83,6 @@ export const ContractOverview = (props: {
       {children}
 
       <Spacer h={4} />
-
-      <ContractActivity
-        contract={contract}
-        bets={bets}
-        comments={comments}
-        user={user}
-        mode="all"
-        betRowClassName="!mt-0 xl:hidden"
-      />
     </Col>
   )
 }
