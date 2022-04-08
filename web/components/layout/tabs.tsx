@@ -17,31 +17,35 @@ export function Tabs(props: { tabs: Tab[]; defaultIndex?: number }) {
 
   return (
     <div>
-      <nav className="flex space-x-4" aria-label="Tabs">
-        {tabs.map((tab, i) => (
-          <Link href={tab.href ?? '#'} key={tab.title} shallow={!!tab.href}>
-            <a
-              key={tab.title}
-              className={clsx(
-                tab.title === activeTab.title
-                  ? 'bg-gray-200 text-gray-700'
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700',
-                'rounded-md px-3 py-2 text-sm font-medium'
-              )}
-              aria-current={tab.title === activeTab.title ? 'page' : undefined}
-              onClick={(e) => {
-                if (!tab.href) {
-                  e.preventDefault()
-                }
-                setActiveIndex(i)
-              }}
-            >
-              {tab.tabIcon ? <span className="mr-2">{tab.tabIcon}</span> : null}
-              {tab.title}
-            </a>
-          </Link>
-        ))}
-      </nav>
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+          {tabs.map((tab, i) => (
+            <Link href={tab.href ?? '#'} key={tab.title} shallow={!!tab.href}>
+              <a
+                key={tab.title}
+                onClick={(e) => {
+                  if (!tab.href) {
+                    e.preventDefault()
+                  }
+                  setActiveIndex(i)
+                }}
+                className={clsx(
+                  activeIndex === i
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
+                  'cursor-pointer whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium'
+                )}
+                aria-current={activeIndex === i ? 'page' : undefined}
+              >
+                {tab.tabIcon ? (
+                  <span className="mr-2">{tab.tabIcon}</span>
+                ) : null}
+                {tab.title}
+              </a>
+            </Link>
+          ))}
+        </nav>
+      </div>
 
       <div className="mt-4">{activeTab.content}</div>
     </div>
