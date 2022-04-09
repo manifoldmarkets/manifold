@@ -1,12 +1,11 @@
 import _ from 'lodash'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { logInterpolation } from '../../common/util/math'
 import { getRecommendedContracts } from '../../common/recommended-contracts'
-import { useUpdatedContracts } from './use-contracts'
 import { useSeenContracts } from './use-seen-contracts'
 import { useGetUserBetContractIds, useUserBetContracts } from './use-user-bets'
 
@@ -18,6 +17,10 @@ export const useAlgoFeed = (
   recentBets: Bet[] | undefined,
   recentComments: Comment[] | undefined
 ) => {
+  const initialContracts = useMemo(() => contracts, [!!contracts])
+  const initialBets = useMemo(() => recentBets, [!!recentBets])
+  const initialComments = useMemo(() => recentComments, [!!recentComments])
+
   const yourBetContractIds = useGetUserBetContractIds(user?.id)
   // Update user bet contracts in local storage.
   useUserBetContracts(user?.id)
@@ -27,24 +30,28 @@ export const useAlgoFeed = (
   const [algoFeed, setAlgoFeed] = useState<Contract[]>([])
 
   useEffect(() => {
-    if (contracts && recentBets && recentComments) {
-      const eligibleContracts = contracts.filter(
+    if (initialContracts && initialBets && initialComments) {
+      const eligibleContracts = initialContracts.filter(
         (c) => !c.isResolved && (c.closeTime ?? Infinity) > Date.now()
       )
-
-      setAlgoFeed(
-        getAlgoFeed(
-          eligibleContracts,
-          recentBets,
-          recentComments,
-          yourBetContractIds,
-          seenContracts
-        )
+      const contracts = getAlgoFeed(
+        eligibleContracts,
+        initialBets,
+        initialComments,
+        yourBetContractIds,
+        seenContracts
       )
+      setAlgoFeed(contracts)
     }
-  }, [contracts, recentBets, recentComments, seenContracts, yourBetContractIds])
+  }, [
+    initialBets,
+    initialComments,
+    initialContracts,
+    seenContracts,
+    yourBetContractIds,
+  ])
 
-  return useUpdatedContracts(algoFeed)
+  return algoFeed
 }
 
 const getAlgoFeed = (

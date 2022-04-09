@@ -9,27 +9,24 @@ import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
 import { useUser } from '../hooks/use-user'
 import { LoadingIndicator } from '../components/loading-indicator'
-import { useGetRecentBets, useRecentBets } from '../hooks/use-bets'
-import { useGetActiveContracts } from '../hooks/use-contracts'
-import { useGetRecentComments, useRecentComments } from '../hooks/use-comments'
+import { useRecentBets } from '../hooks/use-bets'
+import { useActiveContracts } from '../hooks/use-contracts'
+import { useRecentComments } from '../hooks/use-comments'
 import { useAlgoFeed } from '../hooks/use-algo-feed'
 
 const Home = () => {
   const user = useUser()
 
-  const initialContracts = useGetActiveContracts()
+  const contracts = useActiveContracts()
+  const contractsDict = _.keyBy(contracts, 'id')
 
-  const initialRecentBets = useGetRecentBets()
-  const recentBets = useRecentBets() ?? initialRecentBets
+  const recentBets = useRecentBets()
+  const recentComments = useRecentComments()
 
-  const initialRecentComments = useGetRecentComments()
-  const recentComments = useRecentComments() ?? initialRecentComments
+  const feedContracts = useAlgoFeed(user, contracts, recentBets, recentComments)
 
-  const feedContracts = useAlgoFeed(
-    user,
-    initialContracts,
-    initialRecentBets,
-    initialRecentComments
+  const updatedContracts = feedContracts.map(
+    (contract) => contractsDict[contract.id] ?? contract
   )
 
   if (user === null) {
@@ -38,9 +35,9 @@ const Home = () => {
   }
 
   const activityContent =
-    initialContracts && recentBets && recentComments ? (
+    contracts && recentBets && recentComments ? (
       <ActivityFeed
-        contracts={feedContracts}
+        contracts={updatedContracts}
         recentBets={recentBets}
         recentComments={recentComments}
         mode="only-recent"
