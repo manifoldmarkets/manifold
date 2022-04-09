@@ -160,7 +160,7 @@ export function BetPanelSwitcher(props: {
                 tradeType === 'BUY' ? setTradeType('SELL') : setTradeType('BUY')
               }
             >
-              {tradeType === 'BUY' ? 'Sell' : 'Buy'}
+              {tradeType === 'BUY' ? 'Sell' : 'Bet'}
             </button>
           </Row>
         </Col>
@@ -385,11 +385,11 @@ function BuyPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Buy'}
+          {isSubmitting ? 'Submitting...' : 'Submit bet'}
         </button>
       )}
 
-      {wasSubmitted && <div className="mt-4">Buy submitted!</div>}
+      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
     </>
   )
 }

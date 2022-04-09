@@ -23,9 +23,9 @@ export default function BetRow(props: {
     <>
       <div className={className}>
         <Row className="items-center justify-end gap-2">
-          <div className={clsx('mr-2 text-gray-400', labelClassName)}>
+          {/* <div className={clsx('mr-2 text-gray-400', labelClassName)}>
             Place a trade
-          </div>
+          </div> */}
           <YesNoSelector
             btnClassName="btn-sm w-24"
             onSelect={(choice) => {
