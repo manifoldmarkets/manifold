@@ -2,6 +2,7 @@ import _ from 'lodash'
 import { useEffect, useState } from 'react'
 import {
   Contract,
+  getActiveContracts,
   listenForActiveContracts,
   listenForContracts,
   listenForHotContracts,
@@ -24,6 +25,16 @@ export const useActiveContracts = () => {
 
   useEffect(() => {
     return listenForActiveContracts(setContracts)
+  }, [])
+
+  return contracts
+}
+
+export const useGetActiveContracts = () => {
+  const [contracts, setContracts] = useState<Contract[] | undefined>()
+
+  useEffect(() => {
+    getActiveContracts().then(setContracts)
   }, [])
 
   return contracts
