@@ -52,3 +52,17 @@ export const useUserBetContracts = (userId: string | undefined) => {
 
   return contractIds
 }
+
+export const useGetUserBetContractIds = (userId: string | undefined) => {
+  const [contractIds, setContractIds] = useState<string[]>([])
+
+  useEffect(() => {
+    const key = `user-bet-contractIds-${userId}`
+    const userBetContractJson = localStorage.getItem(key)
+    if (userBetContractJson) {
+      setContractIds(JSON.parse(userBetContractJson))
+    }
+  }, [userId])
+
+  return contractIds
+}

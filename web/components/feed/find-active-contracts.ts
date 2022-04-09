@@ -59,7 +59,10 @@ export function findActiveContracts(
   }
 
   let activeContracts = allContracts.filter(
-    (contract) => contract.visibility === 'public' && !contract.isResolved
+    (contract) =>
+      contract.visibility === 'public' &&
+      !contract.isResolved &&
+      (contract.closeTime ?? Infinity) > Date.now()
   )
   activeContracts = _.sortBy(
     activeContracts,
