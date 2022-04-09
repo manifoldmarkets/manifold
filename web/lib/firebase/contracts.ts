@@ -124,7 +124,7 @@ const activeContractsQuery = query(
   contractCollection,
   where('isResolved', '==', false),
   where('visibility', '==', 'public'),
-  where('volume24Hours', '>', 0)
+  where('volume7Days', '>', 0)
 )
 
 export function getActiveContracts() {
