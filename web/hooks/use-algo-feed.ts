@@ -64,7 +64,7 @@ const getAlgoFeed = (
   const contractsById = _.keyBy(contracts, (c) => c.id)
 
   const recommended = getRecommendedContracts(contractsById, yourBetContractIds)
-  const confidence = logInterpolation(0, 100, yourBetContractIds.length + 1)
+  const confidence = logInterpolation(0, 100, yourBetContractIds.length)
   const recommendedScores = _.fromPairs(
     recommended.map((c, index) => {
       const score = 1 - index / recommended.length
@@ -129,7 +129,8 @@ function getContractsActivityScores(
     const commentCount = contractComments[contract.id]?.length ?? 0
     const betCount = contractBets[contract.id]?.length ?? 0
     const activtyCount = betCount + commentCount * 5
-    const activityCountScore = logInterpolation(0, 200, activtyCount)
+    const activityCountScore =
+      0.5 + 0.5 * logInterpolation(0, 200, activtyCount)
 
     const lastBetTime = contractMostRecentBet[contract.id]?.createdTime
     const timeSinceLastBet = !lastBetTime
