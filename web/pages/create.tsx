@@ -9,7 +9,7 @@ import { useUser } from '../hooks/use-user'
 import { Contract, contractPath } from '../lib/firebase/contracts'
 import { createContract } from '../lib/firebase/api-call'
 import { BuyAmountInput } from '../components/amount-input'
-import { MINIMUM_ANTE } from '../../common/antes'
+import { FIXED_ANTE, MINIMUM_ANTE } from '../../common/antes'
 import { InfoTooltip } from '../components/info-tooltip'
 import { CREATOR_FEE } from '../../common/fees'
 import { Page } from '../components/page'
@@ -19,6 +19,7 @@ import { parseWordsAsTags } from '../../common/util/parse'
 import { TagsList } from '../components/tags-list'
 import { Row } from '../components/layout/row'
 import { MAX_DESCRIPTION_LENGTH, outcomeType } from '../../common/contract'
+import { formatMoney } from '../../common/util/format'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -69,15 +70,15 @@ export function NewContract(props: { question: string; tag?: string }) {
   const [tagText, setTagText] = useState<string>(tag ?? '')
   const tags = parseWordsAsTags(tagText)
 
-  const [ante, setAnte] = useState<number | undefined | null>(null)
-  useEffect(() => {
-    if (ante === null && creator) {
-      const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
-      setAnte(initialAnte)
-    }
-  }, [ante, creator])
+  const [ante, setAnte] = useState(FIXED_ANTE)
+  // useEffect(() => {
+  //   if (ante === null && creator) {
+  //     const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
+  //     setAnte(initialAnte)
+  //   }
+  // }, [ante, creator])
 
-  const [anteError, setAnteError] = useState<string | undefined>()
+  // const [anteError, setAnteError] = useState<string | undefined>()
   // By default, close the market a week from today
   const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DDT23:59')
   const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
@@ -236,12 +237,27 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
-          <span>Market subsidy</span>
+          <span>Cost</span>
           <InfoTooltip
-            text={`Provide liquidity to encourage traders to participate.`}
+            text={`Cost to create your market. This amount is used to subsidize trading.`}
           />
         </label>
-        <BuyAmountInput
+
+        <div className="label-text text-neutral pl-1">{formatMoney(ante)}</div>
+
+        {ante > balance && (
+          <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+            <span className="mr-2 text-red-500">Insufficient balance</span>
+            <button
+              className="btn btn-xs btn-primary"
+              onClick={() => (window.location.href = '/add-funds')}
+            >
+              Add funds
+            </button>
+          </div>
+        )}
+
+        {/* <BuyAmountInput
           amount={ante ?? undefined}
           minimumAmount={MINIMUM_ANTE}
           onChange={setAnte}
@@ -249,7 +265,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           setError={setAnteError}
           disabled={isSubmitting}
           contractIdForLoan={undefined}
-        />
+        /> */}
       </div>
 
       <Spacer h={4} />
