@@ -340,14 +340,6 @@ export function FeedQuestion(props: {
             >
               {question}
             </SiteLink>
-            {!showDescription && (
-              <SiteLink
-                href={contractPath(contract)}
-                className="relative top-4 self-end text-sm sm:self-start"
-              >
-                <div className="pb-1.5 text-gray-400">See more...</div>
-              </SiteLink>
-            )}
           </Col>
           {(isBinary || resolution) && (
             <ResolutionOrChance className="items-center" contract={contract} />
