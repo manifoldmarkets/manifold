@@ -1,6 +1,3 @@
-import { useState } from 'react'
-import clsx from 'clsx'
-
 import { Bet } from '../../../common/bet'
 import { Contract } from '../../../common/contract'
 import { Comment } from '../../lib/firebase/comments'
@@ -35,13 +32,15 @@ export function ContractTabs(props: {
     />
   )
 
-  if (!user || !userBets?.length) return activity
-
   const yourTrades = (
     <div>
-      <MyBetsSummary className="px-2" contract={contract} bets={userBets} />
+      <MyBetsSummary
+        className="px-2"
+        contract={contract}
+        bets={userBets ?? []}
+      />
       <Spacer h={6} />
-      <ContractBetsTable contract={contract} bets={userBets} />
+      <ContractBetsTable contract={contract} bets={userBets ?? []} />
       <Spacer h={12} />
     </div>
   )
@@ -50,7 +49,9 @@ export function ContractTabs(props: {
     <Tabs
       tabs={[
         { title: 'Timeline', content: activity },
-        { title: 'Your trades', content: yourTrades },
+        ...(!user || !userBets?.length
+          ? []
+          : [{ title: 'Your trades', content: yourTrades }]),
       ]}
     />
   )
