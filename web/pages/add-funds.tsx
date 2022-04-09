@@ -10,9 +10,9 @@ import { Page } from '../components/page'
 export default function AddFundsPage() {
   const user = useUser()
 
-  const [amountSelected, setAmountSelected] = useState<
-    500 | 1000 | 2500 | 10000
-  >(500)
+  const [amountSelected, setAmountSelected] = useState<1000 | 2500 | 10000>(
+    2500
+  )
 
   return (
     <Page>
