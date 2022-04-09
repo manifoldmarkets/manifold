@@ -19,6 +19,7 @@ import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 import { getNewContract } from '../../common/new-contract'
 import {
+  FIXED_ANTE,
   getAnteBets,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
@@ -47,7 +48,7 @@ export const createContract = functions
       const creator = await getUser(userId)
       if (!creator) return { status: 'error', message: 'User not found' }
 
-      let { question, description, initialProb, ante, closeTime, tags } = data
+      let { question, description, initialProb, closeTime, tags } = data
 
       if (!question || typeof question != 'string')
         return { status: 'error', message: 'Missing or invalid question field' }
@@ -70,6 +71,8 @@ export const createContract = functions
         (!initialProb || initialProb < 1 || initialProb > 99)
       )
         return { status: 'error', message: 'Invalid initial probability' }
+
+      const ante = FIXED_ANTE // data.ante
 
       if (
         ante === undefined ||
