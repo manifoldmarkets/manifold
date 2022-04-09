@@ -96,7 +96,7 @@ export function CreateAnswerPanel(props: {
           {text && (
             <>
               <Col className="mt-1 gap-2">
-                <div className="text-sm text-gray-500">Buy amount</div>
+                <div className="text-sm text-gray-500">Bet amount</div>
                 <BuyAmountInput
                   amount={betAmount}
                   onChange={setBetAmount}
