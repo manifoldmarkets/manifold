@@ -94,7 +94,8 @@ export function BetPanel(props: {
           className
         )}
       >
-        <Title className={clsx('!mt-0')} text="Place a trade" />
+        <div className="mb-6 text-2xl text-gray-700">Place a trade</div>
+        {/* <Title className={clsx('!mt-0 text-neutral')} text="Place a trade" /> */}
 
         <BuyPanel contract={contract} user={user} userBets={userBets ?? []} />
 
