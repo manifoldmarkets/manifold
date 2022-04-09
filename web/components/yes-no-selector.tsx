@@ -134,11 +134,11 @@ export function ChooseCancelSelector(props: {
   )
 }
 
-const fundAmounts = [500, 1000, 2500, 10000]
+const fundAmounts = [1000, 2500, 10000]
 
 export function FundsSelector(props: {
-  selected: 500 | 1000 | 2500 | 10000
-  onSelect: (selected: 500 | 1000 | 2500 | 10000) => void
+  selected: 1000 | 2500 | 10000
+  onSelect: (selected: 1000 | 2500 | 10000) => void
   className?: string
   btnClassName?: string
 }) {
