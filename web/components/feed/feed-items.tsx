@@ -303,14 +303,14 @@ export function FeedQuestion(props: {
   const { volumeLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
 
-  const closeMessage =
-    contract.isResolved || !contract.closeTime ? null : (
-      <>
-        <span className="mx-2">•</span>
-        {contract.closeTime > Date.now() ? 'Closes' : 'Closed'}
-        <RelativeTimestamp time={contract.closeTime || 0} />
-      </>
-    )
+  // const closeMessage =
+  //   contract.isResolved || !contract.closeTime ? null : (
+  //     <>
+  //       <span className="mx-2">•</span>
+  //       {contract.closeTime > Date.now() ? 'Closes' : 'Closed'}
+  //       <RelativeTimestamp time={contract.closeTime || 0} />
+  //     </>
+  //   )
 
   return (
     <>
@@ -329,7 +329,7 @@ export function FeedQuestion(props: {
           {/* Currently hidden on mobile; ideally we'd fit this in somewhere. */}
           <span className="float-right hidden text-gray-400 sm:inline">
             {volumeLabel}
-            {closeMessage}
+            {/* {closeMessage} */}
           </span>
         </div>
         <Col className="items-start justify-between gap-2 sm:flex-row sm:gap-4">
