@@ -1,6 +1,7 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
+import _ from 'lodash'
 import { useState } from 'react'
 
 import { Contract } from '../../../common/contract'
@@ -84,6 +85,13 @@ export function ContractInfoDialog(props: { contract: Contract }) {
                 <tr>
                   <td>Liquidity</td>
                   <td>{formatMoney(contract.totalLiquidity)}</td>
+                </tr>
+              )}
+
+              {contract.mechanism === 'dpm-2' && (
+                <tr>
+                  <td>Pool</td>
+                  <td>{formatMoney(_.sum(Object.values(contract.pool)))}</td>
                 </tr>
               )}
             </tbody>
