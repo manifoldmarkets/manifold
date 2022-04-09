@@ -1,7 +1,10 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import dayjs from 'dayjs'
 import { useState } from 'react'
+
 import { Contract } from '../../../common/contract'
+import { formatMoney } from '../../../common/util/format'
 import { useFoldsWithTags } from '../../hooks/use-fold'
 import { useUser } from '../../hooks/use-user'
 import {
@@ -28,6 +31,10 @@ export function ContractInfoDialog(props: { contract: Contract }) {
     (fold) => fold.followCount > 1 || user?.id === fold.curatorId
   )
 
+  const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
+
+  const { createdTime, closeTime, resolutionTime } = contract
+
   return (
     <>
       <button
@@ -46,7 +53,44 @@ export function ContractInfoDialog(props: { contract: Contract }) {
         <Col className="gap-4 rounded bg-white p-6">
           <Title className="!mt-0 !mb-0" text="Market info" />
 
+          <div className="text-gray-500">Stats</div>
+          <table className="table-compact table-zebra table w-full text-gray-500">
+            <tbody>
+              <tr>
+                <td>Market created</td>
+                <td>{formatTime(createdTime)}</td>
+              </tr>
+
+              {closeTime && (
+                <tr>
+                  <td>Market close{closeTime > Date.now() ? 's' : 'd'}</td>
+                  <td>{formatTime(closeTime)}</td>
+                </tr>
+              )}
+
+              {resolutionTime && (
+                <tr>
+                  <td>Market resolved</td>
+                  <td>{formatTime(resolutionTime)}</td>
+                </tr>
+              )}
+
+              <tr>
+                <td>Volume</td>
+                <td>{formatMoney(contract.volume24Hours)}</td>
+              </tr>
+
+              {contract.mechanism === 'cpmm-1' && (
+                <tr>
+                  <td>Liquidity</td>
+                  <td>{formatMoney(contract.totalLiquidity)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
           <div className="text-gray-500">Share</div>
+
           <Row className="justify-start gap-4">
             <TweetButton
               className="self-start"
