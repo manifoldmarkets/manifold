@@ -77,7 +77,7 @@ export function ContractInfoDialog(props: { contract: Contract }) {
 
               <tr>
                 <td>Volume</td>
-                <td>{formatMoney(contract.volume24Hours)}</td>
+                <td>{formatMoney(contract.volume)}</td>
               </tr>
 
               {contract.mechanism === 'cpmm-1' && (
