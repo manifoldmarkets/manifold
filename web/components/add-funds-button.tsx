@@ -9,9 +9,9 @@ export function AddFundsButton(props: { className?: string }) {
   const { className } = props
   const user = useUser()
 
-  const [amountSelected, setAmountSelected] = useState<
-    500 | 1000 | 2500 | 10000
-  >(500)
+  const [amountSelected, setAmountSelected] = useState<1000 | 2500 | 10000>(
+    2500
+  )
 
   const location = useLocation()
 
