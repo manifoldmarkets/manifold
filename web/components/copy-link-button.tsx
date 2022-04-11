@@ -3,10 +3,11 @@ import { LinkIcon } from '@heroicons/react/outline'
 import { Menu, Transition } from '@headlessui/react'
 import { Contract } from '../../common/contract'
 import { copyToClipboard } from '../lib/util/copy'
+import { contractPath } from '../lib/firebase/contracts'
+import { ENV_CONFIG } from '../../common/envs/constants'
 
-function copyCurrentUrl(contract: Contract) {
-  const url = window.location.href
-  copyToClipboard(url)
+function copyContractUrl(contract: Contract) {
+  copyToClipboard(`https://${ENV_CONFIG.domain}${contractPath(contract)}`)
 }
 
 export function CopyLinkButton(props: { contract: Contract }) {
@@ -16,7 +17,7 @@ export function CopyLinkButton(props: { contract: Contract }) {
     <Menu
       as="div"
       className="relative z-10 flex-shrink-0"
-      onMouseUp={() => copyCurrentUrl(contract)}
+      onMouseUp={() => copyContractUrl(contract)}
     >
       <Menu.Button
         className="btn btn-xs normal-case"
