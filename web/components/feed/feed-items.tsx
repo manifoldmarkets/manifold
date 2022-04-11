@@ -295,7 +295,8 @@ function TruncatedComment(props: {
 
 export function FeedQuestion(props: {
   contract: Contract
-  showDescription?: boolean
+  showDescription: boolean
+  contractPath?: string
 }) {
   const { contract, showDescription } = props
   const { creatorName, creatorUsername, question, resolution, outcomeType } =
@@ -335,7 +336,9 @@ export function FeedQuestion(props: {
         <Col className="items-start justify-between gap-2 sm:flex-row sm:gap-4">
           <Col>
             <SiteLink
-              href={contractPath(contract)}
+              href={
+                props.contractPath ? props.contractPath : contractPath(contract)
+              }
               className="text-lg text-indigo-700 sm:text-xl"
             >
               {question}

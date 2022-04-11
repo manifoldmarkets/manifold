@@ -36,6 +36,7 @@ export type DescriptionItem = BaseActivityItem & {
 export type QuestionItem = BaseActivityItem & {
   type: 'question'
   showDescription: boolean
+  contractPath?: string
 }
 
 export type BetItem = BaseActivityItem & {
@@ -280,7 +281,14 @@ export function getAllContractActivityItems(
     filterToOutcome && answer
       ? [{ type: 'createanswer', id: answer.id, contract, answer }]
       : abbreviated
-      ? [{ type: 'question', id: '0', contract, showDescription: false }]
+      ? [
+          {
+            type: 'question',
+            id: '0',
+            contract,
+            showDescription: false,
+          },
+        ]
       : [{ type: 'description', id: '0', contract }]
 
   items.push(
@@ -325,8 +333,12 @@ export function getRecentContractActivityItems(
   contract: Contract,
   bets: Bet[],
   comments: Comment[],
-  user: User | null | undefined
+  user: User | null | undefined,
+  options: {
+    contractPath?: string
+  }
 ) {
+  const { contractPath } = options
   bets = bets
     .filter((bet) => !bet.isRedemption)
     .sort((b1, b2) => b1.createdTime - b2.createdTime)
@@ -337,6 +349,7 @@ export function getRecentContractActivityItems(
     id: '0',
     contract,
     showDescription: false,
+    contractPath,
   }
 
   const items =

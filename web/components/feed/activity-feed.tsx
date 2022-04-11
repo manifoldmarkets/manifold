@@ -1,13 +1,10 @@
 import _ from 'lodash'
-import clsx from 'clsx'
 
-import { Contract, tradingAllowed } from '../../lib/firebase/contracts'
+import { Contract } from '../../lib/firebase/contracts'
 import { Comment } from '../../lib/firebase/comments'
 import { Col } from '../layout/col'
 import { Bet } from '../../../common/bet'
 import { useUser } from '../../hooks/use-user'
-import BetRow from '../bet-row'
-import { FeedQuestion } from './feed-items'
 import { ContractActivity } from './contract-activity'
 
 export function ActivityFeed(props: {
@@ -15,8 +12,9 @@ export function ActivityFeed(props: {
   recentBets: Bet[]
   recentComments: Comment[]
   mode: 'only-recent' | 'abbreviated' | 'all'
+  getContractPath?: (contract: Contract) => string
 }) {
-  const { contracts, recentBets, recentComments, mode } = props
+  const { contracts, recentBets, recentComments, mode, getContractPath } = props
 
   const user = useUser()
 
@@ -36,19 +34,9 @@ export function ActivityFeed(props: {
           bets={groupedBets[contract.id] ?? []}
           comments={groupedComments[contract.id] ?? []}
           mode={mode}
+          contractPath={getContractPath ? getContractPath(contract) : undefined}
         />
       )}
-    />
-  )
-}
-
-export function SummaryActivityFeed(props: { contracts: Contract[] }) {
-  const { contracts } = props
-
-  return (
-    <FeedContainer
-      contracts={contracts}
-      renderContract={(contract) => <ContractSummary contract={contract} />}
     />
   )
 }
@@ -71,29 +59,5 @@ function FeedContainer(props: {
         </Col>
       </Col>
     </Col>
-  )
-}
-
-function ContractSummary(props: {
-  contract: Contract
-  betRowClassName?: string
-}) {
-  const { contract, betRowClassName } = props
-  const { outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-
-  return (
-    <div className="flow-root pr-2 md:pr-0">
-      <div className={clsx(tradingAllowed(contract) ? '' : '-mb-8')}>
-        <div className="relative pb-8">
-          <div className="relative flex items-start space-x-3">
-            <FeedQuestion contract={contract} showDescription />
-          </div>
-        </div>
-      </div>
-      {isBinary && tradingAllowed(contract) && (
-        <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
-      )}
-    </div>
   )
 }
