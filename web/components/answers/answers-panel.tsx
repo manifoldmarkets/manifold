@@ -1,7 +1,6 @@
 import _ from 'lodash'
 import { useLayoutEffect, useState } from 'react'
 
-import { Answer } from '../../../common/answer'
 import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { Col } from '../layout/col'
 import { formatPercent } from '../../../common/util/format'
@@ -15,12 +14,11 @@ import { AnswerResolvePanel } from './answer-resolve-panel'
 
 export function AnswersPanel(props: {
   contract: FullContract<DPM, FreeResponse>
-  answers: Answer[]
 }) {
   const { contract } = props
   const { creatorId, resolution, resolutions, totalBets } = contract
 
-  const answers = useAnswers(contract.id) ?? props.answers
+  const answers = useAnswers(contract.id) ?? contract.answers
   const [winningAnswers, otherAnswers] = _.partition(
     answers.filter(
       (answer) => answer.id !== '0' && totalBets[answer.id] > 0.000000001

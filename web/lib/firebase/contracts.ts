@@ -28,6 +28,10 @@ export function contractPath(contract: Contract) {
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 
+export function homeContractPath(contract: Contract) {
+  return `/home?c=${contract.slug}`
+}
+
 export function contractMetrics(contract: Contract) {
   const { createdTime, resolutionTime, isResolved } = contract
 

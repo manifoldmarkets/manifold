@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { ArrowLeftIcon } from '@heroicons/react/outline'
 
 import { useContractWithPreload } from '../../hooks/use-contract'
 import { ContractOverview } from '../../components/contract/contract-overview'
@@ -21,10 +22,6 @@ import { contractTextDetails } from '../../components/contract/contract-card'
 import { Bet, listAllBets } from '../../lib/firebase/bets'
 import { Comment, listAllComments } from '../../lib/firebase/comments'
 import Custom404 from '../404'
-import { getFoldsByTags } from '../../lib/firebase/folds'
-import { Fold } from '../../../common/fold'
-import { listAllAnswers } from '../../lib/firebase/answers'
-import { Answer } from '../../../common/answer'
 import { AnswersPanel } from '../../components/answers/answers-panel'
 import { fromPropz, usePropz } from '../../hooks/use-propz'
 import { Leaderboard } from '../../components/leaderboard'
@@ -34,6 +31,8 @@ import { formatMoney } from '../../../common/util/format'
 import { FeedBet, FeedComment } from '../../components/feed/feed-items'
 import { useUserById } from '../../hooks/use-users'
 import { ContractTabs } from '../../components/contract/contract-tabs'
+import { FirstArgument } from '../../../common/util/types'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -43,17 +42,10 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
 
-  const foldsPromise = getFoldsByTags(contract?.tags ?? [])
-
-  const [bets, comments, answers] = await Promise.all([
+  const [bets, comments] = await Promise.all([
     contractId ? listAllBets(contractId) : [],
     contractId ? listAllComments(contractId) : [],
-    contractId && contract.outcomeType === 'FREE_RESPONSE'
-      ? listAllAnswers(contractId)
-      : [],
   ])
-
-  const folds = await foldsPromise
 
   return {
     props: {
@@ -62,8 +54,6 @@ export async function getStaticPropz(props: {
       slug: contractSlug,
       bets,
       comments,
-      answers,
-      folds,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -79,19 +69,22 @@ export default function ContractPage(props: {
   username: string
   bets: Bet[]
   comments: Comment[]
-  answers: Answer[]
   slug: string
-  folds: Fold[]
+  backToHome?: () => void
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
     username: '',
     comments: [],
-    answers: [],
     bets: [],
     slug: '',
-    folds: [],
   }
+  return <ContractPageContent {...props} />
+}
+
+export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
+  const { backToHome } = props
+
   const user = useUser()
 
   const contract = useContractWithPreload(props.contract)
@@ -136,6 +129,16 @@ export default function ContractPage(props: {
       )}
 
       <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white px-2 py-6 md:px-6 md:py-8">
+        {backToHome && (
+          <button
+            className="btn btn-sm mb-4 items-center gap-2 self-start border-0 border-gray-700 bg-white normal-case text-gray-700 hover:bg-white hover:text-gray-700 lg:hidden"
+            onClick={backToHome}
+          >
+            <ArrowLeftIcon className="h-5 w-5 text-gray-700" />
+            Back
+          </button>
+        )}
+
         <ContractOverview
           contract={contract}
           bets={bets ?? []}
@@ -145,8 +148,7 @@ export default function ContractPage(props: {
             <>
               <Spacer h={4} />
               <AnswersPanel
-                contract={contract as any}
-                answers={props.answers}
+                contract={contract as FullContract<DPM, FreeResponse>}
               />
               <Spacer h={4} />
             </>

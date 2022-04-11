@@ -6,9 +6,10 @@ export function Page(props: {
   margin?: boolean
   assertUser?: 'signed-in' | 'signed-out'
   rightSidebar?: React.ReactNode
+  suspend?: boolean
   children?: any
 }) {
-  const { margin, assertUser, children, rightSidebar } = props
+  const { margin, assertUser, children, rightSidebar, suspend } = props
 
   return (
     <div>
@@ -17,6 +18,7 @@ export function Page(props: {
           'mx-auto w-full pb-14 lg:grid lg:grid-cols-12 lg:gap-8 lg:pt-6 xl:max-w-7xl',
           margin && 'px-4'
         )}
+        style={suspend ? visuallyHiddenStyle : undefined}
       >
         <div className="hidden lg:col-span-2 lg:block">
           <Sidebar />
@@ -41,3 +43,15 @@ export function Page(props: {
     </div>
   )
 }
+
+const visuallyHiddenStyle = {
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  margin: -1,
+  overflow: 'hidden',
+  padding: 0,
+  position: 'absolute',
+  width: 1,
+  whiteSpace: 'nowrap',
+} as const
