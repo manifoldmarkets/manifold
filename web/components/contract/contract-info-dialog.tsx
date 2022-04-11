@@ -12,6 +12,7 @@ import {
   contractPath,
   getBinaryProbPercent,
 } from '../../lib/firebase/contracts'
+import { CopyLinkButton } from '../copy-link-button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -100,6 +101,7 @@ export function ContractInfoDialog(props: { contract: Contract }) {
           <div className="text-gray-500">Share</div>
 
           <Row className="justify-start gap-4">
+            <CopyLinkButton contract={contract} />
             <TweetButton
               className="self-start"
               tweetText={getTweetText(contract, false)}
