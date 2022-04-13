@@ -116,7 +116,6 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { resolution } = contract
 
   let invested = 0
-  let salesInvested = 0
   let payout = 0
   let loan = 0
   let sellProfit = 0
@@ -126,7 +125,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     const { isSold, sale, amount, loanAmount, isRedemption } = bet
     if (isSold) {
       sellProfit -= amount
-      salesInvested += amount
+      invested += amount
     } else if (sale) {
       sellProfit += sale.amount
     } else {
@@ -134,6 +133,8 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
         redeemed += -1 * amount
       } else if (amount > 0) {
         invested += amount
+      } else {
+        sellProfit -= amount
       }
 
       loan += loanAmount ?? 0
@@ -143,17 +144,13 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     }
   }
 
-  const investedIncludingSales = invested + salesInvested
-
-  const totalValue = payout + sellProfit + redeemed
-  const profit = totalValue - invested
-  const profitPercent = (profit / investedIncludingSales) * 100
+  const profit = payout - invested + sellProfit + redeemed
+  const profitPercent = (profit / invested) * 100
   const netInvestment = payout - loan
 
   return {
     invested,
     payout,
-    totalValue,
     profit,
     profitPercent,
     netInvestment,
@@ -164,7 +161,6 @@ export function getContractBetNullMetrics() {
   return {
     invested: 0,
     payout: 0,
-    totalValue: 0,
     profit: 0,
     profitPercent: 0,
     netInvestment: 0,
