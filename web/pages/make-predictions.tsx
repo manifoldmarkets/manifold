@@ -248,7 +248,6 @@ ${TEST_VALUE}
             error={anteError}
             setError={setAnteError}
             disabled={isSubmitting}
-            contractIdForLoan={undefined}
           />
         </div>
 

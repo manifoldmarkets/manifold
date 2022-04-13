@@ -59,8 +59,8 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
         )
         const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
 
-        const loanAmount = getLoanAmount(yourBets, amount)
-        if (user.balance < amount - loanAmount)
+        const loanAmount = 0 // getLoanAmount(yourBets, amount)
+        if (user.balance < amount)
           return { status: 'error', message: 'Insufficient balance' }
 
         if (outcomeType === 'FREE_RESPONSE') {
