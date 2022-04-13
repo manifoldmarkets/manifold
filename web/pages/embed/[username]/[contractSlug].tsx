@@ -113,6 +113,7 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         <Row className="items-center justify-between gap-4 px-2">
           <ContractDetails
             contract={contract}
+            bets={bets}
             isCreator={false}
             hideShareButtons
           />

@@ -21,6 +21,7 @@ import { Spacer } from '../layout/spacer'
 import { useState } from 'react'
 import { getProbability } from '../../../common/calculate'
 import { ContractInfoDialog } from './contract-info-dialog'
+import { Bet } from '../../../common/bet'
 
 export function ContractCard(props: {
   contract: Contract
@@ -171,10 +172,11 @@ function AbbrContractDetails(props: {
 
 export function ContractDetails(props: {
   contract: Contract
+  bets: Bet[]
   isCreator?: boolean
   hideShareButtons?: boolean
 }) {
-  const { contract, isCreator, hideShareButtons } = props
+  const { contract, bets, isCreator, hideShareButtons } = props
   const { closeTime, creatorName, creatorUsername } = contract
   const { volumeLabel, createdDate, resolvedDate } = contractMetrics(contract)
 
@@ -233,7 +235,9 @@ export function ContractDetails(props: {
           <div className="whitespace-nowrap">{volumeLabel}</div>
         </Row>
 
-        {!hideShareButtons && <ContractInfoDialog contract={contract} />}
+        {!hideShareButtons && (
+          <ContractInfoDialog contract={contract} bets={bets} />
+        )}
       </Row>
     </Col>
   )
