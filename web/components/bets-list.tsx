@@ -32,14 +32,13 @@ import {
   calculatePayout,
   calculateSaleAmount,
   getOutcomeProbability,
-  getProbability,
   getProbabilityAfterSale,
   getContractBetMetrics,
   resolvedPayout,
   getContractBetNullMetrics,
 } from '../../common/calculate'
 
-type BetSort = 'newest' | 'profit' | 'resolutionTime' | 'value' | 'closeTime'
+type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
 
 export function BetsList(props: { user: User }) {
@@ -90,15 +89,16 @@ export function BetsList(props: { user: User }) {
       !FILTERS.resolved(c) && (c.closeTime ?? Infinity) < Date.now(),
     open: (c) => !(FILTERS.closed(c) || FILTERS.resolved(c)),
     all: () => true,
-    // Pepe notes: most users want "settled", to see when their bets or sold; or "realized profit"
   }
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => contractsMetrics[c.id].profit,
     value: (c) => contractsMetrics[c.id].payout,
     newest: (c) =>
       Math.max(...contractBets[c.id].map((bet) => bet.createdTime)),
-    resolutionTime: (c) => -(c.resolutionTime ?? c.closeTime ?? Infinity),
-    closeTime: (c) => -(c.closeTime ?? Infinity),
+    closeTime: (c) =>
+      // This is in fact the intuitive sort direction.
+      (filter === 'open' ? -1 : 1) *
+      (c.resolutionTime ?? c.closeTime ?? Infinity),
   }
   const displayedContracts = _.sortBy(contracts, SORTS[sort])
     .reverse()
@@ -166,11 +166,10 @@ export function BetsList(props: { user: User }) {
             value={sort}
             onChange={(e) => setSort(e.target.value as BetSort)}
           >
-            <option value="value">By value</option>
-            <option value="profit">By profit</option>
-            <option value="newest">Most recent</option>
-            <option value="closeTime">Closing soonest</option>
-            <option value="resolutionTime">Resolved soonest</option>
+            <option value="value">Value</option>
+            <option value="profit">Profit</option>
+            <option value="newest">Recent trade</option>
+            <option value="closeTime">Close date</option>
           </select>
         </Row>
       </Col>
