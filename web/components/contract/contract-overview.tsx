@@ -56,7 +56,11 @@ export const ContractOverview = (props: {
           )}
         </Row>
 
-        <ContractDetails contract={contract} isCreator={isCreator} />
+        <ContractDetails
+          contract={contract}
+          bets={bets}
+          isCreator={isCreator}
+        />
       </Col>
 
       <Spacer h={4} />

@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import _ from 'lodash'
 import { useState } from 'react'
+import { Bet } from '../../../common/bet'
 
 import { Contract } from '../../../common/contract'
 import { formatMoney } from '../../../common/util/format'
@@ -22,8 +23,8 @@ import { FoldTagList } from '../tags-list'
 import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
 
-export function ContractInfoDialog(props: { contract: Contract }) {
-  const { contract } = props
+export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
 
   const [open, setOpen] = useState(false)
 
@@ -36,6 +37,7 @@ export function ContractInfoDialog(props: { contract: Contract }) {
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
 
   const { createdTime, closeTime, resolutionTime } = contract
+  const tradersCount = _.uniqBy(bets, 'userId').length
 
   return (
     <>
@@ -80,6 +82,11 @@ export function ContractInfoDialog(props: { contract: Contract }) {
               <tr>
                 <td>Volume</td>
                 <td>{formatMoney(contract.volume)}</td>
+              </tr>
+
+              <tr>
+                <td>Traders</td>
+                <td>{tradersCount}</td>
               </tr>
 
               {contract.mechanism === 'cpmm-1' && (
