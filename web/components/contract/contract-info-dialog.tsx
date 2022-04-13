@@ -7,8 +7,6 @@ import { Bet } from '../../../common/bet'
 
 import { Contract } from '../../../common/contract'
 import { formatMoney } from '../../../common/util/format'
-import { useFoldsWithTags } from '../../hooks/use-fold'
-import { useUser } from '../../hooks/use-user'
 import {
   contractPath,
   getBinaryProbPercent,
@@ -19,7 +17,6 @@ import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { ShareEmbedButton } from '../share-embed-button'
 import { TagsInput } from '../tags-input'
-import { FoldTagList } from '../tags-list'
 import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
 
@@ -27,12 +24,6 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
 
   const [open, setOpen] = useState(false)
-
-  const user = useUser()
-
-  const folds = (useFoldsWithTags(contract.tags) ?? []).filter(
-    (fold) => fold.followCount > 1 || user?.id === fold.curatorId
-  )
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
 
@@ -115,9 +106,6 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
             />
             <ShareEmbedButton contract={contract} />
           </Row>
-          <div />
-          <div className="text-gray-500">Communities</div>
-          <FoldTagList folds={folds} noLabel />
           <div />
 
           <div className="text-gray-500">Tags</div>
