@@ -327,12 +327,10 @@ function BuyPanel(props: {
         inputClassName="w-full"
         amount={betAmount}
         onChange={onBetChange}
-        userBets={userBets}
         error={error}
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
-        contractIdForLoan={contract.id}
       />
 
       <Col className="mt-3 w-full gap-3">

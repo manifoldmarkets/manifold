@@ -103,7 +103,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         .collection(`contracts/${contractId}/bets`)
         .doc()
 
-      const loanAmount = getLoanAmount(yourBets, amount)
+      const loanAmount = 0 // getLoanAmount(yourBets, amount)
 
       const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
         getNewMultiBetInfo(

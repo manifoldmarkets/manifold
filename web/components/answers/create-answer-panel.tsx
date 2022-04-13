@@ -104,7 +104,6 @@ export function CreateAnswerPanel(props: {
                   setError={setAmountError}
                   minimumAmount={1}
                   disabled={isSubmitting}
-                  contractIdForLoan={contract.id}
                 />
               </Col>
               <Col className="gap-3">

@@ -4,8 +4,7 @@ import { useUser } from '../hooks/use-user'
 import { formatMoney, formatWithCommas } from '../../common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { Bet, MAX_LOAN_PER_CONTRACT } from '../../common/bet'
-import { InfoTooltip } from './info-tooltip'
+import { Bet } from '../../common/bet'
 import { Spacer } from './layout/spacer'
 import { calculateCpmmSale } from '../../common/calculate-cpmm'
 import { Binary, CPMM, FullContract } from '../../common/contract'
@@ -80,8 +79,6 @@ export function BuyAmountInput(props: {
   onChange: (newAmount: number | undefined) => void
   error: string | undefined
   setError: (error: string | undefined) => void
-  contractIdForLoan: string | undefined
-  userBets?: Bet[]
   minimumAmount?: number
   disabled?: boolean
   className?: string
@@ -92,10 +89,8 @@ export function BuyAmountInput(props: {
   const {
     amount,
     onChange,
-    userBets,
     error,
     setError,
-    contractIdForLoan,
     disabled,
     className,
     inputClassName,
@@ -105,23 +100,12 @@ export function BuyAmountInput(props: {
 
   const user = useUser()
 
-  const openUserBets = (userBets ?? []).filter(
-    (bet) => !bet.isSold && !bet.sale
-  )
-  const prevLoanAmount = _.sumBy(openUserBets, (bet) => bet.loanAmount ?? 0)
-
-  const loanAmount = contractIdForLoan
-    ? Math.min(amount ?? 0, MAX_LOAN_PER_CONTRACT - prevLoanAmount)
-    : 0
-
   const onAmountChange = (amount: number | undefined) => {
     onChange(amount)
 
     // Check for errors.
     if (amount !== undefined) {
-      const amountNetLoan = amount - loanAmount
-
-      if (user && user.balance < amountNetLoan) {
+      if (user && user.balance < amount) {
         setError('Insufficient balance')
       } else if (minimumAmount && amount < minimumAmount) {
         setError('Minimum amount: ' + formatMoney(minimumAmount))
@@ -141,25 +125,7 @@ export function BuyAmountInput(props: {
       className={className}
       inputClassName={inputClassName}
       inputRef={inputRef}
-    >
-      {user && (
-        <Col className="gap-3 text-sm">
-          {contractIdForLoan && (
-            <Row className="items-center justify-between gap-2 text-gray-500">
-              <Row className="items-center gap-2">
-                Amount loaned{' '}
-                <InfoTooltip
-                  text={`In every market, you get an interest-free loan on the first ${formatMoney(
-                    MAX_LOAN_PER_CONTRACT
-                  )}.`}
-                />
-              </Row>
-              <span className="text-neutral">{formatMoney(loanAmount)}</span>{' '}
-            </Row>
-          )}
-        </Col>
-      )}
-    </AmountInput>
+    />
   )
 }
 
@@ -204,16 +170,12 @@ export function SellAmountInput(props: {
   const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
   const shares = yesShares || noShares
 
-  const prevLoanAmount = _.sumBy(openUserBets, (bet) => bet.loanAmount ?? 0)
-
   const sharesSold = Math.min(amount ?? 0, yesShares || noShares)
   const { saleValue } = calculateCpmmSale(
     contract,
     sharesSold,
     sellOutcome as 'YES' | 'NO'
   )
-
-  const loanRepaid = Math.min(prevLoanAmount, saleValue)
 
   const onAmountChange = (amount: number | undefined) => {
     onChange(amount)
@@ -245,17 +207,6 @@ export function SellAmountInput(props: {
             Sale proceeds{' '}
             <span className="text-neutral">{formatMoney(saleValue)}</span>
           </Row>
-          {!!prevLoanAmount && (
-            <Row className="items-center justify-between gap-2 text-gray-500">
-              <Row className="items-center gap-2">
-                Loan repaid{' '}
-                <InfoTooltip
-                  text={`Sold shares go toward paying off loans first.`}
-                />
-              </Row>
-              <span className="text-neutral">{formatMoney(loanRepaid)}</span>{' '}
-            </Row>
-          )}
         </Col>
       )}
     </AmountInput>
