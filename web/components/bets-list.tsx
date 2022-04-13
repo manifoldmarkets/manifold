@@ -317,7 +317,7 @@ export function MyBetsSummary(props: {
   const noWinnings = _.sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
-  const { invested, profitPercent, payout } = getContractBetMetrics(
+  const { invested, profitPercent, payout, profit } = getContractBetMetrics(
     contract,
     bets
   )
@@ -343,7 +343,7 @@ export function MyBetsSummary(props: {
           </Col>
         ) : (
           <>
-            {isBinary && (
+            {isBinary ? (
               <>
                 <Col>
                   <div className="whitespace-nowrap text-sm text-gray-500">
@@ -362,24 +362,22 @@ export function MyBetsSummary(props: {
                   </div>
                 </Col>
               </>
+            ) : (
+              <Col>
+                <div className="whitespace-nowrap text-sm text-gray-500">
+                  Current value
+                </div>
+                <div className="whitespace-nowrap">{formatMoney(payout)}</div>
+              </Col>
             )}
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                {isBinary ? (
-                  <>
-                    Payout at{' '}
-                    <span className="text-blue-400">
-                      {formatPercent(getProbability(contract))}
-                    </span>
-                  </>
-                ) : (
-                  <>Current payout</>
-                )}
-              </div>
-              <div className="whitespace-nowrap">{formatMoney(payout)}</div>
-            </Col>
           </>
         )}
+        <Col>
+          <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
+          <div className="whitespace-nowrap">
+            {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
+          </div>
+        </Col>
       </Row>
     </Row>
   )
