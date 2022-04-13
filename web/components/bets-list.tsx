@@ -94,7 +94,7 @@ export function BetsList(props: { user: User }) {
   }
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => contractsMetrics[c.id].profit,
-    value: (c) => contractsMetrics[c.id].totalValue,
+    value: (c) => contractsMetrics[c.id].payout,
     newest: (c) =>
       Math.max(...contractBets[c.id].map((bet) => bet.createdTime)),
     resolutionTime: (c) => -(c.resolutionTime ?? c.closeTime ?? Infinity),
@@ -215,7 +215,7 @@ function MyContractBets(props: {
   const isBinary = outcomeType === 'BINARY'
   const probPercent = getBinaryProbPercent(contract)
 
-  const { totalValue, profit, profitPercent } = getContractBetMetrics(
+  const { payout, profit, profitPercent } = getContractBetMetrics(
     contract,
     bets
   )
@@ -271,7 +271,7 @@ function MyContractBets(props: {
         <Row className="mr-5 justify-end sm:mr-8">
           <Col>
             <div className="whitespace-nowrap text-right text-lg">
-              {formatMoney(metric === 'profit' ? profit : totalValue)}
+              {formatMoney(metric === 'profit' ? profit : payout)}
             </div>
             <div className="text-right">
               <ProfitBadge profitPercent={profitPercent} />
