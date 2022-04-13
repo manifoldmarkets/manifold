@@ -306,8 +306,9 @@ export function MyBetsSummary(props: {
   className?: string
 }) {
   const { bets, contract, className } = props
-  const { resolution, outcomeType } = contract
+  const { resolution, outcomeType, mechanism } = contract
   const isBinary = outcomeType === 'BINARY'
+  const isCpmm = mechanism === 'cpmm-1'
 
   const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
   const yesWinnings = _.sumBy(excludeSales, (bet) =>
@@ -324,12 +325,14 @@ export function MyBetsSummary(props: {
   return (
     <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>
       <Row className="gap-4 sm:gap-6">
-        <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">
-            Invested
-          </div>
-          <div className="whitespace-nowrap">{formatMoney(invested)}</div>
-        </Col>
+        {!isCpmm && (
+          <Col>
+            <div className="whitespace-nowrap text-sm text-gray-500">
+              Invested
+            </div>
+            <div className="whitespace-nowrap">{formatMoney(invested)}</div>
+          </Col>
+        )}
         {resolution ? (
           <Col>
             <div className="text-sm text-gray-500">Payout</div>
