@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import * as _ from 'lodash'
 import { Contract } from './contract'
 import { filterDefined } from './util/array'
 import { addObjects } from './util/object'
