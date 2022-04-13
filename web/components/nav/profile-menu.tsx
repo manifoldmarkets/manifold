@@ -12,7 +12,6 @@ export function getNavigationOptions(user?: User | null) {
   if (!user) {
     return [
       { name: 'Leaderboards', href: '/leaderboards' },
-      { name: 'Communities', href: '/folds' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     ]
   }
@@ -20,7 +19,6 @@ export function getNavigationOptions(user?: User | null) {
   return [
     { name: 'Add funds', href: '/add-funds' },
     { name: 'Leaderboards', href: '/leaderboards' },
-    { name: 'Communities', href: '/folds' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'About', href: 'https://docs.manifold.markets' },
     { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
