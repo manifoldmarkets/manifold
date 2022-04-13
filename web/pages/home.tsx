@@ -31,15 +31,16 @@ const Home = () => {
   )
 
   const router = useRouter()
-  const slug = router.query.c as string | undefined
+  const { u: username, s: slug } = router.query
   const contract = feedContracts.find((c) => c.slug === slug)
 
   useEffect(() => {
-    if (slug && !contract) {
-      delete router.query.c
-      router.replace(router, undefined, { shallow: true })
+    // If the page initially loads with query params, redirect to the contract page.
+    if (router.isReady && slug && username) {
+      Router.replace(`/${username}/${slug}`)
     }
-  })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady])
 
   if (user === null) {
     Router.replace('/')
@@ -59,7 +60,9 @@ const Home = () => {
                 recentBets={recentBets}
                 recentComments={recentComments}
                 mode="only-recent"
-                getContractPath={(c) => `home?c=${c.slug}`}
+                getContractPath={(c) =>
+                  `home?u=${c.creatorUsername}&s=${c.slug}`
+                }
               />
             ) : (
               <LoadingIndicator className="mt-4" />
