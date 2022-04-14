@@ -130,7 +130,7 @@ export function BetsList(props: { user: User }) {
     ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
 
   return (
-    <Col className="mt-6 gap-4 sm:gap-6">
+    <Col className="mt-6">
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
@@ -174,18 +174,20 @@ export function BetsList(props: { user: User }) {
         </Row>
       </Col>
 
-      {displayedContracts.length === 0 ? (
-        <NoBets />
-      ) : (
-        displayedContracts.map((contract) => (
-          <MyContractBets
-            key={contract.id}
-            contract={contract}
-            bets={contractBets[contract.id] ?? []}
-            metric={sort === 'profit' ? 'profit' : 'value'}
-          />
-        ))
-      )}
+      <Col className="mt-6 divide-y">
+        {displayedContracts.length === 0 ? (
+          <NoBets />
+        ) : (
+          displayedContracts.map((contract) => (
+            <MyContractBets
+              key={contract.id}
+              contract={contract}
+              bets={contractBets[contract.id] ?? []}
+              metric={sort === 'profit' ? 'profit' : 'value'}
+            />
+          ))
+        )}
+      </Col>
     </Col>
   )
 }
@@ -223,7 +225,7 @@ function MyContractBets(props: {
     <div
       tabIndex={0}
       className={clsx(
-        'card card-body collapse collapse-arrow relative cursor-pointer bg-white p-6 shadow-xl',
+        'collapse collapse-arrow relative cursor-pointer bg-white p-4 pr-6',
         collapsed ? 'collapse-close' : 'collapse-open pb-2'
       )}
       onClick={() => setCollapsed((collapsed) => !collapsed)}
@@ -243,7 +245,7 @@ function MyContractBets(props: {
             {/* Show carrot for collapsing. Hack the positioning. */}
             <div
               className="collapse-title absolute h-0 min-h-0 w-0 p-0"
-              style={{ top: -10, right: 4 }}
+              style={{ top: -10, right: 0 }}
             />
           </Row>
 
