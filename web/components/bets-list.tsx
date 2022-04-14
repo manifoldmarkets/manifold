@@ -321,6 +321,8 @@ export function MyBetsSummary(props: {
     bets
   )
 
+  console.log({ invested, profit, payout })
+
   return (
     <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>
       <Row className="gap-4 sm:gap-6">
