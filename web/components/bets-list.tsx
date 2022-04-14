@@ -119,7 +119,7 @@ export function BetsList(props: { user: User }) {
   )
   const currentNetInvestment = _.sumBy(
     unsettled,
-    (c) => contractsMetrics[c.id].netInvestment
+    (c) => contractsMetrics[c.id].netPayout
   )
 
   const totalPortfolio = currentNetInvestment + user.balance
@@ -127,7 +127,7 @@ export function BetsList(props: { user: User }) {
   const totalPnl = totalPortfolio - user.totalDeposits
   const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
   const investedProfitPercent =
-    ((currentBetsValue - currentInvested) / currentInvested) * 100
+    ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
 
   return (
     <Col className="mt-6 gap-4 sm:gap-6">
@@ -320,8 +320,6 @@ export function MyBetsSummary(props: {
     contract,
     bets
   )
-
-  console.log({ invested, profit, payout })
 
   return (
     <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>

@@ -115,7 +115,8 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
 export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { resolution } = contract
 
-  let invested = 0
+  let currentInvested = 0
+  let totalInvested = 0
   let payout = 0
   let loan = 0
   let saleValue = 0
@@ -124,18 +125,19 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   for (const bet of yourBets) {
     const { isSold, sale, amount, loanAmount, isRedemption } = bet
     if (isSold) {
-      invested += amount
+      totalInvested += amount
     } else if (sale) {
       saleValue += sale.amount
     } else {
       if (isRedemption) {
         redeemed += -1 * amount
       } else if (amount > 0) {
-        invested += amount
+        totalInvested += amount
       } else {
         saleValue -= amount
       }
 
+      currentInvested += amount
       loan += loanAmount ?? 0
       payout += resolution
         ? calculatePayout(contract, bet, resolution)
@@ -143,16 +145,16 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     }
   }
 
-  const profit = payout + saleValue + redeemed - invested
-  const profitPercent = (profit / invested) * 100
-  const netInvestment = payout - loan
+  const netPayout = payout - loan
+  const profit = payout + saleValue + redeemed - totalInvested
+  const profitPercent = (profit / totalInvested) * 100
 
   return {
-    invested,
+    invested: Math.max(0, currentInvested),
     payout,
+    netPayout,
     profit,
     profitPercent,
-    netInvestment,
   }
 }
 
@@ -160,8 +162,8 @@ export function getContractBetNullMetrics() {
   return {
     invested: 0,
     payout: 0,
+    netPayout: 0,
     profit: 0,
     profitPercent: 0,
-    netInvestment: 0,
   }
 }
