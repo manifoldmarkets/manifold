@@ -47,7 +47,7 @@ export function BetsList(props: { user: User }) {
 
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
-  const [sort, setSort] = useState<BetSort>('value')
+  const [sort, setSort] = useState<BetSort>('newest')
   const [filter, setFilter] = useState<BetFilter>('open')
 
   useEffect(() => {
