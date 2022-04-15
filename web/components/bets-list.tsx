@@ -166,9 +166,9 @@ export function BetsList(props: { user: User }) {
             value={sort}
             onChange={(e) => setSort(e.target.value as BetSort)}
           >
+            <option value="newest">Recent</option>
             <option value="value">Value</option>
             <option value="profit">Profit</option>
-            <option value="newest">Recent trade</option>
             <option value="closeTime">Close date</option>
           </select>
         </Row>
