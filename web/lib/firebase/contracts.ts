@@ -49,9 +49,12 @@ export function contractMetrics(contract: Contract) {
 export function getBinaryProb(contract: FullContract<any, Binary>) {
   const { totalShares, pool, p, resolutionProbability, mechanism } = contract
 
-  return resolutionProbability ?? mechanism === 'cpmm-1'
-    ? getCpmmProbability(pool, p)
-    : getDpmProbability(totalShares)
+  return (
+    resolutionProbability ??
+    (mechanism === 'cpmm-1'
+      ? getCpmmProbability(pool, p)
+      : getDpmProbability(totalShares))
+  )
 }
 
 export function getBinaryProbPercent(contract: FullContract<any, Binary>) {
