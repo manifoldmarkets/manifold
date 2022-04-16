@@ -38,7 +38,8 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
 
   const { width } = useWindowSize()
 
-  const labelLength = !width || width > 800 ? 50 : 20
+  const isLargeWidth = !width || width > 800
+  const labelLength = isLargeWidth ? 50 : 20
 
   const endTime =
     resolutionTime || isClosed
@@ -68,16 +69,15 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
       answers?.find((answer) => answer.id === outcome)?.text ?? 'None'
     const answerText =
       answer.slice(0, labelLength) + (answer.length > labelLength ? '...' : '')
-    const id = `#${outcome}: ${answerText}`
 
-    return { id, data: points }
+    return { id: answerText, data: points }
   })
 
   data.reverse()
 
   const yTickValues = [0, 25, 50, 75, 100]
 
-  const numXTickValues = !width || width < 800 ? 2 : 5
+  const numXTickValues = isLargeWidth ? 5 : 2
   const hoursAgo = latestTime.subtract(5, 'hours')
   const startDate = dayjs(contract.createdTime).isBefore(hoursAgo)
     ? new Date(contract.createdTime)
@@ -87,8 +87,8 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
 
   return (
     <div
-      className="w-full overflow-hidden"
-      style={{ height: height ?? (!width || width >= 800 ? 350 : 225) }}
+      className="w-full"
+      style={{ height: height ?? (isLargeWidth ? 350 : 250) }}
     >
       <ResponsiveLine
         data={data}
@@ -115,7 +115,34 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
         enableGridX={!!width && width >= 800}
         enableArea
         areaOpacity={1}
-        margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+        margin={{ top: 20, right: 0, bottom: 22, left: 40 }}
+        legends={[
+          {
+            anchor: 'top-left',
+            direction: 'column',
+            justify: false,
+            translateX: isLargeWidth ? 5 : 2,
+            translateY: 0,
+            itemsSpacing: 0,
+            itemTextColor: 'black',
+            itemDirection: 'left-to-right',
+            itemWidth: isLargeWidth ? 288 : 138,
+            itemHeight: 20,
+            itemBackground: 'white',
+            symbolSize: 12,
+            symbolBorderColor: 'rgba(0, 0, 0, 0.5)',
+            symbolBorderWidth: 1,
+            effects: [
+              {
+                on: 'hover',
+                style: {
+                  itemBackground: 'rgba(255, 255, 255, 1)',
+                  itemOpacity: 1,
+                },
+              },
+            ],
+          },
+        ]}
       />
     </div>
   )
