@@ -9,7 +9,7 @@ import {
 } from '../../common/contract'
 import { User } from '../../common/user'
 import { getLoanAmount, getNewMultiBetInfo } from '../../common/new-bet'
-import { Answer } from '../../common/answer'
+import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
 import { getContract, getValues } from './utils'
 import { sendNewAnswerEmail } from './emails'
 import { Bet } from '../../common/bet'
@@ -31,7 +31,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
     if (amount <= 0 || isNaN(amount) || !isFinite(amount))
       return { status: 'error', message: 'Invalid amount' }
 
-    if (!text || typeof text !== 'string' || text.length > 10000)
+    if (!text || typeof text !== 'string' || text.length > MAX_ANSWER_LENGTH)
       return { status: 'error', message: 'Invalid text' }
 
     // Run as transaction to prevent race conditions.

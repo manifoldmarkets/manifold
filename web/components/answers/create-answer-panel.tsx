@@ -22,6 +22,7 @@ import {
 } from '../../../common/calculate-dpm'
 import { firebaseLogin } from '../../lib/firebase/users'
 import { Bet } from '../../../common/bet'
+import { MAX_ANSWER_LENGTH } from '../../../common/answer'
 
 export function CreateAnswerPanel(props: {
   contract: FullContract<DPM, FreeResponse>
@@ -84,7 +85,7 @@ export function CreateAnswerPanel(props: {
           className="textarea textarea-bordered w-full resize-none"
           placeholder="Type your answer..."
           rows={1}
-          maxLength={10000}
+          maxLength={MAX_ANSWER_LENGTH}
         />
         <div />
         <Col
