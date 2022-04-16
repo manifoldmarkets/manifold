@@ -75,7 +75,7 @@ export function CreateAnswerPanel(props: {
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
   return (
-    <Col className="gap-4 rounded bg-gray-50 p-4">
+    <Col className="gap-4 rounded">
       <Col className="flex-1 gap-2">
         <div className="mb-1">Add your answer</div>
         <Textarea

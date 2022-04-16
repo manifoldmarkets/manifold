@@ -10,6 +10,7 @@ import { tradingAllowed } from '../../lib/firebase/contracts'
 import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
+import { Spacer } from '../layout/spacer'
 
 export function AnswersPanel(props: {
   contract: FullContract<DPM, FreeResponse>
@@ -105,12 +106,15 @@ export function AnswersPanel(props: {
       )}
 
       {user?.id === creatorId && !resolution && (
-        <AnswerResolvePanel
-          contract={contract}
-          resolveOption={resolveOption}
-          setResolveOption={setResolveOption}
-          chosenAnswers={chosenAnswers}
-        />
+        <>
+          <Spacer h={2} />
+          <AnswerResolvePanel
+            contract={contract}
+            resolveOption={resolveOption}
+            setResolveOption={setResolveOption}
+            chosenAnswers={chosenAnswers}
+          />
+        </>
       )}
     </Col>
   )

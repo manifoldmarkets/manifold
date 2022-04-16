@@ -18,10 +18,9 @@ export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
   comments: Comment[]
-  children?: any
   className?: string
 }) => {
-  const { contract, bets, comments, children, className } = props
+  const { contract, bets, comments, className } = props
   const { question, resolution, creatorId, outcomeType } = contract
 
   const user = useUser()
@@ -80,12 +79,6 @@ export const ContractOverview = (props: {
         contract={contract}
         isCreator={isCreator}
       />
-
-      <Spacer h={4} />
-
-      {children}
-
-      <Spacer h={4} />
     </Col>
   )
 }
