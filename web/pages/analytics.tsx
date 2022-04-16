@@ -1,7 +1,5 @@
-import clsx from 'clsx'
 import dayjs from 'dayjs'
 import _ from 'lodash'
-import { useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
 import {
   DailyCountChart,
@@ -19,7 +17,7 @@ import { getDailyContracts } from '../lib/firebase/contracts'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
-  const numberOfDays = 90
+  const numberOfDays = 80
   const today = dayjs(dayjs().format('YYYY-MM-DD'))
   const startDate = today.subtract(numberOfDays, 'day')
 
@@ -153,6 +151,27 @@ export function CustomAnalytics(props: {
     monthlyActiveUsers,
     weekOnWeekRetention,
   } = props
+
+  const dailyDividedByWeekly = dailyActiveUsers
+    .map((dailyActive, i) =>
+      Math.round((100 * dailyActive) / weeklyActiveUsers[i])
+    )
+    .slice(7)
+
+  const dailyDividedByMonthly = dailyActiveUsers
+    .map((dailyActive, i) =>
+      Math.round((100 * dailyActive) / monthlyActiveUsers[i])
+    )
+    .slice(7)
+
+  const weeklyDividedByMonthly = weeklyActiveUsers
+    .map((weeklyActive, i) =>
+      Math.round((100 * weeklyActive) / monthlyActiveUsers[i])
+    )
+    .slice(7)
+
+  const oneWeekLaterDate = startDate + 7 * 24 * 60 * 60 * 1000
+
   return (
     <Col className="px-2 sm:px-0">
       <Title text="Active users" />
@@ -199,17 +218,6 @@ export function CustomAnalytics(props: {
       />
       <Spacer h={8} />
 
-      <Title text="Week-on-week retention" />
-      <p className="text-gray-500">
-        Out of all active users 2 weeks ago, how many came back last week?
-      </p>
-      <DailyPercentChart
-        dailyPercent={weekOnWeekRetention}
-        startDate={startDate}
-        small
-      />
-      <Spacer h={8} />
-
       <Title text="Daily activity" />
       <Tabs
         defaultIndex={0}
@@ -240,6 +248,56 @@ export function CustomAnalytics(props: {
               <DailyCountChart
                 dailyCounts={dailyCommentCounts}
                 startDate={startDate}
+                small
+              />
+            ),
+          },
+        ]}
+      />
+
+      <Spacer h={8} />
+
+      <Title text="Week-on-week retention" />
+      <p className="text-gray-500">
+        Out of all active users 2 weeks ago, how many came back last week?
+      </p>
+      <DailyPercentChart
+        dailyPercent={weekOnWeekRetention.slice(7)}
+        startDate={oneWeekLaterDate}
+        small
+      />
+      <Spacer h={8} />
+
+      <Title text="Ratio of Active Users" />
+      <Tabs
+        defaultIndex={0}
+        tabs={[
+          {
+            title: 'Daily / Weekly',
+            content: (
+              <DailyPercentChart
+                dailyPercent={dailyDividedByWeekly}
+                startDate={oneWeekLaterDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Daily / Monthly',
+            content: (
+              <DailyPercentChart
+                dailyPercent={dailyDividedByMonthly}
+                startDate={oneWeekLaterDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Weekly / Monthly',
+            content: (
+              <DailyPercentChart
+                dailyPercent={weeklyDividedByMonthly}
+                startDate={oneWeekLaterDate}
                 small
               />
             ),
