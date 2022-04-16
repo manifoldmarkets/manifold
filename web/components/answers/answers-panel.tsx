@@ -3,7 +3,6 @@ import { useLayoutEffect, useState } from 'react'
 
 import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { Col } from '../layout/col'
-import { formatPercent } from '../../../common/util/format'
 import { useUser } from '../../hooks/use-user'
 import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
 import { useAnswers } from '../../hooks/use-answers'
@@ -82,27 +81,23 @@ export function AnswersPanel(props: {
 
   return (
     <Col className="gap-3">
-      {sortedAnswers.map((answer) => (
-        <AnswerItem
-          key={answer.id}
-          answer={answer}
-          contract={contract}
-          user={user}
-          showChoice={showChoice}
-          chosenProb={chosenAnswers[answer.id]}
-          totalChosenProb={chosenTotal}
-          onChoose={onChoose}
-          onDeselect={onDeselect}
-        />
-      ))}
+      {resolveOption &&
+        sortedAnswers.map((answer) => (
+          <AnswerItem
+            key={answer.id}
+            answer={answer}
+            contract={contract}
+            user={user}
+            showChoice={showChoice}
+            chosenProb={chosenAnswers[answer.id]}
+            totalChosenProb={chosenTotal}
+            onChoose={onChoose}
+            onDeselect={onDeselect}
+          />
+        ))}
 
-      {sortedAnswers.length === 0 ? (
+      {sortedAnswers.length === 0 && (
         <div className="p-4 text-gray-500">No answers yet...</div>
-      ) : (
-        <div className="self-end p-4 text-gray-500">
-          None of the above:{' '}
-          {formatPercent(getDpmOutcomeProbability(contract.totalShares, '0'))}
-        </div>
       )}
 
       {tradingAllowed(contract) && !resolveOption && (

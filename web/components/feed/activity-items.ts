@@ -97,9 +97,10 @@ function groupBets(
     hideOutcome: boolean
     abbreviated: boolean
     smallAvatar: boolean
+    reversed: boolean
   }
 ) {
-  const { hideOutcome, abbreviated, smallAvatar } = options
+  const { hideOutcome, abbreviated, smallAvatar, reversed } = options
 
   const commentsMap = mapCommentsByBetId(comments)
   const items: ActivityItem[] = []
@@ -171,7 +172,9 @@ function groupBets(
   if (group.length > 0) {
     pushGroup()
   }
-  return abbreviated ? items.slice(-3) : items
+  const abbrItems = abbreviated ? items.slice(-3) : items
+  if (reversed) abbrItems.reverse()
+  return abbrItems
 }
 
 function getAnswerGroups(
@@ -182,9 +185,10 @@ function getAnswerGroups(
   options: {
     sortByProb: boolean
     abbreviated: boolean
+    reversed: boolean
   }
 ) {
-  const { sortByProb, abbreviated } = options
+  const { sortByProb, abbreviated, reversed } = options
 
   let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
     (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
@@ -208,9 +212,8 @@ function getAnswerGroups(
     outcomes = outcomes.slice(-2)
   }
   if (sortByProb) {
-    outcomes = _.sortBy(
-      outcomes,
-      (outcome) => -1 * getOutcomeProbability(contract, outcome)
+    outcomes = _.sortBy(outcomes, (outcome) =>
+      getOutcomeProbability(contract, outcome)
     )
   } else {
     // Sort by recent bet.
@@ -233,6 +236,7 @@ function getAnswerGroups(
         hideOutcome: true,
         abbreviated,
         smallAvatar: true,
+        reversed,
       })
 
       if (abbreviated) items = items.slice(-2)
@@ -263,6 +267,8 @@ export function getAllContractActivityItems(
 ) {
   const { abbreviated } = options
   const { outcomeType } = contract
+
+  const reversed = !abbreviated
 
   bets =
     outcomeType === 'BINARY'
@@ -301,12 +307,14 @@ export function getAllContractActivityItems(
           {
             sortByProb: true,
             abbreviated,
+            reversed,
           }
         )
       : groupBets(bets, comments, contract, user?.id, {
           hideOutcome: !!filterToOutcome,
           abbreviated,
           smallAvatar: !!filterToOutcome,
+          reversed,
         }))
   )
 
@@ -317,14 +325,7 @@ export function getAllContractActivityItems(
     items.push({ type: 'resolve', id: `${contract.resolutionTime}`, contract })
   }
 
-  if (!abbreviated) {
-    items.reverse()
-    for (const item of items) {
-      if (item.type === 'answergroup') {
-        item.items.reverse()
-      }
-    }
-  }
+  if (reversed) items.reverse()
 
   return items
 }
@@ -362,12 +363,14 @@ export function getRecentContractActivityItems(
           {
             sortByProb: false,
             abbreviated: true,
+            reversed: false,
           }
         )
       : groupBets(bets, comments, contract, user?.id, {
           hideOutcome: false,
           abbreviated: true,
           smallAvatar: false,
+          reversed: false,
         })
 
   return [questionItem, ...items]

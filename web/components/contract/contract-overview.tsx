@@ -73,7 +73,7 @@ export const ContractOverview = (props: {
         />
       )}
 
-      <Spacer h={6} />
+      {contract.description && <Spacer h={6} />}
 
       <ContractDescription
         className="px-2"
