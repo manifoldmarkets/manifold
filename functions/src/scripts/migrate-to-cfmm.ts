@@ -31,7 +31,11 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
     const contract = contractDoc.data() as FullContract<DPM, Binary>
     console.log('recalculating', contract.slug)
 
-    if (contract.mechanism !== 'dpm-2' || contract.outcomeType !== 'BINARY') {
+    if (
+      contract.mechanism !== 'dpm-2' ||
+      contract.outcomeType !== 'BINARY' ||
+      contract.resolution
+    ) {
       console.log('invalid candidate to port to cfmm')
       return
     }
