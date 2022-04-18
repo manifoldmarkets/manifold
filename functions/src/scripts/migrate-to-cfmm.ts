@@ -47,11 +47,18 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
       (b) => b.createdTime
     )
 
+    const getSoldBetPayout = (bet: Bet) => {
+      const soldBet = bets.find((b) => bet.sale?.betId === b.id)
+      return soldBet
+        ? -soldBet.amount / Math.sqrt(soldBet.probBefore * soldBet.probAfter)
+        : 0
+    }
+
     for (let bet of bets) {
       const shares = bet.sale
-        ? -bet.sale.amount
+        ? getSoldBetPayout(bet)
         : bet.isSold
-        ? bets.find((b) => b.sale?.betId === bet.id)?.sale?.amount ?? 0
+        ? bet.amount / Math.sqrt(bet.probBefore * bet.probAfter) // make up fake share qty
         : calculateStandardDpmPayout(contract, bet, bet.outcome)
 
       console.log(
