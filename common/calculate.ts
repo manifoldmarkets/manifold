@@ -29,12 +29,15 @@ export function getProbability(contract: FullContract<DPM | CPMM, Binary>) {
 export function getInitialProbability(
   contract: FullContract<DPM | CPMM, Binary>
 ) {
-  return (
-    contract.initialProbability ??
-    (contract.mechanism === 'cpmm-1'
-      ? getCpmmProbability(contract.pool, contract.p)
-      : getDpmProbability(contract.phantomShares ?? contract.totalShares))
-  )
+  if (contract.initialProbability) return contract.initialProbability
+
+  if (contract.mechanism === 'dpm-2' || (contract as any).totalShares)
+    // use totalShares to calculate prob for ported contracts
+    return getDpmProbability(
+      (contract as any).phantomShares ?? (contract as any).totalShares
+    )
+
+  return getCpmmProbability(contract.pool, contract.p)
 }
 
 export function getOutcomeProbability(contract: Contract, outcome: string) {
