@@ -12,16 +12,14 @@ import {
 import { formatPercent } from '../../common/util/format'
 
 export function OutcomeLabel(props: {
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string
   contract: Contract
+  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string
   truncate: 'short' | 'long' | 'none'
 }) {
   const { outcome, contract, truncate } = props
 
-  const binaryOutcomes = ['YES', 'NO', 'CANCEL', 'MKT']
-  if (binaryOutcomes.includes(outcome)) {
+  if (contract.outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
-  }
 
   return (
     <FreeResponseOutcomeLabel

@@ -31,7 +31,7 @@ export function AnswersPanel(props: {
       resolutions ? -1 * resolutions[answer.id] : 0
     ),
     ..._.sortBy(
-      otherAnswers,
+      resolution ? [] : otherAnswers,
       (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
     ),
   ]
@@ -82,7 +82,7 @@ export function AnswersPanel(props: {
 
   return (
     <Col className="gap-3">
-      {resolveOption &&
+      {(resolveOption || resolution === 'MKT') &&
         sortedAnswers.map((answer) => (
           <AnswerItem
             key={answer.id}
