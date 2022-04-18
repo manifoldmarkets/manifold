@@ -5,7 +5,7 @@ import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
 import { Comment } from '../../common/comment'
-import { Contract } from '../../common/contract'
+import { Contract, FreeResponseContract } from '../../common/contract'
 import { CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
 import { formatMoney, formatPercent } from '../../common/util/format'
@@ -98,6 +98,10 @@ const toDisplayResolution = (
   if (resolution === 'MKT' && resolutions) return 'MULTI'
   if (resolution === 'CANCEL') return 'N/A'
 
+  const answer = (contract as FreeResponseContract).answers?.find(
+    (a) => a.id === resolution
+  )
+  if (answer) return answer.text
   return `#${resolution}`
 }
 

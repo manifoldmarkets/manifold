@@ -22,6 +22,7 @@ import {
 } from '../../../common/calculate-dpm'
 import { firebaseLogin } from '../../lib/firebase/users'
 import { Bet } from '../../../common/bet'
+import { MAX_ANSWER_LENGTH } from '../../../common/answer'
 
 export function CreateAnswerPanel(props: {
   contract: FullContract<DPM, FreeResponse>
@@ -75,7 +76,7 @@ export function CreateAnswerPanel(props: {
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
   return (
-    <Col className="gap-4 rounded bg-gray-50 p-4">
+    <Col className="gap-4 rounded">
       <Col className="flex-1 gap-2">
         <div className="mb-1">Add your answer</div>
         <Textarea
@@ -84,7 +85,7 @@ export function CreateAnswerPanel(props: {
           className="textarea textarea-bordered w-full resize-none"
           placeholder="Type your answer..."
           rows={1}
-          maxLength={10000}
+          maxLength={MAX_ANSWER_LENGTH}
         />
         <div />
         <Col

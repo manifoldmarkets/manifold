@@ -6,7 +6,11 @@ import { useUser } from '../../hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
 import clsx from 'clsx'
-import { ContractDetails, ResolutionOrChance } from './contract-card'
+import {
+  FreeResponseResolution,
+  ContractDetails,
+  BinaryResolutionOrChance,
+} from './contract-card'
 import { Bet } from '../../../common/bet'
 import { Comment } from '../../../common/comment'
 import BetRow from '../bet-row'
@@ -18,11 +22,10 @@ export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
   comments: Comment[]
-  children?: any
   className?: string
 }) => {
-  const { contract, bets, comments, children, className } = props
-  const { question, resolution, creatorId, outcomeType } = contract
+  const { contract, bets, className } = props
+  const { question, creatorId, outcomeType, resolution } = contract
 
   const user = useUser()
   const isCreator = user?.id === creatorId
@@ -36,8 +39,8 @@ export const ContractOverview = (props: {
             <Linkify text={question} />
           </div>
 
-          {(isBinary || resolution) && (
-            <ResolutionOrChance
+          {isBinary && (
+            <BinaryResolutionOrChance
               className="hidden items-end xl:flex"
               contract={contract}
               large
@@ -45,15 +48,24 @@ export const ContractOverview = (props: {
           )}
         </Row>
 
-        <Row className="items-center justify-between gap-4 xl:hidden">
-          {(isBinary || resolution) && (
-            <ResolutionOrChance contract={contract} />
-          )}
+        {isBinary ? (
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <BinaryResolutionOrChance contract={contract} />
 
-          {isBinary && tradingAllowed(contract) && (
-            <BetRow contract={contract} labelClassName="hidden" />
-          )}
-        </Row>
+            {tradingAllowed(contract) && (
+              <BetRow contract={contract} labelClassName="hidden" />
+            )}
+          </Row>
+        ) : (
+          outcomeType === 'FREE_RESPONSE' &&
+          resolution && (
+            <FreeResponseResolution
+              contract={contract}
+              resolution={resolution}
+              truncate="none"
+            />
+          )
+        )}
 
         <ContractDetails
           contract={contract}
@@ -73,19 +85,13 @@ export const ContractOverview = (props: {
         />
       )}
 
-      <Spacer h={6} />
+      {contract.description && <Spacer h={6} />}
 
       <ContractDescription
         className="px-2"
         contract={contract}
         isCreator={isCreator}
       />
-
-      <Spacer h={4} />
-
-      {children}
-
-      <Spacer h={4} />
     </Col>
   )
 }

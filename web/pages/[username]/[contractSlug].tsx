@@ -98,7 +98,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
     return <Custom404 />
   }
 
-  const { creatorId, isResolved, question, outcomeType } = contract
+  const { creatorId, isResolved, question, outcomeType, resolution } = contract
 
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
@@ -143,8 +143,10 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
           contract={contract}
           bets={bets ?? []}
           comments={comments ?? []}
-        >
-          {contract.outcomeType === 'FREE_RESPONSE' && (
+        />
+
+        {outcomeType === 'FREE_RESPONSE' &&
+          (!isResolved || resolution === 'MKT') && (
             <>
               <Spacer h={4} />
               <AnswersPanel
@@ -153,7 +155,6 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
               <Spacer h={4} />
             </>
           )}
-        </ContractOverview>
 
         {contract.isResolved && (
           <>

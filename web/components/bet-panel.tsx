@@ -19,7 +19,7 @@ import { Bet } from '../../common/bet'
 import { placeBet, sellShares } from '../lib/firebase/api-call'
 import { BuyAmountInput, SellAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
-import { OutcomeLabel } from './outcome-label'
+import { BinaryOutcomeLabel, OutcomeLabel } from './outcome-label'
 import {
   calculatePayoutAfterCorrectBet,
   calculateShares,
@@ -58,7 +58,7 @@ export function BetPanel(props: {
           <Row className="items-center justify-between gap-2">
             <div>
               You have {formatWithCommas(Math.floor(shares))}{' '}
-              <OutcomeLabel outcome={sharesOutcome} /> shares
+              <BinaryOutcomeLabel outcome={sharesOutcome} /> shares
             </div>
 
             <button
@@ -147,7 +147,7 @@ export function BetPanelSwitcher(props: {
           <Row className="items-center justify-between gap-2">
             <div>
               You have {formatWithCommas(Math.floor(shares))}{' '}
-              <OutcomeLabel outcome={sharesOutcome} /> shares
+              <BinaryOutcomeLabel outcome={sharesOutcome} /> shares
             </div>
 
             <button
@@ -349,11 +349,12 @@ function BuyPanel(props: {
               {contract.mechanism === 'dpm-2' ? (
                 <>
                   Estimated
-                  <br /> payout if <OutcomeLabel outcome={betChoice ?? 'YES'} />
+                  <br /> payout if{' '}
+                  <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
                 </>
               ) : (
                 <>
-                  Payout if <OutcomeLabel outcome={betChoice ?? 'YES'} />
+                  Payout if <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
                 </>
               )}
             </div>
@@ -547,7 +548,12 @@ function SellSharesModal(props: {
 
         <div className="mb-6">
           You have {formatWithCommas(Math.floor(shares))}{' '}
-          <OutcomeLabel outcome={sharesOutcome} /> shares
+          <OutcomeLabel
+            outcome={sharesOutcome}
+            contract={contract}
+            truncate="long"
+          />{' '}
+          shares
         </div>
 
         <SellPanel

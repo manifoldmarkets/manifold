@@ -3,7 +3,6 @@ import { useLayoutEffect, useState } from 'react'
 
 import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { Col } from '../layout/col'
-import { formatPercent } from '../../../common/util/format'
 import { useUser } from '../../hooks/use-user'
 import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
 import { useAnswers } from '../../hooks/use-answers'
@@ -11,6 +10,7 @@ import { tradingAllowed } from '../../lib/firebase/contracts'
 import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
+import { Spacer } from '../layout/spacer'
 
 export function AnswersPanel(props: {
   contract: FullContract<DPM, FreeResponse>
@@ -31,7 +31,7 @@ export function AnswersPanel(props: {
       resolutions ? -1 * resolutions[answer.id] : 0
     ),
     ..._.sortBy(
-      otherAnswers,
+      resolution ? [] : otherAnswers,
       (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
     ),
   ]
@@ -82,40 +82,41 @@ export function AnswersPanel(props: {
 
   return (
     <Col className="gap-3">
-      {sortedAnswers.map((answer) => (
-        <AnswerItem
-          key={answer.id}
-          answer={answer}
-          contract={contract}
-          user={user}
-          showChoice={showChoice}
-          chosenProb={chosenAnswers[answer.id]}
-          totalChosenProb={chosenTotal}
-          onChoose={onChoose}
-          onDeselect={onDeselect}
-        />
-      ))}
+      {(resolveOption === 'CHOOSE' ||
+        resolveOption === 'CHOOSE_MULTIPLE' ||
+        resolution === 'MKT') &&
+        sortedAnswers.map((answer) => (
+          <AnswerItem
+            key={answer.id}
+            answer={answer}
+            contract={contract}
+            showChoice={showChoice}
+            chosenProb={chosenAnswers[answer.id]}
+            totalChosenProb={chosenTotal}
+            onChoose={onChoose}
+            onDeselect={onDeselect}
+          />
+        ))}
 
-      {sortedAnswers.length === 0 ? (
-        <div className="p-4 text-gray-500">No answers yet...</div>
-      ) : (
-        <div className="self-end p-4 text-gray-500">
-          None of the above:{' '}
-          {formatPercent(getDpmOutcomeProbability(contract.totalShares, '0'))}
-        </div>
+      {sortedAnswers.length === 0 && (
+        <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
-      {tradingAllowed(contract) && !resolveOption && (
-        <CreateAnswerPanel contract={contract} />
-      )}
+      {tradingAllowed(contract) &&
+        (!resolveOption || resolveOption === 'CANCEL') && (
+          <CreateAnswerPanel contract={contract} />
+        )}
 
       {user?.id === creatorId && !resolution && (
-        <AnswerResolvePanel
-          contract={contract}
-          resolveOption={resolveOption}
-          setResolveOption={setResolveOption}
-          chosenAnswers={chosenAnswers}
-        />
+        <>
+          <Spacer h={2} />
+          <AnswerResolvePanel
+            contract={contract}
+            resolveOption={resolveOption}
+            setResolveOption={setResolveOption}
+            chosenAnswers={chosenAnswers}
+          />
+        </>
       )}
     </Col>
   )

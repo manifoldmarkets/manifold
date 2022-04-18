@@ -8,8 +8,9 @@ import {
 import { DOMAIN } from '../../../../common/envs/constants'
 import { AnswersGraph } from '../../../components/answers/answers-graph'
 import {
-  ResolutionOrChance,
+  BinaryResolutionOrChance,
   ContractDetails,
+  FreeResponseResolution,
 } from '../../../components/contract/contract-card'
 import { ContractProbGraph } from '../../../components/contract/contract-prob-graph'
 import { Col } from '../../../components/layout/col'
@@ -118,8 +119,14 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
             hideShareButtons
           />
 
-          {(isBinary || resolution) && (
-            <ResolutionOrChance contract={contract} />
+          {isBinary && <BinaryResolutionOrChance contract={contract} />}
+
+          {outcomeType === 'FREE_RESPONSE' && resolution && (
+            <FreeResponseResolution
+              contract={contract}
+              resolution={resolution}
+              truncate="long"
+            />
           )}
         </Row>
 
