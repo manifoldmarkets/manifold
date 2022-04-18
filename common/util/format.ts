@@ -8,14 +8,14 @@ const formatter = new Intl.NumberFormat('en-US', {
 })
 
 export function formatMoney(amount: number) {
-  const newAmount = Math.round(amount) === 0 ? 0 : amount // handle -0 case
+  const newAmount = Math.floor(amount) === 0 ? 0 : Math.floor(amount) // handle -0 case
   return (
     ENV_CONFIG.moneyMoniker + ' ' + formatter.format(newAmount).replace('$', '')
   )
 }
 
 export function formatWithCommas(amount: number) {
-  return formatter.format(amount).replace('$', '')
+  return formatter.format(Math.floor(amount)).replace('$', '')
 }
 
 export function formatPercent(zeroToOne: number) {
