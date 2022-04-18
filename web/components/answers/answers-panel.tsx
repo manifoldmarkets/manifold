@@ -82,13 +82,14 @@ export function AnswersPanel(props: {
 
   return (
     <Col className="gap-3">
-      {(resolveOption || resolution === 'MKT') &&
+      {(resolveOption === 'CHOOSE' ||
+        resolveOption === 'CHOOSE_MULTIPLE' ||
+        resolution === 'MKT') &&
         sortedAnswers.map((answer) => (
           <AnswerItem
             key={answer.id}
             answer={answer}
             contract={contract}
-            user={user}
             showChoice={showChoice}
             chosenProb={chosenAnswers[answer.id]}
             totalChosenProb={chosenTotal}
@@ -101,9 +102,10 @@ export function AnswersPanel(props: {
         <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
-      {tradingAllowed(contract) && !resolveOption && (
-        <CreateAnswerPanel contract={contract} />
-      )}
+      {tradingAllowed(contract) &&
+        (!resolveOption || resolveOption === 'CANCEL') && (
+          <CreateAnswerPanel contract={contract} />
+        )}
 
       {user?.id === creatorId && !resolution && (
         <>
