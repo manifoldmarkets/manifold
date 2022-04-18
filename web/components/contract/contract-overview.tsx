@@ -6,7 +6,11 @@ import { useUser } from '../../hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
 import clsx from 'clsx'
-import { ContractDetails, ResolutionOrChance } from './contract-card'
+import {
+  FreeResponseResolution,
+  ContractDetails,
+  BinaryResolutionOrChance,
+} from './contract-card'
 import { Bet } from '../../../common/bet'
 import { Comment } from '../../../common/comment'
 import BetRow from '../bet-row'
@@ -21,7 +25,7 @@ export const ContractOverview = (props: {
   className?: string
 }) => {
   const { contract, bets, className } = props
-  const { question, creatorId, outcomeType } = contract
+  const { question, creatorId, outcomeType, resolution } = contract
 
   const user = useUser()
   const isCreator = user?.id === creatorId
@@ -36,7 +40,7 @@ export const ContractOverview = (props: {
           </div>
 
           {isBinary && (
-            <ResolutionOrChance
+            <BinaryResolutionOrChance
               className="hidden items-end xl:flex"
               contract={contract}
               large
@@ -46,14 +50,21 @@ export const ContractOverview = (props: {
 
         {isBinary ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
-            <ResolutionOrChance contract={contract} />
+            <BinaryResolutionOrChance contract={contract} />
 
             {tradingAllowed(contract) && (
               <BetRow contract={contract} labelClassName="hidden" />
             )}
           </Row>
         ) : (
-          <ResolutionOrChance contract={contract} />
+          outcomeType === 'FREE_RESPONSE' &&
+          resolution && (
+            <FreeResponseResolution
+              contract={contract}
+              resolution={resolution}
+              truncate="none"
+            />
+          )
         )}
 
         <ContractDetails

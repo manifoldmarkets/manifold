@@ -26,7 +26,7 @@ import { Row } from '../layout/row'
 import { createComment, MAX_COMMENT_LENGTH } from '../../lib/firebase/comments'
 import { formatMoney, formatPercent } from '../../../common/util/format'
 import { Comment } from '../../../common/comment'
-import { ResolutionOrChance } from '../contract/contract-card'
+import { BinaryResolutionOrChance } from '../contract/contract-card'
 import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
 import { UserLink } from '../user-page'
@@ -144,7 +144,12 @@ export function FeedComment(props: {
             {!hideOutcome && (
               <>
                 {' '}
-                of <OutcomeLabel outcome={outcome} />
+                of{' '}
+                <OutcomeLabel
+                  outcome={outcome}
+                  contract={contract}
+                  truncate="short"
+                />
               </>
             )}
             <RelativeTimestamp time={createdTime} />
@@ -227,7 +232,12 @@ export function FeedBet(props: {
           {!hideOutcome && (
             <>
               {' '}
-              of <OutcomeLabel outcome={outcome} />
+              of{' '}
+              <OutcomeLabel
+                outcome={outcome}
+                contract={contract}
+                truncate="short"
+              />
             </>
           )}
           <RelativeTimestamp time={createdTime} />
@@ -345,7 +355,10 @@ export function FeedQuestion(props: {
             </SiteLink>
           </Col>
           {isBinary && (
-            <ResolutionOrChance className="items-center" contract={contract} />
+            <BinaryResolutionOrChance
+              className="items-center"
+              contract={contract}
+            />
           )}
         </Col>
         {showDescription && (
@@ -449,7 +462,12 @@ function FeedResolve(props: { contract: Contract }) {
             name={creatorName}
             username={creatorUsername}
           />{' '}
-          resolved this market to <OutcomeLabel outcome={resolution} />{' '}
+          resolved this market to{' '}
+          <OutcomeLabel
+            outcome={resolution}
+            contract={contract}
+            truncate="long"
+          />{' '}
           <RelativeTimestamp time={contract.resolutionTime || 0} />
         </div>
       </div>
@@ -482,8 +500,12 @@ function FeedClose(props: { contract: Contract }) {
   )
 }
 
-function BetGroupSpan(props: { bets: Bet[]; outcome?: string }) {
-  const { bets, outcome } = props
+function BetGroupSpan(props: {
+  contract: Contract
+  bets: Bet[]
+  outcome?: string
+}) {
+  const { contract, bets, outcome } = props
 
   const numberTraders = _.uniqBy(bets, (b) => b.userId).length
 
@@ -501,7 +523,12 @@ function BetGroupSpan(props: { bets: Bet[]; outcome?: string }) {
       {outcome && (
         <>
           {' '}
-          of <OutcomeLabel outcome={outcome} />
+          of{' '}
+          <OutcomeLabel
+            outcome={outcome}
+            contract={contract}
+            truncate="short"
+          />
         </>
       )}{' '}
     </span>
@@ -513,7 +540,7 @@ function FeedBetGroup(props: {
   bets: Bet[]
   hideOutcome: boolean
 }) {
-  const { bets, hideOutcome } = props
+  const { contract, bets, hideOutcome } = props
 
   const betGroups = _.groupBy(bets, (bet) => bet.outcome)
   const outcomes = Object.keys(betGroups)
@@ -535,6 +562,7 @@ function FeedBetGroup(props: {
           {outcomes.map((outcome, index) => (
             <Fragment key={outcome}>
               <BetGroupSpan
+                contract={contract}
                 outcome={hideOutcome ? undefined : outcome}
                 bets={betGroups[outcome]}
               />
