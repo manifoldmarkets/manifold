@@ -314,7 +314,7 @@ export function getAllContractActivityItems(
           hideOutcome: !!filterToOutcome,
           abbreviated,
           smallAvatar: !!filterToOutcome,
-          reversed,
+          reversed: false,
         }))
   )
 

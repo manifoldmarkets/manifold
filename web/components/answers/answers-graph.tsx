@@ -129,6 +129,7 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
             itemWidth: isLargeWidth ? 288 : 138,
             itemHeight: 20,
             itemBackground: 'white',
+            itemOpacity: 0.9,
             symbolSize: 12,
             effects: [
               {
