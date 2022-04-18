@@ -48,10 +48,11 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
     )
 
     for (let bet of bets) {
-      const shares =
-        bet.isSold || bet.sale
-          ? 0
-          : calculateStandardDpmPayout(contract, bet, bet.outcome)
+      const shares = bet.sale
+        ? -bet.sale.amount
+        : bet.isSold
+        ? bets.find((b) => b.sale?.betId === bet.id)?.sale?.amount ?? 0
+        : calculateStandardDpmPayout(contract, bet, bet.outcome)
 
       console.log(
         'converting',
