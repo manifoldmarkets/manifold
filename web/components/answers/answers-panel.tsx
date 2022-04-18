@@ -98,7 +98,7 @@ export function AnswersPanel(props: {
         ))}
 
       {sortedAnswers.length === 0 && (
-        <div className="p-4 text-gray-500">No answers yet...</div>
+        <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
       {tradingAllowed(contract) && !resolveOption && (

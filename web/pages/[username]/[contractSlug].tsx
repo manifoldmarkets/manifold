@@ -145,6 +145,15 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
           comments={comments ?? []}
         />
 
+        {contract.outcomeType === 'FREE_RESPONSE' && (
+          <>
+            <Spacer h={4} />
+            <AnswersPanel
+              contract={contract as FullContract<DPM, FreeResponse>}
+            />
+          </>
+        )}
+
         {contract.isResolved && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
@@ -165,15 +174,6 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
           bets={bets}
           comments={comments}
         />
-
-        {contract.outcomeType === 'FREE_RESPONSE' && (
-          <>
-            <Spacer h={4} />
-            <AnswersPanel
-              contract={contract as FullContract<DPM, FreeResponse>}
-            />
-          </>
-        )}
       </Col>
     </Page>
   )
