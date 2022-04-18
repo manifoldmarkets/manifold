@@ -13,7 +13,7 @@ import {
 } from '../../../common/contract'
 import { Bet } from '../../../common/bet'
 import {
-  calculateStandardDpmPayout,
+  calculateDpmPayout,
   getDpmProbability,
 } from '../../../common/calculate-dpm'
 import { User } from '../../../common/user'
@@ -31,11 +31,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
     const contract = contractDoc.data() as FullContract<DPM, Binary>
     console.log('recalculating', contract.slug)
 
-    if (
-      contract.mechanism !== 'dpm-2' ||
-      contract.outcomeType !== 'BINARY' ||
-      !!contract.resolution
-    ) {
+    if (contract.mechanism !== 'dpm-2' || contract.outcomeType !== 'BINARY') {
       console.log('invalid candidate to port to cfmm')
       return
     }
@@ -59,7 +55,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
         ? getSoldBetPayout(bet)
         : bet.isSold
         ? bet.amount / Math.sqrt(bet.probBefore * bet.probAfter) // make up fake share qty
-        : calculateStandardDpmPayout(contract, bet, bet.outcome)
+        : calculateDpmPayout(contract, bet, contract.resolution ?? bet.outcome)
 
       console.log(
         'converting',
@@ -77,7 +73,9 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
         })
     }
 
-    const prob = getDpmProbability(contract.totalShares)
+    const prob =
+      contract.resolutionProbability ?? getDpmProbability(contract.totalShares)
+
     const ante = 100
     const newPool = { YES: ante, NO: ante }
     console.log('creating liquidity pool at p=', prob, 'for M$', ante)
