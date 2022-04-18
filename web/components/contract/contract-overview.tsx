@@ -20,8 +20,8 @@ export const ContractOverview = (props: {
   comments: Comment[]
   className?: string
 }) => {
-  const { contract, bets, comments, className } = props
-  const { question, resolution, creatorId, outcomeType } = contract
+  const { contract, bets, className } = props
+  const { question, creatorId, outcomeType } = contract
 
   const user = useUser()
   const isCreator = user?.id === creatorId
@@ -35,7 +35,7 @@ export const ContractOverview = (props: {
             <Linkify text={question} />
           </div>
 
-          {(isBinary || resolution) && (
+          {isBinary && (
             <ResolutionOrChance
               className="hidden items-end xl:flex"
               contract={contract}
@@ -44,15 +44,17 @@ export const ContractOverview = (props: {
           )}
         </Row>
 
-        <Row className="items-center justify-between gap-4 xl:hidden">
-          {(isBinary || resolution) && (
+        {isBinary ? (
+          <Row className="items-center justify-between gap-4 xl:hidden">
             <ResolutionOrChance contract={contract} />
-          )}
 
-          {isBinary && tradingAllowed(contract) && (
-            <BetRow contract={contract} labelClassName="hidden" />
-          )}
-        </Row>
+            {tradingAllowed(contract) && (
+              <BetRow contract={contract} labelClassName="hidden" />
+            )}
+          </Row>
+        ) : (
+          <ResolutionOrChance contract={contract} />
+        )}
 
         <ContractDetails
           contract={contract}

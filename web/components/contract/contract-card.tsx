@@ -22,6 +22,7 @@ import { useState } from 'react'
 import { getProbability } from '../../../common/calculate'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { Bet } from '../../../common/bet'
+import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 
 export function ContractCard(props: {
   contract: Contract
@@ -30,7 +31,7 @@ export function ContractCard(props: {
   className?: string
 }) {
   const { contract, showHotVolume, showCloseTime, className } = props
-  const { question } = contract
+  const { question, outcomeType } = contract
 
   return (
     <div>
@@ -51,18 +52,40 @@ export function ContractCard(props: {
         />
         <Spacer h={3} />
 
-        <Row className="justify-between gap-4">
+        <Row
+          className={clsx(
+            'justify-between gap-4',
+            outcomeType === 'FREE_RESPONSE' && 'flex-col items-start'
+          )}
+        >
           <p
             className="break-words font-medium text-indigo-700"
             style={{ /* For iOS safari */ wordBreak: 'break-word' }}
           >
             {question}
           </p>
-          <ResolutionOrChance className="items-center" contract={contract} />
+          <ResolutionOrChance
+            className={clsx(
+              outcomeType === 'FREE_RESPONSE' ? 'items-start' : 'items-center'
+            )}
+            contract={contract}
+          />
         </Row>
       </div>
     </div>
   )
+}
+
+function getAnswerResolutionText(
+  contract: FullContract<DPM, FreeResponse>,
+  resolution: string
+) {
+  const { answers } = contract
+  const chosen = answers?.find((answer) => answer.id === resolution)
+  if (chosen) {
+    return chosen.text.slice(0, 50)
+  }
+  return undefined
 }
 
 export function ResolutionOrChance(props: {
@@ -86,18 +109,25 @@ export function ResolutionOrChance(props: {
 
   const probColor = marketClosed ? 'text-gray-400' : 'text-primary'
 
-  const resolutionText =
-    {
-      YES: 'YES',
-      NO: 'NO',
-      MKT: isBinary
-        ? formatPercent(
-            contract.resolutionProbability ?? getProbability(contract)
-          )
-        : 'MULTI',
-      CANCEL: 'N/A',
-      '': '',
-    }[resolution || ''] ?? `#${resolution}`
+  const resolutionText = {
+    YES: 'YES',
+    NO: 'NO',
+    MKT: isBinary
+      ? formatPercent(
+          contract.resolutionProbability ?? getProbability(contract)
+        )
+      : 'MULTI',
+    CANCEL: 'N/A',
+    '': '',
+  }[resolution || '']
+
+  const answerText =
+    resolution &&
+    outcomeType === 'FREE_RESPONSE' &&
+    getAnswerResolutionText(
+      contract as FullContract<DPM, FreeResponse>,
+      resolution
+    )
 
   return (
     <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
@@ -108,7 +138,11 @@ export function ResolutionOrChance(props: {
           >
             Resolved
           </div>
-          <div className={resolutionColor}>{resolutionText}</div>
+          {resolutionText ? (
+            <div className={resolutionColor}>{resolutionText}</div>
+          ) : (
+            <div className={clsx(resolutionColor, 'text-xl')}>{answerText}</div>
+          )}
         </>
       ) : (
         isBinary && (

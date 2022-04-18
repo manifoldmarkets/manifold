@@ -344,7 +344,7 @@ export function FeedQuestion(props: {
               {question}
             </SiteLink>
           </Col>
-          {(isBinary || resolution) && (
+          {isBinary && (
             <ResolutionOrChance className="items-center" contract={contract} />
           )}
         </Col>
