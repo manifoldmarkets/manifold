@@ -611,7 +611,7 @@ function FeedAnswerGroup(props: {
             <UserLink username={username} name={name} /> answered
           </div>
 
-          <Row className="align-items justify-between gap-4">
+          <Col className="align-items justify-between gap-4 sm:flex-row">
             <span className="whitespace-pre-line text-lg">
               <Linkify text={text} />
             </span>
@@ -627,13 +627,13 @@ function FeedAnswerGroup(props: {
               </span>
               <BuyButton
                 className={clsx(
-                  'btn-sm hidden flex-initial !px-6 sm:flex',
+                  'btn-sm flex-initial !px-6 sm:flex',
                   tradingAllowed(contract) ? '' : '!hidden'
                 )}
                 onClick={() => setOpen(true)}
               />
             </Row>
-          </Row>
+          </Col>
         </Col>
       </Row>
 
@@ -656,15 +656,6 @@ function FeedAnswerGroup(props: {
           </div>
         </div>
       ))}
-
-      <div
-        className={clsx('ml-10 mt-4', tradingAllowed(contract) ? '' : 'hidden')}
-      >
-        <BuyButton
-          className="btn-sm !px-6 sm:hidden"
-          onClick={() => setOpen(true)}
-        />
-      </div>
     </Col>
   )
 }
