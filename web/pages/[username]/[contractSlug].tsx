@@ -145,12 +145,13 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
           comments={comments ?? []}
         />
 
-        {contract.outcomeType === 'FREE_RESPONSE' && (
+        {outcomeType === 'FREE_RESPONSE' && !isResolved && (
           <>
             <Spacer h={4} />
             <AnswersPanel
               contract={contract as FullContract<DPM, FreeResponse>}
             />
+            <Spacer h={4} />
           </>
         )}
 
