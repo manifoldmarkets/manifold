@@ -71,7 +71,7 @@ export function AnswerResolvePanel(props: {
       : 'btn-disabled'
 
   return (
-    <Col className="gap-4 rounded bg-gray-50 p-4">
+    <Col className="gap-4 rounded">
       <div>Resolve your market</div>
       <Col className="gap-4 sm:flex-row sm:items-center">
         <ChooseCancelSelector

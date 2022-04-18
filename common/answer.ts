@@ -29,3 +29,5 @@ export const getNoneAnswer = (contractId: string, creator: User) => {
     text: 'None',
   }
 }
+
+export const MAX_ANSWER_LENGTH = 240

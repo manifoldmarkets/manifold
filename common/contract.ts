@@ -38,6 +38,8 @@ export type FullContract<
   T
 
 export type Contract = FullContract<DPM | CPMM, Binary | Multi | FreeResponse>
+export type BinaryContract = FullContract<DPM | CPMM, Binary>
+export type FreeResponseContract = FullContract<DPM | CPMM, FreeResponse>
 
 export type DPM = {
   mechanism: 'dpm-2'
@@ -61,18 +63,20 @@ export type Binary = {
   outcomeType: 'BINARY'
   initialProbability: number
   resolutionProbability?: number // Used for BINARY markets resolved to MKT
+  resolution?: 'YES' | 'NO' | 'MKT' | 'CANCEL'
 }
 
 export type Multi = {
   outcomeType: 'MULTI'
   multiOutcomes: string[] // Used for outcomeType 'MULTI'.
-  resolutions?: { [outcome: string]: number } // Used for PROB
+  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
 export type FreeResponse = {
   outcomeType: 'FREE_RESPONSE'
   answers: Answer[] // Used for outcomeType 'FREE_RESPONSE'.
-  resolutions?: { [outcome: string]: number } // Used for PROB
+  resolution?: string | 'MKT' | 'CANCEL'
+  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
 export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE'

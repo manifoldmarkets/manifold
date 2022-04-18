@@ -250,11 +250,16 @@ function MyContractBets(props: {
           </Row>
 
           <Row className="flex-1 items-center gap-2 text-sm text-gray-500">
-            {isBinary && (
+            {(isBinary || resolution) && (
               <>
                 {resolution ? (
                   <div>
-                    Resolved <OutcomeLabel outcome={resolution} />
+                    Resolved{' '}
+                    <OutcomeLabel
+                      outcome={resolution}
+                      contract={contract}
+                      truncate="short"
+                    />
                   </div>
                 ) : (
                   <div className="text-primary text-lg">{probPercent}</div>
@@ -510,7 +515,15 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
       </td>
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
-        <OutcomeLabel outcome={outcome} />
+        {outcome === '0' ? (
+          'ANTE'
+        ) : (
+          <OutcomeLabel
+            outcome={outcome}
+            contract={contract}
+            truncate="short"
+          />
+        )}
       </td>
       <td>{formatMoney(Math.abs(amount))}</td>
       {!isCPMM && <td>{saleDisplay}</td>}
@@ -561,7 +574,8 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
     >
       <div className="mb-4 text-2xl">
         Sell {formatWithCommas(shares)} shares of{' '}
-        <OutcomeLabel outcome={outcome} /> for {formatMoney(saleAmount)}?
+        <OutcomeLabel outcome={outcome} contract={contract} truncate="long" />{' '}
+        for {formatMoney(saleAmount)}?
       </div>
       {!!loanAmount && (
         <div className="mt-2">
