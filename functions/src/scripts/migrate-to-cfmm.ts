@@ -29,6 +29,12 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
   await firestore.runTransaction(async (transaction) => {
     const contractDoc = await transaction.get(contractRef)
     const contract = contractDoc.data() as FullContract<DPM, Binary>
+
+    if (!contract?.slug) {
+      console.log('missing slug; id=', contractRef.id)
+      return
+    }
+
     console.log('recalculating', contract.slug)
 
     if (
@@ -137,7 +143,9 @@ async function main() {
           )
 
   for (let contractRef of contractRefs) {
-    await recalculateContract(contractRef, isCommit)
+    await recalculateContract(contractRef, isCommit).catch((e) =>
+      console.log('error: ', e, 'id=', contractRef.id)
+    )
     console.log()
     console.log()
   }
