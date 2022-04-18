@@ -62,7 +62,11 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
         shares
       )
 
-      if (isCommit) transaction.update(betsRef.doc(bet.id), { shares })
+      if (isCommit)
+        transaction.update(betsRef.doc(bet.id), {
+          shares,
+          dpmShares: bet.shares,
+        })
     }
 
     const prob = getDpmProbability(contract.totalShares)
@@ -78,6 +82,11 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
       collectedFees: addObjects(contract.collectedFees ?? noFees, noFees),
     }
 
+    const additionalInfo = {
+      cfmmConversionTime: Date.now(),
+      dpmPool: contract.pool,
+    }
+
     const liquidityDocRef = contractRef.collection('liquidity').doc()
 
     const lp = getCpmmInitialLiquidity(
@@ -91,7 +100,10 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
     )
 
     if (isCommit) {
-      transaction.update(contractRef, contractUpdate)
+      transaction.update(contractRef, {
+        ...contractUpdate,
+        ...additionalInfo,
+      })
       transaction.set(liquidityDocRef, lp)
 
       console.log('updated', contract.slug)
