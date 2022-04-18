@@ -397,7 +397,10 @@ export function ContractBetsTable(props: {
     sales.map((sale) => [sale.sale?.betId ?? '', sale])
   )
 
-  const [redemptions, normalBets] = _.partition(buys, (b) => b.isRedemption)
+  const [redemptions, normalBets] = _.partition(
+    contract.mechanism === 'cpmm-1' ? bets : buys,
+    (b) => b.isRedemption
+  )
   const amountRedeemed = Math.floor(
     -0.5 * _.sumBy(redemptions, (b) => b.shares)
   )
