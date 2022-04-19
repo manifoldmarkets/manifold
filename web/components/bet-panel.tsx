@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
-import _ from 'lodash'
 
 import { useUser } from '../hooks/use-user'
 import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
@@ -19,7 +18,7 @@ import { Bet } from '../../common/bet'
 import { placeBet, sellShares } from '../lib/firebase/api-call'
 import { BuyAmountInput, SellAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
-import { BinaryOutcomeLabel, OutcomeLabel } from './outcome-label'
+import { BinaryOutcomeLabel } from './outcome-label'
 import {
   calculatePayoutAfterCorrectBet,
   calculateShares,
@@ -32,8 +31,8 @@ import {
   calculateCpmmSale,
   getCpmmProbability,
 } from '../../common/calculate-cpmm'
-import { Modal } from './layout/modal'
 import { SellRow } from './sell-row'
+import { useSaveShares } from './use-save-shares'
 
 export function BetPanel(props: {
   contract: FullContract<DPM | CPMM, Binary>
@@ -97,9 +96,12 @@ export function BetPanelSwitcher(props: {
 
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
 
-  const { yesFloorShares, noFloorShares } = useSaveShares(contract, userBets)
+  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
+    contract,
+    userBets
+  )
 
-  const shares = yesFloorShares || noFloorShares
+  const floorShares = yesFloorShares || noFloorShares
   const sharesOutcome = yesFloorShares
     ? 'YES'
     : noFloorShares
@@ -119,7 +121,7 @@ export function BetPanelSwitcher(props: {
         <Col className="rounded-t-md bg-gray-100 px-6 py-6">
           <Row className="items-center justify-between gap-2">
             <div>
-              You have {formatWithCommas(Math.floor(shares))}{' '}
+              You have {formatWithCommas(floorShares)}{' '}
               <BinaryOutcomeLabel outcome={sharesOutcome} /> shares
             </div>
 
@@ -158,7 +160,7 @@ export function BetPanelSwitcher(props: {
         {tradeType === 'SELL' && user && sharesOutcome && (
           <SellPanel
             contract={contract as FullContract<CPMM, Binary>}
-            shares={yesFloorShares || noFloorShares}
+            shares={yesShares || noShares}
             sharesOutcome={sharesOutcome}
             user={user}
             userBets={userBets ?? []}
@@ -464,60 +466,5 @@ export function SellPanel(props: {
 
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
     </>
-  )
-}
-
-export const useSaveShares = (
-  contract: FullContract<CPMM | DPM, Binary>,
-  userBets: Bet[] | undefined
-) => {
-  const [savedShares, setSavedShares] = useState<
-    | {
-        yesShares: number
-        noShares: number
-        yesFloorShares: number
-        noFloorShares: number
-      }
-    | undefined
-  >()
-
-  const [yesBets, noBets] = _.partition(
-    userBets ?? [],
-    (bet) => bet.outcome === 'YES'
-  )
-  const [yesShares, noShares] = [
-    _.sumBy(yesBets, (bet) => bet.shares),
-    _.sumBy(noBets, (bet) => bet.shares),
-  ]
-
-  const [yesFloorShares, noFloorShares] = [
-    Math.floor(yesShares),
-    Math.floor(noShares),
-  ]
-
-  useEffect(() => {
-    // Save yes and no shares to local storage.
-    const savedShares = localStorage.getItem(`${contract.id}-shares`)
-    if (!userBets && savedShares) {
-      setSavedShares(JSON.parse(savedShares))
-    }
-
-    if (userBets) {
-      const updatedShares = { yesShares, noShares }
-      localStorage.setItem(
-        `${contract.id}-shares`,
-        JSON.stringify(updatedShares)
-      )
-    }
-  }, [contract.id, userBets, noShares, yesShares])
-
-  if (userBets) return { yesShares, noShares, yesFloorShares, noFloorShares }
-  return (
-    savedShares ?? {
-      yesShares: 0,
-      noShares: 0,
-      yesFloorShares: 0,
-      noFloorShares: 0,
-    }
   )
 }
