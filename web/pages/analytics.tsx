@@ -14,6 +14,7 @@ import { fromPropz, usePropz } from '../hooks/use-propz'
 import { getDailyBets } from '../lib/firebase/bets'
 import { getDailyComments } from '../lib/firebase/comments'
 import { getDailyContracts } from '../lib/firebase/contracts'
+import { getDailyNewUsers } from '../lib/firebase/users'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -21,11 +22,13 @@ export async function getStaticPropz() {
   const today = dayjs(dayjs().format('YYYY-MM-DD'))
   const startDate = today.subtract(numberOfDays, 'day')
 
-  const [dailyBets, dailyContracts, dailyComments] = await Promise.all([
-    getDailyBets(startDate.valueOf(), numberOfDays),
-    getDailyContracts(startDate.valueOf(), numberOfDays),
-    getDailyComments(startDate.valueOf(), numberOfDays),
-  ])
+  const [dailyBets, dailyContracts, dailyComments, dailyNewUsers] =
+    await Promise.all([
+      getDailyBets(startDate.valueOf(), numberOfDays),
+      getDailyContracts(startDate.valueOf(), numberOfDays),
+      getDailyComments(startDate.valueOf(), numberOfDays),
+      getDailyNewUsers(startDate.valueOf(), numberOfDays),
+    ])
 
   const dailyBetCounts = dailyBets.map((bets) => bets.length)
   const dailyContractCounts = dailyContracts.map(
@@ -87,6 +90,33 @@ export async function getStaticPropz() {
     return Math.round(retainedFrac * 100 * 100) / 100
   })
 
+  const firstBetDict: { [userId: string]: number } = {}
+  for (let i = 0; i < dailyBets.length; i++) {
+    const bets = dailyBets[i]
+    for (const bet of bets) {
+      if (bet.userId in firstBetDict) continue
+      firstBetDict[bet.userId] = i
+    }
+  }
+  const weeklyActivationRate = dailyNewUsers.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i
+    let activatedCount = 0
+    let newUsers = 0
+    for (let j = start; j <= end; j++) {
+      const userIds = dailyNewUsers[j].map((user) => user.id)
+      newUsers += userIds.length
+      for (const userId of userIds) {
+        const dayIndex = firstBetDict[userId]
+        if (dayIndex !== undefined && dayIndex <= end) {
+          activatedCount++
+        }
+      }
+    }
+    const frac = activatedCount / (newUsers || 1)
+    return Math.round(frac * 100 * 100) / 100
+  })
+
   return {
     props: {
       startDate: startDate.valueOf(),
@@ -97,6 +127,7 @@ export async function getStaticPropz() {
       dailyContractCounts,
       dailyCommentCounts,
       weekOnWeekRetention,
+      weeklyActivationRate,
     },
     revalidate: 12 * 60 * 60, // regenerate after half a day
   }
@@ -111,6 +142,7 @@ export default function Analytics(props: {
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
   weekOnWeekRetention: number[]
+  weeklyActivationRate: number[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     startDate: 0,
@@ -121,6 +153,7 @@ export default function Analytics(props: {
     dailyContractCounts: [],
     dailyCommentCounts: [],
     weekOnWeekRetention: [],
+    weeklyActivationRate: [],
   }
   return (
     <Page>
@@ -140,6 +173,7 @@ export function CustomAnalytics(props: {
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
   weekOnWeekRetention: number[]
+  weeklyActivationRate: number[]
 }) {
   const {
     startDate,
@@ -150,6 +184,7 @@ export function CustomAnalytics(props: {
     weeklyActiveUsers,
     monthlyActiveUsers,
     weekOnWeekRetention,
+    weeklyActivationRate,
   } = props
 
   const dailyDividedByWeekly = dailyActiveUsers
@@ -263,6 +298,17 @@ export function CustomAnalytics(props: {
       </p>
       <DailyPercentChart
         dailyPercent={weekOnWeekRetention.slice(7)}
+        startDate={oneWeekLaterDate}
+        small
+      />
+      <Spacer h={8} />
+
+      <Title text="Weekly activation rate" />
+      <p className="text-gray-500">
+        Out of all new users this week, how many placed at least one bet?
+      </p>
+      <DailyPercentChart
+        dailyPercent={weeklyActivationRate.slice(7)}
         startDate={oneWeekLaterDate}
         small
       />
