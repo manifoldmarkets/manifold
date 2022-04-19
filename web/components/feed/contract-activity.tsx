@@ -18,20 +18,12 @@ export function ContractActivity(props: {
   comments: Comment[]
   user: User | null | undefined
   mode: 'only-recent' | 'abbreviated' | 'all'
-  filterToOutcome?: string // Which multi-category outcome to filter
   contractPath?: string
   className?: string
   betRowClassName?: string
 }) {
-  const {
-    contract,
-    user,
-    filterToOutcome,
-    mode,
-    contractPath,
-    className,
-    betRowClassName,
-  } = props
+  const { contract, user, mode, contractPath, className, betRowClassName } =
+    props
 
   const updatedComments =
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -47,14 +39,9 @@ export function ContractActivity(props: {
       ? getRecentContractActivityItems(contract, bets, comments, user, {
           contractPath,
         })
-      : getAllContractActivityItems(
-          contract,
-          bets,
-          comments,
-          user,
-          filterToOutcome,
-          { abbreviated: mode === 'abbreviated' }
-        )
+      : getAllContractActivityItems(contract, bets, comments, user, {
+          abbreviated: mode === 'abbreviated',
+        })
 
   return (
     <FeedItems
