@@ -45,19 +45,19 @@ import { AnswerBetPanel } from '../answers/answer-bet-panel'
 import { useSaveSeenContract } from '../../hooks/use-seen-contracts'
 import { User } from '../../../common/user'
 import { Modal } from '../layout/modal'
+import { trackClick } from '../../lib/firebase/tracking'
 
 export function FeedItems(props: {
   contract: Contract
-  user: User | null | undefined
   items: ActivityItem[]
   className?: string
   betRowClassName?: string
 }) {
-  const { contract, user, items, className, betRowClassName } = props
+  const { contract, items, className, betRowClassName } = props
   const { outcomeType } = contract
 
   const ref = useRef<HTMLDivElement | null>(null)
-  useSaveSeenContract(ref, contract, user)
+  useSaveSeenContract(ref, contract)
 
   return (
     <div className={clsx('flow-root pr-2 md:pr-0', className)} ref={ref}>
@@ -347,6 +347,7 @@ export function FeedQuestion(props: {
               href={
                 props.contractPath ? props.contractPath : contractPath(contract)
               }
+              onClick={() => trackClick(contract.id)}
               className="text-lg text-indigo-700 sm:text-xl"
             >
               {question}

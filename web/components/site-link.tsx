@@ -4,9 +4,10 @@ import Link from 'next/link'
 export const SiteLink = (props: {
   href: string
   children?: any
+  onClick?: () => void
   className?: string
 }) => {
-  const { href, children, className } = props
+  const { href, children, onClick, className } = props
 
   return href.startsWith('http') ? (
     <a
@@ -17,7 +18,10 @@ export const SiteLink = (props: {
       )}
       style={{ /* For iOS safari */ wordBreak: 'break-word' }}
       target="_blank"
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (onClick) onClick()
+      }}
     >
       {children}
     </a>
@@ -29,7 +33,10 @@ export const SiteLink = (props: {
           className
         )}
         style={{ /* For iOS safari */ wordBreak: 'break-word' }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (onClick) onClick()
+        }}
       >
         {children}
       </a>
