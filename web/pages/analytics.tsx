@@ -90,6 +90,31 @@ export async function getStaticPropz() {
     return Math.round(retainedFrac * 100 * 100) / 100
   })
 
+  const monthlyRetention = dailyUserIds.map((_userId, i) => {
+    const twoMonthsAgo = {
+      start: Math.max(0, i - 60),
+      end: Math.max(0, i - 30),
+    }
+    const lastMonth = {
+      start: Math.max(0, i - 30),
+      end: i,
+    }
+
+    const activeTwoMonthsAgo = new Set<string>()
+    for (let j = twoMonthsAgo.start; j <= twoMonthsAgo.end; j++) {
+      dailyUserIds[j].forEach((userId) => activeTwoMonthsAgo.add(userId))
+    }
+    const activeLastMonth = new Set<string>()
+    for (let j = lastMonth.start; j <= lastMonth.end; j++) {
+      dailyUserIds[j].forEach((userId) => activeLastMonth.add(userId))
+    }
+    const retainedCount = _.sumBy(Array.from(activeTwoMonthsAgo), (userId) =>
+      activeLastMonth.has(userId) ? 1 : 0
+    )
+    const retainedFrac = retainedCount / activeTwoMonthsAgo.size
+    return Math.round(retainedFrac * 100 * 100) / 100
+  })
+
   const firstBetDict: { [userId: string]: number } = {}
   for (let i = 0; i < dailyBets.length; i++) {
     const bets = dailyBets[i]
@@ -128,6 +153,7 @@ export async function getStaticPropz() {
       dailyCommentCounts,
       weekOnWeekRetention,
       weeklyActivationRate,
+      monthlyRetention,
     },
     revalidate: 12 * 60 * 60, // regenerate after half a day
   }
@@ -142,6 +168,7 @@ export default function Analytics(props: {
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
   weekOnWeekRetention: number[]
+  monthlyRetention: number[]
   weeklyActivationRate: number[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
@@ -153,6 +180,7 @@ export default function Analytics(props: {
     dailyContractCounts: [],
     dailyCommentCounts: [],
     weekOnWeekRetention: [],
+    monthlyRetention: [],
     weeklyActivationRate: [],
   }
   return (
@@ -173,6 +201,7 @@ export function CustomAnalytics(props: {
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
   weekOnWeekRetention: number[]
+  monthlyRetention: number[]
   weeklyActivationRate: number[]
 }) {
   const {
@@ -184,6 +213,7 @@ export function CustomAnalytics(props: {
     weeklyActiveUsers,
     monthlyActiveUsers,
     weekOnWeekRetention,
+    monthlyRetention,
     weeklyActivationRate,
   } = props
 
@@ -292,14 +322,35 @@ export function CustomAnalytics(props: {
 
       <Spacer h={8} />
 
-      <Title text="Week-on-week retention" />
+      <Title text="Retention" />
       <p className="text-gray-500">
-        Out of all active users 2 weeks ago, how many came back last week?
+        What fraction of active users are still active after the given time
+        period?
       </p>
-      <DailyPercentChart
-        dailyPercent={weekOnWeekRetention.slice(7)}
-        startDate={oneWeekLaterDate}
-        small
+      <Tabs
+        defaultIndex={0}
+        tabs={[
+          {
+            title: 'Weekly',
+            content: (
+              <DailyPercentChart
+                dailyPercent={weekOnWeekRetention.slice(7)}
+                startDate={oneWeekLaterDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Monthly',
+            content: (
+              <DailyPercentChart
+                dailyPercent={monthlyRetention.slice(7)}
+                startDate={oneWeekLaterDate}
+                small
+              />
+            ),
+          },
+        ]}
       />
       <Spacer h={8} />
 
