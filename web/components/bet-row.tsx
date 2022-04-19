@@ -1,11 +1,14 @@
 import clsx from 'clsx'
 import { useState } from 'react'
 
-import { BetPanelSwitcher } from './bet-panel'
+import { BetPanelSwitcher, useSaveShares } from './bet-panel'
 import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
 import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 import { Modal } from './layout/modal'
+import { SellRow } from './sell-row'
+import { useUser } from '../hooks/use-user'
+import { useUserContractBets } from '../hooks/use-user-bets'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
 export default function BetRow(props: {
@@ -18,11 +21,17 @@ export default function BetRow(props: {
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
     undefined
   )
+  const user = useUser()
+  const userBets = useUserContractBets(user?.id, props.contract.id)
+  const { yesFloorShares, noFloorShares } = useSaveShares(
+    props.contract,
+    userBets
+  )
 
   return (
     <>
       <div className={className}>
-        <Row className="items-center justify-end gap-2">
+        <Row className="mt-2 justify-end space-x-3">
           {/* <div className={clsx('mr-2 text-gray-400', labelClassName)}>
             Place a trade
           </div> */}
@@ -32,6 +41,24 @@ export default function BetRow(props: {
               setOpen(true)
               setBetChoice(choice)
             }}
+            replaceNoButton={
+              yesFloorShares > noFloorShares && yesFloorShares > 0 ? (
+                <SellRow
+                  contract={props.contract}
+                  user={user}
+                  buttonOnly={true}
+                />
+              ) : undefined
+            }
+            replaceYesButton={
+              noFloorShares > yesFloorShares && noFloorShares > 0 ? (
+                <SellRow
+                  contract={props.contract}
+                  user={user}
+                  buttonOnly={true}
+                />
+              ) : undefined
+            }
           />
         </Row>
         <Modal open={open} setOpen={setOpen}>
