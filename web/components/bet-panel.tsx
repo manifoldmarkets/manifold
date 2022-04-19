@@ -54,7 +54,7 @@ export function BetPanel(props: {
   return (
     <Col className={className}>
       {sharesOutcome && user && mechanism === 'cpmm-1' && (
-        <Col className="rounded-t-md bg-gray-100 px-6 py-6">
+        <Col className="rounded-t-md bg-gray-100 px-4 py-6">
           <Row className="items-center justify-between gap-2">
             <div>
               You have {formatWithCommas(Math.floor(shares))}{' '}
