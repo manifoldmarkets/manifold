@@ -158,6 +158,12 @@ export default function Sidebar() {
           buttonContent={<MoreButton />}
         />
       </div>
+
+      {user && (
+        <Link href={'/create'}>
+          <button className="btn btn-primary btn-md mt-4">Create Market</button>
+        </Link>
+      )}
     </nav>
   )
 }
