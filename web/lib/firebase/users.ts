@@ -18,11 +18,13 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth'
+import _ from 'lodash'
 
 import { app } from './init'
 import { PrivateUser, User } from '../../../common/user'
 import { createUser } from './api-call'
 import { getValues, listenForValue, listenForValues } from './utils'
+import { DAY_MS } from '../../../common/util/time'
 
 export type { User }
 
@@ -176,4 +178,32 @@ const topCreatorsQuery = query(
 
 export function getTopCreators() {
   return getValues<User>(topCreatorsQuery)
+}
+
+export function getUsers() {
+  return getValues<User>(collection(db, 'users'))
+}
+
+const getUsersQuery = (startTime: number, endTime: number) =>
+  query(
+    collection(db, 'users'),
+    where('createdTime', '>=', startTime),
+    where('createdTime', '<', endTime),
+    orderBy('createdTime', 'asc')
+  )
+
+export async function getDailyNewUsers(
+  startTime: number,
+  numberOfDays: number
+) {
+  const query = getUsersQuery(startTime, startTime + DAY_MS * numberOfDays)
+  const users = await getValues<User>(query)
+
+  const usersByDay = _.range(0, numberOfDays).map(() => [] as User[])
+  for (const user of users) {
+    const dayIndex = Math.floor((user.createdTime - startTime) / DAY_MS)
+    usersByDay[dayIndex].push(user)
+  }
+
+  return usersByDay
 }
