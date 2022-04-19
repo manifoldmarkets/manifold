@@ -331,6 +331,9 @@ function EditableCloseDate(props: {
     closeTime && dayjs(closeTime).format('YYYY-MM-DDT23:59')
   )
 
+  const isSameYear = dayjs(closeTime).isSame(dayjs(), 'year')
+  const isSameDay = dayjs(closeTime).isSame(dayjs(), 'day')
+
   const onSave = () => {
     const newCloseTime = dayjs(closeDate).valueOf()
     if (newCloseTime === closeTime) setIsEditingCloseTime(false)
@@ -366,7 +369,10 @@ function EditableCloseDate(props: {
           text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
           time={closeTime}
         >
-          {dayjs(closeTime).format('MMM D')} ({fromNow(closeTime)})
+          {isSameYear
+            ? dayjs(closeTime).format('MMM D')
+            : dayjs(closeTime).format('MMM D, YYYY')}
+          {isSameDay && <> ({fromNow(closeTime)})</>}
         </DateTimeTooltip>
       )}
 
