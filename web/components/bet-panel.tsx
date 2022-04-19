@@ -42,8 +42,12 @@ export function BetPanel(props: {
   const { contract, className } = props
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
-  const { yesShares, noShares } = useSaveShares(contract, userBets)
-  const sharesOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
+  const { yesFloorShares, noFloorShares } = useSaveShares(contract, userBets)
+  const sharesOutcome = yesFloorShares
+    ? 'YES'
+    : noFloorShares
+    ? 'NO'
+    : undefined
 
   return (
     <Col className={className}>
@@ -93,10 +97,14 @@ export function BetPanelSwitcher(props: {
 
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
 
-  const { yesShares, noShares } = useSaveShares(contract, userBets)
+  const { yesFloorShares, noFloorShares } = useSaveShares(contract, userBets)
 
-  const shares = yesShares || noShares
-  const sharesOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
+  const shares = yesFloorShares || noFloorShares
+  const sharesOutcome = yesFloorShares
+    ? 'YES'
+    : noFloorShares
+    ? 'NO'
+    : undefined
 
   useEffect(() => {
     // Switch back to BUY if the user has sold all their shares.
@@ -150,7 +158,7 @@ export function BetPanelSwitcher(props: {
         {tradeType === 'SELL' && user && sharesOutcome && (
           <SellPanel
             contract={contract as FullContract<CPMM, Binary>}
-            shares={yesShares || noShares}
+            shares={yesFloorShares || noFloorShares}
             sharesOutcome={sharesOutcome}
             user={user}
             userBets={userBets ?? []}
@@ -464,7 +472,13 @@ export const useSaveShares = (
   userBets: Bet[] | undefined
 ) => {
   const [savedShares, setSavedShares] = useState<
-    { yesShares: number; noShares: number } | undefined
+    | {
+        yesShares: number
+        noShares: number
+        yesFloorShares: number
+        noFloorShares: number
+      }
+    | undefined
   >()
 
   const [yesBets, noBets] = _.partition(
@@ -474,6 +488,11 @@ export const useSaveShares = (
   const [yesShares, noShares] = [
     _.sumBy(yesBets, (bet) => bet.shares),
     _.sumBy(noBets, (bet) => bet.shares),
+  ]
+
+  const [yesFloorShares, noFloorShares] = [
+    Math.floor(yesShares),
+    Math.floor(noShares),
   ]
 
   useEffect(() => {
@@ -492,6 +511,13 @@ export const useSaveShares = (
     }
   }, [contract.id, userBets, noShares, yesShares])
 
-  if (userBets) return { yesShares, noShares }
-  return savedShares ?? { yesShares: 0, noShares: 0 }
+  if (userBets) return { yesShares, noShares, yesFloorShares, noFloorShares }
+  return (
+    savedShares ?? {
+      yesShares: 0,
+      noShares: 0,
+      yesFloorShares: 0,
+      noFloorShares: 0,
+    }
+  )
 }
