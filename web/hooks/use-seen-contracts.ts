@@ -1,8 +1,7 @@
 import _ from 'lodash'
 import { useEffect, RefObject, useState } from 'react'
 import { Contract } from '../../common/contract'
-import { User } from '../../common/user'
-import { logView } from '../lib/firebase/views'
+import { trackView } from '../lib/firebase/tracking'
 import { useIsVisible } from './use-is-visible'
 
 export const useSeenContracts = () => {
@@ -19,8 +18,7 @@ export const useSeenContracts = () => {
 
 export const useSaveSeenContract = (
   ref: RefObject<Element>,
-  contract: Contract,
-  user: User | null | undefined
+  contract: Contract
 ) => {
   const isVisible = useIsVisible(ref)
 
@@ -32,9 +30,9 @@ export const useSaveSeenContract = (
       }
       localStorage.setItem(key, JSON.stringify(newSeenContracts))
 
-      if (user) logView(user.id, contract.id)
+      trackView(contract.id)
     }
-  }, [isVisible, contract, user])
+  }, [isVisible, contract])
 }
 
 const key = 'feed-seen-contracts'

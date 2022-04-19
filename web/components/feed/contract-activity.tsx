@@ -46,7 +46,6 @@ export function ContractActivity(props: {
   return (
     <FeedItems
       contract={contract}
-      user={user}
       items={items}
       className={className}
       betRowClassName={betRowClassName}
