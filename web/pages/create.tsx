@@ -8,10 +8,8 @@ import { Spacer } from '../components/layout/spacer'
 import { useUser } from '../hooks/use-user'
 import { Contract, contractPath } from '../lib/firebase/contracts'
 import { createContract } from '../lib/firebase/api-call'
-import { BuyAmountInput } from '../components/amount-input'
 import { FIXED_ANTE, MINIMUM_ANTE } from '../../common/antes'
 import { InfoTooltip } from '../components/info-tooltip'
-import { CREATOR_FEE } from '../../common/fees'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { ProbabilitySelector } from '../components/probability-selector'
@@ -39,6 +37,7 @@ export default function Create() {
               <Textarea
                 placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
                 className="input input-bordered resize-none"
+                autoFocus
                 value={question}
                 onChange={(e) => setQuestion(e.target.value || '')}
               />
