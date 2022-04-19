@@ -18,7 +18,6 @@ export type ActivityItem =
   | QuestionItem
   | BetItem
   | CommentItem
-  | CreateAnswerItem
   | BetGroupItem
   | AnswerGroupItem
   | CloseItem
@@ -53,11 +52,6 @@ export type CommentItem = BaseActivityItem & {
   hideOutcome: boolean
   truncate: boolean
   smallAvatar: boolean
-}
-
-export type CreateAnswerItem = BaseActivityItem & {
-  type: 'createanswer'
-  answer: Answer
 }
 
 export type BetGroupItem = BaseActivityItem & {
@@ -260,7 +254,6 @@ export function getAllContractActivityItems(
   bets: Bet[],
   comments: Comment[],
   user: User | null | undefined,
-  filterToOutcome: string | undefined,
   options: {
     abbreviated: boolean
   }
@@ -275,30 +268,19 @@ export function getAllContractActivityItems(
       ? bets.filter((bet) => !bet.isAnte && !bet.isRedemption)
       : bets.filter((bet) => !(bet.isAnte && (bet.outcome as string) === '0'))
 
-  let answer: Answer | undefined
-  if (filterToOutcome) {
-    bets = bets.filter((bet) => bet.outcome === filterToOutcome)
-    answer = (contract as FullContract<DPM, FreeResponse>).answers?.find(
-      (answer) => answer.id === filterToOutcome
-    )
-  }
-
-  const items: ActivityItem[] =
-    filterToOutcome && answer
-      ? [{ type: 'createanswer', id: answer.id, contract, answer }]
-      : abbreviated
-      ? [
-          {
-            type: 'question',
-            id: '0',
-            contract,
-            showDescription: false,
-          },
-        ]
-      : [{ type: 'description', id: '0', contract }]
+  const items: ActivityItem[] = abbreviated
+    ? [
+        {
+          type: 'question',
+          id: '0',
+          contract,
+          showDescription: false,
+        },
+      ]
+    : [{ type: 'description', id: '0', contract }]
 
   items.push(
-    ...(outcomeType === 'FREE_RESPONSE' && !filterToOutcome
+    ...(outcomeType === 'FREE_RESPONSE'
       ? getAnswerGroups(
           contract as FullContract<DPM, FreeResponse>,
           bets,
@@ -311,9 +293,9 @@ export function getAllContractActivityItems(
           }
         )
       : groupBets(bets, comments, contract, user?.id, {
-          hideOutcome: !!filterToOutcome,
+          hideOutcome: false,
           abbreviated,
-          smallAvatar: !!filterToOutcome,
+          smallAvatar: false,
           reversed: false,
         }))
   )

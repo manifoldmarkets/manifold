@@ -96,8 +96,6 @@ function FeedItem(props: { item: ActivityItem }) {
       return <FeedComment {...item} />
     case 'bet':
       return <FeedBet {...item} />
-    case 'createanswer':
-      return <FeedCreateAnswer {...item} />
     case 'betgroup':
       return <FeedBetGroup {...item} />
     case 'answergroup':
@@ -393,34 +391,6 @@ function FeedDescription(props: { contract: Contract }) {
             username={creatorUsername}
           />{' '}
           created this market <RelativeTimestamp time={contract.createdTime} />
-        </div>
-      </div>
-    </>
-  )
-}
-
-function FeedCreateAnswer(props: {
-  contract: FullContract<any, FreeResponse>
-  answer: Answer
-}) {
-  const { answer } = props
-
-  return (
-    <>
-      <Avatar
-        className="ml-1"
-        size="sm"
-        username={answer.username}
-        avatarUrl={answer.avatarUrl}
-      />
-      <div className="min-w-0 flex-1 py-1.5">
-        <div className="text-sm text-gray-500">
-          <UserLink
-            className="text-gray-900"
-            name={answer.name}
-            username={answer.username}
-          />{' '}
-          submitted this answer <RelativeTimestamp time={answer.createdTime} />
         </div>
       </div>
     </>
