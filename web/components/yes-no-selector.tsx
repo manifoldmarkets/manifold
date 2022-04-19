@@ -12,15 +12,22 @@ export function YesNoSelector(props: {
   replaceYesButton?: React.ReactNode
   replaceNoButton?: React.ReactNode
 }) {
-  const { selected, onSelect, className, btnClassName } = props
+  const {
+    selected,
+    onSelect,
+    className,
+    btnClassName,
+    replaceNoButton,
+    replaceYesButton,
+  } = props
 
   const commonClassNames =
     'inline-flex flex-1  items-center justify-center rounded-3xl border-2 p-2'
 
   return (
     <Row className={clsx('space-x-3', className)}>
-      {props.replaceYesButton ? (
-        props.replaceYesButton
+      {replaceYesButton ? (
+        replaceYesButton
       ) : (
         <button
           className={clsx(
@@ -36,8 +43,8 @@ export function YesNoSelector(props: {
           Bet YES
         </button>
       )}
-      {props.replaceNoButton ? (
-        props.replaceNoButton
+      {replaceNoButton ? (
+        replaceNoButton
       ) : (
         <button
           className={clsx(
