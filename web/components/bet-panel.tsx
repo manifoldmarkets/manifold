@@ -33,60 +33,25 @@ import {
   getCpmmProbability,
 } from '../../common/calculate-cpmm'
 import { Modal } from './layout/modal'
+import { SellRow } from './sell-row'
 
 export function BetPanel(props: {
   contract: FullContract<DPM | CPMM, Binary>
   className?: string
 }) {
   const { contract, className } = props
-  const { mechanism } = contract
-
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
-
-  const [showSellModal, setShowSellModal] = useState(false)
-
   const { yesShares, noShares } = useSaveShares(contract, userBets)
-
-  const shares = yesShares || noShares
   const sharesOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
 
   return (
     <Col className={className}>
-      {sharesOutcome && user && mechanism === 'cpmm-1' && (
-        <Col className="rounded-t-md bg-gray-100 px-6 py-6">
-          <Row className="items-center justify-between gap-2">
-            <div>
-              You have {formatWithCommas(Math.floor(shares))}{' '}
-              <BinaryOutcomeLabel outcome={sharesOutcome} /> shares
-            </div>
-
-            <button
-              className="btn btn-sm"
-              style={{
-                backgroundColor: 'white',
-                border: '2px solid',
-                color: '#3D4451',
-              }}
-              onClick={() => setShowSellModal(true)}
-            >
-              Sell
-            </button>
-
-            {showSellModal && (
-              <SellSharesModal
-                contract={contract as FullContract<CPMM, Binary>}
-                user={user}
-                userBets={userBets ?? []}
-                shares={shares}
-                sharesOutcome={sharesOutcome}
-                setOpen={setShowSellModal}
-              />
-            )}
-          </Row>
-        </Col>
-      )}
-
+      <SellRow
+        contract={contract}
+        user={user}
+        className={'rounded-t-md bg-gray-100 px-6 py-6'}
+      />
       <Col
         className={clsx(
           'rounded-b-md bg-white px-8 py-6',
@@ -394,7 +359,7 @@ function BuyPanel(props: {
   )
 }
 
-function SellPanel(props: {
+export function SellPanel(props: {
   contract: FullContract<CPMM, Binary>
   userBets: Bet[]
   shares: number
@@ -494,7 +459,7 @@ function SellPanel(props: {
   )
 }
 
-const useSaveShares = (
+export const useSaveShares = (
   contract: FullContract<CPMM | DPM, Binary>,
   userBets: Bet[] | undefined
 ) => {
@@ -529,42 +494,4 @@ const useSaveShares = (
 
   if (userBets) return { yesShares, noShares }
   return savedShares ?? { yesShares: 0, noShares: 0 }
-}
-
-function SellSharesModal(props: {
-  contract: FullContract<CPMM, Binary>
-  userBets: Bet[]
-  shares: number
-  sharesOutcome: 'YES' | 'NO'
-  user: User
-  setOpen: (open: boolean) => void
-}) {
-  const { contract, shares, sharesOutcome, userBets, user, setOpen } = props
-
-  return (
-    <Modal open={true} setOpen={setOpen}>
-      <Col className="rounded-md bg-white px-8 py-6">
-        <Title className="!mt-0" text={'Sell shares'} />
-
-        <div className="mb-6">
-          You have {formatWithCommas(Math.floor(shares))}{' '}
-          <OutcomeLabel
-            outcome={sharesOutcome}
-            contract={contract}
-            truncate="long"
-          />{' '}
-          shares
-        </div>
-
-        <SellPanel
-          contract={contract}
-          shares={shares}
-          sharesOutcome={sharesOutcome}
-          user={user}
-          userBets={userBets ?? []}
-          onSellSuccess={() => setOpen(false)}
-        />
-      </Col>
-    </Modal>
-  )
 }
