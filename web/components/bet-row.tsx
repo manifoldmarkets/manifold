@@ -1,14 +1,15 @@
 import clsx from 'clsx'
 import { useState } from 'react'
 
-import { BetPanelSwitcher, useSaveShares } from './bet-panel'
+import { BetPanelSwitcher } from './bet-panel'
 import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
 import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 import { Modal } from './layout/modal'
-import { SellRow } from './sell-row'
+import { SellButton, SellRow } from './sell-row'
 import { useUser } from '../hooks/use-user'
 import { useUserContractBets } from '../hooks/use-user-bets'
+import { useSaveShares } from './use-save-shares'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
 export default function BetRow(props: {
@@ -16,17 +17,14 @@ export default function BetRow(props: {
   className?: string
   labelClassName?: string
 }) {
-  const { className, labelClassName } = props
+  const { className, labelClassName, contract } = props
   const [open, setOpen] = useState(false)
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
     undefined
   )
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, props.contract.id)
-  const { yesFloorShares, noFloorShares } = useSaveShares(
-    props.contract,
-    userBets
-  )
+  const userBets = useUserContractBets(user?.id, contract.id)
+  const { yesFloorShares, noFloorShares } = useSaveShares(contract, userBets)
 
   return (
     <>
@@ -43,28 +41,20 @@ export default function BetRow(props: {
             }}
             replaceNoButton={
               yesFloorShares > noFloorShares && yesFloorShares > 0 ? (
-                <SellRow
-                  contract={props.contract}
-                  user={user}
-                  buttonOnly={true}
-                />
+                <SellButton contract={contract} user={user} />
               ) : undefined
             }
             replaceYesButton={
               noFloorShares > yesFloorShares && noFloorShares > 0 ? (
-                <SellRow
-                  contract={props.contract}
-                  user={user}
-                  buttonOnly={true}
-                />
+                <SellButton contract={contract} user={user} />
               ) : undefined
             }
           />
         </Row>
         <Modal open={open} setOpen={setOpen}>
           <BetPanelSwitcher
-            contract={props.contract}
-            title={props.contract.question}
+            contract={contract}
+            title={contract.question}
             selected={betChoice}
             onBetSuccess={() => setOpen(false)}
           />

@@ -8,88 +8,67 @@ import { formatWithCommas } from '../../common/util/format'
 import { OutcomeLabel } from './outcome-label'
 import { Modal } from './layout/modal'
 import { Title } from './title'
-import { SellPanel, useSaveShares } from './bet-panel'
+import { SellPanel } from './bet-panel'
 import { useUserContractBets } from '../hooks/use-user-bets'
 import clsx from 'clsx'
+import { useSaveShares } from './use-save-shares'
 
 export function SellRow(props: {
   contract: FullContract<DPM | CPMM, Binary>
   user: User | null | undefined
   className?: string
-  buttonOnly?: boolean
 }) {
-  const { className } = props
+  const { className, contract, user } = props
 
-  const userBets = useUserContractBets(props.user?.id, props.contract.id)
+  const userBets = useUserContractBets(user?.id, contract.id)
   const [showSellModal, setShowSellModal] = useState(false)
 
-  const { mechanism } = props.contract
-  const { yesFloorShares, noFloorShares } = useSaveShares(
-    props.contract,
+  const { mechanism } = contract
+  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
+    contract,
     userBets
   )
-  const shares = yesFloorShares || noFloorShares
+  const floorShares = yesFloorShares || noFloorShares
   const sharesOutcome = yesFloorShares
     ? 'YES'
     : noFloorShares
     ? 'NO'
     : undefined
 
-  if (sharesOutcome && props.user && mechanism === 'cpmm-1') {
+  if (sharesOutcome && user && mechanism === 'cpmm-1') {
     return (
       <div>
-        {props.buttonOnly ? (
-          <Col className={'items-center'}>
+        <Col className={className}>
+          <Row className="items-center justify-between gap-2 ">
+            <div>
+              You have {formatWithCommas(floorShares)}{' '}
+              <OutcomeLabel
+                outcome={sharesOutcome}
+                contract={contract}
+                truncate={'short'}
+              />{' '}
+              shares
+            </div>
+
             <button
-              className={clsx(
-                'btn-sm w-24 gap-1',
-                // from the yes-no-selector:
-                'flex inline-flex flex-row  items-center justify-center rounded-3xl border-2 p-2',
-                sharesOutcome === 'NO'
-                  ? 'hover:bg-primary-focus border-primary hover:border-primary-focus text-primary hover:text-white'
-                  : 'border-red-400 text-red-500 hover:border-red-500 hover:bg-red-500 hover:text-white'
-              )}
+              className="btn btn-sm"
+              style={{
+                backgroundColor: 'white',
+                border: '2px solid',
+                color: '#3D4451',
+              }}
               onClick={() => setShowSellModal(true)}
             >
-              {'Sell ' + sharesOutcome}
+              Sell
             </button>
-            <div className={'w-24 text-center text-sm text-gray-500'}>
-              {'(' + shares + ' shares)'}
-            </div>
-          </Col>
-        ) : (
-          <Col className={className}>
-            <Row className="items-center justify-between gap-2 ">
-              <div>
-                You have {formatWithCommas(shares)}{' '}
-                <OutcomeLabel
-                  outcome={sharesOutcome}
-                  contract={props.contract}
-                  truncate={'short'}
-                />{' '}
-                shares
-              </div>
-
-              <button
-                className="btn btn-sm"
-                style={{
-                  backgroundColor: 'white',
-                  border: '2px solid',
-                  color: '#3D4451',
-                }}
-                onClick={() => setShowSellModal(true)}
-              >
-                Sell
-              </button>
-            </Row>
-          </Col>
-        )}
+          </Row>
+        </Col>
         {showSellModal && (
           <SellSharesModal
-            contract={props.contract as FullContract<CPMM, Binary>}
-            user={props.user}
+            contract={contract as FullContract<CPMM, Binary>}
+            user={user}
             userBets={userBets ?? []}
-            shares={shares}
+            shares={yesShares || noShares}
             sharesOutcome={sharesOutcome}
             setOpen={setShowSellModal}
           />
@@ -98,7 +77,63 @@ export function SellRow(props: {
     )
   }
 
-  return <div></div>
+  return <div />
+}
+
+export function SellButton(props: {
+  contract: FullContract<DPM | CPMM, Binary>
+  user: User | null | undefined
+}) {
+  const { contract, user } = props
+
+  const userBets = useUserContractBets(user?.id, contract.id)
+  const [showSellModal, setShowSellModal] = useState(false)
+
+  const { mechanism } = contract
+  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
+    contract,
+    userBets
+  )
+  const floorShares = yesFloorShares || noFloorShares
+  const sharesOutcome = yesFloorShares
+    ? 'YES'
+    : noFloorShares
+    ? 'NO'
+    : undefined
+
+  if (sharesOutcome && user && mechanism === 'cpmm-1') {
+    return (
+      <Col className={'items-center'}>
+        <button
+          className={clsx(
+            'btn-sm w-24 gap-1',
+            // from the yes-no-selector:
+            'flex inline-flex flex-row  items-center justify-center rounded-3xl border-2 p-2',
+            sharesOutcome === 'NO'
+              ? 'hover:bg-primary-focus border-primary hover:border-primary-focus text-primary hover:text-white'
+              : 'border-red-400 text-red-500 hover:border-red-500 hover:bg-red-500 hover:text-white'
+          )}
+          onClick={() => setShowSellModal(true)}
+        >
+          {'Sell ' + sharesOutcome}
+        </button>
+        <div className={'mt-1 w-24 text-center text-sm text-gray-500'}>
+          {'(' + floorShares + ' shares)'}
+        </div>
+        {showSellModal && (
+          <SellSharesModal
+            contract={contract as FullContract<CPMM, Binary>}
+            user={user}
+            userBets={userBets ?? []}
+            shares={yesShares || noShares}
+            sharesOutcome={sharesOutcome}
+            setOpen={setShowSellModal}
+          />
+        )}
+      </Col>
+    )
+  }
+  return <div />
 }
 
 function SellSharesModal(props: {
@@ -120,7 +155,7 @@ function SellSharesModal(props: {
           You have {formatWithCommas(Math.floor(shares))}{' '}
           <OutcomeLabel
             outcome={sharesOutcome}
-            contract={props.contract}
+            contract={contract}
             truncate={'short'}
           />{' '}
           shares
