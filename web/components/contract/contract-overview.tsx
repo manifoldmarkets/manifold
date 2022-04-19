@@ -7,7 +7,7 @@ import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
 import clsx from 'clsx'
 import {
-  FreeResponseResolution,
+  FreeResponseResolutionOrChance,
   ContractDetails,
   BinaryResolutionOrChance,
 } from './contract-card'
@@ -59,9 +59,8 @@ export const ContractOverview = (props: {
         ) : (
           outcomeType === 'FREE_RESPONSE' &&
           resolution && (
-            <FreeResponseResolution
+            <FreeResponseResolutionOrChance
               contract={contract}
-              resolution={resolution}
               truncate="none"
             />
           )

@@ -10,7 +10,7 @@ import { AnswersGraph } from '../../../components/answers/answers-graph'
 import {
   BinaryResolutionOrChance,
   ContractDetails,
-  FreeResponseResolution,
+  FreeResponseResolutionOrChance,
 } from '../../../components/contract/contract-card'
 import { ContractProbGraph } from '../../../components/contract/contract-prob-graph'
 import { Col } from '../../../components/layout/col'
@@ -122,9 +122,8 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
           {isBinary && <BinaryResolutionOrChance contract={contract} />}
 
           {outcomeType === 'FREE_RESPONSE' && resolution && (
-            <FreeResponseResolution
+            <FreeResponseResolutionOrChance
               contract={contract}
-              resolution={resolution}
               truncate="long"
             />
           )}

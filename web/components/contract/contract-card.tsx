@@ -1,9 +1,10 @@
 import clsx from 'clsx'
 import Link from 'next/link'
+import _ from 'lodash'
 import { ClockIcon, DatabaseIcon, PencilIcon } from '@heroicons/react/outline'
 import { TrendingUpIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
-import { formatMoney } from '../../../common/util/format'
+import { formatMoney, formatPercent } from '../../../common/util/format'
 import { UserLink } from '../user-page'
 import {
   Contract,
@@ -30,9 +31,11 @@ import {
   FullContract,
 } from '../../../common/contract'
 import {
+  AnswerLabel,
   BinaryContractOutcomeLabel,
   FreeResponseOutcomeLabel,
 } from '../outcome-label'
+import { getOutcomeProbability } from '../../../common/calculate'
 
 export function ContractCard(props: {
   contract: Contract
@@ -80,10 +83,9 @@ export function ContractCard(props: {
               contract={contract}
             />
           )}
-          {outcomeType === 'FREE_RESPONSE' && resolution && (
-            <FreeResponseResolution
+          {outcomeType === 'FREE_RESPONSE' && (
+            <FreeResponseResolutionOrChance
               contract={contract as FullContract<DPM, FreeResponse>}
-              resolution={resolution}
               truncate="long"
             />
           )}
@@ -130,20 +132,51 @@ export function BinaryResolutionOrChance(props: {
   )
 }
 
-export function FreeResponseResolution(props: {
+function getTopAnswer(contract: FreeResponseContract) {
+  const { answers } = contract
+  const top = _.maxBy(
+    answers.map((answer) => ({
+      answer,
+      prob: getOutcomeProbability(contract, answer.id),
+    })),
+    ({ prob }) => prob
+  )
+  return top?.answer
+}
+
+export function FreeResponseResolutionOrChance(props: {
   contract: FreeResponseContract
-  resolution: string
   truncate: 'short' | 'long' | 'none'
 }) {
-  const { contract, resolution, truncate } = props
+  const { contract, truncate } = props
+  const { resolution } = contract
+
+  const topAnswer = getTopAnswer(contract)
+
   return (
     <Col className="text-xl">
-      <div className={clsx('text-base text-gray-500')}>Resolved</div>
-      <FreeResponseOutcomeLabel
-        contract={contract}
-        resolution={resolution}
-        truncate={truncate}
-      />
+      {resolution ? (
+        <>
+          <div className={clsx('text-base text-gray-500')}>Resolved</div>
+          <FreeResponseOutcomeLabel
+            contract={contract}
+            resolution={resolution}
+            truncate={truncate}
+          />
+        </>
+      ) : (
+        topAnswer && (
+          <Row className="flex-1 items-center justify-between gap-6">
+            <AnswerLabel answer={topAnswer} truncate={truncate} />
+            <Col className="text-primary">
+              <div>
+                {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
+              </div>
+              <div className="text-base">chance</div>
+            </Col>
+          </Row>
+        )
+      )}
     </Col>
   )
 }
