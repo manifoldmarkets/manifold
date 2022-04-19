@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { useState } from 'react'
 
 import { BetPanelSwitcher } from './bet-panel'
@@ -6,7 +5,7 @@ import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
 import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 import { Modal } from './layout/modal'
-import { SellButton, SellRow } from './sell-row'
+import { SellButton } from './sell-button'
 import { useUser } from '../hooks/use-user'
 import { useUserContractBets } from '../hooks/use-user-bets'
 import { useSaveShares } from './use-save-shares'

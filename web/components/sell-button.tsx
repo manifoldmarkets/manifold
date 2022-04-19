@@ -1,20 +1,17 @@
 import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
 import { User } from '../../common/user'
-import { useState } from 'react'
-import { Col } from './layout/col'
-import { Row } from './layout/row'
-import { formatWithCommas } from '../../common/util/format'
-import { OutcomeLabel } from './outcome-label'
 import { useUserContractBets } from '../hooks/use-user-bets'
+import { useState } from 'react'
 import { useSaveShares } from './use-save-shares'
+import { Col } from './layout/col'
+import clsx from 'clsx'
 import { SellSharesModal } from './sell-modal'
 
-export function SellRow(props: {
+export function SellButton(props: {
   contract: FullContract<DPM | CPMM, Binary>
   user: User | null | undefined
-  className?: string
 }) {
-  const { className, contract, user } = props
+  const { contract, user } = props
 
   const userBets = useUserContractBets(user?.id, contract.id)
   const [showSellModal, setShowSellModal] = useState(false)
@@ -33,32 +30,23 @@ export function SellRow(props: {
 
   if (sharesOutcome && user && mechanism === 'cpmm-1') {
     return (
-      <div>
-        <Col className={className}>
-          <Row className="items-center justify-between gap-2 ">
-            <div>
-              You have {formatWithCommas(floorShares)}{' '}
-              <OutcomeLabel
-                outcome={sharesOutcome}
-                contract={contract}
-                truncate={'short'}
-              />{' '}
-              shares
-            </div>
-
-            <button
-              className="btn btn-sm"
-              style={{
-                backgroundColor: 'white',
-                border: '2px solid',
-                color: '#3D4451',
-              }}
-              onClick={() => setShowSellModal(true)}
-            >
-              Sell
-            </button>
-          </Row>
-        </Col>
+      <Col className={'items-center'}>
+        <button
+          className={clsx(
+            'btn-sm w-24 gap-1',
+            // from the yes-no-selector:
+            'flex inline-flex flex-row  items-center justify-center rounded-3xl border-2 p-2',
+            sharesOutcome === 'NO'
+              ? 'hover:bg-primary-focus border-primary hover:border-primary-focus text-primary hover:text-white'
+              : 'border-red-400 text-red-500 hover:border-red-500 hover:bg-red-500 hover:text-white'
+          )}
+          onClick={() => setShowSellModal(true)}
+        >
+          {'Sell ' + sharesOutcome}
+        </button>
+        <div className={'mt-1 w-24 text-center text-sm text-gray-500'}>
+          {'(' + floorShares + ' shares)'}
+        </div>
         {showSellModal && (
           <SellSharesModal
             contract={contract as FullContract<CPMM, Binary>}
@@ -69,9 +57,8 @@ export function SellRow(props: {
             setOpen={setShowSellModal}
           />
         )}
-      </div>
+      </Col>
     )
   }
-
   return <div />
 }
