@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
 import { initAdmin } from './script-init'
-initAdmin('stephenDev')
+initAdmin()
 
 import { Binary, Contract, DPM, FullContract } from '../../../common/contract'
 import { Bet } from '../../../common/bet'
