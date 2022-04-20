@@ -1,9 +1,10 @@
 const defaultTheme = require('tailwindcss/defaultTheme')
 
 module.exports = {
-  mode: 'jit',
-  purge: ['./pages/**/*.{js,ts,jsx,tsx}', './components/**/*.{js,ts,jsx,tsx}'],
-  darkMode: false, // or 'media' or 'class'
+  content: [
+    './pages/**/*.{js,ts,jsx,tsx}',
+    './components/**/*.{js,ts,jsx,tsx}',
+  ],
   theme: {
     fontFamily: Object.assign(
       { ...defaultTheme.fontFamily },
@@ -17,9 +18,6 @@ module.exports = {
         'world-trading': "url('/world-trading-background.webp')",
       },
     },
-  },
-  variants: {
-    extend: {},
   },
   plugins: [
     require('@tailwindcss/forms'),
