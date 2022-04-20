@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
 import { initAdmin } from './script-init'
-initAdmin('stephen')
+initAdmin()
 
 import { PrivateUser, STARTING_BALANCE, User } from '../../../common/user'
 
