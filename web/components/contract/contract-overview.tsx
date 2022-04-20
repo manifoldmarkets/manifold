@@ -8,7 +8,6 @@ import { Linkify } from '../linkify'
 import clsx from 'clsx'
 import {
   FreeResponseResolutionOrChance,
-  ContractDetails,
   BinaryResolutionOrChance,
 } from './contract-card'
 import { Bet } from '../../../common/bet'
@@ -17,6 +16,7 @@ import BetRow from '../bet-row'
 import { AnswersGraph } from '../answers/answers-graph'
 import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { ContractDescription } from './contract-description'
+import { ContractDetails } from './contract-details'
 
 export const ContractOverview = (props: {
   contract: Contract
