@@ -9,40 +9,57 @@ export function YesNoSelector(props: {
   onSelect: (selected: 'YES' | 'NO') => void
   className?: string
   btnClassName?: string
+  replaceYesButton?: React.ReactNode
+  replaceNoButton?: React.ReactNode
 }) {
-  const { selected, onSelect, className, btnClassName } = props
+  const {
+    selected,
+    onSelect,
+    className,
+    btnClassName,
+    replaceNoButton,
+    replaceYesButton,
+  } = props
 
   const commonClassNames =
     'inline-flex flex-1  items-center justify-center rounded-3xl border-2 p-2'
 
   return (
     <Row className={clsx('space-x-3', className)}>
-      <button
-        className={clsx(
-          commonClassNames,
-          'hover:bg-primary-focus border-primary hover:border-primary-focus hover:text-white',
-          selected == 'YES'
-            ? 'bg-primary text-white'
-            : 'text-primary bg-transparent',
-          btnClassName
-        )}
-        onClick={() => onSelect('YES')}
-      >
-        Bet YES
-      </button>
-      <button
-        className={clsx(
-          commonClassNames,
-          'border-red-400 hover:border-red-500 hover:bg-red-500 hover:text-white',
-          selected == 'NO'
-            ? 'bg-red-400 text-white'
-            : 'bg-transparent text-red-400',
-          btnClassName
-        )}
-        onClick={() => onSelect('NO')}
-      >
-        Bet NO
-      </button>
+      {replaceYesButton ? (
+        replaceYesButton
+      ) : (
+        <button
+          className={clsx(
+            commonClassNames,
+            'hover:bg-primary-focus border-primary hover:border-primary-focus hover:text-white',
+            selected == 'YES'
+              ? 'bg-primary text-white'
+              : 'text-primary bg-transparent',
+            btnClassName
+          )}
+          onClick={() => onSelect('YES')}
+        >
+          Bet YES
+        </button>
+      )}
+      {replaceNoButton ? (
+        replaceNoButton
+      ) : (
+        <button
+          className={clsx(
+            commonClassNames,
+            'border-red-400 hover:border-red-500 hover:bg-red-500 hover:text-white',
+            selected == 'NO'
+              ? 'bg-red-400 text-white'
+              : 'bg-transparent text-red-400',
+            btnClassName
+          )}
+          onClick={() => onSelect('NO')}
+        >
+          Bet NO
+        </button>
+      )}
     </Row>
   )
 }
