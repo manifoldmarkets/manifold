@@ -68,7 +68,7 @@ export function ContractCard(props: {
         <Row
           className={clsx(
             'justify-between gap-4',
-            outcomeType === 'FREE_RESPONSE' && 'flex-col items-start'
+            outcomeType === 'FREE_RESPONSE' && 'flex-col items-start !gap-2'
           )}
         >
           <p
@@ -85,6 +85,7 @@ export function ContractCard(props: {
           )}
           {outcomeType === 'FREE_RESPONSE' && (
             <FreeResponseResolutionOrChance
+              className="self-end text-gray-600"
               contract={contract as FullContract<DPM, FreeResponse>}
               truncate="long"
             />
@@ -147,14 +148,15 @@ function getTopAnswer(contract: FreeResponseContract) {
 export function FreeResponseResolutionOrChance(props: {
   contract: FreeResponseContract
   truncate: 'short' | 'long' | 'none'
+  className?: string
 }) {
-  const { contract, truncate } = props
+  const { contract, truncate, className } = props
   const { resolution } = contract
 
   const topAnswer = getTopAnswer(contract)
 
   return (
-    <Col className="text-xl">
+    <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
       {resolution ? (
         <>
           <div className={clsx('text-base text-gray-500')}>Resolved</div>
@@ -162,13 +164,18 @@ export function FreeResponseResolutionOrChance(props: {
             contract={contract}
             resolution={resolution}
             truncate={truncate}
+            answerClassName="text-xl"
           />
         </>
       ) : (
         topAnswer && (
-          <Row className="flex-1 items-center justify-between gap-6">
-            <AnswerLabel answer={topAnswer} truncate={truncate} />
-            <Col className="text-primary">
+          <Row className="items-center gap-6">
+            <AnswerLabel
+              className="!text-gray-600"
+              answer={topAnswer}
+              truncate={truncate}
+            />
+            <Col className="text-primary text-3xl">
               <div>
                 {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
               </div>

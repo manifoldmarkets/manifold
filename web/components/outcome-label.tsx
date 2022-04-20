@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { Answer } from '../../common/answer'
 import { getProbability } from '../../common/calculate'
 import {
@@ -59,8 +60,9 @@ export function FreeResponseOutcomeLabel(props: {
   contract: FreeResponseContract
   resolution: string | 'CANCEL' | 'MKT'
   truncate: 'short' | 'long' | 'none'
+  answerClassName?: string
 }) {
-  const { contract, resolution, truncate } = props
+  const { contract, resolution, truncate, answerClassName } = props
 
   if (resolution === 'CANCEL') return <CancelLabel />
   if (resolution === 'MKT') return <MultiLabel />
@@ -68,7 +70,13 @@ export function FreeResponseOutcomeLabel(props: {
   const { answers } = contract
   const chosen = answers?.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />
-  return <AnswerLabel answer={chosen} truncate={truncate} />
+  return (
+    <AnswerLabel
+      answer={chosen}
+      truncate={truncate}
+      className={answerClassName}
+    />
+  )
 }
 
 export function YesLabel() {
@@ -103,8 +111,9 @@ export function AnswerNumberLabel(props: { number: string }) {
 export function AnswerLabel(props: {
   answer: Answer
   truncate: 'short' | 'long' | 'none'
+  className?: string
 }) {
-  const { answer, truncate } = props
+  const { answer, truncate, className } = props
   const { text } = answer
 
   let truncated = text
@@ -114,5 +123,5 @@ export function AnswerLabel(props: {
     truncated = text.slice(0, 75) + '...'
   }
 
-  return <span className="text-primary">{truncated}</span>
+  return <span className={className}>{truncated}</span>
 }
