@@ -18,7 +18,6 @@ import {
 } from '../../lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
-import { contractTextDetails } from '../../components/contract/contract-card'
 import { Bet, listAllBets } from '../../lib/firebase/bets'
 import { Comment, listAllComments } from '../../lib/firebase/comments'
 import Custom404 from '../404'
@@ -33,6 +32,7 @@ import { useUserById } from '../../hooks/use-users'
 import { ContractTabs } from '../../components/contract/contract-tabs'
 import { FirstArgument } from '../../../common/util/types'
 import { DPM, FreeResponse, FullContract } from '../../../common/contract'
+import { contractTextDetails } from '../../components/contract/contract-details'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
