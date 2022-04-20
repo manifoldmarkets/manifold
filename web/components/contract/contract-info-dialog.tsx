@@ -11,6 +11,7 @@ import {
   contractPath,
   getBinaryProbPercent,
 } from '../../lib/firebase/contracts'
+import { AddLiquidityPanel } from '../add-liquidity-panel'
 import { CopyLinkButton } from '../copy-link-button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -110,8 +111,14 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
 
           <div className="text-gray-500">Tags</div>
           <TagsInput contract={contract} />
-
           <div />
+
+          {!contract.resolution && (
+            <>
+              <div className="text-gray-500">Add liquidity</div>
+              <AddLiquidityPanel contract={contract} />
+            </>
+          )}
         </Col>
       </Modal>
     </>
