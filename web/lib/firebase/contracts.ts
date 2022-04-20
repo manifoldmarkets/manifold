@@ -22,6 +22,7 @@ import { getDpmProbability } from '../../../common/calculate-dpm'
 import { createRNG, shuffle } from '../../../common/util/random'
 import { getCpmmProbability } from '../../../common/calculate-cpmm'
 import { formatMoney, formatPercent } from '../../../common/util/format'
+import { DAY_MS } from '../../../common/util/time'
 export type { Contract }
 
 export function contractPath(contract: Contract) {
@@ -160,6 +161,19 @@ export function listenForInactiveContracts(
   setContracts: (contracts: Contract[]) => void
 ) {
   return listenForValues<Contract>(inactiveContractsQuery, setContracts)
+}
+
+const newContractsQuery = query(
+  contractCollection,
+  where('isResolved', '==', false),
+  where('volume7Days', '==', 0),
+  where('createdTime', '>', Date.now() - 7 * DAY_MS)
+)
+
+export function listenForNewContracts(
+  setContracts: (contracts: Contract[]) => void
+) {
+  return listenForValues<Contract>(newContractsQuery, setContracts)
 }
 
 export function listenForContract(
