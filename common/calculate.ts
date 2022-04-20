@@ -18,7 +18,14 @@ import {
   getDpmProbabilityAfterSale,
 } from './calculate-dpm'
 import { calculateFixedPayout } from './calculate-fixed-payouts'
-import { Binary, Contract, CPMM, DPM, FullContract } from './contract'
+import {
+  Binary,
+  Contract,
+  CPMM,
+  DPM,
+  FreeResponseContract,
+  FullContract,
+} from './contract'
 
 export function getProbability(contract: FullContract<DPM | CPMM, Binary>) {
   return contract.mechanism === 'cpmm-1'
@@ -169,4 +176,16 @@ export function getContractBetNullMetrics() {
     profit: 0,
     profitPercent: 0,
   }
+}
+
+export function getTopAnswer(contract: FreeResponseContract) {
+  const { answers } = contract
+  const top = _.maxBy(
+    answers.map((answer) => ({
+      answer,
+      prob: getOutcomeProbability(contract, answer.id),
+    })),
+    ({ prob }) => prob
+  )
+  return top?.answer
 }

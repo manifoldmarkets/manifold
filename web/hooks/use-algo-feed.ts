@@ -8,6 +8,12 @@ import { logInterpolation } from '../../common/util/math'
 import { getRecommendedContracts } from '../../common/recommended-contracts'
 import { useSeenContracts } from './use-seen-contracts'
 import { useGetUserBetContractIds, useUserBetContracts } from './use-user-bets'
+import { DAY_MS } from '../../common/util/time'
+import {
+  getProbability,
+  getOutcomeProbability,
+  getTopAnswer,
+} from '../../common/calculate'
 
 const MAX_FEED_CONTRACTS = 75
 
@@ -120,11 +126,13 @@ function getContractsActivityScores(
   )
 
   const scoredContracts = contracts.map((contract) => {
+    const { outcomeType } = contract
+
     const seenTime = seenContracts[contract.id]
     const lastCommentTime = contractMostRecentComment[contract.id]?.createdTime
     const hasNewComments =
       !seenTime || (lastCommentTime && lastCommentTime > seenTime)
-    const newCommentScore = hasNewComments ? 1 : 0.75
+    const newCommentScore = hasNewComments ? 1 : 0.5
 
     const commentCount = contractComments[contract.id]?.length ?? 0
     const betCount = contractBets[contract.id]?.length ?? 0
@@ -132,24 +140,38 @@ function getContractsActivityScores(
     const activityCountScore =
       0.5 + 0.5 * logInterpolation(0, 200, activtyCount)
 
-    const lastBetTime = contractMostRecentBet[contract.id]?.createdTime
-    const timeSinceLastBet = !lastBetTime
-      ? contract.createdTime
-      : Date.now() - lastBetTime
-    const daysAgo = timeSinceLastBet / oneDayMs
+    const lastBetTime =
+      contractMostRecentBet[contract.id]?.createdTime ?? contract.createdTime
+    const timeSinceLastBet = Date.now() - lastBetTime
+    const daysAgo = timeSinceLastBet / DAY_MS
     const timeAgoScore = 1 - logInterpolation(0, 3, daysAgo)
 
-    const score = newCommentScore * activityCountScore * timeAgoScore
+    let prob = 0.5
+    if (outcomeType === 'BINARY') {
+      prob = getProbability(contract)
+    } else if (outcomeType === 'FREE_RESPONSE') {
+      const topAnswer = getTopAnswer(contract)
+      if (topAnswer)
+        prob = Math.max(0.5, getOutcomeProbability(contract, topAnswer.id))
+    }
+    const frac = 1 - Math.abs(prob - 0.5) ** 2 / 0.25
+    const probScore = 0.5 + frac * 0.5
+
+    const score =
+      newCommentScore * activityCountScore * timeAgoScore * probScore
 
     // Map score to [0.5, 1] since no recent activty is not a deal breaker.
     const mappedScore = 0.5 + score / 2
-    return [contract.id, mappedScore] as [string, number]
+    const newMappedScore = 0.75 + score / 4
+
+    const isNew = Date.now() < contract.createdTime + DAY_MS
+    const activityScore = isNew ? newMappedScore : mappedScore
+
+    return [contract.id, activityScore] as [string, number]
   })
 
   return _.fromPairs(scoredContracts)
 }
-
-const oneDayMs = 24 * 60 * 60 * 1000
 
 function getSeenContractsScore(
   contract: Contract,
@@ -160,7 +182,7 @@ function getSeenContractsScore(
     return 1
   }
 
-  const daysAgo = (Date.now() - lastSeen) / oneDayMs
+  const daysAgo = (Date.now() - lastSeen) / DAY_MS
 
   if (daysAgo < 0.5) {
     const frac = logInterpolation(0, 0.5, daysAgo)
