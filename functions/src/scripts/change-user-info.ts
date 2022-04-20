@@ -1,15 +1,8 @@
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
-// Generate your own private key, and set the path below:
-// https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
-
-// const serviceAccount = require('../../../../../../Downloads/dev-mantic-markets-firebase-adminsdk-sir5m-b2d27f8970.json')
-const serviceAccount = require('../../../../../../Downloads/mantic-markets-firebase-adminsdk-1ep46-351a65eca3.json')
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-})
+import { initAdmin } from './script-init'
+initAdmin()
 
 import { getUserByUsername } from '../utils'
 import { changeUser } from '../change-user-info'

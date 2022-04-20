@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
 import { initAdmin } from './script-init'
-initAdmin('stephen')
+initAdmin()
 
 import { Bet } from '../../../common/bet'
 import { getDpmProbability } from '../../../common/calculate-dpm'
