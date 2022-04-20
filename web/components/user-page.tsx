@@ -88,7 +88,10 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         <Col className="sm:flex-row sm:gap-4">
           {user.website && (
             <SiteLink
-              href={user.website.replace('https://manifold.markets/', '')}
+              href={
+                'https://' +
+                user.website.replace('http://', '').replace('https://', '')
+              }
             >
               <Row className="items-center gap-1">
                 <LinkIcon className="h-4 w-4" />
