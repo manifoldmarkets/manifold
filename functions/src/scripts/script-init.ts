@@ -6,7 +6,7 @@ import * as admin from 'firebase-admin'
 // First, generate a private key from the Google service account management page:
 // Prod: https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
 // Dev: https://console.firebase.google.com/u/0/project/dev-mantic-markets/settings/serviceaccounts/adminsdk
-// Then set GOOGLE_ACCOUNT_CREDENTIALS_PROD or GOOGLE_ACCOUNT_CREDENTIALS_DEV to the path of the key.
+// Then set GOOGLE_APPLICATION_CREDENTIALS_PROD or GOOGLE_APPLICATION_CREDENTIALS_DEV to the path of the key.
 
 // Then, to run a script, make sure you are pointing at the Firebase you intend to:
 // $ firebase use dev (or prod)
@@ -55,7 +55,7 @@ export const initAdmin = (env?: string) => {
     )
     return
   }
-  const envVar = `GOOGLE_AUTHENTICATION_CREDENTIALS_${env.toUpperCase()}`
+  const envVar = `GOOGLE_APPLICATION_CREDENTIALS_${env.toUpperCase()}`
   const keyPath = process.env[envVar]
   if (keyPath == null) {
     console.error(
