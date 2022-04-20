@@ -36,7 +36,12 @@ export const useAlgoFeed = (
   const [algoFeed, setAlgoFeed] = useState<Contract[]>([])
 
   useEffect(() => {
-    if (initialContracts && initialBets && initialComments) {
+    if (
+      initialContracts &&
+      initialBets &&
+      initialComments &&
+      yourBetContractIds
+    ) {
       const eligibleContracts = initialContracts.filter(
         (c) => !c.isResolved && (c.closeTime ?? Infinity) > Date.now()
       )
