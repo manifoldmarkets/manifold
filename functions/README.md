@@ -26,7 +26,8 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 0. `$ yarn dev` to spin up the emulators
    The Emulator UI is at http://localhost:4000; the functions are hosted on :5001.
    Note: You have to kill and restart emulators when you change code; no hot reload =(
-1. Connect to emulators by enabling `functions.useEmulator('localhost', 5001)`
+   Note2: You may even have to find the process ID of the emulator and kill it manually.
+1. Connect by uncommenting the `connectFunctionsEmulator` in `web/lib/firebase/api-call.ts`
 
 ## Debugging
 

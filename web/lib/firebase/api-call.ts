@@ -1,10 +1,16 @@
-import { getFunctions, httpsCallable } from 'firebase/functions'
+import {
+  getFunctions,
+  httpsCallable,
+  connectFunctionsEmulator,
+} from 'firebase/functions'
 import { Fold } from '../../../common/fold'
 import { User } from '../../../common/user'
 import { randomString } from '../../../common/util/random'
 import './init'
 
 const functions = getFunctions()
+// Uncomment to connect to local emulators:
+// connectFunctionsEmulator(functions, 'localhost', 5001)
 
 export const cloudFunction = <RequestData, ResponseData>(name: string) =>
   httpsCallable<RequestData, ResponseData>(functions, name)

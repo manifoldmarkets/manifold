@@ -117,13 +117,15 @@ function DonationBox(props: { user?: User | null }) {
     e.preventDefault()
     setIsSubmitting(true)
     setError(undefined)
-    // TODO await sending to db
     await transact({
       amount,
-      toId: 'asdfsasdf', // TODO hardcode in Manifold Markets official account
+      // TODO hardcode in Manifold Markets official account.
+      // Or should we just have it go into a void?
+      toId: 'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // akrolsmir@gmail in Dev env
       category: 'TO_CHARITY',
-      data: {
-        charityId: 'fjdkslasdf', // TODO fill in
+      description: `${user?.name} donated M$ ${amount} to wellgive`,
+      txnData: {
+        charityId: 'wellgive', // TODO fill in
       },
     })
     setIsSubmitting(false)
