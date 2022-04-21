@@ -66,3 +66,9 @@ export const changeUserInfo = (data: {
     .then((r) => r.data as { status: string; message?: string })
     .catch((e) => ({ status: 'error', message: e.message }))
 }
+
+export const addLiquidity = (data: { amount: number; contractId: string }) => {
+  return cloudFunction('addLiquidity')(data)
+    .then((r) => r.data as { status: string })
+    .catch((e) => ({ status: 'error', message: e.message }))
+}
