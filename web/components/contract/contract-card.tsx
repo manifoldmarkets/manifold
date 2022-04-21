@@ -23,7 +23,7 @@ import {
   BinaryContractOutcomeLabel,
   FreeResponseOutcomeLabel,
 } from '../outcome-label'
-import { getOutcomeProbability } from '../../../common/calculate'
+import { getOutcomeProbability, getTopAnswer } from '../../../common/calculate'
 import { AbbrContractDetails } from './contract-details'
 
 export function ContractCard(props: {
@@ -120,18 +120,6 @@ export function BinaryResolutionOrChance(props: {
       )}
     </Col>
   )
-}
-
-function getTopAnswer(contract: FreeResponseContract) {
-  const { answers } = contract
-  const top = _.maxBy(
-    answers.map((answer) => ({
-      answer,
-      prob: getOutcomeProbability(contract, answer.id),
-    })),
-    ({ prob }) => prob
-  )
-  return top?.answer
 }
 
 export function FreeResponseResolutionOrChance(props: {

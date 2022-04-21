@@ -18,6 +18,7 @@ import { Avatar } from '../avatar'
 import { useState } from 'react'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { Bet } from '../../../common/bet'
+import NewContractBadge from '../new-contract-badge'
 
 export function AbbrContractDetails(props: {
   contract: Contract
@@ -25,7 +26,8 @@ export function AbbrContractDetails(props: {
   showCloseTime?: boolean
 }) {
   const { contract, showHotVolume, showCloseTime } = props
-  const { volume24Hours, creatorName, creatorUsername, closeTime } = contract
+  const { volume, volume24Hours, creatorName, creatorUsername, closeTime } =
+    contract
   const { volumeLabel } = contractMetrics(contract)
 
   return (
@@ -54,11 +56,10 @@ export function AbbrContractDetails(props: {
             {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
             {fromNow(closeTime || 0)}
           </Row>
+        ) : volume > 0 ? (
+          <Row>{volumeLabel}</Row>
         ) : (
-          <Row className="gap-1">
-            {/* <DatabaseIcon className="h-5 w-5" /> */}
-            {volumeLabel}
-          </Row>
+          <NewContractBadge />
         )}
       </Row>
     </Col>
