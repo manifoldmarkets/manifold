@@ -12,6 +12,7 @@ import {
 } from '../../../common/contract'
 import { User } from '../../../common/user'
 import { mapCommentsByBetId } from '../../lib/firebase/comments'
+import { useUser } from '../../hooks/use-user'
 
 export type ActivityItem =
   | DescriptionItem
@@ -22,10 +23,17 @@ export type ActivityItem =
   | AnswerGroupItem
   | CloseItem
   | ResolveItem
+  | CommentInputItem
 
 type BaseActivityItem = {
   id: string
   contract: Contract
+}
+
+export type CommentInputItem = BaseActivityItem & {
+  type: 'commentInput'
+  bets: Bet[]
+  comments: Comment[]
 }
 
 export type DescriptionItem = BaseActivityItem & {
@@ -48,7 +56,7 @@ export type BetItem = BaseActivityItem & {
 export type CommentItem = BaseActivityItem & {
   type: 'comment'
   comment: Comment
-  bet: Bet
+  bet: Bet | undefined
   hideOutcome: boolean
   truncate: boolean
   smallAvatar: boolean
@@ -279,26 +287,53 @@ export function getAllContractActivityItems(
       ]
     : [{ type: 'description', id: '0', contract }]
 
-  items.push(
-    ...(outcomeType === 'FREE_RESPONSE'
-      ? getAnswerGroups(
-          contract as FullContract<DPM, FreeResponse>,
-          bets,
-          comments,
-          user,
-          {
-            sortByProb: true,
-            abbreviated,
-            reversed,
-          }
-        )
-      : groupBets(bets, comments, contract, user?.id, {
-          hideOutcome: false,
+  // for each comment. turn it into an activity item and add it to the items:
+  const commentWithoutBetActivityItems = comments
+    .filter((comment) => !comment.betId)
+    .map((comment) => ({
+      type: 'comment' as const,
+      id: comment.id,
+      contract: contract,
+      comment,
+      bet: undefined,
+      truncate: false,
+      hideOutcome: true,
+      smallAvatar: false,
+    }))
+  const groupedBets = groupBets(bets, comments, contract, user?.id, {
+    hideOutcome: false,
+    abbreviated,
+    smallAvatar: false,
+    reversed: false,
+  })
+  // iterate through the bets and comment acitivity items and add them to the items in order of comment creation time:
+  const allActivityItems = [...commentWithoutBetActivityItems, ...groupedBets]
+  const sortedActivityItems = _.sortBy(allActivityItems, (item) => {
+    if (item.type === 'comment') {
+      return item.comment.createdTime
+    } else if (item.type === 'bet') {
+      return item.bet.createdTime
+    } else if (item.type === 'betgroup') {
+      return item.bets[0].createdTime
+    }
+  })
+  items.push(...sortedActivityItems)
+
+  if (outcomeType === 'FREE_RESPONSE') {
+    items.push(
+      ...getAnswerGroups(
+        contract as FullContract<DPM, FreeResponse>,
+        bets,
+        comments,
+        user,
+        {
+          sortByProb: true,
           abbreviated,
-          smallAvatar: false,
-          reversed: false,
-        }))
-  )
+          reversed,
+        }
+      )
+    )
+  }
 
   if (contract.closeTime && contract.closeTime <= Date.now()) {
     items.push({ type: 'close', id: `${contract.closeTime}`, contract })
@@ -306,6 +341,13 @@ export function getAllContractActivityItems(
   if (contract.resolution) {
     items.push({ type: 'resolve', id: `${contract.resolutionTime}`, contract })
   }
+  items.push({
+    type: 'commentInput',
+    id: 'commentInput',
+    bets,
+    comments,
+    contract,
+  })
 
   if (reversed) items.reverse()
 

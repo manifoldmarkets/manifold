@@ -19,25 +19,38 @@ export const MAX_COMMENT_LENGTH = 10000
 
 export async function createComment(
   contractId: string,
-  betId: string,
   text: string,
-  commenter: User
+  commenter: User,
+  betId?: string
 ) {
-  const ref = doc(getCommentsCollection(contractId), betId)
-
-  const comment: Comment = {
-    id: ref.id,
-    contractId,
-    betId,
-    userId: commenter.id,
-    text: text.slice(0, MAX_COMMENT_LENGTH),
-    createdTime: Date.now(),
-    userName: commenter.name,
-    userUsername: commenter.username,
-    userAvatarUrl: commenter.avatarUrl,
+  if (betId) {
+    const ref = doc(getCommentsCollection(contractId), betId)
+    const comment: Comment = {
+      id: ref.id,
+      betId: betId,
+      contractId,
+      userId: commenter.id,
+      text: text.slice(0, MAX_COMMENT_LENGTH),
+      createdTime: Date.now(),
+      userName: commenter.name,
+      userUsername: commenter.username,
+      userAvatarUrl: commenter.avatarUrl,
+    }
+    return await setDoc(ref, comment)
+  } else {
+    const newCommentRef = doc(getCommentsCollection(contractId))
+    let comment: Comment = {
+      id: newCommentRef.id,
+      contractId,
+      userId: commenter.id,
+      text: text.slice(0, MAX_COMMENT_LENGTH),
+      createdTime: Date.now(),
+      userName: commenter.name,
+      userUsername: commenter.username,
+      userAvatarUrl: commenter.avatarUrl,
+    }
+    return await setDoc(newCommentRef, comment)
   }
-
-  return await setDoc(ref, comment)
 }
 
 function getCommentsCollection(contractId: string) {
@@ -67,7 +80,9 @@ export function listenForComments(
 export function mapCommentsByBetId(comments: Comment[]) {
   const map: Record<string, Comment> = {}
   for (const comment of comments) {
-    map[comment.betId] = comment
+    if (comment.betId) {
+      map[comment.betId] = comment
+    }
   }
   return map
 }
