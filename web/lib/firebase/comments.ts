@@ -23,34 +23,23 @@ export async function createComment(
   commenter: User,
   betId?: string
 ) {
-  if (betId) {
-    const ref = doc(getCommentsCollection(contractId), betId)
-    const comment: Comment = {
-      id: ref.id,
-      betId: betId,
-      contractId,
-      userId: commenter.id,
-      text: text.slice(0, MAX_COMMENT_LENGTH),
-      createdTime: Date.now(),
-      userName: commenter.name,
-      userUsername: commenter.username,
-      userAvatarUrl: commenter.avatarUrl,
-    }
-    return await setDoc(ref, comment)
-  } else {
-    const newCommentRef = doc(getCommentsCollection(contractId))
-    let comment: Comment = {
-      id: newCommentRef.id,
-      contractId,
-      userId: commenter.id,
-      text: text.slice(0, MAX_COMMENT_LENGTH),
-      createdTime: Date.now(),
-      userName: commenter.name,
-      userUsername: commenter.username,
-      userAvatarUrl: commenter.avatarUrl,
-    }
-    return await setDoc(newCommentRef, comment)
+  const ref = betId
+    ? doc(getCommentsCollection(contractId), betId)
+    : doc(getCommentsCollection(contractId))
+  let comment: Comment = {
+    id: ref.id,
+    contractId,
+    userId: commenter.id,
+    text: text.slice(0, MAX_COMMENT_LENGTH),
+    createdTime: Date.now(),
+    userName: commenter.name,
+    userUsername: commenter.username,
+    userAvatarUrl: commenter.avatarUrl,
   }
+  if (betId) {
+    comment.betId = betId
+  }
+  return await setDoc(ref, comment)
 }
 
 function getCommentsCollection(contractId: string) {

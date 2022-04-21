@@ -182,38 +182,39 @@ function RelativeTimestamp(props: { time: number }) {
 
 export function CommentInput(props: {
   contract: Contract
-  comments: Comment[]
+  commentsByBetId: Record<string, Comment>
   bets: Bet[]
 }) {
   // see if we can comment input on any bet:
-  const { contract, bets, comments } = props
+  const { contract, bets, commentsByBetId } = props
   const user = useUser()
-  let canCommentOnBet = false
+  const [comment, setComment] = useState('')
+
+  if (!user) {
+    return <div />
+  }
+
+  let canCommentOnABet = false
   bets.forEach((bet) => {
-    // make sure there is not already a comment with a mathcing bet id:
-    const matchingComment = comments.find((comment) => comment.betId === bet.id)
+    // make sure there is not already a comment with a matching bet id:
+    const matchingComment = commentsByBetId[bet.id]
     if (matchingComment) {
       return
     }
     const { createdTime, userId } = bet
-    const isSelf = user?.id === userId
-    // You can comment if your bet was posted in the last hour
-    const canComment = isSelf && Date.now() - createdTime < 60 * 60 * 1000
+    const canComment = CanComment(userId, createdTime, user)
     if (canComment) {
-      // if you can comment on this bet, then you can comment on the contract
-      canCommentOnBet = true
+      canCommentOnABet = true
     }
   })
 
-  const [comment, setComment] = useState('')
+  if (canCommentOnABet) return <div />
 
   async function submitComment() {
     if (!user || !comment) return
     await createComment(contract.id, comment, user)
     setComment('')
   }
-
-  if (canCommentOnBet) return <div />
 
   return (
     <>
@@ -222,8 +223,6 @@ export function CommentInput(props: {
       </div>
       <div className={'min-w-0 flex-1 py-1.5'}>
         <div className="text-sm text-gray-500">
-          {/*<span>{isSelf ? 'You' : bettor ? bettor.name : 'A trader'}</span>{' '}*/}
-
           <div className="mt-2">
             <Textarea
               value={comment}
@@ -262,9 +261,7 @@ export function FeedBet(props: {
   const { id, amount, outcome, createdTime, userId } = bet
   const user = useUser()
   const isSelf = user?.id === userId
-
-  // You can comment if your bet was posted in the last hour
-  const canComment = isSelf && Date.now() - createdTime < 60 * 60 * 1000
+  const canComment = CanComment(userId, createdTime, user)
 
   const [comment, setComment] = useState('')
   async function submitComment() {
@@ -447,6 +444,12 @@ export function FeedQuestion(props: {
       </div>
     </>
   )
+}
+
+function CanComment(userId: string, createdTime: number, user?: User | null) {
+  const isSelf = user?.id === userId
+  // You can comment if your bet was posted in the last hour
+  return isSelf && Date.now() - createdTime < 60 * 60 * 1000
 }
 
 function FeedDescription(props: { contract: Contract }) {

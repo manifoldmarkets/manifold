@@ -12,7 +12,6 @@ import {
 } from '../../../common/contract'
 import { User } from '../../../common/user'
 import { mapCommentsByBetId } from '../../lib/firebase/comments'
-import { useUser } from '../../hooks/use-user'
 
 export type ActivityItem =
   | DescriptionItem
@@ -33,7 +32,7 @@ type BaseActivityItem = {
 export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
   bets: Bet[]
-  comments: Comment[]
+  commentsByBetId: Record<string, Comment>
 }
 
 export type DescriptionItem = BaseActivityItem & {
@@ -287,8 +286,7 @@ export function getAllContractActivityItems(
       ]
     : [{ type: 'description', id: '0', contract }]
 
-  // for each comment. turn it into an activity item and add it to the items:
-  const commentWithoutBetActivityItems = comments
+  const commentsWithoutBets = comments
     .filter((comment) => !comment.betId)
     .map((comment) => ({
       type: 'comment' as const,
@@ -300,15 +298,17 @@ export function getAllContractActivityItems(
       hideOutcome: true,
       smallAvatar: false,
     }))
+
   const groupedBets = groupBets(bets, comments, contract, user?.id, {
     hideOutcome: false,
     abbreviated,
     smallAvatar: false,
     reversed: false,
   })
-  // iterate through the bets and comment acitivity items and add them to the items in order of comment creation time:
-  const allActivityItems = [...commentWithoutBetActivityItems, ...groupedBets]
-  const sortedActivityItems = _.sortBy(allActivityItems, (item) => {
+
+  // iterate through the bets and comment activity items and add them to the items in order of comment creation time:
+  const unorderedBetsAndComments = [...commentsWithoutBets, ...groupedBets]
+  const sortedBetsAndComments = _.sortBy(unorderedBetsAndComments, (item) => {
     if (item.type === 'comment') {
       return item.comment.createdTime
     } else if (item.type === 'bet') {
@@ -317,7 +317,8 @@ export function getAllContractActivityItems(
       return item.bets[0].createdTime
     }
   })
-  items.push(...sortedActivityItems)
+
+  items.push(...sortedBetsAndComments)
 
   if (outcomeType === 'FREE_RESPONSE') {
     items.push(
@@ -341,11 +342,13 @@ export function getAllContractActivityItems(
   if (contract.resolution) {
     items.push({ type: 'resolve', id: `${contract.resolutionTime}`, contract })
   }
+
+  const commentsByBetId = mapCommentsByBetId(comments)
   items.push({
     type: 'commentInput',
     id: 'commentInput',
     bets,
-    comments,
+    commentsByBetId,
     contract,
   })
 
