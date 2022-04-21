@@ -167,7 +167,7 @@ export const sendNewCommentEmail = async (
   commentCreator: User,
   contract: Contract,
   comment: Comment,
-  bet: Bet,
+  bet?: Bet,
   answer?: Answer
 ) => {
   const privateUser = await getPrivateUser(userId)
@@ -186,8 +186,11 @@ export const sendNewCommentEmail = async (
   const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
   const { text } = comment
 
-  const { amount, sale, outcome } = bet
-  let betDescription = `${sale ? 'sold' : 'bought'} M$ ${Math.round(amount)}`
+  let betDescription = ''
+  if (bet) {
+    const { amount, sale } = bet
+    betDescription = `${sale ? 'sold' : 'bought'} M$ ${Math.round(amount)}`
+  }
 
   const subject = `Comment on ${question}`
   const from = `${commentorName} <info@manifold.markets>`
@@ -208,16 +211,17 @@ export const sendNewCommentEmail = async (
         comment: text,
         marketUrl,
         unsubscribeUrl,
-        betDescription,
+        betDescription: betDescription,
       },
       { from }
     )
   } else {
-    betDescription = `${betDescription} of ${toDisplayResolution(
-      contract,
-      outcome
-    )}`
-
+    if (bet) {
+      betDescription = `${betDescription} of ${toDisplayResolution(
+        contract,
+        bet.outcome
+      )}`
+    }
     await sendTemplateEmail(
       privateUser.email,
       subject,
