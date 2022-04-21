@@ -9,8 +9,10 @@ import { BuyAmountInput } from '../../../components/amount-input'
 import { Spacer } from '../../../components/layout/spacer'
 import { User } from '../../../../common/user'
 import { useUser } from '../../../hooks/use-user'
-import { manaTo$ } from '../misc'
 import { Linkify } from '../../../components/linkify'
+
+const manaToUSD = (mana: number) =>
+  (mana / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 
 // TODO: replace with props
 const data: Charity = {
@@ -86,10 +88,12 @@ function Details(props: { userDonated?: number; numSupporters: number }) {
   const { raised, website } = data
   return (
     <Col className="gap-1 text-right">
-      <div className="text-primary mb-2 text-4xl">{manaTo$(raised)} raised</div>
+      <div className="text-primary mb-2 text-4xl">
+        {manaToUSD(raised)} raised
+      </div>
       {userDonated && (
         <div className="text-primary text-xl">
-          {manaTo$(userDonated)} from you!
+          {manaToUSD(userDonated)} from you!
         </div>
       )}
       {numSupporters > 0 && (
@@ -142,7 +146,7 @@ function DonationBox(props: { user?: User | null }) {
             <span>
               {amount || 0} Mana
               <span className="mx-2">→</span>
-              {manaTo$(amount || 0)}
+              {manaToUSD(amount || 0)}
             </span>
           </Row>
           {/* TODO: matching pool */}
