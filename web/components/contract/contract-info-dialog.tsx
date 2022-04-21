@@ -113,7 +113,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <TagsInput contract={contract} />
           <div />
 
-          {!contract.resolution && (
+          {!contract.resolution && (!closeTime || closeTime > Date.now()) && (
             <>
               <div className="text-gray-500">Add liquidity</div>
               <AddLiquidityPanel contract={contract} />
