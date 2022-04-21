@@ -216,8 +216,7 @@ export function CommentInput(props: {
   async function submitComment() {
     if (!comment) return
     if (!user) {
-      await firebaseLogin()
-      return
+      return await firebaseLogin()
     }
     await createComment(contract.id, comment, user)
     setComment('')
