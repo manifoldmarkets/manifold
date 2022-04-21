@@ -286,40 +286,6 @@ export function getAllContractActivityItems(
       ]
     : [{ type: 'description', id: '0', contract }]
 
-  const commentsWithoutBets = comments
-    .filter((comment) => !comment.betId)
-    .map((comment) => ({
-      type: 'comment' as const,
-      id: comment.id,
-      contract: contract,
-      comment,
-      bet: undefined,
-      truncate: false,
-      hideOutcome: true,
-      smallAvatar: false,
-    }))
-
-  const groupedBets = groupBets(bets, comments, contract, user?.id, {
-    hideOutcome: false,
-    abbreviated,
-    smallAvatar: false,
-    reversed: false,
-  })
-
-  // iterate through the bets and comment activity items and add them to the items in order of comment creation time:
-  const unorderedBetsAndComments = [...commentsWithoutBets, ...groupedBets]
-  const sortedBetsAndComments = _.sortBy(unorderedBetsAndComments, (item) => {
-    if (item.type === 'comment') {
-      return item.comment.createdTime
-    } else if (item.type === 'bet') {
-      return item.bet.createdTime
-    } else if (item.type === 'betgroup') {
-      return item.bets[0].createdTime
-    }
-  })
-
-  items.push(...sortedBetsAndComments)
-
   if (outcomeType === 'FREE_RESPONSE') {
     items.push(
       ...getAnswerGroups(
@@ -334,6 +300,39 @@ export function getAllContractActivityItems(
         }
       )
     )
+  } else {
+    const commentsWithoutBets = comments
+      .filter((comment) => !comment.betId)
+      .map((comment) => ({
+        type: 'comment' as const,
+        id: comment.id,
+        contract: contract,
+        comment,
+        bet: undefined,
+        truncate: false,
+        hideOutcome: true,
+        smallAvatar: false,
+      }))
+
+    const groupedBets = groupBets(bets, comments, contract, user?.id, {
+      hideOutcome: false,
+      abbreviated,
+      smallAvatar: false,
+      reversed: false,
+    })
+
+    // iterate through the bets and comment activity items and add them to the items in order of comment creation time:
+    const unorderedBetsAndComments = [...commentsWithoutBets, ...groupedBets]
+    const sortedBetsAndComments = _.sortBy(unorderedBetsAndComments, (item) => {
+      if (item.type === 'comment') {
+        return item.comment.createdTime
+      } else if (item.type === 'bet') {
+        return item.bet.createdTime
+      } else if (item.type === 'betgroup') {
+        return item.bets[0].createdTime
+      }
+    })
+    items.push(...sortedBetsAndComments)
   }
 
   if (contract.closeTime && contract.closeTime <= Date.now()) {

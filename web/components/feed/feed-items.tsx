@@ -187,10 +187,11 @@ export function CommentInput(props: {
 }) {
   // see if we can comment input on any bet:
   const { contract, bets, commentsByBetId } = props
+  const { outcomeType } = contract
   const user = useUser()
   const [comment, setComment] = useState('')
 
-  if (!user) {
+  if (!user || outcomeType === 'FREE_RESPONSE') {
     return <div />
   }
 
