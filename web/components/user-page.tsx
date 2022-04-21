@@ -87,7 +87,12 @@ export function UserPage(props: { user: User; currentUser?: User }) {
 
         <Col className="sm:flex-row sm:gap-4">
           {user.website && (
-            <SiteLink href={user.website}>
+            <SiteLink
+              href={
+                'https://' +
+                user.website.replace('http://', '').replace('https://', '')
+              }
+            >
               <Row className="items-center gap-1">
                 <LinkIcon className="h-4 w-4" />
                 <span className="text-sm text-gray-500">{user.website}</span>
@@ -96,7 +101,13 @@ export function UserPage(props: { user: User; currentUser?: User }) {
           )}
 
           {user.twitterHandle && (
-            <SiteLink href={`https://twitter.com/${user.twitterHandle}`}>
+            <SiteLink
+              href={`https://twitter.com/${user.twitterHandle
+                .replace('https://www.twitter.com/', '')
+                .replace('https://twitter.com/', '')
+                .replace('www.twitter.com/', '')
+                .replace('twitter.com/', '')}`}
+            >
               <Row className="items-center gap-1">
                 <img
                   src="/twitter-logo.svg"

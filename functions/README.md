@@ -17,16 +17,16 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 0. `$ cd functions` to switch to this folder
 1. `$ yarn global add firebase-tools` to install the Firebase CLI globally
 2. `$ yarn` to install JS dependencies
-3. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev (TODO: maybe not for Manifold)
+3. `$ firebase login` to authenticate the CLI tools to Firebase
 4. `$ firebase use dev` to choose the dev project
+5. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev (TODO: maybe not for Manifold)
 
 ## Developing locally
 
-1. `$ firebase login` if you aren't logged into Firebase via commandline yet.
-2. `$ yarn dev` to spin up the emulators
+0. `$ yarn dev` to spin up the emulators
    The Emulator UI is at http://localhost:4000; the functions are hosted on :5001.
    Note: You have to kill and restart emulators when you change code; no hot reload =(
-3. Connect to emulators by enabling `functions.useEmulator('localhost', 5001)`
+1. Connect to emulators by enabling `functions.useEmulator('localhost', 5001)`
 
 ## Debugging
 

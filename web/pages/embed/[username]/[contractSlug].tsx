@@ -9,9 +9,9 @@ import { DOMAIN } from '../../../../common/envs/constants'
 import { AnswersGraph } from '../../../components/answers/answers-graph'
 import {
   BinaryResolutionOrChance,
-  ContractDetails,
   FreeResponseResolutionOrChance,
 } from '../../../components/contract/contract-card'
+import { ContractDetails } from '../../../components/contract/contract-details'
 import { ContractProbGraph } from '../../../components/contract/contract-prob-graph'
 import { Col } from '../../../components/layout/col'
 import { Row } from '../../../components/layout/row'

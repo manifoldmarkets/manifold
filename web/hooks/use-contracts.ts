@@ -6,6 +6,7 @@ import {
   listenForContracts,
   listenForHotContracts,
   listenForInactiveContracts,
+  listenForNewContracts,
 } from '../lib/firebase/contracts'
 import { listenForTaggedContracts } from '../lib/firebase/folds'
 
@@ -20,13 +21,22 @@ export const useContracts = () => {
 }
 
 export const useActiveContracts = () => {
-  const [contracts, setContracts] = useState<Contract[] | undefined>()
+  const [activeContracts, setActiveContracts] = useState<
+    Contract[] | undefined
+  >()
+  const [newContracts, setNewContracts] = useState<Contract[] | undefined>()
 
   useEffect(() => {
-    return listenForActiveContracts(setContracts)
+    return listenForActiveContracts(setActiveContracts)
   }, [])
 
-  return contracts
+  useEffect(() => {
+    return listenForNewContracts(setNewContracts)
+  }, [])
+
+  if (!activeContracts || !newContracts) return undefined
+
+  return [...activeContracts, ...newContracts]
 }
 
 export const useInactiveContracts = () => {

@@ -9,6 +9,7 @@ import {
   UserIcon,
   UsersIcon,
   XIcon,
+  SparklesIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Textarea from 'react-expanding-textarea'
@@ -46,6 +47,8 @@ import { useSaveSeenContract } from '../../hooks/use-seen-contracts'
 import { User } from '../../../common/user'
 import { Modal } from '../layout/modal'
 import { trackClick } from '../../lib/firebase/tracking'
+import { DAY_MS } from '../../../common/util/time'
+import NewContractBadge from '../new-contract-badge'
 
 export function FeedItems(props: {
   contract: Contract
@@ -307,19 +310,17 @@ export function FeedQuestion(props: {
   contractPath?: string
 }) {
   const { contract, showDescription } = props
-  const { creatorName, creatorUsername, question, resolution, outcomeType } =
-    contract
+  const {
+    creatorName,
+    creatorUsername,
+    question,
+    outcomeType,
+    volume,
+    createdTime,
+  } = contract
   const { volumeLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
-
-  // const closeMessage =
-  //   contract.isResolved || !contract.closeTime ? null : (
-  //     <>
-  //       <span className="mx-2">•</span>
-  //       {contract.closeTime > Date.now() ? 'Closes' : 'Closed'}
-  //       <RelativeTimestamp time={contract.closeTime || 0} />
-  //     </>
-  //   )
+  const isNew = createdTime > Date.now() - DAY_MS
 
   return (
     <>
@@ -336,10 +337,15 @@ export function FeedQuestion(props: {
           />{' '}
           asked
           {/* Currently hidden on mobile; ideally we'd fit this in somewhere. */}
-          <span className="float-right hidden text-gray-400 sm:inline">
-            {volumeLabel}
-            {/* {closeMessage} */}
-          </span>
+          <div className="relative -top-2 float-right ">
+            {isNew || volume === 0 ? (
+              <NewContractBadge />
+            ) : (
+              <span className="hidden text-gray-400 sm:inline">
+                {volumeLabel}
+              </span>
+            )}
+          </div>
         </div>
         <Col className="items-start justify-between gap-2 sm:flex-row sm:gap-4">
           <Col>
