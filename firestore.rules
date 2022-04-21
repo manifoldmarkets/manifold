@@ -30,6 +30,10 @@ service cloud.firestore {
       allow create: if userId == request.auth.uid;
     }
 
+    match /private-users/{userId}/latency/{loadTimeId} {
+      allow create: if userId == request.auth.uid;
+    }
+
     match /contracts/{contractId} {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()

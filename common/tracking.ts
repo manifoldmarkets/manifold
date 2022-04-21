@@ -10,3 +10,9 @@ export type ClickEvent = {
   contractId: string
   timestamp: number
 }
+
+export type LatencyEvent = {
+  type: 'feed' | 'portfolio'
+  latency: number
+  timestamp: number
+}

@@ -37,6 +37,8 @@ import {
   resolvedPayout,
   getContractBetNullMetrics,
 } from '../../common/calculate'
+import { useTimeSinceFirstRender } from '../hooks/use-time-since-first-render'
+import { trackLatency } from '../lib/firebase/tracking'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
@@ -66,6 +68,14 @@ export function BetsList(props: { user: User }) {
       }
     }
   }, [bets])
+
+  const getTime = useTimeSinceFirstRender()
+  useEffect(() => {
+    if (bets && contracts) {
+      trackLatency('portfolio', getTime())
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!bets, !!contracts])
 
   if (!bets || !contracts) {
     return <LoadingIndicator />
