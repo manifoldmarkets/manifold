@@ -64,5 +64,9 @@ service cloud.firestore {
       allow read;
       allow write: if request.auth.uid == userId;
     }
+
+    match /txns/{txnId} {
+      allow read;
+    }
   }
 }
