@@ -181,7 +181,7 @@ export function getContractBetNullMetrics() {
 export function getTopAnswer(contract: FreeResponseContract) {
   const { answers } = contract
   const top = _.maxBy(
-    answers.map((answer) => ({
+    answers?.map((answer) => ({
       answer,
       prob: getOutcomeProbability(contract, answer.id),
     })),
