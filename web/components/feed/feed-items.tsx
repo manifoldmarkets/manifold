@@ -48,6 +48,7 @@ import { User } from '../../../common/user'
 import { Modal } from '../layout/modal'
 import { trackClick } from '../../lib/firebase/tracking'
 import { DAY_MS } from '../../../common/util/time'
+import NewContractBadge from '../new-contract-badge'
 
 export function FeedItems(props: {
   contract: Contract
@@ -313,7 +314,6 @@ export function FeedQuestion(props: {
     creatorName,
     creatorUsername,
     question,
-    resolution,
     outcomeType,
     volume,
     createdTime,
@@ -321,15 +321,6 @@ export function FeedQuestion(props: {
   const { volumeLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
   const isNew = createdTime > Date.now() - DAY_MS
-
-  // const closeMessage =
-  //   contract.isResolved || !contract.closeTime ? null : (
-  //     <>
-  //       <span className="mx-2">•</span>
-  //       {contract.closeTime > Date.now() ? 'Closes' : 'Closed'}
-  //       <RelativeTimestamp time={contract.closeTime || 0} />
-  //     </>
-  //   )
 
   return (
     <>
@@ -346,15 +337,12 @@ export function FeedQuestion(props: {
           />{' '}
           asked
           {/* Currently hidden on mobile; ideally we'd fit this in somewhere. */}
-          <div className="relative -top-2 float-right text-gray-400">
+          <div className="relative -top-2 float-right ">
             {isNew || volume === 0 ? (
-              <Row className="gap-1">
-                <SparklesIcon className="h-5 w-5" aria-hidden="true" /> New
-              </Row>
+              <NewContractBadge />
             ) : (
-              <span className="hidden sm:inline">
+              <span className="hidden text-gray-400 sm:inline">
                 {volumeLabel}
-                {/* {closeMessage} */}
               </span>
             )}
           </div>
