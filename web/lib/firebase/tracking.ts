@@ -2,7 +2,7 @@ import { doc, collection, setDoc } from 'firebase/firestore'
 import _ from 'lodash'
 
 import { db } from './init'
-import { ClickEvent, View } from '../../../common/tracking'
+import { ClickEvent, LatencyEvent, View } from '../../../common/tracking'
 import { listenForLogin, User } from './users'
 
 let user: User | null = null
@@ -33,4 +33,20 @@ export async function trackClick(contractId: string) {
   }
 
   return await setDoc(ref, clickEvent)
+}
+
+export async function trackLatency(
+  type: 'feed' | 'portfolio',
+  latency: number
+) {
+  if (!user) return
+  const ref = doc(collection(db, 'private-users', user.id, 'latency'))
+
+  const latencyEvent: LatencyEvent = {
+    type,
+    latency,
+    timestamp: Date.now(),
+  }
+
+  return await setDoc(ref, latencyEvent)
 }

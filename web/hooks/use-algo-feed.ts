@@ -14,6 +14,8 @@ import {
   getOutcomeProbability,
   getTopAnswer,
 } from '../../common/calculate'
+import { useTimeSinceFirstRender } from './use-time-since-first-render'
+import { trackLatency } from '../lib/firebase/tracking'
 
 const MAX_FEED_CONTRACTS = 75
 
@@ -35,6 +37,8 @@ export const useAlgoFeed = (
 
   const [algoFeed, setAlgoFeed] = useState<Contract[]>([])
 
+  const getTime = useTimeSinceFirstRender()
+
   useEffect(() => {
     if (
       initialContracts &&
@@ -53,6 +57,7 @@ export const useAlgoFeed = (
         seenContracts
       )
       setAlgoFeed(contracts)
+      trackLatency('feed', getTime())
     }
   }, [
     initialBets,
@@ -60,6 +65,7 @@ export const useAlgoFeed = (
     initialContracts,
     seenContracts,
     yourBetContractIds,
+    getTime,
   ])
 
   return algoFeed
