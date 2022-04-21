@@ -211,7 +211,7 @@ export const sendNewCommentEmail = async (
         comment: text,
         marketUrl,
         unsubscribeUrl,
-        betDescription: betDescription,
+        betDescription,
       },
       { from }
     )

@@ -46,6 +46,7 @@ import { useSaveSeenContract } from '../../hooks/use-seen-contracts'
 import { User } from '../../../common/user'
 import { Modal } from '../layout/modal'
 import { trackClick } from '../../lib/firebase/tracking'
+import { firebaseLogin } from '../../lib/firebase/users'
 
 export function FeedItems(props: {
   contract: Contract
@@ -191,28 +192,30 @@ export function CommentInput(props: {
   const user = useUser()
   const [comment, setComment] = useState('')
 
-  if (!user || outcomeType === 'FREE_RESPONSE') {
+  if (outcomeType === 'FREE_RESPONSE') {
     return <div />
   }
 
   let canCommentOnABet = false
-  bets.forEach((bet) => {
+  bets.some((bet) => {
     // make sure there is not already a comment with a matching bet id:
     const matchingComment = commentsByBetId[bet.id]
     if (matchingComment) {
-      return
+      return false
     }
     const { createdTime, userId } = bet
-    const canComment = CanComment(userId, createdTime, user)
-    if (canComment) {
-      canCommentOnABet = true
-    }
+    canCommentOnABet = canCommentOnBet(userId, createdTime, user)
+    return canCommentOnABet
   })
 
   if (canCommentOnABet) return <div />
 
   async function submitComment() {
-    if (!user || !comment) return
+    if (!comment) return
+    if (!user) {
+      await firebaseLogin()
+      return
+    }
     await createComment(contract.id, comment, user)
     setComment('')
   }
@@ -262,7 +265,7 @@ export function FeedBet(props: {
   const { id, amount, outcome, createdTime, userId } = bet
   const user = useUser()
   const isSelf = user?.id === userId
-  const canComment = CanComment(userId, createdTime, user)
+  const canComment = canCommentOnBet(userId, createdTime, user)
 
   const [comment, setComment] = useState('')
   async function submitComment() {
@@ -447,7 +450,11 @@ export function FeedQuestion(props: {
   )
 }
 
-function CanComment(userId: string, createdTime: number, user?: User | null) {
+function canCommentOnBet(
+  userId: string,
+  createdTime: number,
+  user?: User | null
+) {
   const isSelf = user?.id === userId
   // You can comment if your bet was posted in the last hour
   return isSelf && Date.now() - createdTime < 60 * 60 * 1000

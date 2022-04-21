@@ -26,7 +26,7 @@ export async function createComment(
   const ref = betId
     ? doc(getCommentsCollection(contractId), betId)
     : doc(getCommentsCollection(contractId))
-  let comment: Comment = {
+  const comment: Comment = {
     id: ref.id,
     contractId,
     userId: commenter.id,
