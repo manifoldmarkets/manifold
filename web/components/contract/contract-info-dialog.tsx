@@ -113,12 +113,14 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <TagsInput contract={contract} />
           <div />
 
-          {!contract.resolution && (!closeTime || closeTime > Date.now()) && (
-            <>
-              <div className="text-gray-500">Add liquidity</div>
-              <AddLiquidityPanel contract={contract} />
-            </>
-          )}
+          {contract.mechanism === 'cpmm-1' &&
+            !contract.resolution &&
+            (!closeTime || closeTime > Date.now()) && (
+              <>
+                <div className="text-gray-500">Add liquidity</div>
+                <AddLiquidityPanel contract={contract} />
+              </>
+            )}
         </Col>
       </Modal>
     </>
