@@ -50,8 +50,7 @@ export const transact = functions.runWith({ minInstances: 1 }).https.onCall(
 
       const txn: Txn = {
         id: newTxnDoc.id,
-        // @ts-ignore - this is a firestore doc
-        createdTime: admin.firestore.FieldValue.serverTimestamp(),
+        createdTime: Date.now(),
 
         fromId,
         fromName: fromUser.name,
