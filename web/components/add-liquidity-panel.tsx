@@ -1,4 +1,6 @@
+import clsx from 'clsx'
 import { useState } from 'react'
+
 import { Contract } from '../../common/contract'
 import { formatMoney } from '../../common/util/format'
 import { useUser } from '../hooks/use-user'
@@ -15,8 +17,10 @@ export function AddLiquidityPanel(props: { contract: Contract }) {
   const [amount, setAmount] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const onAmountChange = (amount: number | undefined) => {
+    setIsSuccess(false)
     setAmount(amount)
 
     // Check for errors.
@@ -34,14 +38,19 @@ export function AddLiquidityPanel(props: { contract: Contract }) {
   const submit = () => {
     if (!amount) return
 
+    setIsLoading(true)
     setIsSuccess(false)
 
     addLiquidity({ amount, contractId })
-      .then((r) =>
-        r.status === 'success'
-          ? (setIsSuccess(true), setError(undefined))
-          : setError('Server error')
-      )
+      .then((r) => {
+        if (r.status === 'success') {
+          setIsSuccess(true)
+          setError(undefined)
+          setIsLoading(false)
+        } else {
+          setError('Server error')
+        }
+      })
       .catch((e) => setError('Server error'))
   }
 
@@ -55,8 +64,13 @@ export function AddLiquidityPanel(props: { contract: Contract }) {
           onChange={onAmountChange}
           label="M$"
           error={error}
+          disabled={isLoading}
         />
-        <button className="btn btn-primary ml-2" onClick={submit}>
+        <button
+          className={clsx('btn btn-primary ml-2', isLoading && 'btn-disabled')}
+          onClick={submit}
+          disabled={isLoading}
+        >
           Add
         </button>
       </Row>
@@ -64,6 +78,8 @@ export function AddLiquidityPanel(props: { contract: Contract }) {
       {isSuccess && amount && (
         <div>Success! Added {formatMoney(amount)} in liquidity.</div>
       )}
+
+      {isLoading && <div>Processing...</div>}
     </>
   )
 }
