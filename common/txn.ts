@@ -5,6 +5,7 @@ export type Txn = {
   createdTime: number
 
   fromId: string
+  // TODO: Do we really want to denormalize name/username/avatar here?
   fromName: string
   fromUsername: string
   fromAvatarUrl?: string
@@ -27,5 +28,5 @@ export type TxnCategory = 'TO_CHARITY' // | 'TIP' | 'BET' | ...
 export type TxnData = CharityData // | TipData | BetData | ...
 
 export type CharityData = {
-  // TODO: Could fill this in
+  charityId: string
 }

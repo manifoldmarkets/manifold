@@ -3,8 +3,8 @@ import { Row } from '../layout/row'
 
 // TODO: type probably belongs elsewhere
 export interface Charity {
+  slug: string // Note, slugs double as charity IDs
   name: string
-  slug: string
   website: string
   ein: string
   photo?: string

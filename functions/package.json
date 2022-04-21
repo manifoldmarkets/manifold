@@ -8,7 +8,8 @@
     "shell": "yarn build && firebase functions:shell",
     "start": "yarn shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "dev": "yarn serve"
   },
   "main": "lib/functions/src/index.js",
   "dependencies": {

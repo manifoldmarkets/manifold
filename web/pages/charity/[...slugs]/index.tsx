@@ -10,6 +10,7 @@ import { Spacer } from '../../../components/layout/spacer'
 import { User } from '../../../../common/user'
 import { useUser } from '../../../hooks/use-user'
 import { Linkify } from '../../../components/linkify'
+import { transact } from '../../../lib/firebase/api-call'
 
 const manaToUSD = (mana: number) =>
   (mana / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -117,7 +118,14 @@ function DonationBox(props: { user?: User | null }) {
     setIsSubmitting(true)
     setError(undefined)
     // TODO await sending to db
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await transact({
+      amount,
+      toId: 'asdfsasdf', // TODO hardcode in Manifold Markets official account
+      category: 'TO_CHARITY',
+      data: {
+        charityId: 'fjdkslasdf', // TODO fill in
+      },
+    })
     setIsSubmitting(false)
     setAmount(undefined)
   }

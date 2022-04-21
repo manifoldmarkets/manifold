@@ -16,6 +16,8 @@ export const createFold = cloudFunction<
   { status: 'error' | 'success'; message?: string; fold?: Fold }
 >('createFold')
 
+export const transact = cloudFunction('transact')
+
 export const placeBet = cloudFunction('placeBet')
 
 export const sellBet = cloudFunction('sellBet')

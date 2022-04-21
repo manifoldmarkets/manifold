@@ -19,7 +19,7 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 2. `$ yarn` to install JS dependencies
 3. `$ firebase login` to authenticate the CLI tools to Firebase
 4. `$ firebase use dev` to choose the dev project
-5. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev (TODO: maybe not for Manifold)
+5. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev
 
 ## Developing locally
 
