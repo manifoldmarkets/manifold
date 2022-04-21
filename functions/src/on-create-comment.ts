@@ -6,6 +6,7 @@ import { getContract, getUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
+import { Answer } from '../../common/answer'
 
 const firestore = admin.firestore()
 
@@ -24,18 +25,22 @@ export const onCreateComment = functions.firestore
     const commentCreator = await getUser(comment.userId)
     if (!commentCreator) return
 
-    const betSnapshot = await firestore
-      .collection('contracts')
-      .doc(contractId)
-      .collection('bets')
-      .doc(comment.betId)
-      .get()
-    const bet = betSnapshot.data() as Bet
+    let bet: Bet | undefined
+    let answer: Answer | undefined
+    if (comment.betId) {
+      const betSnapshot = await firestore
+        .collection('contracts')
+        .doc(contractId)
+        .collection('bets')
+        .doc(comment.betId)
+        .get()
+      bet = betSnapshot.data() as Bet
 
-    const answer =
-      contract.outcomeType === 'FREE_RESPONSE' && contract.answers
-        ? contract.answers.find((answer) => answer.id === bet.outcome)
-        : undefined
+      answer =
+        contract.outcomeType === 'FREE_RESPONSE' && contract.answers
+          ? contract.answers.find((answer) => answer.id === bet?.outcome)
+          : undefined
+    }
 
     const comments = await getValues<Comment>(
       firestore.collection('contracts').doc(contractId).collection('comments')

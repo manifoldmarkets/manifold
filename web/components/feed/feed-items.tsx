@@ -47,6 +47,7 @@ import { useSaveSeenContract } from '../../hooks/use-seen-contracts'
 import { User } from '../../../common/user'
 import { Modal } from '../layout/modal'
 import { trackClick } from '../../lib/firebase/tracking'
+import { firebaseLogin } from '../../lib/firebase/users'
 import { DAY_MS } from '../../../common/util/time'
 import NewContractBadge from '../new-contract-badge'
 
@@ -107,23 +108,29 @@ function FeedItem(props: { item: ActivityItem }) {
       return <FeedClose {...item} />
     case 'resolve':
       return <FeedResolve {...item} />
+    case 'commentInput':
+      return <CommentInput {...item} />
   }
 }
 
 export function FeedComment(props: {
   contract: Contract
   comment: Comment
-  bet: Bet
+  bet: Bet | undefined
   hideOutcome: boolean
   truncate: boolean
   smallAvatar: boolean
 }) {
   const { contract, comment, bet, hideOutcome, truncate, smallAvatar } = props
-  const { amount, outcome } = bet
+  let money: string | undefined
+  let outcome: string | undefined
+  let bought: string | undefined
+  if (bet) {
+    outcome = bet.outcome
+    bought = bet.amount >= 0 ? 'bought' : 'sold'
+    money = formatMoney(Math.abs(bet.amount))
+  }
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
-
-  const bought = amount >= 0 ? 'bought' : 'sold'
-  const money = formatMoney(Math.abs(amount))
 
   return (
     <>
@@ -147,7 +154,7 @@ export function FeedComment(props: {
                 {' '}
                 of{' '}
                 <OutcomeLabel
-                  outcome={outcome}
+                  outcome={outcome ? outcome : ''}
                   contract={contract}
                   truncate="short"
                 />
@@ -177,6 +184,78 @@ function RelativeTimestamp(props: { time: number }) {
   )
 }
 
+export function CommentInput(props: {
+  contract: Contract
+  commentsByBetId: Record<string, Comment>
+  bets: Bet[]
+}) {
+  // see if we can comment input on any bet:
+  const { contract, bets, commentsByBetId } = props
+  const { outcomeType } = contract
+  const user = useUser()
+  const [comment, setComment] = useState('')
+
+  if (outcomeType === 'FREE_RESPONSE') {
+    return <div />
+  }
+
+  let canCommentOnABet = false
+  bets.some((bet) => {
+    // make sure there is not already a comment with a matching bet id:
+    const matchingComment = commentsByBetId[bet.id]
+    if (matchingComment) {
+      return false
+    }
+    const { createdTime, userId } = bet
+    canCommentOnABet = canCommentOnBet(userId, createdTime, user)
+    return canCommentOnABet
+  })
+
+  if (canCommentOnABet) return <div />
+
+  async function submitComment() {
+    if (!comment) return
+    if (!user) {
+      return await firebaseLogin()
+    }
+    await createComment(contract.id, comment, user)
+    setComment('')
+  }
+
+  return (
+    <>
+      <div>
+        <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
+      </div>
+      <div className={'min-w-0 flex-1 py-1.5'}>
+        <div className="text-sm text-gray-500">
+          <div className="mt-2">
+            <Textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="textarea textarea-bordered w-full resize-none"
+              placeholder="Add a comment..."
+              rows={3}
+              maxLength={MAX_COMMENT_LENGTH}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                  submitComment()
+                }
+              }}
+            />
+            <button
+              className="btn btn-outline btn-sm mt-1"
+              onClick={submitComment}
+            >
+              Comment
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export function FeedBet(props: {
   contract: Contract
   bet: Bet
@@ -188,14 +267,12 @@ export function FeedBet(props: {
   const { id, amount, outcome, createdTime, userId } = bet
   const user = useUser()
   const isSelf = user?.id === userId
-
-  // You can comment if your bet was posted in the last hour
-  const canComment = isSelf && Date.now() - createdTime < 60 * 60 * 1000
+  const canComment = canCommentOnBet(userId, createdTime, user)
 
   const [comment, setComment] = useState('')
   async function submitComment() {
     if (!user || !comment || !canComment) return
-    await createComment(contract.id, id, comment, user)
+    await createComment(contract.id, comment, user, id)
   }
 
   const bought = amount >= 0 ? 'bought' : 'sold'
@@ -376,6 +453,16 @@ export function FeedQuestion(props: {
       </div>
     </>
   )
+}
+
+function canCommentOnBet(
+  userId: string,
+  createdTime: number,
+  user?: User | null
+) {
+  const isSelf = user?.id === userId
+  // You can comment if your bet was posted in the last hour
+  return isSelf && Date.now() - createdTime < 60 * 60 * 1000
 }
 
 function FeedDescription(props: { contract: Contract }) {
