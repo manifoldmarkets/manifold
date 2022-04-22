@@ -39,12 +39,12 @@ export default function BetRow(props: {
               setBetChoice(choice)
             }}
             replaceNoButton={
-              yesFloorShares > noFloorShares && yesFloorShares > 0 ? (
+              yesFloorShares > 0 ? (
                 <SellButton contract={contract} user={user} />
               ) : undefined
             }
             replaceYesButton={
-              noFloorShares > yesFloorShares && noFloorShares > 0 ? (
+              noFloorShares > 0 ? (
                 <SellButton contract={contract} user={user} />
               ) : undefined
             }
