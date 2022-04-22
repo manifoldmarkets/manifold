@@ -745,7 +745,7 @@ function FeedAnswer(props: {
 
   return (
     <Col
-      className="bg-base-200 border-base-300 flex-1 p-3"
+      className="border-base-300 flex-1 bg-white p-3"
       style={{ borderWidth: 2, borderRadius: 6 }}
     >
       <Modal open={open} setOpen={setOpen}>
