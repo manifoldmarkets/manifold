@@ -21,12 +21,24 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 4. `$ firebase use dev` to choose the dev project
 5. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev (TODO: maybe not for Manifold)
 
+### Preparing local Firestore database:
+
+0. [Install](https://cloud.google.com/sdk/docs/install) gcloud CLI
+1. `$ brew install java` to install java if you don't already have it
+   1. `$ echo 'export PATH="/usr/local/opt/openjdk/bin:$PATH"' >> ~/.zshrc` to add java to your path
+2. `$ gcloud auth login` to authenticate the CLI tools to Firebase
+3. `$ gcloud config set project <project-id>` to choose the project (`$ gcloud projects list` to see options)
+4. `$ mkdir firestore_export` to create a folder to store the exported database
+5. `$ yarn db:update-local-from-remote` to pull the remote db from Firestore to local
+   1. TODO: this won't work when open source, we'll have to point to the public db
+
 ## Developing locally
 
-0. `$ yarn dev` to spin up the emulators
+1. `$ yarn serve` to spin up the emulators
    The Emulator UI is at http://localhost:4000; the functions are hosted on :5001.
    Note: You have to kill and restart emulators when you change code; no hot reload =(
-1. Connect to emulators by enabling `functions.useEmulator('localhost', 5001)`
+2. `$ yarn dev:emulate` in `/web` to connect to emulators with the frontend
+   1. Note: emulated database is cleared after every shutdown
 
 ## Debugging
 
