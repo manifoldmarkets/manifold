@@ -23,7 +23,10 @@ export default function BetRow(props: {
   )
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
-  const { yesFloorShares, noFloorShares } = useSaveShares(contract, userBets)
+  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
+    contract,
+    userBets
+  )
 
   return (
     <>
@@ -40,12 +43,22 @@ export default function BetRow(props: {
             }}
             replaceNoButton={
               yesFloorShares > 0 ? (
-                <SellButton contract={contract} user={user} />
+                <SellButton
+                  contract={contract}
+                  user={user}
+                  sharesOutcome={'YES'}
+                  shares={yesShares}
+                />
               ) : undefined
             }
             replaceYesButton={
               noFloorShares > 0 ? (
-                <SellButton contract={contract} user={user} />
+                <SellButton
+                  contract={contract}
+                  user={user}
+                  sharesOutcome={'NO'}
+                  shares={noShares}
+                />
               ) : undefined
             }
           />
