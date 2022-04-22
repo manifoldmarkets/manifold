@@ -256,6 +256,47 @@ function getAnswerGroups(
   return answerGroups
 }
 
+function groupBetsAndComments(
+  bets: Bet[],
+  comments: Comment[],
+  contract: Contract,
+  userId: string | undefined,
+  options: {
+    hideOutcome: boolean
+    abbreviated: boolean
+    smallAvatar: boolean
+    reversed: boolean
+  }
+) {
+  const commentsWithoutBets = comments
+    .filter((comment) => !comment.betId)
+    .map((comment) => ({
+      type: 'comment' as const,
+      id: comment.id,
+      contract: contract,
+      comment,
+      bet: undefined,
+      truncate: false,
+      hideOutcome: true,
+      smallAvatar: false,
+    }))
+
+  const groupedBets = groupBets(bets, comments, contract, userId, options)
+
+  // iterate through the bets and comment activity items and add them to the items in order of comment creation time:
+  const unorderedBetsAndComments = [...commentsWithoutBets, ...groupedBets]
+  const sortedBetsAndComments = _.sortBy(unorderedBetsAndComments, (item) => {
+    if (item.type === 'comment') {
+      return item.comment.createdTime
+    } else if (item.type === 'bet') {
+      return item.bet.createdTime
+    } else if (item.type === 'betgroup') {
+      return item.bets[0].createdTime
+    }
+  })
+  return sortedBetsAndComments
+}
+
 export function getAllContractActivityItems(
   contract: Contract,
   bets: Bet[],
@@ -301,38 +342,14 @@ export function getAllContractActivityItems(
       )
     )
   } else {
-    const commentsWithoutBets = comments
-      .filter((comment) => !comment.betId)
-      .map((comment) => ({
-        type: 'comment' as const,
-        id: comment.id,
-        contract: contract,
-        comment,
-        bet: undefined,
-        truncate: false,
-        hideOutcome: true,
+    items.push(
+      ...groupBetsAndComments(bets, comments, contract, user?.id, {
+        hideOutcome: false,
+        abbreviated,
         smallAvatar: false,
-      }))
-
-    const groupedBets = groupBets(bets, comments, contract, user?.id, {
-      hideOutcome: false,
-      abbreviated,
-      smallAvatar: false,
-      reversed: false,
-    })
-
-    // iterate through the bets and comment activity items and add them to the items in order of comment creation time:
-    const unorderedBetsAndComments = [...commentsWithoutBets, ...groupedBets]
-    const sortedBetsAndComments = _.sortBy(unorderedBetsAndComments, (item) => {
-      if (item.type === 'comment') {
-        return item.comment.createdTime
-      } else if (item.type === 'bet') {
-        return item.bet.createdTime
-      } else if (item.type === 'betgroup') {
-        return item.bets[0].createdTime
-      }
-    })
-    items.push(...sortedBetsAndComments)
+        reversed,
+      })
+    )
   }
 
   if (contract.closeTime && contract.closeTime <= Date.now()) {
@@ -392,7 +409,7 @@ export function getRecentContractActivityItems(
             reversed: false,
           }
         )
-      : groupBets(bets, comments, contract, user?.id, {
+      : groupBetsAndComments(bets, comments, contract, user?.id, {
           hideOutcome: false,
           abbreviated: true,
           smallAvatar: false,
