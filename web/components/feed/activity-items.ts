@@ -23,6 +23,7 @@ export type ActivityItem =
   | CloseItem
   | ResolveItem
   | CommentInputItem
+  | AnswerItem
 
 type BaseActivityItem = {
   id: string
@@ -71,6 +72,11 @@ export type AnswerGroupItem = BaseActivityItem & {
   type: 'answergroup'
   answer: Answer
   items: ActivityItem[]
+}
+
+export type AnswerItem = BaseActivityItem & {
+  type: 'answer'
+  answer: Answer
 }
 
 export type CloseItem = BaseActivityItem & {
@@ -233,13 +239,14 @@ function getAnswerGroups(
         (answer) => answer.id === outcome
       ) as Answer
 
-      let items = groupBets(answerBets, answerComments, contract, user?.id, {
-        hideOutcome: true,
-        abbreviated,
-        smallAvatar: true,
-        reversed,
-      })
-
+      // let items = groupBets(answerBets, answerComments, contract, user?.id, {
+      //   hideOutcome: true,
+      //   abbreviated,
+      //   smallAvatar: true,
+      //   reversed,
+      // })
+      //
+      let items: ActivityItem[] = []
       if (abbreviated) items = items.slice(-2)
 
       return {
@@ -248,6 +255,81 @@ function getAnswerGroups(
         contract,
         answer,
         items,
+        user,
+      }
+    })
+    .filter((group) => group.answer)
+
+  return answerGroups
+}
+function getAnswers(
+  contract: FullContract<DPM, FreeResponse>,
+  bets: Bet[],
+  comments: Comment[],
+  user: User | undefined | null,
+  options: {
+    sortByProb: boolean
+    abbreviated: boolean
+    reversed: boolean
+  }
+) {
+  const { sortByProb, abbreviated, reversed } = options
+
+  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
+    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
+  )
+  if (abbreviated) {
+    const lastComment = _.last(comments)
+    const lastCommentOutcome = bets.find(
+      (bet) => bet.id === lastComment?.betId
+    )?.outcome
+    const lastBetOutcome = _.last(bets)?.outcome
+    if (lastCommentOutcome && lastBetOutcome) {
+      outcomes = _.uniq([
+        ...outcomes.filter(
+          (outcome) =>
+            outcome !== lastCommentOutcome && outcome !== lastBetOutcome
+        ),
+        lastCommentOutcome,
+        lastBetOutcome,
+      ])
+    }
+    outcomes = outcomes.slice(-2)
+  }
+  if (sortByProb) {
+    outcomes = _.sortBy(outcomes, (outcome) =>
+      getOutcomeProbability(contract, outcome)
+    )
+  } else {
+    // Sort by recent bet.
+    outcomes = _.sortBy(outcomes, (outcome) =>
+      _.findLastIndex(bets, (bet) => bet.outcome === outcome)
+    )
+  }
+
+  const answerGroups = outcomes
+    .map((outcome) => {
+      const answerBets = bets.filter((bet) => bet.outcome === outcome)
+      const answerComments = comments.filter((comment) =>
+        answerBets.some((bet) => bet.id === comment.betId)
+      )
+      const answer = contract.answers?.find(
+        (answer) => answer.id === outcome
+      ) as Answer
+
+      // let items = groupBets(answerBets, answerComments, contract, user?.id, {
+      //   hideOutcome: true,
+      //   abbreviated,
+      //   smallAvatar: true,
+      //   reversed,
+      // })
+      //
+
+      return {
+        id: outcome,
+        type: 'answer' as const,
+        contract,
+        answer,
         user,
       }
     })
@@ -329,7 +411,24 @@ export function getAllContractActivityItems(
 
   if (outcomeType === 'FREE_RESPONSE') {
     items.push(
-      ...getAnswerGroups(
+      ...groupBetsAndComments(bets, comments, contract, user?.id, {
+        hideOutcome: false,
+        abbreviated,
+        smallAvatar: false,
+        reversed,
+      })
+    )
+    const commentsByBetId = mapCommentsByBetId(comments)
+    items.push({
+      type: 'commentInput',
+      id: 'commentInput',
+      bets,
+      commentsByBetId,
+      contract,
+    })
+
+    items.push(
+      ...getAnswers(
         contract as FullContract<DPM, FreeResponse>,
         bets,
         comments,
@@ -359,14 +458,16 @@ export function getAllContractActivityItems(
     items.push({ type: 'resolve', id: `${contract.resolutionTime}`, contract })
   }
 
-  const commentsByBetId = mapCommentsByBetId(comments)
-  items.push({
-    type: 'commentInput',
-    id: 'commentInput',
-    bets,
-    commentsByBetId,
-    contract,
-  })
+  if (outcomeType === 'BINARY') {
+    const commentsByBetId = mapCommentsByBetId(comments)
+    items.push({
+      type: 'commentInput',
+      id: 'commentInput',
+      bets,
+      commentsByBetId,
+      contract,
+    })
+  }
 
   if (reversed) items.reverse()
 

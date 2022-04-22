@@ -67,7 +67,12 @@ export function FeedItems(props: {
     <div className={clsx('flow-root pr-2 md:pr-0', className)} ref={ref}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
-          <div key={item.id} className="relative pb-6">
+          <div
+            key={item.id}
+            className={
+              item.type === 'answer' ? 'relative pb-2' : 'relative pb-6'
+            }
+          >
             {activityItemIdx !== items.length - 1 ||
             item.type === 'answergroup' ? (
               <span
@@ -104,6 +109,8 @@ function FeedItem(props: { item: ActivityItem }) {
       return <FeedBetGroup {...item} />
     case 'answergroup':
       return <FeedAnswerGroup {...item} />
+    case 'answer':
+      return <FeedAnswer {...item} />
     case 'close':
       return <FeedClose {...item} />
     case 'resolve':
@@ -195,9 +202,9 @@ export function CommentInput(props: {
   const user = useUser()
   const [comment, setComment] = useState('')
 
-  if (outcomeType === 'FREE_RESPONSE') {
-    return <div />
-  }
+  // if (outcomeType === 'FREE_RESPONSE') {
+  //   return <div />
+  // }
 
   let canCommentOnABet = false
   bets.some((bet) => {
@@ -224,34 +231,36 @@ export function CommentInput(props: {
 
   return (
     <>
-      <div>
-        <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
-      </div>
-      <div className={'min-w-0 flex-1 py-1.5'}>
-        <div className="text-sm text-gray-500">
-          <div className="mt-2">
-            <Textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="textarea textarea-bordered w-full resize-none"
-              placeholder="Add a comment..."
-              rows={3}
-              maxLength={MAX_COMMENT_LENGTH}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                  submitComment()
-                }
-              }}
-            />
-            <button
-              className="btn btn-outline btn-sm mt-1"
-              onClick={submitComment}
-            >
-              Comment
-            </button>
+      <Row className={'flex w-full gap-2 pt-5'}>
+        <div>
+          <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
+        </div>
+        <div className={'min-w-0 flex-1 py-1.5'}>
+          <div className="text-sm text-gray-500">
+            <div className="mt-2">
+              <Textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="textarea textarea-bordered w-full resize-none"
+                placeholder="Add a comment..."
+                rows={3}
+                maxLength={MAX_COMMENT_LENGTH}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    submitComment()
+                  }
+                }}
+              />
+              <button
+                className="btn btn-outline btn-sm mt-1"
+                onClick={submitComment}
+              >
+                Comment
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </Row>
     </>
   )
 }
@@ -720,6 +729,71 @@ function FeedAnswerGroup(props: {
           </div>
         </div>
       ))}
+    </Col>
+  )
+}
+function FeedAnswer(props: {
+  contract: FullContract<any, FreeResponse>
+  answer: Answer
+}) {
+  const { answer, contract } = props
+  const { username, avatarUrl, name, text } = answer
+
+  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
+  const probPercent = formatPercent(prob)
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Col
+      className="bg-base-200 border-base-300 flex-1 p-3"
+      style={{ borderWidth: 2, borderRadius: 6 }}
+    >
+      <Modal open={open} setOpen={setOpen}>
+        <AnswerBetPanel
+          answer={answer}
+          contract={contract}
+          closePanel={() => setOpen(false)}
+          className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
+          isModal={true}
+        />
+      </Modal>
+
+      <Row className="my-4 gap-3">
+        <div className="px-1">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+            <Avatar username={username} avatarUrl={avatarUrl} />
+          </div>
+        </div>
+        <Col className="min-w-0 flex-1 gap-2">
+          <div className="text-sm text-gray-500">
+            <UserLink username={username} name={name} /> answered
+          </div>
+
+          <Col className="align-items justify-between gap-4 sm:flex-row">
+            <span className="whitespace-pre-line text-lg">
+              <Linkify text={text} />
+            </span>
+
+            <Row className="align-items justify-end gap-4">
+              <span
+                className={clsx(
+                  'text-2xl',
+                  tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
+                )}
+              >
+                {probPercent}
+              </span>
+              <BuyButton
+                className={clsx(
+                  'btn-sm flex-initial !px-6 sm:flex',
+                  tradingAllowed(contract) ? '' : '!hidden'
+                )}
+                onClick={() => setOpen(true)}
+              />
+            </Row>
+          </Col>
+        </Col>
+      </Row>
     </Col>
   )
 }
