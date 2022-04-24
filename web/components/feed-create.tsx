@@ -1,6 +1,6 @@
 import { SparklesIcon, XIcon } from '@heroicons/react/solid'
 import { Avatar } from './avatar'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { NewContract } from '../pages/create'
 import { firebaseLogin, User } from '../lib/firebase/users'
@@ -10,6 +10,7 @@ import { Col } from './layout/col'
 import clsx from 'clsx'
 import { Row } from './layout/row'
 import { ENV_CONFIG } from '../../common/envs/constants'
+import _ from 'lodash'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
@@ -71,14 +72,19 @@ export default function FeedCreate(props: {
   const [isExpanded, setIsExpanded] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement | null>()
 
-  const placeholders = ENV_CONFIG.newQuestionPlaceholders
   // Rotate through a new placeholder each day
   // Easter egg idea: click your own name to shuffle the placeholder
   // const daysSinceEpoch = Math.floor(Date.now() / 1000 / 60 / 60 / 24)
-  const [randIndex] = useState(
-    Math.floor(Math.random() * 1e10) % placeholders.length
-  )
-  const placeholder = props.placeholder ?? `e.g. ${placeholders[randIndex]}`
+
+  // Take care not to produce a different placeholder on the server and client
+  const [defaultPlaceholder, setDefaultPlaceholder] = useState('')
+  useEffect(() => {
+    setDefaultPlaceholder(
+      `e.g. ${_.sample(ENV_CONFIG.newQuestionPlaceholders)}`
+    )
+  }, [])
+
+  const placeholder = props.placeholder ?? defaultPlaceholder
 
   return (
     <div
