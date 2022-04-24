@@ -76,7 +76,7 @@ export default function FeedCreate(props: {
   // Easter egg idea: click your own name to shuffle the placeholder
   // const daysSinceEpoch = Math.floor(Date.now() / 1000 / 60 / 60 / 24)
 
-  // take care not to produce a different placeholder on the server and client
+  // Take care not to produce a different placeholder on the server and client
   const [defaultPlaceholder, setDefaultPlaceholder] = useState('')
   useEffect(() => {
     setDefaultPlaceholder(
