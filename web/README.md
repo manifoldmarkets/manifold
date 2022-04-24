@@ -2,11 +2,6 @@
 
 ## Getting started
 
-Manifold's website uses [Next.js][nextjs], which is a [React][react]-based framework that handles concerns like routing,
-builds, and a development server. It's also integrated with [Vercel][vercel], which is responsible for hosting the site
-and providing some other production functionality like serving the API. The application code is written exclusively in
-Typescript. Styling is done via CSS-in-JS in the React code and uses [Tailwind][tailwind] CSS classes.
-
 To run the development server, install [Yarn][yarn], and then in this directory:
 
 1. `yarn` to install all dependencies
@@ -14,6 +9,13 @@ To run the development server, install [Yarn][yarn], and then in this directory:
 3. Your site will be available on http://localhost:3000
 
 Check package.json for other command-line tasks. (e.g. `yarn dev` will point the development server at the prod database. `yarn emulate` will run against a local emulated database, if you are serving it via `yarn serve` from the [`functions/` package][functions-readme].)
+
+## Tech stack
+
+Manifold's website uses [Next.js][nextjs], which is a [React][react]-based framework that handles concerns like routing,
+builds, and a development server. It's also integrated with [Vercel][vercel], which is responsible for hosting the site
+and providing some other production functionality like serving the API. The application code is written exclusively in
+Typescript. Styling is done via CSS-in-JS in the React code and uses [Tailwind][tailwind] CSS classes.
 
 ## Building and deployment
 
