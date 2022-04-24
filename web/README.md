@@ -54,6 +54,6 @@ integration][prettier-integrations] to format it in your editor.
 [prettier]: https://prettier.io
 [prettier-integrations]: https://prettier.io/docs/en/editors.html
 [next-static-files]: https://nextjs.org/docs/basic-features/static-file-serving
-[next-router]: https://nextjs.org/docs/basic-features/pages
+[next-pages]: https://nextjs.org/docs/basic-features/pages
 [vercel-functions]: https://vercel.com/docs/concepts/functions/serverless-functions
 [functions-readme]: https://github.com/manifoldmarkets/manifold/blob/main/functions/README.md
