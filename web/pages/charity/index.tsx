@@ -39,17 +39,17 @@ export default function Charity() {
 
   return (
     <Page>
-      <Col className="w-full items-center px-4 sm:px-0">
+      <Col className="w-full rounded bg-white px-4 py-6 sm:px-8">
         <Col className="max-w-xl">
-          <Title text="Donate to a charity" />
+          <Title className="!mt-0" text="Donate to a charity" />
           <div className="mb-6 text-gray-500">
-            Exchange your $M for real dollars in the form of charity donations!
+            Exchange your M$ for real dollars in the form of charity donations!
           </div>
           <input
             type="text"
             onChange={(e) => debouncedQuery(e.target.value)}
             placeholder="Search charities"
-            className="input input-bordered mb-4 w-full"
+            className="input input-bordered mb-6 w-full"
           />
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-3 lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
