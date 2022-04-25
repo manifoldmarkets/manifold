@@ -1,4 +1,14 @@
-export const charities = [
+export interface Charity {
+  slug: string // Note, slugs double as charity IDs
+  name: string
+  website: string
+  ein: string
+  photo: string
+  blurb: string
+  raised?: number
+}
+
+export const charities: Charity[] = [
   {
     name: 'Faunalytics',
     website: 'https://faunalytics.org/',

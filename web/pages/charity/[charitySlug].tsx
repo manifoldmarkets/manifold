@@ -1,34 +1,39 @@
 import clsx from 'clsx'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Charity } from '../../../components/charity/charity-card'
-import { Col } from '../../../components/layout/col'
-import { Row } from '../../../components/layout/row'
-import { Page } from '../../../components/page'
-import { Title } from '../../../components/title'
-import { BuyAmountInput } from '../../../components/amount-input'
-import { Spacer } from '../../../components/layout/spacer'
-import { User } from '../../../../common/user'
-import { useUser } from '../../../hooks/use-user'
-import { Linkify } from '../../../components/linkify'
-import { transact } from '../../../lib/firebase/api-call'
+import { useEffect, useRef, useState } from 'react'
+import { Col } from '../../components/layout/col'
+import { Row } from '../../components/layout/row'
+import { Page } from '../../components/page'
+import { Title } from '../../components/title'
+import { BuyAmountInput } from '../../components/amount-input'
+import { Spacer } from '../../components/layout/spacer'
+import { User } from '../../../common/user'
+import { useUser } from '../../hooks/use-user'
+import { Linkify } from '../../components/linkify'
+import { transact } from '../../lib/firebase/api-call'
+import { charities, Charity } from '../../../common/charity'
+import { useRouter } from 'next/router'
+import Custom404 from '../404'
 
 const manaToUSD = (mana: number) =>
   (mana / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 
-// TODO: replace with props
-const data: Charity = {
-  name: 'QRI',
-  slug: 'qri',
-  website: 'https://www.google.com',
-  ein: '123456789',
-  photo: 'https://placekitten.com/200/200',
-  blurb:
-    'Lorem Ipsum is simply dummy text of Lorem Ipsum is simply dummy text ofLorem Ipsum is simply dummy text ofLorem Ipsum is simply dLorem Ipsum is simply dummy text ofLorem Ipsum is simply dummy text ofLorem Ipsum is simply dummy text ofLorem Ipsum is simply dummy text ofLorem Ipsum is simply dummy text ofLorem Ipsum is simply dummy text ofLorem Ipsum is simply dummy text ofLorem Ipsum isLorem Ipsum is simply dummy text ofLorem Ipsum is simply dummy text of simply dummy text ofummy text of ',
-  raised: 23450,
+export default function CharityPageWrapper() {
+  const router = useRouter()
+  const { charitySlug } = router.query as { charitySlug: string }
+
+  const charity = charities.find(
+    (c) => c.slug.toLowerCase() === charitySlug?.toLowerCase()
+  )
+  if (!router.isReady) return <></>
+  if (!charity) {
+    return <Custom404 />
+  }
+  return <CharityPage charity={charity} />
 }
 
-export default function CharityPage() {
-  const { name, photo, blurb } = data
+function CharityPage(props: { charity: Charity }) {
+  const { charity } = props
+  const { name, photo, blurb } = charity
 
   // TODO: why not just useUser inside Donation Box rather than passing in?
   const user = useUser()
@@ -41,7 +46,7 @@ export default function CharityPage() {
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
             {photo && <img src={photo} alt="" className="w-40 rounded-2xl" />}
-            <Details userDonated={4} numSupporters={1} />
+            <Details charity={charity} userDonated={4} numSupporters={1} />
           </Row>
           <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
           <Blurb text={blurb} />
@@ -84,13 +89,17 @@ function Blurb({ text }: { text: string }) {
   )
 }
 
-function Details(props: { userDonated?: number; numSupporters: number }) {
-  const { userDonated, numSupporters } = props
-  const { raised, website } = data
+function Details(props: {
+  charity: Charity
+  userDonated?: number
+  numSupporters: number
+}) {
+  const { charity, userDonated, numSupporters } = props
+  const { raised, website } = charity
   return (
     <Col className="gap-1 text-right">
       <div className="text-primary mb-2 text-4xl">
-        {manaToUSD(raised)} raised
+        {manaToUSD(raised ?? 0)} raised
       </div>
       {userDonated && (
         <div className="text-primary text-xl">

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { useState, useMemo } from 'react'
 import { charities as charityList } from '../../../common/charity'
-import Card from '../../components/charity/charity-card'
+import { CharityCard } from '../../components/charity/charity-card'
 import { Col } from '../../components/layout/col'
 import { Page } from '../../components/page'
 import { Title } from '../../components/title'
@@ -39,7 +39,7 @@ export default function Charity() {
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-3 lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
           {filterCharities.map((charity) => (
             <div key={charity.name}>
-              <Card charity={charity} />
+              <CharityCard charity={charity} />
             </div>
           ))}
         </div>
