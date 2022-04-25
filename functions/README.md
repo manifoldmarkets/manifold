@@ -19,17 +19,17 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 2. `$ yarn` to install JS dependencies
 3. `$ firebase login` to authenticate the CLI tools to Firebase
 4. `$ firebase use dev` to choose the dev project
-5. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev
 
-### Preparing local Firestore database:
+### For local development
 
-0. [Install](https://cloud.google.com/sdk/docs/install) gcloud CLI
-1. `$ brew install java` to install java if you don't already have it
+0. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev
+1. [Install](https://cloud.google.com/sdk/docs/install) gcloud CLI
+2. `$ brew install java` to install java if you don't already have it
    1. `$ echo 'export PATH="/usr/local/opt/openjdk/bin:$PATH"' >> ~/.zshrc` to add java to your path
-2. `$ gcloud auth login` to authenticate the CLI tools to Firebase
-3. `$ gcloud config set project <project-id>` to choose the project (`$ gcloud projects list` to see options)
-4. `$ mkdir firestore_export` to create a folder to store the exported database
-5. `$ yarn db:update-local-from-remote` to pull the remote db from Firestore to local
+3. `$ gcloud auth login` to authenticate the CLI tools to Google Cloud
+4. `$ gcloud config set project <project-id>` to choose the project (`$ gcloud projects list` to see options)
+5. `$ mkdir firestore_export` to create a folder to store the exported database
+6. `$ yarn db:update-local-from-remote` to pull the remote db from Firestore to local
    1. TODO: this won't work when open source, we'll have to point to the public db
 
 ## Developing locally
