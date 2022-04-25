@@ -3,7 +3,7 @@
 export type Comment = {
   id: string
   contractId: string
-  betId: string
+  betId?: string
   userId: string
 
   text: string

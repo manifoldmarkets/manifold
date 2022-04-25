@@ -8,6 +8,11 @@
 
 (`yarn dev` will point you to prod database)
 
+### Running with local emulated database and functions
+
+1. `yarn serve` first in `/functions` and wait for it to start
+2. `yarn dev:emulate` will point you to the emulated database
+
 ## Formatting
 
 Before committing, run `yarn format` to format your code.

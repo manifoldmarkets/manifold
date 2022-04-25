@@ -113,6 +113,13 @@ export function BetsList(props: { user: User }) {
   const displayedContracts = _.sortBy(contracts, SORTS[sort])
     .reverse()
     .filter(FILTERS[filter])
+    .filter((c) => {
+      if (sort === 'profit') return true
+
+      // Filter out contracts where you don't have shares anymore.
+      const metrics = contractsMetrics[c.id]
+      return metrics.payout > 0
+    })
 
   const [settled, unsettled] = _.partition(
     contracts,
@@ -206,7 +213,7 @@ const NoBets = () => {
   return (
     <div className="mx-4 text-gray-500">
       You have not made any bets yet.{' '}
-      <SiteLink href="/" className="underline">
+      <SiteLink href="/home" className="underline">
         Find a prediction market!
       </SiteLink>
     </div>
@@ -226,11 +233,10 @@ function MyContractBets(props: {
   const isBinary = outcomeType === 'BINARY'
   const probPercent = getBinaryProbPercent(contract)
 
-  const { payout, profit, profitPercent } = getContractBetMetrics(
+  const { payout, profit, profitPercent, invested } = getContractBetMetrics(
     contract,
     bets
   )
-
   return (
     <div
       tabIndex={0}

@@ -250,7 +250,10 @@ function ContractTopTrades(props: {
   const topBettor = useUserById(betsById[topBetId]?.userId)
 
   // And also the commentId of the comment with the highest profit
-  const topCommentId = _.sortBy(comments, (c) => -profitById[c.betId])[0]?.id
+  const topCommentId = _.sortBy(
+    comments,
+    (c) => c.betId && -profitById[c.betId]
+  )[0]?.id
 
   return (
     <div className="mt-12 max-w-sm">

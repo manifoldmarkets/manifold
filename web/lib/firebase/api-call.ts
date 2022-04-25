@@ -1,16 +1,9 @@
-import {
-  getFunctions,
-  httpsCallable,
-  connectFunctionsEmulator,
-} from 'firebase/functions'
+import { httpsCallable } from 'firebase/functions'
 import { Fold } from '../../../common/fold'
 import { User } from '../../../common/user'
 import { randomString } from '../../../common/util/random'
 import './init'
-
-const functions = getFunctions()
-// Uncomment to connect to local emulators:
-// connectFunctionsEmulator(functions, 'localhost', 5001)
+import { functions } from './init'
 
 export const cloudFunction = <RequestData, ResponseData>(name: string) =>
   httpsCallable<RequestData, ResponseData>(functions, name)
@@ -72,5 +65,11 @@ export const changeUserInfo = (data: {
 }) => {
   return cloudFunction('changeUserInfo')(data)
     .then((r) => r.data as { status: string; message?: string })
+    .catch((e) => ({ status: 'error', message: e.message }))
+}
+
+export const addLiquidity = (data: { amount: number; contractId: string }) => {
+  return cloudFunction('addLiquidity')(data)
+    .then((r) => r.data as { status: string })
     .catch((e) => ({ status: 'error', message: e.message }))
 }

@@ -7,6 +7,7 @@
     "devdev": "NEXT_PUBLIC_FIREBASE_ENV=DEV concurrently -n NEXT,TS -c magenta,cyan \"FIREBASE_ENV=DEV next dev -p 3000\" \"FIREBASE_ENV=DEV yarn ts --watch\" # see https://github.com/vercel/next.js/discussions/33634",
     "dev:dev": "yarn devdev",
     "dev:the": "NEXT_PUBLIC_FIREBASE_ENV=THEOREMONE concurrently -n NEXT,TS -c magenta,cyan \"FIREBASE_ENV=THEOREMONE next dev -p 3000\" \"FIREBASE_ENV=THEOREMONE yarn ts --watch\"",
+    "dev:emulate": "NEXT_PUBLIC_FIREBASE_EMULATE=TRUE yarn devdev",
     "ts": "tsc --noEmit --incremental --preserveWatchOutput --pretty",
     "build": "next build",
     "start": "next start",
@@ -53,7 +54,7 @@
     "pretty-quick": "3.1.2",
     "tailwindcss": "3.0.1",
     "tsc-files": "1.1.3",
-    "typescript": "4.5.2"
+    "typescript": "4.5.3"
   },
   "lint-staged": {
     "*.{ts,tsx}": "tsc-files --noEmit --incremental false"

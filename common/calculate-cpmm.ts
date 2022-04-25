@@ -174,17 +174,19 @@ export function calculateCpmmSale(
     throw new Error('Cannot sell non-positive shares')
   }
 
-  const rawSaleValue = calculateCpmmShareValue(
+  const saleValue = calculateCpmmShareValue(
     contract,
     shares,
     outcome as 'YES' | 'NO'
   )
 
-  const { fees, remainingBet: saleValue } = getCpmmLiquidityFee(
-    contract,
-    rawSaleValue,
-    outcome === 'YES' ? 'NO' : 'YES'
-  )
+  const fees = noFees
+
+  // const { fees, remainingBet: saleValue } = getCpmmLiquidityFee(
+  //   contract,
+  //   rawSaleValue,
+  //   outcome === 'YES' ? 'NO' : 'YES'
+  // )
 
   const { pool } = contract
   const { YES: y, NO: n } = pool

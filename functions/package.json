@@ -1,15 +1,21 @@
 {
   "name": "functions",
   "version": "1.0.0",
+  "config": {
+    "firestore": "dev-mantic-markets.appspot.com"
+  },
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "serve": "yarn build && firebase emulators:start --only functions",
     "shell": "yarn build && firebase functions:shell",
     "start": "yarn shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "dev": "yarn serve"
+    "serve": "yarn build && firebase emulators:start --only functions,firestore --import=./firestore_export",
+    "db:update-local-from-remote": "yarn db:backup-remote && gsutil rsync -r gs://$npm_package_config_firestore/firestore_export ./firestore_export",
+    "db:backup-local": "firebase emulators:export --force ./firestore_export",
+    "db:rename-remote-backup-folder": "gsutil mv gs://$npm_package_config_firestore/firestore_export gs://$npm_package_config_firestore/firestore_export_$(date +%d-%m-%Y-%H-%M)",
+    "db:backup-remote": "yarn db:rename-remote-backup-folder && gcloud firestore export gs://$npm_package_config_firestore/firestore_export/"
   },
   "main": "lib/functions/src/index.js",
   "dependencies": {
