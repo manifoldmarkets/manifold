@@ -19,7 +19,7 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 2. `$ yarn` to install JS dependencies
 3. `$ firebase login` to authenticate the CLI tools to Firebase
 4. `$ firebase use dev` to choose the dev project
-5. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev (TODO: maybe not for Manifold)
+5. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev
 
 ### Preparing local Firestore database:
 
@@ -39,6 +39,13 @@ Adapted from https://firebase.google.com/docs/functions/get-started
    Note: You have to kill and restart emulators when you change code; no hot reload =(
 2. `$ yarn dev:emulate` in `/web` to connect to emulators with the frontend
    1. Note: emulated database is cleared after every shutdown
+
+## Firestore Commands
+
+- `db:update-local-from-remote` - Pull the remote db from Firestore to local, also calls:
+  - `db:backup-remote` - Exports the remote dev db to the backup folder on Google Cloud Storage (called on every `db:update-local-from-remote`)
+  - `db:rename-remote-backup-folder` - Renames the remote backup folder (called on every `db:backup-remote` to preserve the previous db backup)
+- `db:backup-local` - Save the local db changes to the disk (overwrites existing)
 
 ## Debugging
 
