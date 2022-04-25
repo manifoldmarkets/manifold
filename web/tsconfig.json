@@ -15,6 +15,10 @@
     "jsx": "preserve",
     "incremental": true
   },
+
+  "watchOptions": {
+    "excludeDirectories": [".next"]
+  },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "../common/**/*.ts"],
-  "exclude": ["node_modules", ".next"]
+  "exclude": ["node_modules"]
 }
