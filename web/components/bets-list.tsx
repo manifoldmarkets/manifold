@@ -213,7 +213,7 @@ const NoBets = () => {
   return (
     <div className="mx-4 text-gray-500">
       You have not made any bets yet.{' '}
-      <SiteLink href="/" className="underline">
+      <SiteLink href="/home" className="underline">
         Find a prediction market!
       </SiteLink>
     </div>
