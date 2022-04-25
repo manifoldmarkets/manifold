@@ -1,32 +1,16 @@
 import _ from 'lodash'
 import { useState, useMemo } from 'react'
+import { charities as charityList } from '../../../common/charity'
 import Card from '../../components/charity/charity-card'
 import { Col } from '../../components/layout/col'
 import { Page } from '../../components/page'
 import { Title } from '../../components/title'
 
-const charities = [
-  'QRI',
-  'Redwood Research',
-  '._.',
-  'Center for Effective Altruism',
-  'AllFed',
-  'Against Malaria Foundation',
-  'Institution for Long Long Loooong Loquacious Language (ILL)',
-  'American Red Cross',
-].map((name, i) => ({
-  name,
-  slug: name,
-  website: 'https://www.google.com',
-  ein: '123456789',
-  photo: i === 4 ? '' : 'https://placekitten.com/200/200',
-  blurb:
-    i === 2
-      ? 'short text'
-      : "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.",
+// TODO: Fetch amount raised.
+const charities = charityList.map((charity) => ({
+  ...charity,
   raised: 4001,
 }))
-// TODO: actual data
 
 export default function Charity() {
   const [query, setQuery] = useState('')
