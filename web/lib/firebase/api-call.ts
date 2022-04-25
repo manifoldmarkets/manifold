@@ -1,10 +1,9 @@
-import { getFunctions, httpsCallable } from 'firebase/functions'
+import { httpsCallable } from 'firebase/functions'
 import { Fold } from '../../../common/fold'
 import { User } from '../../../common/user'
 import { randomString } from '../../../common/util/random'
 import './init'
-
-const functions = getFunctions()
+import { functions } from './init'
 
 export const cloudFunction = <RequestData, ResponseData>(name: string) =>
   httpsCallable<RequestData, ResponseData>(functions, name)
