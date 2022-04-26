@@ -42,7 +42,8 @@ export function ContractActivity(props: {
       ? getSpecificContractActivityItems(contract, bets, comments, user, {
           mode,
         })
-      : getAllContractActivityItems(contract, bets, comments, user, {
+      : // only used in abbreviated mode with folds/communities, all mode isn't used
+        getAllContractActivityItems(contract, bets, comments, user, {
           abbreviated: mode === 'abbreviated',
         })
 
