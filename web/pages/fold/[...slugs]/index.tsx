@@ -363,7 +363,7 @@ function FoldLeaderboards(props: {
     <>
       <Leaderboard
         className="max-w-xl"
-        title="🏅 Top traders"
+        title="🏅 Top bettors"
         users={topTraders}
         columns={[
           {
