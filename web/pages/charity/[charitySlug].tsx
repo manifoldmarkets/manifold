@@ -53,7 +53,13 @@ function CharityPage(props: { charity: Charity }) {
           <Title className="!mt-0" text={name} />
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
-            {photo && <img src={photo} alt="" className="w-40 rounded-2xl" />}
+            {photo && (
+              <img
+                src={photo}
+                alt=""
+                className="w-40 rounded-2xl object-contain"
+              />
+            )}
             <Details
               charity={charity}
               totalRaised={totalRaised}

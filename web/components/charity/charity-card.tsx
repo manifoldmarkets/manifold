@@ -14,7 +14,7 @@ export function CharityCard(props: { charity: Charity }) {
     <Link href={`/charity/${slug}`} passHref>
       <div className="card image-full bg-base-100 glass cursor-pointer shadow-xl">
         <figure className="absolute h-full">
-          {photo && <img src={photo} alt="" />}
+          {photo && <img className="!object-contain" src={photo} alt="" />}
         </figure>
         <div className="card-body">
           <h3 className="card-title line-clamp-3">{name}</h3>
