@@ -191,30 +191,11 @@ function RelativeTimestamp(props: { time: number }) {
   )
 }
 
-export function CommentInput(props: {
-  contract: Contract
-  commentsByBetId: Record<string, Comment>
-  bets: Bet[]
-}) {
+export function CommentInput(props: { contract: Contract }) {
   // see if we can comment input on any bet:
-  const { contract, bets, commentsByBetId } = props
-  const { outcomeType } = contract
+  const { contract } = props
   const user = useUser()
   const [comment, setComment] = useState('')
-
-  let canCommentOnABet = false
-  bets.some((bet) => {
-    // make sure there is not already a comment with a matching bet id:
-    const matchingComment = commentsByBetId[bet.id]
-    if (matchingComment) {
-      return false
-    }
-    const { createdTime, userId } = bet
-    canCommentOnABet = canCommentOnBet(userId, createdTime, user)
-    return canCommentOnABet
-  })
-
-  if (canCommentOnABet) return <div />
 
   async function submitComment() {
     if (!comment) return

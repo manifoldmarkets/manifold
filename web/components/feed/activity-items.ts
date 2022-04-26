@@ -31,8 +31,6 @@ type BaseActivityItem = {
 
 export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
-  bets: Bet[]
-  commentsByBetId: Record<string, Comment>
 }
 
 export type DescriptionItem = BaseActivityItem & {
@@ -268,6 +266,7 @@ function groupBetsAndComments(
     reversed: boolean
   }
 ) {
+  const { reversed, smallAvatar, abbreviated } = options
   const commentsWithoutBets = comments
     .filter((comment) => !comment.betId)
     .map((comment) => ({
@@ -276,9 +275,9 @@ function groupBetsAndComments(
       contract: contract,
       comment,
       bet: undefined,
-      truncate: false,
+      truncate: abbreviated,
       hideOutcome: true,
-      smallAvatar: false,
+      smallAvatar,
     }))
 
   const groupedBets = groupBets(bets, comments, contract, userId, options)
@@ -294,6 +293,8 @@ function groupBetsAndComments(
       return item.bets[0].createdTime
     }
   })
+
+  if (reversed) sortedBetsAndComments.reverse()
   return sortedBetsAndComments
 }
 
@@ -308,8 +309,7 @@ export function getAllContractActivityItems(
 ) {
   const { abbreviated } = options
   const { outcomeType } = contract
-
-  const reversed = !abbreviated
+  const reversed = true
 
   bets =
     outcomeType === 'BINARY'
@@ -347,12 +347,9 @@ export function getAllContractActivityItems(
         }
       )
     )
-    const commentsByBetId = mapCommentsByBetId(comments)
     items.push({
       type: 'commentInput',
       id: 'commentInput',
-      bets,
-      commentsByBetId,
       contract,
     })
   } else {
@@ -374,12 +371,9 @@ export function getAllContractActivityItems(
   }
 
   if (outcomeType === 'BINARY') {
-    const commentsByBetId = mapCommentsByBetId(comments)
     items.push({
       type: 'commentInput',
       id: 'commentInput',
-      bets,
-      commentsByBetId,
       contract,
     })
   }
@@ -433,4 +427,57 @@ export function getRecentContractActivityItems(
         })
 
   return [questionItem, ...items]
+}
+
+export function getSpecificContractActivityItems(
+  contract: Contract,
+  bets: Bet[],
+  comments: Comment[],
+  user: User | null | undefined,
+  options: {
+    mode: 'comments' | 'bets'
+  }
+) {
+  const { mode } = options
+  let items = [] as ActivityItem[]
+
+  switch (mode) {
+    case 'bets':
+      items.push(
+        ...groupBets(bets, comments, contract, user?.id, {
+          hideOutcome: false,
+          abbreviated: false,
+          smallAvatar: false,
+          reversed: false,
+        })
+      )
+      break
+
+    case 'comments':
+      const onlyBetsWithComments = bets.filter((bet) =>
+        comments.some((comment) => comment.betId === bet.id)
+      )
+      items.push(
+        ...groupBetsAndComments(
+          onlyBetsWithComments,
+          comments,
+          contract,
+          user?.id,
+          {
+            hideOutcome: false,
+            abbreviated: false,
+            smallAvatar: false,
+            reversed: false,
+          }
+        )
+      )
+      items.push({
+        type: 'commentInput',
+        id: 'commentInput',
+        contract,
+      })
+      break
+  }
+
+  return items.reverse()
 }
