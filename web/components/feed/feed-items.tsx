@@ -248,10 +248,13 @@ export function CommentInput(props: {
                 }}
               />
               <button
-                className="btn btn-outline btn-sm mt-1"
+                className={clsx(
+                  'btn btn-outline btn-sm mt-1',
+                  user ? '' : 'text-transform: capitalize'
+                )}
                 onClick={submitComment}
               >
-                Comment
+                {user ? 'Comment' : 'Sign in to comment'}
               </button>
             </div>
           </div>
@@ -649,9 +652,9 @@ function FeedAnswerGroup(props: {
   contract: FullContract<any, FreeResponse>
   answer: Answer
   items: ActivityItem[]
-  className?: string
+  type: string
 }) {
-  const { answer, items, contract, className } = props
+  const { answer, items, contract, type } = props
   const { username, avatarUrl, name, text } = answer
 
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
@@ -659,7 +662,13 @@ function FeedAnswerGroup(props: {
   const [open, setOpen] = useState(false)
 
   return (
-    <Col className={className ? className : 'flex-1 gap-2'}>
+    <Col
+      className={
+        type === 'answer'
+          ? 'border-base-200 bg-base-200 flex-1 rounded-md p-3'
+          : 'flex-1 gap-2'
+      }
+    >
       <Modal open={open} setOpen={setOpen}>
         <AnswerBetPanel
           answer={answer}

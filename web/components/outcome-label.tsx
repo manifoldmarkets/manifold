@@ -27,7 +27,7 @@ export function OutcomeLabel(props: {
       contract={contract as FullContract<DPM, FreeResponse>}
       resolution={outcome}
       truncate={truncate}
-      answerClassName={'font-bold text-primary'}
+      answerClassName={'font-bold text-base-400'}
     />
   )
 }

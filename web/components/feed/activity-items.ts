@@ -281,7 +281,6 @@ function getAnswers(
         answer,
         items: [] as ActivityItem[],
         user,
-        className: 'border-base-200 flex-1 bg-base-200 p-3 rounded-md',
       }
     })
     .filter((group) => group.answer)
