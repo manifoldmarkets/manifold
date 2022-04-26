@@ -46,18 +46,21 @@ export const transact = functions
       }
       const fromUser = fromSnap.data() as User
 
-      const toDoc = firestore.doc(`users/${toId}`)
-      const toSnap = await transaction.get(toDoc)
-      if (!toSnap.exists) {
-        return { status: 'error', message: 'User not found' }
-      }
-      const toUser = toSnap.data() as User
-
       if (fromUser.balance < amount) {
         return {
           status: 'error',
           message: `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance} `,
         }
+      }
+
+      if (toType === 'user') {
+        const toDoc = firestore.doc(`users/${toId}`)
+        const toSnap = await transaction.get(toDoc)
+        if (!toSnap.exists) {
+          return { status: 'error', message: 'User not found' }
+        }
+        const toUser = toSnap.data() as User
+        transaction.update(toDoc, { balance: toUser.balance + amount })
       }
 
       const newTxnDoc = firestore.collection(`txns/`).doc()
@@ -79,7 +82,6 @@ export const transact = functions
 
       transaction.create(newTxnDoc, txn)
       transaction.update(fromDoc, { balance: fromUser.balance - amount })
-      transaction.update(toDoc, { balance: toUser.balance + amount })
 
       return { status: 'success', txnId: newTxnDoc.id }
     })
