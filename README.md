@@ -4,7 +4,13 @@ This [monorepo][] has basically everything involved in running and operating Man
 
 ## Getting started
 
-All dependencies for everything are managed using [Yarn][yarn]. (Take care to use Yarn 1.x rather than Yarn 2 for now.) Install it and run `yarn` to install them. Then if you want to run the website locally `cd` into `web` and run `yarn dev:dev`. See [`web/README.md`][web-readme] for more details on hacking on the client in particular.
+0. Make sure you have [Yarn 1.x][yarn]
+1. `$ cd web`
+2. `$ yarn`
+3. `$ yarn dev:dev`
+4. Your site will be available on http://localhost:3000
+
+See [`web/README.md`][web-readme] for more details on hacking on the web client.
 
 ## General architecture
 
@@ -23,6 +29,8 @@ Operations with complicated contracts (e.g. buying shares) are provided in a sep
   the different environments (i.e. prod, dev, Manifold for Teams instances.)
 
 - `og-image/`: The OpenGraph image generator; creates the preview images shown on Twitter/social media.
+
+Also: Our docs are currently in [a separate repo](https://github.com/manifoldmarkets/docs). TODO: move them into this monorepo.
 
 ## Contributing
 
