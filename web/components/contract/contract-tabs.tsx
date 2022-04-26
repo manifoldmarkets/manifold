@@ -51,7 +51,7 @@ export function ContractTabs(props: {
         { title: 'Timeline', content: activity },
         ...(!user || !userBets?.length
           ? []
-          : [{ title: 'Your trades', content: yourTrades }]),
+          : [{ title: 'Your bets', content: yourTrades }]),
       ]}
     />
   )
