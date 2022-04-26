@@ -143,7 +143,7 @@ function DonationBox(props: { user?: User | null; charity: Charity }) {
   const donateDisabled = isSubmitting || !amount || error
 
   const onSubmit: React.FormEventHandler = async (e) => {
-    if (!user) return
+    if (!user || donateDisabled) return
 
     e.preventDefault()
     setIsSubmitting(true)
@@ -154,9 +154,8 @@ function DonationBox(props: { user?: User | null; charity: Charity }) {
       fromType: 'user',
       toId: charity.id,
       toType: 'charity',
-      category: 'TO_CHARITY',
       description: `${user.name} donated M$ ${amount} to ${charity.name}`,
-    })
+    }).catch((err) => console.log('Error', err))
     setIsSubmitting(false)
     setAmount(undefined)
   }

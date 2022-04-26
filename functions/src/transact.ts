@@ -7,20 +7,11 @@ import { removeUndefinedProps } from '../../common/util/object'
 
 export const transact = functions
   .runWith({ minInstances: 1 })
-  .https.onCall(async (data: Exclude<Txn, 'id' | 'createdTime'>, context) => {
+  .https.onCall(async (data: Omit<Txn, 'id' | 'createdTime'>, context) => {
     const userId = context?.auth?.uid
     if (!userId) return { status: 'error', message: 'Not authorized' }
 
-    const {
-      amount,
-      fromType,
-      fromId,
-      toId,
-      toType,
-      category,
-      description,
-      data: txnData,
-    } = data
+    const { amount, fromType, fromId, toId, toType, description } = data
 
     if (fromType !== 'user')
       return {
@@ -68,22 +59,20 @@ export const transact = functions
       const txn: Txn = removeUndefinedProps({
         id: newTxnDoc.id,
         createdTime: Date.now(),
+
         fromId,
         fromType,
         toId,
         toType,
 
         amount,
-
-        category,
         description,
-        data: txnData,
       })
 
       transaction.create(newTxnDoc, txn)
       transaction.update(fromDoc, { balance: fromUser.balance - amount })
 
-      return { status: 'success', txnId: newTxnDoc.id }
+      return { status: 'success', txn }
     })
   })
 

@@ -5,23 +5,15 @@ export type Txn = {
   createdTime: number
 
   fromId: string
-  fromType: 'user' | 'contract' | 'bank_of_manifold'
+  fromType: source_type
 
   toId: string
-  toType: 'user' | 'contract' | 'charity' | 'bank_of_manifold'
+  toType: source_type
 
   amount: number
 
-  category: TxnCategory
   // Human-readable description
   description?: string
-  // Structured metadata for different kinds of txns
-  data?: TxnData
 }
 
-export type TxnCategory = 'TO_CHARITY' // | 'TIP' | 'BET' | ...
-export type TxnData = CharityData // | TipData | BetData | ...
-
-export type CharityData = {
-  charityId: string
-}
+export type source_type = 'user' | 'contract' | 'charity' | 'bank'
