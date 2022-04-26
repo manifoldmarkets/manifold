@@ -2,30 +2,44 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { User } from '../../common/user'
-import { Txn, TxnCategory, TxnData } from '../../common/txn'
+import { Txn } from '../../common/txn'
+import { removeUndefinedProps } from '../../common/util/object'
 
-export const transact = functions.runWith({ minInstances: 1 }).https.onCall(
-  async (
-    data: {
-      amount: number
-      toId: string
-      category: TxnCategory
-      description?: string
-      txnData?: TxnData
-    },
-    context
-  ) => {
-    const fromId = context?.auth?.uid
-    if (!fromId) return { status: 'error', message: 'Not authorized' }
+export const transact = functions
+  .runWith({ minInstances: 1 })
+  .https.onCall(async (data: Exclude<Txn, 'id' | 'createdTime'>, context) => {
+    const userId = context?.auth?.uid
+    if (!userId) return { status: 'error', message: 'Not authorized' }
 
-    const { amount, toId, category, description, txnData } = data
+    const {
+      amount,
+      fromType,
+      fromId,
+      toId,
+      toType,
+      category,
+      description,
+      data: txnData,
+    } = data
+
+    if (fromType !== 'user')
+      return {
+        status: 'error',
+        message: "From type is only implemented for type 'user'.",
+      }
+
+    if (fromId !== userId)
+      return {
+        status: 'error',
+        message: 'Must be authenticated with userId equal to specified fromId.',
+      }
 
     if (amount <= 0 || isNaN(amount) || !isFinite(amount))
       return { status: 'error', message: 'Invalid amount' }
 
-    // run as transaction to prevent race conditions
+    // Run as transaction to prevent race conditions.
     return await firestore.runTransaction(async (transaction) => {
-      const fromDoc = firestore.doc(`users/${fromId}`)
+      const fromDoc = firestore.doc(`users/${userId}`)
       const fromSnap = await transaction.get(fromDoc)
       if (!fromSnap.exists) {
         return { status: 'error', message: 'User not found' }
@@ -48,26 +62,20 @@ export const transact = functions.runWith({ minInstances: 1 }).https.onCall(
 
       const newTxnDoc = firestore.collection(`txns/`).doc()
 
-      const txn: Txn = {
+      const txn: Txn = removeUndefinedProps({
         id: newTxnDoc.id,
         createdTime: Date.now(),
-
         fromId,
-        fromName: fromUser.name,
-        fromUsername: fromUser.username,
-        fromAvatarUrl: fromUser.avatarUrl,
-
+        fromType,
         toId,
-        toName: toUser.name,
-        toUsername: toUser.username,
-        toAvatarUrl: toUser.avatarUrl,
+        toType,
 
         amount,
 
         category,
         description,
         data: txnData,
-      }
+      })
 
       transaction.create(newTxnDoc, txn)
       transaction.update(fromDoc, { balance: fromUser.balance - amount })
@@ -75,7 +83,6 @@ export const transact = functions.runWith({ minInstances: 1 }).https.onCall(
 
       return { status: 'success', txnId: newTxnDoc.id }
     })
-  }
-)
+  })
 
 const firestore = admin.firestore()

@@ -5,15 +5,10 @@ export type Txn = {
   createdTime: number
 
   fromId: string
-  // TODO: Do we really want to denormalize name/username/avatar here?
-  fromName: string
-  fromUsername: string
-  fromAvatarUrl?: string
+  fromType: 'user' | 'contract' | 'bank_of_manifold'
 
   toId: string
-  toName: string
-  toUsername: string
-  toAvatarUrl?: string
+  toType: 'user' | 'contract' | 'charity' | 'bank_of_manifold'
 
   amount: number
 
