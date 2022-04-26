@@ -13,8 +13,6 @@ import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
 import { FeedItems } from '../feed/feed-items'
 import { ActivityItem } from '../feed/activity-items'
-import { useBets } from '../../hooks/use-bets'
-import { Bet } from '../../../common/bet'
 import { User } from '../../../common/user'
 import { getOutcomeProbability } from '../../../common/calculate'
 import { Answer } from '../../../common/answer'
@@ -54,11 +52,7 @@ export function AnswersPanel(props: {
 
   const chosenTotal = _.sum(Object.values(chosenAnswers))
 
-  const answerItems = getAnswers(
-    contract as FullContract<DPM, FreeResponse>,
-    useBets(contract.id) || ([] as Bet[]),
-    user
-  ).reverse()
+  const answerItems = getAnswers(contract, user)
 
   const onChoose = (answerId: string, prob: number) => {
     if (resolveOption === 'CHOOSE') {
@@ -146,22 +140,21 @@ export function AnswersPanel(props: {
 
 function getAnswers(
   contract: FullContract<DPM, FreeResponse>,
-  bets: Bet[],
   user: User | undefined | null
 ) {
-  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
-    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
-  )
+  const { answers } = contract
+
+  let outcomes = _.uniq(
+    answers.map((answer) => answer.number.toString())
+  ).filter((outcome) => getOutcomeProbability(contract, outcome) > 0.0001)
   outcomes = _.sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
-  )
+  ).reverse()
 
-  const answers = outcomes
+  return outcomes
     .map((outcome) => {
-      const answer = contract.answers?.find(
-        (answer) => answer.id === outcome
-      ) as Answer
-
+      const answer = answers.find((answer) => answer.id === outcome) as Answer
+      //unnecessary
       return {
         id: outcome,
         type: 'answer' as const,
@@ -172,6 +165,4 @@ function getAnswers(
       }
     })
     .filter((group) => group.answer)
-
-  return answers
 }
