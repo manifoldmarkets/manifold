@@ -323,7 +323,7 @@ export function FeedBet(props: {
                 }}
               />
               <button
-                className="btn btn-outline btn-sm mt-1"
+                className="btn btn-outline btn-sm text-transform: mt-1 capitalize"
                 onClick={submitComment}
                 disabled={!canComment}
               >
