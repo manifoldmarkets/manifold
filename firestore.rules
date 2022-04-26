@@ -45,9 +45,18 @@ service cloud.firestore {
       allow read;
     }
 
+    function commentMatchesUser(userId, comment) {
+      // it's a bad look if someone can impersonate other ids/names/avatars so check everything
+      let user = get(/databases/$(database)/documents/users/$(userId));
+      return comment.userId == userId
+        && comment.userName == user.name
+        && comment.userUsername == user.username
+        && comment.userAvatarUrl == user.avatarUrl
+    }
+
     match /{somePath=**}/comments/{commentId} {
       allow read;
-      allow create: if request.auth != null;
+      allow create: if request.auth != null && commentMatchesUser(request.resource.data, request.auth.uid);
     }
 
     match /{somePath=**}/answers/{answerId} {
