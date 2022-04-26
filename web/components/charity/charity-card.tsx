@@ -1,9 +1,14 @@
+import _ from 'lodash'
 import Link from 'next/link'
 import { Charity } from '../../../common/charity'
+import { useCharityTxns } from '../../hooks/use-charity-txns'
 import { Row } from '../layout/row'
 
 export function CharityCard(props: { charity: Charity }) {
-  const { name, slug, photo, raised, blurb } = props.charity
+  const { name, slug, photo, blurb, id } = props.charity
+
+  const txns = useCharityTxns(id)
+  const raised = _.sumBy(txns, (txn) => txn.amount)
 
   return (
     <Link href={`/charity/${slug}`} passHref>

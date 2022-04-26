@@ -40,6 +40,11 @@ function CharityPage(props: { charity: Charity }) {
 
   const txns = useCharityTxns(charity.id)
   const totalRaised = _.sumBy(txns, (txn) => txn.amount)
+  const fromYou = _.sumBy(
+    txns.filter((txn) => txn.fromId === user?.id),
+    (txn) => txn.amount
+  )
+  const numSupporters = _.uniqBy(txns, (txn) => txn.fromId).length
 
   return (
     <Page rightSidebar={<DonationBox user={user} charity={charity} />}>
@@ -51,9 +56,9 @@ function CharityPage(props: { charity: Charity }) {
             {photo && <img src={photo} alt="" className="w-40 rounded-2xl" />}
             <Details
               charity={charity}
-              userDonated={4}
-              numSupporters={1}
               totalRaised={totalRaised}
+              userDonated={fromYou}
+              numSupporters={numSupporters}
             />
           </Row>
           <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
@@ -99,9 +104,9 @@ function Blurb({ text }: { text: string }) {
 
 function Details(props: {
   charity: Charity
-  userDonated?: number
-  numSupporters: number
   totalRaised: number
+  userDonated: number
+  numSupporters: number
 }) {
   const { charity, userDonated, numSupporters, totalRaised } = props
   const { website } = charity
@@ -110,7 +115,7 @@ function Details(props: {
       <div className="text-primary mb-2 text-4xl">
         {manaToUSD(totalRaised ?? 0)} raised
       </div>
-      {userDonated && (
+      {userDonated > 0 && (
         <div className="text-primary text-xl">
           {manaToUSD(userDonated)} from you!
         </div>
@@ -139,8 +144,6 @@ function DonationBox(props: { user?: User | null; charity: Charity }) {
     setError(undefined)
     await transact({
       amount,
-      // TODO hardcode in Manifold Markets official account.
-      // Or should we just have it go into a void?
       fromId: user.id,
       fromType: 'user',
       toId: charity.id,

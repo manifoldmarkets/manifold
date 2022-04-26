@@ -1,12 +1,11 @@
 export interface Charity {
   id: string
-  slug: string // Note, slugs double as charity IDs
+  slug: string
   name: string
   website: string
   ein: string
   photo: string
   blurb: string
-  raised?: number
 }
 
 export const charities: Charity[] = [
