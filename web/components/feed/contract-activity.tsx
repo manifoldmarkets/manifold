@@ -1,5 +1,3 @@
-import _ from 'lodash'
-
 import { Contract } from '../../lib/firebase/contracts'
 import { Comment } from '../../lib/firebase/comments'
 import { Bet } from '../../../common/bet'
@@ -8,6 +6,7 @@ import { useComments } from '../../hooks/use-comments'
 import {
   getAllContractActivityItems,
   getRecentContractActivityItems,
+  getSpecificContractActivityItems,
 } from './activity-items'
 import { FeedItems } from './feed-items'
 import { User } from '../../../common/user'
@@ -17,7 +16,7 @@ export function ContractActivity(props: {
   bets: Bet[]
   comments: Comment[]
   user: User | null | undefined
-  mode: 'only-recent' | 'abbreviated' | 'all'
+  mode: 'only-recent' | 'abbreviated' | 'all' | 'comments' | 'bets'
   contractPath?: string
   className?: string
   betRowClassName?: string
@@ -39,7 +38,12 @@ export function ContractActivity(props: {
       ? getRecentContractActivityItems(contract, bets, comments, user, {
           contractPath,
         })
-      : getAllContractActivityItems(contract, bets, comments, user, {
+      : mode === 'comments' || mode === 'bets'
+      ? getSpecificContractActivityItems(contract, bets, comments, user, {
+          mode,
+        })
+      : // only used in abbreviated mode with folds/communities, all mode isn't used
+        getAllContractActivityItems(contract, bets, comments, user, {
           abbreviated: mode === 'abbreviated',
         })
 
