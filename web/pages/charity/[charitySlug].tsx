@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 import { Col } from '../../components/layout/col'
@@ -13,6 +14,7 @@ import { transact } from '../../lib/firebase/api-call'
 import { charities, Charity } from '../../../common/charity'
 import { useRouter } from 'next/router'
 import Custom404 from '../404'
+import { useCharityTxns } from '../../hooks/use-charity-txns'
 
 const manaToUSD = (mana: number) =>
   (mana / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -21,9 +23,7 @@ export default function CharityPageWrapper() {
   const router = useRouter()
   const { charitySlug } = router.query as { charitySlug: string }
 
-  const charity = charities.find(
-    (c) => c.slug.toLowerCase() === charitySlug?.toLowerCase()
-  )
+  const charity = charities.find((c) => c.slug === charitySlug?.toLowerCase())
   if (!router.isReady) return <></>
   if (!charity) {
     return <Custom404 />
@@ -38,15 +38,23 @@ function CharityPage(props: { charity: Charity }) {
   // TODO: why not just useUser inside Donation Box rather than passing in?
   const user = useUser()
 
+  const txns = useCharityTxns(charity.id)
+  const totalRaised = _.sumBy(txns, (txn) => txn.amount)
+
   return (
-    <Page rightSidebar={<DonationBox user={user} />}>
+    <Page rightSidebar={<DonationBox user={user} charity={charity} />}>
       <Col className="mx-1 w-full items-center sm:px-0">
-        <Col className="max-w-2xl rounded bg-white px-8">
-          <Title text={name} />
+        <Col className="max-w-2xl rounded bg-white px-8 py-6">
+          <Title className="!mt-0" text={name} />
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
             {photo && <img src={photo} alt="" className="w-40 rounded-2xl" />}
-            <Details charity={charity} userDonated={4} numSupporters={1} />
+            <Details
+              charity={charity}
+              userDonated={4}
+              numSupporters={1}
+              totalRaised={totalRaised}
+            />
           </Row>
           <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
           <Blurb text={blurb} />
@@ -93,13 +101,14 @@ function Details(props: {
   charity: Charity
   userDonated?: number
   numSupporters: number
+  totalRaised: number
 }) {
-  const { charity, userDonated, numSupporters } = props
-  const { raised, website } = charity
+  const { charity, userDonated, numSupporters, totalRaised } = props
+  const { website } = charity
   return (
     <Col className="gap-1 text-right">
       <div className="text-primary mb-2 text-4xl">
-        {manaToUSD(raised ?? 0)} raised
+        {manaToUSD(totalRaised ?? 0)} raised
       </div>
       {userDonated && (
         <div className="text-primary text-xl">
@@ -114,8 +123,8 @@ function Details(props: {
   )
 }
 
-function DonationBox(props: { user?: User | null }) {
-  const { user } = props
+function DonationBox(props: { user?: User | null; charity: Charity }) {
+  const { user, charity } = props
   const [amount, setAmount] = useState<number | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
@@ -123,6 +132,8 @@ function DonationBox(props: { user?: User | null }) {
   const donateDisabled = isSubmitting || !amount || error
 
   const onSubmit: React.FormEventHandler = async (e) => {
+    if (!user) return
+
     e.preventDefault()
     setIsSubmitting(true)
     setError(undefined)
@@ -130,12 +141,12 @@ function DonationBox(props: { user?: User | null }) {
       amount,
       // TODO hardcode in Manifold Markets official account.
       // Or should we just have it go into a void?
-      toId: 'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // akrolsmir@gmail in Dev env
+      fromId: user.id,
+      fromType: 'user',
+      toId: charity.id,
+      toType: 'charity',
       category: 'TO_CHARITY',
-      description: `${user?.name} donated M$ ${amount} to wellgive`,
-      txnData: {
-        charityId: 'wellgive', // TODO fill in
-      },
+      description: `${user.name} donated M$ ${amount} to ${charity.name}`,
     })
     setIsSubmitting(false)
     setAmount(undefined)
