@@ -80,6 +80,7 @@ export type ResolveItem = BaseActivityItem & {
 }
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
+const ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW = 3
 
 // Group together bets that are:
 // - Within a day of the first in the group
@@ -171,7 +172,9 @@ function groupBets(
   if (group.length > 0) {
     pushGroup()
   }
-  const abbrItems = abbreviated ? items.slice(-3) : items
+  const abbrItems = abbreviated
+    ? items.slice(-ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW)
+    : items
   if (reversed) abbrItems.reverse()
   return abbrItems
 }
@@ -238,7 +241,8 @@ function getAnswerGroups(
         reversed,
       })
 
-      if (abbreviated) items = items.slice(-2)
+      if (abbreviated)
+        items = items.slice(-ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW)
 
       return {
         id: outcome,
@@ -250,6 +254,8 @@ function getAnswerGroups(
       }
     })
     .filter((group) => group.answer)
+
+  if (reversed) answerGroups.reverse()
 
   return answerGroups
 }
@@ -266,7 +272,7 @@ function groupBetsAndComments(
     reversed: boolean
   }
 ) {
-  const { reversed, smallAvatar, abbreviated } = options
+  const { smallAvatar, abbreviated, reversed } = options
   const commentsWithoutBets = comments
     .filter((comment) => !comment.betId)
     .map((comment) => ({
@@ -284,7 +290,7 @@ function groupBetsAndComments(
 
   // iterate through the bets and comment activity items and add them to the items in order of comment creation time:
   const unorderedBetsAndComments = [...commentsWithoutBets, ...groupedBets]
-  const sortedBetsAndComments = _.sortBy(unorderedBetsAndComments, (item) => {
+  let sortedBetsAndComments = _.sortBy(unorderedBetsAndComments, (item) => {
     if (item.type === 'comment') {
       return item.comment.createdTime
     } else if (item.type === 'bet') {
@@ -294,8 +300,12 @@ function groupBetsAndComments(
     }
   })
 
-  if (reversed) sortedBetsAndComments.reverse()
-  return sortedBetsAndComments
+  const abbrItems = abbreviated
+    ? sortedBetsAndComments.slice(-ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW)
+    : sortedBetsAndComments
+
+  if (reversed) abbrItems.reverse()
+  return abbrItems
 }
 
 export function getAllContractActivityItems(
@@ -406,25 +416,42 @@ export function getRecentContractActivityItems(
     contractPath,
   }
 
-  const items =
-    contract.outcomeType === 'FREE_RESPONSE'
-      ? getAnswerGroups(
-          contract as FullContract<DPM, FreeResponse>,
-          bets,
-          comments,
-          user,
-          {
-            sortByProb: false,
-            abbreviated: true,
-            reversed: false,
-          }
-        )
-      : groupBetsAndComments(bets, comments, contract, user?.id, {
+  const items = []
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    items.push(
+      ...getAnswerGroups(
+        contract as FullContract<DPM, FreeResponse>,
+        bets,
+        comments,
+        user,
+        {
+          sortByProb: false,
+          abbreviated: true,
+          reversed: true,
+        }
+      )
+    )
+  } else {
+    const onlyUsersBetsOrBetsWithComments = bets.filter((bet) =>
+      comments.some(
+        (comment) => comment.betId === bet.id || bet.userId === user?.id
+      )
+    )
+    items.push(
+      ...groupBetsAndComments(
+        onlyUsersBetsOrBetsWithComments,
+        comments,
+        contract,
+        user?.id,
+        {
           hideOutcome: false,
           abbreviated: true,
           smallAvatar: false,
-          reversed: false,
-        })
+          reversed: true,
+        }
+      )
+    )
+  }
 
   return [questionItem, ...items]
 }
