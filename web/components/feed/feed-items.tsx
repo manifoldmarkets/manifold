@@ -248,10 +248,9 @@ export function CommentInput(props: {
                 }}
               />
               <button
-                className={clsx(
-                  'btn btn-outline btn-sm mt-1',
-                  user ? '' : 'text-transform: capitalize'
-                )}
+                className={
+                  'btn btn-outline btn-sm text-transform: mt-1 capitalize'
+                }
                 onClick={submitComment}
               >
                 {user ? 'Comment' : 'Sign in to comment'}
