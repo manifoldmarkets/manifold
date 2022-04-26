@@ -209,7 +209,7 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
 
   return users && users.length > 0 ? (
     <Leaderboard
-      title="🏅 Top traders"
+      title="🏅 Top bettors"
       users={users || []}
       columns={[
         {
