@@ -11,6 +11,13 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
+import { FeedItems } from '../feed/feed-items'
+import { ActivityItem } from '../feed/activity-items'
+import { useBets } from '../../hooks/use-bets'
+import { Bet } from '../../../common/bet'
+import { User } from '../../../common/user'
+import { getOutcomeProbability } from '../../../common/calculate'
+import { Answer } from '../../../common/answer'
 
 export function AnswersPanel(props: {
   contract: FullContract<DPM, FreeResponse>
@@ -46,6 +53,12 @@ export function AnswersPanel(props: {
   }>({})
 
   const chosenTotal = _.sum(Object.values(chosenAnswers))
+
+  const answerItems = getAnswers(
+    contract as FullContract<DPM, FreeResponse>,
+    useBets(contract.id) || ([] as Bet[]),
+    user
+  ).reverse()
 
   const onChoose = (answerId: string, prob: number) => {
     if (resolveOption === 'CHOOSE') {
@@ -102,6 +115,15 @@ export function AnswersPanel(props: {
         <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
+      {!resolveOption && sortedAnswers.length > 0 && (
+        <FeedItems
+          contract={contract}
+          items={answerItems}
+          className={''}
+          betRowClassName={''}
+        />
+      )}
+
       {tradingAllowed(contract) &&
         (!resolveOption || resolveOption === 'CANCEL') && (
           <CreateAnswerPanel contract={contract} />
@@ -120,4 +142,36 @@ export function AnswersPanel(props: {
       )}
     </Col>
   )
+}
+
+function getAnswers(
+  contract: FullContract<DPM, FreeResponse>,
+  bets: Bet[],
+  user: User | undefined | null
+) {
+  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
+    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
+  )
+  outcomes = _.sortBy(outcomes, (outcome) =>
+    getOutcomeProbability(contract, outcome)
+  )
+
+  const answers = outcomes
+    .map((outcome) => {
+      const answer = contract.answers?.find(
+        (answer) => answer.id === outcome
+      ) as Answer
+
+      return {
+        id: outcome,
+        type: 'answer' as const,
+        contract,
+        answer,
+        items: [] as ActivityItem[],
+        user,
+      }
+    })
+    .filter((group) => group.answer)
+
+  return answers
 }
