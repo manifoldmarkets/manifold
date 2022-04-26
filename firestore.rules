@@ -64,7 +64,8 @@ service cloud.firestore {
 
     match /{somePath=**}/followers/{userId} {
       allow read;
-      allow write: if request.auth.uid == userId;
+      allow create, update: if request.auth.uid == userId && request.resource.data.userId == userId;
+      allow delete: if request.auth.uid == userId;
     }
   }
 }
