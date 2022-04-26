@@ -1,5 +1,5 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import { Fragment, useRef, useState } from 'react'
+import React, { Fragment, useRef, useState } from 'react'
 import * as _ from 'lodash'
 import {
   BanIcon,
@@ -67,7 +67,12 @@ export function FeedItems(props: {
     <div className={clsx('flow-root pr-2 md:pr-0', className)} ref={ref}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
-          <div key={item.id} className="relative pb-6">
+          <div
+            key={item.id}
+            className={
+              item.type === 'answer' ? 'relative pb-2' : 'relative pb-6'
+            }
+          >
             {activityItemIdx !== items.length - 1 ||
             item.type === 'answergroup' ? (
               <span
@@ -103,6 +108,8 @@ function FeedItem(props: { item: ActivityItem }) {
     case 'betgroup':
       return <FeedBetGroup {...item} />
     case 'answergroup':
+      return <FeedAnswerGroup {...item} />
+    case 'answer':
       return <FeedAnswerGroup {...item} />
     case 'close':
       return <FeedClose {...item} />
@@ -195,10 +202,6 @@ export function CommentInput(props: {
   const user = useUser()
   const [comment, setComment] = useState('')
 
-  if (outcomeType === 'FREE_RESPONSE') {
-    return <div />
-  }
-
   let canCommentOnABet = false
   bets.some((bet) => {
     // make sure there is not already a comment with a matching bet id:
@@ -224,34 +227,38 @@ export function CommentInput(props: {
 
   return (
     <>
-      <div>
-        <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
-      </div>
-      <div className={'min-w-0 flex-1 py-1.5'}>
-        <div className="text-sm text-gray-500">
-          <div className="mt-2">
-            <Textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="textarea textarea-bordered w-full resize-none"
-              placeholder="Add a comment..."
-              rows={3}
-              maxLength={MAX_COMMENT_LENGTH}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                  submitComment()
+      <Row className={'flex w-full gap-2 pt-5'}>
+        <div>
+          <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
+        </div>
+        <div className={'min-w-0 flex-1 py-1.5'}>
+          <div className="text-sm text-gray-500">
+            <div className="mt-2">
+              <Textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="textarea textarea-bordered w-full resize-none"
+                placeholder="Add a comment..."
+                rows={3}
+                maxLength={MAX_COMMENT_LENGTH}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    submitComment()
+                  }
+                }}
+              />
+              <button
+                className={
+                  'btn btn-outline btn-sm text-transform: mt-1 capitalize'
                 }
-              }}
-            />
-            <button
-              className="btn btn-outline btn-sm mt-1"
-              onClick={submitComment}
-            >
-              Comment
-            </button>
+                onClick={submitComment}
+              >
+                {user ? 'Comment' : 'Sign in to comment'}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </Row>
     </>
   )
 }
@@ -644,8 +651,9 @@ function FeedAnswerGroup(props: {
   contract: FullContract<any, FreeResponse>
   answer: Answer
   items: ActivityItem[]
+  type: string
 }) {
-  const { answer, items, contract } = props
+  const { answer, items, contract, type } = props
   const { username, avatarUrl, name, text } = answer
 
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
@@ -653,7 +661,13 @@ function FeedAnswerGroup(props: {
   const [open, setOpen] = useState(false)
 
   return (
-    <Col className="flex-1 gap-2">
+    <Col
+      className={
+        type === 'answer'
+          ? 'border-base-200 bg-base-200 flex-1 rounded-md p-3'
+          : 'flex-1 gap-2'
+      }
+    >
       <Modal open={open} setOpen={setOpen}>
         <AnswerBetPanel
           answer={answer}

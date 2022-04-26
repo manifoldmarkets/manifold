@@ -68,7 +68,7 @@ export type BetGroupItem = BaseActivityItem & {
 }
 
 export type AnswerGroupItem = BaseActivityItem & {
-  type: 'answergroup'
+  type: 'answergroup' | 'answer'
   answer: Answer
   items: ActivityItem[]
 }
@@ -256,6 +256,38 @@ function getAnswerGroups(
   return answerGroups
 }
 
+function getAnswers(
+  contract: FullContract<DPM, FreeResponse>,
+  bets: Bet[],
+  user: User | undefined | null
+) {
+  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
+    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
+  )
+  outcomes = _.sortBy(outcomes, (outcome) =>
+    getOutcomeProbability(contract, outcome)
+  )
+
+  const answerGroups = outcomes
+    .map((outcome) => {
+      const answer = contract.answers?.find(
+        (answer) => answer.id === outcome
+      ) as Answer
+
+      return {
+        id: outcome,
+        type: 'answer' as const,
+        contract,
+        answer,
+        items: [] as ActivityItem[],
+        user,
+      }
+    })
+    .filter((group) => group.answer)
+
+  return answerGroups
+}
+
 function groupBetsAndComments(
   bets: Bet[],
   comments: Comment[],
@@ -328,18 +360,36 @@ export function getAllContractActivityItems(
     : [{ type: 'description', id: '0', contract }]
 
   if (outcomeType === 'FREE_RESPONSE') {
+    const onlyUsersBetsOrBetsWithComments = bets.filter((bet) =>
+      comments.some(
+        (comment) => comment.betId === bet.id || bet.userId === user?.id
+      )
+    )
     items.push(
-      ...getAnswerGroups(
-        contract as FullContract<DPM, FreeResponse>,
-        bets,
+      ...groupBetsAndComments(
+        onlyUsersBetsOrBetsWithComments,
         comments,
-        user,
+        contract,
+        user?.id,
         {
-          sortByProb: true,
+          hideOutcome: false,
           abbreviated,
+          smallAvatar: false,
           reversed,
         }
       )
+    )
+    const commentsByBetId = mapCommentsByBetId(comments)
+    items.push({
+      type: 'commentInput',
+      id: 'commentInput',
+      bets,
+      commentsByBetId,
+      contract,
+    })
+
+    items.push(
+      ...getAnswers(contract as FullContract<DPM, FreeResponse>, bets, user)
     )
   } else {
     items.push(
@@ -359,14 +409,16 @@ export function getAllContractActivityItems(
     items.push({ type: 'resolve', id: `${contract.resolutionTime}`, contract })
   }
 
-  const commentsByBetId = mapCommentsByBetId(comments)
-  items.push({
-    type: 'commentInput',
-    id: 'commentInput',
-    bets,
-    commentsByBetId,
-    contract,
-  })
+  if (outcomeType === 'BINARY') {
+    const commentsByBetId = mapCommentsByBetId(comments)
+    items.push({
+      type: 'commentInput',
+      id: 'commentInput',
+      bets,
+      commentsByBetId,
+      contract,
+    })
+  }
 
   if (reversed) items.reverse()
 
