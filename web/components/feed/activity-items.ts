@@ -432,24 +432,13 @@ export function getRecentContractActivityItems(
       )
     )
   } else {
-    const onlyUsersBetsOrBetsWithComments = bets.filter((bet) =>
-      comments.some(
-        (comment) => comment.betId === bet.id || bet.userId === user?.id
-      )
-    )
     items.push(
-      ...groupBetsAndComments(
-        onlyUsersBetsOrBetsWithComments,
-        comments,
-        contract,
-        user?.id,
-        {
-          hideOutcome: false,
-          abbreviated: true,
-          smallAvatar: false,
-          reversed: true,
-        }
-      )
+      ...groupBetsAndComments(bets, comments, contract, user?.id, {
+        hideOutcome: false,
+        abbreviated: true,
+        smallAvatar: false,
+        reversed: true,
+      })
     )
   }
 
