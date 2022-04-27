@@ -49,14 +49,14 @@ service cloud.firestore {
       // it's a bad look if someone can impersonate other ids/names/avatars so check everything
       let user = get(/databases/$(database)/documents/users/$(userId));
       return comment.userId == userId
-        && comment.userName == user.name
-        && comment.userUsername == user.username
-        && comment.userAvatarUrl == user.avatarUrl
+        && comment.userName == user.data.name
+        && comment.userUsername == user.data.username
+        && comment.userAvatarUrl == user.data.avatarUrl;
     }
 
     match /{somePath=**}/comments/{commentId} {
       allow read;
-      allow create: if request.auth != null && commentMatchesUser(request.resource.data, request.auth.uid);
+      allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data);
     }
 
     match /{somePath=**}/answers/{answerId} {
