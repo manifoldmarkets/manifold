@@ -39,7 +39,13 @@ import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
 import { Answer } from '../../../common/answer'
 import { ActivityItem } from './activity-items'
-import { FreeResponse, FullContract } from '../../../common/contract'
+import {
+  Binary,
+  CPMM,
+  DPM,
+  FreeResponse,
+  FullContract,
+} from '../../../common/contract'
 import { BuyButton } from '../yes-no-selector'
 import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
 import { AnswerBetPanel } from '../answers/answer-bet-panel'
@@ -50,6 +56,8 @@ import { trackClick } from '../../lib/firebase/tracking'
 import { firebaseLogin } from '../../lib/firebase/users'
 import { DAY_MS } from '../../../common/util/time'
 import NewContractBadge from '../new-contract-badge'
+import { useUserContractBets } from '../../hooks/use-user-bets'
+import { useSaveShares } from '../use-save-shares'
 
 export function FeedItems(props: {
   contract: Contract
@@ -137,7 +145,15 @@ export function FeedComment(props: {
     bought = bet.amount >= 0 ? 'bought' : 'sold'
     money = formatMoney(Math.abs(bet.amount))
   }
-  const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
+  const { text, userUsername, userName, userAvatarUrl, createdTime, userId } =
+    comment
+
+  const userBets = useUserContractBets(userId, contract.id)
+  const { yesFloorShares, noFloorShares } = useSaveShares(
+    contract as FullContract<CPMM | DPM, Binary>,
+    userBets
+  )
+  const userPosition = yesFloorShares || noFloorShares
 
   return (
     <>
@@ -155,16 +171,34 @@ export function FeedComment(props: {
               username={userUsername}
               name={userName}
             />{' '}
-            {bought} {money}
-            {!hideOutcome && (
+            {contract.outcomeType === 'BINARY' ? (
+              userPosition > 0 && (
+                <>
+                  {'owns ' + userPosition + ' shares '}
+                  <>
+                    {' of '}
+                    <OutcomeLabel
+                      outcome={yesFloorShares > noFloorShares ? 'YES' : 'NO'}
+                      contract={contract}
+                      truncate="short"
+                    />
+                  </>
+                </>
+              )
+            ) : (
               <>
-                {' '}
-                of{' '}
-                <OutcomeLabel
-                  outcome={outcome ? outcome : ''}
-                  contract={contract}
-                  truncate="short"
-                />
+                {bought} {money}
+                {!hideOutcome && (
+                  <>
+                    {' '}
+                    of{' '}
+                    <OutcomeLabel
+                      outcome={outcome ? outcome : ''}
+                      contract={contract}
+                      truncate="short"
+                    />
+                  </>
+                )}
               </>
             )}
             <RelativeTimestamp time={createdTime} />
@@ -255,7 +289,9 @@ export function FeedBet(props: {
   const { id, amount, outcome, createdTime, userId } = bet
   const user = useUser()
   const isSelf = user?.id === userId
-  const canComment = canCommentOnBet(userId, createdTime, user)
+  const canComment =
+    canCommentOnBet(userId, createdTime, user) &&
+    contract.outcomeType !== 'BINARY'
 
   const [comment, setComment] = useState('')
   async function submitComment() {
