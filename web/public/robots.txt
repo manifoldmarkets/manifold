@@ -6,5 +6,5 @@ Allow: /
 Host: https://manifold.markets
 
 # Sitemaps
-Sitemap: https://manifold.markets/sitemap.xml
 Sitemap: https://manifold.markets/server-sitemap.xml
+Sitemap: https://manifold.markets/sitemap.xml

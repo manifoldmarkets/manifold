@@ -1,19 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-<url><loc>https://manifold.markets</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/about</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/account</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/add-funds</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/analytics</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/create</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/embed/analytics</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/folds</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/home</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/landing-page</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/leaderboards</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/make-predictions</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/markets</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/profile</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/simulator</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
-<url><loc>https://manifold.markets/portfolio</loc><changefreq>hourly</changefreq><priority>0.7</priority><lastmod>2022-03-24T16:51:19.526Z</lastmod></url>
+<url><loc>https://manifold.markets</loc><changefreq>hourly</changefreq><priority>0.7</priority></url>
+<url><loc>https://manifold.markets/markets</loc><changefreq>hourly</changefreq><priority>0.2</priority></url>
+<url><loc>https://manifold.markets/leaderboards</loc><changefreq>hourly</changefreq><priority>0.2</priority></url>
 </urlset>
