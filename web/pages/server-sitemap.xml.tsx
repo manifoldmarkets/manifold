@@ -15,7 +15,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const fields = sortedMarkets.map((market) => ({
     // See https://www.sitemaps.org/protocol.html
     loc: market.url,
-    changefreq: 'hourly',
+    changefreq: market.volume24Hours > 10 ? 'hourly' : 'daily',
     priority: market.volume24Hours + market.volume7Days > 100 ? 0.7 : 0.1,
     // TODO: Add `lastmod` aka last modified time
   })) as ISitemapField[]
