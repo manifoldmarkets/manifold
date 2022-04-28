@@ -171,7 +171,6 @@ export default function Sidebar() {
         />
       </div>
 
-      {/*// check their markets for if any have a created time of today, if they haven't made a market today, let them know they get a free market*/}
       {deservesDailyFreeMarket ? (
         <div className=" text-primary mt-4 text-center">
           Use your daily free market!
@@ -180,7 +179,6 @@ export default function Sidebar() {
         <div />
       )}
 
-      {/*// check their markets for if any have a created time of today, if they haven't made a market today, give let them know they get a free market*/}
       {user && (
         <div className={'aligncenter flex justify-center'}>
           <Link href={'/create'}>
