@@ -33,7 +33,9 @@ import { ContractTabs } from '../../components/contract/contract-tabs'
 import { FirstArgument } from '../../../common/util/types'
 import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { contractTextDetails } from '../../components/contract/contract-details'
-
+import { useWindowSize } from '../../hooks/use-window-size'
+import Confetti from 'react-confetti'
+import dayjs from 'dayjs'
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
@@ -86,6 +88,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
   const { backToHome } = props
 
   const user = useUser()
+  const { width, height } = useWindowSize()
 
   const contract = useContractWithPreload(props.contract)
   const { bets, comments } = props
@@ -119,6 +122,17 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
 
   return (
     <Page rightSidebar={rightSidebar}>
+      {user &&
+        contract.creatorId === user.id &&
+        Date.now() - contract.createdTime < 10 * 1000 && (
+          <Confetti
+            width={width ? width : 500}
+            height={height ? height : 500}
+            recycle={false}
+            numberOfPieces={300}
+          />
+        )}
+
       {ogCardProps && (
         <SEO
           title={question}
