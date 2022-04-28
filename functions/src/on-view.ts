@@ -19,6 +19,6 @@ export const onView = functions.firestore
       )
 
     await firestore
-      .doc(`private-users/${userId}/cached/lastViewed`)
+      .doc(`private-users/${userId}/cached/lastViewTime`)
       .set({ [contractId]: timestamp }, { merge: true })
   })
