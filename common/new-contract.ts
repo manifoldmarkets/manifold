@@ -87,15 +87,22 @@ const getBinaryDpmProps = (initialProb: number, ante: number) => {
   return system
 }
 
-const getBinaryCpmmProps = (initialProb: number, ante: number) => {
-  const pool = { YES: ante, NO: ante }
-  const p = initialProb / 100
+const getBinaryCpmmProps = (initialProbInt: number, ante: number) => {
+  const prob = initialProbInt / 100
+
+  // constrain parameter to [0.1, 0.9]
+  const p = prob > 0.9 ? 0.9 : prob < 0.1 ? 0.1 : prob
+
+  const pool = {
+    YES: prob > 0.9 ? (ante * p * (prob - 1)) / ((p - 1) * prob) : ante,
+    NO: prob < 0.1 ? (ante * (p - 1) * prob) / (p * (prob - 1)) : ante,
+  }
 
   const system: CPMM & Binary = {
     mechanism: 'cpmm-1',
     outcomeType: 'BINARY',
     totalLiquidity: ante,
-    initialProbability: p,
+    initialProbability: prob,
     p,
     pool: pool,
   }
