@@ -4,8 +4,11 @@ export function ProbabilitySelector(props: {
   probabilityInt: number
   setProbabilityInt: (p: number) => void
   isSubmitting?: boolean
+  minProb?: number
+  maxProb?: number
 }) {
-  const { probabilityInt, setProbabilityInt, isSubmitting } = props
+  const { probabilityInt, setProbabilityInt, isSubmitting, minProb, maxProb } =
+    props
 
   return (
     <Row className="items-center gap-2">
@@ -15,10 +18,19 @@ export function ProbabilitySelector(props: {
           value={probabilityInt}
           className="input input-bordered input-md text-lg"
           disabled={isSubmitting}
-          min={1}
-          max={99}
+          min={minProb ?? 1}
+          max={maxProb ?? 99}
           onChange={(e) =>
             setProbabilityInt(parseInt(e.target.value.substring(0, 2)))
+          }
+          onBlur={() =>
+            setProbabilityInt(
+              maxProb && probabilityInt > maxProb
+                ? maxProb
+                : minProb && probabilityInt < minProb
+                ? minProb
+                : probabilityInt
+            )
           }
         />
         <span>%</span>
@@ -26,8 +38,8 @@ export function ProbabilitySelector(props: {
       <input
         type="range"
         className="range range-primary"
-        min={1}
-        max={99}
+        min={minProb ?? 1}
+        max={maxProb ?? 99}
         value={probabilityInt}
         onChange={(e) => setProbabilityInt(parseInt(e.target.value))}
       />
