@@ -12,14 +12,18 @@ export function CharityCard(props: { charity: Charity }) {
 
   return (
     <Link href={`/charity/${slug}`} passHref>
-      <div className="card image-full bg-base-100 glass cursor-pointer shadow-xl">
-        <figure className="absolute h-full">
-          {photo && <img className="!object-contain" src={photo} alt="" />}
+      <div className="card card-compact transition:shadow cursor-pointer border-2 bg-white hover:shadow-md">
+        <figure className="h-32">
+          {photo ? (
+            <img className="h-full w-full object-contain" src={photo} alt="" />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-r from-slate-300 to-indigo-200" />
+          )}
         </figure>
         <div className="card-body">
           <h3 className="card-title line-clamp-3">{name}</h3>
-          <div className="line-clamp-4 text-sm text-gray-100">{blurb}</div>
-          <Row className="mt-4 items-end justify-center gap-1 text-green-300">
+          <div className="line-clamp-4 text-sm">{blurb}</div>
+          <Row className="text-primary mt-4 items-end justify-center gap-1">
             <span className="text-3xl">${Math.floor((raised ?? 0) / 100)}</span>
             <span>raised</span>
           </Row>
