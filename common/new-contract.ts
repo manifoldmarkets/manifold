@@ -53,7 +53,6 @@ export function getNewContract(
     visibility: 'public',
     isResolved: false,
     createdTime: Date.now(),
-    lastUpdatedTime: Date.now(),
     closeTime,
 
     volume,
