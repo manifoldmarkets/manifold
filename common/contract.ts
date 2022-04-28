@@ -21,6 +21,8 @@ export type FullContract<
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime: number // If the question or description was changed
+  lastBetTime?: number
+  lastCommentTime?: number
   closeTime?: number // When no more trading is allowed
 
   isResolved: boolean
