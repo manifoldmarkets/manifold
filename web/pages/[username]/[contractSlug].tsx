@@ -35,7 +35,7 @@ import { DPM, FreeResponse, FullContract } from '../../../common/contract'
 import { contractTextDetails } from '../../components/contract/contract-details'
 import { useWindowSize } from '../../hooks/use-window-size'
 import Confetti from 'react-confetti'
-import dayjs from 'dayjs'
+
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
@@ -92,6 +92,24 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
 
   const contract = useContractWithPreload(props.contract)
   const { bets, comments } = props
+  const [showConfetti, setShowConfetti] = useState(false)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const shouldSeeConfetti = !!(
+        user &&
+        contract &&
+        contract.creatorId === user.id &&
+        Date.now() - contract.createdTime < 10 * 1000
+      )
+      setShowConfetti(shouldSeeConfetti)
+      // Don't erase confetti mid-animation
+      if (shouldSeeConfetti) clearInterval(timer)
+    }, 1000)
+    return () => {
+      clearInterval(timer)
+    }
+  }, [contract, user])
 
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
@@ -122,16 +140,14 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
 
   return (
     <Page rightSidebar={rightSidebar}>
-      {user &&
-        contract.creatorId === user.id &&
-        Date.now() - contract.createdTime < 10 * 1000 && (
-          <Confetti
-            width={width ? width : 500}
-            height={height ? height : 500}
-            recycle={false}
-            numberOfPieces={300}
-          />
-        )}
+      {showConfetti && (
+        <Confetti
+          width={width ? width : 500}
+          height={height ? height : 500}
+          recycle={false}
+          numberOfPieces={300}
+        />
+      )}
 
       {ogCardProps && (
         <SEO
