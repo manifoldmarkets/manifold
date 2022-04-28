@@ -1,7 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
-import { query, where } from 'firebase/firestore'
 import { chargeUser, getUser } from './utils'
 import {
   Binary,
