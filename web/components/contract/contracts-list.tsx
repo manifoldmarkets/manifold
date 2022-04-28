@@ -25,15 +25,16 @@ export function ContractsGrid(props: {
   showCloseTime?: boolean
 }) {
   const { showCloseTime } = props
+  const PAGE_SIZE = 100
+  const [page, setPage] = useState(1)
 
   const [resolvedContracts, activeContracts] = _.partition(
     props.contracts,
     (c) => c.isResolved
   )
-  const contracts = [...activeContracts, ...resolvedContracts].slice(
-    0,
-    MAX_CONTRACTS_DISPLAYED
-  )
+  const allContracts = [...activeContracts, ...resolvedContracts]
+  const showMore = allContracts.length > PAGE_SIZE * page
+  const contracts = allContracts.slice(0, PAGE_SIZE * page)
 
   if (contracts.length === 0) {
     return (
@@ -47,16 +48,27 @@ export function ContractsGrid(props: {
   }
 
   return (
-    <ul className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
-      {contracts.map((contract) => (
-        <ContractCard
-          contract={contract}
-          key={contract.id}
-          // showHotVolume={showHotVolume}
-          showCloseTime={showCloseTime}
-        />
-      ))}
-    </ul>
+    <>
+      <ul className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
+        {contracts.map((contract) => (
+          <ContractCard
+            contract={contract}
+            key={contract.id}
+            // showHotVolume={showHotVolume}
+            showCloseTime={showCloseTime}
+          />
+        ))}
+      </ul>
+      {/* Show a link that increases the page num when clicked */}
+      {showMore && (
+        <button
+          className="btn btn-link float-right normal-case"
+          onClick={() => setPage(page + 1)}
+        >
+          Show more...
+        </button>
+      )}
+    </>
   )
 }
 
