@@ -95,20 +95,13 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
   const [showConfetti, setShowConfetti] = useState(false)
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const shouldSeeConfetti = !!(
-        user &&
-        contract &&
-        contract.creatorId === user.id &&
-        Date.now() - contract.createdTime < 10 * 1000
-      )
-      setShowConfetti(shouldSeeConfetti)
-      // Don't erase confetti mid-animation
-      if (shouldSeeConfetti) clearInterval(timer)
-    }, 1000)
-    return () => {
-      clearInterval(timer)
-    }
+    const shouldSeeConfetti = !!(
+      user &&
+      contract &&
+      contract.creatorId === user.id &&
+      Date.now() - contract.createdTime < 10 * 1000
+    )
+    setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
 
   // Sort for now to see if bug is fixed.
