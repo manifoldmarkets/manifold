@@ -1,5 +1,7 @@
 import * as _ from 'lodash'
+import { Bet } from './bet'
 import { Contract } from './contract'
+import { ClickEvent } from './tracking'
 import { filterDefined } from './util/array'
 import { addObjects } from './util/object'
 
@@ -91,4 +93,86 @@ const contractsToWordFrequency = (contracts: Contract[]) => {
     .reduce(addObjects, {})
 
   return toFrequency(frequencySum)
+}
+
+export const getWordScores = (
+  contracts: Contract[],
+  contractViewCounts: { [contractId: string]: number },
+  clicks: ClickEvent[],
+  bets: Bet[]
+) => {
+  const contractClicks = _.groupBy(clicks, (click) => click.contractId)
+  const contractBets = _.groupBy(bets, (bet) => bet.contractId)
+
+  const yourContracts = contracts.filter(
+    (c) =>
+      contractViewCounts[c.id] || contractClicks[c.id] || contractBets[c.id]
+  )
+  const yourTfIdf = calculateContractTfIdf(yourContracts)
+
+  const contractWordScores = _.mapValues(
+    yourTfIdf,
+    (wordsTfIdf, contractId) => {
+      const viewCount = contractViewCounts[contractId] ?? 0
+      const clickCount = contractClicks[contractId]?.length ?? 0
+      const betCount = contractBets[contractId]?.length ?? 0
+
+      const factor =
+        -1 * Math.log(viewCount + 1) +
+        3 * Math.log(clickCount + 1) +
+        10 * Math.log(betCount + 1)
+
+      return _.mapValues(wordsTfIdf, (tfIdf) => tfIdf * factor)
+    }
+  )
+
+  const wordScores = Object.values(contractWordScores).reduce(addObjects, {})
+
+  console.log(
+    'your word scores',
+    _.sortBy(_.toPairs(wordScores), ([, score]) => -score).slice(0, 10)
+  )
+
+  return wordScores
+}
+
+export function getContractScores(
+  contracts: Contract[],
+  wordScores: { [word: string]: number }
+) {
+  const scorePairs = contracts.map((contract) => {
+    const wordFrequency = contractToWordFrequency(contract)
+
+    const score = _.sumBy(Object.keys(wordFrequency), (word) => {
+      const wordFreq = wordFrequency[word] ?? 0
+      const weight = wordScores[word] ?? 0
+      return wordFreq * weight
+    })
+
+    return [contract.id, score] as [string, number]
+  })
+
+  return _.fromPairs(scorePairs)
+}
+
+// Caluculate Term Frequency-Inverse Document Frequency (TF-IDF):
+// https://medium.datadriveninvestor.com/tf-idf-in-natural-language-processing-8db8ef4a7736
+function calculateContractTfIdf(contracts: Contract[]) {
+  const contractFreq = contracts.map((c) => contractToWordFrequency(c))
+  const contractWords = contractFreq.map((freq) => Object.keys(freq))
+
+  const wordsCount: { [word: string]: number } = {}
+  for (const words of contractWords) {
+    for (const word of words) {
+      wordsCount[word] = (wordsCount[word] ?? 0) + 1
+    }
+  }
+
+  const wordIdf = _.mapValues(wordsCount, (count) =>
+    Math.log(contracts.length / count)
+  )
+  const contractWordsTfIdf = _.map(contractFreq, (wordFreq) =>
+    _.mapValues(wordFreq, (freq, word) => freq * wordIdf[word])
+  )
+  return _.fromPairs(contracts.map((c, i) => [c.id, contractWordsTfIdf[i]]))
 }
