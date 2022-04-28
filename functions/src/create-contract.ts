@@ -1,7 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
-
 import { chargeUser, getUser } from './utils'
 import {
   Binary,
@@ -109,7 +108,16 @@ export const createContract = functions
         tags ?? []
       )
 
-      if (ante) await chargeUser(creator.id, ante)
+      // uses utc time on server:
+      const today = new Date().setHours(0, 0, 0, 0)
+      const userContractsCreatedTodaySnapshot = await firestore
+        .collection(`contracts`)
+        .where('creatorId', '==', userId)
+        .where('createdTime', '>=', today)
+        .get()
+      const isFree = userContractsCreatedTodaySnapshot.size === 0
+
+      if (!isFree && ante) await chargeUser(creator.id, ante)
 
       await contractRef.create(contract)
 
