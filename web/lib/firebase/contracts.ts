@@ -121,6 +121,19 @@ export async function listAllContracts(): Promise<Contract[]> {
   return snapshot.docs.map((doc) => doc.data() as Contract)
 }
 
+export async function userHasCreatedContractToday(
+  userId: string
+): Promise<boolean> {
+  // uses utc time like the server
+  const todayAtMidnight = dayjs.utc().startOf('day').valueOf()
+  return listContracts(userId).then((contracts) => {
+    const todayContracts = contracts.filter((contract) => {
+      return contract.createdTime > todayAtMidnight
+    })
+    return todayContracts.length === 0
+  })
+}
+
 export function listenForContracts(
   setContracts: (contracts: Contract[]) => void
 ) {

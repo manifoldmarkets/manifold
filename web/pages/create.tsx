@@ -6,7 +6,11 @@ import Textarea from 'react-expanding-textarea'
 
 import { Spacer } from '../components/layout/spacer'
 import { useUser } from '../hooks/use-user'
-import { Contract, contractPath } from '../lib/firebase/contracts'
+import {
+  Contract,
+  contractPath,
+  userHasCreatedContractToday,
+} from '../lib/firebase/contracts'
 import { createContract } from '../lib/firebase/api-call'
 import { FIXED_ANTE, MINIMUM_ANTE } from '../../common/antes'
 import { InfoTooltip } from '../components/info-tooltip'
@@ -70,6 +74,13 @@ export function NewContract(props: { question: string; tag?: string }) {
   const tags = parseWordsAsTags(tagText)
 
   const [ante, setAnte] = useState(FIXED_ANTE)
+
+  const [deservesDailyFreeMarket, setDeservesDailyFreeMarket] = useState(false)
+  creator &&
+    userHasCreatedContractToday(creator.id).then((result) => {
+      setDeservesDailyFreeMarket(result)
+    })
+
   // useEffect(() => {
   //   if (ante === null && creator) {
   //     const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
@@ -241,10 +252,14 @@ export function NewContract(props: { question: string; tag?: string }) {
             text={`Cost to create your market. This amount is used to subsidize trading.`}
           />
         </label>
-
-        <div className="label-text text-neutral pl-1">{formatMoney(ante)}</div>
-
-        {ante > balance && (
+        {deservesDailyFreeMarket ? (
+          <div className="label-text text-primary pl-1">FREE</div>
+        ) : (
+          <div className="label-text text-neutral pl-1">
+            {formatMoney(ante)}
+          </div>
+        )}
+        {!deservesDailyFreeMarket && ante > balance && (
           <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
             <span className="mr-2 text-red-500">Insufficient balance</span>
             <button
