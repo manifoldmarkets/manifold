@@ -33,7 +33,7 @@ export default function CharityPageWrapper() {
 
 function CharityPage(props: { charity: Charity }) {
   const { charity } = props
-  const { name, photo, blurb } = charity
+  const { name, photo, description } = charity
 
   // TODO: why not just useUser inside Donation Box rather than passing in?
   const user = useUser()
@@ -68,7 +68,7 @@ function CharityPage(props: { charity: Charity }) {
             />
           </Row>
           <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
-          <Blurb text={blurb} />
+          <Blurb text={description} />
         </Col>
       </Col>
     </Page>

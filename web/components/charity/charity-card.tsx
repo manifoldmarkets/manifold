@@ -5,7 +5,7 @@ import { useCharityTxns } from '../../hooks/use-charity-txns'
 import { Row } from '../layout/row'
 
 export function CharityCard(props: { charity: Charity }) {
-  const { name, slug, photo, blurb, id } = props.charity
+  const { name, slug, photo, preview, id } = props.charity
 
   const txns = useCharityTxns(id)
   const raised = _.sumBy(txns, (txn) => txn.amount)
@@ -22,7 +22,7 @@ export function CharityCard(props: { charity: Charity }) {
         </figure>
         <div className="card-body">
           <h3 className="card-title line-clamp-3">{name}</h3>
-          <div className="line-clamp-4 text-sm">{blurb}</div>
+          <div className="line-clamp-4 text-sm">{preview}</div>
           <Row className="text-primary mt-4 items-end justify-center gap-1">
             <span className="text-3xl">${Math.floor((raised ?? 0) / 100)}</span>
             <span>raised</span>
