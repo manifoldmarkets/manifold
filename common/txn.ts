@@ -11,7 +11,9 @@ export type Txn = {
   toType: source_type
 
   amount: number
+  token: 'M$' // | 'USD' | MarketOutcome
 
+  category: 'CHARITY' // | 'BET' | 'TIP'
   // Human-readable description
   description?: string
 }
