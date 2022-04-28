@@ -190,7 +190,7 @@ export const sendNewCommentEmail = async (
   if (bet) {
     const { amount, sale } = bet
     betDescription = `${sale || amount < 0 ? 'sold' : 'bought'} ${formatMoney(
-      amount
+      Math.abs(amount)
     )}`
   }
 
