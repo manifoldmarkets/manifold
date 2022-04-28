@@ -48,8 +48,8 @@ export const sendMarketResolutionEmail = async (
     creatorName: creator.name,
     question: contract.question,
     outcome,
-    investment: `${Math.round(investment)}`,
-    payout: `${Math.round(payout)}`,
+    investment: `${Math.floor(investment)}`,
+    payout: `${Math.floor(payout)}`,
     url: `https://${DOMAIN}/${creator.username}/${contract.slug}`,
   }
 
@@ -189,7 +189,9 @@ export const sendNewCommentEmail = async (
   let betDescription = ''
   if (bet) {
     const { amount, sale } = bet
-    betDescription = `${sale ? 'sold' : 'bought'} M$ ${Math.round(amount)}`
+    betDescription = `${sale || amount < 0 ? 'sold' : 'bought'} ${formatMoney(
+      amount
+    )}`
   }
 
   const subject = `Comment on ${question}`
