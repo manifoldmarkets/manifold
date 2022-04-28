@@ -38,7 +38,7 @@ export default function Leaderboards(props: {
     <Page margin>
       <Col className="items-center gap-10 lg:flex-row">
         <Leaderboard
-          title="🏅 Top traders"
+          title="🏅 Top bettors"
           users={topTraders}
           columns={[
             {

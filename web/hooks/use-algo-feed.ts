@@ -151,6 +151,10 @@ function getContractsActivityScores(
     const activityCountScore =
       0.5 + 0.5 * logInterpolation(0, 200, activtyCount)
 
+    const { volume7Days, volume } = contract
+    const combinedVolume = Math.log(volume7Days + 1) + Math.log(volume + 1)
+    const volumeScore = 0.5 + 0.5 * logInterpolation(4, 25, combinedVolume)
+
     const lastBetTime =
       contractMostRecentBet[contract.id]?.createdTime ?? contract.createdTime
     const timeSinceLastBet = Date.now() - lastBetTime
@@ -169,7 +173,11 @@ function getContractsActivityScores(
     const probScore = 0.5 + frac * 0.5
 
     const score =
-      newCommentScore * activityCountScore * timeAgoScore * probScore
+      newCommentScore *
+      activityCountScore *
+      volumeScore *
+      timeAgoScore *
+      probScore
 
     // Map score to [0.5, 1] since no recent activty is not a deal breaker.
     const mappedScore = 0.5 + score / 2

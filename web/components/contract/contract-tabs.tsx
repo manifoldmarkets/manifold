@@ -21,13 +21,24 @@ export function ContractTabs(props: {
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
   const userBets = user && bets.filter((bet) => bet.userId === user.id)
 
-  const activity = (
+  const betActivity = (
     <ContractActivity
       contract={contract}
       bets={bets}
       comments={comments}
       user={user}
-      mode="all"
+      mode="bets"
+      betRowClassName="!mt-0 xl:hidden"
+    />
+  )
+
+  const commentActivity = (
+    <ContractActivity
+      contract={contract}
+      bets={bets}
+      comments={comments}
+      user={user}
+      mode="comments"
       betRowClassName="!mt-0 xl:hidden"
     />
   )
@@ -48,10 +59,11 @@ export function ContractTabs(props: {
   return (
     <Tabs
       tabs={[
-        { title: 'Timeline', content: activity },
+        { title: 'Comments', content: commentActivity },
+        { title: 'Bets', content: betActivity },
         ...(!user || !userBets?.length
           ? []
-          : [{ title: 'Your trades', content: yourTrades }]),
+          : [{ title: 'Your bets', content: yourTrades }]),
       ]}
     />
   )

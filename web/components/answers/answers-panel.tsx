@@ -11,6 +11,11 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
+import { FeedItems } from '../feed/feed-items'
+import { ActivityItem } from '../feed/activity-items'
+import { User } from '../../../common/user'
+import { getOutcomeProbability } from '../../../common/calculate'
+import { Answer } from '../../../common/answer'
 
 export function AnswersPanel(props: {
   contract: FullContract<DPM, FreeResponse>
@@ -46,6 +51,8 @@ export function AnswersPanel(props: {
   }>({})
 
   const chosenTotal = _.sum(Object.values(chosenAnswers))
+
+  const answerItems = getAnswers(contract, user)
 
   const onChoose = (answerId: string, prob: number) => {
     if (resolveOption === 'CHOOSE') {
@@ -102,6 +109,15 @@ export function AnswersPanel(props: {
         <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
+      {!resolveOption && sortedAnswers.length > 0 && (
+        <FeedItems
+          contract={contract}
+          items={answerItems}
+          className={''}
+          betRowClassName={''}
+        />
+      )}
+
       {tradingAllowed(contract) &&
         (!resolveOption || resolveOption === 'CANCEL') && (
           <CreateAnswerPanel contract={contract} />
@@ -120,4 +136,33 @@ export function AnswersPanel(props: {
       )}
     </Col>
   )
+}
+
+function getAnswers(
+  contract: FullContract<DPM, FreeResponse>,
+  user: User | undefined | null
+) {
+  const { answers } = contract
+
+  let outcomes = _.uniq(
+    answers.map((answer) => answer.number.toString())
+  ).filter((outcome) => getOutcomeProbability(contract, outcome) > 0.0001)
+  outcomes = _.sortBy(outcomes, (outcome) =>
+    getOutcomeProbability(contract, outcome)
+  ).reverse()
+
+  return outcomes
+    .map((outcome) => {
+      const answer = answers.find((answer) => answer.id === outcome) as Answer
+      //unnecessary
+      return {
+        id: outcome,
+        type: 'answer' as const,
+        contract,
+        answer,
+        items: [] as ActivityItem[],
+        user,
+      }
+    })
+    .filter((group) => group.answer)
 }
