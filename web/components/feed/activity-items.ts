@@ -460,12 +460,14 @@ export function getSpecificContractActivityItems(
   switch (mode) {
     case 'bets':
       items.push(
-        ...groupBets(bets, comments, contract, user?.id, {
+        ...bets.map((bet) => ({
+          type: 'bet' as const,
+          id: bet.id,
+          bet,
+          contract,
           hideOutcome: false,
-          abbreviated: false,
           smallAvatar: false,
-          reversed: false,
-        })
+        }))
       )
       break
 
