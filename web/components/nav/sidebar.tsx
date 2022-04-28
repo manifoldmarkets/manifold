@@ -19,13 +19,7 @@ import { firebaseLogin, firebaseLogout } from '../../lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
-import { CreatorContractsList } from '../contract/contracts-list'
-import {
-  Contract,
-  listContracts,
-  userHasCreatedContractToday,
-} from '../../lib/firebase/contracts'
-import { useState } from 'react'
+import { useHasCreatedContractToday } from '../../hooks/use-has-created-contract-today'
 
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
@@ -103,11 +97,7 @@ export default function Sidebar() {
   const user = useUser()
   let folds = useFollowedFolds(user) || []
   folds = _.sortBy(folds, 'followCount').reverse()
-  const [deservesDailyFreeMarket, setDeservesDailyFreeMarket] = useState(false)
-  user &&
-    userHasCreatedContractToday(user.id).then((result) => {
-      setDeservesDailyFreeMarket(result)
-    })
+  const deservesDailyFreeMarket = !useHasCreatedContractToday(user)
 
   const navigationOptions = user === null ? signedOutNavigation : navigation
   const mobileNavigationOptions =
@@ -173,7 +163,7 @@ export default function Sidebar() {
 
       {deservesDailyFreeMarket ? (
         <div className=" text-primary mt-4 text-center">
-          Use your daily free market!
+          Use your daily free market! 🎉
         </div>
       ) : (
         <div />
@@ -182,7 +172,7 @@ export default function Sidebar() {
       {user && (
         <div className={'aligncenter flex justify-center'}>
           <Link href={'/create'}>
-            <button className="btn btn-primary btn-md mt-4">
+            <button className="btn btn-primary btn-md mt-4 capitalize">
               Create Market
             </button>
           </Link>

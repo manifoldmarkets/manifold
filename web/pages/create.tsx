@@ -6,11 +6,7 @@ import Textarea from 'react-expanding-textarea'
 
 import { Spacer } from '../components/layout/spacer'
 import { useUser } from '../hooks/use-user'
-import {
-  Contract,
-  contractPath,
-  userHasCreatedContractToday,
-} from '../lib/firebase/contracts'
+import { Contract, contractPath } from '../lib/firebase/contracts'
 import { createContract } from '../lib/firebase/api-call'
 import { FIXED_ANTE, MINIMUM_ANTE } from '../../common/antes'
 import { InfoTooltip } from '../components/info-tooltip'
@@ -22,6 +18,7 @@ import { TagsList } from '../components/tags-list'
 import { Row } from '../components/layout/row'
 import { MAX_DESCRIPTION_LENGTH, outcomeType } from '../../common/contract'
 import { formatMoney } from '../../common/util/format'
+import { useHasCreatedContractToday } from '../hooks/use-has-created-contract-today'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -75,11 +72,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [ante, setAnte] = useState(FIXED_ANTE)
 
-  const [deservesDailyFreeMarket, setDeservesDailyFreeMarket] = useState(false)
-  creator &&
-    userHasCreatedContractToday(creator.id).then((result) => {
-      setDeservesDailyFreeMarket(result)
-    })
+  const deservesDailyFreeMarket = !useHasCreatedContractToday(creator)
 
   // useEffect(() => {
   //   if (ante === null && creator) {
@@ -288,7 +281,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         <button
           type="submit"
           className={clsx(
-            'btn btn-primary',
+            'btn btn-primary capitalize',
             isSubmitting && 'loading disabled'
           )}
           disabled={isSubmitting || !isValid}
