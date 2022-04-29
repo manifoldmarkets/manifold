@@ -31,7 +31,7 @@ type BaseActivityItem = {
 
 export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
-  bets: Bet[]
+  betsByCurrentUser: Bet[]
   comments: Comment[]
 }
 
@@ -323,7 +323,7 @@ function getCommentsWithPositions(
     id: comment.id,
     contract: contract,
     comment,
-    betsBySameUser: bets.length === 0 ? [] : betsByUserId[comment.userId],
+    betsBySameUser: bets.length === 0 ? [] : betsByUserId[comment.userId] ?? [],
     truncate: true,
     hideOutcome: false,
     smallAvatar: false,
@@ -385,7 +385,7 @@ export function getAllContractActivityItems(
       type: 'commentInput',
       id: 'commentInput',
       contract,
-      bets: [],
+      betsByCurrentUser: [],
       comments: [],
     })
   } else {
@@ -411,7 +411,7 @@ export function getAllContractActivityItems(
       type: 'commentInput',
       id: 'commentInput',
       contract,
-      bets: [],
+      betsByCurrentUser: [],
       comments: [],
     })
   }
@@ -507,7 +507,9 @@ export function getSpecificContractActivityItems(
         type: 'commentInput',
         id: 'commentInput',
         contract,
-        bets: bets,
+        betsByCurrentUser: user
+          ? bets.filter((bet) => bet.userId === user.id)
+          : [],
         comments: comments,
       })
       break

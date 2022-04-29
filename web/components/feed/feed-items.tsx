@@ -221,10 +221,10 @@ export function FeedComment(props: {
 
 export function CommentInput(props: {
   contract: Contract
-  bets: Bet[]
+  betsByCurrentUser: Bet[]
   comments: Comment[]
 }) {
-  const { contract, bets, comments } = props
+  const { contract, betsByCurrentUser, comments } = props
   const user = useUser()
   const [comment, setComment] = useState('')
 
@@ -238,7 +238,7 @@ export function CommentInput(props: {
   }
 
   // Should this be oldest bet or most recent bet?
-  const mostRecentCommentableBet = bets
+  const mostRecentCommentableBet = betsByCurrentUser
     .filter(
       (bet) =>
         canCommentOnBet(bet.userId, bet.createdTime, user) &&
@@ -258,7 +258,7 @@ export function CommentInput(props: {
     )
   }
   const { userPosition, userPositionMoney, yesFloorShares, noFloorShares } =
-    getBettorsPosition(contract, Date.now(), bets)
+    getBettorsPosition(contract, Date.now(), betsByCurrentUser)
 
   return (
     <>
