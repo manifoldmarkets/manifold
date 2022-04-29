@@ -23,34 +23,39 @@ const MAX_FEED_CONTRACTS = 60
 export const updateUserFeed = functions.pubsub
   .schedule('every 60 minutes')
   .onRun(async () => {
-    // Get contracts bet on or created in last week.
-    const contracts = await Promise.all([
-      getValues<Contract>(
-        firestore
-          .collection('contracts')
-          .where('isResolved', '==', false)
-          .where('volume7Days', '>', 0)
-      ),
-
-      getValues<Contract>(
-        firestore
-          .collection('contracts')
-          .where('isResolved', '==', false)
-          .where('createdTime', '>', Date.now() - DAY_MS * 7)
-          .where('volume7Days', '==', 0)
-      ),
-    ]).then(([activeContracts, inactiveContracts]) => {
-      const combined = [...activeContracts, ...inactiveContracts]
-      // Remove closed contracts.
-      return combined.filter((c) => (c.closeTime ?? Infinity) > Date.now())
-    })
-
+    const contracts = await getFeedContracts()
     const users = await getValues<User>(firestore.collection('users'))
 
     await batchedWaitAll(users.map((user) => () => updateFeed(user, contracts)))
   })
 
-const updateFeed = async (user: User, contracts: Contract[]) => {
+export async function getFeedContracts() {
+  // Get contracts bet on or created in last week.
+  const contracts = await Promise.all([
+    getValues<Contract>(
+      firestore
+        .collection('contracts')
+        .where('isResolved', '==', false)
+        .where('volume7Days', '>', 0)
+    ),
+
+    getValues<Contract>(
+      firestore
+        .collection('contracts')
+        .where('isResolved', '==', false)
+        .where('createdTime', '>', Date.now() - DAY_MS * 7)
+        .where('volume7Days', '==', 0)
+    ),
+  ]).then(([activeContracts, inactiveContracts]) => {
+    const combined = [...activeContracts, ...inactiveContracts]
+    // Remove closed contracts.
+    return combined.filter((c) => (c.closeTime ?? Infinity) > Date.now())
+  })
+
+  return contracts
+}
+
+export const updateFeed = async (user: User, contracts: Contract[]) => {
   const userCacheCollection = firestore.collection(
     `private-users/${user.id}/cache`
   )
@@ -95,7 +100,7 @@ const updateFeed = async (user: User, contracts: Contract[]) => {
     feedContracts.map((contract) => getRecentBetsAndComments(contract))
   )
 
-  await userCacheCollection.doc('feed').set(feed)
+  await userCacheCollection.doc('feed').set({ feed })
 }
 
 function scoreContract(
