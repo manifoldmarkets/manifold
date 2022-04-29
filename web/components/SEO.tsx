@@ -6,7 +6,7 @@ export type OgCardProps = {
   metadata: string
   creatorName: string
   creatorUsername: string
-  creatorAvatarUrl: string
+  creatorAvatarUrl?: string
 }
 
 function buildCardUrl(props: OgCardProps) {
