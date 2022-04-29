@@ -1,7 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
-
 import { chargeUser, getUser } from './utils'
 import {
   Binary,
@@ -73,11 +72,19 @@ export const createContract = functions
         return { status: 'error', message: 'Invalid initial probability' }
 
       const ante = FIXED_ANTE // data.ante
+      // uses utc time on server:
+      const today = new Date().setHours(0, 0, 0, 0)
+      const userContractsCreatedTodaySnapshot = await firestore
+        .collection(`contracts`)
+        .where('creatorId', '==', userId)
+        .where('createdTime', '>=', today)
+        .get()
+      const isFree = userContractsCreatedTodaySnapshot.size === 0
 
       if (
         ante === undefined ||
         ante < MINIMUM_ANTE ||
-        ante > creator.balance ||
+        (ante > creator.balance && !isFree) ||
         isNaN(ante) ||
         !isFinite(ante)
       )
@@ -109,7 +116,7 @@ export const createContract = functions
         tags ?? []
       )
 
-      if (ante) await chargeUser(creator.id, ante)
+      if (!isFree && ante) await chargeUser(creator.id, ante)
 
       await contractRef.create(contract)
 
