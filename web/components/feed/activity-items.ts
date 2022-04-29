@@ -316,17 +316,7 @@ function getCommentsWithPositions(
   comments: Comment[],
   contract: Contract
 ) {
-  function mapBetsByUserId(bets: Bet[]) {
-    return bets.reduce((acc, bet) => {
-      const userId = bet.userId
-      if (!acc[userId]) {
-        acc[userId] = []
-      }
-      acc[userId].push(bet)
-      return acc
-    }, {} as { [userId: string]: Bet[] })
-  }
-  const betsByUserId = mapBetsByUserId(bets)
+  const betsByUserId = _.groupBy(bets, (bet) => bet.userId)
 
   const items = comments.map((comment) => ({
     type: 'comment' as const,

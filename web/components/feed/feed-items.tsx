@@ -156,7 +156,7 @@ export function FeedComment(props: {
   }
 
   // Only calculated if they don't have a matching bet
-  const [userPosition, userPositionMoney, yesFloorShares, noFloorShares] =
+  const { userPosition, userPositionMoney, yesFloorShares, noFloorShares } =
     getBettorsPosition(
       contract,
       comment.createdTime,
@@ -257,7 +257,7 @@ export function CommentInput(props: {
       />
     )
   }
-  const [userPosition, userPositionMoney, yesFloorShares, noFloorShares] =
+  const { userPosition, userPositionMoney, yesFloorShares, noFloorShares } =
     getBettorsPosition(contract, Date.now(), bets)
 
   return (
@@ -331,12 +331,20 @@ function getBettorsPosition(
     yesShares = 0,
     noShares = 0,
     noFloorShares = 0
+
+  const emptyReturn = {
+    userPosition: 0,
+    userPositionMoney: 0,
+    yesFloorShares,
+    noFloorShares,
+  }
+
   // TODO: show which of the answers was their majority stake at time of comment for FR?
   if (contract.outcomeType != 'BINARY') {
-    return [0, 0, 0, 0]
+    return emptyReturn
   }
   if (bets.length === 0) {
-    return [0, 0, 0, 0]
+    return emptyReturn
   }
 
   // Calculate the majority shares they had when they made the comment
@@ -357,7 +365,7 @@ function getBettorsPosition(
     yesFloorShares > noFloorShares ? 'YES' : 'NO'
   )
   const userPositionMoney = formatMoney(Math.abs(saleValue))
-  return [userPosition, userPositionMoney, yesFloorShares, noFloorShares]
+  return { userPosition, userPositionMoney, yesFloorShares, noFloorShares }
 }
 
 export function FeedBet(props: {
