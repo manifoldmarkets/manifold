@@ -4,20 +4,24 @@ import * as _ from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { getUserByUsername, getValues } from '../utils'
+import { getValues } from '../utils'
 import { View } from '../../../common/tracking'
+import { User } from '../../../common/user'
+import { batchedWaitAll } from '../../../common/util/promise'
 
 const firestore = admin.firestore()
 
 async function cacheViews() {
   console.log('Caching views')
 
-  const user = await getUserByUsername('JamesGrugett')
+  const users = await getValues<User>(firestore.collection('users'))
 
-  if (user) {
-    console.log('Caching views for', user.username)
-    await cacheUserViews(user.id)
-  }
+  await batchedWaitAll(
+    users.map((user) => () => {
+      console.log('Caching views for', user.username)
+      return cacheUserViews(user.id)
+    })
+  )
 }
 
 async function cacheUserViews(userId: string) {
@@ -39,11 +43,11 @@ async function cacheUserViews(userId: string) {
   }
 
   await firestore
-    .doc(`private-users/${userId}/cached/viewCounts`)
+    .doc(`private-users/${userId}/cache/viewCounts`)
     .set(viewCounts, { merge: true })
 
   await firestore
-    .doc(`private-users/${userId}/cached/lastViewTime`)
+    .doc(`private-users/${userId}/cache/lastViewTime`)
     .set(lastViewTime, { merge: true })
 
   console.log(viewCounts, lastViewTime)
