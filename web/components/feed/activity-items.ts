@@ -31,6 +31,8 @@ type BaseActivityItem = {
 
 export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
+  bets: Bet[]
+  comments: Comment[]
 }
 
 export type DescriptionItem = BaseActivityItem & {
@@ -48,12 +50,13 @@ export type BetItem = BaseActivityItem & {
   bet: Bet
   hideOutcome: boolean
   smallAvatar: boolean
+  hideComment?: boolean
 }
 
 export type CommentItem = BaseActivityItem & {
   type: 'comment'
   comment: Comment
-  bet: Bet | undefined
+  betsBySameUser: Bet[]
   hideOutcome: boolean
   truncate: boolean
   smallAvatar: boolean
@@ -129,7 +132,7 @@ function groupBets(
           type: 'comment' as const,
           id: bet.id,
           comment,
-          bet,
+          betsBySameUser: [bet],
           contract,
           hideOutcome,
           truncate: abbreviated,
@@ -280,7 +283,7 @@ function groupBetsAndComments(
       id: comment.id,
       contract: contract,
       comment,
-      bet: undefined,
+      betsBySameUser: [],
       truncate: abbreviated,
       hideOutcome: true,
       smallAvatar,
@@ -306,6 +309,37 @@ function groupBetsAndComments(
 
   if (reversed) abbrItems.reverse()
   return abbrItems
+}
+
+function getCommentsWithPositions(
+  bets: Bet[],
+  comments: Comment[],
+  contract: Contract
+) {
+  function mapBetsByUserId(bets: Bet[]) {
+    return bets.reduce((acc, bet) => {
+      const userId = bet.userId
+      if (!acc[userId]) {
+        acc[userId] = []
+      }
+      acc[userId].push(bet)
+      return acc
+    }, {} as { [userId: string]: Bet[] })
+  }
+  const betsByUserId = mapBetsByUserId(bets)
+
+  const items = comments.map((comment) => ({
+    type: 'comment' as const,
+    id: comment.id,
+    contract: contract,
+    comment,
+    betsBySameUser: bets.length === 0 ? [] : betsByUserId[comment.userId],
+    truncate: true,
+    hideOutcome: false,
+    smallAvatar: false,
+  }))
+
+  return items
 }
 
 export function getAllContractActivityItems(
@@ -361,6 +395,8 @@ export function getAllContractActivityItems(
       type: 'commentInput',
       id: 'commentInput',
       contract,
+      bets: [],
+      comments: [],
     })
   } else {
     items.push(
@@ -385,6 +421,8 @@ export function getAllContractActivityItems(
       type: 'commentInput',
       id: 'commentInput',
       contract,
+      bets: [],
+      comments: [],
     })
   }
 
@@ -467,32 +505,20 @@ export function getSpecificContractActivityItems(
           contract,
           hideOutcome: false,
           smallAvatar: false,
+          hideComment: true,
         }))
       )
       break
 
     case 'comments':
-      const onlyBetsWithComments = bets.filter((bet) =>
-        comments.some((comment) => comment.betId === bet.id)
-      )
-      items.push(
-        ...groupBetsAndComments(
-          onlyBetsWithComments,
-          comments,
-          contract,
-          user?.id,
-          {
-            hideOutcome: false,
-            abbreviated: false,
-            smallAvatar: false,
-            reversed: false,
-          }
-        )
-      )
+      items.push(...getCommentsWithPositions(bets, comments, contract))
+
       items.push({
         type: 'commentInput',
         id: 'commentInput',
         contract,
+        bets: bets,
+        comments: comments,
       })
       break
   }
