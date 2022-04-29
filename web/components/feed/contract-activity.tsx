@@ -16,7 +16,13 @@ export function ContractActivity(props: {
   bets: Bet[]
   comments: Comment[]
   user: User | null | undefined
-  mode: 'only-recent' | 'abbreviated' | 'all' | 'comments' | 'bets'
+  mode:
+    | 'only-recent'
+    | 'abbreviated'
+    | 'all'
+    | 'comments'
+    | 'bets'
+    | 'free-response-comments'
   contractPath?: string
   className?: string
   betRowClassName?: string
@@ -38,7 +44,9 @@ export function ContractActivity(props: {
       ? getRecentContractActivityItems(contract, bets, comments, user, {
           contractPath,
         })
-      : mode === 'comments' || mode === 'bets'
+      : mode === 'comments' ||
+        mode === 'bets' ||
+        mode === 'free-response-comments'
       ? getSpecificContractActivityItems(contract, bets, comments, user, {
           mode,
         })

@@ -38,7 +38,11 @@ export function ContractTabs(props: {
       bets={bets}
       comments={comments}
       user={user}
-      mode="comments"
+      mode={
+        contract.outcomeType === 'FREE_RESPONSE'
+          ? 'free-response-comments'
+          : 'comments'
+      }
       betRowClassName="!mt-0 xl:hidden"
     />
   )
