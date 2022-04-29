@@ -12,6 +12,13 @@ import { Row } from './layout/row'
 import { LinkIcon } from '@heroicons/react/solid'
 import { genHash } from '../../common/util/random'
 import { PencilIcon } from '@heroicons/react/outline'
+import { Tabs } from './layout/tabs'
+import React, { useEffect, useState } from 'react'
+import { Comment } from '../../common/comment'
+import { getUsersComments } from '../lib/firebase/comments'
+import { Bet } from '../../common/bet'
+import { formatMoney } from '../../common/util/format'
+import { RelativeTimestamp } from './relative-timestamp'
 
 export function UserLink(props: {
   name: string
@@ -33,7 +40,20 @@ export function UserPage(props: { user: User; currentUser?: User }) {
   const { user, currentUser } = props
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
+  const [comments, setComments] = useState<Comment[]>([] as Comment[])
 
+  useEffect(() => {
+    if (user) {
+      getUsersComments(user.id).then(setComments)
+    }
+  }, [user])
+
+  const items = comments
+    .sort((a, b) => b.createdTime - a.createdTime)
+    .map((comment) => ({
+      comment,
+      bet: undefined,
+    }))
   return (
     <Page>
       <SEO
@@ -138,8 +158,28 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         </Col>
 
         <Spacer h={10} />
-
-        <CreatorContractsList creator={user} />
+        <Tabs
+          tabs={[
+            {
+              title: 'Markets',
+              content: <CreatorContractsList creator={user} />,
+            },
+            {
+              title: 'Comments',
+              content: (
+                <>
+                  {items.map((item, activityItemIdx) => (
+                    <div key={item.comment.id} className={'relative pb-6'}>
+                      <div className="relative flex items-start space-x-3">
+                        <ProfileComment comment={item.comment} bet={item.bet} />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ),
+            },
+          ]}
+        />
       </Col>
     </Page>
   )
@@ -156,4 +196,36 @@ export function defaultBannerUrl(userId: string) {
     'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
   ]
   return defaultBanner[genHash(userId)() % defaultBanner.length]
+}
+
+function ProfileComment(props: { comment: Comment; bet: Bet | undefined }) {
+  const { comment, bet } = props
+  let money: string | undefined
+  let outcome: string | undefined
+  let bought: string | undefined
+  if (bet) {
+    outcome = bet.outcome
+    bought = bet.amount >= 0 ? 'bought' : 'sold'
+    money = formatMoney(Math.abs(bet.amount))
+  }
+  const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
+
+  return (
+    <>
+      <Avatar username={userUsername} avatarUrl={userAvatarUrl} />
+      <div className="min-w-0 flex-1">
+        <div>
+          <p className="mt-0.5 text-sm text-gray-500">
+            <UserLink
+              className="text-gray-500"
+              username={userUsername}
+              name={userName}
+            />{' '}
+            <RelativeTimestamp time={createdTime} />
+          </p>
+        </div>
+        {text}
+      </div>
+    </>
+  )
 }
