@@ -2,7 +2,7 @@
 
 **Manifold Markets Contributor License Agreement**
 
-(Thanks to Beeminder and Discourse.org whose CLA we modeled this on!)
+(Thanks to [Beeminder](http://bmndr.co/cla) and [Discourse.org](https://cla-assistant.io/discourse/discourse) whose CLAs we modeled this on!)
 
 ## Unofficial Summary
 
