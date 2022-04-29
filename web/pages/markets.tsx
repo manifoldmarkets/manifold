@@ -2,26 +2,16 @@ import {
   ContractsGrid,
   SearchableGrid,
 } from '../components/contract/contracts-list'
+import { LoadingIndicator } from '../components/loading-indicator'
 import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
 import { useContracts } from '../hooks/use-contracts'
-import { Contract, listAllContracts } from '../lib/firebase/contracts'
-
-export async function getStaticProps() {
-  const contracts = await listAllContracts().catch((_) => [])
-  return {
-    props: {
-      contracts,
-    },
-
-    revalidate: 60, // regenerate after a minute
-  }
-}
+import { Contract } from '../lib/firebase/contracts'
 
 // TODO: Rename endpoint to "Explore"
-export default function Markets(props: { contracts: Contract[] }) {
-  const contracts = useContracts() ?? props.contracts ?? []
+export default function Markets() {
+  const contracts = useContracts()
 
   return (
     <Page>
@@ -30,12 +20,11 @@ export default function Markets(props: { contracts: Contract[] }) {
         description="Discover what's new, trending, or soon-to-close. Or search among our hundreds of markets."
         url="/markets"
       />
-      {/* <HotMarkets contracts={hotContracts} />
-      <Spacer h={10} />
-      <ClosingSoonMarkets contracts={closingSoonContracts} />
-      <Spacer h={10} /> */}
-
-      <SearchableGrid contracts={contracts} />
+      {contracts === undefined ? (
+        <LoadingIndicator />
+      ) : (
+        <SearchableGrid contracts={contracts} />
+      )}
     </Page>
   )
 }
