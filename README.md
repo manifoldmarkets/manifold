@@ -37,6 +37,8 @@ Also: Our docs are currently in [a separate repo](https://github.com/manifoldmar
 
 Since we are just now open-sourcing things, we will see how things go. Feel free to open issues, submit PRs, and chat about the process on [Discord][discord]. We would prefer [small PRs][small-prs] that we can effectively evaluate and review -- maybe check in with us first if you are thinking to work on a big change.
 
+By contributing to this codebase, you are agreeing to the terms of the [Manifold CLA](https://github.com/manifoldmarkets/manifold/.github/CONTRIBUTING.md).
+
 If you need additional access to any infrastructure in order to work on something (e.g. Vercel, Firebase) let us know about that on Discord as well.
 
 [vercel]: https://vercel.com/
