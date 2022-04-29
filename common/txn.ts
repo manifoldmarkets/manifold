@@ -5,10 +5,10 @@ export type Txn = {
   createdTime: number
 
   fromId: string
-  fromType: source_type
+  fromType: SourceType
 
   toId: string
-  toType: source_type
+  toType: SourceType
 
   amount: number
   token: 'M$' // | 'USD' | MarketOutcome
@@ -18,4 +18,4 @@ export type Txn = {
   description?: string
 }
 
-export type source_type = 'user' | 'contract' | 'charity' | 'bank'
+export type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
