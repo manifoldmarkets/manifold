@@ -99,7 +99,7 @@ export function NewContract(props: { question: string; tag?: string }) {
     ante !== undefined &&
     ante !== null &&
     ante >= MINIMUM_ANTE &&
-    ante <= balance &&
+    (ante <= balance || deservesDailyFreeMarket) &&
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now()
