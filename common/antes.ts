@@ -5,7 +5,7 @@ import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
 
-export const FIXED_ANTE = 50
+export const FIXED_ANTE = 100
 
 // deprecated
 export const PHANTOM_ANTE = 0.001
