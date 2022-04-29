@@ -25,8 +25,9 @@ Operations with complicated contracts (e.g. buying shares) are provided in a sep
 - `functions/`: Firebase cloud functions, for secure work (e.g. balances, Stripe payments, emails). Also contains in
   `functions/src/scripts/` some Typescript scripts that do ad hoc CLI interaction with Firebase.
 
-- `common/`: Typescript library code shared between `web/` & `functions/`. Also contains in `common/envs` configuration for
-  the different environments (i.e. prod, dev, Manifold for Teams instances.)
+- `common/`: Typescript library code shared between `web/` & `functions/`. If you want to look at how the market math
+  works, most of that's in here (it gets called from the `placeBet` and `sellBet` endpoints in `functions/`.) Also
+  contains in `common/envs` configuration for the different environments (i.e. prod, dev, Manifold for Teams instances.)
 
 - `og-image/`: The OpenGraph image generator; creates the preview images shown on Twitter/social media.
 
@@ -34,7 +35,11 @@ Also: Our docs are currently in [a separate repo](https://github.com/manifoldmar
 
 ## Contributing
 
-Since we are just now open-sourcing things, we will see how things go. Feel free to open issues, submit PRs, and chat about the process on Discord. We would prefer [small PRs][small-prs] that we can effectively evaluate and review -- maybe check in with us first if you are thinking to work on a big change.
+Since we are just now open-sourcing things, we will see how things go. Feel free to open issues, submit PRs, and chat about the process on [Discord][discord]. We would prefer [small PRs][small-prs] that we can effectively evaluate and review -- maybe check in with us first if you are thinking to work on a big change.
+
+By contributing to this codebase, you are agreeing to the terms of the [Manifold CLA](https://github.com/manifoldmarkets/manifold/blob/main/.github/CONTRIBUTING.md).
+
+If you need additional access to any infrastructure in order to work on something (e.g. Vercel, Firebase) let us know about that on Discord as well.
 
 [vercel]: https://vercel.com/
 [jamstack]: https://jamstack.org/
@@ -45,3 +50,4 @@ Since we are just now open-sourcing things, we will see how things go. Feel free
 [cloud-firestore]: https://firebase.google.com/docs/firestore
 [cloud-functions]: https://firebase.google.com/docs/functions
 [small-prs]: https://google.github.io/eng-practices/review/developer/small-cls.html
+[discord]: https://discord.gg/eHQBNBqXuh

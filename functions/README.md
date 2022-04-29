@@ -34,9 +34,10 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 
 ## Developing locally
 
+0. `$ firebase use dev` if you haven't already
 1. `$ yarn serve` to spin up the emulators
-   The Emulator UI is at http://localhost:4000; the functions are hosted on :5001.
-   Note: You have to kill and restart emulators when you change code; no hot reload =(
+   1. The Emulator UI is at http://localhost:4000; the functions are hosted on :5001.
+      Note: You have to kill and restart emulators when you change code; no hot reload =(
 2. `$ yarn dev:emulate` in `/web` to connect to emulators with the frontend
    1. Note: emulated database is cleared after every shutdown
 

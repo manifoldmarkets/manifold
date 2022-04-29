@@ -5,14 +5,16 @@ import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
 
-export const FIXED_ANTE = 50
+export const FIXED_ANTE = 100
 
 // deprecated
 export const PHANTOM_ANTE = 0.001
 export const MINIMUM_ANTE = 50
 
+export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
+
 export function getCpmmInitialLiquidity(
-  creator: User,
+  providerId: string,
   contract: FullContract<CPMM, Binary>,
   anteId: string,
   amount: number
@@ -21,7 +23,7 @@ export function getCpmmInitialLiquidity(
 
   const lp: LiquidityProvision = {
     id: anteId,
-    userId: creator.id,
+    userId: providerId,
     contractId: contract.id,
     createdTime,
     isAnte: true,

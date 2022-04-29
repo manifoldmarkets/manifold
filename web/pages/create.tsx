@@ -18,6 +18,7 @@ import { TagsList } from '../components/tags-list'
 import { Row } from '../components/layout/row'
 import { MAX_DESCRIPTION_LENGTH, outcomeType } from '../../common/contract'
 import { formatMoney } from '../../common/util/format'
+import { useHasCreatedContractToday } from '../hooks/use-has-created-contract-today'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -70,6 +71,9 @@ export function NewContract(props: { question: string; tag?: string }) {
   const tags = parseWordsAsTags(tagText)
 
   const [ante, setAnte] = useState(FIXED_ANTE)
+
+  const deservesDailyFreeMarket = !useHasCreatedContractToday(creator)
+
   // useEffect(() => {
   //   if (ante === null && creator) {
   //     const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
@@ -95,7 +99,7 @@ export function NewContract(props: { question: string; tag?: string }) {
     ante !== undefined &&
     ante !== null &&
     ante >= MINIMUM_ANTE &&
-    ante <= balance &&
+    (ante <= balance || deservesDailyFreeMarket) &&
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now()
@@ -106,11 +110,14 @@ export function NewContract(props: { question: string; tag?: string }) {
 
     setIsSubmitting(true)
 
+    const boundedProb =
+      initialProb > 90 ? 90 : initialProb < 10 ? 10 : initialProb
+
     const result: any = await createContract({
       question,
       outcomeType,
       description,
-      initialProb,
+      initialProb: boundedProb,
       ante,
       closeTime,
       tags,
@@ -172,6 +179,8 @@ export function NewContract(props: { question: string; tag?: string }) {
           <ProbabilitySelector
             probabilityInt={initialProb}
             setProbabilityInt={setInitialProb}
+            minProb={10}
+            maxProb={90}
           />
         </div>
       )}
@@ -241,10 +250,14 @@ export function NewContract(props: { question: string; tag?: string }) {
             text={`Cost to create your market. This amount is used to subsidize trading.`}
           />
         </label>
-
-        <div className="label-text text-neutral pl-1">{formatMoney(ante)}</div>
-
-        {ante > balance && (
+        {deservesDailyFreeMarket ? (
+          <div className="label-text text-primary pl-1">FREE</div>
+        ) : (
+          <div className="label-text text-neutral pl-1">
+            {formatMoney(ante)}
+          </div>
+        )}
+        {!deservesDailyFreeMarket && ante > balance && (
           <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
             <span className="mr-2 text-red-500">Insufficient balance</span>
             <button
@@ -273,7 +286,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         <button
           type="submit"
           className={clsx(
-            'btn btn-primary',
+            'btn btn-primary capitalize',
             isSubmitting && 'loading disabled'
           )}
           disabled={isSubmitting || !isValid}
