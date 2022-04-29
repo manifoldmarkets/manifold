@@ -24,11 +24,13 @@ export default function Charity() {
   return (
     <Page>
       <Col className="w-full items-center rounded px-4 py-6 sm:px-8 xl:w-[125%]">
-        <Col className="max-w-xl">
-          <Title className="!mt-0" text="Donate to a charity" />
+        <Col className="max-w-xl gap-2">
+          <Title className="!mt-0" text="Donate your M$ to charity!" />
           <div className="mb-6 text-gray-500">
-            Exchange your M$ for real dollars in the form of charity donations!
+            Throughout the month of May, every M$ 100 you contribute turns into
+            $1 USD to your chosen charity. We'll cover all processing fees!
           </div>
+
           <input
             type="text"
             onChange={(e) => debouncedQuery(e.target.value)}
@@ -48,6 +50,14 @@ export default function Charity() {
             No charities match your search :(
           </div>
         )}
+
+        <div className="mt-10 italic text-gray-500">
+          Note: Manifold is not affiliated with any of these charities, other
+          than being fans of their work.
+          <br />
+          As Manifold is a for-profit entity, your contributions will not be tax
+          deductible.
+        </div>
       </Col>
     </Page>
   )
