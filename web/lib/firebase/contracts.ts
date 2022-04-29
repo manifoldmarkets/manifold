@@ -115,6 +115,18 @@ export async function listContracts(creatorId: string): Promise<Contract[]> {
   return snapshot.docs.map((doc) => doc.data() as Contract)
 }
 
+export async function listTaggedContractsCaseInsensitive(
+  tag: string
+): Promise<Contract[]> {
+  const q = query(
+    contractCollection,
+    where('lowercaseTags', 'array-contains', tag.toLowerCase()),
+    orderBy('createdTime', 'desc')
+  )
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((doc) => doc.data() as Contract)
+}
+
 export async function listAllContracts(): Promise<Contract[]> {
   const q = query(contractCollection, orderBy('createdTime', 'desc'))
   const snapshot = await getDocs(q)
