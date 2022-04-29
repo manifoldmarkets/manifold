@@ -53,6 +53,26 @@ async function cacheUserViews(userId: string) {
   console.log(viewCounts, lastViewTime)
 }
 
+async function deleteCache() {
+  console.log('Deleting view cache')
+
+  const users = await getValues<User>(firestore.collection('users'))
+
+  await batchedWaitAll(
+    users.map((user) => async () => {
+      console.log('Deleting view cache for', user.username)
+      await firestore.doc(`private-users/${user.id}/cache/viewCounts`).delete()
+      await firestore
+        .doc(`private-users/${user.id}/cache/lastViewTime`)
+        .delete()
+      await firestore
+        .doc(`private-users/${user.id}/cache/contractScores`)
+        .delete()
+      await firestore.doc(`private-users/${user.id}/cache/wordScores`).delete()
+    })
+  )
+}
+
 if (require.main === module) {
   cacheViews().then(() => process.exit())
 }
