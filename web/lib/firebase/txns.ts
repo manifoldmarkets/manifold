@@ -10,7 +10,7 @@ const txnCollection = collection(db, 'txns')
 const getCharityQuery = (charityId: string) =>
   query(
     txnCollection,
-    where('toType', '==', 'charity'),
+    where('toType', '==', 'CHARITY'),
     where('toId', '==', charityId),
     orderBy('createdTime', 'desc')
   )
