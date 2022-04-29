@@ -324,8 +324,14 @@ function ContractTopTrades(props: {
 }
 
 const getOpenGraphProps = (contract: Contract) => {
-  const { resolution, question, creatorName, creatorUsername, outcomeType } =
-    contract
+  const {
+    resolution,
+    question,
+    creatorName,
+    creatorUsername,
+    outcomeType,
+    creatorAvatarUrl,
+  } = contract
   const probPercent =
     outcomeType === 'BINARY' ? getBinaryProbPercent(contract) : undefined
 
@@ -339,8 +345,9 @@ const getOpenGraphProps = (contract: Contract) => {
     question,
     probability: probPercent,
     metadata: contractTextDetails(contract),
-    creatorName: creatorName,
-    creatorUsername: creatorUsername,
+    creatorName,
+    creatorUsername,
+    creatorAvatarUrl,
     description,
   }
 }
