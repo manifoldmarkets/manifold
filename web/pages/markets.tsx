@@ -2,7 +2,6 @@ import {
   ContractsGrid,
   SearchableGrid,
 } from '../components/contract/contracts-list'
-import { LoadingIndicator } from '../components/loading-indicator'
 import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
@@ -20,11 +19,7 @@ export default function Markets() {
         description="Discover what's new, trending, or soon-to-close. Or search among our hundreds of markets."
         url="/markets"
       />
-      {contracts === undefined ? (
-        <LoadingIndicator />
-      ) : (
-        <SearchableGrid contracts={contracts} />
-      )}
+      <SearchableGrid contracts={contracts} />
     </Page>
   )
 }
