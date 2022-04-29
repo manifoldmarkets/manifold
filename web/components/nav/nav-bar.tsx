@@ -3,8 +3,8 @@ import Link from 'next/link'
 import {
   HomeIcon,
   MenuAlt3Icon,
+  PresentationChartLineIcon,
   SearchIcon,
-  TableIcon,
   XIcon,
 } from '@heroicons/react/outline'
 import { Transition, Dialog } from '@headlessui/react'
@@ -39,7 +39,10 @@ export function BottomNavBar() {
       {user !== null && (
         <Link href="/portfolio">
           <a className="block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
-            <TableIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
+            <PresentationChartLineIcon
+              className="my-1 mx-auto h-6 w-6"
+              aria-hidden="true"
+            />
             Portfolio
           </a>
         </Link>
