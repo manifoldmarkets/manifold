@@ -12,13 +12,13 @@ export const onView = functions.firestore
     const { contractId, timestamp } = snapshot.data() as View
 
     await firestore
-      .doc(`private-users/${userId}/cached/viewCounts`)
+      .doc(`private-users/${userId}/cache/viewCounts`)
       .set(
         { [contractId]: admin.firestore.FieldValue.increment(1) },
         { merge: true }
       )
 
     await firestore
-      .doc(`private-users/${userId}/cached/lastViewTime`)
+      .doc(`private-users/${userId}/cache/lastViewTime`)
       .set({ [contractId]: timestamp }, { merge: true })
   })

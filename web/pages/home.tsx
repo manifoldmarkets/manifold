@@ -15,7 +15,7 @@ import { ContractPageContent } from './[username]/[contractSlug]'
 const Home = () => {
   const user = useUser()
 
-  const feed = useAlgoFeed()
+  const feed = useAlgoFeed(user)
 
   const router = useRouter()
   const { u: username, s: slug } = router.query

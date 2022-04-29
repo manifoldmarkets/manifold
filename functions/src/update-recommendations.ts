@@ -39,7 +39,7 @@ export const updateUserRecommendations = async (
     ),
 
     getValue<{ [contractId: string]: number }>(
-      firestore.doc(`private-users/${user.id}/cached/viewCounts`)
+      firestore.doc(`private-users/${user.id}/cache/viewCounts`)
     ),
 
     getValues<ClickEvent>(
@@ -53,7 +53,7 @@ export const updateUserRecommendations = async (
   const contractScores = getContractScores(contracts, wordScores)
 
   const cachedCollection = firestore.collection(
-    `private-users/${user.id}/cached`
+    `private-users/${user.id}/cache`
   )
   await cachedCollection.doc('wordScores').set(wordScores)
   await cachedCollection.doc('contractScores').set(contractScores)

@@ -1,7 +1,4 @@
 import { httpsCallable } from 'firebase/functions'
-import { Bet } from '../../../common/bet'
-import { Comment } from '../../../common/comment'
-import { Contract } from '../../../common/contract'
 import { Fold } from '../../../common/fold'
 import { User } from '../../../common/user'
 import { randomString } from '../../../common/util/random'
@@ -74,15 +71,3 @@ export const addLiquidity = (data: { amount: number; contractId: string }) => {
     .then((r) => r.data as { status: string })
     .catch((e) => ({ status: 'error', message: e.message }))
 }
-
-export const getFeed = cloudFunction<
-  undefined,
-  {
-    status: 'error' | 'success'
-    feed: {
-      contract: Contract
-      recentBets: Bet[]
-      recentComments: Comment[]
-    }[]
-  }
->('getFeed')

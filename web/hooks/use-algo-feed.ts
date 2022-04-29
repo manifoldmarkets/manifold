@@ -5,9 +5,10 @@ import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
 import { useTimeSinceFirstRender } from './use-time-since-first-render'
 import { trackLatency } from '../lib/firebase/tracking'
-import { getFeed } from '../lib/firebase/api-call'
+import { User } from '../../common/user'
+import { getUserFeed } from '../lib/firebase/users'
 
-export const useAlgoFeed = () => {
+export const useAlgoFeed = (user: User | null | undefined) => {
   const [feed, setFeed] = useState<
     {
       contract: Contract
@@ -19,14 +20,15 @@ export const useAlgoFeed = () => {
   const getTime = useTimeSinceFirstRender()
 
   useEffect(() => {
-    getFeed().then(({ data }) => {
-      console.log('got data', data)
-      setFeed(data.feed)
+    if (user) {
+      getUserFeed(user.id).then((feed) => {
+        setFeed(feed)
 
-      trackLatency('feed', getTime())
-      console.log('feed load time', getTime())
-    })
-  }, [getTime])
+        trackLatency('feed', getTime())
+        console.log('feed load time', getTime())
+      })
+    }
+  }, [user, getTime])
 
   return feed
 }

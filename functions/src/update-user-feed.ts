@@ -13,19 +13,18 @@ import {
 } from '../../common/calculate'
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
+import { User } from '../../common/user'
+import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
 const MAX_FEED_CONTRACTS = 60
 
-export const getFeed = functions
-  .runWith({ minInstances: 1 })
-  .https.onCall(async (_data, context) => {
-    const userId = context?.auth?.uid
-    if (!userId) return { status: 'error', message: 'Not authorized' }
-
+export const updateUserFeed = functions.pubsub
+  .schedule('every 60 minutes')
+  .onRun(async () => {
     // Get contracts bet on or created in last week.
-    const contractsPromise = Promise.all([
+    const contracts = await Promise.all([
       getValues<Contract>(
         firestore
           .collection('contracts')
@@ -46,58 +45,58 @@ export const getFeed = functions
       return combined.filter((c) => (c.closeTime ?? Infinity) > Date.now())
     })
 
-    const userCacheCollection = firestore.collection(
-      `private-users/${userId}/cached`
-    )
-    const [recommendationScores, lastViewedTime] = await Promise.all([
-      getValue<{ [contractId: string]: number }>(
-        userCacheCollection.doc('contractScores')
-      ),
-      getValue<{ [contractId: string]: number }>(
-        userCacheCollection.doc('lastViewTime')
-      ),
-    ]).then((dicts) => dicts.map((dict) => dict ?? {}))
+    const users = await getValues<User>(firestore.collection('users'))
 
-    const contracts = await contractsPromise
-
-    const averageRecScore =
-      1 +
-      _.sumBy(
-        contracts.filter((c) => recommendationScores[c.id] !== undefined),
-        (c) => recommendationScores[c.id]
-      ) /
-        (contracts.length + 1)
-
-    console.log({ recommendationScores, averageRecScore, lastViewedTime })
-
-    const scoredContracts = contracts.map((contract) => {
-      const score = scoreContract(
-        contract,
-        recommendationScores[contract.id] ?? averageRecScore,
-        lastViewedTime[contract.id]
-      )
-      return [contract, score] as [Contract, number]
-    })
-
-    const sortedContracts = _.sortBy(
-      scoredContracts,
-      ([_, score]) => score
-    ).reverse()
-
-    console.log(sortedContracts.map(([c, score]) => c.question + ': ' + score))
-
-    const feedContracts = sortedContracts
-      .slice(0, MAX_FEED_CONTRACTS)
-      .map(([c]) => c)
-
-    const feed = await Promise.all(
-      feedContracts.map((contract) => getRecentBetsAndComments(contract))
-    )
-
-    console.log('feed', feed)
-
-    return { status: 'success', feed }
+    await batchedWaitAll(users.map((user) => () => updateFeed(user, contracts)))
   })
+
+const updateFeed = async (user: User, contracts: Contract[]) => {
+  const userCacheCollection = firestore.collection(
+    `private-users/${user.id}/cache`
+  )
+  const [recommendationScores, lastViewedTime] = await Promise.all([
+    getValue<{ [contractId: string]: number }>(
+      userCacheCollection.doc('contractScores')
+    ),
+    getValue<{ [contractId: string]: number }>(
+      userCacheCollection.doc('lastViewTime')
+    ),
+  ]).then((dicts) => dicts.map((dict) => dict ?? {}))
+
+  const averageRecScore =
+    1 +
+    _.sumBy(
+      contracts.filter((c) => recommendationScores[c.id] !== undefined),
+      (c) => recommendationScores[c.id]
+    ) /
+      (contracts.length + 1)
+
+  const scoredContracts = contracts.map((contract) => {
+    const score = scoreContract(
+      contract,
+      recommendationScores[contract.id] ?? averageRecScore,
+      lastViewedTime[contract.id]
+    )
+    return [contract, score] as [Contract, number]
+  })
+
+  const sortedContracts = _.sortBy(
+    scoredContracts,
+    ([_, score]) => score
+  ).reverse()
+
+  console.log(sortedContracts.map(([c, score]) => c.question + ': ' + score))
+
+  const feedContracts = sortedContracts
+    .slice(0, MAX_FEED_CONTRACTS)
+    .map(([c]) => c)
+
+  const feed = await Promise.all(
+    feedContracts.map((contract) => getRecentBetsAndComments(contract))
+  )
+
+  await userCacheCollection.doc('feed').set(feed)
+}
 
 function scoreContract(
   contract: Contract,
@@ -171,12 +170,16 @@ async function getRecentBetsAndComments(contract: Contract) {
       contractDoc
         .collection('bets')
         .where('createdTime', '>', Date.now() - DAY_MS)
+        .orderBy('createdTime', 'desc')
+        .limit(1)
     ),
 
     getValues<Comment>(
       contractDoc
         .collection('comments')
         .where('createdTime', '>', Date.now() - 3 * DAY_MS)
+        .orderBy('createdTime', 'desc')
+        .limit(3)
     ),
   ])
 
