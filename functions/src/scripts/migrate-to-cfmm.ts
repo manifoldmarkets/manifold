@@ -106,7 +106,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
     const liquidityDocRef = contractRef.collection('liquidity').doc()
 
     const lp = getCpmmInitialLiquidity(
-      { id: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' } as User, // use @ManifoldMarkets' id
+      'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // use @ManifoldMarkets' id
       {
         ...contract,
         ...contractUpdate,
