@@ -36,6 +36,7 @@ const signedOutNavigation = [
 ]
 
 const signedOutMobileNavigation = [
+  { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
   { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
   { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
