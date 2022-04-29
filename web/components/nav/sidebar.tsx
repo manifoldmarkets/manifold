@@ -5,9 +5,10 @@ import {
   SearchIcon,
   ChatIcon,
   BookOpenIcon,
-  TableIcon,
   DotsHorizontalIcon,
   CashIcon,
+  HeartIcon,
+  PresentationChartLineIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import _ from 'lodash'
@@ -24,7 +25,8 @@ import { useHasCreatedContractToday } from '../../hooks/use-has-created-contract
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
-  { name: 'Portfolio', href: '/portfolio', icon: TableIcon },
+  { name: 'Portfolio', href: '/portfolio', icon: PresentationChartLineIcon },
+  { name: 'Charity', href: '/charity', icon: HeartIcon },
 ]
 
 const signedOutNavigation = [
