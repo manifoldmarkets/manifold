@@ -22,6 +22,7 @@ import {
   getAnteBets,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
   MINIMUM_ANTE,
 } from '../../common/antes'
 import { getNoneAnswer } from '../../common/answer'
@@ -144,8 +145,10 @@ export const createContract = functions
             .collection(`contracts/${contract.id}/liquidity`)
             .doc()
 
+          const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : creator.id
+
           const lp = getCpmmInitialLiquidity(
-            creator,
+            providerId,
             contract as FullContract<CPMM, Binary>,
             liquidityDoc.id,
             ante
