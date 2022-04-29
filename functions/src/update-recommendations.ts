@@ -11,6 +11,7 @@ import {
   getContractScores,
   getWordScores,
 } from '../../common/recommended-contracts'
+import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
@@ -23,7 +24,9 @@ export const updateRecommendations = functions.pubsub
 
     const users = await getValues<User>(firestore.collection('users'))
 
-    for (const user of users) await updateUserRecommendations(user, contracts)
+    await batchedWaitAll(
+      users.map((user) => () => updateUserRecommendations(user, contracts))
+    )
   })
 
 export const updateUserRecommendations = async (
