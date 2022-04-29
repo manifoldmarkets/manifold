@@ -223,8 +223,9 @@ export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
   comments: Comment[]
+  answerOutcome?: string
 }) {
-  const { contract, betsByCurrentUser, comments } = props
+  const { contract, betsByCurrentUser, comments, answerOutcome } = props
   const user = useUser()
   const [comment, setComment] = useState('')
 
@@ -233,7 +234,7 @@ export function CommentInput(props: {
     if (!user) {
       return await firebaseLogin()
     }
-    await createComment(contract.id, comment, user)
+    await createComment(contract.id, comment, user, undefined, answerOutcome)
     setComment('')
   }
 
