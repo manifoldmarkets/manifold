@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { User } from '../../common/user'
 
 export const useHasCreatedContractToday = (user: User | null | undefined) => {
-  const [hasCreatedContractToday, setHasCreatedContractToday] = useState(false)
+  const [hasCreatedContractToday, setHasCreatedContractToday] = useState(true)
 
   useEffect(() => {
     // Uses utc time like the server.
