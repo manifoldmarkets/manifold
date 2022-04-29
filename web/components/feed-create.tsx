@@ -141,7 +141,7 @@ export default function FeedCreate(props: {
       {/* Show a fake "Create Market" button, which gets replaced with the NewContract one*/}
       {!isExpanded && (
         <div className="flex justify-end sm:-mt-4">
-          <button className="btn btn-sm" disabled>
+          <button className="btn btn-sm capitalize" disabled>
             Create Market
           </button>
         </div>
