@@ -13,7 +13,7 @@ export const transact = functions
 
     const { amount, fromType, fromId, toId, toType, description } = data
 
-    if (fromType !== 'user')
+    if (fromType !== 'USER')
       return {
         status: 'error',
         message: "From type is only implemented for type 'user'.",
@@ -44,7 +44,7 @@ export const transact = functions
         }
       }
 
-      if (toType === 'user') {
+      if (toType === 'USER') {
         const toDoc = firestore.doc(`users/${toId}`)
         const toSnap = await transaction.get(toDoc)
         if (!toSnap.exists) {
@@ -66,6 +66,9 @@ export const transact = functions
         toType,
 
         amount,
+        // TODO: Unhardcode once we have non-donation txns
+        token: 'M$',
+        category: 'CHARITY',
         description,
       })
 
