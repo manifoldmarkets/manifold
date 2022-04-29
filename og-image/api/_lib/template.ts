@@ -92,7 +92,7 @@ export function getHtml(parsedReq: ParsedRequest) {
     creatorUsername,
     creatorAvatarUrl,
   } = parsedReq
-  const MAX_QUESTION_CHARS = 120
+  const MAX_QUESTION_CHARS = 100
   const truncatedQuestion = question.length > MAX_QUESTION_CHARS
       ? question.slice(0, MAX_QUESTION_CHARS) + '...'
       : question
