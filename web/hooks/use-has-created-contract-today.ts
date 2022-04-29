@@ -1,6 +1,5 @@
 import { listContracts } from '../lib/firebase/contracts'
 import { useEffect, useState } from 'react'
-import dayjs from 'dayjs'
 import { User } from '../../common/user'
 
 export const useHasCreatedContractToday = (user: User | null | undefined) => {
@@ -8,7 +7,8 @@ export const useHasCreatedContractToday = (user: User | null | undefined) => {
 
   useEffect(() => {
     // Uses utc time like the server.
-    const todayAtMidnight = dayjs.utc().startOf('day').valueOf()
+    const utcTimeString = new Date().toISOString()
+    const todayAtMidnight = new Date(utcTimeString).setUTCHours(0, 0, 0, 0)
 
     async function listUserContractsForToday() {
       if (!user) return
