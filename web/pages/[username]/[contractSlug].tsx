@@ -287,7 +287,7 @@ function ContractTopTrades(props: {
             <FeedComment
               contract={contract}
               comment={commentsById[topCommentId]}
-              bet={betsById[topCommentId]}
+              betsBySameUser={[betsById[topCommentId]]}
               hideOutcome={false}
               truncate={false}
               smallAvatar={false}
