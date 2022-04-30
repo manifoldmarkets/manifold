@@ -119,21 +119,27 @@ export const getWordScores = (
 
       const factor =
         -1 * Math.log(viewCount + 1) +
-        3 * Math.log(clickCount + 1) +
-        10 * Math.log(betCount + 1)
+        10 * Math.log(betCount + clickCount / 4 + 1)
 
       return _.mapValues(wordsTfIdf, (tfIdf) => tfIdf * factor)
     }
   )
 
   const wordScores = Object.values(contractWordScores).reduce(addObjects, {})
-
-  console.log(
-    'your word scores',
-    _.sortBy(_.toPairs(wordScores), ([, score]) => -score).slice(0, 10)
+  const minScore = Math.min(...Object.values(wordScores))
+  const maxScore = Math.max(...Object.values(wordScores))
+  const normalizedWordScores = _.mapValues(
+    wordScores,
+    (score) => (score - minScore) / (maxScore - minScore)
   )
 
-  return wordScores
+  // console.log(
+  //   'your word scores',
+  //   _.sortBy(_.toPairs(normalizedWordScores), ([, score]) => -score).slice(0, 100),
+  //   _.sortBy(_.toPairs(normalizedWordScores), ([, score]) => -score).slice(-100)
+  // )
+
+  return normalizedWordScores
 }
 
 export function getContractScores(
@@ -149,10 +155,23 @@ export function getContractScores(
       return wordFreq * weight
     })
 
-    return [contract.id, score] as [string, number]
+    return [contract, score] as [Contract, number]
   })
 
-  return _.fromPairs(scorePairs)
+  /*
+  const questionPairs = _.sortBy(
+    scorePairs.map(
+      ([contract, score]) => [contract.question, score] as [string, number]
+    ),
+    ([, score]) => -score
+  )
+
+  console.log('score', questionPairs.slice(0, 100), questionPairs.slice(-100))
+  */
+
+  return _.fromPairs(
+    scorePairs.map(([contract, score]) => [contract.id, score])
+  )
 }
 
 // Caluculate Term Frequency-Inverse Document Frequency (TF-IDF):

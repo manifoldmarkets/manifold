@@ -18,7 +18,7 @@ import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
-const MAX_FEED_CONTRACTS = 60
+const MAX_FEED_CONTRACTS = 75
 
 export const updateUserFeed = functions.pubsub
   .schedule('every 60 minutes')
@@ -119,9 +119,14 @@ function getActivityScore(contract: Contract, viewTime: number | undefined) {
     lastCommentTime && (!viewTime || lastCommentTime > viewTime)
   const newCommentScore = hasNewComments ? 1 : 0.5
 
+  const timeSinceLastComment = Date.now() - (lastCommentTime ?? createdTime)
+  const commentDaysAgo = timeSinceLastComment / DAY_MS
+  const commentTimeScore =
+    0.25 + 0.75 * (1 - logInterpolation(0, 3, commentDaysAgo))
+
   const timeSinceLastBet = Date.now() - (lastBetTime ?? createdTime)
-  const daysAgo = timeSinceLastBet / DAY_MS
-  const betTimeScore = 1 - logInterpolation(0, 3, daysAgo)
+  const betDaysAgo = timeSinceLastBet / DAY_MS
+  const betTimeScore = 0.5 + 0.5 * (1 - logInterpolation(0, 3, betDaysAgo))
 
   let prob = 0.5
   if (outcomeType === 'BINARY') {
@@ -134,14 +139,12 @@ function getActivityScore(contract: Contract, viewTime: number | undefined) {
   const frac = 1 - Math.abs(prob - 0.5) ** 2 / 0.25
   const probScore = 0.5 + frac * 0.5
 
-  const { volume24Hours, volume7Days, volume } = contract
-  const combinedVolume =
-    Math.log(volume24Hours + 1) +
-    Math.log(volume7Days + 1) +
-    Math.log(volume + 1)
-  const volumeScore = 0.5 + 0.5 * logInterpolation(7, 35, combinedVolume)
+  const { volume24Hours, volume7Days } = contract
+  const combinedVolume = Math.log(volume24Hours + 1) + Math.log(volume7Days + 1)
+  const volumeScore = 0.5 + 0.5 * logInterpolation(4, 20, combinedVolume)
 
-  const score = newCommentScore * betTimeScore * probScore * volumeScore
+  const score =
+    newCommentScore * commentTimeScore * betTimeScore * probScore * volumeScore
 
   // Map score to [0.5, 1] since no recent activty is not a deal breaker.
   const mappedScore = 0.5 + 0.5 * score
@@ -160,11 +163,11 @@ function getLastViewedScore(viewTime: number | undefined) {
 
   if (daysAgo < 0.5) {
     const frac = logInterpolation(0, 0.5, daysAgo)
-    return 0.5 * frac
+    return 0.5 + 0.25 * frac
   }
 
   const frac = logInterpolation(0.5, 14, daysAgo)
-  return 0.5 + 0.5 * frac
+  return 0.75 + 0.25 * frac
 }
 
 async function getRecentBetsAndComments(contract: Contract) {

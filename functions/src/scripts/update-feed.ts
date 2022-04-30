@@ -21,7 +21,10 @@ async function updateFeed() {
 
   const contracts = await getValues<Contract>(firestore.collection('contracts'))
   const feedContracts = await getFeedContracts()
-  const users = await getValues<User>(firestore.collection('users'))
+  const users = await getValues<User>(
+    firestore.collection('users')
+    //.where('username', '==', 'JamesGrugett')
+  )
 
   await batchedWaitAll(
     users.map((user) => async () => {
