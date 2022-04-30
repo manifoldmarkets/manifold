@@ -113,7 +113,10 @@ function Blurb({ text }: { text: string }) {
   return (
     <>
       <div
-        className={clsx(' text-gray-500', !open && 'line-clamp-5')}
+        className={clsx(
+          'whitespace-pre-line text-gray-500',
+          !open && 'line-clamp-5'
+        )}
         ref={ref}
       >
         {text}

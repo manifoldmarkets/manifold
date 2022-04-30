@@ -17,13 +17,16 @@ export const charities: Charity[] = [
     name: '1Day Sooner',
     website: 'https://www.1daysooner.org/',
     preview:
-      'Accelerating the development of each additional safe and effective vaccine by even a couple of days via COVID-19 human challenge trials could save thousands of lives.',
+      'Accelerating the development of each vaccine by even a couple of days via COVID-19 human challenge trials could save thousands of lives.',
     photo:
       'https://images.squarespace-cdn.com/content/v1/5f5f8496d1d7713486b6075a/666cbb5a-5335-4323-b9ea-b764edc826e1/OFFICIAL+1Day+Sooner+Logo.png',
     description: `1Day Sooner is a non-profit that advocates on behalf of COVID-19 challenge trial volunteers.
-      After a vaccine candidate is created in a lab, it is developed through a combination of pre-clinical evaluation and three phases of clinical trials that test its safety and efficacy. In traditional Phase III trials, participants receive the vaccine candidate or a placebo/active comparator, and efficacy is judged by comparing the prevalence of infection in the vaccine group and the placebo/comparator group, to test the hypothesis that significantly fewer participants in the vaccine group get infected. In these traditional trials, after receiving the treatment, participants return to their homes and their normal daily lives so as to test the treatment under real world conditions. Since only a small proportion of these participants may encounter the disease, it may take a large number of participants and a good deal of time for these trials to reveal differences between the vaccine and placebo groups.
-      In a human challenge trial (HCT), willing participants would receive the vaccine candidate or placebo and, after some time for the vaccine to take effect, be deliberately exposed to live coronavirus. Since exposure to the virus is guaranteed in HCTs, it may be possible to judge a vaccine candidate’s efficacy more quickly and with far fewer participants than a standard Phase III trial. While HCT efficacy results do not traditionally provide sufficient basis for licensure on their own, they could allow us to (1) more quickly weed out disappointing vaccine candidates or (2) promote the development of promising candidates in conjunction with traditional Phase III studies.
-      In addition, by gathering detailed data on the process of infection and vaccine protection in a clinical setting, researchers could learn information that proves extremely useful for broader vaccine and therapeutic development efforts. Altogether, there are scenarios in which the speed of HCTs and the richness of the data they provide accelerate the development of an effective and broadly accessible COVID-19 vaccine, with thousands of lives spared (depending on the pandemic’s long-term trajectory).`,
+      
+    After a vaccine candidate is created in a lab, it is developed through a combination of pre-clinical evaluation and three phases of clinical trials that test its safety and efficacy. In traditional Phase III trials, participants receive the vaccine candidate or a placebo/active comparator, and efficacy is judged by comparing the prevalence of infection in the vaccine group and the placebo/comparator group, to test the hypothesis that significantly fewer participants in the vaccine group get infected. In these traditional trials, after receiving the treatment, participants return to their homes and their normal daily lives so as to test the treatment under real world conditions. Since only a small proportion of these participants may encounter the disease, it may take a large number of participants and a good deal of time for these trials to reveal differences between the vaccine and placebo groups.
+      
+    In a human challenge trial (HCT), willing participants would receive the vaccine candidate or placebo and, after some time for the vaccine to take effect, be deliberately exposed to live coronavirus. Since exposure to the virus is guaranteed in HCTs, it may be possible to judge a vaccine candidate’s efficacy more quickly and with far fewer participants than a standard Phase III trial. While HCT efficacy results do not traditionally provide sufficient basis for licensure on their own, they could allow us to (1) more quickly weed out disappointing vaccine candidates or (2) promote the development of promising candidates in conjunction with traditional Phase III studies.
+      
+    In addition, by gathering detailed data on the process of infection and vaccine protection in a clinical setting, researchers could learn information that proves extremely useful for broader vaccine and therapeutic development efforts. Altogether, there are scenarios in which the speed of HCTs and the richness of the data they provide accelerate the development of an effective and broadly accessible COVID-19 vaccine, with thousands of lives spared (depending on the pandemic’s long-term trajectory).`,
     tags: ['Featured'] as CharityTag[],
   },
   {
@@ -33,8 +36,43 @@ export const charities: Charity[] = [
       'A new initiative to advance forecasting and epistemics with the aim of improving the long-term future of humanity.',
     photo:
       'https://quantifieduncertainty.org/_next/image?url=https%3A%2F%2Fsuper-static-assets.s3.amazonaws.com%2F09bb1362-5e3f-4724-8ffd-f3235f67356f%2Fimages%2F6151ac3e-aed7-44c7-9827-399fe6e9222b.png&w=1920&q=80',
-    description: `QURI researches systematic practices to specify and estimate the most important parameters for the most important or scalable decisions. Research areas include forecasting, epistemics, evaluations, ontology, and estimation. We emphasize technological solutions that can heavily scale in the next 5 to 30 years.
+    description: `QURI researches systematic practices to specify and estimate the most important parameters for the most important or scalable decisions. Research areas include forecasting, epistemics, evaluations, ontology, and estimation.
+    
+    We emphasize technological solutions that can heavily scale in the next 5 to 30 years.
+    
     We believe that humanity’s success in the next few hundred years will lie intensely on its ability to coordinate and make good decisions. If important governmental and philanthropic bodies become significantly more effective, this will make society far more resilient to many kinds of challenges ahead.`,
+    tags: ['Featured'] as CharityTag[],
+  },
+  {
+    name: 'Long-Term Future Fund',
+    website: 'https://funds.effectivealtruism.org/funds/far-future',
+    photo: 'https://app.effectivealtruism.org/logo-funds.svg',
+    preview:
+      'Positively influence the long-term trajectory of civilization by making grants that address global catastrophic risks.',
+    description: `The Fund has a broad remit to make grants that promote, implement and advocate for longtermist ideas. Many of our grants aim to address potential risks from advanced artificial intelligence and to build infrastructure and advocate for longtermist projects. However, we welcome applications related to long-term institutional reform or other global catastrophic risks (e.g., pandemics or nuclear conflict).
+    
+    We intend to support:
+    - Projects that directly contribute to reducing existential risks through technical research, policy analysis, advocacy, and/or demonstration projects
+    - Training for researchers or practitioners who work to mitigate existential risks, or help with relevant recruitment efforts, or infrastructure for people working on longtermist projects
+    - Promoting long-term thinking`,
+    tags: ['Featured'] as CharityTag[],
+  },
+  {
+    name: 'ARC',
+    website: 'https://alignment.org/',
+    photo: 'https://i.imgur.com/Hwg8OMP.png',
+    preview: 'Align future machine learning systems with human interests.',
+    description: `ARC is a non-profit research organization whose mission is to align future machine learning systems with human interests. Its current work focuses on developing an alignment strategy that could be adopted in industry today while scaling gracefully to future ML systems. Right now Paul Christiano and Mark Xu are researchers and Kyle Scott handles operations.
+
+What is “alignment”? ML systems can exhibit goal-directed behavior, but it is difficult to understand or control what they are “trying” to do. Powerful models could cause harm if they were trying to manipulate and deceive humans. The goal of intent alignment is to instead train these models to be helpful and honest.
+
+Motivation: We believe that modern ML techniques would lead to severe misalignment if scaled up to large enough computers and datasets. Practitioners may be able to adapt before these failures have catastrophic consequences, but we could reduce the risk by adopting scalable methods further in advance.
+
+What we’re working on: The best way to understand our research priorities and methodology is probably to read our report on Eliciting Latent Knowledge. At a high level, we’re trying to figure out how to train ML systems to answer questions by straightforwardly “translating” their beliefs into natural language rather than by reasoning about what a human wants to hear.
+
+Methodology: We’re unsatisfied with an algorithm if we can see any plausible story about how it eventually breaks down, which means that we can rule out most algorithms on paper without ever implementing them. The cost of this approach is that it may completely miss strategies that exploit important structure in realistic ML models; the benefit is that you can consider lots of ideas quickly. (More)
+
+Future plans: We expect to focus on similar theoretical problems in alignment until we either become more pessimistic about tractability or ARC grows enough to branch out into other areas. Over the long term we are likely to work on a combination of theoretical and empirical alignment research, collaborations with industry labs, alignment forecasting, and ML deployment policy.`,
     tags: ['Featured'] as CharityTag[],
   },
   {
@@ -54,7 +92,7 @@ export const charities: Charity[] = [
     photo:
       'https://www.ntd-ngonetwork.org/sites/nnn/files/content/organisation/logos/2020-01-28/v2_HKLogo_Primary_RGB.jpg',
     preview:
-      'At Helen Keller Intl, we envision a world where no one is deprived of the opportunity to live a healthy life – and reach their true potential.',
+      'We envision a world where no one is deprived of the opportunity to live a healthy life – and reach their true potential.',
     description:
       'Right now, 36 million people worldwide — most of them in developing countries — are blind.\n 90 percent of them didn’t have to lose their sight. Helen Keller International is dedicated to combating the causes and consequences of vision loss and making clear vision a reality for those most vulnerable to disease and who lack access to quality eye care.\n Last year alone, we helped provide many tens of millions of people with treatment to prevent diseases of poverty including blinding trachoma and river blindness.\n  Surgeons trained by our staff also performed tens of thousands of cataract surgeries in the developing world.  And in the United States, we screened the vision of nearly 66,000 students living in some of our country’s poorest neighborhoods and provided free eyeglasses to just over 16,000 of them. ',
   },
@@ -67,6 +105,20 @@ export const charities: Charity[] = [
     preview: 'We help protect people from malaria.',
     description:
       'AMF (againstmalaria.com) provides funding for long-lasting insecticide-treated net (LLIN) distributions (for protection against malaria) in developing countries. There is strong evidence that distributing LLINs reduces child mortality and malaria cases. AMF conducts post-distribution surveys of completed distributions to determine whether LLINs have reached their intended destinations and how long they remain in good condition.',
+  },
+  {
+    name: 'Rethink Charity',
+    website: 'https://rethink.charity/',
+    photo:
+      'https://process.filestackapi.com/resize=width:600,height:315,fit:max/quality=value:90/jvYvq1JFQkOqo3J8hVcJ',
+    preview:
+      'Providing vital support to high-impact charities and charitable projects.',
+    description: `At Rethink Charity, we’re excited about improving the world by providing vital support to high-impact charities and charitable projects. We equip them with tools to boost their impact, through our projects that empower their donors with tax-efficient giving options and strategically coordinated matching opportunities.
+    What we do:
+
+    - Rethink Charity Forward is a cause-neutral donation routing fund for high-impact charities around the world. Canadians have used RC Forward to donate $10 million to high-impact charities since the project was launched in late 2017. 
+
+    - EA Giving Tuesday supports both donors and highly effective nonprofits participating in Facebook’s annual Giving Tuesday match. In addition to setting up systems and processes, the team provides analysis-based recommendations, detailed instructions, and responsive support. The team’s goal is to make it as easy as possible for donors to direct matching dollars to highly effective nonprofits.`,
   },
   {
     name: 'Malaria Consortium',
