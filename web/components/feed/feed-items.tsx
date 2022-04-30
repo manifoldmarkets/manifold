@@ -180,7 +180,7 @@ export function FeedComment(props: {
             />{' '}
             {!matchedBet && userPosition > 0 && (
               <>
-                {'with ' + userPositionMoney + ' '}
+                {'had ' + userPositionMoney + ' '}
                 <>
                   {' of '}
                   <OutcomeLabel
@@ -269,7 +269,7 @@ export function CommentInput(props: {
           <div className="text-sm text-gray-500">
             {user && userPosition > 0 && (
               <>
-                {'You with ' + userPositionMoney + ' '}
+                {'You have ' + userPositionMoney + ' '}
                 <>
                   {' of '}
                   <OutcomeLabel
