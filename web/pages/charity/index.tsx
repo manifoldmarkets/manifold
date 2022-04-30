@@ -53,7 +53,7 @@ export default function Charity() {
 
         <div className="mt-10 text-gray-500">
           Don't see your favorite charity? Recommend that we add it by emailing
-          <span className="text-indigo-500"> info@manifold.markets</span>~
+          <span className="text-indigo-500"> give@manifold.markets</span>~
           <br />
           <br />
           <span className="italic">
