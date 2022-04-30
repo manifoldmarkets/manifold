@@ -15,6 +15,8 @@ import { charities, Charity } from '../../../common/charity'
 import { useRouter } from 'next/router'
 import Custom404 from '../404'
 import { useCharityTxns } from '../../hooks/use-charity-txns'
+import { useWindowSize } from '../../hooks/use-window-size'
+import Confetti from 'react-confetti'
 
 const manaToUSD = (mana: number) =>
   (mana / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -46,8 +48,28 @@ function CharityPage(props: { charity: Charity }) {
   )
   const numSupporters = _.uniqBy(txns, (txn) => txn.fromId).length
 
+  const { width, height } = useWindowSize()
+  const [showConfetti, setShowConfetti] = useState(false)
+
   return (
-    <Page rightSidebar={<DonationBox user={user} charity={charity} />}>
+    <Page
+      rightSidebar={
+        <DonationBox
+          user={user}
+          charity={charity}
+          setShowConfetti={setShowConfetti}
+        />
+      }
+    >
+      {showConfetti && (
+        <Confetti
+          width={width ? width : 500}
+          height={height ? height : 500}
+          recycle={false}
+          numberOfPieces={300}
+        />
+      )}
+
       <Col className="mx-1 w-full items-center sm:px-0">
         <Col className="max-w-2xl rounded bg-white px-8 py-6">
           <Title className="!mt-0" text={name} />
@@ -135,8 +157,12 @@ function Details(props: {
   )
 }
 
-function DonationBox(props: { user?: User | null; charity: Charity }) {
-  const { user, charity } = props
+function DonationBox(props: {
+  user?: User | null
+  charity: Charity
+  setShowConfetti: (show: boolean) => void
+}) {
+  const { user, charity, setShowConfetti } = props
   const [amount, setAmount] = useState<number | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
@@ -161,6 +187,7 @@ function DonationBox(props: { user?: User | null; charity: Charity }) {
     }).catch((err) => console.log('Error', err))
     setIsSubmitting(false)
     setAmount(undefined)
+    setShowConfetti(true)
   }
 
   return (
@@ -183,7 +210,7 @@ function DonationBox(props: { user?: User | null; charity: Charity }) {
 
         <Col className="mt-3 w-full gap-3">
           <Row className="items-center justify-between text-sm">
-            <span className="text-gray-500">To {charity.name}</span>
+            <span className="text-gray-500">{charity.name} receives</span>
             <span>{manaToUSD(amount || 0)}</span>
           </Row>
           {/* TODO: matching pool */}
