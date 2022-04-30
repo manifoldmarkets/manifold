@@ -3,13 +3,40 @@ export interface Charity {
   slug: string
   name: string
   website: string
-  ein: string
+  ein?: string
   photo?: string
   preview: string
   description: string
+  tags?: CharityTag[]
 }
 
+type CharityTag = 'Featured' // | 'Health' | 'Poverty' | 'X-Risk' | 'Animal Welfare' | 'Policy'
+
 export const charities: Charity[] = [
+  {
+    name: '1Day Sooner',
+    website: 'https://www.1daysooner.org/',
+    preview:
+      'Accelerating the development of each additional safe and effective vaccine by even a couple of days via COVID-19 human challenge trials could save thousands of lives.',
+    photo:
+      'https://images.squarespace-cdn.com/content/v1/5f5f8496d1d7713486b6075a/666cbb5a-5335-4323-b9ea-b764edc826e1/OFFICIAL+1Day+Sooner+Logo.png',
+    description: `1Day Sooner is a non-profit that advocates on behalf of COVID-19 challenge trial volunteers.
+      After a vaccine candidate is created in a lab, it is developed through a combination of pre-clinical evaluation and three phases of clinical trials that test its safety and efficacy. In traditional Phase III trials, participants receive the vaccine candidate or a placebo/active comparator, and efficacy is judged by comparing the prevalence of infection in the vaccine group and the placebo/comparator group, to test the hypothesis that significantly fewer participants in the vaccine group get infected. In these traditional trials, after receiving the treatment, participants return to their homes and their normal daily lives so as to test the treatment under real world conditions. Since only a small proportion of these participants may encounter the disease, it may take a large number of participants and a good deal of time for these trials to reveal differences between the vaccine and placebo groups.
+      In a human challenge trial (HCT), willing participants would receive the vaccine candidate or placebo and, after some time for the vaccine to take effect, be deliberately exposed to live coronavirus. Since exposure to the virus is guaranteed in HCTs, it may be possible to judge a vaccine candidate’s efficacy more quickly and with far fewer participants than a standard Phase III trial. While HCT efficacy results do not traditionally provide sufficient basis for licensure on their own, they could allow us to (1) more quickly weed out disappointing vaccine candidates or (2) promote the development of promising candidates in conjunction with traditional Phase III studies.
+      In addition, by gathering detailed data on the process of infection and vaccine protection in a clinical setting, researchers could learn information that proves extremely useful for broader vaccine and therapeutic development efforts. Altogether, there are scenarios in which the speed of HCTs and the richness of the data they provide accelerate the development of an effective and broadly accessible COVID-19 vaccine, with thousands of lives spared (depending on the pandemic’s long-term trajectory).`,
+    tags: ['Featured'] as CharityTag[],
+  },
+  {
+    name: 'QURI',
+    website: 'https://quantifieduncertainty.org/',
+    preview:
+      'A new initiative to advance forecasting and epistemics with the aim of improving the long-term future of humanity.',
+    photo:
+      'https://quantifieduncertainty.org/_next/image?url=https%3A%2F%2Fsuper-static-assets.s3.amazonaws.com%2F09bb1362-5e3f-4724-8ffd-f3235f67356f%2Fimages%2F6151ac3e-aed7-44c7-9827-399fe6e9222b.png&w=1920&q=80',
+    description: `QURI researches systematic practices to specify and estimate the most important parameters for the most important or scalable decisions. Research areas include forecasting, epistemics, evaluations, ontology, and estimation. We emphasize technological solutions that can heavily scale in the next 5 to 30 years.
+    We believe that humanity’s success in the next few hundred years will lie intensely on its ability to coordinate and make good decisions. If important governmental and philanthropic bodies become significantly more effective, this will make society far more resilient to many kinds of challenges ahead.`,
+    tags: ['Featured'] as CharityTag[],
+  },
   {
     name: 'Faunalytics',
     website: 'https://faunalytics.org/',
