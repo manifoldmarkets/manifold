@@ -78,7 +78,7 @@ export const charities: Charity[] = [
     website: 'https://www.malariaconsortium.org/',
     ein: '98-0627052',
     photo:
-      'http://www.malariaconsortium.org/website-2013/images_template/malaria_consortium_logo.png',
+      'https://www.malariaconsortium.org/website-2013/images_template/malaria_consortium_logo.png',
     preview:
       'We specialise in the prevention, control and treatment of malaria and other communicable diseases.',
     description:
@@ -110,7 +110,7 @@ export const charities: Charity[] = [
     website: 'https://wikimediafoundation.org/',
     ein: '20-0049703',
     photo:
-      'http://2.bp.blogspot.com/-jVseU39DW0s/VjmXVMOEEEI/AAAAAAAACK8/dwUP6sLqy-Q/s1600/wikimedia.png',
+      'https://2.bp.blogspot.com/-jVseU39DW0s/VjmXVMOEEEI/AAAAAAAACK8/dwUP6sLqy-Q/s1600/wikimedia.png',
     preview: 'We help everyone share in the sum of all knowledge.',
     description:
       'We are the people who keep knowledge free. There is an amazing community of people around the world that makes great projects like Wikipedia. We help them do that work. We take care of the technical infrastructure, the legal challenges, and the growing pains.',
@@ -120,7 +120,7 @@ export const charities: Charity[] = [
     website: 'https://www.rainforesttrust.org/',
     ein: '13-3500609',
     photo:
-      'http://ww1.prweb.com/prfiles/2019/05/29/16344590/Rrainforest%20Trust%20new%20logo%20tall-1%20copy.png',
+      'https://ww1.prweb.com/prfiles/2019/05/29/16344590/Rrainforest%20Trust%20new%20logo%20tall-1%20copy.png',
     preview:
       'Rainforest Trust saves endangered wildlife and protects our planet by creating rainforest reserves through partnerships, community engagement and donor support.',
     description:
