@@ -3,11 +3,13 @@ import { Bet, listAllBets } from '../../../../lib/firebase/bets'
 import { listAllComments } from '../../../../lib/firebase/comments'
 import { getContractFromId } from '../../../../lib/firebase/contracts'
 import { FullMarket, ApiError, toLiteMarket } from '../_types'
+import { applyCorsHeaders, CORS_UNRESTRICTED } from '../../../../lib/api/cors'
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<FullMarket | ApiError>
 ) {
+  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
   const { id } = req.query
   const contractId = id as string
 
