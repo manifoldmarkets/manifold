@@ -52,12 +52,11 @@ export default function Charity() {
         )}
 
         <iframe
-          width="560"
           height="405"
           src="https://manifold.markets/embed/ManifoldMarkets/total-donations-for-manifold-for-go"
           title="Total donations for Manifold for Good this May (in USD)"
           frameBorder="0"
-          className="m-10"
+          className="m-10 w-full rounded-xl bg-white p-10"
         ></iframe>
 
         <div className="mt-10 text-gray-500">
