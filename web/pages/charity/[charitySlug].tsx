@@ -76,7 +76,8 @@ function CharityPage(props: { charity: Charity }) {
 }
 
 function Blurb({ text }: { text: string }) {
-  const [open, setOpen] = useState(false)
+  // Default to open for now (aka don't actually hide any text yet.)
+  const [open, setOpen] = useState(true)
 
   // Calculate whether the full blurb is already shown
   const ref = useRef<HTMLDivElement>(null)
