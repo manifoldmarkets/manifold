@@ -165,7 +165,7 @@ function DonationBox(props: { user?: User | null; charity: Charity }) {
 
   return (
     <div className="rounded-lg bg-white py-6 px-8 shadow-lg">
-      <div className="mb-6 text-2xl text-gray-700">Donate</div>
+      <Title text="Donate" className="!mt-0" />
       <form onSubmit={onSubmit}>
         <label
           className="mb-2 block text-sm text-gray-500"
@@ -183,12 +183,8 @@ function DonationBox(props: { user?: User | null; charity: Charity }) {
 
         <Col className="mt-3 w-full gap-3">
           <Row className="items-center justify-between text-sm">
-            <span className="text-gray-500">Conversion</span>
-            <span>
-              {amount || 0} Mana
-              <span className="mx-2">→</span>
-              {manaToUSD(amount || 0)}
-            </span>
+            <span className="text-gray-500">To {charity.name}</span>
+            <span>{manaToUSD(amount || 0)}</span>
           </Row>
           {/* TODO: matching pool */}
         </Col>
