@@ -324,7 +324,7 @@ function getCommentsWithPositions(
     contract: contract,
     comment,
     betsBySameUser: bets.length === 0 ? [] : betsByUserId[comment.userId] ?? [],
-    truncate: true,
+    truncate: false,
     hideOutcome: false,
     smallAvatar: false,
   }))

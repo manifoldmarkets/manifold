@@ -9,7 +9,6 @@ import {
   UserIcon,
   UsersIcon,
   XIcon,
-  SparklesIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Textarea from 'react-expanding-textarea'
