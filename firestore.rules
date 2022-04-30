@@ -1,5 +1,6 @@
 rules_version = '2';
 
+// To pick the right project: `firebase projects:list`, then `firebase use <project-name>`
 // To deploy: `firebase deploy --only firestore:rules`
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -79,6 +80,10 @@ service cloud.firestore {
       allow read;
       allow create, update: if request.auth.uid == userId && request.resource.data.userId == userId;
       allow delete: if request.auth.uid == userId;
+    }
+
+    match /txns/{txnId} {
+      allow read;
     }
   }
 }
