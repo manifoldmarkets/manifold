@@ -2,6 +2,8 @@ import * as _ from 'lodash'
 
 import { Binary, CPMM, FullContract } from './contract'
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, noFees, PLATFORM_FEE } from './fees'
+import { LiquidityProvision } from './liquidity-provision'
+import { addObjects } from './util/object'
 
 export function getCpmmProbability(
   pool: { [outcome: string]: number },
@@ -256,6 +258,36 @@ export function addCpmmLiquidity(
   const liquidity = newLiquidity - oldLiquidity
 
   return { newPool, liquidity, newP }
+}
+
+export function getCpmmLiquidityPoolWeights(
+  contract: FullContract<CPMM, Binary>,
+  liquidities: LiquidityProvision[]
+) {
+  const { p } = contract
+
+  const liquidityShares = liquidities.map((l) => {
+    const oldLiquidity = getCpmmLiquidity(l.pool, p)
+
+    const newPool = addObjects(l.pool, { YES: l.amount, NO: l.amount })
+    const newLiquidity = getCpmmLiquidity(newPool, p)
+
+    const liquidity = newLiquidity - oldLiquidity
+    return liquidity
+  })
+
+  const shareSum = _.sum(liquidityShares)
+
+  const weights = liquidityShares.map((s, i) => ({
+    weight: s / shareSum,
+    providerId: liquidities[i].userId,
+  }))
+
+  const userWeights = _.groupBy(weights, (w) => w.providerId)
+  const totalUserWeights = _.mapValues(userWeights, (userWeight) =>
+    _.sumBy(userWeight, (w) => w.weight)
+  )
+  return totalUserWeights
 }
 
 // export function removeCpmmLiquidity(
