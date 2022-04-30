@@ -9,22 +9,40 @@ import { User } from '../../common/user'
 import { ClickEvent } from '../../common/tracking'
 import { getWordScores } from '../../common/recommended-contracts'
 import { batchedWaitAll } from '../../common/util/promise'
+import { callCloudFunction } from './call-cloud-function'
 
 const firestore = admin.firestore()
 
 export const updateRecommendations = functions.pubsub
   .schedule('every 24 hours')
   .onRun(async () => {
+    const users = await getValues<User>(firestore.collection('users'))
+
+    const batchSize = 100
+    const userBatches: User[][] = []
+    for (let i = 0; i < users.length; i += batchSize) {
+      userBatches.push(users.slice(i, i + batchSize))
+    }
+
+    for (const batch of userBatches) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      callCloudFunction('updateRecommendationsBatch', { users: batch })
+    }
+  })
+
+export const updateRecommendationsBatch = functions.https.onCall(
+  async (data: { users: User[] }) => {
+    const { users } = data
+
     const contracts = await getValues<Contract>(
       firestore.collection('contracts')
     )
 
-    const users = await getValues<User>(firestore.collection('users'))
-
     await batchedWaitAll(
       users.map((user) => () => updateWordScores(user, contracts))
     )
-  })
+  }
+)
 
 export const updateWordScores = async (user: User, contracts: Contract[]) => {
   const [bets, viewCounts, clicks] = await Promise.all([

@@ -9,10 +9,7 @@ import { User } from '../../../common/user'
 import { batchedWaitAll } from '../../../common/util/promise'
 import { Contract } from '../../../common/contract'
 import { updateWordScores } from '../update-recommendations'
-import {
-  getFeedContracts,
-  updateFeed as updateUserFeed,
-} from '../update-user-feed'
+import { getFeedContracts, doUserFeedUpdate } from '../update-user-feed'
 
 const firestore = admin.firestore()
 
@@ -31,7 +28,7 @@ async function updateFeed() {
       console.log('Updating recs for', user.username)
       await updateWordScores(user, contracts)
       console.log('Updating feed for', user.username)
-      await updateUserFeed(user, feedContracts)
+      await doUserFeedUpdate(user, feedContracts)
     })
   )
 }

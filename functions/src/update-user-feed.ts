@@ -14,21 +14,32 @@ import {
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
-import { batchedWaitAll } from '../../common/util/promise'
 import { getContractScore } from '../../common/recommended-contracts'
+import { callCloudFunction } from './call-cloud-function'
 
 const firestore = admin.firestore()
 
 const MAX_FEED_CONTRACTS = 75
 
-export const updateUserFeed = functions.pubsub
+export const updateFeed = functions.pubsub
   .schedule('every 60 minutes')
   .onRun(async () => {
     const contracts = await getFeedContracts()
     const users = await getValues<User>(firestore.collection('users'))
 
-    await batchedWaitAll(users.map((user) => () => updateFeed(user, contracts)))
+    for (const user of users) {
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      callCloudFunction('updateUserFeed', { user, contracts })
+    }
   })
+
+export const updateUserFeed = functions.https.onCall(
+  async (data: { contracts: Contract[]; user: User }) => {
+    const { user, contracts } = data
+
+    await doUserFeedUpdate(user, contracts)
+  }
+)
 
 export async function getFeedContracts() {
   // Get contracts bet on or created in last week.
@@ -56,7 +67,7 @@ export async function getFeedContracts() {
   return contracts
 }
 
-export const updateFeed = async (user: User, contracts: Contract[]) => {
+export const doUserFeedUpdate = async (user: User, contracts: Contract[]) => {
   const userCacheCollection = firestore.collection(
     `private-users/${user.id}/cache`
   )
