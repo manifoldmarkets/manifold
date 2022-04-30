@@ -30,7 +30,7 @@ export const charities: Charity[] = [
     tags: ['Featured'] as CharityTag[],
   },
   {
-    name: 'QURI',
+    name: 'The Quantified Uncertainty Research Institute',
     website: 'https://quantifieduncertainty.org/',
     preview:
       'A new initiative to advance forecasting and epistemics with the aim of improving the long-term future of humanity.',
@@ -55,24 +55,6 @@ export const charities: Charity[] = [
     - Projects that directly contribute to reducing existential risks through technical research, policy analysis, advocacy, and/or demonstration projects
     - Training for researchers or practitioners who work to mitigate existential risks, or help with relevant recruitment efforts, or infrastructure for people working on longtermist projects
     - Promoting long-term thinking`,
-    tags: ['Featured'] as CharityTag[],
-  },
-  {
-    name: 'ARC',
-    website: 'https://alignment.org/',
-    photo: 'https://i.imgur.com/Hwg8OMP.png',
-    preview: 'Align future machine learning systems with human interests.',
-    description: `ARC is a non-profit research organization whose mission is to align future machine learning systems with human interests. Its current work focuses on developing an alignment strategy that could be adopted in industry today while scaling gracefully to future ML systems. Right now Paul Christiano and Mark Xu are researchers and Kyle Scott handles operations.
-
-What is “alignment”? ML systems can exhibit goal-directed behavior, but it is difficult to understand or control what they are “trying” to do. Powerful models could cause harm if they were trying to manipulate and deceive humans. The goal of intent alignment is to instead train these models to be helpful and honest.
-
-Motivation: We believe that modern ML techniques would lead to severe misalignment if scaled up to large enough computers and datasets. Practitioners may be able to adapt before these failures have catastrophic consequences, but we could reduce the risk by adopting scalable methods further in advance.
-
-What we’re working on: The best way to understand our research priorities and methodology is probably to read our report on Eliciting Latent Knowledge. At a high level, we’re trying to figure out how to train ML systems to answer questions by straightforwardly “translating” their beliefs into natural language rather than by reasoning about what a human wants to hear.
-
-Methodology: We’re unsatisfied with an algorithm if we can see any plausible story about how it eventually breaks down, which means that we can rule out most algorithms on paper without ever implementing them. The cost of this approach is that it may completely miss strategies that exploit important structure in realistic ML models; the benefit is that you can consider lots of ideas quickly. (More)
-
-Future plans: We expect to focus on similar theoretical problems in alignment until we either become more pessimistic about tractability or ARC grows enough to branch out into other areas. Over the long term we are likely to work on a combination of theoretical and empirical alignment research, collaborations with industry labs, alignment forecasting, and ML deployment policy.`,
     tags: ['Featured'] as CharityTag[],
   },
   {
@@ -130,6 +112,39 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
       'We specialise in the prevention, control and treatment of malaria and other communicable diseases.',
     description:
       'We are dedicated to ensuring our work is supported by strong evidence and remains grounded in the lessons we learn through implementation. We explore beyond current practice, to try out innovative ways – through research, implementation and policy development – to achieve effective and sustainable disease management and control.',
+  },
+  {
+    name: 'ARC',
+    website: 'https://alignment.org/',
+    photo: 'https://i.imgur.com/Hwg8OMP.png',
+    preview: 'Align future machine learning systems with human interests.',
+    description: `ARC is a non-profit research organization whose mission is to align future machine learning systems with human interests. Its current work focuses on developing an alignment strategy that could be adopted in industry today while scaling gracefully to future ML systems. Right now Paul Christiano and Mark Xu are researchers and Kyle Scott handles operations.
+
+What is “alignment”? ML systems can exhibit goal-directed behavior, but it is difficult to understand or control what they are “trying” to do. Powerful models could cause harm if they were trying to manipulate and deceive humans. The goal of intent alignment is to instead train these models to be helpful and honest.
+
+Motivation: We believe that modern ML techniques would lead to severe misalignment if scaled up to large enough computers and datasets. Practitioners may be able to adapt before these failures have catastrophic consequences, but we could reduce the risk by adopting scalable methods further in advance.
+
+What we’re working on: The best way to understand our research priorities and methodology is probably to read our report on Eliciting Latent Knowledge. At a high level, we’re trying to figure out how to train ML systems to answer questions by straightforwardly “translating” their beliefs into natural language rather than by reasoning about what a human wants to hear.
+
+Methodology: We’re unsatisfied with an algorithm if we can see any plausible story about how it eventually breaks down, which means that we can rule out most algorithms on paper without ever implementing them. The cost of this approach is that it may completely miss strategies that exploit important structure in realistic ML models; the benefit is that you can consider lots of ideas quickly. (More)
+
+Future plans: We expect to focus on similar theoretical problems in alignment until we either become more pessimistic about tractability or ARC grows enough to branch out into other areas. Over the long term we are likely to work on a combination of theoretical and empirical alignment research, collaborations with industry labs, alignment forecasting, and ML deployment policy.`,
+  },
+  {
+    name: 'The Center for the Study of Partisanship and Ideology',
+    website: 'https://cspicenter.org/',
+    photo: 'https://cspicenter.org/wp-content/uploads/2020/02/CSPI.png',
+    preview:
+      'Support and fund research on how ideology and government policy contribute to scientific, technological, and social progress.',
+    description: `Over the last few decades, scientific and technological progress have stagnated. Scientists conduct more research than ever before, but groundbreaking innovation is scarce. At the same time, identity politics and political polarization have reached new extremes, and social trends such as family stability and crime are worse than in previous decades and in some cases moving in the wrong direction. What explains these trends, and how can we reverse them?
+
+    Much of the blame lies with the institutions we rely on for administration, innovation, and leadership. Instead of forward-looking governments, we have short-sighted politicians and bloated bureaucracies. Instead of real experts with proven track records, we have so-called ‘experts’ who appeal to the authority of their credentials. Instead of political leaders willing to face facts and make tough tradeoffs, we have politicians who appeal to ignorance and defer responsibility.
+    
+    To fix our institutions, we need to rethink them from the ground up. That is why CSPI supports and funds research into the administrative systems, organizational structures, and political ideologies of modern governance. Only by understanding what makes these systems so often dysfunctional can we change them for the better.
+    
+    CSPI believes that governments should be accountable to the populace as a whole, not special interest groups. We think experts should have greater say in public policy, but that there should be different standards for what qualifies as “expertise.” We want to end scientific and technological stagnation and usher in a new era of growth and innovation.
+    
+    We are interested in funding and supporting research that can speak to these issues in the social sciences through grants and fellowships. CSPI particularly seek outs work that is unlikely to receive support elsewhere. See our home page for more about the kinds of research we are particularly interested in funding.`,
   },
   {
     name: 'Faunalytics',
