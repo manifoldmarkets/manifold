@@ -38,38 +38,6 @@ export const charities: Charity[] = [
     tags: ['Featured'] as CharityTag[],
   },
   {
-    name: 'Faunalytics',
-    website: 'https://faunalytics.org/',
-    ein: '01-0686889',
-    photo:
-      'https://animalcharityevaluators.org/wp-content/uploads/2016/08/logo-faunalytics2400x2400-200x200@2x.jpg',
-    preview:
-      'Faunalytics conducts research and shares knowledge to help advocates help animals effectively.',
-    description:
-      "Faunalytics' mission is to empower animal advocates with access to research, analysis, strategies, and messages that maximize their effectiveness to reduce animal suffering.\n Animals need you, and you need data. We conduct essential research, maintain an online research library, and directly support advocates and organizations in their work to save lives. The range of data we offer helps our movement understand how people think about and respond to advocacy, providing advocates with the best strategies to inspire change for animals. ",
-  },
-  {
-    name: 'The Humane League',
-    website: 'https://thehumaneleague.org/',
-    ein: '04-3817491',
-    photo:
-      'https://animalcharityevaluators.org/wp-content/uploads/2019/03/thl-mended-heart-logo@2x-200x200@2x.jpg',
-    preview:
-      'We exist to end the abuse of animals raised for food by influencing the policies of the world’s biggest companies, demanding legislation, and empowering others to take action and leave animals off their plates',
-    description:
-      'The Humane League (THL) currently operates in the U.S., Mexico, the U.K., and Japan, where they work to improve animal welfare standards through grassroots campaigns, movement building, veg*n advocacy, research, and advocacy training, as well as through corporate, media, and community outreach. They work to build the animal advocacy movement internationally through the Open Wing Alliance (OWA), a coalition founded by THL whose mission is to end the use of battery cages globally.',
-  },
-  {
-    name: 'Wild Animal Initiative',
-    website: 'https://www.wildanimalinitiative.org/',
-    ein: '82-2281466',
-    photo:
-      'https://animalcharityevaluators.org/wp-content/uploads/2020/11/WAI-logo_square-gray-on-teal-1-630x630.png',
-    preview: 'We want to make life better for wild animals.',
-    description:
-      'Wild Animal Initiative (WAI) currently operates in the U.S., where they work to strengthen the animal advocacy movement through creating an academic field dedicated to wild animal welfare. They compile literature reviews, write theoretical and opinion articles, and publish research results on their website and/or in peer-reviewed journals. WAI focuses on identifying and sharing possible research avenues and connecting with more established fields. They also work with researchers from various academic and non-academic institutions to identify potential collaborators, and they recently launched a grant assistance program.',
-  },
-  {
     name: 'Give Directly',
     website: 'https://www.givedirectly.org/',
     ein: '27-1661997',
@@ -110,6 +78,38 @@ export const charities: Charity[] = [
       'We specialise in the prevention, control and treatment of malaria and other communicable diseases.',
     description:
       'We are dedicated to ensuring our work is supported by strong evidence and remains grounded in the lessons we learn through implementation. We explore beyond current practice, to try out innovative ways – through research, implementation and policy development – to achieve effective and sustainable disease management and control.',
+  },
+  {
+    name: 'Faunalytics',
+    website: 'https://faunalytics.org/',
+    ein: '01-0686889',
+    photo:
+      'https://animalcharityevaluators.org/wp-content/uploads/2016/08/logo-faunalytics2400x2400-200x200@2x.jpg',
+    preview:
+      'Faunalytics conducts research and shares knowledge to help advocates help animals effectively.',
+    description:
+      "Faunalytics' mission is to empower animal advocates with access to research, analysis, strategies, and messages that maximize their effectiveness to reduce animal suffering.\n Animals need you, and you need data. We conduct essential research, maintain an online research library, and directly support advocates and organizations in their work to save lives. The range of data we offer helps our movement understand how people think about and respond to advocacy, providing advocates with the best strategies to inspire change for animals. ",
+  },
+  {
+    name: 'The Humane League',
+    website: 'https://thehumaneleague.org/',
+    ein: '04-3817491',
+    photo:
+      'https://animalcharityevaluators.org/wp-content/uploads/2019/03/thl-mended-heart-logo@2x-200x200@2x.jpg',
+    preview:
+      'We exist to end the abuse of animals raised for food by influencing the policies of the world’s biggest companies, demanding legislation, and empowering others to take action and leave animals off their plates',
+    description:
+      'The Humane League (THL) currently operates in the U.S., Mexico, the U.K., and Japan, where they work to improve animal welfare standards through grassroots campaigns, movement building, veg*n advocacy, research, and advocacy training, as well as through corporate, media, and community outreach. They work to build the animal advocacy movement internationally through the Open Wing Alliance (OWA), a coalition founded by THL whose mission is to end the use of battery cages globally.',
+  },
+  {
+    name: 'Wild Animal Initiative',
+    website: 'https://www.wildanimalinitiative.org/',
+    ein: '82-2281466',
+    photo:
+      'https://animalcharityevaluators.org/wp-content/uploads/2020/11/WAI-logo_square-gray-on-teal-1-630x630.png',
+    preview: 'We want to make life better for wild animals.',
+    description:
+      'Wild Animal Initiative (WAI) currently operates in the U.S., where they work to strengthen the animal advocacy movement through creating an academic field dedicated to wild animal welfare. They compile literature reviews, write theoretical and opinion articles, and publish research results on their website and/or in peer-reviewed journals. WAI focuses on identifying and sharing possible research avenues and connecting with more established fields. They also work with researchers from various academic and non-academic institutions to identify potential collaborators, and they recently launched a grant assistance program.',
   },
   {
     name: 'New Incentives',
