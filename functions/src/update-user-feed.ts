@@ -81,7 +81,7 @@ export const updateFeed = async (user: User, contracts: Contract[]) => {
     ([_, score]) => score
   ).reverse()
 
-  console.log(sortedContracts.map(([c, score]) => c.question + ': ' + score))
+  // console.log(sortedContracts.map(([c, score]) => c.question + ': ' + score))
 
   const feedContracts = sortedContracts
     .slice(0, MAX_FEED_CONTRACTS)
