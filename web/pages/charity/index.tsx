@@ -6,7 +6,6 @@ import { Col } from '../../components/layout/col'
 import { Page } from '../../components/page'
 import { Title } from '../../components/title'
 
-// TODO: Fetch amount raised.
 const charities = charityList.map((charity) => ({
   ...charity,
   raised: 4001,
@@ -40,9 +39,7 @@ export default function Charity() {
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
           {filterCharities.map((charity) => (
-            <div key={charity.name}>
-              <CharityCard charity={charity} />
-            </div>
+            <CharityCard charity={charity} key={charity.name} />
           ))}
         </div>
         {filterCharities.length === 0 && (
