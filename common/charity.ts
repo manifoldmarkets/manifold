@@ -160,6 +160,7 @@ export const charities: Charity[] = [
   {
     name: 'UNICEF USA',
     website: 'https://www.unicefusa.org/',
+    photo: 'https://www.unicefusa.org/sites/default/files/UNICEFUSA_DIG_C.svg',
     ein: '13-1760110',
     preview:
       "UNICEF USA helps save and protect the world's most vulnerable children.",
@@ -267,6 +268,8 @@ export const charities: Charity[] = [
   {
     name: 'ALLFED',
     website: 'https://allfed.info/',
+    photo:
+      'https://images1.the-dots.com/1860424/allfed-logo-1.png?p=projectImageFullJpg',
     ein: '27-6601178',
     preview: 'Feeding everyone no matter what.',
     description:
