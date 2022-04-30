@@ -16,8 +16,10 @@ export type Manalink = {
   // If not set, the link can be used infinitely
   maxUses?: number
 
-  // All past usages of this link
-  claims: Claim[]
+  // Successful redemptions of the link
+  successes: Claim[]
+  // Failed redemptions of the link
+  failures: Claim[]
 }
 
 type Claim = {
