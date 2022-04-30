@@ -101,8 +101,8 @@ function scoreContract(
 ) {
   const recommendationScore = getContractScore(contract, wordScores)
   const activityScore = getActivityScore(contract, viewTime)
-  const lastViewedScore = getLastViewedScore(viewTime)
-  return recommendationScore * activityScore * lastViewedScore
+  // const lastViewedScore = getLastViewedScore(viewTime)
+  return recommendationScore * activityScore
 }
 
 function getActivityScore(contract: Contract, viewTime: number | undefined) {
