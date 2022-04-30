@@ -51,7 +51,10 @@ export const transact = functions
           return { status: 'error', message: 'User not found' }
         }
         const toUser = toSnap.data() as User
-        transaction.update(toDoc, { balance: toUser.balance + amount })
+        transaction.update(toDoc, {
+          balance: toUser.balance + amount,
+          totalDeposits: toUser.totalDeposits + amount,
+        })
       }
 
       const newTxnDoc = firestore.collection(`txns/`).doc()
@@ -73,7 +76,10 @@ export const transact = functions
       })
 
       transaction.create(newTxnDoc, txn)
-      transaction.update(fromDoc, { balance: fromUser.balance - amount })
+      transaction.update(fromDoc, {
+        balance: fromUser.balance - amount,
+        totalDeposits: fromUser.totalDeposits - amount,
+      })
 
       return { status: 'success', txn }
     })
