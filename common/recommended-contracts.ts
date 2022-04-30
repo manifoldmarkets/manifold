@@ -142,36 +142,18 @@ export const getWordScores = (
   return normalizedWordScores
 }
 
-export function getContractScores(
-  contracts: Contract[],
+export function getContractScore(
+  contract: Contract,
   wordScores: { [word: string]: number }
 ) {
-  const scorePairs = contracts.map((contract) => {
-    const wordFrequency = contractToWordFrequency(contract)
-
-    const score = _.sumBy(Object.keys(wordFrequency), (word) => {
-      const wordFreq = wordFrequency[word] ?? 0
-      const weight = wordScores[word] ?? 0
-      return wordFreq * weight
-    })
-
-    return [contract, score] as [Contract, number]
+  const wordFrequency = contractToWordFrequency(contract)
+  const score = _.sumBy(Object.keys(wordFrequency), (word) => {
+    const wordFreq = wordFrequency[word] ?? 0
+    const weight = wordScores[word] ?? 0
+    return wordFreq * weight
   })
 
-  /*
-  const questionPairs = _.sortBy(
-    scorePairs.map(
-      ([contract, score]) => [contract.question, score] as [string, number]
-    ),
-    ([, score]) => -score
-  )
-
-  console.log('score', questionPairs.slice(0, 100), questionPairs.slice(-100))
-  */
-
-  return _.fromPairs(
-    scorePairs.map(([contract, score]) => [contract.id, score])
-  )
+  return score
 }
 
 // Caluculate Term Frequency-Inverse Document Frequency (TF-IDF):

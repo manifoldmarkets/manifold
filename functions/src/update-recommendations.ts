@@ -7,10 +7,7 @@ import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import { User } from '../../common/user'
 import { ClickEvent } from '../../common/tracking'
-import {
-  getContractScores,
-  getWordScores,
-} from '../../common/recommended-contracts'
+import { getWordScores } from '../../common/recommended-contracts'
 import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
@@ -25,14 +22,11 @@ export const updateRecommendations = functions.pubsub
     const users = await getValues<User>(firestore.collection('users'))
 
     await batchedWaitAll(
-      users.map((user) => () => updateUserRecommendations(user, contracts))
+      users.map((user) => () => updateWordScores(user, contracts))
     )
   })
 
-export const updateUserRecommendations = async (
-  user: User,
-  contracts: Contract[]
-) => {
+export const updateWordScores = async (user: User, contracts: Contract[]) => {
   const [bets, viewCounts, clicks] = await Promise.all([
     getValues<Bet>(
       firestore.collectionGroup('bets').where('userId', '==', user.id)
@@ -50,11 +44,9 @@ export const updateUserRecommendations = async (
   ])
 
   const wordScores = getWordScores(contracts, viewCounts ?? {}, clicks, bets)
-  const contractScores = getContractScores(contracts, wordScores)
 
   const cachedCollection = firestore.collection(
     `private-users/${user.id}/cache`
   )
   await cachedCollection.doc('wordScores').set(wordScores)
-  await cachedCollection.doc('contractScores').set(contractScores)
 }

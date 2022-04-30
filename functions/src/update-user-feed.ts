@@ -15,6 +15,7 @@ import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
 import { batchedWaitAll } from '../../common/util/promise'
+import { getContractScore } from '../../common/recommended-contracts'
 
 const firestore = admin.firestore()
 
@@ -59,27 +60,17 @@ export const updateFeed = async (user: User, contracts: Contract[]) => {
   const userCacheCollection = firestore.collection(
     `private-users/${user.id}/cache`
   )
-  const [recommendationScores, lastViewedTime] = await Promise.all([
-    getValue<{ [contractId: string]: number }>(
-      userCacheCollection.doc('contractScores')
-    ),
+  const [wordScores, lastViewedTime] = await Promise.all([
+    getValue<{ [word: string]: number }>(userCacheCollection.doc('wordScores')),
     getValue<{ [contractId: string]: number }>(
       userCacheCollection.doc('lastViewTime')
     ),
   ]).then((dicts) => dicts.map((dict) => dict ?? {}))
 
-  const averageRecScore =
-    1 +
-    _.sumBy(
-      contracts.filter((c) => recommendationScores[c.id] !== undefined),
-      (c) => recommendationScores[c.id]
-    ) /
-      (contracts.length + 1)
-
   const scoredContracts = contracts.map((contract) => {
     const score = scoreContract(
       contract,
-      recommendationScores[contract.id] ?? averageRecScore,
+      wordScores,
       lastViewedTime[contract.id]
     )
     return [contract, score] as [Contract, number]
@@ -105,12 +96,13 @@ export const updateFeed = async (user: User, contracts: Contract[]) => {
 
 function scoreContract(
   contract: Contract,
-  recommendationScore: number,
+  wordScores: { [word: string]: number },
   viewTime: number | undefined
 ) {
-  const lastViewedScore = getLastViewedScore(viewTime)
+  const recommendationScore = getContractScore(contract, wordScores)
   const activityScore = getActivityScore(contract, viewTime)
-  return recommendationScore * lastViewedScore * activityScore
+  const lastViewedScore = getLastViewedScore(viewTime)
+  return recommendationScore * activityScore * lastViewedScore
 }
 
 function getActivityScore(contract: Contract, viewTime: number | undefined) {

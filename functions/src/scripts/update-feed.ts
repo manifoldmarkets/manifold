@@ -8,7 +8,7 @@ import { getValues } from '../utils'
 import { User } from '../../../common/user'
 import { batchedWaitAll } from '../../../common/util/promise'
 import { Contract } from '../../../common/contract'
-import { updateUserRecommendations } from '../update-recommendations'
+import { updateWordScores } from '../update-recommendations'
 import {
   getFeedContracts,
   updateFeed as updateUserFeed,
@@ -23,13 +23,13 @@ async function updateFeed() {
   const feedContracts = await getFeedContracts()
   const users = await getValues<User>(
     firestore.collection('users')
-    //.where('username', '==', 'JamesGrugett')
+    // .where('username', '==', 'JamesGrugett')
   )
 
   await batchedWaitAll(
     users.map((user) => async () => {
       console.log('Updating recs for', user.username)
-      await updateUserRecommendations(user, contracts)
+      await updateWordScores(user, contracts)
       console.log('Updating feed for', user.username)
       await updateUserFeed(user, feedContracts)
     })
