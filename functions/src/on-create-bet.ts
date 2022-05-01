@@ -19,9 +19,10 @@ export const onCreateBet = functions.firestore
       throw new Error('Could not find contract corresponding with bet')
 
     const bet = change.data() as Bet
+    const lastBetTime = bet.createdTime
 
     await firestore
       .collection('contracts')
       .doc(contract.id)
-      .update({ lastBetTime: bet.createdTime })
+      .update({ lastBetTime, lastUpdatedTime: Date.now() })
   })
