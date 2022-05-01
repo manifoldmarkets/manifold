@@ -12,6 +12,7 @@ export interface Charity {
 
 type CharityTag = 'Featured' // | 'Health' | 'Poverty' | 'X-Risk' | 'Animal Welfare' | 'Policy'
 
+// Warning: 'name' is currently used as the slug and the txn toId for the charity.
 export const charities: Charity[] = [
   {
     name: '1Day Sooner',
@@ -30,10 +31,10 @@ export const charities: Charity[] = [
     tags: ['Featured'] as CharityTag[],
   },
   {
-    name: 'The Quantified Uncertainty Research Institute',
+    name: 'QURI',
     website: 'https://quantifieduncertainty.org/',
     preview:
-      'A new initiative to advance forecasting and epistemics with the aim of improving the long-term future of humanity.',
+      'The Quantified Uncertainty Research Institute advances forecasting and epistemics to improve the long-term future of humanity.',
     photo:
       'https://quantifieduncertainty.org/_next/image?url=https%3A%2F%2Fsuper-static-assets.s3.amazonaws.com%2F09bb1362-5e3f-4724-8ffd-f3235f67356f%2Fimages%2F6151ac3e-aed7-44c7-9827-399fe6e9222b.png&w=1920&q=80',
     description: `QURI researches systematic practices to specify and estimate the most important parameters for the most important or scalable decisions. Research areas include forecasting, epistemics, evaluations, ontology, and estimation.
