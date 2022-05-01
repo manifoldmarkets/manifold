@@ -5,6 +5,8 @@ import { ClickEvent } from './tracking'
 import { filterDefined } from './util/array'
 import { addObjects } from './util/object'
 
+export const MAX_FEED_CONTRACTS = 75
+
 export const getRecommendedContracts = (
   contractsById: { [contractId: string]: Contract },
   yourBetOnContractIds: string[]
@@ -146,6 +148,8 @@ export function getContractScore(
   contract: Contract,
   wordScores: { [word: string]: number }
 ) {
+  if (Object.keys(wordScores).length === 0) return 1
+
   const wordFrequency = contractToWordFrequency(contract)
   const score = _.sumBy(Object.keys(wordFrequency), (word) => {
     const wordFreq = wordFrequency[word] ?? 0

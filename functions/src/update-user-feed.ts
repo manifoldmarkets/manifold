@@ -14,12 +14,13 @@ import {
 import { Bet } from '../../common/bet'
 import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
-import { getContractScore } from '../../common/recommended-contracts'
+import {
+  getContractScore,
+  MAX_FEED_CONTRACTS,
+} from '../../common/recommended-contracts'
 import { callCloudFunction } from './call-cloud-function'
 
 const firestore = admin.firestore()
-
-const MAX_FEED_CONTRACTS = 75
 
 export const updateFeed = functions.pubsub
   .schedule('every 60 minutes')

@@ -94,6 +94,8 @@ export const useUpdatedContracts = (contracts: Contract[] | undefined) => {
       })
     })
 
+    triggerUpdate((n) => n + 1)
+
     return () => {
       disposes.forEach((dispose) => dispose())
     }

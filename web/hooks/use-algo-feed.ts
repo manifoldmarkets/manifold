@@ -8,6 +8,10 @@ import { trackLatency } from '../lib/firebase/tracking'
 import { User } from '../../common/user'
 import { getUserFeed } from '../lib/firebase/users'
 import { useUpdatedContracts } from './use-contracts'
+import {
+  getRecentBetsAndComments,
+  getTopWeeklyContracts,
+} from '../lib/firebase/contracts'
 
 type feed = {
   contract: Contract
@@ -23,7 +27,9 @@ export const useAlgoFeed = (user: User | null | undefined) => {
   useEffect(() => {
     if (user) {
       getUserFeed(user.id).then((feed) => {
-        setFeed(feed)
+        if (feed.length === 0) {
+          getDefaultFeed().then((feed) => setFeed(feed))
+        } else setFeed(feed)
 
         trackLatency('feed', getTime())
         console.log('feed load time', getTime())
@@ -43,4 +49,12 @@ const useUpdateFeed = (feed: feed | undefined) => {
         contract: contracts[i],
       }))
     : undefined
+}
+
+const getDefaultFeed = async () => {
+  const contracts = await getTopWeeklyContracts()
+  const feed = await Promise.all(
+    contracts.map((c) => getRecentBetsAndComments(c))
+  )
+  return feed
 }
