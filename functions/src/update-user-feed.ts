@@ -28,10 +28,12 @@ export const updateFeed = functions.pubsub
     const contracts = await getFeedContracts()
     const users = await getValues<User>(firestore.collection('users'))
 
-    for (const user of users) {
-      await new Promise((resolve) => setTimeout(resolve, 10))
-      callCloudFunction('updateUserFeed', { user, contracts })
-    }
+    await Promise.all(
+      users.map(async (user, i) => {
+        await new Promise((resolve) => setTimeout(resolve, 10 * i))
+        await callCloudFunction('updateUserFeed', { user, contracts })
+      })
+    )
   })
 
 export const updateUserFeed = functions.https.onCall(
