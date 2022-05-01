@@ -23,8 +23,11 @@ import _ from 'lodash'
 import { app } from './init'
 import { PrivateUser, User } from '../../../common/user'
 import { createUser } from './api-call'
-import { getValues, listenForValue, listenForValues } from './utils'
+import { getValue, getValues, listenForValue, listenForValues } from './utils'
 import { DAY_MS } from '../../../common/util/time'
+import { Contract } from './contracts'
+import { Bet } from './bets'
+import { Comment } from './comments'
 
 export type { User }
 
@@ -206,4 +209,16 @@ export async function getDailyNewUsers(
   }
 
   return usersByDay
+}
+
+export async function getUserFeed(userId: string) {
+  const feedDoc = doc(db, 'private-users', userId, 'cache', 'feed')
+  const userFeed = await getValue<{
+    feed: {
+      contract: Contract
+      recentBets: Bet[]
+      recentComments: Comment[]
+    }[]
+  }>(feedDoc)
+  return userFeed?.feed ?? []
 }
