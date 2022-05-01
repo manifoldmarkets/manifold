@@ -25,22 +25,27 @@ const firestore = admin.firestore()
 export const updateFeed = functions.pubsub
   .schedule('every 60 minutes')
   .onRun(async () => {
-    const contracts = await getFeedContracts()
     const users = await getValues<User>(firestore.collection('users'))
 
+    const batchSize = 100
+    const userBatches: User[][] = []
+    for (let i = 0; i < users.length; i += batchSize) {
+      userBatches.push(users.slice(i, i + batchSize))
+    }
+
     await Promise.all(
-      users.map(async (user, i) => {
-        await new Promise((resolve) => setTimeout(resolve, 10 * i))
-        await callCloudFunction('updateUserFeed', { user, contracts })
-      })
+      userBatches.map(async (users) =>
+        callCloudFunction('updateFeedBatch', { users })
+      )
     )
   })
 
-export const updateUserFeed = functions.https.onCall(
-  async (data: { contracts: Contract[]; user: User }) => {
-    const { user, contracts } = data
+export const updateFeedBatch = functions.https.onCall(
+  async (data: { users: User[] }) => {
+    const { users } = data
+    const contracts = await getFeedContracts()
 
-    await doUserFeedUpdate(user, contracts)
+    await Promise.all(users.map((user) => doUserFeedUpdate(user, contracts)))
   }
 )
 

@@ -25,10 +25,9 @@ export const updateRecommendations = functions.pubsub
     }
 
     await Promise.all(
-      userBatches.map(async (batch, i) => {
-        await new Promise((resolve) => setTimeout(resolve, 100 * i))
-        await callCloudFunction('updateRecommendationsBatch', { users: batch })
-      })
+      userBatches.map((batch) =>
+        callCloudFunction('updateRecommendationsBatch', { users: batch })
+      )
     )
   })
 
