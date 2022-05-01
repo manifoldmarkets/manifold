@@ -18,12 +18,19 @@ export const onCreateComment = functions.firestore
     }
 
     const contract = await getContract(contractId)
-    if (!contract) return
+    if (!contract)
+      throw new Error('Could not find contract corresponding with comment')
 
     const comment = change.data() as Comment
+    const lastCommentTime = comment.createdTime
 
     const commentCreator = await getUser(comment.userId)
-    if (!commentCreator) return
+    if (!commentCreator) throw new Error('Could not find contract creator')
+
+    await firestore
+      .collection('contracts')
+      .doc(contract.id)
+      .update({ lastCommentTime, lastUpdatedTime: Date.now() })
 
     let bet: Bet | undefined
     let answer: Answer | undefined

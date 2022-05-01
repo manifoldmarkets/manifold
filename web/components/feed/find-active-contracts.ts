@@ -9,11 +9,7 @@ const MAX_ACTIVE_CONTRACTS = 75
 // TODO: Maybe store last activity time directly in the contract?
 // Pros: simplifies this code; cons: harder to tweak "activity" definition later
 function lastActivityTime(contract: Contract) {
-  return Math.max(
-    contract.resolutionTime || 0,
-    contract.lastUpdatedTime,
-    contract.createdTime
-  )
+  return Math.max(contract.resolutionTime || 0, contract.createdTime)
 }
 
 // Types of activity to surface:
