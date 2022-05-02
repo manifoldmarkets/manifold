@@ -22,9 +22,8 @@ export function listenForCharityTxns(
   return listenForValues<Txn>(getCharityQuery(charityId), setTxns)
 }
 
-const getCharitiesQuery = () =>
-  query(txnCollection, where('toType', '==', 'CHARITY'))
+const charitiesQuery = query(txnCollection, where('toType', '==', 'CHARITY'))
 
 export function listenForAllCharityTxns(setTxns: (txns: Txn[]) => void) {
-  return listenForValues<Txn>(getCharitiesQuery(), setTxns)
+  return listenForValues<Txn>(charitiesQuery, setTxns)
 }
