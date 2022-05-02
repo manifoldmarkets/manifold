@@ -42,6 +42,7 @@ function CharityPage(props: { charity: Charity }) {
   const user = useUser()
 
   const txns = useCharityTxns(charity.id)
+  const newToOld = _.sortBy(txns, (txn) => -txn.createdTime)
   const totalRaised = _.sumBy(txns, (txn) => txn.amount)
   const fromYou = _.sumBy(
     txns.filter((txn) => txn.fromId === user?.id),
@@ -92,7 +93,7 @@ function CharityPage(props: { charity: Charity }) {
           </Row>
           <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
           <Blurb text={description} />
-          {txns.map((txn) => (
+          {newToOld.map((txn) => (
             <Donation key={txn.id} txn={txn} />
           ))}
         </Col>
