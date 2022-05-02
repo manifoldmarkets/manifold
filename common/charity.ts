@@ -19,8 +19,7 @@ export const charities: Charity[] = [
     website: 'https://www.1daysooner.org/',
     preview:
       'Accelerating the development of each vaccine by even a couple of days via COVID-19 human challenge trials could save thousands of lives.',
-    photo:
-      'https://images.squarespace-cdn.com/content/v1/5f5f8496d1d7713486b6075a/666cbb5a-5335-4323-b9ea-b764edc826e1/OFFICIAL+1Day+Sooner+Logo.png',
+    photo: 'https://i.imgur.com/bUDdzUE.png',
     description: `1Day Sooner is a non-profit that advocates on behalf of COVID-19 challenge trial volunteers.
       
     After a vaccine candidate is created in a lab, it is developed through a combination of pre-clinical evaluation and three phases of clinical trials that test its safety and efficacy. In traditional Phase III trials, participants receive the vaccine candidate or a placebo/active comparator, and efficacy is judged by comparing the prevalence of infection in the vaccine group and the placebo/comparator group, to test the hypothesis that significantly fewer participants in the vaccine group get infected. In these traditional trials, after receiving the treatment, participants return to their homes and their normal daily lives so as to test the treatment under real world conditions. Since only a small proportion of these participants may encounter the disease, it may take a large number of participants and a good deal of time for these trials to reveal differences between the vaccine and placebo groups.
@@ -35,8 +34,7 @@ export const charities: Charity[] = [
     website: 'https://quantifieduncertainty.org/',
     preview:
       'The Quantified Uncertainty Research Institute advances forecasting and epistemics to improve the long-term future of humanity.',
-    photo:
-      'https://quantifieduncertainty.org/_next/image?url=https%3A%2F%2Fsuper-static-assets.s3.amazonaws.com%2F09bb1362-5e3f-4724-8ffd-f3235f67356f%2Fimages%2F6151ac3e-aed7-44c7-9827-399fe6e9222b.png&w=1920&q=80',
+    photo: 'https://i.imgur.com/ZsSXPjH.png',
     description: `QURI researches systematic practices to specify and estimate the most important parameters for the most important or scalable decisions. Research areas include forecasting, epistemics, evaluations, ontology, and estimation.
     
     We emphasize technological solutions that can heavily scale in the next 5 to 30 years.
@@ -47,7 +45,7 @@ export const charities: Charity[] = [
   {
     name: 'Long-Term Future Fund',
     website: 'https://funds.effectivealtruism.org/funds/far-future',
-    photo: 'https://app.effectivealtruism.org/logo-funds.svg',
+    photo: 'https://i.imgur.com/C2qka9g.png',
     preview:
       'Positively influence the long-term trajectory of civilization by making grants that address global catastrophic risks.',
     description: `The Fund has a broad remit to make grants that promote, implement and advocate for longtermist ideas. Many of our grants aim to address potential risks from advanced artificial intelligence and to build infrastructure and advocate for longtermist projects. However, we welcome applications related to long-term institutional reform or other global catastrophic risks (e.g., pandemics or nuclear conflict).
@@ -61,7 +59,7 @@ export const charities: Charity[] = [
   {
     name: 'GiveWell Maximum Impact Fund',
     website: 'https://www.givewell.org/maximum-impact-fund',
-    photo: 'https://www.givewell.org/sites/all/themes/gw_basic/logo.png',
+    photo: 'https://i.imgur.com/xikuDMZ.png',
     preview:
       'We search for the charities that save or improve lives the most per dollar.',
     description: `
@@ -98,8 +96,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Give Directly',
     website: 'https://www.givedirectly.org/',
     ein: '27-1661997',
-    photo:
-      'https://www.givewell.org/sites/default/files/charity_logos/GiveDirectly.jpg',
+    photo: 'https://i.imgur.com/lrdxSyd.jpg',
     preview: 'Send money directly to people living in poverty.',
     description:
       'GiveDirectly is a nonprofit that lets donors like you send money directly to the world’s poorest households. We believe people living in poverty deserve the dignity to choose for themselves how best to improve their lives — cash enables that choice. Since 2009, we’ve delivered $500M+ in cash directly into the hands of over 1 million families living in poverty. We currently have operations in Kenya, Rwanda, Liberia, Malawi, Morocco, Mozambique, DRC, Uganda, and the United States.',
@@ -108,8 +105,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Hellen Keller International',
     website: 'https://www.hki.org/',
     ein: '13-5562162',
-    photo:
-      'https://www.ntd-ngonetwork.org/sites/nnn/files/content/organisation/logos/2020-01-28/v2_HKLogo_Primary_RGB.jpg',
+    photo: 'https://i.imgur.com/Dl97Abk.jpg',
     preview:
       'We envision a world where no one is deprived of the opportunity to live a healthy life – and reach their true potential.',
     description:
@@ -119,8 +115,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Against Malaria Foundation',
     website: 'https://www.againstmalaria.com/',
     ein: '20-3069841',
-    photo:
-      'https://media-exp1.licdn.com/dms/image/C4D0BAQFvdcum9KBNfg/company-logo_200_200/0?e=2159024400&v=beta&t=hxjJCKQkMp2irTOcuJEceW7x4l3c4PD7gYCQ6ulgYlg',
+    photo: 'https://i.imgur.com/F3JoZi9.png',
     preview: 'We help protect people from malaria.',
     description:
       'AMF (againstmalaria.com) provides funding for long-lasting insecticide-treated net (LLIN) distributions (for protection against malaria) in developing countries. There is strong evidence that distributing LLINs reduces child mortality and malaria cases. AMF conducts post-distribution surveys of completed distributions to determine whether LLINs have reached their intended destinations and how long they remain in good condition.',
@@ -128,8 +123,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
   {
     name: 'Rethink Charity',
     website: 'https://rethink.charity/',
-    photo:
-      'https://process.filestackapi.com/resize=width:600,height:315,fit:max/quality=value:90/jvYvq1JFQkOqo3J8hVcJ',
+    photo: 'https://i.imgur.com/Go7N7As.png',
     preview:
       'Providing vital support to high-impact charities and charitable projects.',
     description: `At Rethink Charity, we’re excited about improving the world by providing vital support to high-impact charities and charitable projects. We equip them with tools to boost their impact, through our projects that empower their donors with tax-efficient giving options and strategically coordinated matching opportunities.
@@ -143,8 +137,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Malaria Consortium',
     website: 'https://www.malariaconsortium.org/',
     ein: '98-0627052',
-    photo:
-      'https://www.malariaconsortium.org/website-2013/images_template/malaria_consortium_logo.png',
+    photo: 'https://i.imgur.com/LGwy9d8.png ',
     preview:
       'We specialise in the prevention, control and treatment of malaria and other communicable diseases.',
     description:
@@ -153,7 +146,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
   {
     name: 'The Center for the Study of Partisanship and Ideology',
     website: 'https://cspicenter.org/',
-    photo: 'https://cspicenter.org/wp-content/uploads/2020/02/CSPI.png',
+    photo: 'https://i.imgur.com/O88tkOW.png',
     preview:
       'Support and fund research on how ideology and government policy contribute to scientific, technological, and social progress.',
     description: `Over the last few decades, scientific and technological progress have stagnated. Scientists conduct more research than ever before, but groundbreaking innovation is scarce. At the same time, identity politics and political polarization have reached new extremes, and social trends such as family stability and crime are worse than in previous decades and in some cases moving in the wrong direction. What explains these trends, and how can we reverse them?
@@ -170,8 +163,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Faunalytics',
     website: 'https://faunalytics.org/',
     ein: '01-0686889',
-    photo:
-      'https://animalcharityevaluators.org/wp-content/uploads/2016/08/logo-faunalytics2400x2400-200x200@2x.jpg',
+    photo: 'https://i.imgur.com/3JXhuXl.jpg',
     preview:
       'Faunalytics conducts research and shares knowledge to help advocates help animals effectively.',
     description:
@@ -181,8 +173,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'The Humane League',
     website: 'https://thehumaneleague.org/',
     ein: '04-3817491',
-    photo:
-      'https://animalcharityevaluators.org/wp-content/uploads/2019/03/thl-mended-heart-logo@2x-200x200@2x.jpg',
+    photo: 'https://i.imgur.com/za9Rwon.jpg',
     preview:
       'We exist to end the abuse of animals raised for food by influencing the policies of the world’s biggest companies, demanding legislation, and empowering others to take action and leave animals off their plates',
     description:
@@ -192,8 +183,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Wild Animal Initiative',
     website: 'https://www.wildanimalinitiative.org/',
     ein: '82-2281466',
-    photo:
-      'https://animalcharityevaluators.org/wp-content/uploads/2020/11/WAI-logo_square-gray-on-teal-1-630x630.png',
+    photo: 'https://i.imgur.com/bOVUnDm.png',
     preview: 'We want to make life better for wild animals.',
     description:
       'Wild Animal Initiative (WAI) currently operates in the U.S., where they work to strengthen the animal advocacy movement through creating an academic field dedicated to wild animal welfare. They compile literature reviews, write theoretical and opinion articles, and publish research results on their website and/or in peer-reviewed journals. WAI focuses on identifying and sharing possible research avenues and connecting with more established fields. They also work with researchers from various academic and non-academic institutions to identify potential collaborators, and they recently launched a grant assistance program.',
@@ -202,8 +192,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'New Incentives',
     website: 'https://www.newincentives.org/',
     ein: '45-2368993',
-    photo:
-      'https://uploads-ssl.webflow.com/5f7c51bf9fac9b5ed62aa37b/5f7c51bf9fac9b85c42aa3df_Group%20344%20(1).svg',
+    photo: 'https://i.imgur.com/bYl4tk3.png',
     preview: 'Cash incentives to boost vaccination rates and save lives.',
     description:
       'New Incentives (newincentives.org) runs a conditional cash transfer (CCT) program in North West Nigeria which seeks to increase uptake of routine immunizations through cash transfers, raising public awareness of the benefits of vaccination and reducing the frequency of vaccine stockouts.',
@@ -212,8 +201,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'SCI foundation',
     website: 'https://schistosomiasiscontrolinitiative.org/',
     ein: '',
-    photo:
-      'https://images.easyfundraising.org.uk/cause/cropped/cause-logo-e99e0632a8a9572150fdcf3abf08ad45.png',
+    photo: 'https://i.imgur.com/sWD8zM5.png',
     preview:
       'SCI works with governments in sub-Saharan Africa to create or scale up programs that treat schistosomiasis and soil-transmitted helminthiasis ("deworming").',
     description:
@@ -223,8 +211,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Wikimedia Foundation',
     website: 'https://wikimediafoundation.org/',
     ein: '20-0049703',
-    photo:
-      'https://2.bp.blogspot.com/-jVseU39DW0s/VjmXVMOEEEI/AAAAAAAACK8/dwUP6sLqy-Q/s1600/wikimedia.png',
+    photo: 'https://i.imgur.com/klEzUbR.png',
     preview: 'We help everyone share in the sum of all knowledge.',
     description:
       'We are the people who keep knowledge free. There is an amazing community of people around the world that makes great projects like Wikipedia. We help them do that work. We take care of the technical infrastructure, the legal challenges, and the growing pains.',
@@ -233,8 +220,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Rainforest Trust',
     website: 'https://www.rainforesttrust.org/',
     ein: '13-3500609',
-    photo:
-      'https://ww1.prweb.com/prfiles/2019/05/29/16344590/Rrainforest%20Trust%20new%20logo%20tall-1%20copy.png',
+    photo: 'https://i.imgur.com/6MzS530.png',
     preview:
       'Rainforest Trust saves endangered wildlife and protects our planet by creating rainforest reserves through partnerships, community engagement and donor support.',
     description:
@@ -244,8 +230,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'The Nature Conservancy',
     website: 'https://www.nature.org/en-us/',
     ein: '53-0242652',
-    photo:
-      'https://mma.prnewswire.com/media/1140905/The_Nature_Conservancy_Logo.jpg?p=facebook',
+    photo: 'https://i.imgur.com/vjxkoGo.jpg',
     preview: 'A Future Where People and Nature Thrive',
     description:
       'The Nature Conservancy is a global environmental nonprofit working to create a world where people and nature can thrive. Founded in the U.S. through grassroots action in 1951, The Nature Conservancy has grown to become one of the most effective and wide-reaching environmental organizations in the world. Thanks to more than a million members and the dedicated efforts of our diverse staff and over 400 scientists, we impact conservation in 76 countries and territories: 37 by direct conservation impact and 39 through partners.',
@@ -254,7 +239,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Doctors Without Borders',
     website: 'https://www.doctorswithoutborders.org/',
     ein: '13-3433452',
-    photo: 'https://www.doctorswithoutborders.org/themes/custom/msf/logo.svg',
+    photo: 'https://i.imgur.com/xqhH9FE.png',
     preview:
       'We provide independent, impartial medical humanitarian assistance to the people who need it most.',
     description:
@@ -264,8 +249,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'World Wildlife Fund',
     website: 'https://www.worldwildlife.org/',
     ein: '52-1693387',
-    photo:
-      'https://www.worldwildlife.org/assets/structure/unique/logo-c562409bb6158bf64e5f8b1be066dbd5983d75f5ce7c9935a5afffbcc03f8e5d.png',
+    photo: 'https://i.imgur.com/hDADuqW.png',
     preview:
       'WWF works to sustain the natural world for the benefit of people and wildlife, collaborating with partners from local to global levels in nearly 100 countries.',
     description:
@@ -274,7 +258,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
   {
     name: 'UNICEF USA',
     website: 'https://www.unicefusa.org/',
-    photo: 'https://www.unicefusa.org/sites/default/files/UNICEFUSA_DIG_C.svg',
+    photo: 'https://i.imgur.com/9cxuvZi.png',
     ein: '13-1760110',
     preview:
       "UNICEF USA helps save and protect the world's most vulnerable children.",
@@ -285,8 +269,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Vitamin Angels',
     website: 'https://www.vitaminangels.org/',
     ein: '77-0485881',
-    photo:
-      'https://www.newhope.com/sites/newhope360.com/files/styles/article_featured_retina/public/vitamin-angels-logo.jpg?itok=pfNCPLE0',
+    photo: 'https://i.imgur.com/Mf35IOu.jpg',
     preview:
       'By improving access to vital nutrition, everyone gets an equal chance to grow, thrive, and prosper.',
     description:
@@ -296,7 +279,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Free Software Foundation',
     website: 'https://www.fsf.org/',
     ein: '04-2888848',
-    photo: 'https://www.gnu.org/graphics/logo-fsf.org.png',
+    photo: 'https://i.imgur.com/z87sFDE.png',
     preview:
       'The Free Software Foundation (FSF) is a nonprofit with a worldwide mission to promote computer user freedom.',
     description:
@@ -306,8 +289,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Direct Relief',
     website: 'https://www.directrelief.org/',
     ein: '95-1831116',
-    photo:
-      'https://www.ngoadvisor.net/wp-content/uploads/2016/02/DirectRelief_Logo_RGB-2-1920x576.png',
+    photo: 'https://i.imgur.com/QS7kHAU.png',
     preview:
       'Direct Relief is a humanitarian aid organization, active in all 50 states and more than 80 countries, with a mission to improve the health and lives of people affected by poverty or emergencies – without regard to politics, religion, or ability to pay.',
     description:
@@ -317,8 +299,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'World Resources Institute',
     website: 'https://www.wri.org/',
     ein: '52-1257057',
-    photo:
-      'https://www.americansecurityproject.org/wp-content/uploads/2016/11/WRI_logo_4c.png',
+    photo: 'https://i.imgur.com/Bi6MgYI.png',
     preview:
       'WRI is a global nonprofit organization that works with leaders in government, business and civil society to research, design, and carry out practical solutions that simultaneously improve people’s lives and ensure nature can thrive.',
     description:
@@ -328,8 +309,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'ProPublica',
     website: 'https://www.propublica.org/',
     ein: '14-2007220',
-    photo:
-      'https://seekvectorlogo.com/wp-content/uploads/2018/09/propublica-vector-logo.png',
+    photo: 'https://i.imgur.com/R5Vt3Pb.png',
     preview:
       'The mission: to expose abuses of power and betrayals of the public trust by government, business, and other institutions, using the moral force of investigative journalism to spur reform through the sustained spotlighting of wrongdoing.',
     description:
@@ -339,8 +319,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Dana-Farber Cancer Institute',
     website: 'https://www.dana-farber.org/',
     ein: '04-2263040',
-    photo:
-      'https://www.danafarbermasterclass.com/assets/images/DFCI-logo-lens-stacked.png',
+    photo: 'https://i.imgur.com/SQNn97p.png',
     preview:
       "For over 70 years, we've led the world by making life-changing breakthroughs in cancer research and patient care, providing the most advanced treatments available.",
     description:
@@ -350,8 +329,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Save The Children',
     website: 'https://www.savethechildren.org/',
     ein: '06-0726487',
-    photo:
-      'https://www.thisisclapham.co.uk/wp-content/uploads/2016/08/savethechildren.png',
+    photo: 'https://i.imgur.com/GngYPBI.png',
     preview:
       'Through the decades, Save the Children has continued to work to save children’s lives, and that’s still what we do today.',
     description:
@@ -361,8 +339,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'World Central Kitchen Incorporated',
     website: 'https://wck.org/',
     ein: '27-3521132',
-    photo:
-      'https://res.cloudinary.com/dktp1ybbx/image/upload/f_auto,fl_lossy,q_auto/v1560203222/organization/prod/924457/M0oxO9vaxO.png',
+    photo: 'https://i.imgur.com/te93MaY.png',
     preview:
       'WCK is first to the frontlines, providing meals in response to humanitarian, climate, and community crises. We build resilient food systems with locally led solutions.',
     description:
@@ -372,8 +349,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'The Johns Hopkins Center for Health Security',
     website: 'https://www.centerforhealthsecurity.org/',
     ein: '',
-    photo:
-      'https://www.centerforhealthsecurity.org/sebin/d/d/CHS.logo.horizontal.blue.png',
+    photo: 'https://i.imgur.com/gKZE2Xs.png',
     preview:
       'Our mission: to protect people’s health from epidemics and disasters and ensure that communities are resilient to major challenges.',
     description:
@@ -382,8 +358,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
   {
     name: 'ALLFED',
     website: 'https://allfed.info/',
-    photo:
-      'https://images1.the-dots.com/1860424/allfed-logo-1.png?p=projectImageFullJpg',
+    photo: 'https://i.imgur.com/p235vwF.jpg',
     ein: '27-6601178',
     preview: 'Feeding everyone no matter what.',
     description:

@@ -18,6 +18,7 @@ import { useCharityTxns } from '../../hooks/use-charity-txns'
 import { useWindowSize } from '../../hooks/use-window-size'
 import Confetti from 'react-confetti'
 import { Donation } from '../../components/charity/feed-items'
+import Image from 'next/image'
 
 export const manaToUSD = (mana: number) =>
   (mana / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -78,11 +79,9 @@ function CharityPage(props: { charity: Charity }) {
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
             {photo && (
-              <img
-                src={photo}
-                alt=""
-                className="w-40 rounded-2xl object-contain"
-              />
+              <div className="relative w-40 rounded-2xl">
+                <Image src={photo} alt="" layout="fill" objectFit="contain" />
+              </div>
             )}
             <Details
               charity={charity}
