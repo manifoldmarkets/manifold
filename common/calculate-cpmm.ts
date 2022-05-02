@@ -172,7 +172,7 @@ export function calculateCpmmSale(
   shares: number,
   outcome: string
 ) {
-  if (shares < 0) {
+  if (Math.round(shares) < 0) {
     throw new Error('Cannot sell non-positive shares')
   }
 
