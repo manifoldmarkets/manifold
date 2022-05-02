@@ -26,6 +26,7 @@ import {
   MINIMUM_ANTE,
 } from '../../common/antes'
 import { getNoneAnswer } from '../../common/answer'
+import { category, CATEGORY_LIST } from '../../common/categories'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })
@@ -35,6 +36,7 @@ export const createContract = functions
         question: string
         outcomeType: outcomeType
         description: string
+        category: category
         initialProb: number
         ante: number
         closeTime: number
@@ -48,7 +50,8 @@ export const createContract = functions
       const creator = await getUser(userId)
       if (!creator) return { status: 'error', message: 'User not found' }
 
-      let { question, description, initialProb, closeTime, tags } = data
+      let { question, description, initialProb, closeTime, tags, category } =
+        data
 
       if (!question || typeof question != 'string')
         return { status: 'error', message: 'Missing or invalid question field' }
@@ -58,6 +61,10 @@ export const createContract = functions
         return { status: 'error', message: 'Invalid description field' }
       description = description.slice(0, MAX_DESCRIPTION_LENGTH)
 
+      if (category !== undefined && !CATEGORY_LIST.includes(category))
+        return { status: 'error', message: 'Invalid category' }
+
+      // deprecated:
       if (tags !== undefined && !_.isArray(tags))
         return { status: 'error', message: 'Invalid tags field' }
       tags = tags?.map((tag) => tag.toString().slice(0, MAX_TAG_LENGTH))
@@ -114,6 +121,7 @@ export const createContract = functions
         initialProb,
         ante,
         closeTime,
+        category,
         tags ?? []
       )
 

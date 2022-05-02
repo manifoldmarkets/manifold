@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import _ from 'lodash'
 import { useState } from 'react'
 import { Bet } from '../../../common/bet'
+import { CATEGORIES } from '../../../common/categories'
 
 import { Contract } from '../../../common/contract'
 import { formatMoney } from '../../../common/util/format'
@@ -28,7 +29,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
 
-  const { createdTime, closeTime, resolutionTime } = contract
+  const { createdTime, closeTime, resolutionTime, category } = contract
   const tradersCount = _.uniqBy(bets, 'userId').length
 
   return (
@@ -52,6 +53,13 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <div className="text-gray-500">Stats</div>
           <table className="table-compact table-zebra table w-full text-gray-500">
             <tbody>
+              {category && (
+                <tr>
+                  <td>Category</td>
+                  <td>{CATEGORIES[category]}</td>
+                </tr>
+              )}
+
               <tr>
                 <td>Market created</td>
                 <td>{formatTime(createdTime)}</td>

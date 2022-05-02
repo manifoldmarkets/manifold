@@ -19,6 +19,12 @@ import { Row } from '../components/layout/row'
 import { MAX_DESCRIPTION_LENGTH, outcomeType } from '../../common/contract'
 import { formatMoney } from '../../common/util/format'
 import { useHasCreatedContractToday } from '../hooks/use-has-created-contract-today'
+import {
+  CATEGORIES,
+  category,
+  CATEGORY_LIST,
+  TO_CATEGORY,
+} from '../../common/categories'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -67,6 +73,7 @@ export function NewContract(props: { question: string; tag?: string }) {
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb, setInitialProb] = useState(50)
   const [description, setDescription] = useState('')
+  const [category, setCategory] = useState<string>(CATEGORY_LIST[0])
   const [tagText, setTagText] = useState<string>(tag ?? '')
   const tags = parseWordsAsTags(tagText)
 
@@ -117,6 +124,7 @@ export function NewContract(props: { question: string; tag?: string }) {
       initialProb,
       ante,
       closeTime,
+      category,
       tags,
     }).then((r) => r.data || {})
 
@@ -199,25 +207,27 @@ export function NewContract(props: { question: string; tag?: string }) {
         />
       </div>
 
-      {/* <Spacer h={4} />
+      <Spacer h={4} />
 
       <div className="form-control max-w-sm items-start">
         <label className="label gap-2">
-          <span className="mb-1">Tags</span>
-          <InfoTooltip text="Optional. Help categorize your market with related tags." />
+          <span className="mb-1">Category</span>
         </label>
 
-        <input
-          placeholder="e.g. Politics, Economics..."
-          className="input input-bordered resize-none"
-          disabled={isSubmitting}
-          value={tagText}
-          onChange={(e) => setTagText(e.target.value || '')}
-        />
-      </div> */}
+        <select
+          className="select select-bordered w-full max-w-xs"
+          onChange={(e) =>
+            setCategory(TO_CATEGORY[e.currentTarget.value] as category)
+          }
+        >
+          {CATEGORY_LIST.map((cat) => (
+            <option selected={category === cat} value={CATEGORIES[cat]}>
+              {CATEGORIES[cat]}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      <Spacer h={4} />
-      <TagsList tags={tags} noLink noLabel />
       <Spacer h={4} />
 
       <div className="form-control mb-1 items-start">

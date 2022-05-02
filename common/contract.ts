@@ -1,4 +1,5 @@
 import { Answer } from './answer'
+import { category } from './categories'
 import { Fees } from './fees'
 
 export type FullContract<
@@ -15,6 +16,7 @@ export type FullContract<
 
   question: string
   description: string // More info about what the contract is about
+  category: category
   tags: string[]
   lowercaseTags: string[]
   visibility: 'public' | 'unlisted'
