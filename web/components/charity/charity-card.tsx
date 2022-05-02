@@ -26,7 +26,7 @@ export function CharityCard(props: { charity: Charity }) {
           )}
         </figure>
         <div className="card-body">
-          <h3 className="card-title line-clamp-3">{name}</h3>
+          {/* <h3 className="card-title line-clamp-3">{name}</h3> */}
           <div className="line-clamp-4 text-sm">{preview}</div>
           {raised > 0 && (
             <Row className="text-primary mt-4 flex-1 items-end justify-center gap-2">
