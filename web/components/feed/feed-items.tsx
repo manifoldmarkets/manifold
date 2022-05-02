@@ -385,6 +385,7 @@ export function FeedBet(props: {
   async function submitComment() {
     if (!user || !comment || !canComment) return
     await createComment(contract.id, comment, user, id)
+    setComment('')
   }
 
   const bought = amount >= 0 ? 'bought' : 'sold'
