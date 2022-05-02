@@ -59,6 +59,42 @@ export const charities: Charity[] = [
     tags: ['Featured'] as CharityTag[],
   },
   {
+    name: 'GiveWell Maximum Impact Fund',
+    website: 'https://www.givewell.org/maximum-impact-fund',
+    photo: 'https://www.givewell.org/sites/all/themes/gw_basic/logo.png',
+    preview:
+      'We search for the charities that save or improve lives the most per dollar.',
+    description: `
+    GiveWell is a nonprofit dedicated to finding outstanding giving opportunities and publishing the full details of our analysis to help donors decide where to give.
+    
+    We don't focus solely on financials, such as assessing administrative or fundraising costs. Instead, we conduct in-depth research to determine how much good a given program accomplishes (in terms of lives saved, lives improved, etc.) per dollar spent. Rather than rating as many charities as possible, we focus on the few charities that stand out most (by our criteria) in order to find and confidently recommend high-impact giving opportunities (our list of top charities).
+    
+    Our top recommendation to GiveWell donors seeking to do the most good possible is to donate to the Maximum Impact Fund. Donations to the Maximum Impact Fund are granted each quarter. We use our latest research to grant the funds to the recommended charity (or charities) where we believe they’ll do the most good.
+    
+    We grant funds from the Maximum Impact Fund to the recipient charity (or charities) at the end of each fiscal quarter. Our research team decides which charities have the highest priority funding needs at that time. This decision takes into consideration factors such as:
+
+    - Which funding gaps we expect to be filled and unfilled
+    - Each charity’s plans for additional funding
+    - The cost-effectiveness of each funding gap`,
+  },
+  {
+    name: 'ARC',
+    website: 'https://alignment.org/',
+    photo: 'https://i.imgur.com/Hwg8OMP.png',
+    preview: 'Align future machine learning systems with human interests.',
+    description: `ARC is a non-profit research organization whose mission is to align future machine learning systems with human interests. Its current work focuses on developing an alignment strategy that could be adopted in industry today while scaling gracefully to future ML systems. Right now Paul Christiano and Mark Xu are researchers and Kyle Scott handles operations.
+
+What is “alignment”? ML systems can exhibit goal-directed behavior, but it is difficult to understand or control what they are “trying” to do. Powerful models could cause harm if they were trying to manipulate and deceive humans. The goal of intent alignment is to instead train these models to be helpful and honest.
+
+Motivation: We believe that modern ML techniques would lead to severe misalignment if scaled up to large enough computers and datasets. Practitioners may be able to adapt before these failures have catastrophic consequences, but we could reduce the risk by adopting scalable methods further in advance.
+
+What we’re working on: The best way to understand our research priorities and methodology is probably to read our report on Eliciting Latent Knowledge. At a high level, we’re trying to figure out how to train ML systems to answer questions by straightforwardly “translating” their beliefs into natural language rather than by reasoning about what a human wants to hear.
+
+Methodology: We’re unsatisfied with an algorithm if we can see any plausible story about how it eventually breaks down, which means that we can rule out most algorithms on paper without ever implementing them. The cost of this approach is that it may completely miss strategies that exploit important structure in realistic ML models; the benefit is that you can consider lots of ideas quickly. (More)
+
+Future plans: We expect to focus on similar theoretical problems in alignment until we either become more pessimistic about tractability or ARC grows enough to branch out into other areas. Over the long term we are likely to work on a combination of theoretical and empirical alignment research, collaborations with industry labs, alignment forecasting, and ML deployment policy.`,
+  },
+  {
     name: 'Give Directly',
     website: 'https://www.givedirectly.org/',
     ein: '27-1661997',
@@ -113,23 +149,6 @@ export const charities: Charity[] = [
       'We specialise in the prevention, control and treatment of malaria and other communicable diseases.',
     description:
       'We are dedicated to ensuring our work is supported by strong evidence and remains grounded in the lessons we learn through implementation. We explore beyond current practice, to try out innovative ways – through research, implementation and policy development – to achieve effective and sustainable disease management and control.',
-  },
-  {
-    name: 'ARC',
-    website: 'https://alignment.org/',
-    photo: 'https://i.imgur.com/Hwg8OMP.png',
-    preview: 'Align future machine learning systems with human interests.',
-    description: `ARC is a non-profit research organization whose mission is to align future machine learning systems with human interests. Its current work focuses on developing an alignment strategy that could be adopted in industry today while scaling gracefully to future ML systems. Right now Paul Christiano and Mark Xu are researchers and Kyle Scott handles operations.
-
-What is “alignment”? ML systems can exhibit goal-directed behavior, but it is difficult to understand or control what they are “trying” to do. Powerful models could cause harm if they were trying to manipulate and deceive humans. The goal of intent alignment is to instead train these models to be helpful and honest.
-
-Motivation: We believe that modern ML techniques would lead to severe misalignment if scaled up to large enough computers and datasets. Practitioners may be able to adapt before these failures have catastrophic consequences, but we could reduce the risk by adopting scalable methods further in advance.
-
-What we’re working on: The best way to understand our research priorities and methodology is probably to read our report on Eliciting Latent Knowledge. At a high level, we’re trying to figure out how to train ML systems to answer questions by straightforwardly “translating” their beliefs into natural language rather than by reasoning about what a human wants to hear.
-
-Methodology: We’re unsatisfied with an algorithm if we can see any plausible story about how it eventually breaks down, which means that we can rule out most algorithms on paper without ever implementing them. The cost of this approach is that it may completely miss strategies that exploit important structure in realistic ML models; the benefit is that you can consider lots of ideas quickly. (More)
-
-Future plans: We expect to focus on similar theoretical problems in alignment until we either become more pessimistic about tractability or ARC grows enough to branch out into other areas. Over the long term we are likely to work on a combination of theoretical and empirical alignment research, collaborations with industry labs, alignment forecasting, and ML deployment policy.`,
   },
   {
     name: 'The Center for the Study of Partisanship and Ideology',
