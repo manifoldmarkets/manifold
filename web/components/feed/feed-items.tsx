@@ -310,7 +310,7 @@ export function CommentInput(props: {
   )
 }
 
-function RelativeTimestamp(props: { time: number }) {
+export function RelativeTimestamp(props: { time: number }) {
   const { time } = props
   return (
     <DateTimeTooltip time={time}>
@@ -385,6 +385,7 @@ export function FeedBet(props: {
   async function submitComment() {
     if (!user || !comment || !canComment) return
     await createComment(contract.id, comment, user, id)
+    setComment('')
   }
 
   const bought = amount >= 0 ? 'bought' : 'sold'

@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { Answer } from '../../common/answer'
 import { getProbability } from '../../common/calculate'
 import {
@@ -126,7 +127,14 @@ export function AnswerLabel(props: {
     truncated = text.slice(0, 75) + '...'
   }
 
-  return <span className={className}>{truncated}</span>
+  return (
+    <span
+      style={{ wordBreak: 'break-word' }}
+      className={clsx('whitespace-pre-line break-words', className)}
+    >
+      {truncated}
+    </span>
+  )
 }
 
 function FreeResponseAnswerToolTip(props: {

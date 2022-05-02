@@ -17,8 +17,9 @@ import Custom404 from '../404'
 import { useCharityTxns } from '../../hooks/use-charity-txns'
 import { useWindowSize } from '../../hooks/use-window-size'
 import Confetti from 'react-confetti'
+import { Donation } from '../../components/charity/feed-items'
 
-const manaToUSD = (mana: number) =>
+export const manaToUSD = (mana: number) =>
   (mana / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 
 export default function CharityPageWrapper() {
@@ -91,6 +92,9 @@ function CharityPage(props: { charity: Charity }) {
           </Row>
           <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
           <Blurb text={description} />
+          {txns.map((txn) => (
+            <Donation key={txn.id} txn={txn} />
+          ))}
         </Col>
       </Col>
     </Page>
@@ -98,8 +102,7 @@ function CharityPage(props: { charity: Charity }) {
 }
 
 function Blurb({ text }: { text: string }) {
-  // Default to open for now (aka don't actually hide any text yet.)
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
 
   // Calculate whether the full blurb is already shown
   const ref = useRef<HTMLDivElement>(null)
@@ -125,7 +128,7 @@ function Blurb({ text }: { text: string }) {
         onClick={() => setOpen(!open)}
         className={clsx(
           'btn btn-link capitalize-none my-3 normal-case text-indigo-700',
-          hideExpander && 'hidden'
+          hideExpander && 'invisible'
         )}
       >
         {open ? 'Hide' : 'Read more'}
@@ -204,7 +207,7 @@ function DonationBox(props: {
           Amount
         </label>
         <BuyAmountInput
-          inputClassName="w-full donate-input"
+          inputClassName="w-full max-w-none donate-input"
           amount={amount}
           onChange={setAmount}
           error={error}
