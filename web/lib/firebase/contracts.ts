@@ -26,6 +26,7 @@ import { DAY_MS } from '../../../common/util/time'
 import { MAX_FEED_CONTRACTS } from '../../../common/recommended-contracts'
 import { Bet } from '../../../common/bet'
 import { Comment } from '../../../common/comment'
+import { ENV_CONFIG } from '../../../common/envs/constants'
 export type { Contract }
 
 export function contractPath(contract: Contract) {
@@ -34,6 +35,10 @@ export function contractPath(contract: Contract) {
 
 export function homeContractPath(contract: Contract) {
   return `/home?c=${contract.slug}`
+}
+
+export function contractUrl(contract: Contract) {
+  return `https://${ENV_CONFIG.domain}${contractPath(contract)}`
 }
 
 export function contractMetrics(contract: Contract) {
