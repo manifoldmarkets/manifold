@@ -85,7 +85,6 @@ export function getHtml(parsedReq: ParsedRequest) {
   const {
     theme,
     fontSize,
-
     question,
     probability,
     metadata,
@@ -93,6 +92,11 @@ export function getHtml(parsedReq: ParsedRequest) {
     creatorUsername,
     creatorAvatarUrl,
   } = parsedReq
+  const MAX_QUESTION_CHARS = 100
+  const truncatedQuestion =
+    question.length > MAX_QUESTION_CHARS
+      ? question.slice(0, MAX_QUESTION_CHARS) + '...'
+      : question
   const hideAvatar = creatorAvatarUrl ? '' : 'hidden'
   return `<!DOCTYPE html>
 <html>
@@ -141,7 +145,7 @@ export function getHtml(parsedReq: ParsedRequest) {
 
       <div class="flex flex-row justify-between gap-12 pt-36">
         <div class="text-indigo-700 text-6xl leading-tight">
-          ${question}
+          ${truncatedQuestion}
         </div>
         <div class="flex flex-col text-primary">
           <div class="text-8xl">${probability}</div>

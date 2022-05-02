@@ -1,5 +1,4 @@
 import _ from 'lodash'
-import Link from 'next/link'
 
 import { Fold } from '../../../../common/fold'
 import { Comment } from '../../../../common/comment'
@@ -23,22 +22,17 @@ import { useUser } from '../../../hooks/use-user'
 import { useFold } from '../../../hooks/use-fold'
 import { SearchableGrid } from '../../../components/contract/contracts-list'
 import { useRouter } from 'next/router'
-import clsx from 'clsx'
 import { scoreCreators, scoreTraders } from '../../../../common/scoring'
 import { Leaderboard } from '../../../components/leaderboard'
-import { formatMoney, toCamelCase } from '../../../../common/util/format'
+import { formatMoney } from '../../../../common/util/format'
 import { EditFoldButton } from '../../../components/folds/edit-fold-button'
 import Custom404 from '../../404'
 import { FollowFoldButton } from '../../../components/folds/follow-fold-button'
-import FeedCreate from '../../../components/feed-create'
 import { SEO } from '../../../components/SEO'
 import { useTaggedContracts } from '../../../hooks/use-contracts'
 import { Linkify } from '../../../components/linkify'
 import { fromPropz, usePropz } from '../../../hooks/use-propz'
 import { filterDefined } from '../../../../common/util/array'
-import { useRecentBets } from '../../../hooks/use-bets'
-import { useRecentComments } from '../../../hooks/use-comments'
-import { LoadingIndicator } from '../../../components/loading-indicator'
 import { findActiveContracts } from '../../../components/feed/find-active-contracts'
 import { Tabs } from '../../../components/layout/tabs'
 
@@ -149,12 +143,6 @@ export default function FoldPage(props: {
   const contracts = filterDefined(
     props.contracts.map((contract) => contractsMap[contract.id])
   )
-  const activeContracts = filterDefined(
-    props.activeContracts.map((contract) => contractsMap[contract.id])
-  )
-
-  const recentBets = useRecentBets()
-  const recentComments = useRecentComments()
 
   if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
@@ -175,37 +163,6 @@ export default function FoldPage(props: {
         creatorScores={creatorScores}
         user={user}
       />
-    </Col>
-  )
-
-  const activityTab = (
-    <Col className="flex-1">
-      {user !== null && !fold.disallowMarketCreation && (
-        <FeedCreate
-          className={clsx('border-b-2')}
-          user={user}
-          tag={toCamelCase(fold.name)}
-          placeholder={`Type your question about ${fold.name}`}
-        />
-      )}
-      {recentBets && recentComments ? (
-        <>
-          <ActivityFeed
-            contracts={activeContracts}
-            recentBets={recentBets ?? []}
-            recentComments={recentComments ?? []}
-            mode="abbreviated"
-          />
-          {activeContracts.length === 0 && (
-            <div className="mx-2 mt-4 text-gray-500 lg:mx-0">
-              No activity from matching markets.{' '}
-              {isCurator && 'Try editing to add more tags!'}
-            </div>
-          )}
-        </>
-      ) : (
-        <LoadingIndicator className="mt-4" />
-      )}
     </Col>
   )
 
@@ -248,13 +205,8 @@ export default function FoldPage(props: {
       </div>
 
       <Tabs
-        defaultIndex={page === 'leaderboards' ? 2 : page === 'markets' ? 1 : 0}
+        defaultIndex={page === 'leaderboards' ? 1 : 0}
         tabs={[
-          {
-            title: 'Activity',
-            content: activityTab,
-            href: foldPath(fold),
-          },
           {
             title: 'Markets',
             content: <SearchableGrid contracts={contracts} />,

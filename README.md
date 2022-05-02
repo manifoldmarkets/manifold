@@ -39,7 +39,7 @@ Since we are just now open-sourcing things, we will see how things go. Feel free
 
 By contributing to this codebase, you are agreeing to the terms of the [Manifold CLA](https://github.com/manifoldmarkets/manifold/blob/main/.github/CONTRIBUTING.md).
 
-If you need additional access to any infrastructure in order to work on something (e.g. Vercel, Firebase) let us know about that on Discord as well.
+If you need additional access to any infrastructure in order to work on something (e.g. Vercel, Firebase) let us know about that on [Discord][discord] as well.
 
 [vercel]: https://vercel.com/
 [jamstack]: https://jamstack.org/
@@ -50,4 +50,4 @@ If you need additional access to any infrastructure in order to work on somethin
 [cloud-firestore]: https://firebase.google.com/docs/firestore
 [cloud-functions]: https://firebase.google.com/docs/functions
 [small-prs]: https://google.github.io/eng-practices/review/developer/small-cls.html
-[discord]: https://discord.gg/eHQBNBqXuh
+[discord]: https://discord.gg/3Zuth9792G

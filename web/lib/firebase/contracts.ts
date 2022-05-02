@@ -23,6 +23,9 @@ import { createRNG, shuffle } from '../../../common/util/random'
 import { getCpmmProbability } from '../../../common/calculate-cpmm'
 import { formatMoney, formatPercent } from '../../../common/util/format'
 import { DAY_MS } from '../../../common/util/time'
+import { MAX_FEED_CONTRACTS } from '../../../common/recommended-contracts'
+import { Bet } from '../../../common/bet'
+import { Comment } from '../../../common/comment'
 export type { Contract }
 
 export function contractPath(contract: Contract) {
@@ -231,6 +234,16 @@ export async function getHotContracts() {
   )
 }
 
+const topWeeklyQuery = query(
+  contractCollection,
+  where('isResolved', '==', false),
+  orderBy('volume7Days', 'desc'),
+  limit(MAX_FEED_CONTRACTS)
+)
+export async function getTopWeeklyContracts() {
+  return await getValues<Contract>(topWeeklyQuery)
+}
+
 const closingSoonQuery = query(
   contractCollection,
   where('isResolved', '==', false),
@@ -275,4 +288,34 @@ export async function getDailyContracts(
   }
 
   return contractsByDay
+}
+
+export async function getRecentBetsAndComments(contract: Contract) {
+  const contractDoc = doc(db, 'contracts', contract.id)
+
+  const [recentBets, recentComments] = await Promise.all([
+    getValues<Bet>(
+      query(
+        collection(contractDoc, 'bets'),
+        where('createdTime', '>', Date.now() - DAY_MS),
+        orderBy('createdTime', 'desc'),
+        limit(1)
+      )
+    ),
+
+    getValues<Comment>(
+      query(
+        collection(contractDoc, 'comments'),
+        where('createdTime', '>', Date.now() - 3 * DAY_MS),
+        orderBy('createdTime', 'desc'),
+        limit(3)
+      )
+    ),
+  ])
+
+  return {
+    contract,
+    recentBets,
+    recentComments,
+  }
 }

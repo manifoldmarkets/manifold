@@ -8,31 +8,27 @@ import { useUser } from '../../hooks/use-user'
 import { ContractActivity } from './contract-activity'
 
 export function ActivityFeed(props: {
-  contracts: Contract[]
-  recentBets: Bet[]
-  recentComments: Comment[]
+  feed: {
+    contract: Contract
+    recentBets: Bet[]
+    recentComments: Comment[]
+  }[]
   mode: 'only-recent' | 'abbreviated' | 'all'
   getContractPath?: (contract: Contract) => string
 }) {
-  const { contracts, recentBets, recentComments, mode, getContractPath } = props
+  const { feed, mode, getContractPath } = props
 
   const user = useUser()
 
-  const groupedBets = _.groupBy(recentBets, (bet) => bet.contractId)
-  const groupedComments = _.groupBy(
-    recentComments,
-    (comment) => comment.contractId
-  )
-
   return (
     <FeedContainer
-      contracts={contracts}
-      renderContract={(contract) => (
+      feed={feed}
+      renderItem={({ contract, recentBets, recentComments }) => (
         <ContractActivity
           user={user}
           contract={contract}
-          bets={groupedBets[contract.id] ?? []}
-          comments={groupedComments[contract.id] ?? []}
+          bets={recentBets}
+          comments={recentComments}
           mode={mode}
           contractPath={getContractPath ? getContractPath(contract) : undefined}
         />
@@ -42,18 +38,26 @@ export function ActivityFeed(props: {
 }
 
 function FeedContainer(props: {
-  contracts: Contract[]
-  renderContract: (contract: Contract) => any
+  feed: {
+    contract: Contract
+    recentBets: Bet[]
+    recentComments: Comment[]
+  }[]
+  renderItem: (item: {
+    contract: Contract
+    recentBets: Bet[]
+    recentComments: Comment[]
+  }) => any
 }) {
-  const { contracts, renderContract } = props
+  const { feed, renderItem } = props
 
   return (
     <Col className="items-center">
       <Col className="w-full max-w-3xl">
         <Col className="w-full divide-y divide-gray-300 self-center bg-white">
-          {contracts.map((contract) => (
-            <div key={contract.id} className="py-6 px-2 sm:px-4">
-              {renderContract(contract)}
+          {feed.map((item) => (
+            <div key={item.contract.id} className="py-6 px-2 sm:px-4">
+              {renderItem(item)}
             </div>
           ))}
         </Col>
