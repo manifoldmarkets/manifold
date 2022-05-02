@@ -5,6 +5,7 @@ import { CharityCard } from '../../components/charity/charity-card'
 import { Col } from '../../components/layout/col'
 import { Spacer } from '../../components/layout/spacer'
 import { Page } from '../../components/page'
+import { SiteLink } from '../../components/site-link'
 import { Title } from '../../components/title'
 import { useAllCharityTxns } from '../../hooks/use-charity-txns'
 
@@ -73,8 +74,14 @@ export default function Charity() {
         ></iframe>
 
         <div className="mt-10 text-gray-500">
-          Don't see your favorite charity? Recommend that we add it by emailing
-          <span className="text-indigo-500"> give@manifold.markets</span>~
+          Don't see your favorite charity? Recommend it{' '}
+          <SiteLink
+            href="https://manifold.markets/Sinclair/which-charities-should-manifold-add"
+            className="text-indigo-700"
+          >
+            here
+          </SiteLink>
+          !
           <br />
           <br />
           <span className="italic">
