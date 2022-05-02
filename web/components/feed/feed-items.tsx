@@ -310,7 +310,7 @@ export function CommentInput(props: {
   )
 }
 
-function RelativeTimestamp(props: { time: number }) {
+export function RelativeTimestamp(props: { time: number }) {
   const { time } = props
   return (
     <DateTimeTooltip time={time}>
