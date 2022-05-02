@@ -72,9 +72,9 @@ export function ResolutionPanel(props: {
 
   return (
     <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
-      <Title className="!mt-0 whitespace-nowrap" text="Resolve market" />
+      <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
 
-      <div className="mb-2 text-sm text-gray-500">Outcome</div>
+      <div className="mb-3 text-sm text-gray-500">Outcome</div>
 
       <YesNoCancelSelector
         className="mx-auto my-2"
