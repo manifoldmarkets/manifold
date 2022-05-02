@@ -1,26 +1,36 @@
 import _ from 'lodash'
 import { useState, useMemo } from 'react'
-import { charities as charityList } from '../../../common/charity'
+import { charities } from '../../../common/charity'
 import { CharityCard } from '../../components/charity/charity-card'
 import { Col } from '../../components/layout/col'
+import { Spacer } from '../../components/layout/spacer'
 import { Page } from '../../components/page'
 import { Title } from '../../components/title'
-
-const charities = charityList.map((charity) => ({
-  ...charity,
-  raised: 4001,
-}))
+import { useAllCharityTxns } from '../../hooks/use-charity-txns'
 
 export default function Charity() {
+  const allCharityTxn = useAllCharityTxns()
+  const totals = _.mapValues(_.groupBy(allCharityTxn, 'toId'), (txns) =>
+    _.sumBy(txns, (txn) => txn.amount)
+  )
+  const totalRaised = _.sum(Object.values(totals))
+
+  // TODO: show loading state while totals are calculating
+
+  const sortedCharities = _.sortBy(charities, [
+    (charity) => (charity.tags?.includes('Featured') ? 0 : 1),
+    (charity) => -totals[charity.id],
+  ])
+
   const [query, setQuery] = useState('')
   const debouncedQuery = _.debounce(setQuery, 50)
 
   const filterCharities = useMemo(
     () =>
-      charities.filter((charity) =>
+      sortedCharities.filter((charity) =>
         charity.name.toLowerCase().includes(query.toLowerCase())
       ),
-    [query]
+    [query, sortedCharities]
   )
 
   return (
@@ -31,6 +41,9 @@ export default function Charity() {
           <div className="mb-6 text-gray-500">
             Donate your winnings to charity! Through the month of May, every M$
             100 you contribute turns into $1 USD sent to your chosen charity.
+            <Spacer h={5} />
+            Together we've donated over ${Math.floor(totalRaised / 100)} USD so
+            far!
           </div>
 
           <input
