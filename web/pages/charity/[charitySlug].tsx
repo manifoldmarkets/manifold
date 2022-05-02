@@ -207,7 +207,7 @@ function DonationBox(props: {
           Amount
         </label>
         <BuyAmountInput
-          inputClassName="w-full donate-input"
+          inputClassName="w-full max-w-none donate-input"
           amount={amount}
           onChange={setAmount}
           error={error}
