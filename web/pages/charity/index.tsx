@@ -1,37 +1,49 @@
 import _ from 'lodash'
 import { useState, useMemo } from 'react'
-import { charities } from '../../../common/charity'
+import { charities, Charity as CharityType } from '../../../common/charity'
 import { CharityCard } from '../../components/charity/charity-card'
 import { Col } from '../../components/layout/col'
 import { Spacer } from '../../components/layout/spacer'
 import { Page } from '../../components/page'
 import { SiteLink } from '../../components/site-link'
 import { Title } from '../../components/title'
-import { useAllCharityTxns } from '../../hooks/use-charity-txns'
+import { getAllCharityTxns } from '../../lib/firebase/txns'
 
-export default function Charity() {
-  const allCharityTxn = useAllCharityTxns()
-  const totals = _.mapValues(_.groupBy(allCharityTxn, 'toId'), (txns) =>
+export async function getStaticProps() {
+  const txns = await getAllCharityTxns()
+  const totals = _.mapValues(_.groupBy(txns, 'toId'), (txns) =>
     _.sumBy(txns, (txn) => txn.amount)
   )
   const totalRaised = _.sum(Object.values(totals))
-
-  // TODO: show loading state while totals are calculating
-
   const sortedCharities = _.sortBy(charities, [
     (charity) => (charity.tags?.includes('Featured') ? 0 : 1),
     (charity) => -totals[charity.id],
   ])
+
+  return {
+    props: {
+      totalRaised,
+      charities: sortedCharities,
+    },
+    revalidate: 60,
+  }
+}
+
+export default function Charity(props: {
+  totalRaised: number
+  charities: CharityType[]
+}) {
+  const { totalRaised, charities } = props
 
   const [query, setQuery] = useState('')
   const debouncedQuery = _.debounce(setQuery, 50)
 
   const filterCharities = useMemo(
     () =>
-      sortedCharities.filter((charity) =>
+      charities.filter((charity) =>
         charity.name.toLowerCase().includes(query.toLowerCase())
       ),
-    [query, sortedCharities]
+    [query]
   )
 
   return (
