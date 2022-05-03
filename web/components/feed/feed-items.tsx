@@ -299,7 +299,7 @@ export function CommentInput(props: {
                   onChange={(e) => setComment(e.target.value)}
                   className="textarea textarea-bordered w-full resize-none"
                   placeholder="Add a comment..."
-                  autoFocus={true}
+                  autoFocus={focused}
                   rows={answerOutcome == undefined || focused ? 3 : 1}
                   onFocus={() => setFocused(true)}
                   onBlur={() => !comment && setFocused(false)}
