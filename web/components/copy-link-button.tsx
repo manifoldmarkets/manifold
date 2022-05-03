@@ -1,6 +1,7 @@
 import { Fragment } from 'react'
 import { LinkIcon } from '@heroicons/react/outline'
 import { Menu, Transition } from '@headlessui/react'
+import clsx from 'clsx'
 import { Contract } from '../../common/contract'
 import { copyToClipboard } from '../lib/util/copy'
 import { contractPath } from '../lib/firebase/contracts'
@@ -10,8 +11,11 @@ function copyContractUrl(contract: Contract) {
   copyToClipboard(`https://${ENV_CONFIG.domain}${contractPath(contract)}`)
 }
 
-export function CopyLinkButton(props: { contract: Contract }) {
-  const { contract } = props
+export function CopyLinkButton(props: {
+  contract: Contract
+  buttonClassName?: string
+}) {
+  const { contract, buttonClassName } = props
 
   return (
     <Menu
@@ -20,12 +24,10 @@ export function CopyLinkButton(props: { contract: Contract }) {
       onMouseUp={() => copyContractUrl(contract)}
     >
       <Menu.Button
-        className="btn btn-xs normal-case"
-        style={{
-          backgroundColor: 'white',
-          border: '2px solid #16A34A',
-          color: '#16A34A', // text-green-600
-        }}
+        className={clsx(
+          'btn btn-xs border-2 border-green-600 bg-white normal-case text-green-600 hover:border-green-600 hover:bg-white',
+          buttonClassName
+        )}
       >
         <LinkIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
         Copy link

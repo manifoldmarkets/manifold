@@ -49,7 +49,19 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
         <Col className="gap-4 rounded bg-white p-6">
           <Title className="!mt-0 !mb-0" text="Market info" />
 
-          <div className="text-gray-500">Stats</div>
+          <div>Share</div>
+
+          <Row className="justify-start gap-4">
+            <CopyLinkButton contract={contract} />
+            <TweetButton
+              className="self-start"
+              tweetText={getTweetText(contract, false)}
+            />
+            <ShareEmbedButton contract={contract} />
+          </Row>
+          <div />
+
+          <div>Stats</div>
           <table className="table-compact table-zebra table w-full text-gray-500">
             <tbody>
               <tr>
@@ -97,19 +109,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
             </tbody>
           </table>
 
-          <div className="text-gray-500">Share</div>
-
-          <Row className="justify-start gap-4">
-            <CopyLinkButton contract={contract} />
-            <TweetButton
-              className="self-start"
-              tweetText={getTweetText(contract, false)}
-            />
-            <ShareEmbedButton contract={contract} />
-          </Row>
-          <div />
-
-          <div className="text-gray-500">Tags</div>
+          <div>Tags</div>
           <TagsInput contract={contract} />
           <div />
 
@@ -117,7 +117,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
             !contract.resolution &&
             (!closeTime || closeTime > Date.now()) && (
               <>
-                <div className="text-gray-500">Add liquidity</div>
+                <div className="">Add liquidity</div>
                 <AddLiquidityPanel contract={contract} />
               </>
             )}

@@ -18,7 +18,7 @@ import { getDailyNewUsers } from '../lib/firebase/users'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
-  const numberOfDays = 80
+  const numberOfDays = 90
   const today = dayjs(dayjs().format('YYYY-MM-DD'))
   const startDate = today.subtract(numberOfDays, 'day')
 
@@ -367,7 +367,7 @@ export function CustomAnalytics(props: {
 
       <Title text="Ratio of Active Users" />
       <Tabs
-        defaultIndex={0}
+        defaultIndex={1}
         tabs={[
           {
             title: 'Daily / Weekly',

@@ -56,7 +56,9 @@ export function AddLiquidityPanel(props: { contract: Contract }) {
 
   return (
     <>
-      <div>Subsidize this market by adding liquidity for traders.</div>
+      <div className="text-gray-500">
+        Subsidize this market by adding liquidity for traders.
+      </div>
 
       <Row>
         <AmountInput
