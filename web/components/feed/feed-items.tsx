@@ -227,35 +227,27 @@ export function CommentInput(props: {
   const user = useUser()
   const [comment, setComment] = useState('')
 
-  async function submitComment() {
-    if (!comment) return
-    if (!user) {
-      return await firebaseLogin()
-    }
-    await createComment(contract.id, comment, user)
-    setComment('')
-  }
-
   // Should this be oldest bet or most recent bet?
   const mostRecentCommentableBet = betsByCurrentUser
     .filter(
       (bet) =>
-        canCommentOnBet(bet.userId, bet.createdTime, user) &&
+        canCommentOnBet(bet, bet.createdTime, user) &&
         !comments.some((comment) => comment.betId == bet.id)
     )
     .sort((b1, b2) => b1.createdTime - b2.createdTime)
     .pop()
 
-  if (mostRecentCommentableBet) {
-    return (
-      <FeedBet
-        contract={contract}
-        bet={mostRecentCommentableBet}
-        hideOutcome={false}
-        smallAvatar={false}
-      />
-    )
+  const { id } = mostRecentCommentableBet || { id: undefined }
+
+  async function submitComment(id: string | undefined) {
+    if (!comment) return
+    if (!user) {
+      return await firebaseLogin()
+    }
+    await createComment(contract.id, comment, user, id)
+    setComment('')
   }
+
   const { userPosition, userPositionMoney, yesFloorShares, noFloorShares } =
     getBettorsPosition(contract, Date.now(), betsByCurrentUser)
 
@@ -267,7 +259,14 @@ export function CommentInput(props: {
         </div>
         <div className={'min-w-0 flex-1 py-1.5'}>
           <div className="text-sm text-gray-500">
-            {user && userPosition > 0 && (
+            {mostRecentCommentableBet && (
+              <BetStatusText
+                contract={contract}
+                bet={mostRecentCommentableBet}
+                isSelf={true}
+              />
+            )}
+            {!mostRecentCommentableBet && user && userPosition > 0 && (
               <>
                 {'You have ' + userPositionMoney + ' '}
                 <>
@@ -290,7 +289,7 @@ export function CommentInput(props: {
                 maxLength={MAX_COMMENT_LENGTH}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    submitComment()
+                    submitComment(id)
                   }
                 }}
               />
@@ -298,7 +297,7 @@ export function CommentInput(props: {
                 className={
                   'btn btn-outline btn-sm text-transform: mt-1 capitalize'
                 }
-                onClick={submitComment}
+                onClick={() => submitComment(id)}
               >
                 {user ? 'Comment' : 'Sign in to comment'}
               </button>
@@ -372,24 +371,12 @@ export function FeedBet(props: {
   bet: Bet
   hideOutcome: boolean
   smallAvatar: boolean
-  hideComment?: boolean
   bettor?: User // If set: reveal bettor identity
 }) {
-  const { contract, bet, hideOutcome, smallAvatar, bettor, hideComment } = props
-  const { id, amount, outcome, createdTime, userId } = bet
+  const { contract, bet, hideOutcome, smallAvatar, bettor } = props
+  const { userId } = bet
   const user = useUser()
   const isSelf = user?.id === userId
-  const canComment = canCommentOnBet(userId, createdTime, user) && !hideComment
-
-  const [comment, setComment] = useState('')
-  async function submitComment() {
-    if (!user || !comment || !canComment) return
-    await createComment(contract.id, comment, user, id)
-    setComment('')
-  }
-
-  const bought = amount >= 0 ? 'bought' : 'sold'
-  const money = formatMoney(Math.abs(amount))
 
   return (
     <>
@@ -421,49 +408,49 @@ export function FeedBet(props: {
           )}
         </div>
         <div className={'min-w-0 flex-1 py-1.5'}>
-          <div className="text-sm text-gray-500">
-            <span>{isSelf ? 'You' : bettor ? bettor.name : 'A trader'}</span>{' '}
-            {bought} {money}
-            {!hideOutcome && (
-              <>
-                {' '}
-                of{' '}
-                <OutcomeLabel
-                  outcome={outcome}
-                  contract={contract}
-                  truncate="short"
-                />
-              </>
-            )}
-            <RelativeTimestamp time={createdTime} />
-            {(canComment || comment) && (
-              <div className="mt-2">
-                <Textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="textarea textarea-bordered w-full resize-none"
-                  placeholder="Add a comment..."
-                  rows={3}
-                  maxLength={MAX_COMMENT_LENGTH}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                      submitComment()
-                    }
-                  }}
-                />
-                <button
-                  className="btn btn-outline btn-sm text-transform: mt-1 capitalize"
-                  onClick={submitComment}
-                  disabled={!canComment}
-                >
-                  Comment
-                </button>
-              </div>
-            )}
-          </div>
+          <BetStatusText
+            bet={bet}
+            contract={contract}
+            isSelf={isSelf}
+            hideOutcome={hideOutcome}
+            bettor={bettor}
+          />
         </div>
       </Row>
     </>
+  )
+}
+
+function BetStatusText(props: {
+  contract: Contract
+  bet: Bet
+  isSelf: boolean
+  hideOutcome?: boolean
+  bettor?: User
+}) {
+  const { bet, contract, hideOutcome, bettor, isSelf } = props
+  const { amount, outcome, createdTime } = bet
+
+  const bought = amount >= 0 ? 'bought' : 'sold'
+  const money = formatMoney(Math.abs(amount))
+
+  return (
+    <div className="text-sm text-gray-500">
+      <span>{isSelf ? 'You' : bettor ? bettor.name : 'A trader'}</span> {bought}{' '}
+      {money}
+      {!hideOutcome && (
+        <>
+          {' '}
+          of{' '}
+          <OutcomeLabel
+            outcome={outcome}
+            contract={contract}
+            truncate="short"
+          />
+        </>
+      )}
+      <RelativeTimestamp time={createdTime} />
+    </div>
   )
 }
 
@@ -573,14 +560,12 @@ export function FeedQuestion(props: {
   )
 }
 
-function canCommentOnBet(
-  userId: string,
-  createdTime: number,
-  user?: User | null
-) {
-  const isSelf = user?.id === userId
+function canCommentOnBet(bet: Bet, createdTime: number, user?: User | null) {
+  const isSelf = user?.id === bet.userId
   // You can comment if your bet was posted in the last hour
-  return isSelf && Date.now() - createdTime < 60 * 60 * 1000
+  return (
+    !bet.isRedemption && isSelf && Date.now() - createdTime < 60 * 60 * 1000
+  )
 }
 
 function FeedDescription(props: { contract: Contract }) {
