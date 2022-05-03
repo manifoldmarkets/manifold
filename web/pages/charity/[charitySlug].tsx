@@ -215,8 +215,8 @@ function DonationBox(props: {
         />
 
         <Col className="mt-3 w-full gap-3">
-          <Row className="items-center justify-between text-sm">
-            <span className="text-gray-500">{charity.name} receives</span>
+          <Row className="items-center text-sm xl:justify-between">
+            <span className="mr-1 text-gray-500">{charity.name} receives</span>
             <span>{manaToUSD(amount || 0)}</span>
           </Row>
           {/* TODO: matching pool */}
