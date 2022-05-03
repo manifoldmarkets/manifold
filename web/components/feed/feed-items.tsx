@@ -259,10 +259,10 @@ export function CommentInput(props: {
   const { id } = mostRecentCommentableBet || { id: undefined }
 
   async function submitComment(betId: string | undefined) {
-    if (!comment) return
     if (!user) {
       return await firebaseLogin()
     }
+    if (!comment) return
     await createComment(contract.id, comment, user, betId, answerOutcome)
     setComment('')
   }
