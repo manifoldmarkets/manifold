@@ -1,6 +1,7 @@
 import { StarIcon } from '@heroicons/react/solid'
 import _ from 'lodash'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Charity } from '../../../common/charity'
 import { useCharityTxns } from '../../hooks/use-charity-txns'
 import { manaToUSD } from '../../pages/charity/[charitySlug]'
@@ -19,9 +20,9 @@ export function CharityCard(props: { charity: Charity }) {
           {tags?.includes('Featured') && <FeaturedBadge />}
         </Row>
 
-        <figure className="h-32 px-4 pt-4">
+        <figure className="relative h-32 p-4">
           {photo ? (
-            <img className="h-full w-full object-contain" src={photo} alt="" />
+            <Image src={photo} alt="" layout="fill" objectFit="contain" />
           ) : (
             <div className="h-full w-full bg-gradient-to-r from-slate-300 to-indigo-200" />
           )}
