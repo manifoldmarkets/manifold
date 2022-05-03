@@ -37,7 +37,7 @@ import { fromNow } from '../../lib/util/time'
 import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
 import { Answer } from '../../../common/answer'
-import { ActivityItem } from './activity-items'
+import { ActivityItem, GENERAL_COMMENTS_OUTCOME_ID } from './activity-items'
 import {
   Binary,
   CPMM,
@@ -123,6 +123,8 @@ function FeedItem(props: { item: ActivityItem }) {
       return <FeedResolve {...item} />
     case 'commentInput':
       return <CommentInput {...item} />
+    case 'generalcomments':
+      return <FeedGeneralComments {...item} />
   }
 }
 
@@ -222,30 +224,46 @@ export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
   comments: Comment[]
+  // Only for free response comment inputs
   answerOutcome?: string
 }) {
   const { contract, betsByCurrentUser, comments, answerOutcome } = props
   const user = useUser()
   const [comment, setComment] = useState('')
+  const [focused, setFocused] = useState(false)
+
+  function setFocusedIfFreeResponse(focus: boolean) {
+    if (answerOutcome != undefined) setFocused(focus)
+  }
 
   // Should this be oldest bet or most recent bet?
   const mostRecentCommentableBet = betsByCurrentUser
-    .filter(
-      (bet) =>
-        canCommentOnBet(bet, bet.createdTime, user) &&
+    .filter((bet) => {
+      if (
+        canCommentOnBet(bet, user) &&
+        // The bet doesn't already have a comment
         !comments.some((comment) => comment.betId == bet.id)
-    )
+      ) {
+        if (!answerOutcome) return true
+        // If we're in free response, don't allow commenting on ante bet
+        return (
+          bet.outcome !== GENERAL_COMMENTS_OUTCOME_ID &&
+          answerOutcome === bet.outcome
+        )
+      }
+      return false
+    })
     .sort((b1, b2) => b1.createdTime - b2.createdTime)
     .pop()
 
   const { id } = mostRecentCommentableBet || { id: undefined }
 
-  async function submitComment(id: string | undefined) {
+  async function submitComment(betId: string | undefined) {
     if (!comment) return
     if (!user) {
       return await firebaseLogin()
     }
-    await createComment(contract.id, comment, user, id)
+    await createComment(contract.id, comment, user, betId, answerOutcome)
     setComment('')
   }
 
@@ -286,7 +304,9 @@ export function CommentInput(props: {
                 onChange={(e) => setComment(e.target.value)}
                 className="textarea textarea-bordered w-full resize-none"
                 placeholder="Add a comment..."
-                rows={3}
+                rows={answerOutcome == undefined || focused ? 3 : 1}
+                onFocus={() => setFocusedIfFreeResponse(true)}
+                onBlur={() => !comment && setFocusedIfFreeResponse(false)}
                 maxLength={MAX_COMMENT_LENGTH}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -298,7 +318,10 @@ export function CommentInput(props: {
                 className={
                   'btn btn-outline btn-sm text-transform: mt-1 capitalize'
                 }
-                onClick={() => submitComment(id)}
+                onClick={() => {
+                  submitComment(id)
+                  setFocusedIfFreeResponse(false)
+                }}
               >
                 {user ? 'Comment' : 'Sign in to comment'}
               </button>
@@ -561,12 +584,11 @@ export function FeedQuestion(props: {
   )
 }
 
-function canCommentOnBet(bet: Bet, createdTime: number, user?: User | null) {
-  const isSelf = user?.id === bet.userId
+function canCommentOnBet(bet: Bet, user?: User | null) {
+  const { userId, createdTime, isRedemption } = bet
+  const isSelf = user?.id === userId
   // You can comment if your bet was posted in the last hour
-  return (
-    !bet.isRedemption && isSelf && Date.now() - createdTime < 60 * 60 * 1000
-  )
+  return !isRedemption && isSelf && Date.now() - createdTime < 60 * 60 * 1000
 }
 
 function FeedDescription(props: { contract: Contract }) {
@@ -819,6 +841,37 @@ function FeedAnswerGroup(props: {
             'relative ml-8',
             index !== items.length - 1 && 'pb-4'
           )}
+        >
+          {index !== items.length - 1 ? (
+            <span
+              className="absolute top-5 left-5 -ml-px h-[calc(100%-1rem)] w-0.5 bg-gray-200"
+              aria-hidden="true"
+            />
+          ) : null}
+          <div className="relative flex items-start space-x-3">
+            <FeedItem item={item} />
+          </div>
+        </div>
+      ))}
+    </Col>
+  )
+}
+
+function FeedGeneralComments(props: {
+  contract: FullContract<any, FreeResponse>
+  items: ActivityItem[]
+  type: string
+}) {
+  const { items } = props
+
+  return (
+    <Col className={'mt-8 flex w-full '}>
+      <div className={'text-md mt-8 mb-2 text-left'}>General Comments</div>
+      <div className={'w-full border-b border-gray-200'} />
+      {items.map((item, index) => (
+        <div
+          key={item.id}
+          className={clsx('relative', index !== items.length - 1 && 'pb-4')}
         >
           {index !== items.length - 1 ? (
             <span

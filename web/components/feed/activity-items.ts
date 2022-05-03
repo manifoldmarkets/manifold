@@ -1,6 +1,6 @@
 import _ from 'lodash'
 
-import { Answer } from '../../../common/answer'
+import { Answer, getNoneAnswer } from '../../../common/answer'
 import { Bet } from '../../../common/bet'
 import { getOutcomeProbability } from '../../../common/calculate'
 import { Comment } from '../../../common/comment'
@@ -23,6 +23,7 @@ export type ActivityItem =
   | CloseItem
   | ResolveItem
   | CommentInputItem
+  | GeneralCommentsItem
 
 type BaseActivityItem = {
   id: string
@@ -75,6 +76,11 @@ export type AnswerGroupItem = BaseActivityItem & {
   items: ActivityItem[]
 }
 
+export type GeneralCommentsItem = BaseActivityItem & {
+  type: 'generalcomments'
+  items: ActivityItem[]
+}
+
 export type CloseItem = BaseActivityItem & {
   type: 'close'
 }
@@ -83,6 +89,7 @@ export type ResolveItem = BaseActivityItem & {
   type: 'resolve'
 }
 
+export const GENERAL_COMMENTS_OUTCOME_ID = 'General Comments'
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 const ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW = 3
 
@@ -276,37 +283,42 @@ function getAnswerAndCommentInputGroups(
   outcomes = _.sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   )
+
+  function collateCommentsSectionForOutcome(outcome: string) {
+    const answerBets = bets.filter((bet) => bet.outcome === outcome)
+    const answerComments = comments.filter(
+      (comment) =>
+        comment.answerOutcome === outcome ||
+        answerBets.some((bet) => bet.id === comment.betId)
+    )
+    let items = []
+    items.push({
+      type: 'commentInput' as const,
+      id: 'commentInputFor' + outcome,
+      contract,
+      betsByCurrentUser: user
+        ? bets.filter((bet) => bet.userId === user.id)
+        : [],
+      comments: comments,
+      answerOutcome: outcome,
+    })
+    items.push(
+      ...getCommentsWithPositions(
+        answerBets,
+        answerComments,
+        contract
+      ).reverse()
+    )
+    return items
+  }
+
   const answerGroups = outcomes
     .map((outcome) => {
-      const answerBets = bets.filter((bet) => bet.outcome === outcome)
-      const answerComments = comments.filter((comment) =>
-        answerBets.some(
-          (bet) => bet.id === comment.betId || comment.answerOutcome === outcome
-        )
-      )
       const answer = contract.answers?.find(
         (answer) => answer.id === outcome
       ) as Answer
 
-      // Create a list of items for each answer group made up of bets with comments and a comment input
-      let items = []
-      items.push({
-        type: 'commentInput' as const,
-        id: 'commentInputFor' + outcome,
-        contract,
-        betsByCurrentUser: user
-          ? bets.filter((bet) => bet.userId === user.id)
-          : [],
-        comments: comments,
-        answerOutcome: outcome,
-      })
-      items.push(
-        ...getCommentsWithPositions(
-          answerBets,
-          answerComments,
-          contract
-        ).reverse()
-      )
+      const items = collateCommentsSectionForOutcome(outcome)
 
       return {
         id: outcome,
@@ -317,7 +329,16 @@ function getAnswerAndCommentInputGroups(
         user,
       }
     })
-    .filter((group) => group.answer)
+    .filter((group) => group.answer) as ActivityItem[]
+
+  const outcome = GENERAL_COMMENTS_OUTCOME_ID
+  const items = collateCommentsSectionForOutcome(outcome)
+  answerGroups.unshift({
+    id: outcome,
+    type: 'generalcomments' as const,
+    contract,
+    items,
+  })
 
   return answerGroups
 }
