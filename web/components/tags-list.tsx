@@ -30,11 +30,12 @@ export function TagsList(props: {
   className?: string
   noLink?: boolean
   noLabel?: boolean
+  label?: string
 }) {
-  const { tags, className, noLink, noLabel } = props
+  const { tags, className, noLink, noLabel, label } = props
   return (
     <Row className={clsx('flex-wrap items-center gap-2', className)}>
-      {!noLabel && <div className="mr-1 text-gray-500">Tags</div>}
+      {!noLabel && <div className="mr-1 text-gray-500">{label || 'Tags'}</div>}
       {tags.map((tag) => (
         <Hashtag
           key={tag}

@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
+import { CATEGORY_LIST } from '../../../common/categories'
 
 import { Contract } from '../../../common/contract'
 import { parseTags } from '../../../common/util/parse'
@@ -9,6 +10,7 @@ import { useAdmin } from '../../hooks/use-admin'
 import { updateContract } from '../../lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
+import { TagsList } from '../tags-list'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -26,6 +28,7 @@ export function ContractDescription(props: {
       `${newDescription} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
     )
     const lowercaseTags = tags.map((tag) => tag.toLowerCase())
+
     await updateContract(contract.id, {
       description: newDescription,
       tags,
@@ -35,6 +38,9 @@ export function ContractDescription(props: {
 
   if (!isCreator && !contract.description.trim()) return null
 
+  const { tags } = contract
+  const category = tags.find((tag) => CATEGORY_LIST.includes(tag.toLowerCase()))
+
   return (
     <div
       className={clsx(
@@ -43,7 +49,15 @@ export function ContractDescription(props: {
       )}
     >
       <Linkify text={contract.description} />
+
+      {category && (
+        <div className="mt-4">
+          <TagsList tags={[category]} label="Category" />
+        </div>
+      )}
+
       <br />
+
       {isCreator && (
         <EditContract
           // Note: Because descriptionTimestamp is called once, later edits use
