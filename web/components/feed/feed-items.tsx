@@ -313,25 +313,44 @@ export function CommentInput(props: {
               </div>
             )}
           </div>
-          <button
-            className={'btn btn-outline btn-sm text-transform: mt-1 capitalize'}
-            onClick={() => {
-              if (answerOutcome === undefined) {
-                submitComment(id)
-              } else if (!focused) {
-                setFocused(true)
-              } else {
-                submitComment(id)
-                setFocused(false)
+          {!user && (
+            <button
+              className={
+                'btn btn-outline btn-sm text-transform: mt-1 capitalize'
               }
-            }}
-          >
-            {user
-              ? !focused && answerOutcome !== undefined
-                ? 'Add Comment'
-                : 'Comment'
-              : 'Sign in to comment'}
-          </button>
+              onClick={() => submitComment(id)}
+            >
+              Sign in to Comment
+            </button>
+          )}
+          {user && answerOutcome === undefined && (
+            <button
+              className={
+                'btn btn-outline btn-sm text-transform: mt-1 capitalize'
+              }
+              onClick={() => submitComment(id)}
+            >
+              Comment
+            </button>
+          )}
+          {user && answerOutcome !== undefined && (
+            <button
+              className={
+                focused
+                  ? 'btn btn-outline btn-sm text-transform: mt-1 capitalize'
+                  : 'btn btn-ghost btn-sm text-transform: mt-1 capitalize'
+              }
+              onClick={() => {
+                if (!focused) setFocused(true)
+                else {
+                  submitComment(id)
+                  setFocused(false)
+                }
+              }}
+            >
+              {!focused ? 'Add Comment' : 'Comment'}
+            </button>
+          )}
         </div>
       </Row>
     </>
