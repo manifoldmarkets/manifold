@@ -1,6 +1,6 @@
 import _ from 'lodash'
 
-import { Answer, getNoneAnswer } from '../../../common/answer'
+import { Answer } from '../../../common/answer'
 import { Bet } from '../../../common/bet'
 import { getOutcomeProbability } from '../../../common/calculate'
 import { Comment } from '../../../common/comment'

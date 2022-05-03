@@ -232,10 +232,6 @@ export function CommentInput(props: {
   const [comment, setComment] = useState('')
   const [focused, setFocused] = useState(false)
 
-  function setFocusedIfFreeResponse(focus: boolean) {
-    if (answerOutcome != undefined) setFocused(focus)
-  }
-
   // Should this be oldest bet or most recent bet?
   const mostRecentCommentableBet = betsByCurrentUser
     .filter((bet) => {
@@ -305,8 +301,8 @@ export function CommentInput(props: {
                 className="textarea textarea-bordered w-full resize-none"
                 placeholder="Add a comment..."
                 rows={answerOutcome == undefined || focused ? 3 : 1}
-                onFocus={() => setFocusedIfFreeResponse(true)}
-                onBlur={() => !comment && setFocusedIfFreeResponse(false)}
+                onFocus={() => setFocused(true)}
+                onBlur={() => !comment && setFocused(false)}
                 maxLength={MAX_COMMENT_LENGTH}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -320,7 +316,7 @@ export function CommentInput(props: {
                 }
                 onClick={() => {
                   submitComment(id)
-                  setFocusedIfFreeResponse(false)
+                  setFocused(false)
                 }}
               >
                 {user ? 'Comment' : 'Sign in to comment'}
