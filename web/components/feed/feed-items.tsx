@@ -123,8 +123,6 @@ function FeedItem(props: { item: ActivityItem }) {
       return <FeedResolve {...item} />
     case 'commentInput':
       return <CommentInput {...item} />
-    case 'generalcomments':
-      return <FeedGeneralComments {...item} />
   }
 }
 
@@ -268,11 +266,11 @@ export function CommentInput(props: {
 
   return (
     <>
-      <Row className={'flex w-full gap-2 pt-3'}>
+      <Row className={'flex w-full gap-2'}>
         <div>
           <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
         </div>
-        <div className={'min-w-0 flex-1 py-1.5'}>
+        <div className={'min-w-0 flex-1'}>
           <div className="text-sm text-gray-500">
             {mostRecentCommentableBet && (
               <BetStatusText
@@ -294,35 +292,46 @@ export function CommentInput(props: {
                 </>
               </>
             )}
-            <div className="mt-2">
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="textarea textarea-bordered w-full resize-none"
-                placeholder="Add a comment..."
-                rows={answerOutcome == undefined || focused ? 3 : 1}
-                onFocus={() => setFocused(true)}
-                onBlur={() => !comment && setFocused(false)}
-                maxLength={MAX_COMMENT_LENGTH}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    submitComment(id)
-                  }
-                }}
-              />
-              <button
-                className={
-                  'btn btn-outline btn-sm text-transform: mt-1 capitalize'
-                }
-                onClick={() => {
-                  submitComment(id)
-                  setFocused(false)
-                }}
-              >
-                {user ? 'Comment' : 'Sign in to comment'}
-              </button>
-            </div>
+            {(answerOutcome === undefined || focused) && (
+              <div className="mt-2">
+                <Textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="textarea textarea-bordered w-full resize-none"
+                  placeholder="Add a comment..."
+                  autoFocus={true}
+                  rows={answerOutcome == undefined || focused ? 3 : 1}
+                  onFocus={() => setFocused(true)}
+                  onBlur={() => !comment && setFocused(false)}
+                  maxLength={MAX_COMMENT_LENGTH}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      submitComment(id)
+                    }
+                  }}
+                />
+              </div>
+            )}
           </div>
+          <button
+            className={'btn btn-outline btn-sm text-transform: mt-1 capitalize'}
+            onClick={() => {
+              if (answerOutcome === undefined) {
+                submitComment(id)
+              } else if (!focused) {
+                setFocused(true)
+              } else {
+                submitComment(id)
+                setFocused(false)
+              }
+            }}
+          >
+            {user
+              ? !focused && answerOutcome !== undefined
+                ? 'Add Comment'
+                : 'Comment'
+              : 'Sign in to comment'}
+          </button>
         </div>
       </Row>
     </>
@@ -837,37 +846,6 @@ function FeedAnswerGroup(props: {
             'relative ml-8',
             index !== items.length - 1 && 'pb-4'
           )}
-        >
-          {index !== items.length - 1 ? (
-            <span
-              className="absolute top-5 left-5 -ml-px h-[calc(100%-1rem)] w-0.5 bg-gray-200"
-              aria-hidden="true"
-            />
-          ) : null}
-          <div className="relative flex items-start space-x-3">
-            <FeedItem item={item} />
-          </div>
-        </div>
-      ))}
-    </Col>
-  )
-}
-
-function FeedGeneralComments(props: {
-  contract: FullContract<any, FreeResponse>
-  items: ActivityItem[]
-  type: string
-}) {
-  const { items } = props
-
-  return (
-    <Col className={'mt-8 flex w-full '}>
-      <div className={'text-md mt-8 mb-2 text-left'}>General Comments</div>
-      <div className={'w-full border-b border-gray-200'} />
-      {items.map((item, index) => (
-        <div
-          key={item.id}
-          className={clsx('relative', index !== items.length - 1 && 'pb-4')}
         >
           {index !== items.length - 1 ? (
             <span

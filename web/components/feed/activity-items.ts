@@ -23,7 +23,6 @@ export type ActivityItem =
   | CloseItem
   | ResolveItem
   | CommentInputItem
-  | GeneralCommentsItem
 
 type BaseActivityItem = {
   id: string
@@ -73,11 +72,6 @@ export type BetGroupItem = BaseActivityItem & {
 export type AnswerGroupItem = BaseActivityItem & {
   type: 'answergroup' | 'answer'
   answer: Answer
-  items: ActivityItem[]
-}
-
-export type GeneralCommentsItem = BaseActivityItem & {
-  type: 'generalcomments'
   items: ActivityItem[]
 }
 
@@ -330,16 +324,6 @@ function getAnswerAndCommentInputGroups(
       }
     })
     .filter((group) => group.answer) as ActivityItem[]
-
-  const outcome = GENERAL_COMMENTS_OUTCOME_ID
-  const items = collateCommentsSectionForOutcome(outcome)
-  answerGroups.unshift({
-    id: outcome,
-    type: 'generalcomments' as const,
-    contract,
-    items,
-  })
-
   return answerGroups
 }
 
@@ -559,7 +543,7 @@ export function getSpecificContractActivityItems(
   comments: Comment[],
   user: User | null | undefined,
   options: {
-    mode: 'comments' | 'bets' | 'free-response-comments'
+    mode: 'comments' | 'bets' | 'free-response-comment-answer-groups'
   }
 ) {
   const { mode } = options
@@ -581,19 +565,30 @@ export function getSpecificContractActivityItems(
       break
 
     case 'comments':
-      items.push(...getCommentsWithPositions(bets, comments, contract))
+      const nonFreeResponseComments = comments.filter(
+        (comment) => comment.answerOutcome === undefined
+      )
+      const nonFreeResponseBets =
+        contract.outcomeType === 'FREE_RESPONSE' ? [] : bets
+      items.push(
+        ...getCommentsWithPositions(
+          nonFreeResponseBets,
+          nonFreeResponseComments,
+          contract
+        )
+      )
 
       items.push({
         type: 'commentInput',
         id: 'commentInput',
         contract,
         betsByCurrentUser: user
-          ? bets.filter((bet) => bet.userId === user.id)
+          ? nonFreeResponseBets.filter((bet) => bet.userId === user.id)
           : [],
-        comments: comments,
+        comments: nonFreeResponseComments,
       })
       break
-    case 'free-response-comments':
+    case 'free-response-comment-answer-groups':
       items.push(
         ...getAnswerAndCommentInputGroups(
           contract as FullContract<DPM, FreeResponse>,

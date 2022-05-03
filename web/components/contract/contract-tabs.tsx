@@ -7,6 +7,7 @@ import { ContractActivity } from '../feed/contract-activity'
 import { ContractBetsTable, MyBetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
+import { Col } from '../layout/col'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -33,18 +34,34 @@ export function ContractTabs(props: {
   )
 
   const commentActivity = (
-    <ContractActivity
-      contract={contract}
-      bets={bets}
-      comments={comments}
-      user={user}
-      mode={
-        contract.outcomeType === 'FREE_RESPONSE'
-          ? 'free-response-comments'
-          : 'comments'
-      }
-      betRowClassName="!mt-0 xl:hidden"
-    />
+    <>
+      <ContractActivity
+        contract={contract}
+        bets={bets}
+        comments={comments}
+        user={user}
+        mode={
+          contract.outcomeType === 'FREE_RESPONSE'
+            ? 'free-response-comment-answer-groups'
+            : 'comments'
+        }
+        betRowClassName="!mt-0 xl:hidden"
+      />
+      {contract.outcomeType === 'FREE_RESPONSE' && (
+        <Col className={'mt-8 flex w-full '}>
+          <div className={'text-md mt-8 mb-2 text-left'}>General Comments</div>
+          <div className={'mb-4 w-full border-b border-gray-200'} />
+          <ContractActivity
+            contract={contract}
+            bets={bets}
+            comments={comments}
+            user={user}
+            mode={'comments'}
+            betRowClassName="!mt-0 xl:hidden"
+          />
+        </Col>
+      )}
+    </>
   )
 
   const yourTrades = (

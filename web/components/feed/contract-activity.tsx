@@ -22,7 +22,7 @@ export function ContractActivity(props: {
     | 'all'
     | 'comments'
     | 'bets'
-    | 'free-response-comments'
+    | 'free-response-comment-answer-groups'
   contractPath?: string
   className?: string
   betRowClassName?: string
@@ -46,7 +46,7 @@ export function ContractActivity(props: {
         })
       : mode === 'comments' ||
         mode === 'bets' ||
-        mode === 'free-response-comments'
+        mode === 'free-response-comment-answer-groups'
       ? getSpecificContractActivityItems(contract, bets, comments, user, {
           mode,
         })
