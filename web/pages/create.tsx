@@ -13,18 +13,12 @@ import { InfoTooltip } from '../components/info-tooltip'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { ProbabilitySelector } from '../components/probability-selector'
-import { parseWordsAsTags } from '../../common/util/parse'
-import { TagsList } from '../components/tags-list'
 import { Row } from '../components/layout/row'
 import { MAX_DESCRIPTION_LENGTH, outcomeType } from '../../common/contract'
 import { formatMoney } from '../../common/util/format'
 import { useHasCreatedContractToday } from '../hooks/use-has-created-contract-today'
-import {
-  CATEGORIES,
-  category,
-  CATEGORY_LIST,
-  TO_CATEGORY,
-} from '../../common/categories'
+import { CATEGORIES, CATEGORY_LIST, TO_CATEGORY } from '../../common/categories'
+import { removeUndefinedProps } from '../../common/util/object'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -73,9 +67,10 @@ export function NewContract(props: { question: string; tag?: string }) {
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb, setInitialProb] = useState(50)
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState<string>(CATEGORY_LIST[0])
-  const [tagText, setTagText] = useState<string>(tag ?? '')
-  const tags = parseWordsAsTags(tagText)
+
+  const [category, setCategory] = useState<string>('')
+  // const [tagText, setTagText] = useState<string>(tag ?? '')
+  // const tags = parseWordsAsTags(tagText)
 
   const [ante, setAnte] = useState(FIXED_ANTE)
 
@@ -117,16 +112,17 @@ export function NewContract(props: { question: string; tag?: string }) {
 
     setIsSubmitting(true)
 
-    const result: any = await createContract({
-      question,
-      outcomeType,
-      description,
-      initialProb,
-      ante,
-      closeTime,
-      category,
-      tags,
-    }).then((r) => r.data || {})
+    const result: any = await createContract(
+      removeUndefinedProps({
+        question,
+        outcomeType,
+        description,
+        initialProb,
+        ante,
+        closeTime,
+        tags: category ? [category] : undefined,
+      })
+    ).then((r) => r.data || {})
 
     if (result.status !== 'success') {
       console.log('error creating contract', result)
@@ -217,9 +213,13 @@ export function NewContract(props: { question: string; tag?: string }) {
         <select
           className="select select-bordered w-full max-w-xs"
           onChange={(e) =>
-            setCategory(TO_CATEGORY[e.currentTarget.value] as category)
+            setCategory(
+              e.currentTarget.value || TO_CATEGORY[e.currentTarget.value]
+            )
           }
         >
+          <option selected={category === ''}></option>
+
           {CATEGORY_LIST.map((cat) => (
             <option selected={category === cat} value={CATEGORIES[cat]}>
               {CATEGORIES[cat]}

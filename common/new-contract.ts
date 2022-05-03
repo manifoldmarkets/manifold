@@ -11,7 +11,6 @@ import { User } from './user'
 import { parseTags } from './util/parse'
 import { removeUndefinedProps } from './util/object'
 import { calcDpmInitialPool } from './calculate-dpm'
-import { category } from './categories'
 
 export function getNewContract(
   id: string,
@@ -23,7 +22,6 @@ export function getNewContract(
   initialProb: number,
   ante: number,
   closeTime: number,
-  category: category,
   extraTags: string[]
 ) {
   const tags = parseTags(
@@ -50,7 +48,6 @@ export function getNewContract(
 
     question: question.trim(),
     description: description.trim(),
-    category,
     tags,
     lowercaseTags,
     visibility: 'public',
