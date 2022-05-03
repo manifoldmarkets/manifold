@@ -37,7 +37,7 @@ import { fromNow } from '../../lib/util/time'
 import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
 import { Answer } from '../../../common/answer'
-import { ActivityItem } from './activity-items'
+import { ActivityItem, GENERAL_COMMENTS_OUTCOME_ID } from './activity-items'
 import {
   Binary,
   CPMM,
@@ -222,29 +222,42 @@ export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
   comments: Comment[]
+  // Only for free response comment inputs
+  answerOutcome?: string
 }) {
-  const { contract, betsByCurrentUser, comments } = props
+  const { contract, betsByCurrentUser, comments, answerOutcome } = props
   const user = useUser()
   const [comment, setComment] = useState('')
+  const [focused, setFocused] = useState(false)
 
   // Should this be oldest bet or most recent bet?
   const mostRecentCommentableBet = betsByCurrentUser
-    .filter(
-      (bet) =>
-        canCommentOnBet(bet, bet.createdTime, user) &&
+    .filter((bet) => {
+      if (
+        canCommentOnBet(bet, user) &&
+        // The bet doesn't already have a comment
         !comments.some((comment) => comment.betId == bet.id)
-    )
+      ) {
+        if (!answerOutcome) return true
+        // If we're in free response, don't allow commenting on ante bet
+        return (
+          bet.outcome !== GENERAL_COMMENTS_OUTCOME_ID &&
+          answerOutcome === bet.outcome
+        )
+      }
+      return false
+    })
     .sort((b1, b2) => b1.createdTime - b2.createdTime)
     .pop()
 
   const { id } = mostRecentCommentableBet || { id: undefined }
 
-  async function submitComment(id: string | undefined) {
-    if (!comment) return
+  async function submitComment(betId: string | undefined) {
     if (!user) {
       return await firebaseLogin()
     }
-    await createComment(contract.id, comment, user, id)
+    if (!comment) return
+    await createComment(contract.id, comment, user, betId, answerOutcome)
     setComment('')
   }
 
@@ -253,11 +266,11 @@ export function CommentInput(props: {
 
   return (
     <>
-      <Row className={'flex w-full gap-2 pt-3'}>
+      <Row className={'flex w-full gap-2'}>
         <div>
           <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
         </div>
-        <div className={'min-w-0 flex-1 py-1.5'}>
+        <div className={'min-w-0 flex-1'}>
           <div className="text-sm text-gray-500">
             {mostRecentCommentableBet && (
               <BetStatusText
@@ -279,30 +292,65 @@ export function CommentInput(props: {
                 </>
               </>
             )}
-            <div className="mt-2">
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="textarea textarea-bordered w-full resize-none"
-                placeholder="Add a comment..."
-                rows={3}
-                maxLength={MAX_COMMENT_LENGTH}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    submitComment(id)
-                  }
-                }}
-              />
-              <button
-                className={
-                  'btn btn-outline btn-sm text-transform: mt-1 capitalize'
-                }
-                onClick={() => submitComment(id)}
-              >
-                {user ? 'Comment' : 'Sign in to comment'}
-              </button>
-            </div>
+            {(answerOutcome === undefined || focused) && (
+              <div className="mt-2">
+                <Textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="textarea textarea-bordered w-full resize-none"
+                  placeholder="Add a comment..."
+                  autoFocus={true}
+                  rows={answerOutcome == undefined || focused ? 3 : 1}
+                  onFocus={() => setFocused(true)}
+                  onBlur={() => !comment && setFocused(false)}
+                  maxLength={MAX_COMMENT_LENGTH}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      submitComment(id)
+                    }
+                  }}
+                />
+              </div>
+            )}
           </div>
+          {!user && (
+            <button
+              className={
+                'btn btn-outline btn-sm text-transform: mt-1 capitalize'
+              }
+              onClick={() => submitComment(id)}
+            >
+              Sign in to Comment
+            </button>
+          )}
+          {user && answerOutcome === undefined && (
+            <button
+              className={
+                'btn btn-outline btn-sm text-transform: mt-1 capitalize'
+              }
+              onClick={() => submitComment(id)}
+            >
+              Comment
+            </button>
+          )}
+          {user && answerOutcome !== undefined && (
+            <button
+              className={
+                focused
+                  ? 'btn btn-outline btn-sm text-transform: mt-1 capitalize'
+                  : 'btn btn-ghost btn-sm text-transform: mt-1 capitalize'
+              }
+              onClick={() => {
+                if (!focused) setFocused(true)
+                else {
+                  submitComment(id)
+                  setFocused(false)
+                }
+              }}
+            >
+              {!focused ? 'Add Comment' : 'Comment'}
+            </button>
+          )}
         </div>
       </Row>
     </>
@@ -560,12 +608,11 @@ export function FeedQuestion(props: {
   )
 }
 
-function canCommentOnBet(bet: Bet, createdTime: number, user?: User | null) {
-  const isSelf = user?.id === bet.userId
+function canCommentOnBet(bet: Bet, user?: User | null) {
+  const { userId, createdTime, isRedemption } = bet
+  const isSelf = user?.id === userId
   // You can comment if your bet was posted in the last hour
-  return (
-    !bet.isRedemption && isSelf && Date.now() - createdTime < 60 * 60 * 1000
-  )
+  return !isRedemption && isSelf && Date.now() - createdTime < 60 * 60 * 1000
 }
 
 function FeedDescription(props: { contract: Contract }) {
