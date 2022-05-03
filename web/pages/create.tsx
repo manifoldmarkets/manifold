@@ -213,9 +213,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         <select
           className="select select-bordered w-full max-w-xs"
           onChange={(e) =>
-            setCategory(
-              e.currentTarget.value || TO_CATEGORY[e.currentTarget.value]
-            )
+            setCategory(TO_CATEGORY[e.currentTarget.value] ?? '')
           }
         >
           <option selected={category === ''}></option>

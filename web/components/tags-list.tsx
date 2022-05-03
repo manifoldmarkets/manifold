@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { CATEGORIES } from '../../common/categories'
 import { Col } from './layout/col'
 
 import { Row } from './layout/row'
@@ -6,6 +7,9 @@ import { SiteLink } from './site-link'
 
 function Hashtag(props: { tag: string; noLink?: boolean }) {
   const { tag, noLink } = props
+  const category = CATEGORIES[tag.replace('#', '').toLowerCase()]
+  console.log(tag, category)
+
   const body = (
     <div
       className={clsx(
@@ -13,7 +17,7 @@ function Hashtag(props: { tag: string; noLink?: boolean }) {
         !noLink && 'cursor-pointer'
       )}
     >
-      <span className="text-sm text-gray-600">{tag}</span>
+      <span className="text-sm text-gray-600">{category ?? tag}</span>
     </div>
   )
 
