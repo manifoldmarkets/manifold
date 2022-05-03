@@ -19,14 +19,15 @@ export function CharityCard(props: { charity: Charity }) {
         <Row className="mt-6">
           {tags?.includes('Featured') && <FeaturedBadge />}
         </Row>
-
-        <figure className="relative h-32 p-4">
-          {photo ? (
-            <Image src={photo} alt="" layout="fill" objectFit="contain" />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-r from-slate-300 to-indigo-200" />
-          )}
-        </figure>
+        <div className="px-8">
+          <figure className="relative h-32">
+            {photo ? (
+              <Image src={photo} alt="" layout="fill" objectFit="contain" />
+            ) : (
+              <div className="h-full w-full bg-gradient-to-r from-slate-300 to-indigo-200" />
+            )}
+          </figure>
+        </div>
         <div className="card-body">
           {/* <h3 className="card-title line-clamp-3">{name}</h3> */}
           <div className="line-clamp-4 text-sm">{preview}</div>
