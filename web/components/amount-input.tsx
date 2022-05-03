@@ -8,6 +8,7 @@ import { Bet } from '../../common/bet'
 import { Spacer } from './layout/spacer'
 import { calculateCpmmSale } from '../../common/calculate-cpmm'
 import { Binary, CPMM, FullContract } from '../../common/contract'
+import { SiteLink } from './site-link'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -65,7 +66,16 @@ export function AmountInput(props: {
 
       {error && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
-          {error}
+          {error === 'Insufficient balance' ? (
+            <>
+              Not enough funds.
+              <span className="ml-1 text-indigo-500">
+                <SiteLink href="/add-funds">Buy more?</SiteLink>
+              </span>
+            </>
+          ) : (
+            error
+          )}
         </div>
       )}
 
