@@ -31,7 +31,7 @@ export function Avatar(props: {
       {avatarUrl ? (
         <img
           className={clsx(
-            'flex items-center justify-center rounded-full object-cover',
+            'rounded-full object-cover',
             `w-${s} h-${s}`,
             !noLink && 'cursor-pointer',
             className
