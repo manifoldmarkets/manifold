@@ -169,7 +169,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
         />
 
         {outcomeType === 'FREE_RESPONSE' &&
-          (!isResolved || resolution === 'MKT') && (
+          (isResolved || resolution === 'MKT') && (
             <>
               <Spacer h={4} />
               <AnswersPanel
@@ -179,7 +179,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
             </>
           )}
 
-        {contract.isResolved && (
+        {isResolved && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
               <ContractLeaderboard contract={contract} bets={bets} />
