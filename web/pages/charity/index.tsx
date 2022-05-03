@@ -36,7 +36,7 @@ export default function Charity() {
 
   return (
     <Page>
-      <Col className="w-full items-center rounded px-4 py-6 sm:px-8 xl:w-[125%]">
+      <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="max-w-xl gap-2">
           <Title className="!mt-0" text="Manifold for Good" />
           <div className="mb-6 text-gray-500">
