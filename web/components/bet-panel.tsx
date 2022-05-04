@@ -432,7 +432,13 @@ export function SellPanel(props: {
       <SellAmountInput
         inputClassName="w-full"
         contract={contract}
-        amount={amount ? Math.floor(amount) : undefined}
+        amount={
+          amount
+            ? Math.round(amount) === 0
+              ? 0
+              : Math.floor(amount)
+            : undefined
+        }
         onChange={setAmount}
         userBets={userBets}
         error={error}
