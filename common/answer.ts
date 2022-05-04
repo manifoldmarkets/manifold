@@ -9,7 +9,7 @@ export type Answer = {
   userId: string
   username: string
   name: string
-  avatarUrl?: string
+  avatarUrl: string
 
   text: string
 }
