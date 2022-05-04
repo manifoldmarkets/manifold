@@ -10,8 +10,7 @@ export function Avatar(props: {
   className?: string
   containerClassName?: string
 }) {
-  const { username, avatarUrl, noLink, size, className, containerClassName } =
-    props
+  const { username, avatarUrl, noLink, size, className } = props
   const s = size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
 
   const onClick =
@@ -21,32 +20,28 @@ export function Avatar(props: {
           e.stopPropagation()
           Router.push(`/${username}`)
         }
-  return (
-    <div
+
+  // there can be no avatar URL or username in the feed, we show a "submit comment"
+  // item with a fake grey user circle guy even if you aren't signed in
+  return avatarUrl ? (
+    <img
       className={clsx(
-        `flex-shrink-0 rounded-full bg-white w-${s} h-${s}`,
-        containerClassName
+        'flex-shrink-0 rounded-full rounded-full bg-white object-cover',
+        `w-${s} h-${s}`,
+        !noLink && 'cursor-pointer',
+        className
       )}
-    >
-      {avatarUrl ? (
-        <img
-          className={clsx(
-            'rounded-full object-cover',
-            `w-${s} h-${s}`,
-            !noLink && 'cursor-pointer',
-            className
-          )}
-          src={avatarUrl}
-          onClick={onClick}
-          alt={username}
-        />
-      ) : (
-        // TODO: After 2022-03-01, can just assume that all contracts have an avatarUrl
-        <UserCircleIcon
-          className={`w-${s} h-${s} text-gray-500`}
-          aria-hidden="true"
-        />
+      src={avatarUrl}
+      onClick={onClick}
+      alt={username}
+    />
+  ) : (
+    <UserCircleIcon
+      className={clsx(
+        `flex-shrink-0 rounded-full bg-white w-${s} h-${s} text-gray-500`,
+        className
       )}
-    </div>
+      aria-hidden="true"
+    />
   )
 }
