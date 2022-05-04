@@ -11,7 +11,7 @@ export type FullContract<
   creatorId: string
   creatorName: string
   creatorUsername: string
-  creatorAvatarUrl?: string // Start requiring after 2022-03-01
+  creatorAvatarUrl: string
 
   question: string
   description: string // More info about what the contract is about
