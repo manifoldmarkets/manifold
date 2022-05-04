@@ -178,9 +178,10 @@ export function SellAmountInput(props: {
   ]
 
   const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
-  const shares = yesShares || noShares
+  const shares = Math.round(yesShares) || Math.round(noShares)
 
-  const sharesSold = Math.min(amount ?? 0, yesShares || noShares)
+  const sharesSold = Math.min(amount ?? 0, shares)
+
   const { saleValue } = calculateCpmmSale(
     contract,
     sharesSold,
