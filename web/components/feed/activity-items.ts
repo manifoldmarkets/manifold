@@ -33,6 +33,7 @@ export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
   betsByCurrentUser: Bet[]
   comments: Comment[]
+  answerOutcome?: string
 }
 
 export type DescriptionItem = BaseActivityItem & {
@@ -82,6 +83,7 @@ export type ResolveItem = BaseActivityItem & {
   type: 'resolve'
 }
 
+export const GENERAL_COMMENTS_OUTCOME_ID = 'General Comments'
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 const ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW = 3
 
@@ -263,6 +265,68 @@ function getAnswerGroups(
   return answerGroups
 }
 
+function getAnswerAndCommentInputGroups(
+  contract: FullContract<DPM, FreeResponse>,
+  bets: Bet[],
+  comments: Comment[],
+  user: User | undefined | null
+) {
+  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
+    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
+  )
+  outcomes = _.sortBy(outcomes, (outcome) =>
+    getOutcomeProbability(contract, outcome)
+  )
+
+  function collateCommentsSectionForOutcome(outcome: string) {
+    const answerBets = bets.filter((bet) => bet.outcome === outcome)
+    const answerComments = comments.filter(
+      (comment) =>
+        comment.answerOutcome === outcome ||
+        answerBets.some((bet) => bet.id === comment.betId)
+    )
+    let items = []
+    items.push({
+      type: 'commentInput' as const,
+      id: 'commentInputFor' + outcome,
+      contract,
+      betsByCurrentUser: user
+        ? bets.filter((bet) => bet.userId === user.id)
+        : [],
+      comments: comments,
+      answerOutcome: outcome,
+    })
+    items.push(
+      ...getCommentsWithPositions(
+        answerBets,
+        answerComments,
+        contract
+      ).reverse()
+    )
+    return items
+  }
+
+  const answerGroups = outcomes
+    .map((outcome) => {
+      const answer = contract.answers?.find(
+        (answer) => answer.id === outcome
+      ) as Answer
+
+      const items = collateCommentsSectionForOutcome(outcome)
+
+      return {
+        id: outcome,
+        type: 'answergroup' as const,
+        contract,
+        answer,
+        items,
+        user,
+      }
+    })
+    .filter((group) => group.answer) as ActivityItem[]
+  return answerGroups
+}
+
 function groupBetsAndComments(
   bets: Bet[],
   comments: Comment[],
@@ -382,7 +446,7 @@ export function getAllContractActivityItems(
       )
     )
     items.push({
-      type: 'commentInput',
+      type: 'commentInput' as const,
       id: 'commentInput',
       contract,
       betsByCurrentUser: [],
@@ -408,7 +472,7 @@ export function getAllContractActivityItems(
 
   if (outcomeType === 'BINARY') {
     items.push({
-      type: 'commentInput',
+      type: 'commentInput' as const,
       id: 'commentInput',
       contract,
       betsByCurrentUser: [],
@@ -479,7 +543,7 @@ export function getSpecificContractActivityItems(
   comments: Comment[],
   user: User | null | undefined,
   options: {
-    mode: 'comments' | 'bets'
+    mode: 'comments' | 'bets' | 'free-response-comment-answer-groups'
   }
 ) {
   const { mode } = options
@@ -501,17 +565,38 @@ export function getSpecificContractActivityItems(
       break
 
     case 'comments':
-      items.push(...getCommentsWithPositions(bets, comments, contract))
+      const nonFreeResponseComments = comments.filter(
+        (comment) => comment.answerOutcome === undefined
+      )
+      const nonFreeResponseBets =
+        contract.outcomeType === 'FREE_RESPONSE' ? [] : bets
+      items.push(
+        ...getCommentsWithPositions(
+          nonFreeResponseBets,
+          nonFreeResponseComments,
+          contract
+        )
+      )
 
       items.push({
         type: 'commentInput',
         id: 'commentInput',
         contract,
         betsByCurrentUser: user
-          ? bets.filter((bet) => bet.userId === user.id)
+          ? nonFreeResponseBets.filter((bet) => bet.userId === user.id)
           : [],
-        comments: comments,
+        comments: nonFreeResponseComments,
       })
+      break
+    case 'free-response-comment-answer-groups':
+      items.push(
+        ...getAnswerAndCommentInputGroups(
+          contract as FullContract<DPM, FreeResponse>,
+          bets,
+          comments,
+          user
+        )
+      )
       break
   }
 

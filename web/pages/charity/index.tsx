@@ -1,17 +1,40 @@
 import _ from 'lodash'
 import { useState, useMemo } from 'react'
-import { charities as charityList } from '../../../common/charity'
+import { charities, Charity as CharityType } from '../../../common/charity'
 import { CharityCard } from '../../components/charity/charity-card'
 import { Col } from '../../components/layout/col'
+import { Spacer } from '../../components/layout/spacer'
 import { Page } from '../../components/page'
+import { SiteLink } from '../../components/site-link'
 import { Title } from '../../components/title'
+import { getAllCharityTxns } from '../../lib/firebase/txns'
 
-const charities = charityList.map((charity) => ({
-  ...charity,
-  raised: 4001,
-}))
+export async function getStaticProps() {
+  const txns = await getAllCharityTxns()
+  const totals = _.mapValues(_.groupBy(txns, 'toId'), (txns) =>
+    _.sumBy(txns, (txn) => txn.amount)
+  )
+  const totalRaised = _.sum(Object.values(totals))
+  const sortedCharities = _.sortBy(charities, [
+    (charity) => (charity.tags?.includes('Featured') ? 0 : 1),
+    (charity) => -totals[charity.id],
+  ])
 
-export default function Charity() {
+  return {
+    props: {
+      totalRaised,
+      charities: sortedCharities,
+    },
+    revalidate: 60,
+  }
+}
+
+export default function Charity(props: {
+  totalRaised: number
+  charities: CharityType[]
+}) {
+  const { totalRaised, charities } = props
+
   const [query, setQuery] = useState('')
   const debouncedQuery = _.debounce(setQuery, 50)
 
@@ -25,12 +48,15 @@ export default function Charity() {
 
   return (
     <Page>
-      <Col className="w-full items-center rounded px-4 py-6 sm:px-8 xl:w-[125%]">
+      <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="max-w-xl gap-2">
           <Title className="!mt-0" text="Manifold for Good" />
           <div className="mb-6 text-gray-500">
             Donate your winnings to charity! Through the month of May, every M$
             100 you contribute turns into $1 USD sent to your chosen charity.
+            <Spacer h={5} />
+            Together we've donated over ${Math.floor(totalRaised / 100)} USD so
+            far!
           </div>
 
           <input
@@ -60,8 +86,14 @@ export default function Charity() {
         ></iframe>
 
         <div className="mt-10 text-gray-500">
-          Don't see your favorite charity? Recommend that we add it by emailing
-          <span className="text-indigo-500"> give@manifold.markets</span>~
+          Don't see your favorite charity? Recommend it{' '}
+          <SiteLink
+            href="https://manifold.markets/Sinclair/which-charities-should-manifold-add"
+            className="text-indigo-700"
+          >
+            here
+          </SiteLink>
+          !
           <br />
           <br />
           <span className="italic">

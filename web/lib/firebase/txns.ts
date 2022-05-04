@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { Txn } from '../../../common/txn'
 
 import { db } from './init'
-import { listenForValues } from './utils'
+import { getValues, listenForValues } from './utils'
 
 const txnCollection = collection(db, 'txns')
 
@@ -20,4 +20,10 @@ export function listenForCharityTxns(
   setTxns: (txns: Txn[]) => void
 ) {
   return listenForValues<Txn>(getCharityQuery(charityId), setTxns)
+}
+
+const charitiesQuery = query(txnCollection, where('toType', '==', 'CHARITY'))
+
+export function getAllCharityTxns() {
+  return getValues<Txn>(charitiesQuery)
 }

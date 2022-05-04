@@ -18,6 +18,7 @@ import { useCharityTxns } from '../../hooks/use-charity-txns'
 import { useWindowSize } from '../../hooks/use-window-size'
 import Confetti from 'react-confetti'
 import { Donation } from '../../components/charity/feed-items'
+import Image from 'next/image'
 
 export const manaToUSD = (mana: number) =>
   (mana / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -42,6 +43,7 @@ function CharityPage(props: { charity: Charity }) {
   const user = useUser()
 
   const txns = useCharityTxns(charity.id)
+  const newToOld = _.sortBy(txns, (txn) => -txn.createdTime)
   const totalRaised = _.sumBy(txns, (txn) => txn.amount)
   const fromYou = _.sumBy(
     txns.filter((txn) => txn.fromId === user?.id),
@@ -77,11 +79,9 @@ function CharityPage(props: { charity: Charity }) {
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
             {photo && (
-              <img
-                src={photo}
-                alt=""
-                className="w-40 rounded-2xl object-contain"
-              />
+              <div className="relative w-40 rounded-2xl">
+                <Image src={photo} alt="" layout="fill" objectFit="contain" />
+              </div>
             )}
             <Details
               charity={charity}
@@ -92,7 +92,7 @@ function CharityPage(props: { charity: Charity }) {
           </Row>
           <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
           <Blurb text={description} />
-          {txns.map((txn) => (
+          {newToOld.map((txn) => (
             <Donation key={txn.id} txn={txn} />
           ))}
         </Col>
@@ -215,8 +215,8 @@ function DonationBox(props: {
         />
 
         <Col className="mt-3 w-full gap-3">
-          <Row className="items-center justify-between text-sm">
-            <span className="text-gray-500">{charity.name} receives</span>
+          <Row className="items-center text-sm xl:justify-between">
+            <span className="mr-1 text-gray-500">{charity.name} receives</span>
             <span>{manaToUSD(amount || 0)}</span>
           </Row>
           {/* TODO: matching pool */}

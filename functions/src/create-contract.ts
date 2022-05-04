@@ -73,7 +73,6 @@ export const createContract = functions
       )
         return { status: 'error', message: 'Invalid initial probability' }
 
-      const ante = FIXED_ANTE // data.ante
       // uses utc time on server:
       const today = new Date().setHours(0, 0, 0, 0)
       const userContractsCreatedTodaySnapshot = await firestore
@@ -82,6 +81,8 @@ export const createContract = functions
         .where('createdTime', '>=', today)
         .get()
       const isFree = userContractsCreatedTodaySnapshot.size === 0
+
+      const ante = isFree ? 300 : FIXED_ANTE // data.ante
 
       if (
         ante === undefined ||
