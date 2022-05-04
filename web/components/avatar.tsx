@@ -8,7 +8,6 @@ export function Avatar(props: {
   noLink?: boolean
   size?: number | 'xs' | 'sm'
   className?: string
-  containerClassName?: string
 }) {
   const { username, avatarUrl, noLink, size, className } = props
   const s = size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
