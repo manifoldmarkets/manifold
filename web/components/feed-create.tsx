@@ -62,7 +62,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
 }
 
 export default function FeedCreate(props: {
-  user?: User
+  user: User
   tag?: string
   placeholder?: string
   className?: string
@@ -98,7 +98,7 @@ export default function FeedCreate(props: {
       }}
     >
       <div className="relative flex items-start space-x-3">
-        <Avatar username={user?.username} avatarUrl={user?.avatarUrl} noLink />
+        <Avatar username={user.username} avatarUrl={user.avatarUrl} noLink />
 
         <div className="min-w-0 flex-1">
           <Row className="justify-between">

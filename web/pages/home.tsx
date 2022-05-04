@@ -31,7 +31,7 @@ const Home = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady])
 
-  if (user === null) {
+  if (user == null) {
     Router.replace('/')
     return <></>
   }
@@ -41,7 +41,7 @@ const Home = () => {
       <Page assertUser="signed-in" suspend={!!contract}>
         <Col className="items-center">
           <Col className="w-full max-w-[700px]">
-            <FeedCreate user={user ?? undefined} />
+            <FeedCreate user={user} />
             <Spacer h={10} />
             {feed ? (
               <ActivityFeed
