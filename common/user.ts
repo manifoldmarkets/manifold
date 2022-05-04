@@ -17,6 +17,8 @@ export type User = {
   totalDeposits: number
   totalPnLCached: number
   creatorVolumeCached: number
+
+  followedCategories?: string[]
 }
 
 export const STARTING_BALANCE = 1000
