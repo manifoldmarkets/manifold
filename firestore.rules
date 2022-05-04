@@ -85,5 +85,10 @@ service cloud.firestore {
     match /txns/{txnId} {
       allow read;
     }
+
+    match /manalinks/{slug} {
+      allow read;
+      allow create, update: if request.auth.uid == request.resource.data.fromId;
+    }
   }
 }
