@@ -81,7 +81,7 @@ export const createContract = functions
         .get()
       const isFree = userContractsCreatedTodaySnapshot.size === 0
 
-      const ante = isFree ? 300 : FIXED_ANTE // data.ante
+      const ante = FIXED_ANTE // data.ante
 
       if (
         ante === undefined ||
