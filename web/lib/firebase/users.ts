@@ -77,11 +77,13 @@ const CACHED_USER_KEY = 'CACHED_USER_KEY'
 // used to avoid weird race condition
 let createUserPromise: Promise<User | null> | undefined = undefined
 
+const warmUpCreateUser = _.throttle(createUser, 5000 /* ms */)
+
 export function listenForLogin(onUser: (user: User | null) => void) {
   const cachedUser = localStorage.getItem(CACHED_USER_KEY)
   onUser(cachedUser ? JSON.parse(cachedUser) : null)
 
-  if (!cachedUser) createUser() // warm up cloud function
+  if (!cachedUser) warmUpCreateUser()
 
   return onAuthStateChanged(auth, async (fbUser) => {
     if (fbUser) {
