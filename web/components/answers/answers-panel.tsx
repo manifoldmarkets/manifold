@@ -116,7 +116,7 @@ export function AnswersPanel(props: {
         />
       )}
 
-      {sortedAnswers.length === 0 && (
+      {answers.length <= 1 && (
         <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
