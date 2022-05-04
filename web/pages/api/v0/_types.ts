@@ -12,7 +12,7 @@ export type LiteMarket = {
   creatorUsername: string
   creatorName: string
   createdTime: number
-  creatorAvatarUrl?: string
+  creatorAvatarUrl: string
 
   // Market attributes. All times are in milliseconds since epoch
   closeTime?: number
