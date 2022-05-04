@@ -16,6 +16,8 @@ export type Manalink = {
   // If set to Infinity, the link can be used infinitely
   maxUses: number
 
+  // Used for simpler caching
+  successUserIds: string[]
   // Successful redemptions of the link
   successes: Claim[]
   // Failed redemptions of the link
@@ -24,6 +26,9 @@ export type Manalink = {
 
 type Claim = {
   toId: string
+
+  // The ID of the successful txn that tracks the money moved
+  txnId: string
 
   claimedTime: number
 }
