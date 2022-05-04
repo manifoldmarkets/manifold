@@ -31,6 +31,9 @@ type BaseActivityItem = {
 
 export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
+  betsByCurrentUser: Bet[]
+  comments: Comment[]
+  answerOutcome?: string
 }
 
 export type DescriptionItem = BaseActivityItem & {
@@ -48,12 +51,13 @@ export type BetItem = BaseActivityItem & {
   bet: Bet
   hideOutcome: boolean
   smallAvatar: boolean
+  hideComment?: boolean
 }
 
 export type CommentItem = BaseActivityItem & {
   type: 'comment'
   comment: Comment
-  bet: Bet | undefined
+  betsBySameUser: Bet[]
   hideOutcome: boolean
   truncate: boolean
   smallAvatar: boolean
@@ -79,6 +83,7 @@ export type ResolveItem = BaseActivityItem & {
   type: 'resolve'
 }
 
+export const GENERAL_COMMENTS_OUTCOME_ID = 'General Comments'
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 const ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW = 3
 
@@ -129,7 +134,7 @@ function groupBets(
           type: 'comment' as const,
           id: bet.id,
           comment,
-          bet,
+          betsBySameUser: [bet],
           contract,
           hideOutcome,
           truncate: abbreviated,
@@ -260,6 +265,68 @@ function getAnswerGroups(
   return answerGroups
 }
 
+function getAnswerAndCommentInputGroups(
+  contract: FullContract<DPM, FreeResponse>,
+  bets: Bet[],
+  comments: Comment[],
+  user: User | undefined | null
+) {
+  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
+    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
+  )
+  outcomes = _.sortBy(outcomes, (outcome) =>
+    getOutcomeProbability(contract, outcome)
+  )
+
+  function collateCommentsSectionForOutcome(outcome: string) {
+    const answerBets = bets.filter((bet) => bet.outcome === outcome)
+    const answerComments = comments.filter(
+      (comment) =>
+        comment.answerOutcome === outcome ||
+        answerBets.some((bet) => bet.id === comment.betId)
+    )
+    let items = []
+    items.push({
+      type: 'commentInput' as const,
+      id: 'commentInputFor' + outcome,
+      contract,
+      betsByCurrentUser: user
+        ? bets.filter((bet) => bet.userId === user.id)
+        : [],
+      comments: comments,
+      answerOutcome: outcome,
+    })
+    items.push(
+      ...getCommentsWithPositions(
+        answerBets,
+        answerComments,
+        contract
+      ).reverse()
+    )
+    return items
+  }
+
+  const answerGroups = outcomes
+    .map((outcome) => {
+      const answer = contract.answers?.find(
+        (answer) => answer.id === outcome
+      ) as Answer
+
+      const items = collateCommentsSectionForOutcome(outcome)
+
+      return {
+        id: outcome,
+        type: 'answergroup' as const,
+        contract,
+        answer,
+        items,
+        user,
+      }
+    })
+    .filter((group) => group.answer) as ActivityItem[]
+  return answerGroups
+}
+
 function groupBetsAndComments(
   bets: Bet[],
   comments: Comment[],
@@ -280,7 +347,7 @@ function groupBetsAndComments(
       id: comment.id,
       contract: contract,
       comment,
-      bet: undefined,
+      betsBySameUser: [],
       truncate: abbreviated,
       hideOutcome: true,
       smallAvatar,
@@ -306,6 +373,27 @@ function groupBetsAndComments(
 
   if (reversed) abbrItems.reverse()
   return abbrItems
+}
+
+function getCommentsWithPositions(
+  bets: Bet[],
+  comments: Comment[],
+  contract: Contract
+) {
+  const betsByUserId = _.groupBy(bets, (bet) => bet.userId)
+
+  const items = comments.map((comment) => ({
+    type: 'comment' as const,
+    id: comment.id,
+    contract: contract,
+    comment,
+    betsBySameUser: bets.length === 0 ? [] : betsByUserId[comment.userId] ?? [],
+    truncate: false,
+    hideOutcome: false,
+    smallAvatar: false,
+  }))
+
+  return items
 }
 
 export function getAllContractActivityItems(
@@ -358,9 +446,11 @@ export function getAllContractActivityItems(
       )
     )
     items.push({
-      type: 'commentInput',
+      type: 'commentInput' as const,
       id: 'commentInput',
       contract,
+      betsByCurrentUser: [],
+      comments: [],
     })
   } else {
     items.push(
@@ -382,9 +472,11 @@ export function getAllContractActivityItems(
 
   if (outcomeType === 'BINARY') {
     items.push({
-      type: 'commentInput',
+      type: 'commentInput' as const,
       id: 'commentInput',
       contract,
+      betsByCurrentUser: [],
+      comments: [],
     })
   }
 
@@ -432,24 +524,13 @@ export function getRecentContractActivityItems(
       )
     )
   } else {
-    const onlyUsersBetsOrBetsWithComments = bets.filter((bet) =>
-      comments.some(
-        (comment) => comment.betId === bet.id || bet.userId === user?.id
-      )
-    )
     items.push(
-      ...groupBetsAndComments(
-        onlyUsersBetsOrBetsWithComments,
-        comments,
-        contract,
-        user?.id,
-        {
-          hideOutcome: false,
-          abbreviated: true,
-          smallAvatar: false,
-          reversed: true,
-        }
-      )
+      ...groupBetsAndComments(bets, comments, contract, user?.id, {
+        hideOutcome: false,
+        abbreviated: true,
+        smallAvatar: false,
+        reversed: true,
+      })
     )
   }
 
@@ -462,7 +543,7 @@ export function getSpecificContractActivityItems(
   comments: Comment[],
   user: User | null | undefined,
   options: {
-    mode: 'comments' | 'bets'
+    mode: 'comments' | 'bets' | 'free-response-comment-answer-groups'
   }
 ) {
   const { mode } = options
@@ -471,38 +552,51 @@ export function getSpecificContractActivityItems(
   switch (mode) {
     case 'bets':
       items.push(
-        ...groupBets(bets, comments, contract, user?.id, {
+        ...bets.map((bet) => ({
+          type: 'bet' as const,
+          id: bet.id,
+          bet,
+          contract,
           hideOutcome: false,
-          abbreviated: false,
           smallAvatar: false,
-          reversed: false,
-        })
+          hideComment: true,
+        }))
       )
       break
 
     case 'comments':
-      const onlyBetsWithComments = bets.filter((bet) =>
-        comments.some((comment) => comment.betId === bet.id)
+      const nonFreeResponseComments = comments.filter(
+        (comment) => comment.answerOutcome === undefined
       )
+      const nonFreeResponseBets =
+        contract.outcomeType === 'FREE_RESPONSE' ? [] : bets
       items.push(
-        ...groupBetsAndComments(
-          onlyBetsWithComments,
-          comments,
-          contract,
-          user?.id,
-          {
-            hideOutcome: false,
-            abbreviated: false,
-            smallAvatar: false,
-            reversed: false,
-          }
+        ...getCommentsWithPositions(
+          nonFreeResponseBets,
+          nonFreeResponseComments,
+          contract
         )
       )
+
       items.push({
         type: 'commentInput',
         id: 'commentInput',
         contract,
+        betsByCurrentUser: user
+          ? nonFreeResponseBets.filter((bet) => bet.userId === user.id)
+          : [],
+        comments: nonFreeResponseComments,
       })
+      break
+    case 'free-response-comment-answer-groups':
+      items.push(
+        ...getAnswerAndCommentInputGroups(
+          contract as FullContract<DPM, FreeResponse>,
+          bets,
+          comments,
+          user
+        )
+      )
       break
   }
 

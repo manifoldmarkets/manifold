@@ -110,14 +110,11 @@ export function NewContract(props: { question: string; tag?: string }) {
 
     setIsSubmitting(true)
 
-    const boundedProb =
-      initialProb > 90 ? 90 : initialProb < 10 ? 10 : initialProb
-
     const result: any = await createContract({
       question,
       outcomeType,
       description,
-      initialProb: boundedProb,
+      initialProb,
       ante,
       closeTime,
       tags,
@@ -179,8 +176,6 @@ export function NewContract(props: { question: string; tag?: string }) {
           <ProbabilitySelector
             probabilityInt={initialProb}
             setProbabilityInt={setInitialProb}
-            minProb={10}
-            maxProb={90}
           />
         </div>
       )}

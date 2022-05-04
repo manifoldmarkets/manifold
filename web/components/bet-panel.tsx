@@ -62,7 +62,7 @@ export function BetPanel(props: {
           className
         )}
       >
-        <div className="mb-6 text-2xl text-gray-700">Place a trade</div>
+        <div className="mb-6 text-2xl">Place your bet</div>
         {/* <Title className={clsx('!mt-0 text-neutral')} text="Place a trade" /> */}
 
         <BuyPanel contract={contract} user={user} userBets={userBets ?? []} />
@@ -125,19 +125,23 @@ export function BetPanelSwitcher(props: {
               <BinaryOutcomeLabel outcome={sharesOutcome} /> shares
             </div>
 
-            <button
-              className="btn btn-sm"
-              style={{
-                backgroundColor: 'white',
-                border: '2px solid',
-                color: '#3D4451',
-              }}
-              onClick={() =>
-                tradeType === 'BUY' ? setTradeType('SELL') : setTradeType('BUY')
-              }
-            >
-              {tradeType === 'BUY' ? 'Sell' : 'Bet'}
-            </button>
+            {tradeType === 'BUY' && (
+              <button
+                className="btn btn-sm"
+                style={{
+                  backgroundColor: 'white',
+                  border: '2px solid',
+                  color: '#3D4451',
+                }}
+                onClick={() =>
+                  tradeType === 'BUY'
+                    ? setTradeType('SELL')
+                    : setTradeType('BUY')
+                }
+              >
+                {tradeType === 'BUY' ? 'Sell' : 'Bet'}
+              </button>
+            )}
           </Row>
         </Col>
       )}
@@ -299,7 +303,7 @@ function BuyPanel(props: {
       />
       <div className="my-3 text-left text-sm text-gray-500">Amount</div>
       <BuyAmountInput
-        inputClassName="w-full"
+        inputClassName="w-full max-w-none"
         amount={betAmount}
         onChange={onBetChange}
         error={error}
@@ -428,7 +432,13 @@ export function SellPanel(props: {
       <SellAmountInput
         inputClassName="w-full"
         contract={contract}
-        amount={amount ? Math.floor(amount) : undefined}
+        amount={
+          amount
+            ? Math.round(amount) === 0
+              ? 0
+              : Math.floor(amount)
+            : undefined
+        }
         onChange={setAmount}
         userBets={userBets}
         error={error}

@@ -26,10 +26,8 @@ export const useSaveShares = (
     _.sumBy(noBets, (bet) => bet.shares),
   ]
 
-  const [yesFloorShares, noFloorShares] = [
-    Math.floor(yesShares),
-    Math.floor(noShares),
-  ]
+  const yesFloorShares = Math.round(yesShares) === 0 ? 0 : Math.floor(yesShares)
+  const noFloorShares = Math.round(noShares) === 0 ? 0 : Math.floor(noShares)
 
   useEffect(() => {
     // Save yes and no shares to local storage.

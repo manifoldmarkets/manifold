@@ -21,7 +21,8 @@ export async function createComment(
   contractId: string,
   text: string,
   commenter: User,
-  betId?: string
+  betId?: string,
+  answerOutcome?: string
 ) {
   const ref = betId
     ? doc(getCommentsCollection(contractId), betId)
@@ -38,6 +39,9 @@ export async function createComment(
   }
   if (betId) {
     comment.betId = betId
+  }
+  if (answerOutcome) {
+    comment.answerOutcome = answerOutcome
   }
   return await setDoc(ref, comment)
 }

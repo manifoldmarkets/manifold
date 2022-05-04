@@ -2,6 +2,7 @@ import * as _ from 'lodash'
 
 import { Bet } from './bet'
 import { getProbability } from './calculate'
+import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
 import { Binary, CPMM, FixedPayouts, FullContract } from './contract'
 import { LiquidityProvision } from './liquidity-provision'
 
@@ -60,14 +61,14 @@ export const getLiquidityPoolPayouts = (
   outcome: string,
   liquidities: LiquidityProvision[]
 ) => {
-  const providedLiquidity = _.sumBy(liquidities, (lp) => lp.liquidity)
-
   const { pool } = contract
   const finalPool = pool[outcome]
 
-  return liquidities.map((lp) => ({
-    userId: lp.userId,
-    payout: (lp.liquidity / providedLiquidity) * finalPool,
+  const weights = getCpmmLiquidityPoolWeights(contract, liquidities)
+
+  return Object.entries(weights).map(([providerId, weight]) => ({
+    userId: providerId,
+    payout: weight * finalPool,
   }))
 }
 
@@ -111,13 +112,13 @@ export const getLiquidityPoolProbPayouts = (
   p: number,
   liquidities: LiquidityProvision[]
 ) => {
-  const providedLiquidity = _.sumBy(liquidities, (lp) => lp.liquidity)
-
   const { pool } = contract
   const finalPool = p * pool.YES + (1 - p) * pool.NO
 
-  return liquidities.map((lp) => ({
-    userId: lp.userId,
-    payout: (lp.liquidity / providedLiquidity) * finalPool,
+  const weights = getCpmmLiquidityPoolWeights(contract, liquidities)
+
+  return Object.entries(weights).map(([providerId, weight]) => ({
+    userId: providerId,
+    payout: weight * finalPool,
   }))
 }

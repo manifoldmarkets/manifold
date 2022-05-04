@@ -18,6 +18,7 @@ import {
   useQueryAndSortParams,
 } from '../../hooks/use-sort-and-query-params'
 import { Answer } from '../../../common/answer'
+import { LoadingIndicator } from '../loading-indicator'
 
 export function ContractsGrid(props: {
   contracts: Contract[]
@@ -213,7 +214,7 @@ function TagContractsGrid(props: { contracts: Contract[] }) {
 const MAX_CONTRACTS_DISPLAYED = 99
 
 export function SearchableGrid(props: {
-  contracts: Contract[]
+  contracts: Contract[] | undefined
   byOneCreator?: boolean
   querySortOptions?: {
     defaultSort: Sort
@@ -230,7 +231,7 @@ export function SearchableGrid(props: {
     return queryWords.every((word) => corpus.toLowerCase().includes(word))
   }
 
-  let matches = contracts.filter(
+  let matches = (contracts ?? []).filter(
     (c) =>
       check(c.question) ||
       check(c.description) ||
@@ -324,7 +325,9 @@ export function SearchableGrid(props: {
         </select>
       </div>
 
-      {sort === 'tag' ? (
+      {contracts === undefined ? (
+        <LoadingIndicator />
+      ) : sort === 'tag' ? (
         <TagContractsGrid contracts={matches} />
       ) : !byOneCreator && sort === 'creator' ? (
         <CreatorContractsGrid contracts={matches} />

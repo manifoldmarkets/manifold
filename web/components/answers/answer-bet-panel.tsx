@@ -116,7 +116,7 @@ export function AnswerBetPanel(props: {
       </Row>
       <div className="my-3 text-left text-sm text-gray-500">Amount </div>
       <BuyAmountInput
-        inputClassName="w-full"
+        inputClassName="w-full max-w-none"
         amount={betAmount}
         onChange={setBetAmount}
         error={error}

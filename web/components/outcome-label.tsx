@@ -11,6 +11,7 @@ import {
   FullContract,
 } from '../../common/contract'
 import { formatPercent } from '../../common/util/format'
+import { ClientRender } from './client-render'
 
 export function OutcomeLabel(props: {
   contract: Contract
@@ -72,11 +73,13 @@ export function FreeResponseOutcomeLabel(props: {
   const chosen = answers?.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
-    <AnswerLabel
-      answer={chosen}
-      truncate={truncate}
-      className={answerClassName}
-    />
+    <FreeResponseAnswerToolTip text={chosen.text}>
+      <AnswerLabel
+        answer={chosen}
+        truncate={truncate}
+        className={answerClassName}
+      />
+    </FreeResponseAnswerToolTip>
   )
 }
 
@@ -124,5 +127,32 @@ export function AnswerLabel(props: {
     truncated = text.slice(0, 75) + '...'
   }
 
-  return <span className={className}>{truncated}</span>
+  return (
+    <span
+      style={{ wordBreak: 'break-word' }}
+      className={clsx('whitespace-pre-line break-words', className)}
+    >
+      {truncated}
+    </span>
+  )
+}
+
+function FreeResponseAnswerToolTip(props: {
+  text: string
+  children?: React.ReactNode
+}) {
+  const { text } = props
+  return (
+    <>
+      <ClientRender>
+        <span
+          className="tooltip hidden cursor-default sm:inline-block"
+          data-tip={text}
+        >
+          {props.children}
+        </span>
+      </ClientRender>
+      <span className="whitespace-nowrap sm:hidden">{props.children}</span>
+    </>
+  )
 }

@@ -8,6 +8,7 @@ import { Bet } from '../../common/bet'
 import { Spacer } from './layout/spacer'
 import { calculateCpmmSale } from '../../common/calculate-cpmm'
 import { Binary, CPMM, FullContract } from '../../common/contract'
+import { SiteLink } from './site-link'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -45,7 +46,7 @@ export function AmountInput(props: {
         <span className="bg-gray-200 text-sm">{label}</span>
         <input
           className={clsx(
-            'input input-bordered',
+            'input input-bordered max-w-[200px] text-lg',
             error && 'input-error',
             inputClassName
           )}
@@ -65,7 +66,16 @@ export function AmountInput(props: {
 
       {error && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
-          {error}
+          {error === 'Insufficient balance' ? (
+            <>
+              Not enough funds.
+              <span className="ml-1 text-indigo-500">
+                <SiteLink href="/add-funds">Buy more?</SiteLink>
+              </span>
+            </>
+          ) : (
+            error
+          )}
         </div>
       )}
 
@@ -168,9 +178,10 @@ export function SellAmountInput(props: {
   ]
 
   const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
-  const shares = yesShares || noShares
+  const shares = Math.round(yesShares) || Math.round(noShares)
 
-  const sharesSold = Math.min(amount ?? 0, yesShares || noShares)
+  const sharesSold = Math.min(amount ?? 0, shares)
+
   const { saleValue } = calculateCpmmSale(
     contract,
     sharesSold,

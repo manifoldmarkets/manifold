@@ -6,8 +6,7 @@ export type OgCardProps = {
   metadata: string
   creatorName: string
   creatorUsername: string
-  // TODO: Store creator avatar url in each contract, then enable this
-  // creatorAvatarUrl: string
+  creatorAvatarUrl?: string
 }
 
 function buildCardUrl(props: OgCardProps) {
@@ -15,6 +14,10 @@ function buildCardUrl(props: OgCardProps) {
     props.probability === undefined
       ? ''
       : `&probability=${encodeURIComponent(props.probability ?? '')}`
+  const creatorAvatarUrlParam =
+    props.creatorAvatarUrl === undefined
+      ? ''
+      : `&creatorAvatarUrl=${encodeURIComponent(props.creatorAvatarUrl ?? '')}`
 
   // URL encode each of the props, then add them as query params
   return (
@@ -23,6 +26,7 @@ function buildCardUrl(props: OgCardProps) {
     probabilityParam +
     `&metadata=${encodeURIComponent(props.metadata)}` +
     `&creatorName=${encodeURIComponent(props.creatorName)}` +
+    creatorAvatarUrlParam +
     `&creatorUsername=${encodeURIComponent(props.creatorUsername)}`
   )
 }

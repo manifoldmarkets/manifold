@@ -32,7 +32,7 @@ export function Page(props: {
           {children}
 
           {/* If right sidebar is hidden, place its content at the bottom of the page. */}
-          <div className="block xl:hidden">{rightSidebar}</div>
+          <div className="mt-4 block xl:hidden">{rightSidebar}</div>
         </main>
         <aside className="hidden xl:col-span-3 xl:block">
           <div className="sticky top-4 space-y-4">{rightSidebar}</div>

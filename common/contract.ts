@@ -20,7 +20,9 @@ export type FullContract<
   visibility: 'public' | 'unlisted'
 
   createdTime: number // Milliseconds since epoch
-  lastUpdatedTime: number // If the question or description was changed
+  lastUpdatedTime?: number // Updated on new bet or comment
+  lastBetTime?: number
+  lastCommentTime?: number
   closeTime?: number // When no more trading is allowed
 
   isResolved: boolean

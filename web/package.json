@@ -22,6 +22,7 @@
     "@nivo/core": "0.74.0",
     "@nivo/line": "0.74.0",
     "clsx": "1.1.1",
+    "cors": "^2.8.5",
     "daisyui": "1.16.4",
     "dayjs": "1.10.7",
     "firebase": "9.6.0",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@tailwindcss/forms": "0.4.0",
+    "@tailwindcss/line-clamp": "^0.3.1",
     "@tailwindcss/typography": "^0.5.1",
     "@types/lodash": "4.14.178",
     "@types/node": "16.11.11",

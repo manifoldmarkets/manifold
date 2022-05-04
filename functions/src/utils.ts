@@ -6,8 +6,14 @@ import { PrivateUser, User } from '../../common/user'
 export const isProd =
   admin.instanceId().app.options.projectId === 'mantic-markets'
 
-export const getValue = async <T>(collection: string, doc: string) => {
+export const getDoc = async <T>(collection: string, doc: string) => {
   const snap = await admin.firestore().collection(collection).doc(doc).get()
+
+  return snap.exists ? (snap.data() as T) : undefined
+}
+
+export const getValue = async <T>(ref: admin.firestore.DocumentReference) => {
+  const snap = await ref.get()
 
   return snap.exists ? (snap.data() as T) : undefined
 }
@@ -18,15 +24,15 @@ export const getValues = async <T>(query: admin.firestore.Query) => {
 }
 
 export const getContract = (contractId: string) => {
-  return getValue<Contract>('contracts', contractId)
+  return getDoc<Contract>('contracts', contractId)
 }
 
 export const getUser = (userId: string) => {
-  return getValue<User>('users', userId)
+  return getDoc<User>('users', userId)
 }
 
 export const getPrivateUser = (userId: string) => {
-  return getValue<PrivateUser>('private-users', userId)
+  return getDoc<PrivateUser>('private-users', userId)
 }
 
 export const getUserByUsername = async (username: string) => {

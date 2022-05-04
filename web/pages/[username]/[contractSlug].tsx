@@ -168,18 +168,17 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
           comments={comments ?? []}
         />
 
-        {outcomeType === 'FREE_RESPONSE' &&
-          (!isResolved || resolution === 'MKT') && (
-            <>
-              <Spacer h={4} />
-              <AnswersPanel
-                contract={contract as FullContract<DPM, FreeResponse>}
-              />
-              <Spacer h={4} />
-            </>
-          )}
+        {outcomeType === 'FREE_RESPONSE' && (
+          <>
+            <Spacer h={4} />
+            <AnswersPanel
+              contract={contract as FullContract<DPM, FreeResponse>}
+            />
+            <Spacer h={4} />
+          </>
+        )}
 
-        {contract.isResolved && (
+        {isResolved && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
               <ContractLeaderboard contract={contract} bets={bets} />
@@ -287,7 +286,7 @@ function ContractTopTrades(props: {
             <FeedComment
               contract={contract}
               comment={commentsById[topCommentId]}
-              bet={betsById[topCommentId]}
+              betsBySameUser={[betsById[topCommentId]]}
               hideOutcome={false}
               truncate={false}
               smallAvatar={false}
@@ -324,8 +323,14 @@ function ContractTopTrades(props: {
 }
 
 const getOpenGraphProps = (contract: Contract) => {
-  const { resolution, question, creatorName, creatorUsername, outcomeType } =
-    contract
+  const {
+    resolution,
+    question,
+    creatorName,
+    creatorUsername,
+    outcomeType,
+    creatorAvatarUrl,
+  } = contract
   const probPercent =
     outcomeType === 'BINARY' ? getBinaryProbPercent(contract) : undefined
 
@@ -339,8 +344,9 @@ const getOpenGraphProps = (contract: Contract) => {
     question,
     probability: probPercent,
     metadata: contractTextDetails(contract),
-    creatorName: creatorName,
-    creatorUsername: creatorUsername,
+    creatorName,
+    creatorUsername,
+    creatorAvatarUrl,
     description,
   }
 }
