@@ -6,6 +6,7 @@ import { Charity } from '../../../common/charity'
 import { useCharityTxns } from '../../hooks/use-charity-txns'
 import { manaToUSD } from '../../pages/charity/[charitySlug]'
 import { Row } from '../layout/row'
+import { TagsList } from '../tags-list'
 
 export function CharityCard(props: { charity: Charity }) {
   const { name, slug, photo, preview, id, tags } = props.charity
@@ -41,6 +42,11 @@ export function CharityCard(props: { charity: Charity }) {
               <span>raised</span>
             </Row>
           )}
+          <TagsList
+            tags={tags.filter((tag) => tag !== 'Featured')}
+            noLabel
+            noLink
+          />
         </div>
       </div>
     </Link>

@@ -1,11 +1,16 @@
 import _ from 'lodash'
 import { useState, useMemo } from 'react'
-import { charities, Charity as CharityType } from '../../../common/charity'
+import {
+  charities,
+  Charity as CharityType,
+  mainTags,
+} from '../../../common/charity'
 import { CharityCard } from '../../components/charity/charity-card'
 import { Col } from '../../components/layout/col'
 import { Spacer } from '../../components/layout/spacer'
 import { Page } from '../../components/page'
 import { SiteLink } from '../../components/site-link'
+import { TagsList } from '../../components/tags-list'
 import { Title } from '../../components/title'
 import { getAllCharityTxns } from '../../lib/firebase/txns'
 
@@ -65,6 +70,8 @@ export default function Charity(props: {
             placeholder="Search charities"
             className="input input-bordered mb-6 w-full"
           />
+
+          <TagsList tags={mainTags as unknown as string[]} noLink />
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
           {filterCharities.map((charity) => (
