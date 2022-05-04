@@ -14,10 +14,8 @@ import { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
 initAdmin()
 const firestore = admin.firestore()
 
-async function getUsersById(
-  transaction: Transaction
-): Promise<Map<string, DocumentSnapshot>> {
-  const results = new Map()
+async function getUsersById(transaction: Transaction) {
+  const results = new Map<string, DocumentSnapshot>()
   const users = await transaction.get(firestore.collection('users'))
   users.forEach((doc) => {
     results.set(doc.get('id'), doc)
@@ -26,15 +24,13 @@ async function getUsersById(
   return results
 }
 
-async function getContractsByUserId(
-  transaction: Transaction
-): Promise<Map<string, DocumentSnapshot[]>> {
+async function getContractsByUserId(transaction: Transaction) {
   let n = 0
-  const results = new Map()
+  const results = new Map<string, DocumentSnapshot[]>()
   const contracts = await transaction.get(firestore.collection('contracts'))
   contracts.forEach((doc) => {
-    let creatorId = doc.get('creatorId')
-    let creatorContracts = results.get(creatorId) || []
+    const creatorId = doc.get('creatorId')
+    const creatorContracts = results.get(creatorId) || []
     creatorContracts.push(doc)
     results.set(creatorId, creatorContracts)
     n++
@@ -43,15 +39,13 @@ async function getContractsByUserId(
   return results
 }
 
-async function getCommentsByUserId(
-  transaction: Transaction
-): Promise<Map<string, DocumentSnapshot[]>> {
+async function getCommentsByUserId(transaction: Transaction) {
   let n = 0
-  let results = new Map()
-  let comments = await transaction.get(firestore.collectionGroup('comments'))
+  const results = new Map<string, DocumentSnapshot[]>()
+  const comments = await transaction.get(firestore.collectionGroup('comments'))
   comments.forEach((doc) => {
-    let userId = doc.get('userId')
-    let userComments = results.get(userId) || []
+    const userId = doc.get('userId')
+    const userComments = results.get(userId) || []
     userComments.push(doc)
     results.set(userId, userComments)
     n++
@@ -60,15 +54,13 @@ async function getCommentsByUserId(
   return results
 }
 
-async function getAnswersByUserId(
-  transaction: Transaction
-): Promise<Map<string, DocumentSnapshot[]>> {
+async function getAnswersByUserId(transaction: Transaction) {
   let n = 0
-  let results = new Map()
-  let answers = await transaction.get(firestore.collectionGroup('answers'))
+  const results = new Map<string, DocumentSnapshot[]>()
+  const answers = await transaction.get(firestore.collectionGroup('answers'))
   answers.forEach((doc) => {
-    let userId = doc.get('userId')
-    let userAnswers = results.get(userId) || []
+    const userId = doc.get('userId')
+    const userAnswers = results.get(userId) || []
     userAnswers.push(doc)
     results.set(userId, userAnswers)
     n++
@@ -79,7 +71,7 @@ async function getAnswersByUserId(
 
 if (require.main === module) {
   admin.firestore().runTransaction(async (transaction) => {
-    let [usersById, contractsByUserId, commentsByUserId, answersByUserId] =
+    const [usersById, contractsByUserId, commentsByUserId, answersByUserId] =
       await Promise.all([
         getUsersById(transaction),
         getContractsByUserId(transaction),
@@ -87,13 +79,13 @@ if (require.main === module) {
         getAnswersByUserId(transaction),
       ])
 
-    let usersContracts = Array.from(
+    const usersContracts = Array.from(
       usersById.entries(),
       ([id, doc]): DocumentCorrespondence => {
         return [doc, contractsByUserId.get(id) || []]
       }
     )
-    let contractDiffs = findDiffs(
+    const contractDiffs = findDiffs(
       usersContracts,
       'avatarUrl',
       'creatorAvatarUrl'
@@ -104,26 +96,26 @@ if (require.main === module) {
       applyDiff(transaction, d)
     })
 
-    let usersComments = Array.from(
+    const usersComments = Array.from(
       usersById.entries(),
       ([id, doc]): DocumentCorrespondence => {
         return [doc, commentsByUserId.get(id) || []]
       }
     )
-    let commentDiffs = findDiffs(usersComments, 'avatarUrl', 'userAvatarUrl')
+    const commentDiffs = findDiffs(usersComments, 'avatarUrl', 'userAvatarUrl')
     console.log(`Found ${commentDiffs.length} comments with mismatches.`)
     commentDiffs.forEach((d) => {
       console.log(describeDiff(d))
       applyDiff(transaction, d)
     })
 
-    let usersAnswers = Array.from(
+    const usersAnswers = Array.from(
       usersById.entries(),
       ([id, doc]): DocumentCorrespondence => {
         return [doc, answersByUserId.get(id) || []]
       }
     )
-    let answerDiffs = findDiffs(usersAnswers, 'avatarUrl', 'avatarUrl')
+    const answerDiffs = findDiffs(usersAnswers, 'avatarUrl', 'avatarUrl')
     console.log(`Found ${answerDiffs.length} answers with mismatches.`)
     answerDiffs.forEach((d) => {
       console.log(describeDiff(d))

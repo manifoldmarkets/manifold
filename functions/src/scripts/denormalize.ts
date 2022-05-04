@@ -18,8 +18,8 @@ export function findDiffs(
   docs: DocumentCorrespondence[],
   srcPath: string,
   destPath: string
-): DocumentDiff[] {
-  let diffs = []
+) {
+  const diffs: DocumentDiff[] = []
   for (let [srcDoc, destDocs] of docs) {
     const srcVal = srcDoc.get(srcPath)
     for (let destDoc of destDocs) {
@@ -35,7 +35,7 @@ export function findDiffs(
   return diffs
 }
 
-export function describeDiff(diff: DocumentDiff): string {
+export function describeDiff(diff: DocumentDiff) {
   function describeDocVal(x: DocumentValue): string {
     return `${x.doc.ref.path}.${x.field}: ${x.val}`
   }
@@ -43,6 +43,6 @@ export function describeDiff(diff: DocumentDiff): string {
 }
 
 export function applyDiff(transaction: Transaction, diff: DocumentDiff) {
-  let { src, dest } = diff
+  const { src, dest } = diff
   transaction.update(dest.doc.ref, dest.field, src.val)
 }
