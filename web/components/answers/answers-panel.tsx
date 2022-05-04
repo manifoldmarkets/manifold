@@ -52,10 +52,10 @@ export function AnswersPanel(props: {
 
   const chosenTotal = _.sum(Object.values(chosenAnswers))
 
-  const answerItems = getAnswers(
+  const answerItems = getAnswerItems(
     contract,
-    user,
-    winningAnswers.length > 0 ? winningAnswers.map((a) => a.id) : []
+    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
+    user
   )
 
   const onChoose = (answerId: string, prob: number) => {
@@ -140,20 +140,14 @@ export function AnswersPanel(props: {
   )
 }
 
-function getAnswers(
+function getAnswerItems(
   contract: FullContract<DPM, FreeResponse>,
-  user: User | undefined | null,
-  ignoreAnswerOutcomes: string[]
+  answers: Answer[],
+  user: User | undefined | null
 ) {
-  const { answers } = contract
-
   let outcomes = _.uniq(
     answers.map((answer) => answer.number.toString())
-  ).filter(
-    (outcome) =>
-      getOutcomeProbability(contract, outcome) > 0.0001 &&
-      !ignoreAnswerOutcomes.includes(outcome)
-  )
+  ).filter((outcome) => getOutcomeProbability(contract, outcome) > 0.0001)
   outcomes = _.sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   ).reverse()
