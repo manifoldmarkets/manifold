@@ -13,12 +13,14 @@ import { LinkIcon } from '@heroicons/react/solid'
 import { genHash } from '../../common/util/random'
 import { PencilIcon } from '@heroicons/react/outline'
 import { Tabs } from './layout/tabs'
-import React, { useEffect, useState } from 'react'
-import { Comment } from '../../common/comment'
-import { getUsersComments } from '../lib/firebase/comments'
-import { Bet } from '../../common/bet'
-import { formatMoney } from '../../common/util/format'
-import { RelativeTimestamp } from './relative-timestamp'
+import { UserCommentsList } from './comments-list'
+import { useEffect, useState } from 'react'
+import { Comment, getUsersComments } from '../lib/firebase/comments'
+import { Contract } from '../../common/contract'
+import { getContractFromId, listContracts } from '../lib/firebase/contracts'
+import { LoadingIndicator } from './loading-indicator'
+import { useRouter } from 'next/router'
+import _ from 'lodash'
 
 export function UserLink(props: {
   name: string
@@ -36,24 +38,43 @@ export function UserLink(props: {
   )
 }
 
-export function UserPage(props: { user: User; currentUser?: User }) {
-  const { user, currentUser } = props
+export function UserPage(props: {
+  user: User
+  currentUser?: User
+  defaultTabIndex?: number
+}) {
+  const router = useRouter()
+  const { user, currentUser, defaultTabIndex } = props
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
-  const [comments, setComments] = useState<Comment[]>([] as Comment[])
+  const [usersComments, setUsersComments] = useState<Comment[]>([] as Comment[])
+  const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
+    'loading'
+  )
+  const [uniqueContracts, setUniqueContracts] = useState<
+    (Contract | undefined)[] | 'loading'
+  >('loading')
 
   useEffect(() => {
     if (user) {
-      getUsersComments(user.id).then(setComments)
+      getUsersComments(user.id).then(setUsersComments)
+      listContracts(user.id).then(setUsersContracts)
     }
   }, [user])
 
-  const items = comments
-    .sort((a, b) => b.createdTime - a.createdTime)
-    .map((comment) => ({
-      comment,
-      bet: undefined,
-    }))
+  useEffect(() => {
+    // get all unique contracts for the comments and group each comments array to a contract
+    if (usersComments) {
+      const uniqueContractIds = _.uniq(
+        usersComments.map((comment) => comment.contractId)
+      )
+      const uniqueContracts = Array.from(uniqueContractIds).map((id) =>
+        getContractFromId(id)
+      )
+      Promise.all(uniqueContracts).then(setUniqueContracts)
+    }
+  }, [usersComments])
+
   return (
     <Page>
       <SEO
@@ -158,28 +179,63 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         </Col>
 
         <Spacer h={10} />
-        <Tabs
-          tabs={[
-            {
-              title: 'Markets',
-              content: <CreatorContractsList creator={user} />,
-            },
-            {
-              title: 'Comments',
-              content: (
-                <>
-                  {items.map((item, activityItemIdx) => (
-                    <div key={item.comment.id} className={'relative pb-6'}>
-                      <div className="relative flex items-start space-x-3">
-                        <ProfileComment comment={item.comment} bet={item.bet} />
-                      </div>
-                    </div>
-                  ))}
-                </>
-              ),
-            },
-          ]}
-        />
+        {usersContracts !== 'loading' && uniqueContracts != 'loading' ? (
+          <Tabs
+            className={'pb-2 pt-1 '}
+            defaultIndex={defaultTabIndex}
+            onClick={(tabName) =>
+              router.push(
+                {
+                  pathname: `/${user.username}`,
+                  query: { tab: tabName },
+                },
+                undefined,
+                { shallow: true }
+              )
+            }
+            tabs={[
+              {
+                title: 'Markets',
+                content: <CreatorContractsList contracts={usersContracts} />,
+                tabIcon: (
+                  <div
+                    className={clsx(
+                      usersContracts.length > 9 ? 'px-1' : 'px-1.5',
+                      'items-center rounded-full border-2 border-current py-0.5 text-xs'
+                    )}
+                  >
+                    {usersContracts.length}
+                  </div>
+                ),
+              },
+              {
+                title: 'Comments',
+                content: (
+                  <UserCommentsList
+                    user={user}
+                    commentsByContractId={_.groupBy(
+                      usersComments,
+                      (comment) => comment.contractId
+                    )}
+                    uniqueContracts={uniqueContracts}
+                  />
+                ),
+                tabIcon: (
+                  <div
+                    className={clsx(
+                      usersComments.length > 9 ? 'px-1' : 'px-1.5',
+                      'items-center rounded-full border-2 border-current py-0.5 text-xs'
+                    )}
+                  >
+                    {usersComments.length}
+                  </div>
+                ),
+              },
+            ]}
+          />
+        ) : (
+          <LoadingIndicator />
+        )}
       </Col>
     </Page>
   )
@@ -196,36 +252,4 @@ export function defaultBannerUrl(userId: string) {
     'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
   ]
   return defaultBanner[genHash(userId)() % defaultBanner.length]
-}
-
-function ProfileComment(props: { comment: Comment; bet: Bet | undefined }) {
-  const { comment, bet } = props
-  let money: string | undefined
-  let outcome: string | undefined
-  let bought: string | undefined
-  if (bet) {
-    outcome = bet.outcome
-    bought = bet.amount >= 0 ? 'bought' : 'sold'
-    money = formatMoney(Math.abs(bet.amount))
-  }
-  const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
-
-  return (
-    <>
-      <Avatar username={userUsername} avatarUrl={userAvatarUrl} />
-      <div className="min-w-0 flex-1">
-        <div>
-          <p className="mt-0.5 text-sm text-gray-500">
-            <UserLink
-              className="text-gray-500"
-              username={userUsername}
-              name={userName}
-            />{' '}
-            <RelativeTimestamp time={createdTime} />
-          </p>
-        </div>
-        {text}
-      </div>
-    </>
-  )
 }

@@ -126,10 +126,13 @@ export async function getDailyComments(
   return commentsByDay
 }
 
-// TODO: add firebase index for comments - userid
 export async function getUsersComments(userId: string) {
   const getUsersCommentsQuery = (userId: string) =>
-    query(collectionGroup(db, 'comments'), where('userId', '==', userId))
+    query(
+      collectionGroup(db, 'comments'),
+      where('userId', '==', userId),
+      orderBy('createdTime', 'desc')
+    )
   const comments = await getValues<Comment>(getUsersCommentsQuery(userId))
   return comments
 }
