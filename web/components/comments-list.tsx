@@ -24,8 +24,8 @@ export function UserCommentsList(props: {
           contract && (
             <div key={contract.id} className={'border-width-1 border-b p-5'}>
               <div className={'mb-2 text-sm text-indigo-700'}>
-                <SiteLink href={contract ? contractPath(contract) : ''}>
-                  {contract ? contract.question : '...'}
+                <SiteLink href={contractPath(contract)}>
+                  {contract.question}
                 </SiteLink>
               </div>
               {commentsByContractId[contract.id].map((comment) => (
