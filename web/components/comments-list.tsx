@@ -7,37 +7,33 @@ import { Avatar } from './avatar'
 import { RelativeTimestamp } from './relative-timestamp'
 import { UserLink } from './user-page'
 import { User } from '../../common/user'
-import _, { Dictionary } from 'lodash'
 import { Col } from './layout/col'
+import { Linkify } from './linkify'
 
 export function UserCommentsList(props: {
   user: User
-  commentsByContractId: Dictionary<Comment[]>
-  uniqueContracts: (Contract | undefined)[]
+  commentsByUniqueContracts: Map<Contract, Comment[]>
 }) {
-  const { commentsByContractId, uniqueContracts } = props
+  const { commentsByUniqueContracts } = props
 
   return (
     <Col className={'bg-white'}>
-      {uniqueContracts.map(
-        (contract) =>
-          contract && (
-            <div key={contract.id} className={'border-width-1 border-b p-5'}>
-              <div className={'mb-2 text-sm text-indigo-700'}>
-                <SiteLink href={contractPath(contract)}>
-                  {contract.question}
-                </SiteLink>
+      {Array.from(commentsByUniqueContracts).map(([contract, comments]) => (
+        <div key={contract.id} className={'border-width-1 border-b p-5'}>
+          <div className={'mb-2 text-sm text-indigo-700'}>
+            <SiteLink href={contractPath(contract)}>
+              {contract.question}
+            </SiteLink>
+          </div>
+          {comments.map((comment) => (
+            <div key={comment.id} className={'relative pb-6'}>
+              <div className="relative flex items-start space-x-3">
+                <ProfileComment comment={comment} />
               </div>
-              {commentsByContractId[contract.id].map((comment) => (
-                <div key={comment.id} className={'relative pb-6'}>
-                  <div className="relative flex items-start space-x-3">
-                    <ProfileComment comment={comment} />
-                  </div>
-                </div>
-              ))}
             </div>
-          )
-      )}
+          ))}
+        </div>
+      ))}
     </Col>
   )
 }
@@ -61,7 +57,7 @@ function ProfileComment(props: { comment: Comment }) {
               <RelativeTimestamp time={createdTime} />
             </p>
           </div>
-          {text}
+          <Linkify text={text} />
         </div>
       </Row>
     </div>

@@ -24,7 +24,7 @@ export default function UserProfile() {
     <UserPage
       user={user}
       currentUser={currentUser || undefined}
-      defaultTabIndex={tab === 'Comments' || tab === 'comments' ? 1 : 0}
+      defaultTabTitle={tab}
     />
   ) : (
     <Custom404 />

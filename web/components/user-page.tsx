@@ -41,38 +41,43 @@ export function UserLink(props: {
 export function UserPage(props: {
   user: User
   currentUser?: User
-  defaultTabIndex?: number
+  defaultTabTitle?: string
 }) {
   const router = useRouter()
-  const { user, currentUser, defaultTabIndex } = props
+  const { user, currentUser, defaultTabTitle } = props
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [usersComments, setUsersComments] = useState<Comment[]>([] as Comment[])
   const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
     'loading'
   )
-  const [uniqueContracts, setUniqueContracts] = useState<
-    (Contract | undefined)[] | 'loading'
+  const [commentsByContract, setCommentsByContract] = useState<
+    Map<Contract, Comment[]> | 'loading'
   >('loading')
 
   useEffect(() => {
-    if (user) {
-      getUsersComments(user.id).then(setUsersComments)
-      listContracts(user.id).then(setUsersContracts)
-    }
+    if (!user) return
+    getUsersComments(user.id).then(setUsersComments)
+    listContracts(user.id).then(setUsersContracts)
   }, [user])
 
   useEffect(() => {
-    // get all unique contracts for the comments and group each comments array to a contract
-    if (usersComments) {
-      const uniqueContractIds = _.uniq(
-        usersComments.map((comment) => comment.contractId)
-      )
-      const uniqueContracts = Array.from(uniqueContractIds).map((id) =>
-        getContractFromId(id)
-      )
-      Promise.all(uniqueContracts).then(setUniqueContracts)
-    }
+    const uniqueContractIds = _.uniq(
+      usersComments.map((comment) => comment.contractId)
+    )
+    Promise.all(
+      uniqueContractIds.map((contractId) => getContractFromId(contractId))
+    ).then((contracts) => {
+      const commentsByContract = new Map<Contract, Comment[]>()
+      contracts.forEach((contract) => {
+        if (!contract) return
+        commentsByContract.set(
+          contract,
+          usersComments.filter((comment) => comment.contractId === contract.id)
+        )
+      })
+      setCommentsByContract(commentsByContract)
+    })
   }, [usersComments])
 
   return (
@@ -179,10 +184,10 @@ export function UserPage(props: {
         </Col>
 
         <Spacer h={10} />
-        {usersContracts !== 'loading' && uniqueContracts != 'loading' ? (
+        {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
             className={'pb-2 pt-1 '}
-            defaultIndex={defaultTabIndex}
+            defaultIndex={defaultTabTitle === 'Comments' ? 1 : 0}
             onClick={(tabName) =>
               router.push(
                 {
@@ -213,11 +218,7 @@ export function UserPage(props: {
                 content: (
                   <UserCommentsList
                     user={user}
-                    commentsByContractId={_.groupBy(
-                      usersComments,
-                      (comment) => comment.contractId
-                    )}
-                    uniqueContracts={uniqueContracts}
+                    commentsByUniqueContracts={commentsByContract}
                   />
                 ),
                 tabIcon: (
