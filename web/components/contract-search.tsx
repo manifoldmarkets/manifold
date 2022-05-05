@@ -160,7 +160,7 @@ const useFilterCreator = (creatorId: string | undefined) => {
 const useFilterTag = (tag: string | undefined) => {
   const { refine } = useRefinementList({ attribute: 'lowercaseTags' })
   useEffect(() => {
-    if (tag) refine(`${tag.toLowerCase()} OR ManifoldMarkets`)
+    if (tag) refine(tag.toLowerCase())
   }, [tag, refine])
 }
 
