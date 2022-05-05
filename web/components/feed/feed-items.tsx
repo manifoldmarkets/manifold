@@ -55,6 +55,7 @@ import { trackClick } from '../../lib/firebase/tracking'
 import { firebaseLogin } from '../../lib/firebase/users'
 import { DAY_MS } from '../../../common/util/time'
 import NewContractBadge from '../new-contract-badge'
+import { RelativeTimestamp } from '../relative-timestamp'
 import { calculateCpmmSale } from '../../../common/calculate-cpmm'
 
 export function FeedItems(props: {
@@ -354,17 +355,6 @@ export function CommentInput(props: {
         </div>
       </Row>
     </>
-  )
-}
-
-export function RelativeTimestamp(props: { time: number }) {
-  const { time } = props
-  return (
-    <DateTimeTooltip time={time}>
-      <span className="ml-1 whitespace-nowrap text-gray-400">
-        {fromNow(time)}
-      </span>
-    </DateTimeTooltip>
   )
 }
 

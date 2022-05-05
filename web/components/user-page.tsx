@@ -12,6 +12,15 @@ import { Row } from './layout/row'
 import { LinkIcon } from '@heroicons/react/solid'
 import { genHash } from '../../common/util/random'
 import { PencilIcon } from '@heroicons/react/outline'
+import { Tabs } from './layout/tabs'
+import { UserCommentsList } from './comments-list'
+import { useEffect, useState } from 'react'
+import { Comment, getUsersComments } from '../lib/firebase/comments'
+import { Contract } from '../../common/contract'
+import { getContractFromId, listContracts } from '../lib/firebase/contracts'
+import { LoadingIndicator } from './loading-indicator'
+import { useRouter } from 'next/router'
+import _ from 'lodash'
 
 export function UserLink(props: {
   name: string
@@ -29,10 +38,47 @@ export function UserLink(props: {
   )
 }
 
-export function UserPage(props: { user: User; currentUser?: User }) {
-  const { user, currentUser } = props
+export function UserPage(props: {
+  user: User
+  currentUser?: User
+  defaultTabTitle?: string
+}) {
+  const router = useRouter()
+  const { user, currentUser, defaultTabTitle } = props
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
+  const [usersComments, setUsersComments] = useState<Comment[]>([] as Comment[])
+  const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
+    'loading'
+  )
+  const [commentsByContract, setCommentsByContract] = useState<
+    Map<Contract, Comment[]> | 'loading'
+  >('loading')
+
+  useEffect(() => {
+    if (!user) return
+    getUsersComments(user.id).then(setUsersComments)
+    listContracts(user.id).then(setUsersContracts)
+  }, [user])
+
+  useEffect(() => {
+    const uniqueContractIds = _.uniq(
+      usersComments.map((comment) => comment.contractId)
+    )
+    Promise.all(
+      uniqueContractIds.map((contractId) => getContractFromId(contractId))
+    ).then((contracts) => {
+      const commentsByContract = new Map<Contract, Comment[]>()
+      contracts.forEach((contract) => {
+        if (!contract) return
+        commentsByContract.set(
+          contract,
+          usersComments.filter((comment) => comment.contractId === contract.id)
+        )
+      })
+      setCommentsByContract(commentsByContract)
+    })
+  }, [usersComments])
 
   return (
     <Page>
@@ -138,8 +184,59 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         </Col>
 
         <Spacer h={10} />
-
-        <CreatorContractsList creator={user} />
+        {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
+          <Tabs
+            className={'pb-2 pt-1 '}
+            defaultIndex={defaultTabTitle === 'Comments' ? 1 : 0}
+            onClick={(tabName) =>
+              router.push(
+                {
+                  pathname: `/${user.username}`,
+                  query: { tab: tabName },
+                },
+                undefined,
+                { shallow: true }
+              )
+            }
+            tabs={[
+              {
+                title: 'Markets',
+                content: <CreatorContractsList contracts={usersContracts} />,
+                tabIcon: (
+                  <div
+                    className={clsx(
+                      usersContracts.length > 9 ? 'px-1' : 'px-1.5',
+                      'items-center rounded-full border-2 border-current py-0.5 text-xs'
+                    )}
+                  >
+                    {usersContracts.length}
+                  </div>
+                ),
+              },
+              {
+                title: 'Comments',
+                content: (
+                  <UserCommentsList
+                    user={user}
+                    commentsByUniqueContracts={commentsByContract}
+                  />
+                ),
+                tabIcon: (
+                  <div
+                    className={clsx(
+                      usersComments.length > 9 ? 'px-1' : 'px-1.5',
+                      'items-center rounded-full border-2 border-current py-0.5 text-xs'
+                    )}
+                  >
+                    {usersComments.length}
+                  </div>
+                ),
+              },
+            ]}
+          />
+        ) : (
+          <LoadingIndicator />
+        )}
       </Col>
     </Page>
   )

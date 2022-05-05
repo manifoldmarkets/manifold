@@ -3,7 +3,7 @@ import { Avatar } from '../avatar'
 import { useUserById } from '../../hooks/use-users'
 import { UserLink } from '../user-page'
 import { manaToUSD } from '../../pages/charity/[charitySlug]'
-import { RelativeTimestamp } from '../feed/feed-items'
+import { RelativeTimestamp } from '../relative-timestamp'
 
 export function Donation(props: { txn: Txn }) {
   const { txn } = props
