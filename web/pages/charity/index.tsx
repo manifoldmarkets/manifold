@@ -40,8 +40,12 @@ export default function Charity(props: {
 
   const filterCharities = useMemo(
     () =>
-      charities.filter((charity) =>
-        charity.name.toLowerCase().includes(query.toLowerCase())
+      charities.filter(
+        (charity) =>
+          charity.name.toLowerCase().includes(query.toLowerCase()) ||
+          charity.preview.toLowerCase().includes(query.toLowerCase()) ||
+          charity.description.toLowerCase().includes(query.toLowerCase()) ||
+          (charity.tags as string[])?.includes(query.toLowerCase())
       ),
     [query]
   )
