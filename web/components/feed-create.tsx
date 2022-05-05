@@ -37,7 +37,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
         <div className="mb-4 text-gray-500">
           Find markets on any topic imaginable. Or create your own!
           <br />
-          Sign up to get M$ 1,000 and start trading.
+          Sign up to get M$1,000 and start trading.
           <br />
         </div>
         <Spacer h={6} />
