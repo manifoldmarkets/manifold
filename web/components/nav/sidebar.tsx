@@ -32,6 +32,7 @@ const navigation = [
 const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
+  { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
 ]
 
