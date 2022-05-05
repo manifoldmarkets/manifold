@@ -1343,7 +1343,7 @@ algoliasearch-helper@^3.7.4, algoliasearch-helper@^3.8.2:
   dependencies:
     "@algolia/events" "^4.0.1"
 
-algoliasearch@^4.13.0:
+algoliasearch@4.13.0:
   version "4.13.0"
   resolved "https://registry.yarnpkg.com/algoliasearch/-/algoliasearch-4.13.0.tgz#e36611fda82b1fc548c156ae7929a7f486e4b663"
   integrity sha512-oHv4faI1Vl2s+YC0YquwkK/TsaJs79g2JFg5FDm2rKN12VItPTAeQ7hyJMHarOPPYuCnNC5kixbtcqvb21wchw==
@@ -4660,7 +4660,7 @@ raw-body@2.4.2, raw-body@^2.2.0:
     iconv-lite "0.4.24"
     unpipe "1.0.0"
 
-react-confetti@^6.0.1:
+react-confetti@6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/react-confetti/-/react-confetti-6.0.1.tgz#d4f57b5a021dd908a6243b8f63b6009b00818d10"
   integrity sha512-ZpOTBrqSNhWE4rRXCZ6E6U+wGd7iYHF5MGrqwikoiBpgBq9Akdu0DcLW+FdFnLjyZYC+VfAiV2KeFgYRMyMrkA==
@@ -4685,10 +4685,19 @@ react-expanding-textarea@2.3.5:
     react-with-forwarded-ref "^0.3.3"
     tslib "^2.0.3"
 
-react-instantsearch-hooks@^6.24.0:
-  version "6.24.0"
-  resolved "https://registry.yarnpkg.com/react-instantsearch-hooks/-/react-instantsearch-hooks-6.24.0.tgz#02a062e6568087e8374ca52249cec5cb230d3b79"
-  integrity sha512-JXDaL/Dyg9ofHwYCluO9Q/9AOx6wLZBMlR+xIiR5ndniXDRKaWf9irtFqtMuSPecNn6tTnqMTeBq6ePplsv8Hg==
+react-instantsearch-hooks-web@6.24.1:
+  version "6.24.1"
+  resolved "https://registry.yarnpkg.com/react-instantsearch-hooks-web/-/react-instantsearch-hooks-web-6.24.1.tgz#392be70c584583f3cd9fe22eda5a59f7449e5ac9"
+  integrity sha512-UX7zaxDE834LxxUNHB5lBg8ujO0KFyOjg8iRZs+WVEBsYdQskGEAHiLlyaSjcfDZS0tPBsZA/ybYjwpGmOMqKg==
+  dependencies:
+    "@babel/runtime" "^7.1.2"
+    instantsearch.js "^4.40.1"
+    react-instantsearch-hooks "6.24.1"
+
+react-instantsearch-hooks@6.24.1:
+  version "6.24.1"
+  resolved "https://registry.yarnpkg.com/react-instantsearch-hooks/-/react-instantsearch-hooks-6.24.1.tgz#59869c4492a5dffdb9ad979e141ec754d87fa668"
+  integrity sha512-X7Wg4thRsybYNYpKFKr2YpZeN8eDH/sIhxxUz4uHhO2U0DD7tnZKa7fJVhCMHZf8ci3lTx9Lz6MBbCK1mr+pvQ==
   dependencies:
     "@babel/runtime" "^7.1.2"
     algoliasearch-helper "^3.7.4"
