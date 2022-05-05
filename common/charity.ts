@@ -43,7 +43,7 @@ export const charities: Charity[] = [
     tags: ['Featured'] as CharityTag[],
   },
   {
-    name: 'Long-Term Future Fund',
+    name: 'EA Long-Term Future Fund',
     website: 'https://funds.effectivealtruism.org/funds/far-future',
     photo: 'https://i.imgur.com/C2qka9g.png',
     preview:
