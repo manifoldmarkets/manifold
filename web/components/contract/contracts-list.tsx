@@ -341,19 +341,8 @@ export function SearchableGrid(props: {
   )
 }
 
-export function CreatorContractsList(props: { creator: User }) {
-  const { creator } = props
-  const [contracts, setContracts] = useState<Contract[] | 'loading'>('loading')
-
-  useEffect(() => {
-    if (creator?.id) {
-      // TODO: stream changes from firestore
-      listContracts(creator.id).then(setContracts)
-    }
-  }, [creator])
-
-  if (contracts === 'loading') return <></>
-
+export function CreatorContractsList(props: { contracts: Contract[] }) {
+  const { contracts } = props
   return (
     <SearchableGrid
       contracts={contracts}
