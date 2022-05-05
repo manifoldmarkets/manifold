@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { SparklesIcon, XIcon } from '@heroicons/react/solid'
 import { Avatar } from './avatar'
 import { useEffect, useRef, useState } from 'react'
@@ -10,7 +11,6 @@ import { Col } from './layout/col'
 import clsx from 'clsx'
 import { Row } from './layout/row'
 import { ENV_CONFIG } from '../../common/envs/constants'
-import _ from 'lodash'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
@@ -55,7 +55,8 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
       </Row>
       <ContractsGrid
         contracts={hotContracts?.slice(0, 10) || []}
-        showHotVolume
+        loadMore={() => {}}
+        hasMore={false}
       />
     </>
   )

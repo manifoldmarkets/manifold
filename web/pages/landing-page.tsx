@@ -158,7 +158,11 @@ function ExploreMarketsSection(props: { hotContracts: Contract[] }) {
         Today's top markets
       </p>
 
-      <ContractsGrid contracts={hotContracts} />
+      <ContractsGrid
+        contracts={hotContracts}
+        loadMore={() => {}}
+        hasMore={false}
+      />
     </div>
   )
 }
