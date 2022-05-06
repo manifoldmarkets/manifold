@@ -72,11 +72,13 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       console.log('user current invested amount', currentInvested)
       console.log('mana limit:', manaLimitPerUser)
 
-      if (manaLimitPerUser && currentInvested + amount > manaLimitPerUser)
+      if (manaLimitPerUser && currentInvested + amount > manaLimitPerUser) {
+        const manaAllowed = manaLimitPerUser - currentInvested
         return {
           status: 'error',
-          message: `Market investment limit is M$${manaLimitPerUser}, you've M$${currentInvested} already`,
+          message: `Market bet cap is M$${manaLimitPerUser}, M$${manaAllowed} left`,
         }
+      }
       const [lastAnswer] = await getValues<Answer>(
         firestore
           .collection(`contracts/${contractId}/answers`)
