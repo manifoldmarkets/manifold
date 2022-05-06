@@ -1,6 +1,12 @@
 import * as _ from 'lodash'
 import { Bet } from './bet'
-import { Binary, DPM, FreeResponse, FullContract } from './contract'
+import {
+  Binary,
+  DPM,
+  FreeResponse,
+  FullContract,
+  NumericContract,
+} from './contract'
 import { DPM_FEES } from './fees'
 
 export function getDpmProbability(totalShares: { [outcome: string]: number }) {
@@ -24,6 +30,17 @@ export function getDpmOutcomeProbabilities(totalShares: {
 }) {
   const squareSum = _.sumBy(Object.values(totalShares), (shares) => shares ** 2)
   return _.mapValues(totalShares, (shares) => shares ** 2 / squareSum)
+}
+
+export function getNumericBets(
+  contract: NumericContract,
+  bucket: string,
+  betAmount: number
+) {
+  const { totalShares, bucketCount } = contract
+
+  const bucketNum = +bucket
+  // const bucketRange =
 }
 
 export function getDpmOutcomeProbabilityAfterBet(

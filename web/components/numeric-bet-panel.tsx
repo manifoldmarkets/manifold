@@ -9,7 +9,6 @@ import {
 } from '../../common/calculate'
 import { NumericContract } from '../../common/contract'
 import { formatPercent, formatMoney } from '../../common/util/format'
-import { useFocus } from '../hooks/use-focus'
 import { useUser } from '../hooks/use-user'
 import { placeBet } from '../lib/firebase/api-call'
 import { firebaseLogin, User } from '../lib/firebase/users'
@@ -58,12 +57,6 @@ function NumericBuyPanel(props: {
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
-
-  const [inputRef, focusAmountInput] = useFocus()
-
-  useEffect(() => {
-    focusAmountInput()
-  }, [focusAmountInput])
 
   function onBucketChange(newBucket: string | undefined) {
     setWasSubmitted(false)
@@ -139,7 +132,6 @@ function NumericBuyPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        inputRef={inputRef}
       />
 
       <div className="my-3 text-left text-sm text-gray-500">Amount</div>
@@ -150,7 +142,6 @@ function NumericBuyPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        inputRef={inputRef}
       />
 
       <Col className="mt-3 w-full gap-3">
