@@ -188,18 +188,16 @@ export const createContract = functions
             ante
           )
 
-          await firestore.runTransaction(async (transaction) => {
-            for (let anteBet of antes) {
-              const anteBetDoc = firestore
-                .collection(`contracts/${contract.id}/bets`)
-                .doc()
+          for (let i = 0; i < antes.length; i++) {
+            const anteBetDoc = firestore
+              .collection(`contracts/${contract.id}/bets`)
+              .doc()
 
-              await transaction.set(anteBetDoc, {
-                id: anteBetDoc.id,
-                ...anteBet,
-              })
-            }
-          })
+            await anteBetDoc.set({
+              id: anteBetDoc.id,
+              ...antes[i],
+            })
+          }
         }
       }
 
