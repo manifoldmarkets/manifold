@@ -76,7 +76,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         const manaAllowed = manaLimitPerUser - currentInvested
         return {
           status: 'error',
-          message: `Market bet cap is M$${manaLimitPerUser}, M$${manaAllowed} left`,
+          message: `Market bet cap is M$${manaLimitPerUser}, you've M$${manaAllowed} left`,
         }
       }
       const [lastAnswer] = await getValues<Answer>(
