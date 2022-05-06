@@ -41,6 +41,8 @@ export const createContract = functions
         ante: number
         closeTime: number
         tags?: string[]
+        min?: number
+        max?: number
       },
       context
     ) => {
@@ -50,7 +52,8 @@ export const createContract = functions
       const creator = await getUser(userId)
       if (!creator) return { status: 'error', message: 'User not found' }
 
-      let { question, description, initialProb, closeTime, tags } = data
+      let { question, description, initialProb, closeTime, tags, min, max } =
+        data
 
       if (!question || typeof question != 'string')
         return { status: 'error', message: 'Missing or invalid question field' }
@@ -121,8 +124,8 @@ export const createContract = functions
         closeTime,
         tags ?? [],
         100,
-        0,
-        100
+        min ?? 0,
+        max ?? 100
       )
 
       if (!isFree && ante) await chargeUser(creator.id, ante)

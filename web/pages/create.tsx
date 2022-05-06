@@ -19,6 +19,7 @@ import { Row } from '../components/layout/row'
 import { MAX_DESCRIPTION_LENGTH, outcomeType } from '../../common/contract'
 import { formatMoney } from '../../common/util/format'
 import { useHasCreatedContractToday } from '../hooks/use-has-created-contract-today'
+import { removeUndefinedProps } from '../../common/util/object'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -66,6 +67,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb, setInitialProb] = useState(50)
+  const [min, setMin] = useState<number | undefined>()
+  const [max, setMax] = useState<number | undefined>()
   const [description, setDescription] = useState('')
   const [tagText, setTagText] = useState<string>(tag ?? '')
   const tags = parseWordsAsTags(tagText)
@@ -110,15 +113,19 @@ export function NewContract(props: { question: string; tag?: string }) {
 
     setIsSubmitting(true)
 
-    const result: any = await createContract({
-      question,
-      outcomeType,
-      description,
-      initialProb,
-      ante,
-      closeTime,
-      tags,
-    }).then((r) => r.data || {})
+    const result: any = await createContract(
+      removeUndefinedProps({
+        question,
+        outcomeType,
+        description,
+        initialProb,
+        ante,
+        closeTime,
+        tags,
+        min,
+        max,
+      })
+    ).then((r) => r.data || {})
 
     if (result.status !== 'success') {
       console.log('error creating contract', result)
@@ -188,6 +195,43 @@ export function NewContract(props: { question: string; tag?: string }) {
             probabilityInt={initialProb}
             setProbabilityInt={setInitialProb}
           />
+        </div>
+      )}
+
+      {outcomeType === 'NUMERIC' && (
+        <div className="form-control">
+          <label className="label">
+            <span className="mb-1">Value range (min, max)</span>
+          </label>
+
+          <Row className="gap-2">
+            <input
+              type="number"
+              className="input input-bordered"
+              placeholder="MIN"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) =>
+                setMin(isNaN(+e.target.value) ? undefined : +e.target.value)
+              }
+              min={0}
+              max={Number.MAX_SAFE_INTEGER}
+              disabled={isSubmitting}
+              value={min}
+            />
+            <input
+              type="number"
+              className="input input-bordered"
+              placeholder="MAX"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) =>
+                setMax(isNaN(+e.target.value) ? undefined : +e.target.value)
+              }
+              min={0}
+              max={Number.MAX_SAFE_INTEGER}
+              disabled={isSubmitting}
+              value={max}
+            />
+          </Row>
         </div>
       )}
 
