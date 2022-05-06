@@ -164,6 +164,17 @@ export function NewContract(props: { question: string; tag?: string }) {
           />
           <span className="label-text">Free response</span>
         </label>
+        <label className="label cursor-pointer gap-2">
+          <input
+            className="radio"
+            type="radio"
+            name="opt"
+            checked={outcomeType === 'NUMERIC'}
+            value="NUMERIC"
+            onChange={() => setOutcomeType('NUMERIC')}
+          />
+          <span className="label-text">Numeric</span>
+        </label>
       </Row>
       <Spacer h={4} />
 
