@@ -10,7 +10,7 @@ const formatter = new Intl.NumberFormat('en-US', {
 export function formatMoney(amount: number) {
   const newAmount = Math.round(amount) === 0 ? 0 : Math.floor(amount) // handle -0 case
   return (
-    ENV_CONFIG.moneyMoniker + ' ' + formatter.format(newAmount).replace('$', '')
+    ENV_CONFIG.moneyMoniker + formatter.format(newAmount).replace('$', '')
   )
 }
 
