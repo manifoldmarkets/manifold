@@ -5,19 +5,15 @@ import {
   getOutcomeProbabilityAfterBet,
   calculateShares,
   calculatePayoutAfterCorrectBet,
+  getOutcomeProbability,
 } from '../../common/calculate'
 import { NumericContract } from '../../common/contract'
-import {
-  formatPercent,
-  formatWithCommas,
-  formatMoney,
-} from '../../common/util/format'
+import { formatPercent, formatMoney } from '../../common/util/format'
 import { useFocus } from '../hooks/use-focus'
 import { useUser } from '../hooks/use-user'
 import { placeBet } from '../lib/firebase/api-call'
 import { firebaseLogin, User } from '../lib/firebase/users'
 import { BucketAmountInput, BuyAmountInput } from './amount-input'
-import { InfoTooltip } from './info-tooltip'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
@@ -69,13 +65,18 @@ function NumericBuyPanel(props: {
     focusAmountInput()
   }, [focusAmountInput])
 
+  function onBucketChange(newBucket: string | undefined) {
+    setWasSubmitted(false)
+    setBucketChoice(newBucket)
+  }
+
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
   }
 
   async function submitBet() {
-    if (!user || !betAmount) return
+    if (!user || !betAmount || !bucketChoice) return
 
     setError(undefined)
     setIsSubmitting(true)
@@ -99,43 +100,32 @@ function NumericBuyPanel(props: {
     }
   }
 
-  const betDisabled = isSubmitting || !betAmount || error
+  const betDisabled = isSubmitting || !betAmount || !bucketChoice || error
 
-  const initialProb = 0
-  const outcomeProb = getOutcomeProbabilityAfterBet(
-    contract,
-    bucketChoice || 'YES',
-    betAmount ?? 0
-  )
-  const resultProb = bucketChoice === 'NO' ? 1 - outcomeProb : outcomeProb
-
-  const shares = calculateShares(
-    contract,
-    betAmount ?? 0,
-    bucketChoice || 'YES'
-  )
-
-  const currentPayout = betAmount
-    ? calculatePayoutAfterCorrectBet(contract, {
-        outcome: bucketChoice,
-        amount: betAmount,
-        shares,
-      } as Bet)
+  const initialProb = bucketChoice
+    ? getOutcomeProbability(contract, bucketChoice)
+    : 0
+  const outcomeProb = bucketChoice
+    ? getOutcomeProbabilityAfterBet(contract, bucketChoice, betAmount ?? 0)
     : 0
 
-  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
+  const shares = bucketChoice
+    ? calculateShares(contract, betAmount ?? 0, bucketChoice)
+    : 0
+
+  const currentPayout =
+    betAmount && bucketChoice
+      ? calculatePayoutAfterCorrectBet(contract, {
+          outcome: bucketChoice,
+          amount: betAmount,
+          shares,
+        } as Bet)
+      : 0
+
+  const currentReturn =
+    betAmount && bucketChoice ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const dpmTooltip =
-    contract.mechanism === 'dpm-2'
-      ? `Current payout for ${formatWithCommas(shares)} / ${formatWithCommas(
-          shares +
-            contract.totalShares[bucketChoice ?? 'YES'] -
-            (contract.phantomShares
-              ? contract.phantomShares[bucketChoice ?? 'YES']
-              : 0)
-        )} ${bucketChoice ?? 'YES'} shares`
-      : undefined
   return (
     <>
       <div className="my-3 text-left text-sm text-gray-500">Numeric value</div>
@@ -145,7 +135,7 @@ function NumericBuyPanel(props: {
         min={min}
         max={max}
         inputClassName="w-full max-w-none"
-        onChange={(bucket) => setBucketChoice(bucket ? `${bucket}` : undefined)}
+        onChange={(bucket) => onBucketChange(bucket ? `${bucket}` : undefined)}
         error={error}
         setError={setError}
         disabled={isSubmitting}
@@ -169,24 +159,16 @@ function NumericBuyPanel(props: {
           <Row>
             <div>{formatPercent(initialProb)}</div>
             <div className="mx-2">→</div>
-            <div>{formatPercent(resultProb)}</div>
+            <div>{formatPercent(outcomeProb)}</div>
           </Row>
         </Row>
 
         <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
             <div>
-              {contract.mechanism === 'dpm-2' ? (
-                <>
-                  Estimated
-                  <br /> payout if correct
-                </>
-              ) : (
-                <>Payout if correct</>
-              )}
+              Estimated
+              <br /> payout if correct
             </div>
-
-            {dpmTooltip && <InfoTooltip text={dpmTooltip} />}
           </Row>
           <Row className="flex-wrap items-end justify-end gap-2">
             <span className="whitespace-nowrap">
@@ -203,11 +185,7 @@ function NumericBuyPanel(props: {
         <button
           className={clsx(
             'btn flex-1',
-            betDisabled
-              ? 'btn-disabled'
-              : bucketChoice === 'YES'
-              ? 'btn-primary'
-              : 'border-none bg-red-400 hover:bg-red-500',
+            betDisabled ? 'btn-disabled' : 'btn-primary',
             isSubmitting ? 'loading' : ''
           )}
           onClick={betDisabled ? undefined : submitBet}
