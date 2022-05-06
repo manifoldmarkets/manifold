@@ -6,8 +6,6 @@ import { useSearchBox } from 'react-instantsearch-hooks-web'
 const MARKETS_SORT = 'markets_sort'
 
 export type Sort =
-  | 'creator'
-  | 'tag'
   | 'newest'
   | 'oldest'
   | 'most-traded'
@@ -15,7 +13,6 @@ export type Sort =
   | 'closing-soon'
   | 'closed'
   | 'resolved'
-  | 'all'
 
 export function useInitialQueryAndSort(options?: {
   defaultSort: Sort

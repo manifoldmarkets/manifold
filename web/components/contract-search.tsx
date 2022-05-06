@@ -32,6 +32,7 @@ const sortIndexes = [
   { label: 'Most traded', value: 'contracts-most-traded' },
   { label: '24h volume', value: 'contracts-24-hour-vol' },
   { label: 'Closing soon', value: 'contracts-closing-soon' },
+  { label: 'Closed', value: 'contracts-closed' },
   { label: 'Resolved', value: 'contracts-resolved' },
 ]
 
@@ -120,7 +121,11 @@ export function ContractSearchInner(props: {
   const tag = querySortOptions?.filter?.tag
   useFilterTag(tag)
 
-  if (!creatorId) {
+  if (
+    !creatorId ||
+    index === 'contracts-closed' ||
+    index === 'contracts-resolved'
+  ) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useFilterClosed(index)
 
@@ -168,7 +173,9 @@ const useFilterClosed = (index: string) => {
   const [now] = useState(Date.now())
   useRange({
     attribute: 'closeTime',
-    min: index === 'contracts-resolved' ? 0 : now,
+    min:
+      index === 'contracts-resolved' || index === 'contracts-closed' ? 0 : now,
+    max: index === 'contracts-closed' ? now : undefined,
   })
 }
 
