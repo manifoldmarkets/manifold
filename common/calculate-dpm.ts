@@ -41,7 +41,7 @@ export function getNumericBets(
 ) {
   const { bucketCount } = contract
   const bucketNumber = parseInt(bucket)
-  const buckets = _.range(0, bucketNumber)
+  const buckets = _.range(0, bucketCount)
 
   const mean = bucketNumber / bucketCount
 

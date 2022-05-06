@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Bet } from '../../common/bet'
 import {
   getOutcomeProbabilityAfterBet,
@@ -7,6 +7,7 @@ import {
   calculatePayoutAfterCorrectBet,
   getOutcomeProbability,
 } from '../../common/calculate'
+import { getNumericBets } from '../../common/calculate-dpm'
 import { NumericContract } from '../../common/contract'
 import { formatPercent, formatMoney } from '../../common/util/format'
 import { useUser } from '../hooks/use-user'
@@ -99,13 +100,19 @@ function NumericBuyPanel(props: {
   const initialProb = bucketChoice
     ? getOutcomeProbability(contract, bucketChoice)
     : 0
-  const outcomeProb = bucketChoice
-    ? getOutcomeProbabilityAfterBet(contract, bucketChoice, betAmount ?? 0)
-    : 0
+  const numericBets =
+    bucketChoice && betAmount
+      ? getNumericBets(contract, bucketChoice, betAmount)
+      : []
+  const outcomeBet = numericBets.find(([choice]) => choice === bucketChoice)
+  const outcomeProb =
+    bucketChoice && outcomeBet
+      ? getOutcomeProbabilityAfterBet(contract, bucketChoice, outcomeBet[1])
+      : initialProb
 
   const shares = bucketChoice
     ? calculateShares(contract, betAmount ?? 0, bucketChoice)
-    : 0
+    : initialProb
 
   const currentPayout =
     betAmount && bucketChoice
