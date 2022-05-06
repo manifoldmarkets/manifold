@@ -22,6 +22,13 @@ import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
 import { useHasCreatedContractToday } from '../../hooks/use-has-created-contract-today'
 
+// Create an icon from the url of an image
+function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
+  return function Icon(props) {
+    return <img src={url} className={clsx(props.className, 'h-6 w-6')} />
+  }
+}
+
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
@@ -39,7 +46,8 @@ const signedOutNavigation = [
 const signedOutMobileNavigation = [
   { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
-  { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
+  { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: IconFromUrl("/discord-logo.svg") },
+  { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets', icon: IconFromUrl("/twitter-logo.svg") },
   { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
 ]
 
