@@ -107,14 +107,6 @@ export function calculateDpmShares(
   return Math.sqrt(bet ** 2 + shares ** 2 + c) - shares
 }
 
-const zigZagOrder = (length: number) => {
-  const mid = Math.floor(length / 2)
-
-  return _.range(0, mid)
-    .flatMap((i) => [i, length - i - 1])
-    .concat(length % 2 === 0 ? [] : [mid])
-}
-
 export function calculateNumericDpmShares(
   totalShares: {
     [outcome: string]: number
@@ -125,7 +117,12 @@ export function calculateNumericDpmShares(
 
   totalShares = _.cloneDeep(totalShares)
 
-  for (let i of zigZagOrder(bets.length)) {
+  const order = _.sortBy(
+    bets.map(([, amount], i) => [amount, i]),
+    ([amount]) => amount
+  ).map(([, i]) => i)
+
+  for (let i of order) {
     const [bucket, bet] = bets[i]
     shares[i] = calculateDpmShares(totalShares, bet, bucket)
     totalShares = addObjects(totalShares, { [bucket]: shares[i] })
