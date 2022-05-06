@@ -16,6 +16,7 @@ export function ContractTabs(props: {
   comments: Comment[]
 }) {
   const { contract, user, comments } = props
+  const { outcomeType } = contract
 
   const bets = useBets(contract.id) ?? props.bets
   // Decending creation time.
@@ -47,7 +48,7 @@ export function ContractTabs(props: {
         }
         betRowClassName="!mt-0 xl:hidden"
       />
-      {contract.outcomeType === 'FREE_RESPONSE' && (
+      {outcomeType === 'FREE_RESPONSE' && (
         <Col className={'mt-8 flex w-full '}>
           <div className={'text-md mt-8 mb-2 text-left'}>General Comments</div>
           <div className={'mb-4 w-full border-b border-gray-200'} />
@@ -81,8 +82,10 @@ export function ContractTabs(props: {
     <Tabs
       tabs={[
         { title: 'Comments', content: commentActivity },
-        { title: 'Bets', content: betActivity },
-        ...(!user || !userBets?.length
+        ...(outcomeType === 'NUMERIC'
+          ? []
+          : [{ title: 'Bets', content: betActivity }]),
+        ...(!user || !userBets?.length || outcomeType === 'NUMERIC'
           ? []
           : [{ title: 'Your bets', content: yourTrades }]),
       ]}

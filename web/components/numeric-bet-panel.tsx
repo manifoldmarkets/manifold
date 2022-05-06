@@ -54,6 +54,7 @@ function NumericBuyPanel(props: {
     undefined
   )
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const [valueError, setValueError] = useState<string | undefined>()
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -129,8 +130,8 @@ function NumericBuyPanel(props: {
         max={max}
         inputClassName="w-full max-w-none"
         onChange={(bucket) => onBucketChange(bucket ? `${bucket}` : undefined)}
-        error={error}
-        setError={setError}
+        error={valueError}
+        setError={setValueError}
         disabled={isSubmitting}
       />
 
