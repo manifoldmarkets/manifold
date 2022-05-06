@@ -161,6 +161,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
 
   return {
     invested: Math.max(0, currentInvested),
+    currentInvested,
     payout,
     netPayout,
     profit,
