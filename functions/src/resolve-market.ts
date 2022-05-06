@@ -45,6 +45,9 @@ export const resolveMarket = functions
           outcome !== 'CANCEL'
         )
           return { status: 'error', message: 'Invalid outcome' }
+      } else if (outcomeType === 'NUMERIC') {
+        if (isNaN(+outcome) && outcome !== 'CANCEL')
+          return { status: 'error', message: 'Invalid outcome' }
       } else {
         return { status: 'error', message: 'Invalid contract outcomeType' }
       }
