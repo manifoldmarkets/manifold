@@ -13,6 +13,7 @@ import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { Bet } from '../../common/bet'
 import { redeemShares } from './redeem-shares'
 import { Fees } from '../../common/fees'
+import { getContractBetMetrics } from '../../common/calculate'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -49,8 +50,14 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           return { status: 'error', message: 'Invalid contract' }
         const contract = contractSnap.data() as Contract
 
-        const { closeTime, outcomeType, mechanism, collectedFees, volume } =
-          contract
+        const {
+          closeTime,
+          outcomeType,
+          mechanism,
+          collectedFees,
+          volume,
+          manaLimitPerUser,
+        } = contract
         if (closeTime && Date.now() > closeTime)
           return { status: 'error', message: 'Trading is closed' }
 
@@ -69,6 +76,17 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           )
           if (!answerSnap.exists)
             return { status: 'error', message: 'Invalid contract' }
+
+          const contractMetrics = getContractBetMetrics(contract, yourBets)
+          const currentInvested = contractMetrics.currentInvested
+          console.log('yourSharesAmount', contractMetrics.currentInvested)
+          console.log('mana limit:', manaLimitPerUser)
+
+          if (manaLimitPerUser && currentInvested + amount > manaLimitPerUser)
+            return {
+              status: 'error',
+              message: `Market investment limit is M$${manaLimitPerUser}, you've M$${currentInvested} already`,
+            }
         }
 
         const newBetDoc = firestore
