@@ -13,6 +13,7 @@ import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
 import { getContract, getValues } from './utils'
 import { sendNewAnswerEmail } from './emails'
 import { Bet } from '../../common/bet'
+import { getContractBetMetrics } from '../../common/calculate'
 
 export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -57,7 +58,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
           message: 'Requires a free response contract',
         }
 
-      const { closeTime, volume } = contract
+      const { closeTime, volume, manaLimitPerUser } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
@@ -66,6 +67,16 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       )
       const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
 
+      const contractMetrics = getContractBetMetrics(contract, yourBets)
+      const currentInvested = contractMetrics.currentInvested
+      console.log('user current invested amount', currentInvested)
+      console.log('mana limit:', manaLimitPerUser)
+
+      if (manaLimitPerUser && currentInvested + amount > manaLimitPerUser)
+        return {
+          status: 'error',
+          message: `Market investment limit is M$${manaLimitPerUser}, you've M$${currentInvested} already`,
+        }
       const [lastAnswer] = await getValues<Answer>(
         firestore
           .collection(`contracts/${contractId}/answers`)

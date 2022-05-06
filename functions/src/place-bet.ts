@@ -79,7 +79,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
 
           const contractMetrics = getContractBetMetrics(contract, yourBets)
           const currentInvested = contractMetrics.currentInvested
-          console.log('yourSharesAmount', contractMetrics.currentInvested)
+          console.log('user current invested amount', currentInvested)
           console.log('mana limit:', manaLimitPerUser)
 
           if (manaLimitPerUser && currentInvested + amount > manaLimitPerUser)
