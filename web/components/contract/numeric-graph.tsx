@@ -18,11 +18,18 @@ export const NumericGraph = memo(function NumericGraph(props: {
   const xs = _.range(bucketCount).map(
     (i) => min + ((max - min) * i) / bucketCount
   )
-  const probs = _.range(bucketCount).map((i) => bucketProbs[`${i}`])
-  const points = probs.map((prob, i) => ({ x: xs[i], y: prob * 100 }))
+  const probs = _.range(bucketCount).map((i) => bucketProbs[`${i}`] * 100)
+  const points = probs.map((prob, i) => ({ x: xs[i], y: prob }))
+  const maxProb = Math.max(...probs)
   const data = [{ id: 'Probability', data: points, color: '#b91181' }]
 
-  const yTickValues = [0, 25, 50, 75, 100]
+  const yTickValues = [
+    0,
+    0.25 * maxProb,
+    0.5 & maxProb,
+    0.75 * maxProb,
+    maxProb,
+  ]
 
   const { width } = useWindowSize()
 
@@ -35,9 +42,8 @@ export const NumericGraph = memo(function NumericGraph(props: {
     >
       <ResponsiveLine
         data={data}
-        yScale={{ min: 0, max: 100, type: 'linear' }}
+        yScale={{ min: 0, max: maxProb, type: 'linear' }}
         yFormat={formatPercent}
-        gridYValues={yTickValues}
         axisLeft={{
           tickValues: yTickValues,
           format: formatPercent,
@@ -54,17 +60,16 @@ export const NumericGraph = memo(function NumericGraph(props: {
         }}
         colors={{ datum: 'color' }}
         pointSize={0}
-        pointBorderWidth={1}
-        pointBorderColor="#fff"
         enableSlices="x"
         enableGridX={!!width && width >= 800}
         enableArea
-        margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+        margin={{ top: 20, right: 28, bottom: 22, left: 50 }}
       />
     </div>
   )
 })
 
 function formatPercent(y: DatumValue) {
-  return `${Math.round(+y.toString())}%`
+  const p = Math.round(+y * 100) / 100
+  return `${p}%`
 }
