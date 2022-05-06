@@ -40,7 +40,10 @@ export type FullContract<
 } & M &
   T
 
-export type Contract = FullContract<DPM | CPMM, Binary | Multi | FreeResponse>
+export type Contract = FullContract<
+  DPM | CPMM,
+  Binary | Multi | FreeResponse | Numeric
+>
 export type BinaryContract = FullContract<DPM | CPMM, Binary>
 export type FreeResponseContract = FullContract<DPM | CPMM, FreeResponse>
 export type NumericContract = FullContract<DPM, Numeric>

@@ -19,6 +19,13 @@ export function getDpmOutcomeProbability(
   return shares ** 2 / squareSum
 }
 
+export function getDpmOutcomeProbabilities(totalShares: {
+  [outcome: string]: number
+}) {
+  const squareSum = _.sumBy(Object.values(totalShares), (shares) => shares ** 2)
+  return _.mapValues(totalShares, (shares) => shares ** 2 / squareSum)
+}
+
 export function getDpmOutcomeProbabilityAfterBet(
   totalShares: {
     [outcome: string]: number
