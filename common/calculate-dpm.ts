@@ -9,6 +9,7 @@ import {
 } from './contract'
 import { DPM_FEES } from './fees'
 import { normpdf } from './normal'
+import { addObjects } from './util/object'
 
 export function getDpmProbability(totalShares: { [outcome: string]: number }) {
   // For binary contracts only.
@@ -104,6 +105,33 @@ export function calculateDpmShares(
   const c = 2 * bet * Math.sqrt(squareSum)
 
   return Math.sqrt(bet ** 2 + shares ** 2 + c) - shares
+}
+
+const zigZagOrder = (length: number) => {
+  const mid = Math.floor(length / 2)
+
+  return _.range(0, mid)
+    .flatMap((i) => [i, length - i - 1])
+    .concat(length % 2 === 0 ? [] : [mid])
+}
+
+export function calculateNumericDpmShares(
+  totalShares: {
+    [outcome: string]: number
+  },
+  bets: [string, number][]
+) {
+  const shares: number[] = []
+
+  totalShares = _.cloneDeep(totalShares)
+
+  for (let i of zigZagOrder(bets.length)) {
+    const [bucket, bet] = bets[i]
+    shares[i] = calculateDpmShares(totalShares, bet, bucket)
+    totalShares = addObjects(totalShares, { [bucket]: shares[i] })
+  }
+
+  return { shares, totalShares }
 }
 
 export function calculateDpmRawShareValue(

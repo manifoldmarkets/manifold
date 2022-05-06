@@ -8,6 +8,7 @@ import {
   getNewBinaryDpmBetInfo,
   getNewMultiBetInfo,
   getLoanAmount,
+  getNumericBetsInfo,
 } from '../../common/new-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { Bet } from '../../common/bet'
@@ -77,6 +78,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
 
         const {
           newBet,
+          newBets,
           newPool,
           newTotalShares,
           newTotalBets,
@@ -103,6 +105,8 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
                   loanAmount,
                   newBetDoc.id
                 ) as any)
+            : outcomeType === 'NUMERIC' && mechanism === 'dpm-2'
+            ? getNumericBetsInfo(user, outcome, amount, contract)
             : getNewMultiBetInfo(
                 user,
                 outcome,
@@ -119,7 +123,17 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           }
         }
 
-        transaction.create(newBetDoc, newBet)
+        if (newBet) transaction.create(newBetDoc, newBet)
+
+        if (newBets) {
+          for (let newBet of newBets) {
+            const newBetDoc = firestore
+              .collection(`contracts/${contractId}/bets`)
+              .doc()
+
+            transaction.create(newBetDoc, { id: newBetDoc.id, ...newBet })
+          }
+        }
 
         transaction.update(
           contractDoc,

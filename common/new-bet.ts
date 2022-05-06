@@ -5,6 +5,8 @@ import {
   calculateDpmShares,
   getDpmProbability,
   getDpmOutcomeProbability,
+  getNumericBets,
+  calculateNumericDpmShares,
 } from './calculate-dpm'
 import { calculateCpmmPurchase, getCpmmProbability } from './calculate-cpmm'
 import {
@@ -14,9 +16,11 @@ import {
   FreeResponse,
   FullContract,
   Multi,
+  NumericContract,
 } from './contract'
 import { User } from './user'
 import { noFees } from './fees'
+import { addObjects } from './util/object'
 
 export const getNewBinaryCpmmBetInfo = (
   user: User,
@@ -152,6 +156,48 @@ export const getNewMultiBetInfo = (
   const newBalance = user.balance - (amount - loanAmount)
 
   return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+}
+
+export const getNumericBetsInfo = (
+  user: User,
+  outcome: string,
+  amount: number,
+  contract: NumericContract
+) => {
+  const { pool, totalShares, totalBets } = contract
+
+  const bets = getNumericBets(contract, outcome, amount)
+  const newPool = addObjects(pool, Object.fromEntries(bets))
+
+  const { shares, totalShares: newTotalShares } = calculateNumericDpmShares(
+    contract.totalShares,
+    bets
+  )
+
+  const newTotalBets = addObjects(totalBets, Object.fromEntries(bets))
+
+  const newBets = bets.map(([outcome, amount], i) => {
+    const probBefore = getDpmOutcomeProbability(totalShares, outcome)
+    const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
+
+    const newBet: Omit<Bet, 'id'> = {
+      userId: user.id,
+      contractId: contract.id,
+      amount,
+      shares: shares[i],
+      outcome,
+      probBefore,
+      probAfter,
+      createdTime: Date.now(),
+      fees: noFees,
+    }
+
+    return newBet
+  })
+
+  const newBalance = user.balance - amount
+
+  return { newBets, newPool, newTotalShares, newTotalBets, newBalance }
 }
 
 export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {
