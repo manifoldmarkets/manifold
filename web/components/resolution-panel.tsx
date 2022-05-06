@@ -19,6 +19,7 @@ import {
 } from '../../common/contract'
 import { formatMoney } from '../../common/util/format'
 import { BucketAmountInput } from './amount-input'
+import { getMappedBucket } from '../../common/calculate-dpm'
 
 export function ResolutionPanel(props: {
   creator: User
@@ -161,10 +162,16 @@ export function NumericResolutionPanel(props: {
   const resolve = async () => {
     if (!outcome) return
 
+    let outcomeChoice = outcome
+    if (outcome !== 'CANCEL') {
+      const bucket = getMappedBucket(+outcome, contract)
+      outcomeChoice = `${bucket}`
+    }
+
     setIsSubmitting(true)
 
     const result = await resolveMarket({
-      outcome: outcome,
+      outcome: outcomeChoice,
       contractId: contract.id,
     }).then((r) => r.data)
 
@@ -201,7 +208,6 @@ export function NumericResolutionPanel(props: {
         <>
           <BucketAmountInput
             bucket={outcome && outcome !== 'CANCEL' ? +outcome : undefined}
-            bucketCount={bucketCount}
             min={min}
             max={max}
             inputClassName="w-full max-w-none"

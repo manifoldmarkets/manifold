@@ -141,7 +141,6 @@ export function BuyAmountInput(props: {
 
 export function BucketAmountInput(props: {
   bucket: number | undefined
-  bucketCount: number
   min: number
   max: number
   onChange: (newBucket: number | undefined) => void
@@ -155,7 +154,6 @@ export function BucketAmountInput(props: {
 }) {
   const {
     bucket,
-    bucketCount,
     min,
     max,
     onChange,
@@ -172,8 +170,8 @@ export function BucketAmountInput(props: {
 
     // Check for errors.
     if (bucket !== undefined) {
-      if (bucket < 0 || bucket >= bucketCount) {
-        setError('Enter a number between 0 and ' + (bucketCount - 1))
+      if (bucket < min || bucket > max) {
+        setError(`Enter a number between ${min} and ${max}`)
       } else {
         setError(undefined)
       }

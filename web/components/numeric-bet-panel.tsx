@@ -7,7 +7,7 @@ import {
   calculatePayoutAfterCorrectBet,
   getOutcomeProbability,
 } from '../../common/calculate'
-import { getNumericBets } from '../../common/calculate-dpm'
+import { getMappedBucket, getNumericBets } from '../../common/calculate-dpm'
 import { NumericContract } from '../../common/contract'
 import { formatPercent, formatMoney } from '../../common/util/format'
 import { useUser } from '../hooks/use-user'
@@ -49,20 +49,19 @@ function NumericBuyPanel(props: {
   onBuySuccess?: () => void
 }) {
   const { contract, user, onBuySuccess } = props
-  const { bucketCount, min, max } = contract
+  const { min, max } = contract
 
-  const [bucketChoice, setBucketChoice] = useState<string | undefined>(
-    undefined
-  )
+  const [bucket, setBucketChoice] = useState<number | undefined>(undefined)
+  const bucketChoice = bucket === undefined ? undefined : `${bucket}`
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
   const [valueError, setValueError] = useState<string | undefined>()
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
-  function onBucketChange(newBucket: string | undefined) {
-    setWasSubmitted(false)
+  function onBucketChange(newBucket: number | undefined) {
     setBucketChoice(newBucket)
+    setWasSubmitted(false)
   }
 
   function onBetChange(newAmount: number | undefined) {
@@ -71,7 +70,9 @@ function NumericBuyPanel(props: {
   }
 
   async function submitBet() {
-    if (!user || !betAmount || !bucketChoice) return
+    if (!user || !betAmount || bucket === undefined) return
+
+    const bucketChoice = getMappedBucket(bucket, contract)
 
     setError(undefined)
     setIsSubmitting(true)
@@ -132,11 +133,10 @@ function NumericBuyPanel(props: {
       <div className="my-3 text-left text-sm text-gray-500">Numeric value</div>
       <BucketAmountInput
         bucket={bucketChoice ? +bucketChoice : undefined}
-        bucketCount={bucketCount}
         min={min}
         max={max}
         inputClassName="w-full max-w-none"
-        onChange={(bucket) => onBucketChange(bucket ? `${bucket}` : undefined)}
+        onChange={onBucketChange}
         error={valueError}
         setError={setValueError}
         disabled={isSubmitting}

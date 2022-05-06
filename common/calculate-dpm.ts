@@ -63,6 +63,13 @@ export function getNumericBets(
   return bets
 }
 
+export const getMappedBucket = (value: number, contract: NumericContract) => {
+  const { bucketCount, min, max } = contract
+  const cappedValue = Math.min(Math.max(min, value), max)
+  const mapped = Math.floor((bucketCount * (cappedValue - min)) / (max - min))
+  return `${mapped}`
+}
+
 export function getDpmOutcomeProbabilityAfterBet(
   totalShares: {
     [outcome: string]: number
