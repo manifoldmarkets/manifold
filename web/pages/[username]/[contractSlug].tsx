@@ -7,7 +7,10 @@ import { ContractOverview } from '../../components/contract/contract-overview'
 import { BetPanel } from '../../components/bet-panel'
 import { Col } from '../../components/layout/col'
 import { useUser } from '../../hooks/use-user'
-import { ResolutionPanel } from '../../components/resolution-panel'
+import {
+  NumericResolutionPanel,
+  ResolutionPanel,
+} from '../../components/resolution-panel'
 import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
 import { listUsers, User } from '../../lib/firebase/users'
@@ -141,9 +144,18 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
         ) : (
           <BetPanel className="hidden xl:flex" contract={contract} />
         ))}
-      {allowResolve && (
-        <ResolutionPanel creator={user} contract={contract as BinaryContract} />
-      )}
+      {allowResolve &&
+        (isNumeric ? (
+          <NumericResolutionPanel
+            creator={user}
+            contract={contract as NumericContract}
+          />
+        ) : (
+          <ResolutionPanel
+            creator={user}
+            contract={contract as BinaryContract}
+          />
+        ))}
     </Col>
   ) : null
 
