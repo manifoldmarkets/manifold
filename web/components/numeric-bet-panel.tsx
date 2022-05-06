@@ -52,7 +52,8 @@ function NumericBuyPanel(props: {
   const { min, max } = contract
 
   const [bucket, setBucketChoice] = useState<number | undefined>(undefined)
-  const bucketChoice = bucket === undefined ? undefined : `${bucket}`
+  const bucketChoice =
+    bucket === undefined ? undefined : `${getMappedBucket(bucket, contract)}`
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
   const [valueError, setValueError] = useState<string | undefined>()
   const [error, setError] = useState<string | undefined>()
@@ -132,7 +133,7 @@ function NumericBuyPanel(props: {
     <>
       <div className="my-3 text-left text-sm text-gray-500">Numeric value</div>
       <BucketAmountInput
-        bucket={bucketChoice ? +bucketChoice : undefined}
+        bucket={bucket}
         min={min}
         max={max}
         inputClassName="w-full max-w-none"
