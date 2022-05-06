@@ -122,7 +122,7 @@ export const createContract = functions
         tags ?? [],
         1000,
         1,
-        1000
+        100
       )
 
       if (!isFree && ante) await chargeUser(creator.id, ante)
