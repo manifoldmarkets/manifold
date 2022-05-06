@@ -13,5 +13,5 @@ export type Comment = {
   // Denormalized, for rendering comments
   userName: string
   userUsername: string
-  userAvatarUrl: string
+  userAvatarUrl?: string
 }
