@@ -139,6 +139,61 @@ export function BuyAmountInput(props: {
   )
 }
 
+export function BucketAmountInput(props: {
+  bucket: number | undefined
+  bucketCount: number
+  min: number
+  max: number
+  onChange: (newBucket: number | undefined) => void
+  error: string | undefined
+  setError: (error: string | undefined) => void
+  disabled?: boolean
+  className?: string
+  inputClassName?: string
+  // Needed to focus the amount input
+  inputRef?: React.MutableRefObject<any>
+}) {
+  const {
+    bucket,
+    bucketCount,
+    min,
+    max,
+    onChange,
+    error,
+    setError,
+    disabled,
+    className,
+    inputClassName,
+    inputRef,
+  } = props
+
+  const onBucketChange = (bucket: number | undefined) => {
+    onChange(bucket)
+
+    // Check for errors.
+    if (bucket !== undefined) {
+      if (bucket < 0 || bucket >= bucketCount) {
+        setError('Enter a number between 0 and ' + (bucketCount - 1))
+      } else {
+        setError(undefined)
+      }
+    }
+  }
+
+  return (
+    <AmountInput
+      amount={bucket}
+      onChange={onBucketChange}
+      label="Value"
+      error={error}
+      disabled={disabled}
+      className={className}
+      inputClassName={inputClassName}
+      inputRef={inputRef}
+    />
+  )
+}
+
 export function SellAmountInput(props: {
   contract: FullContract<CPMM, Binary>
   amount: number | undefined

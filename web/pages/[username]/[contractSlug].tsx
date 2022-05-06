@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
+import _ from 'lodash'
 
 import { useContractWithPreload } from '../../hooks/use-contract'
 import { ContractOverview } from '../../components/contract/contract-overview'
@@ -24,17 +25,23 @@ import Custom404 from '../404'
 import { AnswersPanel } from '../../components/answers/answers-panel'
 import { fromPropz, usePropz } from '../../hooks/use-propz'
 import { Leaderboard } from '../../components/leaderboard'
-import _ from 'lodash'
 import { resolvedPayout } from '../../../common/calculate'
 import { formatMoney } from '../../../common/util/format'
 import { FeedBet, FeedComment } from '../../components/feed/feed-items'
 import { useUserById } from '../../hooks/use-users'
 import { ContractTabs } from '../../components/contract/contract-tabs'
 import { FirstArgument } from '../../../common/util/types'
-import { DPM, FreeResponse, FullContract } from '../../../common/contract'
+import {
+  BinaryContract,
+  DPM,
+  FreeResponse,
+  FullContract,
+  NumericContract,
+} from '../../../common/contract'
 import { contractTextDetails } from '../../components/contract/contract-details'
 import { useWindowSize } from '../../hooks/use-window-size'
 import Confetti from 'react-confetti'
+import { NumericBetPanel } from '../../components/numeric-bet-panel'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -116,18 +123,27 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
 
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
+  const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
-  const hasSidePanel = isBinary && (allowTrade || allowResolve)
+  const hasSidePanel = (isBinary || isNumeric) && (allowTrade || allowResolve)
 
   const ogCardProps = getOpenGraphProps(contract)
 
   const rightSidebar = hasSidePanel ? (
     <Col className="gap-4">
-      {allowTrade && (
-        <BetPanel className="hidden xl:flex" contract={contract} />
+      {allowTrade &&
+        (isNumeric ? (
+          <NumericBetPanel
+            className="hidden xl:flex"
+            contract={contract as NumericContract}
+          />
+        ) : (
+          <BetPanel className="hidden xl:flex" contract={contract} />
+        ))}
+      {allowResolve && (
+        <ResolutionPanel creator={user} contract={contract as BinaryContract} />
       )}
-      {allowResolve && <ResolutionPanel creator={user} contract={contract} />}
     </Col>
   ) : null
 
