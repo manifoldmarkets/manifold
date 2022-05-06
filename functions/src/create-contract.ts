@@ -121,7 +121,7 @@ export const createContract = functions
         closeTime,
         tags ?? [],
         100,
-        1,
+        0,
         100
       )
 
@@ -188,16 +188,18 @@ export const createContract = functions
             ante
           )
 
-          for (let i = 0; i < antes.length; i++) {
-            const anteBetDoc = firestore
-              .collection(`contracts/${contract.id}/bets`)
-              .doc()
+          await Promise.all(
+            antes.map(async (ante) => {
+              const anteBetDoc = firestore
+                .collection(`contracts/${contract.id}/bets`)
+                .doc()
 
-            await anteBetDoc.set({
-              id: anteBetDoc.id,
-              ...antes[i],
+              await anteBetDoc.set({
+                id: anteBetDoc.id,
+                ...ante,
+              })
             })
-          }
+          )
         }
       }
 
