@@ -120,7 +120,7 @@ export const createContract = functions
         ante,
         closeTime,
         tags ?? [],
-        1000,
+        100,
         1,
         100
       )
