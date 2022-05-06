@@ -8,6 +8,7 @@ import {
   NumericContract,
 } from './contract'
 import { DPM_FEES } from './fees'
+import { normpdf } from './normal'
 
 export function getDpmProbability(totalShares: { [outcome: string]: number }) {
   // For binary contracts only.
@@ -35,12 +36,30 @@ export function getDpmOutcomeProbabilities(totalShares: {
 export function getNumericBets(
   contract: NumericContract,
   bucket: string,
-  betAmount: number
+  betAmount: number,
+  std = 0.05
 ) {
-  const { totalShares, bucketCount } = contract
+  const { bucketCount } = contract
+  const bucketNumber = parseInt(bucket)
+  const buckets = _.range(0, bucketNumber)
 
-  const bucketNum = +bucket
-  // const bucketRange =
+  const mean = bucketNumber / bucketCount
+
+  const allDensities = buckets.map((i) => normpdf(i / bucketCount, mean, std))
+  const densitySum = _.sum(allDensities)
+
+  const rawBetAmounts = allDensities
+    .map((d) => (d / densitySum) * betAmount)
+    .map((x) => (x >= 1 / bucketCount ? x : 0))
+
+  const rawSum = _.sum(rawBetAmounts)
+  const scaledBetAmounts = rawBetAmounts.map((x) => (x / rawSum) * betAmount)
+
+  const bets = scaledBetAmounts
+    .map((x, i) => (x > 0 ? [i.toString(), x] : undefined))
+    .filter((x) => x != undefined) as [string, number][]
+
+  return bets
 }
 
 export function getDpmOutcomeProbabilityAfterBet(
