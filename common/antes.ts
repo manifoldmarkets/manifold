@@ -1,9 +1,17 @@
 import { Bet } from './bet'
 import { getDpmProbability } from './calculate-dpm'
-import { Binary, CPMM, DPM, FreeResponse, FullContract } from './contract'
+import {
+  Binary,
+  CPMM,
+  DPM,
+  FreeResponse,
+  FullContract,
+  Numeric,
+} from './contract'
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
+import * as _ from 'lodash'
 
 export const FIXED_ANTE = 100
 
@@ -105,4 +113,32 @@ export function getFreeAnswerAnte(
   }
 
   return anteBet
+}
+
+export function getNumericAntes(
+  creator: User,
+  contract: FullContract<DPM, Numeric>,
+  ante: number
+) {
+  const { bucketCount, createdTime } = contract
+
+  const betAnte = ante / bucketCount
+  const betShares = Math.sqrt(ante ** 2 / bucketCount)
+
+  return _.range(0, bucketCount).map((i) => {
+    const anteBet: Omit<Bet, 'id'> = {
+      userId: creator.id,
+      contractId: contract.id,
+      amount: betAnte,
+      shares: betShares,
+      outcome: i.toString(),
+      probBefore: 0,
+      probAfter: 1 / bucketCount,
+      createdTime,
+      isAnte: true,
+      fees: noFees,
+    }
+
+    return anteBet
+  })
 }

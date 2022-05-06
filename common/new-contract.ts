@@ -1,3 +1,5 @@
+import * as _ from 'lodash'
+
 import { PHANTOM_ANTE } from './antes'
 import {
   Binary,
@@ -5,6 +7,7 @@ import {
   CPMM,
   DPM,
   FreeResponse,
+  Numeric,
   outcomeType,
 } from './contract'
 import { User } from './user'
@@ -22,7 +25,12 @@ export function getNewContract(
   initialProb: number,
   ante: number,
   closeTime: number,
-  extraTags: string[]
+  extraTags: string[],
+
+  // used for numeric markets
+  bucketCount: number,
+  min: number,
+  max: number
 ) {
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
@@ -32,6 +40,8 @@ export function getNewContract(
   const propsByOutcomeType =
     outcomeType === 'BINARY'
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
+      : outcomeType === 'NUMERIC'
+      ? getNumericProps(ante, bucketCount, min, max)
       : getFreeAnswerProps(ante)
 
   const volume = outcomeType === 'BINARY' ? 0 : ante
@@ -110,6 +120,37 @@ const getFreeAnswerProps = (ante: number) => {
     totalShares: { '0': ante },
     totalBets: { '0': ante },
     answers: [],
+  }
+
+  return system
+}
+
+const getNumericProps = (
+  ante: number,
+  bucketCount: number,
+  min: number,
+  max: number
+) => {
+  const buckets = _.range(0, bucketCount).map((i) => i.toString())
+
+  const betAnte = ante / bucketCount
+  const pool = Object.fromEntries(buckets.map((answer) => [answer, betAnte]))
+  const totalBets = pool
+
+  const betShares = Math.sqrt(ante ** 2 / bucketCount)
+  const totalShares = Object.fromEntries(
+    buckets.map((answer) => [answer, betShares])
+  )
+
+  const system: DPM & Numeric = {
+    mechanism: 'dpm-2',
+    outcomeType: 'NUMERIC',
+    pool,
+    totalBets,
+    totalShares,
+    bucketCount,
+    min,
+    max,
   }
 
   return system

@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import * as _ from 'lodash'
 import { Answer } from './answer'
 import { Fees } from './fees'
 
@@ -12,7 +12,7 @@ export type FullContract<
   creatorId: string
   creatorName: string
   creatorUsername: string
-  creatorAvatarUrl: string
+  creatorAvatarUrl?: string
 
   question: string
   description: string // More info about what the contract is about

@@ -12,6 +12,7 @@ import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
+  Numeric,
   outcomeType,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
@@ -22,6 +23,7 @@ import {
   getAnteBets,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
+  getNumericAntes,
   HOUSE_LIQUIDITY_PROVIDER_ID,
   MINIMUM_ANTE,
 } from '../../common/antes'
@@ -63,7 +65,9 @@ export const createContract = functions
       tags = tags?.map((tag) => tag.toString().slice(0, MAX_TAG_LENGTH))
 
       let outcomeType = data.outcomeType ?? 'BINARY'
-      if (!['BINARY', 'MULTI', 'FREE_RESPONSE'].includes(outcomeType))
+      if (
+        !['BINARY', 'MULTI', 'FREE_RESPONSE', 'NUMERIC'].includes(outcomeType)
+      )
         return { status: 'error', message: 'Invalid outcomeType' }
 
       if (
@@ -115,7 +119,10 @@ export const createContract = functions
         initialProb,
         ante,
         closeTime,
-        tags ?? []
+        tags ?? [],
+        1000,
+        1,
+        1000
       )
 
       if (!isFree && ante) await chargeUser(creator.id, ante)
@@ -174,6 +181,25 @@ export const createContract = functions
             anteBetDoc.id
           )
           await anteBetDoc.set(anteBet)
+        } else if (outcomeType === 'NUMERIC') {
+          const antes = getNumericAntes(
+            creator,
+            contract as FullContract<DPM, Numeric>,
+            ante
+          )
+
+          await firestore.runTransaction(async (transaction) => {
+            for (let anteBet of antes) {
+              const anteBetDoc = firestore
+                .collection(`contracts/${contract.id}/bets`)
+                .doc()
+
+              await transaction.set(anteBetDoc, {
+                id: anteBetDoc.id,
+                ...anteBet,
+              })
+            }
+          })
         }
       }
 
