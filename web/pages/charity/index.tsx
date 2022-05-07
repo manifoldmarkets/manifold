@@ -56,7 +56,8 @@ export default function Charity(props: {
         <Col className="max-w-xl gap-2">
           <Title className="!mt-0" text="Manifold for Good" />
           <div className="mb-6 text-gray-500">
-            Donate your winnings to charity! Through the month of May, every M$100 you contribute turns into $1 USD sent to your chosen charity.
+            Donate your winnings to charity! Through the month of May, every
+            M$100 you contribute turns into $1 USD sent to your chosen charity.
             <Spacer h={5} />
             Together we've donated over ${Math.floor(totalRaised / 100)} USD so
             far!
@@ -100,8 +101,8 @@ export default function Charity(props: {
           <br />
           <br />
           <span className="italic">
-            Note: Manifold is not affiliated with any of these charities (other
-            than being fans of their work!)
+            Note: Manifold is not affiliated with non-Featured charities; we're
+            just fans of their work!
             <br />
             As Manifold is a for-profit entity, your contributions will not be
             tax deductible.
