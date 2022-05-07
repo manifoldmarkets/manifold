@@ -57,6 +57,35 @@ export const charities: Charity[] = [
     tags: ['Featured'] as CharityTag[],
   },
   {
+    name: 'Nonlinear',
+    website: 'https://www.nonlinear.org/',
+    photo: 'https://i.imgur.com/Muifc1l.png',
+    preview:
+      'Incubate longtermist nonprofits by connecting founders with ideas, funding, and mentorship.',
+    description: `Problem: There are tens of thousands of people working full time to make AI powerful, but around one hundred working to make AI safe. This needs to change.
+
+    Longtermism is held back by two bottlenecks:
+    1. Lots of funding, but few charities to deploy it.
+    2. Lots of talent, but few charities creating jobs.
+    
+    Solution: Longtermism needs more charities to deploy funding and create jobs. Our goal is to 10x the number of talented people working on longtermism by launching dozens of high impact charities.
+    
+    This helps solve the bottlenecks because entrepreneurs “unlock” latent EA talent - if one person starts an organization that employs 100 people who weren’t previously working on AI safety, that doubles the number of people working on the problem.
+    
+    Our process:
+    1. Research the highest leverage ideas
+    2. Find the right founders
+    3. Connect them with mentors and funding
+    
+    We will be announcing more details about our incubation program soon. 
+    
+    A few of the ideas we’ve incubated so far:
+    - The Nonlinear Library: Listen to top EA content on your podcast player. We use text-to-speech software to create an automatically updating repository of audio content from the EA Forum, Alignment Forum, and LessWrong. You can find it on all major podcast players here. 
+    - EA Hiring Agency: Helping EA orgs scalably hire talent.
+    - EA Houses: EA's Airbnb - Connecting EAs who have extra space with EAs who need space here.`,
+    tags: ['Featured'] as CharityTag[],
+  },
+  {
     name: 'GiveWell Maximum Impact Fund',
     website: 'https://www.givewell.org/maximum-impact-fund',
     photo: 'https://i.imgur.com/xikuDMZ.png',
