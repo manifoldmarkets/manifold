@@ -46,7 +46,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
 
       <Row className="m-4 mb-6 items-center gap-1 text-xl font-semibold text-gray-800">
         <SparklesIcon className="inline h-5 w-5" aria-hidden="true" />
-        Trending today
+        Trending markets
       </Row>
       <ContractsGrid
         contracts={hotContracts?.slice(0, 10) || []}

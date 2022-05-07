@@ -239,6 +239,13 @@ export async function getHotContracts() {
   )
 }
 
+export async function getContractsBySlugs(slugs: string[]) {
+  const q = query(contractCollection, where('slug', 'in', slugs))
+  const snapshot = await getDocs(q)
+  const contracts = snapshot.docs.map((doc) => doc.data() as Contract)
+  return _.sortBy(contracts, (contract) => -1 * contract.volume24Hours)
+}
+
 const topWeeklyQuery = query(
   contractCollection,
   where('isResolved', '==', false),
