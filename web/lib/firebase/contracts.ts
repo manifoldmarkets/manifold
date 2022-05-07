@@ -50,7 +50,7 @@ export function contractMetrics(contract: Contract) {
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
 
-  const volumeLabel = `${formatMoney(contract.volume)} volume`
+  const volumeLabel = `${formatMoney(contract.volume)} bet`
 
   return { volumeLabel, createdDate, resolvedDate }
 }
