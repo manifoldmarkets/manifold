@@ -16,7 +16,7 @@ export function CharityCard(props: { charity: Charity }) {
   return (
     <Link href={`/charity/${slug}`} passHref>
       <div className="card card-compact transition:shadow flex-1 cursor-pointer border-2 bg-white hover:shadow-md">
-        <Row className="mt-6">
+        <Row className="mt-6 mb-2">
           {tags?.includes('Featured') && <FeaturedBadge />}
         </Row>
         <div className="px-8">
