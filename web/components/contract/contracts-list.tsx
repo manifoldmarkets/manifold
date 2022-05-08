@@ -275,6 +275,8 @@ export function SearchableGrid(props: {
     matches.sort((a, b) => b.volume7Days - a.volume7Days)
   } else if (sort === 'most-likely') {
     matches = _.sortBy(matches, (contract) => -getBinaryProb(contract))
+  } else if (sort === 'most-uncertain') {
+    matches = _.sortBy(matches, (contract) => Math.abs(getBinaryProb(contract) - 0.5))
   } else if (sort === 'least-likely') {
     // Exclude non-binary contracts
     matches = matches.filter((contract) => getBinaryProb(contract) !== 0)
@@ -316,6 +318,7 @@ export function SearchableGrid(props: {
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
           <option value="most-likely">Most likely</option>
+          <option value="most-uncertain">Most uncertain</option>
           <option value="least-likely">Least likely</option>
 
           <option value="tag">By tag</option>
