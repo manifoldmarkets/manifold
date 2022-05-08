@@ -227,7 +227,7 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
         setUsers(sortedUsers)
       })
     }
-  }, [])
+  }, [top5Ids, userProfits])
 
   return users && users.length > 0 ? (
     <Leaderboard

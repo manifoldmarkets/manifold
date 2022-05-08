@@ -61,7 +61,7 @@ export default function Folds(props: {
         }
       )
     }
-  }, [curatorsDict])
+  }, [curatorsDict, folds])
 
   const [query, setQuery] = useState('')
   // Copied from contracts-list.tsx; extract if we copy this again
