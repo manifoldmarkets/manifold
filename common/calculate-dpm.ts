@@ -38,7 +38,7 @@ export function getNumericBets(
   contract: NumericContract,
   bucket: string,
   betAmount: number,
-  std = 0.01
+  variance = 0.01
 ) {
   const { bucketCount } = contract
   const bucketNumber = parseInt(bucket)
@@ -46,7 +46,9 @@ export function getNumericBets(
 
   const mean = bucketNumber / bucketCount
 
-  const allDensities = buckets.map((i) => normpdf(i / bucketCount, mean, std))
+  const allDensities = buckets.map((i) =>
+    normpdf(i / bucketCount, mean, variance)
+  )
   const densitySum = _.sum(allDensities)
 
   const rawBetAmounts = allDensities
