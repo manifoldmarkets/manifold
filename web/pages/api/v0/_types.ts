@@ -1,8 +1,8 @@
-import { Bet } from '../../../../common/bet'
-import { getProbability } from '../../../../common/calculate'
-import { Comment } from '../../../../common/comment'
-import { Contract } from '../../../../common/contract'
-import { removeUndefinedProps } from '../../../../common/util/object'
+import { Bet } from 'common/bet'
+import { getProbability } from 'common/calculate'
+import { Comment } from 'common/comment'
+import { Contract } from 'common/contract'
+import { removeUndefinedProps } from 'common/util/object'
 
 export type LiteMarket = {
   // Unique identifer for this market
