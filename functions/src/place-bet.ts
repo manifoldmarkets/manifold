@@ -54,14 +54,8 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           return { status: 'error', message: 'Invalid contract' }
         const contract = contractSnap.data() as Contract
 
-        const {
-          closeTime,
-          outcomeType,
-          mechanism,
-          collectedFees,
-          volume,
-          manaLimitPerUser,
-        } = contract
+        const { closeTime, outcomeType, mechanism, collectedFees, volume } =
+          contract
         if (closeTime && Date.now() > closeTime)
           return { status: 'error', message: 'Trading is closed' }
 
