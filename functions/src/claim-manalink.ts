@@ -17,7 +17,7 @@ export const claimManalink = functions
       const manalinkDoc = firestore.doc(`manalinks/${slug}`)
       const manalinkSnap = await transaction.get(manalinkDoc)
       if (!manalinkSnap.exists) {
-        return { status: 'error', message: 'Link not found' }
+        return { status: 'error', message: 'Manalink not found' }
       }
       const manalink = manalinkSnap.data() as Manalink
 
@@ -30,7 +30,23 @@ export const claimManalink = functions
       if (claimedUserIds.includes(userId)) {
         return {
           status: 'error',
-          message: `${userId} already redeemed link ${slug}`,
+          message: `${userId} already redeemed manalink ${slug}`,
+        }
+      }
+
+      // Disallow expired or maxed out links
+      if (manalink.expiresTime < Date.now()) {
+        return {
+          status: 'error',
+          message: `Manalink ${slug} expired on ${new Date(
+            manalink.expiresTime
+          ).toLocaleString()}`,
+        }
+      }
+      if (manalink.maxUses <= manalink.claims.length) {
+        return {
+          status: 'error',
+          message: `Manalink ${slug} has reached its max uses of ${manalink.maxUses}`,
         }
       }
 
@@ -75,6 +91,8 @@ export const claimManalink = functions
         claimedUserIds: [...claimedUserIds, userId],
         claims: [...manalink.claims, claim],
       })
+
+      return { status: 'success', message: 'Manalink claimed' }
     })
   })
 
