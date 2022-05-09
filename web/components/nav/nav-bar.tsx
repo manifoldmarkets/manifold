@@ -60,7 +60,7 @@ export function BottomNavBar() {
         ) : user ? (
           <>
             <Avatar
-              containerClassName={'mx-auto my-1'}
+              className="mx-auto my-1"
               size="xs"
               username={user.username}
               avatarUrl={user.avatarUrl}
