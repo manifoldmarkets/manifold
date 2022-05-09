@@ -1,15 +1,15 @@
 import clsx from 'clsx'
 import _ from 'lodash'
 
-import { Answer } from '../../../common/answer'
-import { DPM, FreeResponse, FullContract } from '../../../common/contract'
+import { Answer } from 'common/answer'
+import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../avatar'
 import { SiteLink } from '../site-link'
-import { formatPercent } from '../../../common/util/format'
-import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
-import { tradingAllowed } from '../../lib/firebase/contracts'
+import { formatPercent } from 'common/util/format'
+import { getDpmOutcomeProbability } from 'common/calculate-dpm'
+import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Linkify } from '../linkify'
 
 export function AnswerItem(props: {
@@ -68,7 +68,7 @@ export function AnswerItem(props: {
             </Row>
           </SiteLink>
           {/* TODO: Show total pool? */}
-          <div className="text-base">#{number}</div>
+          <div className="text-base">{showChoice && '#' + number}</div>
         </Row>
       </Col>
 

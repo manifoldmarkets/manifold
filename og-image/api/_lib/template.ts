@@ -93,7 +93,8 @@ export function getHtml(parsedReq: ParsedRequest) {
     creatorAvatarUrl,
   } = parsedReq
   const MAX_QUESTION_CHARS = 100
-  const truncatedQuestion = question.length > MAX_QUESTION_CHARS
+  const truncatedQuestion =
+    question.length > MAX_QUESTION_CHARS
       ? question.slice(0, MAX_QUESTION_CHARS) + '...'
       : question
   const hideAvatar = creatorAvatarUrl ? '' : 'hidden'

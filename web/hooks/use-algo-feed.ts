@@ -1,17 +1,17 @@
 import _ from 'lodash'
 import { useState, useEffect } from 'react'
-import { Bet } from '../../common/bet'
-import { Comment } from '../../common/comment'
-import { Contract } from '../../common/contract'
+import { Bet } from 'common/bet'
+import { Comment } from 'common/comment'
+import { Contract } from 'common/contract'
 import { useTimeSinceFirstRender } from './use-time-since-first-render'
-import { trackLatency } from '../lib/firebase/tracking'
-import { User } from '../../common/user'
-import { getUserFeed } from '../lib/firebase/users'
+import { trackLatency } from 'web/lib/firebase/tracking'
+import { User } from 'common/user'
+import { getUserFeed } from 'web/lib/firebase/users'
 import { useUpdatedContracts } from './use-contracts'
 import {
   getRecentBetsAndComments,
   getTopWeeklyContracts,
-} from '../lib/firebase/contracts'
+} from 'web/lib/firebase/contracts'
 
 type feed = {
   contract: Contract

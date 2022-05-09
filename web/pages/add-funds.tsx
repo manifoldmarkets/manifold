@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { Col } from '../components/layout/col'
-import { SEO } from '../components/SEO'
-import { Title } from '../components/title'
-import { FundsSelector } from '../components/yes-no-selector'
-import { useUser } from '../hooks/use-user'
-import { checkoutURL } from '../lib/service/stripe'
-import { Page } from '../components/page'
+import { Col } from 'web/components/layout/col'
+import { SEO } from 'web/components/SEO'
+import { Title } from 'web/components/title'
+import { FundsSelector } from 'web/components/yes-no-selector'
+import { useUser } from 'web/hooks/use-user'
+import { checkoutURL } from 'web/lib/service/stripe'
+import { Page } from 'web/components/page'
 
 export default function AddFundsPage() {
   const user = useUser()

@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Txn } from '../../common/txn'
-import {
-  listenForAllCharityTxns,
-  listenForCharityTxns,
-} from '../lib/firebase/txns'
+import { Txn } from 'common/txn'
+import { listenForCharityTxns } from 'web/lib/firebase/txns'
 
 export const useCharityTxns = (charityId: string) => {
   const [txns, setTxns] = useState<Txn[]>([])
@@ -11,16 +8,6 @@ export const useCharityTxns = (charityId: string) => {
   useEffect(() => {
     return listenForCharityTxns(charityId, setTxns)
   }, [charityId])
-
-  return txns
-}
-
-export const useAllCharityTxns = () => {
-  const [txns, setTxns] = useState<Txn[]>([])
-
-  useEffect(() => {
-    return listenForAllCharityTxns(setTxns)
-  }, [])
 
   return txns
 }
