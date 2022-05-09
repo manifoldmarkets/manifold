@@ -13,7 +13,10 @@ import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
 import { getContract, getValues } from './utils'
 import { sendNewAnswerEmail } from './emails'
 import { Bet } from '../../common/bet'
-import { getContractBetMetrics } from '../../common/calculate'
+import {
+  getContractBetMetrics,
+  hasUserHitManaLimit,
+} from '../../common/calculate'
 
 export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -58,7 +61,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
           message: 'Requires a free response contract',
         }
 
-      const { closeTime, volume, manaLimitPerUser } = contract
+      const { closeTime, volume } = contract
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
@@ -67,18 +70,13 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       )
       const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
 
-      const contractMetrics = getContractBetMetrics(contract, yourBets)
-      const currentInvested = contractMetrics.currentInvested
-      console.log('user current invested amount', currentInvested)
-      console.log('mana limit:', manaLimitPerUser)
+      const { status, message } = hasUserHitManaLimit(
+        contract,
+        yourBets,
+        amount
+      )
+      if (status === 'error') return { status, message: message }
 
-      if (manaLimitPerUser && currentInvested + amount > manaLimitPerUser) {
-        const manaAllowed = manaLimitPerUser - currentInvested
-        return {
-          status: 'error',
-          message: `Market bet cap is M$${manaLimitPerUser}, you've M$${manaAllowed} left`,
-        }
-      }
       const [lastAnswer] = await getValues<Answer>(
         firestore
           .collection(`contracts/${contractId}/answers`)

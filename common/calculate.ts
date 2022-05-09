@@ -190,3 +190,29 @@ export function getTopAnswer(contract: FreeResponseContract) {
   )
   return top?.answer
 }
+
+export function hasUserHitManaLimit(
+  contract: FreeResponseContract,
+  bets: Bet[],
+  amount: number
+) {
+  const { manaLimitPerUser } = contract
+  if (manaLimitPerUser) {
+    const contractMetrics = getContractBetMetrics(contract, bets)
+    const currentInvested = contractMetrics.currentInvested
+    console.log('user current invested amount', currentInvested)
+    console.log('mana limit:', manaLimitPerUser)
+
+    if (currentInvested + amount > manaLimitPerUser) {
+      const manaAllowed = manaLimitPerUser - currentInvested
+      return {
+        status: 'error',
+        message: `Market bet cap is M$${manaLimitPerUser}, you've M$${manaAllowed} left`,
+      }
+    }
+  }
+  return {
+    status: 'success',
+    message: '',
+  }
+}
