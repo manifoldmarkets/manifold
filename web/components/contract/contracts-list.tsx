@@ -13,12 +13,7 @@ export function ContractsGrid(props: {
   hasMore: boolean
   showCloseTime?: boolean
 }) {
-  const { showCloseTime, hasMore, loadMore } = props
-  const [resolvedContracts, activeContracts] = _.partition(
-    props.contracts,
-    (c) => c.isResolved
-  )
-  const contracts = [...activeContracts, ...resolvedContracts]
+  const { contracts, showCloseTime, hasMore, loadMore } = props
 
   if (contracts.length === 0) {
     return (

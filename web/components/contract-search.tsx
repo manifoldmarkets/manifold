@@ -31,10 +31,11 @@ const sortIndexes = [
   { label: 'Oldest', value: 'contracts-oldest' },
   { label: 'Most traded', value: 'contracts-most-traded' },
   { label: '24h volume', value: 'contracts-24-hour-vol' },
-  { label: 'Closing soon', value: 'contracts-closing-soon' },
-  { label: 'Closed', value: 'contracts-closed' },
-  { label: 'Resolved', value: 'contracts-resolved' },
+  { label: 'Close date', value: 'contracts-close-date' },
+  { label: 'Resolve date', value: 'contracts-resolve-date' },
 ]
+
+type filter = 'open' | 'closed' | 'resolved' | 'all'
 
 export function ContractSearch(props: {
   querySortOptions?: {
@@ -56,22 +57,44 @@ export function ContractSearch(props: {
     ? initialSort
     : querySortOptions?.defaultSort
 
-  console.log('sort', sort)
+  const [filter, setFilter] = useState<filter>('open')
+
   if (!sort) return <></>
   return (
     <InstantSearch searchClient={searchClient} indexName={`contracts-${sort}`}>
-      <Row className="gap-2">
+      <Row className="flex-wrap gap-2">
         <SearchBox
           className="flex-1"
           classNames={{
-            form: 'before:top-5',
-            input: 'pl-10 input input-bordered h-[40px]',
+            form: 'before:top-6',
+            input: '!pl-10 !input !input-bordered shadow-none',
+            resetIcon: 'mt-2',
           }}
           placeholder="Search markets"
         />
-        <SortBy items={sortIndexes} />
+        <Row className="mt-2 gap-2 sm:mt-0">
+          <select
+            className="!select !select-bordered"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as filter)}
+          >
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+            <option value="resolved">Resolved</option>
+            <option value="all">All</option>
+          </select>
+          <SortBy
+            items={sortIndexes}
+            classNames={{
+              select: '!select !select-bordered',
+            }}
+          />
+        </Row>
       </Row>
-      <ContractSearchInner querySortOptions={querySortOptions} />
+      <ContractSearchInner
+        querySortOptions={querySortOptions}
+        filter={filter}
+      />
     </InstantSearch>
   )
 }
@@ -85,8 +108,9 @@ export function ContractSearchInner(props: {
     }
     shouldLoadFromStorage?: boolean
   }
+  filter: filter
 }) {
-  const { querySortOptions } = props
+  const { querySortOptions, filter } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
   const { query, setQuery, setSort } = useUpdateQueryAndSort({
@@ -121,17 +145,16 @@ export function ContractSearchInner(props: {
   const tag = querySortOptions?.filter?.tag
   useFilterTag(tag)
 
-  if (
-    !creatorId ||
-    index === 'contracts-closed' ||
-    index === 'contracts-resolved'
-  ) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useFilterClosed(index)
-
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useFilterResolved(index)
-  }
+  useFilterClosed(
+    filter === 'closed'
+      ? true
+      : filter === 'all' || filter === 'resolved'
+      ? undefined
+      : false
+  )
+  useFilterResolved(
+    filter === 'resolved' ? true : filter === 'all' ? undefined : false
+  )
 
   const { showMore, hits, isLastPage } = useInfiniteHits()
   const contracts = hits as any as Contract[]
@@ -169,30 +192,23 @@ const useFilterTag = (tag: string | undefined) => {
   }, [tag, refine])
 }
 
-const useFilterClosed = (index: string) => {
+const useFilterClosed = (value: boolean | undefined) => {
   const [now] = useState(Date.now())
   useRange({
     attribute: 'closeTime',
-    min:
-      index === 'contracts-resolved' || index === 'contracts-closed' ? 0 : now,
-    max: index === 'contracts-closed' ? now : undefined,
+    min: value === false ? now : undefined,
+    max: value ? now : undefined,
   })
 }
 
-const useFilterResolved = (index: string) => {
+const useFilterResolved = (value: boolean | undefined) => {
+  // Note (James): I don't know why this works.
   const { refine: refineResolved } = useToggleRefinement({
-    attribute: 'isResolved',
+    attribute: value === undefined ? 'non-existant-field' : 'isResolved',
     on: true,
-    off: false,
+    off: value === undefined ? undefined : false,
   })
   useEffect(() => {
-    console.log(
-      'effect',
-      'curr',
-      index,
-      'update',
-      index === 'contracts-resolved'
-    )
-    refineResolved({ isRefined: index !== 'contracts-resolved' })
-  }, [index])
+    refineResolved({ isRefined: !value })
+  }, [value])
 }
