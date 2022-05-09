@@ -20,19 +20,23 @@ import { Row } from './layout/row'
 import { useEffect, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { useRouter } from 'next/router'
+import { ENV } from 'common/envs/constants'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
   '75c28fc084a80e1129d427d470cf41a3'
 )
 
+const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
+console.log('env', ENV, indexPrefix)
+
 const sortIndexes = [
-  { label: 'Newest', value: 'contracts-newest' },
-  { label: 'Oldest', value: 'contracts-oldest' },
-  { label: 'Most traded', value: 'contracts-most-traded' },
-  { label: '24h volume', value: 'contracts-24-hour-vol' },
-  { label: 'Close date', value: 'contracts-close-date' },
-  { label: 'Resolve date', value: 'contracts-resolve-date' },
+  { label: 'Newest', value: indexPrefix + 'contracts-newest' },
+  { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
+  { label: 'Most traded', value: indexPrefix + 'contracts-most-traded' },
+  { label: '24h volume', value: indexPrefix + 'contracts-24-hour-vol' },
+  { label: 'Close date', value: indexPrefix + 'contracts-close-date' },
+  { label: 'Resolve date', value: indexPrefix + 'contracts-resolve-date' },
 ]
 
 type filter = 'open' | 'closed' | 'resolved' | 'all'
@@ -53,7 +57,7 @@ export function ContractSearch(props: {
 
   const sort = sortIndexes
     .map(({ value }) => value)
-    .includes(`contracts-${initialSort ?? ''}`)
+    .includes(`${indexPrefix}contracts-${initialSort ?? ''}`)
     ? initialSort
     : querySortOptions?.defaultSort
 
@@ -61,7 +65,10 @@ export function ContractSearch(props: {
 
   if (!sort) return <></>
   return (
-    <InstantSearch searchClient={searchClient} indexName={`contracts-${sort}`}>
+    <InstantSearch
+      searchClient={searchClient}
+      indexName={`${indexPrefix}contracts-${sort}`}
+    >
       <Row className="flex-wrap gap-2">
         <SearchBox
           className="flex-1"
