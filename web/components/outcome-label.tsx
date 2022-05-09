@@ -1,6 +1,6 @@
 import clsx from 'clsx'
-import { Answer } from '../../common/answer'
-import { getProbability } from '../../common/calculate'
+import { Answer } from 'common/answer'
+import { getProbability } from 'common/calculate'
 import {
   Binary,
   Contract,
@@ -9,8 +9,8 @@ import {
   FreeResponse,
   FreeResponseContract,
   FullContract,
-} from '../../common/contract'
-import { formatPercent } from '../../common/util/format'
+} from 'common/contract'
+import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
 
 export function OutcomeLabel(props: {

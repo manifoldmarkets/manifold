@@ -3,11 +3,11 @@ import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
 import { getValues } from './utils'
-import { Contract } from '../../common/contract'
-import { Bet } from '../../common/bet'
-import { User } from '../../common/user'
-import { batchedWaitAll } from '../../common/util/promise'
-import { calculatePayout } from '../../common/calculate'
+import { Contract } from 'common/contract'
+import { Bet } from 'common/bet'
+import { User } from 'common/user'
+import { batchedWaitAll } from 'common/util/promise'
+import { calculatePayout } from 'common/calculate'
 
 const firestore = admin.firestore()
 

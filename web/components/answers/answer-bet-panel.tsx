@@ -3,28 +3,28 @@ import _ from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
-import { Answer } from '../../../common/answer'
-import { DPM, FreeResponse, FullContract } from '../../../common/contract'
+import { Answer } from 'common/answer'
+import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { placeBet } from '../../lib/firebase/api-call'
+import { placeBet } from 'web/lib/firebase/api-call'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import {
   formatMoney,
   formatPercent,
   formatWithCommas,
-} from '../../../common/util/format'
+} from 'common/util/format'
 import { InfoTooltip } from '../info-tooltip'
-import { useUser } from '../../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import {
   getDpmOutcomeProbability,
   calculateDpmShares,
   calculateDpmPayoutAfterCorrectBet,
   getDpmOutcomeProbabilityAfterBet,
-} from '../../../common/calculate-dpm'
-import { firebaseLogin } from '../../lib/firebase/users'
-import { Bet } from '../../../common/bet'
+} from 'common/calculate-dpm'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { Bet } from 'common/bet'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -174,7 +174,7 @@ export function AnswerBetPanel(props: {
           className="btn self-stretch whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
           onClick={firebaseLogin}
         >
-          Sign up to trade!
+          Sign up to bet!
         </button>
       )}
     </Col>

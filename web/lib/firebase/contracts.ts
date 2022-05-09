@@ -17,16 +17,16 @@ import _ from 'lodash'
 
 import { app } from './init'
 import { getValues, listenForValue, listenForValues } from './utils'
-import { Binary, Contract, FullContract } from '../../../common/contract'
-import { getDpmProbability } from '../../../common/calculate-dpm'
-import { createRNG, shuffle } from '../../../common/util/random'
-import { getCpmmProbability } from '../../../common/calculate-cpmm'
-import { formatMoney, formatPercent } from '../../../common/util/format'
-import { DAY_MS } from '../../../common/util/time'
-import { MAX_FEED_CONTRACTS } from '../../../common/recommended-contracts'
-import { Bet } from '../../../common/bet'
-import { Comment } from '../../../common/comment'
-import { ENV_CONFIG } from '../../../common/envs/constants'
+import { Binary, Contract, FullContract } from 'common/contract'
+import { getDpmProbability } from 'common/calculate-dpm'
+import { createRNG, shuffle } from 'common/util/random'
+import { getCpmmProbability } from 'common/calculate-cpmm'
+import { formatMoney, formatPercent } from 'common/util/format'
+import { DAY_MS } from 'common/util/time'
+import { MAX_FEED_CONTRACTS } from 'common/recommended-contracts'
+import { Bet } from 'common/bet'
+import { Comment } from 'common/comment'
+import { ENV_CONFIG } from 'common/envs/constants'
 export type { Contract }
 
 export function contractPath(contract: Contract) {
@@ -50,7 +50,7 @@ export function contractMetrics(contract: Contract) {
     ? dayjs(resolutionTime).format('MMM D')
     : undefined
 
-  const volumeLabel = `${formatMoney(contract.volume)} volume`
+  const volumeLabel = `${formatMoney(contract.volume)} bet`
 
   return { volumeLabel, createdDate, resolvedDate }
 }
@@ -237,6 +237,13 @@ export async function getHotContracts() {
     chooseRandomSubset(contracts, 10),
     (contract) => -1 * contract.volume24Hours
   )
+}
+
+export async function getContractsBySlugs(slugs: string[]) {
+  const q = query(contractCollection, where('slug', 'in', slugs))
+  const snapshot = await getDocs(q)
+  const contracts = snapshot.docs.map((doc) => doc.data() as Contract)
+  return _.sortBy(contracts, (contract) => -1 * contract.volume24Hours)
 }
 
 const topWeeklyQuery = query(

@@ -3,55 +3,50 @@ import { Avatar } from './avatar'
 import { useEffect, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { NewContract } from '../pages/create'
-import { firebaseLogin, User } from '../lib/firebase/users'
+import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { ContractsGrid } from './contract/contracts-list'
-import { Contract, MAX_QUESTION_LENGTH } from '../../common/contract'
+import { Contract, MAX_QUESTION_LENGTH } from 'common/contract'
 import { Col } from './layout/col'
 import clsx from 'clsx'
 import { Row } from './layout/row'
-import { ENV_CONFIG } from '../../common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import _ from 'lodash'
+import { SiteLink } from './site-link'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
 
   return (
     <>
-      <Col className="my-6 rounded-xl bg-white py-12 text-center sm:m-12">
+      <Col className="my-6 rounded-xl text-center sm:m-12">
         <h1 className="text-4xl sm:text-6xl xl:text-6xl">
-          <div className="font-semibold sm:mb-2">
-            A{' '}
-            <span className="bg-gradient-to-r from-teal-400 to-green-400 bg-clip-text font-bold text-transparent">
-              market{' '}
-            </span>
-            for
-          </div>
-          <div className="font-semibold">
-            every{' '}
-            <span className="bg-gradient-to-r from-teal-400 to-green-400 bg-clip-text font-bold text-transparent">
-              question
-            </span>
-          </div>
+          <div className="font-semibold sm:mb-2">A market for</div>
+          <span className="bg-gradient-to-r from-teal-400 to-green-400 bg-clip-text font-bold text-transparent">
+            every question
+          </span>
         </h1>
         <Spacer h={6} />
-        <div className="mb-4 text-gray-500">
-          Find markets on any topic imaginable. Or create your own!
+        <div className="mb-4 px-2 text-gray-500">
+          Bet on any topic imaginable. Or create your own market!
           <br />
-          Sign up to get M$1,000 and start trading.
+          Sign up and get M$1,000 - worth $10 to your{' '}
+          <SiteLink className="font-semibold" href="/charity">
+            favorite charity.
+          </SiteLink>
           <br />
         </div>
         <Spacer h={6} />
         <button
-          className="btn btn-lg self-center border-none bg-gradient-to-r from-teal-500 to-green-500  normal-case hover:from-teal-600 hover:to-green-600"
+          className="self-center rounded-md border-none bg-gradient-to-r from-teal-500 to-green-500 py-4 px-6 text-lg font-semibold normal-case text-white hover:from-teal-600 hover:to-green-600"
           onClick={firebaseLogin}
         >
-          Sign up for free
+          Start betting now
         </button>{' '}
       </Col>
 
       <Row className="m-4 mb-6 items-center gap-1 text-xl font-semibold text-gray-800">
         <SparklesIcon className="inline h-5 w-5" aria-hidden="true" />
-        Trending today
+        Trending markets
       </Row>
       <ContractsGrid
         contracts={hotContracts?.slice(0, 10) || []}

@@ -3,21 +3,21 @@ import _ from 'lodash'
 import { ClockIcon, DatabaseIcon, PencilIcon } from '@heroicons/react/outline'
 import { TrendingUpIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
-import { formatMoney } from '../../../common/util/format'
+import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
 import {
   Contract,
   contractMetrics,
   updateContract,
-} from '../../lib/firebase/contracts'
+} from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import dayjs from 'dayjs'
 import { DateTimeTooltip } from '../datetime-tooltip'
-import { fromNow } from '../../lib/util/time'
+import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../avatar'
 import { useState } from 'react'
 import { ContractInfoDialog } from './contract-info-dialog'
-import { Bet } from '../../../common/bet'
+import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
 
 export function AbbrContractDetails(props: {

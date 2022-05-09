@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { User } from '../lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
 import { Page } from './page'
@@ -10,14 +10,14 @@ import { Linkify } from './linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
 import { LinkIcon } from '@heroicons/react/solid'
-import { genHash } from '../../common/util/random'
+import { genHash } from 'common/util/random'
 import { PencilIcon } from '@heroicons/react/outline'
 import { Tabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
 import { useEffect, useState } from 'react'
-import { Comment, getUsersComments } from '../lib/firebase/comments'
-import { Contract } from '../../common/contract'
-import { getContractFromId, listContracts } from '../lib/firebase/contracts'
+import { Comment, getUsersComments } from 'web/lib/firebase/comments'
+import { Contract } from 'common/contract'
+import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
 import { LoadingIndicator } from './loading-indicator'
 import { useRouter } from 'next/router'
 import _ from 'lodash'
@@ -203,12 +203,7 @@ export function UserPage(props: {
                 title: 'Markets',
                 content: <CreatorContractsList contracts={usersContracts} />,
                 tabIcon: (
-                  <div
-                    className={clsx(
-                      usersContracts.length > 9 ? 'px-1' : 'px-1.5',
-                      'items-center rounded-full border-2 border-current py-0.5 text-xs'
-                    )}
-                  >
+                  <div className="px-0.5 font-bold">
                     {usersContracts.length}
                   </div>
                 ),
@@ -222,14 +217,7 @@ export function UserPage(props: {
                   />
                 ),
                 tabIcon: (
-                  <div
-                    className={clsx(
-                      usersComments.length > 9 ? 'px-1' : 'px-1.5',
-                      'items-center rounded-full border-2 border-current py-0.5 text-xs'
-                    )}
-                  >
-                    {usersComments.length}
-                  </div>
+                  <div className="px-0.5 font-bold">{usersComments.length}</div>
                 ),
               },
             ]}

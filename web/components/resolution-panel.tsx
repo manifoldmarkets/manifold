@@ -3,16 +3,16 @@ import React, { useEffect, useState } from 'react'
 
 import { Col } from './layout/col'
 import { Title } from './title'
-import { User } from '../lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
-import { resolveMarket } from '../lib/firebase/api-call'
+import { resolveMarket } from 'web/lib/firebase/api-call'
 import { ProbabilitySelector } from './probability-selector'
-import { DPM_CREATOR_FEE } from '../../common/fees'
-import { getProbability } from '../../common/calculate'
-import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
-import { formatMoney } from '../../common/util/format'
+import { DPM_CREATOR_FEE } from 'common/fees'
+import { getProbability } from 'common/calculate'
+import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import { formatMoney } from 'common/util/format'
 
 export function ResolutionPanel(props: {
   creator: User

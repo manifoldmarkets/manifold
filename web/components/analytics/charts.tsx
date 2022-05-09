@@ -1,7 +1,7 @@
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
 import _ from 'lodash'
-import { useWindowSize } from '../../hooks/use-window-size'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function DailyCountChart(props: {
   startDate: number
