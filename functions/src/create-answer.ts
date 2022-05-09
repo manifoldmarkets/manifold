@@ -7,11 +7,11 @@ import { getLoanAmount, getNewMultiBetInfo } from 'common/new-bet'
 import { Answer, MAX_ANSWER_LENGTH } from 'common/answer'
 import { getContract, getValues } from './utils'
 import { sendNewAnswerEmail } from './emails'
-import { Bet } from '../../common/bet'
+import { Bet } from 'common/bet'
 import {
   getContractBetMetrics,
   hasUserHitManaLimit,
-} from '../../common/calculate'
+} from 'common/calculate'
 
 export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
