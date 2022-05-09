@@ -127,7 +127,7 @@ export const createContract = functions
         manaLimitPerUser ?? 0
       )
 
-      if (!isFree && ante) await chargeUser(creator.id, ante)
+      if (!isFree && ante) await chargeUser(creator.id, ante, true)
 
       await contractRef.create(contract)
 
