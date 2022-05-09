@@ -5,9 +5,9 @@ import { initAdmin } from './script-init'
 initAdmin()
 
 import { getValues } from '../utils'
-import { View } from 'common/tracking'
-import { User } from 'common/user'
-import { batchedWaitAll } from 'common/util/promise'
+import { View } from '../../../common/tracking'
+import { User } from '../../../common/user'
+import { batchedWaitAll } from '../../../common/util/promise'
 
 const firestore = admin.firestore()
 

@@ -3,10 +3,10 @@ import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
 import { getUser } from './utils'
-import { Contract } from 'common/contract'
-import { slugify } from 'common/util/slugify'
-import { randomString } from 'common/util/random'
-import { Fold } from 'common/fold'
+import { Contract } from '../../common/contract'
+import { slugify } from '../../common/util/slugify'
+import { randomString } from '../../common/util/random'
+import { Fold } from '../../common/fold'
 
 export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
   async (

@@ -4,13 +4,22 @@ import * as _ from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Binary, Contract, CPMM, DPM, FullContract } from 'common/contract'
-import { Bet } from 'common/bet'
-import { calculateDpmPayout, getDpmProbability } from 'common/calculate-dpm'
-import { User } from 'common/user'
-import { getCpmmInitialLiquidity } from 'common/antes'
-import { noFees } from 'common/fees'
-import { addObjects } from 'common/util/object'
+import {
+  Binary,
+  Contract,
+  CPMM,
+  DPM,
+  FullContract,
+} from '../../../common/contract'
+import { Bet } from '../../../common/bet'
+import {
+  calculateDpmPayout,
+  getDpmProbability,
+} from '../../../common/calculate-dpm'
+import { User } from '../../../common/user'
+import { getCpmmInitialLiquidity } from '../../../common/antes'
+import { noFees } from '../../../common/fees'
+import { addObjects } from '../../../common/util/object'
 
 type DocRef = admin.firestore.DocumentReference
 
