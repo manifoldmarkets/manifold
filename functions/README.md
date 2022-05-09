@@ -56,7 +56,7 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 ## Deploying
 
 0. `$ firebase use prod` to switch to prod
-1. `$ yarn deploy` to push your changes live!
+1. `$ firebase deploy --only functions` to push your changes live!
    (Future TODO: auto-deploy functions on Git push)
 
 ## Secrets management
