@@ -3,7 +3,7 @@ import {
   Comment,
   listenForComments,
   listenForRecentComments,
-} from '../lib/firebase/comments'
+} from 'web/lib/firebase/comments'
 
 export const useComments = (contractId: string) => {
   const [comments, setComments] = useState<Comment[] | undefined>()

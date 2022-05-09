@@ -1,17 +1,12 @@
 import _ from 'lodash'
 
-import { Answer } from '../../../common/answer'
-import { Bet } from '../../../common/bet'
-import { getOutcomeProbability } from '../../../common/calculate'
-import { Comment } from '../../../common/comment'
-import {
-  Contract,
-  DPM,
-  FreeResponse,
-  FullContract,
-} from '../../../common/contract'
-import { User } from '../../../common/user'
-import { mapCommentsByBetId } from '../../lib/firebase/comments'
+import { Answer } from 'common/answer'
+import { Bet } from 'common/bet'
+import { getOutcomeProbability } from 'common/calculate'
+import { Comment } from 'common/comment'
+import { Contract, DPM, FreeResponse, FullContract } from 'common/contract'
+import { User } from 'common/user'
+import { mapCommentsByBetId } from 'web/lib/firebase/comments'
 
 export type ActivityItem =
   | DescriptionItem

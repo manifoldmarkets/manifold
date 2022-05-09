@@ -4,7 +4,7 @@ import {
   Bet,
   listenForUserBets,
   listenForUserContractBets,
-} from '../lib/firebase/bets'
+} from 'web/lib/firebase/bets'
 
 export const useUserBets = (userId: string | undefined) => {
   const [bets, setBets] = useState<Bet[] | undefined>(undefined)

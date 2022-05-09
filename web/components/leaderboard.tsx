@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { User } from '../../common/user'
+import { User } from 'common/user'
 import { Avatar } from './avatar'
 import { Row } from './layout/row'
 import { SiteLink } from './site-link'

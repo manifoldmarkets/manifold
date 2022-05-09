@@ -1,5 +1,5 @@
-import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
-import { Bet } from '../../common/bet'
+import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import { Bet } from 'common/bet'
 import { useEffect, useState } from 'react'
 import _ from 'lodash'
 

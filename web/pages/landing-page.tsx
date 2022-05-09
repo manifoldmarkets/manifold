@@ -7,11 +7,11 @@ import {
   ArrowDownIcon,
 } from '@heroicons/react/outline'
 
-import { firebaseLogin } from '../lib/firebase/users'
-import { ContractsGrid } from '../components/contract/contracts-list'
-import { Col } from '../components/layout/col'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { ContractsGrid } from 'web/components/contract/contracts-list'
+import { Col } from 'web/components/layout/col'
 import Link from 'next/link'
-import { Contract } from '../lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
 
 export default function LandingPage(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
@@ -20,7 +20,7 @@ export default function LandingPage(props: { hotContracts: Contract[] }) {
     <div>
       <Hero />
       <FeaturesSection />
-      <ExploreMarketsSection hotContracts={hotContracts} />
+      {/* <ExploreMarketsSection hotContracts={hotContracts} /> */}
     </div>
   )
 }
@@ -158,7 +158,11 @@ function ExploreMarketsSection(props: { hotContracts: Contract[] }) {
         Today's top markets
       </p>
 
-      <ContractsGrid contracts={hotContracts} />
+      <ContractsGrid
+        contracts={hotContracts}
+        loadMore={() => {}}
+        hasMore={false}
+      />
     </div>
   )
 }

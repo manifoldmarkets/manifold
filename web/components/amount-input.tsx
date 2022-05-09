@@ -1,13 +1,13 @@
 import clsx from 'clsx'
 import _ from 'lodash'
-import { useUser } from '../hooks/use-user'
-import { formatMoney, formatWithCommas } from '../../common/util/format'
+import { useUser } from 'web/hooks/use-user'
+import { formatMoney, formatWithCommas } from 'common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { Bet } from '../../common/bet'
+import { Bet } from 'common/bet'
 import { Spacer } from './layout/spacer'
-import { calculateCpmmSale } from '../../common/calculate-cpmm'
-import { Binary, CPMM, FullContract } from '../../common/contract'
+import { calculateCpmmSale } from 'common/calculate-cpmm'
+import { Binary, CPMM, FullContract } from 'common/contract'
 import { SiteLink } from './site-link'
 
 export function AmountInput(props: {
@@ -178,9 +178,10 @@ export function SellAmountInput(props: {
   ]
 
   const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
-  const shares = yesShares || noShares
+  const shares = Math.round(yesShares) || Math.round(noShares)
 
-  const sharesSold = Math.min(amount ?? 0, yesShares || noShares)
+  const sharesSold = Math.min(amount ?? 0, shares)
+
   const { saleValue } = calculateCpmmSale(
     contract,
     sharesSold,

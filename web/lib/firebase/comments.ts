@@ -1,18 +1,19 @@
 import {
-  doc,
   collection,
-  setDoc,
-  query,
   collectionGroup,
-  where,
+  doc,
   orderBy,
+  query,
+  setDoc,
+  where,
 } from 'firebase/firestore'
 import _ from 'lodash'
 
 import { getValues, listenForValues } from './utils'
 import { db } from './init'
-import { User } from '../../../common/user'
-import { Comment } from '../../../common/comment'
+import { User } from 'common/user'
+import { Comment } from 'common/comment'
+
 export type { Comment }
 
 export const MAX_COMMENT_LENGTH = 10000
@@ -124,4 +125,14 @@ export async function getDailyComments(
   }
 
   return commentsByDay
+}
+
+const getUsersCommentsQuery = (userId: string) =>
+  query(
+    collectionGroup(db, 'comments'),
+    where('userId', '==', userId),
+    orderBy('createdTime', 'desc')
+  )
+export async function getUsersComments(userId: string) {
+  return await getValues<Comment>(getUsersCommentsQuery(userId))
 }

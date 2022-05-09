@@ -8,8 +8,8 @@ import {
 import _ from 'lodash'
 
 import { db } from './init'
-import { Bet } from '../../../common/bet'
-import { Contract } from '../../../common/contract'
+import { Bet } from 'common/bet'
+import { Contract } from 'common/contract'
 import { getValues, listenForValues } from './utils'
 export type { Bet }
 

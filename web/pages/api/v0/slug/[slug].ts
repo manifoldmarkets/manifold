@@ -1,9 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { Bet, listAllBets } from '../../../../lib/firebase/bets'
-import { listAllComments } from '../../../../lib/firebase/comments'
-import { getContractFromSlug } from '../../../../lib/firebase/contracts'
+import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { listAllComments } from 'web/lib/firebase/comments'
+import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { FullMarket, ApiError, toLiteMarket } from '../_types'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from '../../../../lib/api/cors'
 
 export default async function handler(
   req: NextApiRequest,

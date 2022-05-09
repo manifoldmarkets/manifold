@@ -40,6 +40,7 @@ export const createContract = functions
         ante: number
         closeTime: number
         tags?: string[]
+        manaLimitPerUser?: number
       },
       context
     ) => {
@@ -49,7 +50,14 @@ export const createContract = functions
       const creator = await getUser(userId)
       if (!creator) return { status: 'error', message: 'User not found' }
 
-      let { question, description, initialProb, closeTime, tags } = data
+      let {
+        question,
+        description,
+        initialProb,
+        closeTime,
+        tags,
+        manaLimitPerUser,
+      } = data
 
       if (!question || typeof question != 'string')
         return { status: 'error', message: 'Missing or invalid question field' }
@@ -82,7 +90,7 @@ export const createContract = functions
         .get()
       const isFree = userContractsCreatedTodaySnapshot.size === 0
 
-      const ante = isFree ? 300 : FIXED_ANTE // data.ante
+      const ante = FIXED_ANTE // data.ante
 
       if (
         ante === undefined ||
@@ -116,10 +124,11 @@ export const createContract = functions
         initialProb,
         ante,
         closeTime,
-        tags ?? []
+        tags ?? [],
+        manaLimitPerUser ?? 0
       )
 
-      if (!isFree && ante) await chargeUser(creator.id, ante)
+      if (!isFree && ante) await chargeUser(creator.id, ante, true)
 
       await contractRef.create(contract)
 

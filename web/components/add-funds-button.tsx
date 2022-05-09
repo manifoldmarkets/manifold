@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 
-import { useUser } from '../hooks/use-user'
-import { checkoutURL } from '../lib/service/stripe'
+import { useUser } from 'web/hooks/use-user'
+import { checkoutURL } from 'web/lib/service/stripe'
 import { FundsSelector } from './yes-no-selector'
 
 export function AddFundsButton(props: { className?: string }) {
