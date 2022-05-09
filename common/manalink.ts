@@ -17,11 +17,9 @@ export type Manalink = {
   maxUses: number
 
   // Used for simpler caching
-  successUserIds: string[]
+  claimedUserIds: string[]
   // Successful redemptions of the link
-  successes: Claim[]
-  // Failed redemptions of the link
-  failures: Claim[]
+  claims: Claim[]
 }
 
 type Claim = {

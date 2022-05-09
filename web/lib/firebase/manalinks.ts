@@ -34,7 +34,7 @@ export async function createManalink(data: {
     createdTime: Date.now(),
     expiresTime,
     maxUses,
-    successUserIds: [],
+    claimedUserIds: [],
     successes: [],
     failures: [],
   }

@@ -138,7 +138,7 @@ function LinksTable(props: { links: Manalink[] }) {
                         {`http://manifold.markets/send/${manalink.slug}`}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {manalink.successUserIds.length}
+                        {manalink.claimedUserIds.length}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         {manalink.maxUses === Infinity ? '∞' : manalink.maxUses}

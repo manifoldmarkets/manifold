@@ -13,7 +13,7 @@ export type Txn = {
   amount: number
   token: 'M$' // | 'USD' | MarketOutcome
 
-  category: 'CHARITY' // | 'BET' | 'TIP'
+  category: 'CHARITY' | 'MANALINK' // | 'BET' | 'TIP'
   // Human-readable description
   description?: string
 }
