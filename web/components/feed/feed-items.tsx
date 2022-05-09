@@ -166,43 +166,41 @@ export function FeedComment(props: {
         avatarUrl={userAvatarUrl}
       />
       <div className="min-w-0 flex-1">
-        <div>
-          <p className="mt-0.5 text-sm text-gray-500">
-            <UserLink
-              className="text-gray-500"
-              username={userUsername}
-              name={userName}
-            />{' '}
-            {!matchedBet && userPosition > 0 && (
+        <p className="mt-0.5 text-sm text-gray-500">
+          <UserLink
+            className="text-gray-500"
+            username={userUsername}
+            name={userName}
+          />{' '}
+          {!matchedBet && userPosition > 0 && (
+            <>
+              {'had ' + userPositionMoney + ' '}
               <>
-                {'had ' + userPositionMoney + ' '}
-                <>
-                  {' of '}
-                  <OutcomeLabel
-                    outcome={yesFloorShares > noFloorShares ? 'YES' : 'NO'}
-                    contract={contract}
-                    truncate="short"
-                  />
-                </>
+                {' of '}
+                <OutcomeLabel
+                  outcome={yesFloorShares > noFloorShares ? 'YES' : 'NO'}
+                  contract={contract}
+                  truncate="short"
+                />
+              </>
+            </>
+          )}
+          <>
+            {bought} {money}
+            {outcome && !hideOutcome && (
+              <>
+                {' '}
+                of{' '}
+                <OutcomeLabel
+                  outcome={outcome ? outcome : ''}
+                  contract={contract}
+                  truncate="short"
+                />
               </>
             )}
-            <>
-              {bought} {money}
-              {outcome && !hideOutcome && (
-                <>
-                  {' '}
-                  of{' '}
-                  <OutcomeLabel
-                    outcome={outcome ? outcome : ''}
-                    contract={contract}
-                    truncate="short"
-                  />
-                </>
-              )}
-            </>
-            <RelativeTimestamp time={createdTime} />
-          </p>
-        </div>
+          </>
+          <RelativeTimestamp time={createdTime} />
+        </p>
         <TruncatedComment
           comment={text}
           moreHref={contractPath(contract)}
@@ -555,17 +553,15 @@ export function FeedQuestion(props: {
           </div>
         </div>
         <Col className="items-start justify-between gap-2 sm:flex-row sm:gap-4">
-          <Col>
-            <SiteLink
-              href={
-                props.contractPath ? props.contractPath : contractPath(contract)
-              }
-              onClick={() => trackClick(contract.id)}
-              className="text-lg text-indigo-700 sm:text-xl"
-            >
-              {question}
-            </SiteLink>
-          </Col>
+          <SiteLink
+            href={
+              props.contractPath ? props.contractPath : contractPath(contract)
+            }
+            onClick={() => trackClick(contract.id)}
+            className="text-lg text-indigo-700 sm:text-xl"
+          >
+            {question}
+          </SiteLink>
           {isBinary && (
             <BinaryResolutionOrChance
               className="items-center"
