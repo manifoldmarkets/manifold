@@ -1,20 +1,19 @@
 import { useState } from 'react'
-import { Manalink } from '../../common/manalink'
-import { formatMoney } from '../../common/util/format'
-import { Col } from '../components/layout/col'
-import { Spacer } from '../components/layout/spacer'
-import { Page } from '../components/page'
-import { SEO } from '../components/SEO'
-import { Title } from '../components/title'
-import { useUser } from '../hooks/use-user'
-import { createManalink, useUserManalinks } from '../lib/firebase/manalinks'
-import { fromNow } from '../lib/util/time'
+import { Manalink } from 'common/manalink'
+import { formatMoney } from 'common/util/format'
+import { Col } from 'web/components/layout/col'
+import { Spacer } from 'web/components/layout/spacer'
+import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
+import { Title } from 'web/components/title'
+import { useUser } from 'web/hooks/use-user'
+import { createManalink, useUserManalinks } from 'web/lib/firebase/manalinks'
+import { fromNow } from 'web/lib/util/time'
 
 export default function SendPage() {
   const user = useUser()
   const [amount, setAmount] = useState(100)
   const links = useUserManalinks(user?.id ?? '')
-  console.log('links', user?.id, links)
 
   return (
     <Page>
