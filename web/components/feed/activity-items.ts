@@ -53,7 +53,6 @@ export type CommentItem = BaseActivityItem & {
   type: 'comment'
   comment: Comment
   betsBySameUser: Bet[]
-  hideOutcome: boolean
   truncate: boolean
   smallAvatar: boolean
 }
@@ -131,7 +130,6 @@ function groupBets(
           comment,
           betsBySameUser: [bet],
           contract,
-          hideOutcome,
           truncate: abbreviated,
           smallAvatar,
         }
@@ -344,7 +342,6 @@ function groupBetsAndComments(
       comment,
       betsBySameUser: [],
       truncate: abbreviated,
-      hideOutcome: true,
       smallAvatar,
     }))
 

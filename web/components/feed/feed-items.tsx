@@ -125,18 +125,10 @@ export function FeedComment(props: {
   contract: Contract
   comment: Comment
   betsBySameUser: Bet[]
-  hideOutcome: boolean
   truncate: boolean
   smallAvatar: boolean
 }) {
-  const {
-    contract,
-    comment,
-    betsBySameUser,
-    hideOutcome,
-    truncate,
-    smallAvatar,
-  } = props
+  const { contract, comment, betsBySameUser, truncate, smallAvatar } = props
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
   let outcome: string | undefined,
     bought: string | undefined,
@@ -188,7 +180,7 @@ export function FeedComment(props: {
             )}
             <>
               {bought} {money}
-              {outcome && !hideOutcome && (
+              {outcome && (
                 <>
                   {' '}
                   of{' '}
