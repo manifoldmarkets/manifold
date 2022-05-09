@@ -34,7 +34,7 @@ export function scoreUsersByContract(
     bets,
     (bet) => bet.isSold || bet.sale
   )
-  const [resolvePayouts] = getPayouts(
+  const { payouts: resolvePayouts } = getPayouts(
     resolution,
     {},
     contract,

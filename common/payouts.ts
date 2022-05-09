@@ -38,6 +38,18 @@ export const getLoanPayouts = (bets: Bet[]): Payout[] => {
   return _.toPairs(loansByUser).map(([userId, payout]) => ({ userId, payout }))
 }
 
+export const groupPayoutsByUser = (payouts: Payout[]) => {
+  const groups = _.groupBy(payouts, (payout) => payout.userId)
+  return _.mapValues(groups, (group) => _.sumBy(group, (g) => g.payout))
+}
+
+export type PayoutInfo = {
+  payouts: Payout[]
+  creatorPayout: number
+  liquidityPayouts: Payout[]
+  collectedFees: Fees
+}
+
 export const getPayouts = (
   outcome: string,
   resolutions: {
@@ -47,16 +59,15 @@ export const getPayouts = (
   bets: Bet[],
   liquidities: LiquidityProvision[],
   resolutionProbability?: number
-): [Payout[], Fees] => {
+): PayoutInfo => {
   if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
-    const payouts = getFixedPayouts(
+    return getFixedPayouts(
       outcome,
       contract,
       bets,
       liquidities,
       resolutionProbability
     )
-    return [payouts, contract.collectedFees]
   }
 
   return getDpmPayouts(
@@ -74,7 +85,7 @@ export const getFixedPayouts = (
   bets: Bet[],
   liquidities: LiquidityProvision[],
   resolutionProbability?: number
-): Payout[] => {
+) => {
   switch (outcome) {
     case 'YES':
     case 'NO':
@@ -100,36 +111,27 @@ export const getDpmPayouts = (
   contract: Contract,
   bets: Bet[],
   resolutionProbability?: number
-) => {
+): PayoutInfo => {
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
 
   switch (outcome) {
     case 'YES':
     case 'NO':
-      return getDpmStandardPayouts(outcome, contract, openBets) as [
-        Payout[],
-        Fees
-      ]
+      return getDpmStandardPayouts(outcome, contract, openBets)
 
     case 'MKT':
       return contract.outcomeType === 'FREE_RESPONSE'
-        ? (getPayoutsMultiOutcome(
+        ? getPayoutsMultiOutcome(
             resolutions,
             contract as FullContract<DPM, Multi | FreeResponse>,
             openBets
-          ) as [Payout[], Fees])
-        : (getDpmMktPayouts(contract, openBets, resolutionProbability) as [
-            Payout[],
-            Fees
-          ])
+          )
+        : getDpmMktPayouts(contract, openBets, resolutionProbability)
     case 'CANCEL':
-      return getDpmCancelPayouts(contract, openBets) as [Payout[], Fees]
+      return getDpmCancelPayouts(contract, openBets)
 
     default:
       // Outcome is a free response answer id.
-      return getDpmStandardPayouts(outcome, contract, openBets) as [
-        Payout[],
-        Fees
-      ]
+      return getDpmStandardPayouts(outcome, contract, openBets)
   }
 }
