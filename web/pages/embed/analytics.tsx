@@ -1,6 +1,6 @@
 import { FirstArgument } from 'common/util/types'
-import { Col } from '../../components/layout/col'
-import { Spacer } from '../../components/layout/spacer'
+import { Col } from 'web/components/layout/col'
+import { Spacer } from 'web/components/layout/spacer'
 import { fromPropz } from 'web/hooks/use-propz'
 import Analytics, {
   CustomAnalytics,

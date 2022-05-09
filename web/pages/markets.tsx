@@ -1,10 +1,10 @@
 import {
   ContractsGrid,
   SearchableGrid,
-} from '../components/contract/contracts-list'
-import { Page } from '../components/page'
-import { SEO } from '../components/SEO'
-import { Title } from '../components/title'
+} from 'web/components/contract/contracts-list'
+import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
+import { Title } from 'web/components/title'
 import { useContracts } from 'web/hooks/use-contracts'
 import { Contract } from 'web/lib/firebase/contracts'
 

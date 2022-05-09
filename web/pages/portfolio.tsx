@@ -1,10 +1,10 @@
 import Router from 'next/router'
 import { useEffect } from 'react'
 
-import { BetsList } from '../components/bets-list'
-import { Page } from '../components/page'
-import { SEO } from '../components/SEO'
-import { Title } from '../components/title'
+import { BetsList } from 'web/components/bets-list'
+import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
+import { Title } from 'web/components/title'
 import { useUser } from 'web/hooks/use-user'
 
 export default function PortfolioPage() {

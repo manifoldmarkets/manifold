@@ -2,7 +2,7 @@ import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 
 import { getUserByUsername, User } from 'web/lib/firebase/users'
-import { UserPage } from '../../components/user-page'
+import { UserPage } from 'web/components/user-page'
 import { useUser } from 'web/hooks/use-user'
 import Custom404 from '../404'
 

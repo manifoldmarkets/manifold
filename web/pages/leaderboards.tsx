@@ -1,8 +1,8 @@
 import _ from 'lodash'
 
-import { Col } from '../components/layout/col'
-import { Leaderboard } from '../components/leaderboard'
-import { Page } from '../components/page'
+import { Col } from 'web/components/layout/col'
+import { Leaderboard } from 'web/components/leaderboard'
+import { Page } from 'web/components/page'
 import { getTopCreators, getTopTraders, User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
