@@ -241,9 +241,11 @@ export function NewContract(props: { question: string; tag?: string }) {
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
           <span>Cost</span>
-          <InfoTooltip
-            text={`Cost to create your market. This amount is used to subsidize trading.`}
-          />
+          {!deservesDailyFreeMarket && (
+            <InfoTooltip
+              text={`Cost to create your market. This amount is used to subsidize trading.`}
+            />
+          )}
         </label>
         {deservesDailyFreeMarket ? (
           <div className="label-text text-primary pl-1">FREE</div>
