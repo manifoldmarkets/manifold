@@ -35,8 +35,7 @@ export async function createManalink(data: {
     expiresTime,
     maxUses,
     claimedUserIds: [],
-    successes: [],
-    failures: [],
+    claims: [],
   }
 
   const ref = doc(db, 'manalinks', slug)
