@@ -262,9 +262,7 @@ export function CommentInput(props: {
   return (
     <>
       <Row className={'flex w-full gap-2'}>
-        <div>
-          <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
-        </div>
+        <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
         <div className={'min-w-0 flex-1'}>
           <div className="text-sm text-gray-500">
             {mostRecentCommentableBet && (
@@ -413,32 +411,27 @@ export function FeedBet(props: {
   return (
     <>
       <Row className={'flex w-full gap-2 pt-3'}>
-        <div>
-          {isSelf ? (
-            <Avatar
-              className={clsx(smallAvatar && 'ml-1')}
-              size={smallAvatar ? 'sm' : undefined}
-              avatarUrl={user.avatarUrl}
-              username={user.username}
-            />
-          ) : bettor ? (
-            <Avatar
-              className={clsx(smallAvatar && 'ml-1')}
-              size={smallAvatar ? 'sm' : undefined}
-              avatarUrl={bettor.avatarUrl}
-              username={bettor.username}
-            />
-          ) : (
-            <div className="relative px-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-                <UserIcon
-                  className="h-5 w-5 text-gray-500"
-                  aria-hidden="true"
-                />
-              </div>
+        {isSelf ? (
+          <Avatar
+            className={clsx(smallAvatar && 'ml-1')}
+            size={smallAvatar ? 'sm' : undefined}
+            avatarUrl={user.avatarUrl}
+            username={user.username}
+          />
+        ) : bettor ? (
+          <Avatar
+            className={clsx(smallAvatar && 'ml-1')}
+            size={smallAvatar ? 'sm' : undefined}
+            avatarUrl={bettor.avatarUrl}
+            username={bettor.username}
+          />
+        ) : (
+          <div className="relative px-1">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+              <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
             </div>
-          )}
-        </div>
+          </div>
+        )}
         <div className={'min-w-0 flex-1 py-1.5'}>
           <BetStatusText
             bet={bet}
@@ -807,9 +800,7 @@ function FeedAnswerGroup(props: {
 
       <Row className="my-4 gap-3">
         <div className="px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-            <Avatar username={username} avatarUrl={avatarUrl} />
-          </div>
+          <Avatar username={username} avatarUrl={avatarUrl} />
         </div>
         <Col className="min-w-0 flex-1 gap-2">
           <div className="text-sm text-gray-500">
