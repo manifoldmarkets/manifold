@@ -1,6 +1,6 @@
 import { Contract } from '../../lib/firebase/contracts'
 import { Comment } from '../../lib/firebase/comments'
-import { Bet } from '../../../common/bet'
+import { Bet } from 'common/bet'
 import { useBets } from '../../hooks/use-bets'
 import { useComments } from '../../hooks/use-comments'
 import {
@@ -9,7 +9,7 @@ import {
   getSpecificContractActivityItems,
 } from './activity-items'
 import { FeedItems } from './feed-items'
-import { User } from '../../../common/user'
+import { User } from 'common/user'
 
 export function ContractActivity(props: {
   contract: Contract

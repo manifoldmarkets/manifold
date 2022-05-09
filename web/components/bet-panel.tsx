@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 
 import { useUser } from '../hooks/use-user'
-import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
+import { Binary, CPMM, DPM, FullContract } from 'common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
@@ -11,10 +11,10 @@ import {
   formatMoney,
   formatPercent,
   formatWithCommas,
-} from '../../common/util/format'
+} from 'common/util/format'
 import { Title } from './title'
 import { firebaseLogin, User } from '../lib/firebase/users'
-import { Bet } from '../../common/bet'
+import { Bet } from 'common/bet'
 import { placeBet, sellShares } from '../lib/firebase/api-call'
 import { BuyAmountInput, SellAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
@@ -24,13 +24,10 @@ import {
   calculateShares,
   getProbability,
   getOutcomeProbabilityAfterBet,
-} from '../../common/calculate'
+} from 'common/calculate'
 import { useFocus } from '../hooks/use-focus'
 import { useUserContractBets } from '../hooks/use-user-bets'
-import {
-  calculateCpmmSale,
-  getCpmmProbability,
-} from '../../common/calculate-cpmm'
+import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
 

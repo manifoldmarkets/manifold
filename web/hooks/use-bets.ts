@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Contract } from '../../common/contract'
+import { Contract } from 'common/contract'
 import {
   Bet,
   listenForBets,

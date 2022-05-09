@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Txn } from '../../common/txn'
+import { Txn } from 'common/txn'
 import { listenForCharityTxns } from '../lib/firebase/txns'
 
 export const useCharityTxns = (charityId: string) => {

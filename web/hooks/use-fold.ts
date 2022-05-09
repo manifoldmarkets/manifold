@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { useEffect, useState } from 'react'
-import { Fold } from '../../common/fold'
-import { User } from '../../common/user'
+import { Fold } from 'common/fold'
+import { User } from 'common/user'
 import {
   listAllFolds,
   listenForFold,

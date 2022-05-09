@@ -3,10 +3,10 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import _ from 'lodash'
 import { useState } from 'react'
-import { Bet } from '../../../common/bet'
+import { Bet } from 'common/bet'
 
-import { Contract } from '../../../common/contract'
-import { formatMoney } from '../../../common/util/format'
+import { Contract } from 'common/contract'
+import { formatMoney } from 'common/util/format'
 import {
   contractPath,
   getBinaryProbPercent,

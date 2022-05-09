@@ -1,10 +1,10 @@
 import _ from 'lodash'
 import { useLayoutEffect, useState } from 'react'
 
-import { DPM, FreeResponse, FullContract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { useUser } from '../../hooks/use-user'
-import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
+import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { useAnswers } from '../../hooks/use-answers'
 import { tradingAllowed } from '../../lib/firebase/contracts'
 import { AnswerItem } from './answer-item'
@@ -13,9 +13,9 @@ import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
 import { FeedItems } from '../feed/feed-items'
 import { ActivityItem } from '../feed/activity-items'
-import { User } from '../../../common/user'
-import { getOutcomeProbability } from '../../../common/calculate'
-import { Answer } from '../../../common/answer'
+import { User } from 'common/user'
+import { getOutcomeProbability } from 'common/calculate'
+import { Answer } from 'common/answer'
 
 export function AnswersPanel(props: {
   contract: FullContract<DPM, FreeResponse>

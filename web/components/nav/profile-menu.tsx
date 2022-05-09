@@ -1,7 +1,7 @@
 import { firebaseLogout, User } from '../../lib/firebase/users'
-import { formatMoney } from '../../../common/util/format'
+import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
-import { IS_PRIVATE_MANIFOLD } from '../../../common/envs/constants'
+import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { Row } from '../layout/row'
 
 export function getNavigationOptions(user?: User | null) {

@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import _ from 'lodash'
 import { Row } from '../layout/row'
-import { formatPercent } from '../../../common/util/format'
+import { formatPercent } from 'common/util/format'
 import {
   Contract,
   contractPath,
@@ -17,13 +17,13 @@ import {
   FreeResponse,
   FreeResponseContract,
   FullContract,
-} from '../../../common/contract'
+} from 'common/contract'
 import {
   AnswerLabel,
   BinaryContractOutcomeLabel,
   FreeResponseOutcomeLabel,
 } from '../outcome-label'
-import { getOutcomeProbability, getTopAnswer } from '../../../common/calculate'
+import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AbbrContractDetails } from './contract-details'
 
 export function ContractCard(props: {

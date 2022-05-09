@@ -1,13 +1,13 @@
 import clsx from 'clsx'
 import _ from 'lodash'
 import { useUser } from '../hooks/use-user'
-import { formatMoney, formatWithCommas } from '../../common/util/format'
+import { formatMoney, formatWithCommas } from 'common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { Bet } from '../../common/bet'
+import { Bet } from 'common/bet'
 import { Spacer } from './layout/spacer'
-import { calculateCpmmSale } from '../../common/calculate-cpmm'
-import { Binary, CPMM, FullContract } from '../../common/contract'
+import { calculateCpmmSale } from 'common/calculate-cpmm'
+import { Binary, CPMM, FullContract } from 'common/contract'
 import { SiteLink } from './site-link'
 
 export function AmountInput(props: {

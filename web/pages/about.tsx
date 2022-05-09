@@ -1,5 +1,5 @@
 import { cloneElement } from 'react'
-import { CREATOR_FEE } from '../../common/fees'
+import { CREATOR_FEE } from 'common/fees'
 import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import styles from './about.module.css'

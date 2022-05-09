@@ -11,7 +11,7 @@ import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
 import Sidebar from './sidebar'
 import { useUser } from '../../hooks/use-user'
-import { formatMoney } from '../../../common/util/format'
+import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL

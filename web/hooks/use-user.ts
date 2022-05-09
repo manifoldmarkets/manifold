@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { useEffect, useState } from 'react'
-import { PrivateUser } from '../../common/user'
+import { PrivateUser } from 'common/user'
 import {
   listenForLogin,
   listenForPrivateUser,

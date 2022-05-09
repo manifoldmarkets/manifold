@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import { useState } from 'react'
 
-import { Contract } from '../../common/contract'
-import { formatMoney } from '../../common/util/format'
+import { Contract } from 'common/contract'
+import { formatMoney } from 'common/util/format'
 import { useUser } from '../hooks/use-user'
 import { addLiquidity } from '../lib/firebase/api-call'
 import { AmountInput } from './amount-input'

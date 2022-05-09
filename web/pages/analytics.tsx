@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import _ from 'lodash'
-import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
+import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   DailyCountChart,
   DailyPercentChart,

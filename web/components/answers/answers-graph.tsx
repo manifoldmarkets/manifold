@@ -4,9 +4,9 @@ import dayjs from 'dayjs'
 import _ from 'lodash'
 import { memo } from 'react'
 
-import { Bet } from '../../../common/bet'
-import { DPM, FreeResponse, FullContract } from '../../../common/contract'
-import { getOutcomeProbability } from '../../../common/calculate'
+import { Bet } from 'common/bet'
+import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { getOutcomeProbability } from 'common/calculate'
 import { useBets } from '../../hooks/use-bets'
 import { useWindowSize } from '../../hooks/use-window-size'
 

@@ -1,5 +1,5 @@
-import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
-import { User } from '../../common/user'
+import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import { User } from 'common/user'
 import { useUserContractBets } from '../hooks/use-user-bets'
 import { useState } from 'react'
 import { Col } from './layout/col'

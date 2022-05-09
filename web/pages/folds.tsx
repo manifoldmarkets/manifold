@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Fold } from '../../common/fold'
+import { Fold } from 'common/fold'
 import { CreateFoldButton } from '../components/folds/create-fold-button'
 import { FollowFoldButton } from '../components/folds/follow-fold-button'
 import { Col } from '../components/layout/col'

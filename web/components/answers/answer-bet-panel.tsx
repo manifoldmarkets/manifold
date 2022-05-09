@@ -3,8 +3,8 @@ import _ from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
-import { Answer } from '../../../common/answer'
-import { DPM, FreeResponse, FullContract } from '../../../common/contract'
+import { Answer } from 'common/answer'
+import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { placeBet } from '../../lib/firebase/api-call'
@@ -14,7 +14,7 @@ import {
   formatMoney,
   formatPercent,
   formatWithCommas,
-} from '../../../common/util/format'
+} from 'common/util/format'
 import { InfoTooltip } from '../info-tooltip'
 import { useUser } from '../../hooks/use-user'
 import {
@@ -22,9 +22,9 @@ import {
   calculateDpmShares,
   calculateDpmPayoutAfterCorrectBet,
   getDpmOutcomeProbabilityAfterBet,
-} from '../../../common/calculate-dpm'
+} from 'common/calculate-dpm'
 import { firebaseLogin } from '../../lib/firebase/users'
-import { Bet } from '../../../common/bet'
+import { Bet } from 'common/bet'
 
 export function AnswerBetPanel(props: {
   answer: Answer

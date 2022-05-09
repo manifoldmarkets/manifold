@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import { SearchIcon } from '@heroicons/react/outline'
 
-import { User } from '../../../common/user'
+import { User } from 'common/user'
 import {
   followFoldFromSlug,
   unfollowFoldFromSlug,

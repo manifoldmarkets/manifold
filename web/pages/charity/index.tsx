@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { useState, useMemo } from 'react'
-import { charities, Charity as CharityType } from '../../../common/charity'
+import { charities, Charity as CharityType } from 'common/charity'
 import { CharityCard } from '../../components/charity/charity-card'
 import { Col } from '../../components/layout/col'
 import { Spacer } from '../../components/layout/spacer'

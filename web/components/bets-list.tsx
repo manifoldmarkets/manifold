@@ -11,7 +11,7 @@ import {
   formatMoney,
   formatPercent,
   formatWithCommas,
-} from '../../common/util/format'
+} from 'common/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import {
@@ -25,7 +25,7 @@ import { UserLink } from './user-page'
 import { sellBet } from '../lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
-import { filterDefined } from '../../common/util/array'
+import { filterDefined } from 'common/util/array'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
 import {
@@ -36,7 +36,7 @@ import {
   getContractBetMetrics,
   resolvedPayout,
   getContractBetNullMetrics,
-} from '../../common/calculate'
+} from 'common/calculate'
 import { useTimeSinceFirstRender } from '../hooks/use-time-since-first-render'
 import { trackLatency } from '../lib/firebase/tracking'
 

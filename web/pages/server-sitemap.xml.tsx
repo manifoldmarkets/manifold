@@ -2,7 +2,7 @@ import _ from 'lodash'
 import { GetServerSideProps } from 'next'
 import { getServerSideSitemap, ISitemapField } from 'next-sitemap'
 
-import { DOMAIN } from '../../common/envs/constants'
+import { DOMAIN } from 'common/envs/constants'
 import { LiteMarket } from './api/v0/_types'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {

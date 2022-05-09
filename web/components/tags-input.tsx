@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useState } from 'react'
-import { parseWordsAsTags } from '../../common/util/parse'
+import { parseWordsAsTags } from 'common/util/parse'
 import { Contract, updateContract } from '../lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Row } from './layout/row'

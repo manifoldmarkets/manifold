@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { useEffect, RefObject, useState } from 'react'
-import { Contract } from '../../common/contract'
+import { Contract } from 'common/contract'
 import { trackView } from '../lib/firebase/tracking'
 import { useIsVisible } from './use-is-visible'
 

@@ -10,11 +10,11 @@ import {
   FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
 } from './contract-card'
-import { Bet } from '../../../common/bet'
-import { Comment } from '../../../common/comment'
+import { Bet } from 'common/bet'
+import { Comment } from 'common/comment'
 import BetRow from '../bet-row'
 import { AnswersGraph } from '../answers/answers-graph'
-import { DPM, FreeResponse, FullContract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { ShareMarket } from '../share-market'

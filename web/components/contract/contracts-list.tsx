@@ -17,7 +17,7 @@ import {
   Sort,
   useQueryAndSortParams,
 } from '../../hooks/use-sort-and-query-params'
-import { Answer } from '../../../common/answer'
+import { Answer } from 'common/answer'
 import { LoadingIndicator } from '../loading-indicator'
 
 export function ContractsGrid(props: {

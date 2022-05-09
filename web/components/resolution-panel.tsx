@@ -9,10 +9,10 @@ import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { resolveMarket } from '../lib/firebase/api-call'
 import { ProbabilitySelector } from './probability-selector'
-import { DPM_CREATOR_FEE } from '../../common/fees'
-import { getProbability } from '../../common/calculate'
-import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
-import { formatMoney } from '../../common/util/format'
+import { DPM_CREATOR_FEE } from 'common/fees'
+import { getProbability } from 'common/calculate'
+import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import { formatMoney } from 'common/util/format'
 
 export function ResolutionPanel(props: {
   creator: User

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Answer } from '../../common/answer'
+import { Answer } from 'common/answer'
 import { listenForAnswers } from '../lib/firebase/answers'
 
 export const useAnswers = (contractId: string) => {

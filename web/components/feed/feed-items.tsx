@@ -24,8 +24,8 @@ import { useUser } from '../../hooks/use-user'
 import { Linkify } from '../linkify'
 import { Row } from '../layout/row'
 import { createComment, MAX_COMMENT_LENGTH } from '../../lib/firebase/comments'
-import { formatMoney, formatPercent } from '../../../common/util/format'
-import { Comment } from '../../../common/comment'
+import { formatMoney, formatPercent } from 'common/util/format'
+import { Comment } from 'common/comment'
 import { BinaryResolutionOrChance } from '../contract/contract-card'
 import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
@@ -36,27 +36,21 @@ import { JoinSpans } from '../join-spans'
 import { fromNow } from '../../lib/util/time'
 import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
-import { Answer } from '../../../common/answer'
+import { Answer } from 'common/answer'
 import { ActivityItem, GENERAL_COMMENTS_OUTCOME_ID } from './activity-items'
-import {
-  Binary,
-  CPMM,
-  DPM,
-  FreeResponse,
-  FullContract,
-} from '../../../common/contract'
+import { Binary, CPMM, DPM, FreeResponse, FullContract } from 'common/contract'
 import { BuyButton } from '../yes-no-selector'
-import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
+import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { AnswerBetPanel } from '../answers/answer-bet-panel'
 import { useSaveSeenContract } from '../../hooks/use-seen-contracts'
-import { User } from '../../../common/user'
+import { User } from 'common/user'
 import { Modal } from '../layout/modal'
 import { trackClick } from '../../lib/firebase/tracking'
 import { firebaseLogin } from '../../lib/firebase/users'
-import { DAY_MS } from '../../../common/util/time'
+import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
 import { RelativeTimestamp } from '../relative-timestamp'
-import { calculateCpmmSale } from '../../../common/calculate-cpmm'
+import { calculateCpmmSale } from 'common/calculate-cpmm'
 
 export function FeedItems(props: {
   contract: Contract

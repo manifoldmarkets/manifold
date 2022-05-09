@@ -1,11 +1,6 @@
-import { Bet } from '../../../../common/bet'
-import {
-  Contract,
-  DPM,
-  FreeResponse,
-  FullContract,
-} from '../../../../common/contract'
-import { DOMAIN } from '../../../../common/envs/constants'
+import { Bet } from 'common/bet'
+import { Contract, DPM, FreeResponse, FullContract } from 'common/contract'
+import { DOMAIN } from 'common/envs/constants'
 import { AnswersGraph } from '../../../components/answers/answers-graph'
 import {
   BinaryResolutionOrChance,
