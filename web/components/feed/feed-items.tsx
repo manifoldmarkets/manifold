@@ -553,17 +553,15 @@ export function FeedQuestion(props: {
           </div>
         </div>
         <Col className="items-start justify-between gap-2 sm:flex-row sm:gap-4">
-          <Col>
-            <SiteLink
-              href={
-                props.contractPath ? props.contractPath : contractPath(contract)
-              }
-              onClick={() => trackClick(contract.id)}
-              className="text-lg text-indigo-700 sm:text-xl"
-            >
-              {question}
-            </SiteLink>
-          </Col>
+          <SiteLink
+            href={
+              props.contractPath ? props.contractPath : contractPath(contract)
+            }
+            onClick={() => trackClick(contract.id)}
+            className="text-lg text-indigo-700 sm:text-xl"
+          >
+            {question}
+          </SiteLink>
           {isBinary && (
             <BinaryResolutionOrChance
               className="items-center"
