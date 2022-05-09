@@ -6,12 +6,15 @@ import {
   STARTING_BALANCE,
   SUS_STARTING_BALANCE,
   User,
-} from 'common/user'
+} from '../../common/user'
 import { getUser, getUserByUsername } from './utils'
-import { randomString } from 'common/util/random'
-import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
+import { randomString } from '../../common/util/random'
+import {
+  cleanDisplayName,
+  cleanUsername,
+} from '../../common/util/clean-username'
 import { sendWelcomeEmail } from './emails'
-import { isWhitelisted } from 'common/envs/constants'
+import { isWhitelisted } from '../../common/envs/constants'
 
 export const createUser = functions
   .runWith({ minInstances: 1 })

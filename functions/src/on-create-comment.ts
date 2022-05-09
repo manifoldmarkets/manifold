@@ -3,10 +3,10 @@ import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
 import { getContract, getUser, getValues } from './utils'
-import { Comment } from 'common/comment'
+import { Comment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
-import { Bet } from 'common/bet'
-import { Answer } from 'common/answer'
+import { Bet } from '../../common/bet'
+import { Answer } from '../../common/answer'
 
 const firestore = admin.firestore()
 
