@@ -27,7 +27,11 @@ import {
 } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
+import {
+  calculateCpmmSale,
+  getCpmmProbability,
+  getCpmmLiquidityFee,
+} from 'common/calculate-cpmm'
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
 
@@ -281,6 +285,10 @@ function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
+  const cpmmFees =
+    contract.mechanism === 'cpmm-1' &&
+    getCpmmLiquidityFee(contract, betAmount ?? 0, betChoice ?? 'YES').totalFees
+
   const dpmTooltip =
     contract.mechanism === 'dpm-2'
       ? `Current payout for ${formatWithCommas(shares)} / ${formatWithCommas(
@@ -334,6 +342,10 @@ function BuyPanel(props: {
                 </>
               )}
             </div>
+
+            {cpmmFees !== false && (
+              <InfoTooltip text={`Includes ${formatMoney(cpmmFees)} in fees`} />
+            )}
 
             {dpmTooltip && <InfoTooltip text={dpmTooltip} />}
           </Row>
