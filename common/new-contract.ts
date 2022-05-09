@@ -22,7 +22,8 @@ export function getNewContract(
   initialProb: number,
   ante: number,
   closeTime: number,
-  extraTags: string[]
+  extraTags: string[],
+  manaLimitPerUser: number
 ) {
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
@@ -64,6 +65,7 @@ export function getNewContract(
       liquidityFee: 0,
       platformFee: 0,
     },
+    manaLimitPerUser,
   })
 
   return contract as Contract
