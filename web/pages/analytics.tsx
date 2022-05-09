@@ -1,20 +1,20 @@
 import dayjs from 'dayjs'
 import _ from 'lodash'
-import { IS_PRIVATE_MANIFOLD } from '../../common/envs/constants'
+import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   DailyCountChart,
   DailyPercentChart,
-} from '../components/analytics/charts'
-import { Col } from '../components/layout/col'
-import { Spacer } from '../components/layout/spacer'
-import { Tabs } from '../components/layout/tabs'
-import { Page } from '../components/page'
-import { Title } from '../components/title'
-import { fromPropz, usePropz } from '../hooks/use-propz'
-import { getDailyBets } from '../lib/firebase/bets'
-import { getDailyComments } from '../lib/firebase/comments'
-import { getDailyContracts } from '../lib/firebase/contracts'
-import { getDailyNewUsers } from '../lib/firebase/users'
+} from 'web/components/analytics/charts'
+import { Col } from 'web/components/layout/col'
+import { Spacer } from 'web/components/layout/spacer'
+import { Tabs } from 'web/components/layout/tabs'
+import { Page } from 'web/components/page'
+import { Title } from 'web/components/title'
+import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { getDailyBets } from 'web/lib/firebase/bets'
+import { getDailyComments } from 'web/lib/firebase/comments'
+import { getDailyContracts } from 'web/lib/firebase/contracts'
+import { getDailyNewUsers } from 'web/lib/firebase/users'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {

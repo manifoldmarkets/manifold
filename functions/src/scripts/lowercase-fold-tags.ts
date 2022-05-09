@@ -5,7 +5,7 @@ import { initAdmin } from './script-init'
 initAdmin()
 
 import { getValues } from '../utils'
-import { Fold } from '../../../common/fold'
+import { Fold } from 'common/fold'
 
 async function lowercaseFoldTags() {
   const firestore = admin.firestore()

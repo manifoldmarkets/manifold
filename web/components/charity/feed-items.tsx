@@ -1,6 +1,6 @@
-import { Txn } from '../../../common/txn'
+import { Txn } from 'common/txn'
 import { Avatar } from '../avatar'
-import { useUserById } from '../../hooks/use-users'
+import { useUserById } from 'web/hooks/use-users'
 import { UserLink } from '../user-page'
 import { manaToUSD } from '../../pages/charity/[charitySlug]'
 import { RelativeTimestamp } from '../relative-timestamp'

@@ -21,10 +21,10 @@ import {
 import _ from 'lodash'
 
 import { app } from './init'
-import { PrivateUser, User } from '../../../common/user'
+import { PrivateUser, User } from 'common/user'
 import { createUser } from './api-call'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
-import { DAY_MS } from '../../../common/util/time'
+import { DAY_MS } from 'common/util/time'
 import { Contract } from './contracts'
 import { Bet } from './bets'
 import { Comment } from './comments'

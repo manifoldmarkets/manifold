@@ -11,7 +11,7 @@ import {
   where,
 } from 'firebase/firestore'
 import _ from 'lodash'
-import { Fold } from '../../../common/fold'
+import { Fold } from 'common/fold'
 import { Contract, contractCollection } from './contracts'
 import { db } from './init'
 import { User } from './users'

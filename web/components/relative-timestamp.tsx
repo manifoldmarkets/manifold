@@ -1,5 +1,5 @@
 import { DateTimeTooltip } from './datetime-tooltip'
-import { fromNow } from '../lib/util/time'
+import { fromNow } from 'web/lib/util/time'
 import React from 'react'
 
 export function RelativeTimestamp(props: { time: number }) {

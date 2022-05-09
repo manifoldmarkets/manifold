@@ -1,8 +1,8 @@
 import { httpsCallable } from 'firebase/functions'
-import { Fold } from '../../../common/fold'
-import { Txn } from '../../../common/txn'
-import { User } from '../../../common/user'
-import { randomString } from '../../../common/util/random'
+import { Fold } from 'common/fold'
+import { Txn } from 'common/txn'
+import { User } from 'common/user'
+import { randomString } from 'common/util/random'
 import './init'
 import { functions } from './init'
 
