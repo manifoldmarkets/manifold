@@ -77,16 +77,18 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           if (!answerSnap.exists)
             return { status: 'error', message: 'Invalid contract' }
 
-          const contractMetrics = getContractBetMetrics(contract, yourBets)
-          const currentInvested = contractMetrics.currentInvested
-          console.log('user current invested amount', currentInvested)
-          console.log('mana limit:', manaLimitPerUser)
+          if (manaLimitPerUser) {
+            const contractMetrics = getContractBetMetrics(contract, yourBets)
+            const currentInvested = contractMetrics.currentInvested
+            console.log('user current invested amount', currentInvested)
+            console.log('mana limit:', manaLimitPerUser)
 
-          if (manaLimitPerUser && currentInvested + amount > manaLimitPerUser) {
-            const manaAllowed = manaLimitPerUser - currentInvested
-            return {
-              status: 'error',
-              message: `Market bet cap is M$${manaLimitPerUser}, you've M$${manaAllowed} left`,
+            if (currentInvested + amount > manaLimitPerUser) {
+              const manaAllowed = manaLimitPerUser - currentInvested
+              return {
+                status: 'error',
+                message: `Market bet cap is M$${manaLimitPerUser}, you've M$${manaAllowed} left`,
+              }
             }
           }
         }
