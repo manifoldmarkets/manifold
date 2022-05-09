@@ -1,6 +1,6 @@
 import { getFirestore } from '@firebase/firestore'
 import { initializeApp, getApps, getApp } from 'firebase/app'
-import { FIREBASE_CONFIG } from '../../../common/envs/constants'
+import { FIREBASE_CONFIG } from 'common/envs/constants'
 import { connectFirestoreEmulator } from 'firebase/firestore'
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
 

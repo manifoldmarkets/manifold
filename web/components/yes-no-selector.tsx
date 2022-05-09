@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import React from 'react'
-import { formatMoney } from '../../common/util/format'
+import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 

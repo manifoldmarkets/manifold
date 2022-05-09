@@ -1,32 +1,24 @@
-import { Bet } from '../../../../common/bet'
-import {
-  Contract,
-  DPM,
-  FreeResponse,
-  FullContract,
-} from '../../../../common/contract'
-import { DOMAIN } from '../../../../common/envs/constants'
-import { AnswersGraph } from '../../../components/answers/answers-graph'
+import { Bet } from 'common/bet'
+import { Contract, DPM, FreeResponse, FullContract } from 'common/contract'
+import { DOMAIN } from 'common/envs/constants'
+import { AnswersGraph } from 'web/components/answers/answers-graph'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
-} from '../../../components/contract/contract-card'
-import { ContractDetails } from '../../../components/contract/contract-details'
-import { ContractProbGraph } from '../../../components/contract/contract-prob-graph'
-import { Col } from '../../../components/layout/col'
-import { Row } from '../../../components/layout/row'
-import { Spacer } from '../../../components/layout/spacer'
-import { Linkify } from '../../../components/linkify'
-import { SiteLink } from '../../../components/site-link'
-import { useContractWithPreload } from '../../../hooks/use-contract'
-import { useMeasureSize } from '../../../hooks/use-measure-size'
-import { fromPropz, usePropz } from '../../../hooks/use-propz'
-import { useWindowSize } from '../../../hooks/use-window-size'
-import { listAllBets } from '../../../lib/firebase/bets'
-import {
-  contractPath,
-  getContractFromSlug,
-} from '../../../lib/firebase/contracts'
+} from 'web/components/contract/contract-card'
+import { ContractDetails } from 'web/components/contract/contract-details'
+import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
+import { Linkify } from 'web/components/linkify'
+import { SiteLink } from 'web/components/site-link'
+import { useContractWithPreload } from 'web/hooks/use-contract'
+import { useMeasureSize } from 'web/hooks/use-measure-size'
+import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { useWindowSize } from 'web/hooks/use-window-size'
+import { listAllBets } from 'web/lib/firebase/bets'
+import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 
 export const getStaticProps = fromPropz(getStaticPropz)

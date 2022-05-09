@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Contract, contractUrl } from '../lib/firebase/contracts'
+import { Contract, contractUrl } from 'web/lib/firebase/contracts'
 import { CopyLinkButton } from './copy-link-button'
 import { Col } from './layout/col'
 import { Row } from './layout/row'

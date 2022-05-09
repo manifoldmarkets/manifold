@@ -1,7 +1,7 @@
 import 'tailwindcss/tailwind.css'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
-import { usePreserveScroll } from '../hooks/use-preserve-scroll'
+import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
 
 function MyApp({ Component, pageProps }: AppProps) {
   usePreserveScroll()

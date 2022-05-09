@@ -1,7 +1,7 @@
 import _ from 'lodash'
-import { Contract } from '../../lib/firebase/contracts'
-import { Comment } from '../../lib/firebase/comments'
-import { Bet } from '../../../common/bet'
+import { Contract } from 'web/lib/firebase/contracts'
+import { Comment } from 'web/lib/firebase/comments'
+import { Bet } from 'common/bet'
 
 const MAX_ACTIVE_CONTRACTS = 75
 

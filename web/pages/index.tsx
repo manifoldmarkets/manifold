@@ -1,12 +1,12 @@
 import React from 'react'
 import Router from 'next/router'
 
-import { Contract, getContractsBySlugs } from '../lib/firebase/contracts'
-import { Page } from '../components/page'
-import { FeedPromo } from '../components/feed-create'
-import { Col } from '../components/layout/col'
-import { useUser } from '../hooks/use-user'
-import { ManifoldLogo } from '../components/nav/manifold-logo'
+import { Contract, getContractsBySlugs } from 'web/lib/firebase/contracts'
+import { Page } from 'web/components/page'
+import { FeedPromo } from 'web/components/feed-create'
+import { Col } from 'web/components/layout/col'
+import { useUser } from 'web/hooks/use-user'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 
 export async function getStaticProps() {
   const hotContracts = await getContractsBySlugs([
