@@ -1,22 +1,20 @@
 import _ from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchBox } from 'react-instantsearch-hooks-web'
 
 const MARKETS_SORT = 'markets_sort'
 
 export type Sort =
-  | 'creator'
-  | 'tag'
   | 'newest'
   | 'oldest'
   | 'most-traded'
   | '24-hour-vol'
-  | 'close-date'
+  | 'closing-soon'
   | 'closed'
   | 'resolved'
-  | 'all'
 
-export function useQueryAndSortParams(options?: {
+export function useInitialQueryAndSort(options?: {
   defaultSort: Sort
   shouldLoadFromStorage?: boolean
 }) {
@@ -26,24 +24,58 @@ export function useQueryAndSortParams(options?: {
   })
   const router = useRouter()
 
-  const { s: sort, q: query } = router.query as {
-    q?: string
-    s?: Sort
+  const [initialSort, setInitialSort] = useState<Sort | undefined>(undefined)
+  const [initialQuery, setInitialQuery] = useState('')
+
+  useEffect(() => {
+    // If there's no sort option, then set the one from localstorage
+    if (router.isReady) {
+      const { s: sort, q: query } = router.query as {
+        q?: string
+        s?: Sort
+      }
+
+      setInitialQuery(query ?? '')
+
+      if (!sort && shouldLoadFromStorage) {
+        console.log('ready loading from storage ', sort ?? defaultSort)
+        const localSort = localStorage.getItem(MARKETS_SORT) as Sort
+        if (localSort) {
+          router.query.s = localSort
+          // Use replace to not break navigating back.
+          router.replace(router, undefined, { shallow: true })
+        }
+        setInitialSort(localSort ?? defaultSort)
+      } else {
+        console.log('ready setting to ', sort ?? defaultSort)
+        setInitialSort(sort ?? defaultSort)
+      }
+    }
+  }, [defaultSort, router.isReady, shouldLoadFromStorage])
+
+  return {
+    initialSort,
+    initialQuery,
   }
+}
+
+export function useUpdateQueryAndSort(props: {
+  shouldLoadFromStorage: boolean
+}) {
+  const { shouldLoadFromStorage } = props
+  const router = useRouter()
 
   const setSort = (sort: Sort | undefined) => {
-    router.query.s = sort
-    router.push(router, undefined, { shallow: true })
-    if (shouldLoadFromStorage) {
-      localStorage.setItem(MARKETS_SORT, sort || '')
+    if (sort !== router.query.s) {
+      router.query.s = sort
+      router.push(router, undefined, { shallow: true })
+      if (shouldLoadFromStorage) {
+        localStorage.setItem(MARKETS_SORT, sort || '')
+      }
     }
   }
 
-  const [queryState, setQueryState] = useState(query)
-
-  useEffect(() => {
-    setQueryState(query)
-  }, [query])
+  const { query, refine } = useSearchBox()
 
   // Debounce router query update.
   const pushQuery = useMemo(
@@ -60,26 +92,13 @@ export function useQueryAndSortParams(options?: {
   )
 
   const setQuery = (query: string | undefined) => {
-    setQueryState(query)
+    refine(query ?? '')
     pushQuery(query)
   }
 
-  useEffect(() => {
-    // If there's no sort option, then set the one from localstorage
-    if (router.isReady && !sort && shouldLoadFromStorage) {
-      const localSort = localStorage.getItem(MARKETS_SORT) as Sort
-      if (localSort) {
-        router.query.s = localSort
-        // Use replace to not break navigating back.
-        router.replace(router, undefined, { shallow: true })
-      }
-    }
-  })
-
   return {
-    sort: sort ?? defaultSort,
-    query: queryState ?? '',
     setSort,
     setQuery,
+    query,
   }
 }
