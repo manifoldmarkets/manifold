@@ -20,7 +20,7 @@ export default function LandingPage(props: { hotContracts: Contract[] }) {
     <div>
       <Hero />
       <FeaturesSection />
-      <ExploreMarketsSection hotContracts={hotContracts} />
+      {/* <ExploreMarketsSection hotContracts={hotContracts} /> */}
     </div>
   )
 }
