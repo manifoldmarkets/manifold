@@ -1,4 +1,11 @@
-import { collection, orderBy, query, setDoc, where } from 'firebase/firestore'
+import {
+  collection,
+  getDoc,
+  orderBy,
+  query,
+  setDoc,
+  where,
+} from 'firebase/firestore'
 import { doc } from 'firebase/firestore'
 import { Manalink } from '../../../common/manalink'
 import { db } from './init'
@@ -51,6 +58,21 @@ function listUserManalinks(fromId?: string) {
     where('fromId', '==', fromId),
     orderBy('createdTime', 'desc')
   )
+}
+
+export async function getManalink(slug: string) {
+  const docSnap = await getDoc(doc(db, 'manalinks', slug))
+  return docSnap.data() as Manalink
+}
+
+export function useManalink(slug: string) {
+  const [manalink, setManalink] = useState<Manalink | null>(null)
+  useEffect(() => {
+    if (slug) {
+      getManalink(slug).then(setManalink)
+    }
+  }, [slug])
+  return manalink
 }
 
 export function listenForUserManalinks(
