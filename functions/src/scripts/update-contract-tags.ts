@@ -4,8 +4,8 @@ import * as _ from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Contract } from 'common/contract'
-import { parseTags } from 'common/util/parse'
+import { Contract } from '../../../common/contract'
+import { parseTags } from '../../../common/util/parse'
 import { getValues } from '../utils'
 
 async function updateContractTags() {
