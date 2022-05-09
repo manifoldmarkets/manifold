@@ -16,8 +16,8 @@ import { Linkify } from '../components/linkify'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { useUser } from '../hooks/use-user'
-import { createContract } from '../lib/firebase/api-call'
-import { contractPath } from '../lib/firebase/contracts'
+import { createContract } from 'web/lib/firebase/api-call'
+import { contractPath } from 'web/lib/firebase/contracts'
 
 type Prediction = {
   question: string

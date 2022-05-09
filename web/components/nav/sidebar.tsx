@@ -16,7 +16,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from '../../hooks/use-fold'
 import { useUser } from '../../hooks/use-user'
-import { firebaseLogin, firebaseLogout } from '../../lib/firebase/users'
+import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
@@ -46,8 +46,16 @@ const signedOutNavigation = [
 const signedOutMobileNavigation = [
   { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
-  { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: IconFromUrl("/discord-logo.svg") },
-  { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets', icon: IconFromUrl("/twitter-logo.svg") },
+  {
+    name: 'Discord',
+    href: 'https://discord.gg/eHQBNBqXuh',
+    icon: IconFromUrl('/discord-logo.svg'),
+  },
+  {
+    name: 'Twitter',
+    href: 'https://twitter.com/ManifoldMarkets',
+    icon: IconFromUrl('/twitter-logo.svg'),
+  },
   { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
 ]
 

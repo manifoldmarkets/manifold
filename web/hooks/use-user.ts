@@ -6,7 +6,7 @@ import {
   listenForPrivateUser,
   listenForUser,
   User,
-} from '../lib/firebase/users'
+} from 'web/lib/firebase/users'
 import { useStateCheckEquality } from './use-state-check-equality'
 
 export const useUser = () => {

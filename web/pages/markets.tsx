@@ -6,7 +6,7 @@ import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
 import { useContracts } from '../hooks/use-contracts'
-import { Contract } from '../lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
 
 // TODO: Rename endpoint to "Explore"
 export default function Markets() {

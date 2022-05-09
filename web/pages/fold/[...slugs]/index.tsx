@@ -4,18 +4,18 @@ import { Fold } from 'common/fold'
 import { Comment } from 'common/comment'
 import { Page } from '../../../components/page'
 import { Title } from '../../../components/title'
-import { Bet, listAllBets } from '../../../lib/firebase/bets'
-import { Contract } from '../../../lib/firebase/contracts'
+import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { Contract } from 'web/lib/firebase/contracts'
 import {
   foldPath,
   getFoldBySlug,
   getFoldContracts,
-} from '../../../lib/firebase/folds'
+} from 'web/lib/firebase/folds'
 import { ActivityFeed } from '../../../components/feed/activity-feed'
 import { TagsList } from '../../../components/tags-list'
 import { Row } from '../../../components/layout/row'
 import { UserLink } from '../../../components/user-page'
-import { getUser, User } from '../../../lib/firebase/users'
+import { getUser, User } from 'web/lib/firebase/users'
 import { Spacer } from '../../../components/layout/spacer'
 import { Col } from '../../../components/layout/col'
 import { useUser } from '../../../hooks/use-user'

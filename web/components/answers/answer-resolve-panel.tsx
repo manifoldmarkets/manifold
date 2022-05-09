@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { Col } from '../layout/col'
-import { resolveMarket } from '../../lib/firebase/api-call'
+import { resolveMarket } from 'web/lib/firebase/api-call'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../yes-no-selector'
 import { ResolveConfirmationButton } from '../confirmation-button'

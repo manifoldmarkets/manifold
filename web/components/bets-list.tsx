@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
 import { useUserBets } from '../hooks/use-user-bets'
-import { Bet } from '../lib/firebase/bets'
-import { User } from '../lib/firebase/users'
+import { Bet } from 'web/lib/firebase/bets'
+import { User } from 'web/lib/firebase/users'
 import {
   formatMoney,
   formatPercent,
@@ -19,10 +19,10 @@ import {
   getContractFromId,
   contractPath,
   getBinaryProbPercent,
-} from '../lib/firebase/contracts'
+} from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
-import { sellBet } from '../lib/firebase/api-call'
+import { sellBet } from 'web/lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from 'common/util/array'
@@ -38,7 +38,7 @@ import {
   getContractBetNullMetrics,
 } from 'common/calculate'
 import { useTimeSinceFirstRender } from '../hooks/use-time-since-first-render'
-import { trackLatency } from '../lib/firebase/tracking'
+import { trackLatency } from 'web/lib/firebase/tracking'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'closed' | 'resolved' | 'all'

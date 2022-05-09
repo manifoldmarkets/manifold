@@ -12,8 +12,8 @@ import { Title } from '../components/title'
 import { UserLink } from '../components/user-page'
 import { useFolds, useFollowedFoldIds } from '../hooks/use-fold'
 import { useUser } from '../hooks/use-user'
-import { foldPath, listAllFolds } from '../lib/firebase/folds'
-import { getUser, User } from '../lib/firebase/users'
+import { foldPath, listAllFolds } from 'web/lib/firebase/folds'
+import { getUser, User } from 'web/lib/firebase/users'
 
 export async function getStaticProps() {
   const folds = await listAllFolds().catch((_) => [])

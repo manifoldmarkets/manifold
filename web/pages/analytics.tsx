@@ -11,10 +11,10 @@ import { Tabs } from '../components/layout/tabs'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
 import { fromPropz, usePropz } from '../hooks/use-propz'
-import { getDailyBets } from '../lib/firebase/bets'
-import { getDailyComments } from '../lib/firebase/comments'
-import { getDailyContracts } from '../lib/firebase/contracts'
-import { getDailyNewUsers } from '../lib/firebase/users'
+import { getDailyBets } from 'web/lib/firebase/bets'
+import { getDailyComments } from 'web/lib/firebase/comments'
+import { getDailyContracts } from 'web/lib/firebase/contracts'
+import { getDailyNewUsers } from 'web/lib/firebase/users'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {

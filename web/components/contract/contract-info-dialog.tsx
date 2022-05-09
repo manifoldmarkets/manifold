@@ -7,10 +7,7 @@ import { Bet } from 'common/bet'
 
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
-import {
-  contractPath,
-  getBinaryProbPercent,
-} from '../../lib/firebase/contracts'
+import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { AddLiquidityPanel } from '../add-liquidity-panel'
 import { CopyLinkButton } from '../copy-link-button'
 import { Col } from '../layout/col'

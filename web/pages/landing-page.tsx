@@ -7,11 +7,11 @@ import {
   ArrowDownIcon,
 } from '@heroicons/react/outline'
 
-import { firebaseLogin } from '../lib/firebase/users'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { ContractsGrid } from '../components/contract/contracts-list'
 import { Col } from '../components/layout/col'
 import Link from 'next/link'
-import { Contract } from '../lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
 
 export default function LandingPage(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props

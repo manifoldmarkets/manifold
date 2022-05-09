@@ -1,4 +1,4 @@
-import { firebaseLogout, User } from '../../lib/firebase/users'
+import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'

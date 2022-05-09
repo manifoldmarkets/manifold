@@ -4,7 +4,7 @@ import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
 import { FundsSelector } from '../components/yes-no-selector'
 import { useUser } from '../hooks/use-user'
-import { checkoutURL } from '../lib/service/stripe'
+import { checkoutURL } from 'web/lib/service/stripe'
 import { Page } from '../components/page'
 
 export default function AddFundsPage() {

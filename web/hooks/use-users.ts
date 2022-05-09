@@ -4,7 +4,7 @@ import {
   getUser,
   listenForAllUsers,
   listenForPrivateUsers,
-} from '../lib/firebase/users'
+} from 'web/lib/firebase/users'
 
 export const useUsers = () => {
   const [users, setUsers] = useState<User[]>([])

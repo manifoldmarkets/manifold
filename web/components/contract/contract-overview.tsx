@@ -1,4 +1,4 @@
-import { Contract, tradingAllowed } from '../../lib/firebase/contracts'
+import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'

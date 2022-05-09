@@ -6,7 +6,7 @@ import { Title } from '../../components/title'
 import {
   Contract,
   listTaggedContractsCaseInsensitive,
-} from '../../lib/firebase/contracts'
+} from 'web/lib/firebase/contracts'
 
 export default function TagPage() {
   const router = useRouter()

@@ -9,17 +9,17 @@ import { useUser } from '../../hooks/use-user'
 import { ResolutionPanel } from '../../components/resolution-panel'
 import { Title } from '../../components/title'
 import { Spacer } from '../../components/layout/spacer'
-import { listUsers, User } from '../../lib/firebase/users'
+import { listUsers, User } from 'web/lib/firebase/users'
 import {
   Contract,
   getContractFromSlug,
   tradingAllowed,
   getBinaryProbPercent,
-} from '../../lib/firebase/contracts'
+} from 'web/lib/firebase/contracts'
 import { SEO } from '../../components/SEO'
 import { Page } from '../../components/page'
-import { Bet, listAllBets } from '../../lib/firebase/bets'
-import { Comment, listAllComments } from '../../lib/firebase/comments'
+import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { Comment, listAllComments } from 'web/lib/firebase/comments'
 import Custom404 from '../404'
 import { AnswersPanel } from '../../components/answers/answers-panel'
 import { fromPropz, usePropz } from '../../hooks/use-propz'

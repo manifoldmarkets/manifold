@@ -5,7 +5,7 @@ import { PencilIcon } from '@heroicons/react/outline'
 
 import { Fold } from 'common/fold'
 import { parseWordsAsTags } from 'common/util/parse'
-import { deleteFold, updateFold } from '../../lib/firebase/folds'
+import { deleteFold, updateFold } from 'web/lib/firebase/folds'
 import { toCamelCase } from 'common/util/format'
 import { Spacer } from '../layout/spacer'
 import { TagsList } from '../tags-list'

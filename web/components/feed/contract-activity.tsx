@@ -1,5 +1,5 @@
-import { Contract } from '../../lib/firebase/contracts'
-import { Comment } from '../../lib/firebase/comments'
+import { Contract } from 'web/lib/firebase/contracts'
+import { Comment } from 'web/lib/firebase/comments'
 import { Bet } from 'common/bet'
 import { useBets } from '../../hooks/use-bets'
 import { useComments } from '../../hooks/use-comments'

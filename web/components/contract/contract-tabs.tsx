@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { Comment } from '../../lib/firebase/comments'
+import { Comment } from 'web/lib/firebase/comments'
 import { User } from 'common/user'
 import { useBets } from '../../hooks/use-bets'
 import { ContractActivity } from '../feed/contract-activity'

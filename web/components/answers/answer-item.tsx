@@ -9,7 +9,7 @@ import { Avatar } from '../avatar'
 import { SiteLink } from '../site-link'
 import { formatPercent } from 'common/util/format'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
-import { tradingAllowed } from '../../lib/firebase/contracts'
+import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Linkify } from '../linkify'
 
 export function AnswerItem(props: {

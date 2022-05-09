@@ -7,7 +7,7 @@ import { Spacer } from '../../components/layout/spacer'
 import { Page } from '../../components/page'
 import { SiteLink } from '../../components/site-link'
 import { Title } from '../../components/title'
-import { getAllCharityTxns } from '../../lib/firebase/txns'
+import { getAllCharityTxns } from 'web/lib/firebase/txns'
 
 export async function getStaticProps() {
   const txns = await getAllCharityTxns()

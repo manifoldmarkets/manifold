@@ -1,7 +1,7 @@
 import _ from 'lodash'
 
-import { Contract } from '../../lib/firebase/contracts'
-import { Comment } from '../../lib/firebase/comments'
+import { Contract } from 'web/lib/firebase/contracts'
+import { Comment } from 'web/lib/firebase/comments'
 import { Col } from '../layout/col'
 import { Bet } from 'common/bet'
 import { useUser } from '../../hooks/use-user'

@@ -6,7 +6,7 @@ import { User } from 'common/user'
 import {
   followFoldFromSlug,
   unfollowFoldFromSlug,
-} from '../../lib/firebase/folds'
+} from 'web/lib/firebase/folds'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 

@@ -7,7 +7,7 @@ import { Answer } from 'common/answer'
 import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { placeBet } from '../../lib/firebase/api-call'
+import { placeBet } from 'web/lib/firebase/api-call'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import {
@@ -23,7 +23,7 @@ import {
   calculateDpmPayoutAfterCorrectBet,
   getDpmOutcomeProbabilityAfterBet,
 } from 'common/calculate-dpm'
-import { firebaseLogin } from '../../lib/firebase/users'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 
 export function AnswerBetPanel(props: {

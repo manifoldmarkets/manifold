@@ -1,7 +1,7 @@
 import React from 'react'
 import Router from 'next/router'
 
-import { Contract, getContractsBySlugs } from '../lib/firebase/contracts'
+import { Contract, getContractsBySlugs } from 'web/lib/firebase/contracts'
 import { Page } from '../components/page'
 import { FeedPromo } from '../components/feed-create'
 import { Col } from '../components/layout/col'

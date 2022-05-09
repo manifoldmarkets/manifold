@@ -1,6 +1,6 @@
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { contractPath } from '../lib/firebase/contracts'
+import { contractPath } from 'web/lib/firebase/contracts'
 import { SiteLink } from './site-link'
 import { Row } from './layout/row'
 import { Avatar } from './avatar'

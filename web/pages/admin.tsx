@@ -8,7 +8,7 @@ import Custom404 from './404'
 import { useContracts } from '../hooks/use-contracts'
 import _ from 'lodash'
 import { useAdmin } from '../hooks/use-admin'
-import { contractPath } from '../lib/firebase/contracts'
+import { contractPath } from 'web/lib/firebase/contracts'
 
 function avatarHtml(avatarUrl: string) {
   return `<img

@@ -13,9 +13,9 @@ import {
   formatWithCommas,
 } from 'common/util/format'
 import { Title } from './title'
-import { firebaseLogin, User } from '../lib/firebase/users'
+import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
-import { placeBet, sellShares } from '../lib/firebase/api-call'
+import { placeBet, sellShares } from 'web/lib/firebase/api-call'
 import { BuyAmountInput, SellAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel } from './outcome-label'

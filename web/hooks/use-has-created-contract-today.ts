@@ -1,4 +1,4 @@
-import { listContracts } from '../lib/firebase/contracts'
+import { listContracts } from 'web/lib/firebase/contracts'
 import { useEffect, useState } from 'react'
 import { User } from 'common/user'
 

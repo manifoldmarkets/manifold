@@ -2,9 +2,9 @@ import { Fragment } from 'react'
 import { CodeIcon } from '@heroicons/react/outline'
 import { Menu, Transition } from '@headlessui/react'
 import { Contract } from 'common/contract'
-import { contractPath } from '../lib/firebase/contracts'
+import { contractPath } from 'web/lib/firebase/contracts'
 import { DOMAIN } from 'common/envs/constants'
-import { copyToClipboard } from '../lib/util/copy'
+import { copyToClipboard } from 'web/lib/util/copy'
 
 function copyEmbedCode(contract: Contract) {
   const title = contract.question

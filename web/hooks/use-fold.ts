@@ -9,7 +9,7 @@ import {
   listenForFoldsWithTags,
   listenForFollow,
   listenForFollowedFolds,
-} from '../lib/firebase/folds'
+} from 'web/lib/firebase/folds'
 
 export const useFold = (foldId: string | undefined) => {
   const [fold, setFold] = useState<Fold | null | undefined>()

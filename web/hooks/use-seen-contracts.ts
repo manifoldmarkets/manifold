@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { useEffect, RefObject, useState } from 'react'
 import { Contract } from 'common/contract'
-import { trackView } from '../lib/firebase/tracking'
+import { trackView } from 'web/lib/firebase/tracking'
 import { useIsVisible } from './use-is-visible'
 
 export const useSeenContracts = () => {

@@ -7,7 +7,7 @@ import {
   Contract,
   contractPath,
   getBinaryProbPercent,
-} from '../../lib/firebase/contracts'
+} from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import {

@@ -17,11 +17,8 @@ import { useContractWithPreload } from '../../../hooks/use-contract'
 import { useMeasureSize } from '../../../hooks/use-measure-size'
 import { fromPropz, usePropz } from '../../../hooks/use-propz'
 import { useWindowSize } from '../../../hooks/use-window-size'
-import { listAllBets } from '../../../lib/firebase/bets'
-import {
-  contractPath,
-  getContractFromSlug,
-} from '../../../lib/firebase/contracts'
+import { listAllBets } from 'web/lib/firebase/bets'
+import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 
 export const getStaticProps = fromPropz(getStaticPropz)
