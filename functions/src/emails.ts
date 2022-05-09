@@ -17,6 +17,7 @@ export const sendMarketResolutionEmail = async (
   investment: number,
   payout: number,
   creator: User,
+  creatorPayout: number,
   contract: Contract,
   resolution: string,
   resolutionProbability?: number,
@@ -42,6 +43,11 @@ export const sendMarketResolutionEmail = async (
 
   const subject = `Resolved ${outcome}: ${contract.question}`
 
+  const creatorPayoutText =
+    userId === creator.id
+      ? ` (plus ${formatMoney(creatorPayout)} in commissions)`
+      : ''
+
   const templateData: market_resolved_template = {
     userId: user.id,
     name: user.name,
@@ -49,7 +55,7 @@ export const sendMarketResolutionEmail = async (
     question: contract.question,
     outcome,
     investment: `${Math.floor(investment)}`,
-    payout: `${Math.floor(payout)}`,
+    payout: `${Math.floor(payout)}${creatorPayoutText}`,
     url: `https://${DOMAIN}/${creator.username}/${contract.slug}`,
   }
 
