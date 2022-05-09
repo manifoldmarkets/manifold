@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 admin.initializeApp()
 
 // export * from './keep-awake'
+export * from './claim-manalink'
 export * from './transact'
 export * from './place-bet'
 export * from './resolve-market'

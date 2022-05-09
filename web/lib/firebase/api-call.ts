@@ -21,6 +21,11 @@ export const transact = cloudFunction<
   { status: 'error' | 'success'; message?: string; txn?: Txn }
 >('transact')
 
+export const claimManalink = cloudFunction<
+  string,
+  { status: 'error' | 'success'; message?: string }
+>('claimManalink')
+
 export const placeBet = cloudFunction('placeBet')
 
 export const sellBet = cloudFunction('sellBet')
