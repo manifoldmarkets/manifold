@@ -1,10 +1,15 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract, DPM, FreeResponse, FullContract } from 'common/contract'
-import { User } from 'common/user'
-import { getLoanAmount, getNewMultiBetInfo } from 'common/new-bet'
-import { Answer, MAX_ANSWER_LENGTH } from 'common/answer'
+import {
+  Contract,
+  DPM,
+  FreeResponse,
+  FullContract,
+} from '../../common/contract'
+import { User } from '../../common/user'
+import { getLoanAmount, getNewMultiBetInfo } from '../../common/new-bet'
+import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
 import { getContract, getValues } from './utils'
 import { sendNewAnswerEmail } from './emails'
 import { Bet } from 'common/bet'

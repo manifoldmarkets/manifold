@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { SparklesIcon, XIcon } from '@heroicons/react/solid'
 import { Avatar } from './avatar'
 import { useEffect, useRef, useState } from 'react'
@@ -9,8 +10,7 @@ import { Contract, MAX_QUESTION_LENGTH } from 'common/contract'
 import { Col } from './layout/col'
 import clsx from 'clsx'
 import { Row } from './layout/row'
-import { ENV_CONFIG } from 'common/envs/constants'
-import _ from 'lodash'
+import { ENV_CONFIG } from '../../common/envs/constants'
 import { SiteLink } from './site-link'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
@@ -50,7 +50,8 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
       </Row>
       <ContractsGrid
         contracts={hotContracts?.slice(0, 10) || []}
-        showHotVolume
+        loadMore={() => {}}
+        hasMore={false}
       />
     </>
   )

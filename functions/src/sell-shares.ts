@@ -2,12 +2,12 @@ import * as _ from 'lodash'
 import * as admin from 'firebase-admin'
 import * as functions from 'firebase-functions'
 
-import { Binary, CPMM, FullContract } from 'common/contract'
-import { User } from 'common/user'
-import { getCpmmSellBetInfo } from 'common/sell-bet'
-import { addObjects, removeUndefinedProps } from 'common/util/object'
+import { Binary, CPMM, FullContract } from '../../common/contract'
+import { User } from '../../common/user'
+import { getCpmmSellBetInfo } from '../../common/sell-bet'
+import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { getValues } from './utils'
-import { Bet } from 'common/bet'
+import { Bet } from '../../common/bet'
 
 export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
   async (

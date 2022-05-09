@@ -3,9 +3,9 @@ import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
 import { getValues } from './utils'
-import { Contract } from 'common/contract'
-import { Bet } from 'common/bet'
-import { batchedWaitAll } from 'common/util/promise'
+import { Contract } from '../../common/contract'
+import { Bet } from '../../common/bet'
+import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 

@@ -1,9 +1,9 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { User } from 'common/user'
-import { Txn } from 'common/txn'
-import { removeUndefinedProps } from 'common/util/object'
+import { User } from '../../common/user'
+import { Txn } from '../../common/txn'
+import { removeUndefinedProps } from '../../common/util/object'
 
 export const transact = functions
   .runWith({ minInstances: 1 })
