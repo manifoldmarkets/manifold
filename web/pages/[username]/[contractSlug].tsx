@@ -209,7 +209,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
   )
 }
 
-function ContractLeaderboard(props: { userProfits: Record<string, number> }) {
+function ContractLeaderboard(props: { userProfits: { [id: string]: number } }) {
   const { userProfits } = props
   const [users, setUsers] = useState<User[]>()
 
