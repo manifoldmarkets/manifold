@@ -118,7 +118,7 @@ export const createContract = functions
         tags ?? []
       )
 
-      if (!isFree && ante) await chargeUser(creator.id, ante)
+      if (!isFree && ante) await chargeUser(creator.id, ante, true)
 
       await contractRef.create(contract)
 
