@@ -2,7 +2,7 @@ import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 import { THEOREMONE_CONFIG } from './theoremone'
 
-const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
+export const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 
 const CONFIGS = {
   PROD: PROD_CONFIG,

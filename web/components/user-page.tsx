@@ -201,7 +201,7 @@ export function UserPage(props: {
             tabs={[
               {
                 title: 'Markets',
-                content: <CreatorContractsList contracts={usersContracts} />,
+                content: <CreatorContractsList creator={user} />,
                 tabIcon: (
                   <div className="px-0.5 font-bold">
                     {usersContracts.length}
