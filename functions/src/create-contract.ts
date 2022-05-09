@@ -13,10 +13,10 @@ import {
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
   outcomeType,
-} from '../../common/contract'
-import { slugify } from '../../common/util/slugify'
-import { randomString } from '../../common/util/random'
-import { getNewContract } from '../../common/new-contract'
+} from 'common/contract'
+import { slugify } from 'common/util/slugify'
+import { randomString } from 'common/util/random'
+import { getNewContract } from 'common/new-contract'
 import {
   FIXED_ANTE,
   getAnteBets,
@@ -24,8 +24,8 @@ import {
   getFreeAnswerAnte,
   HOUSE_LIQUIDITY_PROVIDER_ID,
   MINIMUM_ANTE,
-} from '../../common/antes'
-import { getNoneAnswer } from '../../common/answer'
+} from 'common/antes'
+import { getNoneAnswer } from 'common/answer'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })
@@ -72,7 +72,6 @@ export const createContract = functions
       )
         return { status: 'error', message: 'Invalid initial probability' }
 
-      const ante = FIXED_ANTE // data.ante
       // uses utc time on server:
       const today = new Date().setHours(0, 0, 0, 0)
       const userContractsCreatedTodaySnapshot = await firestore
@@ -81,6 +80,8 @@ export const createContract = functions
         .where('createdTime', '>=', today)
         .get()
       const isFree = userContractsCreatedTodaySnapshot.size === 0
+
+      const ante = FIXED_ANTE // data.ante
 
       if (
         ante === undefined ||

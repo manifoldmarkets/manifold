@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { User } from '../lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
 import { Page } from './page'
@@ -10,8 +10,17 @@ import { Linkify } from './linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
 import { LinkIcon } from '@heroicons/react/solid'
-import { genHash } from '../../common/util/random'
+import { genHash } from 'common/util/random'
 import { PencilIcon } from '@heroicons/react/outline'
+import { Tabs } from './layout/tabs'
+import { UserCommentsList } from './comments-list'
+import { useEffect, useState } from 'react'
+import { Comment, getUsersComments } from 'web/lib/firebase/comments'
+import { Contract } from 'common/contract'
+import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
+import { LoadingIndicator } from './loading-indicator'
+import { useRouter } from 'next/router'
+import _ from 'lodash'
 
 export function UserLink(props: {
   name: string
@@ -29,10 +38,47 @@ export function UserLink(props: {
   )
 }
 
-export function UserPage(props: { user: User; currentUser?: User }) {
-  const { user, currentUser } = props
+export function UserPage(props: {
+  user: User
+  currentUser?: User
+  defaultTabTitle?: string
+}) {
+  const router = useRouter()
+  const { user, currentUser, defaultTabTitle } = props
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
+  const [usersComments, setUsersComments] = useState<Comment[]>([] as Comment[])
+  const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
+    'loading'
+  )
+  const [commentsByContract, setCommentsByContract] = useState<
+    Map<Contract, Comment[]> | 'loading'
+  >('loading')
+
+  useEffect(() => {
+    if (!user) return
+    getUsersComments(user.id).then(setUsersComments)
+    listContracts(user.id).then(setUsersContracts)
+  }, [user])
+
+  useEffect(() => {
+    const uniqueContractIds = _.uniq(
+      usersComments.map((comment) => comment.contractId)
+    )
+    Promise.all(
+      uniqueContractIds.map((contractId) => getContractFromId(contractId))
+    ).then((contracts) => {
+      const commentsByContract = new Map<Contract, Comment[]>()
+      contracts.forEach((contract) => {
+        if (!contract) return
+        commentsByContract.set(
+          contract,
+          usersComments.filter((comment) => comment.contractId === contract.id)
+        )
+      })
+      setCommentsByContract(commentsByContract)
+    })
+  }, [usersComments])
 
   return (
     <Page>
@@ -138,8 +184,47 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         </Col>
 
         <Spacer h={10} />
-
-        <CreatorContractsList creator={user} />
+        {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
+          <Tabs
+            className={'pb-2 pt-1 '}
+            defaultIndex={defaultTabTitle === 'Comments' ? 1 : 0}
+            onClick={(tabName) =>
+              router.push(
+                {
+                  pathname: `/${user.username}`,
+                  query: { tab: tabName },
+                },
+                undefined,
+                { shallow: true }
+              )
+            }
+            tabs={[
+              {
+                title: 'Markets',
+                content: <CreatorContractsList creator={user} />,
+                tabIcon: (
+                  <div className="px-0.5 font-bold">
+                    {usersContracts.length}
+                  </div>
+                ),
+              },
+              {
+                title: 'Comments',
+                content: (
+                  <UserCommentsList
+                    user={user}
+                    commentsByUniqueContracts={commentsByContract}
+                  />
+                ),
+                tabIcon: (
+                  <div className="px-0.5 font-bold">{usersComments.length}</div>
+                ),
+              },
+            ]}
+          />
+        ) : (
+          <LoadingIndicator />
+        )}
       </Col>
     </Page>
   )

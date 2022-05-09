@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { useEffect, useState } from 'react'
-import { Fold } from '../../common/fold'
-import { User } from '../../common/user'
+import { Fold } from 'common/fold'
+import { User } from 'common/user'
 import {
   listAllFolds,
   listenForFold,
@@ -9,7 +9,7 @@ import {
   listenForFoldsWithTags,
   listenForFollow,
   listenForFollowedFolds,
-} from '../lib/firebase/folds'
+} from 'web/lib/firebase/folds'
 
 export const useFold = (foldId: string | undefined) => {
   const [fold, setFold] = useState<Fold | null | undefined>()

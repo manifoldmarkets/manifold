@@ -1,7 +1,7 @@
 import { cloneElement } from 'react'
-import { CREATOR_FEE } from '../../common/fees'
-import { Page } from '../components/page'
-import { SEO } from '../components/SEO'
+import { CREATOR_FEE } from 'common/fees'
+import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
 import styles from './about.module.css'
 
 export default function About() {

@@ -1,23 +1,24 @@
 import _ from 'lodash'
 import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
-import { Col } from '../../components/layout/col'
-import { Row } from '../../components/layout/row'
-import { Page } from '../../components/page'
-import { Title } from '../../components/title'
-import { BuyAmountInput } from '../../components/amount-input'
-import { Spacer } from '../../components/layout/spacer'
-import { User } from '../../../common/user'
-import { useUser } from '../../hooks/use-user'
-import { Linkify } from '../../components/linkify'
-import { transact } from '../../lib/firebase/api-call'
-import { charities, Charity } from '../../../common/charity'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Page } from 'web/components/page'
+import { Title } from 'web/components/title'
+import { BuyAmountInput } from 'web/components/amount-input'
+import { Spacer } from 'web/components/layout/spacer'
+import { User } from 'common/user'
+import { useUser } from 'web/hooks/use-user'
+import { Linkify } from 'web/components/linkify'
+import { transact } from 'web/lib/firebase/api-call'
+import { charities, Charity } from 'common/charity'
 import { useRouter } from 'next/router'
 import Custom404 from '../404'
-import { useCharityTxns } from '../../hooks/use-charity-txns'
-import { useWindowSize } from '../../hooks/use-window-size'
+import { useCharityTxns } from 'web/hooks/use-charity-txns'
+import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
-import { Donation } from '../../components/charity/feed-items'
+import { Donation } from 'web/components/charity/feed-items'
+import Image from 'next/image'
 
 export const manaToUSD = (mana: number) =>
   (mana / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -78,11 +79,9 @@ function CharityPage(props: { charity: Charity }) {
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
             {photo && (
-              <img
-                src={photo}
-                alt=""
-                className="w-40 rounded-2xl object-contain"
-              />
+              <div className="relative w-40 rounded-2xl">
+                <Image src={photo} alt="" layout="fill" objectFit="contain" />
+              </div>
             )}
             <Details
               charity={charity}
@@ -216,8 +215,8 @@ function DonationBox(props: {
         />
 
         <Col className="mt-3 w-full gap-3">
-          <Row className="items-center justify-between text-sm">
-            <span className="text-gray-500">{charity.name} receives</span>
+          <Row className="items-center text-sm xl:justify-between">
+            <span className="mr-1 text-gray-500">{charity.name} receives</span>
             <span>{manaToUSD(amount || 0)}</span>
           </Row>
           {/* TODO: matching pool */}

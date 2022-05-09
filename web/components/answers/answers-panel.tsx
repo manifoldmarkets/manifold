@@ -1,21 +1,21 @@
 import _ from 'lodash'
 import { useLayoutEffect, useState } from 'react'
 
-import { DPM, FreeResponse, FullContract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { Col } from '../layout/col'
-import { useUser } from '../../hooks/use-user'
-import { getDpmOutcomeProbability } from '../../../common/calculate-dpm'
-import { useAnswers } from '../../hooks/use-answers'
-import { tradingAllowed } from '../../lib/firebase/contracts'
+import { useUser } from 'web/hooks/use-user'
+import { getDpmOutcomeProbability } from 'common/calculate-dpm'
+import { useAnswers } from 'web/hooks/use-answers'
+import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
 import { FeedItems } from '../feed/feed-items'
 import { ActivityItem } from '../feed/activity-items'
-import { User } from '../../../common/user'
-import { getOutcomeProbability } from '../../../common/calculate'
-import { Answer } from '../../../common/answer'
+import { User } from 'common/user'
+import { getOutcomeProbability } from 'common/calculate'
+import { Answer } from 'common/answer'
 
 export function AnswersPanel(props: {
   contract: FullContract<DPM, FreeResponse>
@@ -24,7 +24,7 @@ export function AnswersPanel(props: {
   const { creatorId, resolution, resolutions, totalBets } = contract
 
   const answers = useAnswers(contract.id) ?? contract.answers
-  const [winningAnswers, otherAnswers] = _.partition(
+  const [winningAnswers, losingAnswers] = _.partition(
     answers.filter(
       (answer) => answer.id !== '0' && totalBets[answer.id] > 0.000000001
     ),
@@ -36,7 +36,7 @@ export function AnswersPanel(props: {
       resolutions ? -1 * resolutions[answer.id] : 0
     ),
     ..._.sortBy(
-      resolution ? [] : otherAnswers,
+      resolution ? [] : losingAnswers,
       (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
     ),
   ]
@@ -52,7 +52,11 @@ export function AnswersPanel(props: {
 
   const chosenTotal = _.sum(Object.values(chosenAnswers))
 
-  const answerItems = getAnswers(contract, user)
+  const answerItems = getAnswerItems(
+    contract,
+    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
+    user
+  )
 
   const onChoose = (answerId: string, prob: number) => {
     if (resolveOption === 'CHOOSE') {
@@ -89,9 +93,7 @@ export function AnswersPanel(props: {
 
   return (
     <Col className="gap-3">
-      {(resolveOption === 'CHOOSE' ||
-        resolveOption === 'CHOOSE_MULTIPLE' ||
-        resolution === 'MKT') &&
+      {(resolveOption || resolution) &&
         sortedAnswers.map((answer) => (
           <AnswerItem
             key={answer.id}
@@ -105,17 +107,17 @@ export function AnswersPanel(props: {
           />
         ))}
 
-      {sortedAnswers.length === 0 && (
-        <div className="pb-4 text-gray-500">No answers yet...</div>
-      )}
-
-      {!resolveOption && sortedAnswers.length > 0 && (
+      {!resolveOption && (
         <FeedItems
           contract={contract}
           items={answerItems}
           className={''}
           betRowClassName={''}
         />
+      )}
+
+      {answers.length <= 1 && (
+        <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
       {tradingAllowed(contract) &&
@@ -138,12 +140,11 @@ export function AnswersPanel(props: {
   )
 }
 
-function getAnswers(
+function getAnswerItems(
   contract: FullContract<DPM, FreeResponse>,
+  answers: Answer[],
   user: User | undefined | null
 ) {
-  const { answers } = contract
-
   let outcomes = _.uniq(
     answers.map((answer) => answer.number.toString())
   ).filter((outcome) => getOutcomeProbability(contract, outcome) > 0.0001)

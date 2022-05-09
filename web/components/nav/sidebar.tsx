@@ -14,13 +14,20 @@ import clsx from 'clsx'
 import _ from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useFollowedFolds } from '../../hooks/use-fold'
-import { useUser } from '../../hooks/use-user'
-import { firebaseLogin, firebaseLogout } from '../../lib/firebase/users'
+import { useFollowedFolds } from 'web/hooks/use-fold'
+import { useUser } from 'web/hooks/use-user'
+import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
-import { useHasCreatedContractToday } from '../../hooks/use-has-created-contract-today'
+import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
+
+// Create an icon from the url of an image
+function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
+  return function Icon(props) {
+    return <img src={url} className={clsx(props.className, 'h-6 w-6')} />
+  }
+}
 
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
@@ -32,13 +39,23 @@ const navigation = [
 const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
+  { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
 ]
 
 const signedOutMobileNavigation = [
   { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
-  { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
+  {
+    name: 'Discord',
+    href: 'https://discord.gg/eHQBNBqXuh',
+    icon: IconFromUrl('/discord-logo.svg'),
+  },
+  {
+    name: 'Twitter',
+    href: 'https://twitter.com/ManifoldMarkets',
+    icon: IconFromUrl('/twitter-logo.svg'),
+  },
   { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
 ]
 

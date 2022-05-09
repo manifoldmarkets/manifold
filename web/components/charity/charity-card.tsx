@@ -1,8 +1,9 @@
 import { StarIcon } from '@heroicons/react/solid'
 import _ from 'lodash'
 import Link from 'next/link'
-import { Charity } from '../../../common/charity'
-import { useCharityTxns } from '../../hooks/use-charity-txns'
+import Image from 'next/image'
+import { Charity } from 'common/charity'
+import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { manaToUSD } from '../../pages/charity/[charitySlug]'
 import { Row } from '../layout/row'
 
@@ -15,17 +16,18 @@ export function CharityCard(props: { charity: Charity }) {
   return (
     <Link href={`/charity/${slug}`} passHref>
       <div className="card card-compact transition:shadow flex-1 cursor-pointer border-2 bg-white hover:shadow-md">
-        <Row className="mt-6">
+        <Row className="mt-6 mb-2">
           {tags?.includes('Featured') && <FeaturedBadge />}
         </Row>
-
-        <figure className="h-32 px-4 pt-4">
-          {photo ? (
-            <img className="h-full w-full object-contain" src={photo} alt="" />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-r from-slate-300 to-indigo-200" />
-          )}
-        </figure>
+        <div className="px-8">
+          <figure className="relative h-32">
+            {photo ? (
+              <Image src={photo} alt="" layout="fill" objectFit="contain" />
+            ) : (
+              <div className="h-full w-full bg-gradient-to-r from-slate-300 to-indigo-200" />
+            )}
+          </figure>
+        </div>
         <div className="card-body">
           {/* <h3 className="card-title line-clamp-3">{name}</h3> */}
           <div className="line-clamp-4 text-sm">{preview}</div>

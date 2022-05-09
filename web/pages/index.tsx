@@ -1,15 +1,24 @@
 import React from 'react'
 import Router from 'next/router'
 
-import { Contract, getHotContracts } from '../lib/firebase/contracts'
-import { Page } from '../components/page'
-import { FeedPromo } from '../components/feed-create'
-import { Col } from '../components/layout/col'
-import { useUser } from '../hooks/use-user'
-import { ManifoldLogo } from '../components/nav/manifold-logo'
+import { Contract, getContractsBySlugs } from 'web/lib/firebase/contracts'
+import { Page } from 'web/components/page'
+import { FeedPromo } from 'web/components/feed-create'
+import { Col } from 'web/components/layout/col'
+import { useUser } from 'web/hooks/use-user'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 
 export async function getStaticProps() {
-  const hotContracts = (await getHotContracts().catch(() => [])) ?? []
+  const hotContracts = await getContractsBySlugs([
+    'if-boris-johnson-is-leader-of-the-c',
+    'will-ethereum-merge-to-proofofstake',
+    'will-russia-control-the-majority-of',
+    'will-elon-musk-buy-twitter-this-yea',
+    'will-an-ai-get-gold-on-any-internat',
+    'how-many-us-supreme-court-justices',
+    'who-will-win-the-nba-finals-champio',
+    'what-database-will-manifold-be-prim',
+  ])
 
   return {
     props: { hotContracts },

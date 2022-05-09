@@ -2,7 +2,7 @@ import { collection } from 'firebase/firestore'
 
 import { getValues, listenForValues } from './utils'
 import { db } from './init'
-import { Answer } from '../../../common/answer'
+import { Answer } from 'common/answer'
 
 function getAnswersCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'answers')

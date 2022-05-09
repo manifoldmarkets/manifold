@@ -3,26 +3,26 @@ import _ from 'lodash'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
-import { DPM, FreeResponse, FullContract } from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { createAnswer } from '../../lib/firebase/api-call'
+import { createAnswer } from 'web/lib/firebase/api-call'
 import { Row } from '../layout/row'
 import {
   formatMoney,
   formatPercent,
   formatWithCommas,
-} from '../../../common/util/format'
+} from 'common/util/format'
 import { InfoTooltip } from '../info-tooltip'
-import { useUser } from '../../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import {
   calculateDpmShares,
   calculateDpmPayoutAfterCorrectBet,
   getDpmOutcomeProbabilityAfterBet,
-} from '../../../common/calculate-dpm'
-import { firebaseLogin } from '../../lib/firebase/users'
-import { Bet } from '../../../common/bet'
-import { MAX_ANSWER_LENGTH } from '../../../common/answer'
+} from 'common/calculate-dpm'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { Bet } from 'common/bet'
+import { MAX_ANSWER_LENGTH } from 'common/answer'
 
 export function CreateAnswerPanel(props: {
   contract: FullContract<DPM, FreeResponse>

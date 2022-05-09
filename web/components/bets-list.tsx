@@ -4,14 +4,14 @@ import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
-import { useUserBets } from '../hooks/use-user-bets'
-import { Bet } from '../lib/firebase/bets'
-import { User } from '../lib/firebase/users'
+import { useUserBets } from 'web/hooks/use-user-bets'
+import { Bet } from 'web/lib/firebase/bets'
+import { User } from 'web/lib/firebase/users'
 import {
   formatMoney,
   formatPercent,
   formatWithCommas,
-} from '../../common/util/format'
+} from 'common/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import {
@@ -19,13 +19,13 @@ import {
   getContractFromId,
   contractPath,
   getBinaryProbPercent,
-} from '../lib/firebase/contracts'
+} from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
-import { sellBet } from '../lib/firebase/api-call'
+import { sellBet } from 'web/lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
-import { filterDefined } from '../../common/util/array'
+import { filterDefined } from 'common/util/array'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
 import {
@@ -36,9 +36,9 @@ import {
   getContractBetMetrics,
   resolvedPayout,
   getContractBetNullMetrics,
-} from '../../common/calculate'
-import { useTimeSinceFirstRender } from '../hooks/use-time-since-first-render'
-import { trackLatency } from '../lib/firebase/tracking'
+} from 'common/calculate'
+import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
+import { trackLatency } from 'web/lib/firebase/tracking'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
@@ -553,10 +553,11 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   )
 }
 
+const warmUpSellBet = _.throttle(() => sellBet({}).catch(), 5000 /* ms */)
+
 function SellButton(props: { contract: Contract; bet: Bet }) {
   useEffect(() => {
-    // warm up cloud function
-    sellBet({}).catch()
+    warmUpSellBet()
   }, [])
 
   const { contract, bet } = props

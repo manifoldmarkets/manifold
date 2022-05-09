@@ -8,7 +8,7 @@ module.exports = {
     optimizeCss: true,
   },
   images: {
-    domains: ['lh3.googleusercontent.com'],
+    domains: ['lh3.googleusercontent.com', 'i.imgur.com'],
   },
   async redirects() {
     return [
