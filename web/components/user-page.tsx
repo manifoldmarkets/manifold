@@ -203,12 +203,7 @@ export function UserPage(props: {
                 title: 'Markets',
                 content: <CreatorContractsList contracts={usersContracts} />,
                 tabIcon: (
-                  <div
-                    className={clsx(
-                      usersContracts.length > 9 ? 'px-1' : 'px-1.5',
-                      'items-center rounded-full border-2 border-current py-0.5 text-xs'
-                    )}
-                  >
+                  <div className="px-0.5 font-bold">
                     {usersContracts.length}
                   </div>
                 ),
@@ -222,14 +217,7 @@ export function UserPage(props: {
                   />
                 ),
                 tabIcon: (
-                  <div
-                    className={clsx(
-                      usersComments.length > 9 ? 'px-1' : 'px-1.5',
-                      'items-center rounded-full border-2 border-current py-0.5 text-xs'
-                    )}
-                  >
-                    {usersComments.length}
-                  </div>
+                  <div className="px-0.5 font-bold">{usersComments.length}</div>
                 ),
               },
             ]}
