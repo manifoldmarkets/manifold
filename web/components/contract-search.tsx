@@ -28,7 +28,6 @@ const searchClient = algoliasearch(
 )
 
 const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
-console.log('env', ENV, indexPrefix)
 
 const sortIndexes = [
   { label: 'Newest', value: indexPrefix + 'contracts-newest' },
@@ -68,6 +67,11 @@ export function ContractSearch(props: {
     <InstantSearch
       searchClient={searchClient}
       indexName={`${indexPrefix}contracts-${sort}`}
+      key={`search-${
+        querySortOptions?.filter?.tag ??
+        querySortOptions?.filter?.creatorId ??
+        ''
+      }`}
     >
       <Row className="flex-wrap gap-2">
         <SearchBox
@@ -125,7 +129,6 @@ export function ContractSearchInner(props: {
   })
 
   useEffect(() => {
-    console.log('initial query', initialQuery)
     setQuery(initialQuery)
   }, [initialQuery])
 
@@ -134,12 +137,10 @@ export function ContractSearchInner(props: {
   })
 
   useEffect(() => {
-    console.log('setting query', query)
     setQuery(query)
   }, [query])
 
   useEffect(() => {
-    console.log('effect sort', 'curr', index)
     const sort = index.split('contracts-')[1] as Sort
     if (sort) {
       setSort(sort)
