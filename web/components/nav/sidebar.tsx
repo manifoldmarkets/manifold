@@ -14,13 +14,13 @@ import clsx from 'clsx'
 import _ from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useFollowedFolds } from '../../hooks/use-fold'
-import { useUser } from '../../hooks/use-user'
+import { useFollowedFolds } from 'web/hooks/use-fold'
+import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
-import { useHasCreatedContractToday } from '../../hooks/use-has-created-contract-today'
+import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {

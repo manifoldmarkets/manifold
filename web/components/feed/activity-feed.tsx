@@ -4,7 +4,7 @@ import { Contract } from 'web/lib/firebase/contracts'
 import { Comment } from 'web/lib/firebase/comments'
 import { Col } from '../layout/col'
 import { Bet } from 'common/bet'
-import { useUser } from '../../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { ContractActivity } from './contract-activity'
 
 export function ActivityFeed(props: {

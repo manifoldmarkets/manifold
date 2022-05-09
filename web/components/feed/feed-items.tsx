@@ -20,7 +20,7 @@ import {
   contractPath,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
-import { useUser } from '../../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Linkify } from '../linkify'
 import { Row } from '../layout/row'
 import { createComment, MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
@@ -42,7 +42,7 @@ import { Binary, CPMM, DPM, FreeResponse, FullContract } from 'common/contract'
 import { BuyButton } from '../yes-no-selector'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { AnswerBetPanel } from '../answers/answer-bet-panel'
-import { useSaveSeenContract } from '../../hooks/use-seen-contracts'
+import { useSaveSeenContract } from 'web/hooks/use-seen-contracts'
 import { User } from 'common/user'
 import { Modal } from '../layout/modal'
 import { trackClick } from 'web/lib/firebase/tracking'

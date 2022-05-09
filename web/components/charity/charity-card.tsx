@@ -3,7 +3,7 @@ import _ from 'lodash'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Charity } from 'common/charity'
-import { useCharityTxns } from '../../hooks/use-charity-txns'
+import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { manaToUSD } from '../../pages/charity/[charitySlug]'
 import { Row } from '../layout/row'
 

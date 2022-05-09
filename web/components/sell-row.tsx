@@ -5,7 +5,7 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { formatWithCommas } from 'common/util/format'
 import { OutcomeLabel } from './outcome-label'
-import { useUserContractBets } from '../hooks/use-user-bets'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useSaveShares } from './use-save-shares'
 import { SellSharesModal } from './sell-modal'
 

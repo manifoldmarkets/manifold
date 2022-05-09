@@ -5,7 +5,7 @@ import dayjs from 'dayjs'
 import Textarea from 'react-expanding-textarea'
 
 import { Spacer } from '../components/layout/spacer'
-import { useUser } from '../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createContract } from 'web/lib/firebase/api-call'
 import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
@@ -18,7 +18,7 @@ import { TagsList } from '../components/tags-list'
 import { Row } from '../components/layout/row'
 import { MAX_DESCRIPTION_LENGTH, outcomeType } from 'common/contract'
 import { formatMoney } from 'common/util/format'
-import { useHasCreatedContractToday } from '../hooks/use-has-created-contract-today'
+import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 
 export default function Create() {
   const [question, setQuestion] = useState('')

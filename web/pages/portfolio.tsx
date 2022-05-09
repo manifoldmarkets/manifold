@@ -5,7 +5,7 @@ import { BetsList } from '../components/bets-list'
 import { Page } from '../components/page'
 import { SEO } from '../components/SEO'
 import { Title } from '../components/title'
-import { useUser } from '../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 
 export default function PortfolioPage() {
   const user = useUser()

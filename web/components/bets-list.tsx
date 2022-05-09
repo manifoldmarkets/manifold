@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
-import { useUserBets } from '../hooks/use-user-bets'
+import { useUserBets } from 'web/hooks/use-user-bets'
 import { Bet } from 'web/lib/firebase/bets'
 import { User } from 'web/lib/firebase/users'
 import {
@@ -37,7 +37,7 @@ import {
   resolvedPayout,
   getContractBetNullMetrics,
 } from 'common/calculate'
-import { useTimeSinceFirstRender } from '../hooks/use-time-since-first-render'
+import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
 import { trackLatency } from 'web/lib/firebase/tracking'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'

@@ -7,9 +7,9 @@ import { ActivityFeed } from '../components/feed/activity-feed'
 import FeedCreate from '../components/feed-create'
 import { Spacer } from '../components/layout/spacer'
 import { Col } from '../components/layout/col'
-import { useUser } from '../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { LoadingIndicator } from '../components/loading-indicator'
-import { useAlgoFeed } from '../hooks/use-algo-feed'
+import { useAlgoFeed } from 'web/hooks/use-algo-feed'
 import { ContractPageContent } from './[username]/[contractSlug]'
 
 const Home = () => {

@@ -5,7 +5,7 @@ import Textarea from 'react-expanding-textarea'
 
 import { Contract } from 'common/contract'
 import { parseTags } from 'common/util/parse'
-import { useAdmin } from '../../hooks/use-admin'
+import { useAdmin } from 'web/hooks/use-admin'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'

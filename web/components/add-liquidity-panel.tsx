@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
-import { useUser } from '../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { addLiquidity } from 'web/lib/firebase/api-call'
 import { AmountInput } from './amount-input'
 import { Row } from './layout/row'

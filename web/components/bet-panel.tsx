@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 
-import { useUser } from '../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Binary, CPMM, DPM, FullContract } from 'common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
@@ -25,8 +25,8 @@ import {
   getProbability,
   getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
-import { useFocus } from '../hooks/use-focus'
-import { useUserContractBets } from '../hooks/use-user-bets'
+import { useFocus } from 'web/hooks/use-focus'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'

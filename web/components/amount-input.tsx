@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import _ from 'lodash'
-import { useUser } from '../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'

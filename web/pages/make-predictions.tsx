@@ -15,7 +15,7 @@ import { Spacer } from '../components/layout/spacer'
 import { Linkify } from '../components/linkify'
 import { Page } from '../components/page'
 import { Title } from '../components/title'
-import { useUser } from '../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { createContract } from 'web/lib/firebase/api-call'
 import { contractPath } from 'web/lib/firebase/contracts'
 

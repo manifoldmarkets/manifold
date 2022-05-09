@@ -14,7 +14,7 @@ import {
   formatWithCommas,
 } from 'common/util/format'
 import { InfoTooltip } from '../info-tooltip'
-import { useUser } from '../../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import {
   calculateDpmShares,
   calculateDpmPayoutAfterCorrectBet,

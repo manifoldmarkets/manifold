@@ -1,7 +1,7 @@
 import React from 'react'
 import { Page } from '../components/page'
 import { UserPage } from '../components/user-page'
-import { useUser } from '../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
 function SignInCard() {

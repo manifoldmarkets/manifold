@@ -1,7 +1,7 @@
 import { FirstArgument } from 'common/util/types'
 import { Col } from '../../components/layout/col'
 import { Spacer } from '../../components/layout/spacer'
-import { fromPropz } from '../../hooks/use-propz'
+import { fromPropz } from 'web/hooks/use-propz'
 import Analytics, {
   CustomAnalytics,
   FirebaseAnalytics,

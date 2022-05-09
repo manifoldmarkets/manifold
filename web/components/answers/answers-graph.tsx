@@ -7,8 +7,8 @@ import { memo } from 'react'
 import { Bet } from 'common/bet'
 import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
-import { useBets } from '../../hooks/use-bets'
-import { useWindowSize } from '../../hooks/use-window-size'
+import { useBets } from 'web/hooks/use-bets'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 const NUM_LINES = 6
 

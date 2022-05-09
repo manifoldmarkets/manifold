@@ -16,7 +16,7 @@ import { ContractCard } from './contract-card'
 import {
   Sort,
   useQueryAndSortParams,
-} from '../../hooks/use-sort-and-query-params'
+} from 'web/hooks/use-sort-and-query-params'
 import { Answer } from 'common/answer'
 import { LoadingIndicator } from '../loading-indicator'
 

@@ -5,7 +5,7 @@ import { Contract, getContractsBySlugs } from 'web/lib/firebase/contracts'
 import { Page } from '../components/page'
 import { FeedPromo } from '../components/feed-create'
 import { Col } from '../components/layout/col'
-import { useUser } from '../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from '../components/nav/manifold-logo'
 
 export async function getStaticProps() {
