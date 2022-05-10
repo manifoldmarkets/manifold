@@ -4,10 +4,10 @@ import * as _ from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Bet } from '../../../common/bet'
-import { Contract } from '../../../common/contract'
-import { getLoanPayouts, getPayouts } from '../../../common/payouts'
-import { filterDefined } from '../../../common/util/array'
+import { Bet } from 'common/bet'
+import { Contract } from 'common/contract'
+import { getLoanPayouts, getPayouts } from 'common/payouts'
+import { filterDefined } from 'common/util/array'
 
 type DocRef = admin.firestore.DocumentReference
 
