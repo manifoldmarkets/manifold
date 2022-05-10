@@ -9,7 +9,8 @@ import { User } from '../../../common/user'
 import { batchedWaitAll } from '../../../common/util/promise'
 import { Contract } from '../../../common/contract'
 import { updateWordScores } from '../update-recommendations'
-import { getFeedContracts, doUserFeedUpdate } from '../update-feed'
+import { doUserFeedUpdate } from '../update-feed'
+import { getFeedContracts } from 'functions/src/get-feed-data'
 
 const firestore = admin.firestore()
 

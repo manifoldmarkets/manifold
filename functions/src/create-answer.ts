@@ -12,8 +12,8 @@ import { getNewMultiBetInfo } from '../../common/new-bet'
 import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
 import { getContract, getValues } from './utils'
 import { sendNewAnswerEmail } from './emails'
-import { Bet } from 'common/bet'
-import { hasUserHitManaLimit } from 'common/calculate'
+import { Bet } from '../../common/bet'
+import { hasUserHitManaLimit } from '../../common/calculate'
 
 export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (

@@ -11,8 +11,8 @@ import {
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { Bet } from '../../common/bet'
 import { redeemShares } from './redeem-shares'
-import { Fees } from 'common/fees'
-import { hasUserHitManaLimit } from 'common/calculate'
+import { Fees } from '../../common/fees'
+import { hasUserHitManaLimit } from '../../common/calculate'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
