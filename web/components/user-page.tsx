@@ -21,6 +21,9 @@ import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
 import { LoadingIndicator } from './loading-indicator'
 import { useRouter } from 'next/router'
 import _ from 'lodash'
+import { BetsList } from './bets-list'
+import { Bet } from 'common/bet'
+import { getUserBets } from 'web/lib/firebase/bets'
 
 export function UserLink(props: {
   name: string
@@ -51,6 +54,7 @@ export function UserPage(props: {
   const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
     'loading'
   )
+  const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
@@ -59,6 +63,7 @@ export function UserPage(props: {
     if (!user) return
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
+    getUserBets(user.id).then(setUsersBets)
   }, [user])
 
   useEffect(() => {
@@ -218,6 +223,13 @@ export function UserPage(props: {
                 ),
                 tabIcon: (
                   <div className="px-0.5 font-bold">{usersComments.length}</div>
+                ),
+              },
+              {
+                title: 'Bets',
+                content: <BetsList user={user} />,
+                tabIcon: (
+                  <div className="px-0.5 font-bold">{usersBets.length}</div>
                 ),
               },
             ]}
