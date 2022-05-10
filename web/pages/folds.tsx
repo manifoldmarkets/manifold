@@ -41,9 +41,12 @@ export default function Folds(props: {
 }) {
   const [curatorsDict, setCuratorsDict] = useState(props.curatorsDict)
 
-  const folds = useFolds() ?? props.folds
+  let folds = useFolds() ?? props.folds
   const user = useUser()
   const followedFoldIds = useFollowedFoldIds(user) || []
+  // First sort by follower count, then list followed folds first
+  folds = _.sortBy(folds, (fold) => -1 * fold.followCount)
+  folds = _.sortBy(folds, (fold) => !followedFoldIds.includes(fold.id))
 
   useEffect(() => {
     // Load User object for curator of new Folds.
@@ -58,7 +61,7 @@ export default function Folds(props: {
         }
       )
     }
-  }, [curatorsDict, folds])
+  }, [curatorsDict])
 
   const [query, setQuery] = useState('')
   // Copied from contracts-list.tsx; extract if we copy this again
@@ -67,11 +70,7 @@ export default function Folds(props: {
     return queryWords.every((word) => corpus.toLowerCase().includes(word))
   }
 
-  // List followed folds first, then folds with the highest follower count
-  const matches = _.sortBy(folds, [
-    (fold) => !followedFoldIds.includes(fold.id),
-    (fold) => -1 * fold.followCount,
-  ]).filter(
+  const matches = folds.filter(
     (f) =>
       check(f.name) ||
       check(f.about || '') ||
