@@ -29,7 +29,5 @@ export const getNewLiquidityProvision = (
 
   const newTotalLiquidity = (totalLiquidity ?? 0) + amount
 
-  const newBalance = user.balance - amount
-
-  return { newLiquidityProvision, newPool, newP, newBalance, newTotalLiquidity }
+  return { newLiquidityProvision, newPool, newP, newTotalLiquidity }
 }
