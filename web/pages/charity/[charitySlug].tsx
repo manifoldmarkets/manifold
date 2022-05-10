@@ -19,9 +19,7 @@ import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
 import { Donation } from 'web/components/charity/feed-items'
 import Image from 'next/image'
-
-export const manaToUSD = (mana: number) =>
-  (mana / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+import { manaToUSD } from '../../../common/util/format'
 
 export default function CharityPageWrapper() {
   const router = useRouter()
