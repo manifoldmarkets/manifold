@@ -115,12 +115,7 @@ export const sendWelcomeEmail = async (
   user: User,
   privateUser: PrivateUser
 ) => {
-  if (
-    !privateUser ||
-    privateUser.unsubscribedFromResolutionEmails ||
-    !privateUser.email
-  )
-    return
+  if (!privateUser || !privateUser.email) return
 
   const { name, id: userId } = user
   const firstName = name.split(' ')[0]
@@ -133,9 +128,11 @@ export const sendWelcomeEmail = async (
     'Welcome to Manifold Markets!',
     'welcome',
     {
-      from: 'David from Manifold <david@manifold.markets>',
       name: firstName,
       unsubscribeLink,
+    },
+    {
+      from: 'David from Manifold <david@manifold.markets>',
     }
   )
 }
