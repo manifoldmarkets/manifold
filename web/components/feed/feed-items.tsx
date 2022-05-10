@@ -1,5 +1,5 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import React, { Fragment, useRef, useState } from 'react'
+import React, { Fragment, useEffect, useRef, useState } from 'react'
 import * as _ from 'lodash'
 import {
   BanIcon,
@@ -30,10 +30,8 @@ import { BinaryResolutionOrChance } from '../contract/contract-card'
 import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
 import { UserLink } from '../user-page'
-import { DateTimeTooltip } from '../datetime-tooltip'
 import { Bet } from 'web/lib/firebase/bets'
 import { JoinSpans } from '../join-spans'
-import { fromNow } from 'web/lib/util/time'
 import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
 import { Answer } from 'common/answer'
@@ -51,6 +49,8 @@ import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { calculateCpmmSale } from 'common/calculate-cpmm'
+import { useWindowSize } from 'web/hooks/use-window-size'
+import { useRouter } from 'next/router'
 
 export function FeedItems(props: {
   contract: Contract
@@ -118,17 +118,81 @@ function FeedItem(props: { item: ActivityItem }) {
       return <FeedResolve {...item} />
     case 'commentInput':
       return <CommentInput {...item} />
+    case 'commentThread':
+      return <FeedCommentThread {...item} />
   }
+}
+
+export function FeedCommentThread(props: {
+  contract: Contract
+  comments: Comment[]
+  betsBySameUser: Bet[]
+  truncate?: boolean
+  smallAvatar?: boolean
+}) {
+  const { contract, comments, betsBySameUser, truncate, smallAvatar } = props
+  const [showCommentReplyInput, setShowCommentReplyInput] = useState(false)
+  const [replyToUsername, setReplyToUsername] = useState('')
+  const router = useRouter()
+  const scrollToId = '#' + comments[comments.length - 1].id
+  function scrollAndOpenReplyInput(comment: Comment) {
+    setReplyToUsername(comment.userUsername)
+    // We should replace this with refs to detect if the comment is already in view
+    router.replace(scrollToId, undefined, { shallow: true })
+    setShowCommentReplyInput(true)
+  }
+  return (
+    <div className={'w-full flex-col flex-col space-x-8 pr-6'}>
+      {comments.map((comment, commentIdx) => (
+        <div
+          key={comment.id}
+          id={comment.id}
+          className={clsx('flex space-x-3', commentIdx === 0 ? '' : 'mt-4')}
+        >
+          <FeedComment
+            contract={contract}
+            comment={comment}
+            betsBySameUser={betsBySameUser}
+            onReplyClick={scrollAndOpenReplyInput}
+            smallAvatar={smallAvatar}
+            truncate={truncate}
+          />
+        </div>
+      ))}
+      {showCommentReplyInput && (
+        <div className={' w-full pt-6'}>
+          <CommentInput
+            contract={contract}
+            // Should we allow replies to contain recent bet info?
+            betsByCurrentUser={[]}
+            comments={[]}
+            replyTo={comments[0]}
+            replyToUsername={replyToUsername}
+            autoFocusOnFirstRender={true}
+            answerOutcome={comments[0].answerOutcome}
+          />
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function FeedComment(props: {
   contract: Contract
   comment: Comment
   betsBySameUser: Bet[]
-  truncate: boolean
-  smallAvatar: boolean
+  truncate?: boolean
+  smallAvatar?: boolean
+  onReplyClick?: (comment: Comment) => void
 }) {
-  const { contract, comment, betsBySameUser, truncate, smallAvatar } = props
+  const {
+    contract,
+    comment,
+    betsBySameUser,
+    truncate,
+    smallAvatar,
+    onReplyClick,
+  } = props
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
   let outcome: string | undefined,
     bought: string | undefined,
@@ -200,6 +264,16 @@ export function FeedComment(props: {
           moreHref={contractPath(contract)}
           shouldTruncate={truncate}
         />
+        {onReplyClick && (
+          <button
+            className={
+              'btn btn-ghost btn-xs text-transform: text-xs capitalize text-gray-500'
+            }
+            onClick={() => onReplyClick(comment)}
+          >
+            Reply
+          </button>
+        )}
       </div>
     </>
   )
@@ -209,14 +283,26 @@ export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
   comments: Comment[]
-  // Only for free response comment inputs
+  // Tie a comment to an free response answer outcome
   answerOutcome?: string
+  // Tie a comment to another comment
+  replyTo?: Comment
+  replyToUsername?: string
+  autoFocusOnFirstRender?: boolean
 }) {
-  const { contract, betsByCurrentUser, comments, answerOutcome } = props
+  const {
+    contract,
+    betsByCurrentUser,
+    comments,
+    answerOutcome,
+    replyTo,
+    autoFocusOnFirstRender,
+    replyToUsername,
+  } = props
   const user = useUser()
   const [comment, setComment] = useState('')
-  const [focused, setFocused] = useState(false)
-
+  const [focused, setFocused] = useState(autoFocusOnFirstRender ?? false)
+  const { width } = useWindowSize()
   // Should this be oldest bet or most recent bet?
   const mostRecentCommentableBet = betsByCurrentUser
     .filter((bet) => {
@@ -237,6 +323,12 @@ export function CommentInput(props: {
     .sort((b1, b2) => b1.createdTime - b2.createdTime)
     .pop()
 
+  useEffect(() => {
+    if (!replyToUsername || !user || replyToUsername === user.username) return
+    const replacement = `@${replyToUsername} `
+    setComment(replacement + comment.replace(replacement, ''))
+  }, [user, replyToUsername])
+
   const { id } = mostRecentCommentableBet || { id: undefined }
 
   async function submitComment(betId: string | undefined) {
@@ -244,100 +336,118 @@ export function CommentInput(props: {
       return await firebaseLogin()
     }
     if (!comment) return
-    await createComment(contract.id, comment, user, betId, answerOutcome)
+    await createComment(
+      contract.id,
+      comment,
+      user,
+      betId,
+      answerOutcome,
+      replyTo?.id
+    )
     setComment('')
   }
 
   const { userPosition, userPositionMoney, yesFloorShares, noFloorShares } =
     getBettorsPosition(contract, Date.now(), betsByCurrentUser)
 
+  const shouldCollapseAfterClickOutside = false
+
+  function isMobile() {
+    return width ? width < 768 : false
+  }
+
   return (
     <>
-      <Row className={'flex w-full gap-2'}>
-        <div>
+      <Row className={'mb-2 flex w-full gap-2'}>
+        <div className={'mt-1'}>
           <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
         </div>
         <div className={'min-w-0 flex-1'}>
           <div className="text-sm text-gray-500">
-            {mostRecentCommentableBet && (
-              <BetStatusText
-                contract={contract}
-                bet={mostRecentCommentableBet}
-                isSelf={true}
-              />
-            )}
-            {!mostRecentCommentableBet && user && userPosition > 0 && (
-              <>
-                {'You have ' + userPositionMoney + ' '}
-                <>
-                  {' of '}
-                  <OutcomeLabel
-                    outcome={yesFloorShares > noFloorShares ? 'YES' : 'NO'}
-                    contract={contract}
-                    truncate="short"
-                  />
-                </>
-              </>
-            )}
-            {(answerOutcome === undefined || focused) && (
-              <div className="mt-2">
-                <Textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="textarea textarea-bordered w-full resize-none"
-                  placeholder="Add a comment..."
-                  autoFocus={focused}
-                  rows={answerOutcome == undefined || focused ? 3 : 1}
-                  onFocus={() => setFocused(true)}
-                  onBlur={() => !comment && setFocused(false)}
-                  maxLength={MAX_COMMENT_LENGTH}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                      submitComment(id)
-                    }
-                  }}
+            <div className={'mb-1'}>
+              {mostRecentCommentableBet && (
+                <BetStatusText
+                  contract={contract}
+                  bet={mostRecentCommentableBet}
+                  isSelf={true}
                 />
-              </div>
-            )}
-          </div>
-          {!user && (
-            <button
-              className={
-                'btn btn-outline btn-sm text-transform: mt-1 capitalize'
-              }
-              onClick={() => submitComment(id)}
-            >
-              Sign in to Comment
-            </button>
-          )}
-          {user && answerOutcome === undefined && (
-            <button
-              className={
-                'btn btn-outline btn-sm text-transform: mt-1 capitalize'
-              }
-              onClick={() => submitComment(id)}
-            >
-              Comment
-            </button>
-          )}
-          {user && answerOutcome !== undefined && (
-            <button
-              className={
-                focused
-                  ? 'btn btn-outline btn-sm text-transform: mt-1 capitalize'
-                  : 'btn btn-ghost btn-sm text-transform: mt-1 capitalize'
-              }
-              onClick={() => {
-                if (!focused) setFocused(true)
-                else {
-                  submitComment(id)
-                  setFocused(false)
+              )}
+              {!mostRecentCommentableBet && user && userPosition > 0 && (
+                <>
+                  {'You have ' + userPositionMoney + ' '}
+                  <>
+                    {' of '}
+                    <OutcomeLabel
+                      outcome={yesFloorShares > noFloorShares ? 'YES' : 'NO'}
+                      contract={contract}
+                      truncate="short"
+                    />
+                  </>
+                </>
+              )}
+            </div>
+
+            <Row className="gap-1.5">
+              <Textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="textarea textarea-bordered w-full resize-none"
+                placeholder={
+                  replyTo || answerOutcome
+                    ? 'Write a reply... '
+                    : 'Write a comment...'
                 }
-              }}
-            >
-              {!focused ? 'Add Comment' : 'Comment'}
-            </button>
-          )}
+                autoFocus={focused}
+                rows={focused ? 3 : 1}
+                onFocus={() => setFocused(true)}
+                onBlur={() =>
+                  shouldCollapseAfterClickOutside && setFocused(false)
+                }
+                maxLength={MAX_COMMENT_LENGTH}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !isMobile()) {
+                    submitComment(id)
+                  }
+                }}
+              />
+              <div
+                className={clsx(
+                  'flex justify-center',
+                  focused ? 'items-end' : 'items-center'
+                )}
+              >
+                {!user && (
+                  <button
+                    className={
+                      'btn btn-outline btn-sm text-transform: capitalize'
+                    }
+                    onClick={() => submitComment(id)}
+                  >
+                    Sign in to Comment
+                  </button>
+                )}
+                {user && (
+                  <button
+                    className={clsx(
+                      'btn text-transform: block capitalize md:hidden lg:hidden',
+                      focused && comment
+                        ? 'btn-outline btn-sm '
+                        : 'btn-ghost btn-sm text-gray-500'
+                    )}
+                    onClick={() => {
+                      if (!focused) return
+                      else {
+                        submitComment(id)
+                        setFocused(false)
+                      }
+                    }}
+                  >
+                    {replyTo || answerOutcome ? 'Reply' : 'Comment'}
+                  </button>
+                )}
+              </div>
+            </Row>
+          </div>
         </div>
       </Row>
     </>
@@ -771,14 +881,17 @@ function FeedAnswerGroup(props: {
   answer: Answer
   items: ActivityItem[]
   type: string
+  betsByCurrentUser?: Bet[]
+  comments?: Comment[]
 }) {
-  const { answer, items, contract, type } = props
+  const { answer, items, contract, type, betsByCurrentUser, comments } = props
   const { username, avatarUrl, name, text } = answer
 
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
-
+  const [showReply, setShowReply] = useState(false)
+  const isFreeResponseContractPage = type === 'answergroup' && comments
   return (
     <Col
       className={
@@ -803,7 +916,7 @@ function FeedAnswerGroup(props: {
             <Avatar username={username} avatarUrl={avatarUrl} />
           </div>
         </div>
-        <Col className="min-w-0 flex-1 gap-2">
+        <Col className="min-w-0 flex-1 lg:gap-1">
           <div className="text-sm text-gray-500">
             <UserLink username={username} name={name} /> answered
           </div>
@@ -813,26 +926,70 @@ function FeedAnswerGroup(props: {
               <Linkify text={text} />
             </span>
 
-            <Row className="align-items justify-end gap-4">
-              <span
-                className={clsx(
-                  'text-2xl',
-                  tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
-                )}
-              >
-                {probPercent}
-              </span>
-              <BuyButton
-                className={clsx(
-                  'btn-sm flex-initial !px-6 sm:flex',
-                  tradingAllowed(contract) ? '' : '!hidden'
-                )}
-                onClick={() => setOpen(true)}
-              />
+            <Row className="items-center justify-center gap-4">
+              {isFreeResponseContractPage && (
+                <div className={'sm:hidden md:hidden lg:hidden'}>
+                  <button
+                    className={
+                      'btn btn-ghost btn-xs text-transform: text-xs capitalize text-gray-500'
+                    }
+                    onClick={() => setShowReply(true)}
+                  >
+                    Reply
+                  </button>
+                </div>
+              )}
+
+              <div className={'align-items flex w-full justify-end gap-4 '}>
+                <span
+                  className={clsx(
+                    'text-2xl',
+                    tradingAllowed(contract)
+                      ? 'text-green-500'
+                      : 'text-gray-500'
+                  )}
+                >
+                  {probPercent}
+                </span>
+                <BuyButton
+                  className={clsx(
+                    'btn-sm flex-initial !px-6 sm:flex',
+                    tradingAllowed(contract) ? '' : '!hidden'
+                  )}
+                  onClick={() => setOpen(true)}
+                />
+              </div>
             </Row>
           </Col>
+          {isFreeResponseContractPage && (
+            <div
+              className={'justify-initial hidden sm:block md:block lg:block'}
+            >
+              <button
+                className={
+                  'btn btn-ghost btn-xs text-transform: text-xs capitalize text-gray-500'
+                }
+                onClick={() => setShowReply(true)}
+              >
+                Reply
+              </button>
+            </div>
+          )}
         </Col>
       </Row>
+
+      {showReply && (
+        <div className={'ml-8'}>
+          <CommentInput
+            contract={contract}
+            betsByCurrentUser={betsByCurrentUser ?? []}
+            comments={comments ?? []}
+            answerOutcome={answer.number + ''}
+            autoFocusOnFirstRender={true}
+            replyToUsername={answer.username}
+          />
+        </div>
+      )}
 
       {items.map((item, index) => (
         <div

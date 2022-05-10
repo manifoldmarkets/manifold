@@ -18,6 +18,7 @@ export type ActivityItem =
   | CloseItem
   | ResolveItem
   | CommentInputItem
+  | CommentThreadItem
 
 type BaseActivityItem = {
   id: string
@@ -53,8 +54,14 @@ export type CommentItem = BaseActivityItem & {
   type: 'comment'
   comment: Comment
   betsBySameUser: Bet[]
-  truncate: boolean
-  smallAvatar: boolean
+  truncate?: boolean
+  smallAvatar?: boolean
+}
+
+export type CommentThreadItem = BaseActivityItem & {
+  type: 'commentThread'
+  comments: Comment[]
+  betsBySameUser: Bet[]
 }
 
 export type BetGroupItem = BaseActivityItem & {
@@ -67,6 +74,8 @@ export type AnswerGroupItem = BaseActivityItem & {
   type: 'answergroup' | 'answer'
   answer: Answer
   items: ActivityItem[]
+  betsByCurrentUser?: Bet[]
+  comments?: Comment[]
 }
 
 export type CloseItem = BaseActivityItem & {
@@ -271,41 +280,23 @@ function getAnswerAndCommentInputGroups(
     getOutcomeProbability(contract, outcome)
   )
 
-  function collateCommentsSectionForOutcome(outcome: string) {
-    const answerBets = bets.filter((bet) => bet.outcome === outcome)
-    const answerComments = comments.filter(
-      (comment) =>
-        comment.answerOutcome === outcome ||
-        answerBets.some((bet) => bet.id === comment.betId)
-    )
-    let items = []
-    items.push({
-      type: 'commentInput' as const,
-      id: 'commentInputFor' + outcome,
-      contract,
-      betsByCurrentUser: user
-        ? bets.filter((bet) => bet.userId === user.id)
-        : [],
-      comments: comments,
-      answerOutcome: outcome,
-    })
-    items.push(
-      ...getCommentsWithPositions(
-        answerBets,
-        answerComments,
-        contract
-      ).reverse()
-    )
-    return items
-  }
-
   const answerGroups = outcomes
     .map((outcome) => {
       const answer = contract.answers?.find(
         (answer) => answer.id === outcome
       ) as Answer
 
-      const items = collateCommentsSectionForOutcome(outcome)
+      const answerBets = bets.filter((bet) => bet.outcome === outcome)
+      const answerComments = comments.filter(
+        (comment) =>
+          comment.answerOutcome === outcome ||
+          answerBets.some((bet) => bet.id === comment.betId)
+      )
+      const items = getCommentThreads(
+        answerBets,
+        answerComments,
+        contract
+      ).reverse()
 
       return {
         id: outcome,
@@ -314,6 +305,8 @@ function getAnswerAndCommentInputGroups(
         answer,
         items,
         user,
+        betsByCurrentUser: answerBets.filter((bet) => bet.userId === user?.id),
+        comments: answerComments,
       }
     })
     .filter((group) => group.answer) as ActivityItem[]
@@ -367,22 +360,24 @@ function groupBetsAndComments(
   return abbrItems
 }
 
-function getCommentsWithPositions(
+function getCommentThreads(
   bets: Bet[],
   comments: Comment[],
   contract: Contract
 ) {
   const betsByUserId = _.groupBy(bets, (bet) => bet.userId)
-
-  const items = comments.map((comment) => ({
-    type: 'comment' as const,
+  const parentComments = comments.filter((comment) => !comment.replyToCommentId)
+  const childrenComments = comments.filter(
+    (comment) => comment.replyToCommentId
+  )
+  const items = parentComments.map((comment) => ({
+    type: 'commentThread' as const,
     id: comment.id,
     contract: contract,
-    comment,
-    betsBySameUser: bets.length === 0 ? [] : betsByUserId[comment.userId] ?? [],
-    truncate: false,
-    hideOutcome: false,
-    smallAvatar: false,
+    comments: [comment].concat(
+      childrenComments.filter((child) => child.replyToCommentId === comment.id)
+    ),
+    betsBySameUser: betsByUserId[comment.userId] || [],
   }))
 
   return items
@@ -563,7 +558,7 @@ export function getSpecificContractActivityItems(
       const nonFreeResponseBets =
         contract.outcomeType === 'FREE_RESPONSE' ? [] : bets
       items.push(
-        ...getCommentsWithPositions(
+        ...getCommentThreads(
           nonFreeResponseBets,
           nonFreeResponseComments,
           contract
