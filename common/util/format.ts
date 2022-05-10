@@ -16,6 +16,13 @@ export function formatWithCommas(amount: number) {
   return formatter.format(Math.floor(amount)).replace('$', '')
 }
 
+export function manaToUSD(mana: number) {
+  return (mana / 100).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  })
+}
+
 export function formatPercent(zeroToOne: number) {
   // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
   const decimalPlaces = zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
