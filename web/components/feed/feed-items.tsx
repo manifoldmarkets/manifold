@@ -166,43 +166,41 @@ export function FeedComment(props: {
         avatarUrl={userAvatarUrl}
       />
       <div className="min-w-0 flex-1">
-        <div>
-          <p className="mt-0.5 text-sm text-gray-500">
-            <UserLink
-              className="text-gray-500"
-              username={userUsername}
-              name={userName}
-            />{' '}
-            {!matchedBet && userPosition > 0 && (
+        <p className="mt-0.5 text-sm text-gray-500">
+          <UserLink
+            className="text-gray-500"
+            username={userUsername}
+            name={userName}
+          />{' '}
+          {!matchedBet && userPosition > 0 && (
+            <>
+              {'had ' + userPositionMoney + ' '}
               <>
-                {'had ' + userPositionMoney + ' '}
-                <>
-                  {' of '}
-                  <OutcomeLabel
-                    outcome={yesFloorShares > noFloorShares ? 'YES' : 'NO'}
-                    contract={contract}
-                    truncate="short"
-                  />
-                </>
+                {' of '}
+                <OutcomeLabel
+                  outcome={yesFloorShares > noFloorShares ? 'YES' : 'NO'}
+                  contract={contract}
+                  truncate="short"
+                />
+              </>
+            </>
+          )}
+          <>
+            {bought} {money}
+            {outcome && !hideOutcome && (
+              <>
+                {' '}
+                of{' '}
+                <OutcomeLabel
+                  outcome={outcome ? outcome : ''}
+                  contract={contract}
+                  truncate="short"
+                />
               </>
             )}
-            <>
-              {bought} {money}
-              {outcome && !hideOutcome && (
-                <>
-                  {' '}
-                  of{' '}
-                  <OutcomeLabel
-                    outcome={outcome ? outcome : ''}
-                    contract={contract}
-                    truncate="short"
-                  />
-                </>
-              )}
-            </>
-            <RelativeTimestamp time={createdTime} />
-          </p>
-        </div>
+          </>
+          <RelativeTimestamp time={createdTime} />
+        </p>
         <TruncatedComment
           comment={text}
           moreHref={contractPath(contract)}
@@ -262,9 +260,7 @@ export function CommentInput(props: {
   return (
     <>
       <Row className={'flex w-full gap-2'}>
-        <div>
-          <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
-        </div>
+        <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
         <div className={'min-w-0 flex-1'}>
           <div className="text-sm text-gray-500">
             {mostRecentCommentableBet && (
@@ -413,32 +409,27 @@ export function FeedBet(props: {
   return (
     <>
       <Row className={'flex w-full gap-2 pt-3'}>
-        <div>
-          {isSelf ? (
-            <Avatar
-              className={clsx(smallAvatar && 'ml-1')}
-              size={smallAvatar ? 'sm' : undefined}
-              avatarUrl={user.avatarUrl}
-              username={user.username}
-            />
-          ) : bettor ? (
-            <Avatar
-              className={clsx(smallAvatar && 'ml-1')}
-              size={smallAvatar ? 'sm' : undefined}
-              avatarUrl={bettor.avatarUrl}
-              username={bettor.username}
-            />
-          ) : (
-            <div className="relative px-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-                <UserIcon
-                  className="h-5 w-5 text-gray-500"
-                  aria-hidden="true"
-                />
-              </div>
+        {isSelf ? (
+          <Avatar
+            className={clsx(smallAvatar && 'ml-1')}
+            size={smallAvatar ? 'sm' : undefined}
+            avatarUrl={user.avatarUrl}
+            username={user.username}
+          />
+        ) : bettor ? (
+          <Avatar
+            className={clsx(smallAvatar && 'ml-1')}
+            size={smallAvatar ? 'sm' : undefined}
+            avatarUrl={bettor.avatarUrl}
+            username={bettor.username}
+          />
+        ) : (
+          <div className="relative px-1">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+              <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
             </div>
-          )}
-        </div>
+          </div>
+        )}
         <div className={'min-w-0 flex-1 py-1.5'}>
           <BetStatusText
             bet={bet}
@@ -562,17 +553,15 @@ export function FeedQuestion(props: {
           </div>
         </div>
         <Col className="items-start justify-between gap-2 sm:flex-row sm:gap-4">
-          <Col>
-            <SiteLink
-              href={
-                props.contractPath ? props.contractPath : contractPath(contract)
-              }
-              onClick={() => trackClick(contract.id)}
-              className="text-lg text-indigo-700 sm:text-xl"
-            >
-              {question}
-            </SiteLink>
-          </Col>
+          <SiteLink
+            href={
+              props.contractPath ? props.contractPath : contractPath(contract)
+            }
+            onClick={() => trackClick(contract.id)}
+            className="text-lg text-indigo-700 sm:text-xl"
+          >
+            {question}
+          </SiteLink>
           {isBinary && (
             <BinaryResolutionOrChance
               className="items-center"
@@ -807,9 +796,7 @@ function FeedAnswerGroup(props: {
 
       <Row className="my-4 gap-3">
         <div className="px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-            <Avatar username={username} avatarUrl={avatarUrl} />
-          </div>
+          <Avatar username={username} avatarUrl={avatarUrl} />
         </div>
         <Col className="min-w-0 flex-1 gap-2">
           <div className="text-sm text-gray-500">
