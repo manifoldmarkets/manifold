@@ -1,12 +1,12 @@
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
-import { Bet } from '../../common/bet'
-import { getProbability } from '../../common/calculate'
+import { Bet } from 'common/bet'
+import { getProbability } from 'common/calculate'
 
-import { Binary, CPMM, FullContract } from '../../common/contract'
-import { noFees } from '../../common/fees'
-import { User } from '../../common/user'
+import { Binary, CPMM, FullContract } from 'common/contract'
+import { noFees } from 'common/fees'
+import { User } from 'common/user'
 
 export const redeemShares = async (userId: string, contractId: string) => {
   return await firestore.runTransaction(async (transaction) => {

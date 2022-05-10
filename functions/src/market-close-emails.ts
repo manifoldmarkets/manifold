@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract } from '../../common/contract'
+import { Contract } from 'common/contract'
 import { getPrivateUser, getUserByUsername } from './utils'
 import { sendMarketCloseEmail } from './emails'
 
