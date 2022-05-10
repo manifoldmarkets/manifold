@@ -20,25 +20,21 @@ export function ActivityFeed(props: {
   const user = useUser()
 
   return (
-    <Col className="items-center">
-      <Col className="w-full max-w-3xl">
-        <Col className="w-full divide-y divide-gray-300 self-center bg-white">
-          {feed.map((item) => (
-            <div key={item.contract.id} className="py-6 px-2 sm:px-4">
-              <ContractActivity
-                user={user}
-                contract={item.contract}
-                bets={item.recentBets}
-                comments={item.recentComments}
-                mode={mode}
-                contractPath={
-                  getContractPath ? getContractPath(item.contract) : undefined
-                }
-              />
-            </div>
-          ))}
-        </Col>
-      </Col>
+    <Col className="divide-y divide-gray-300 bg-white">
+      {feed.map((item) => (
+        <ContractActivity
+          key={item.contract.id}
+          className="py-6 px-2 sm:px-4"
+          user={user}
+          contract={item.contract}
+          bets={item.recentBets}
+          comments={item.recentComments}
+          mode={mode}
+          contractPath={
+            getContractPath ? getContractPath(item.contract) : undefined
+          }
+        />
+      ))}
     </Col>
   )
 }
