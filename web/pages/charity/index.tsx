@@ -47,7 +47,7 @@ export default function Charity(props: {
           charity.description.toLowerCase().includes(query.toLowerCase()) ||
           (charity.tags as string[])?.includes(query.toLowerCase())
       ),
-    [query]
+    [charities, query]
   )
 
   return (
