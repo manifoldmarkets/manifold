@@ -17,39 +17,7 @@ export function ActivityFeed(props: {
   getContractPath?: (contract: Contract) => string
 }) {
   const { feed, mode, getContractPath } = props
-
   const user = useUser()
-
-  return (
-    <FeedContainer
-      feed={feed}
-      renderItem={({ contract, recentBets, recentComments }) => (
-        <ContractActivity
-          user={user}
-          contract={contract}
-          bets={recentBets}
-          comments={recentComments}
-          mode={mode}
-          contractPath={getContractPath ? getContractPath(contract) : undefined}
-        />
-      )}
-    />
-  )
-}
-
-function FeedContainer(props: {
-  feed: {
-    contract: Contract
-    recentBets: Bet[]
-    recentComments: Comment[]
-  }[]
-  renderItem: (item: {
-    contract: Contract
-    recentBets: Bet[]
-    recentComments: Comment[]
-  }) => any
-}) {
-  const { feed, renderItem } = props
 
   return (
     <Col className="items-center">
@@ -57,7 +25,16 @@ function FeedContainer(props: {
         <Col className="w-full divide-y divide-gray-300 self-center bg-white">
           {feed.map((item) => (
             <div key={item.contract.id} className="py-6 px-2 sm:px-4">
-              {renderItem(item)}
+              <ContractActivity
+                user={user}
+                contract={item.contract}
+                bets={item.recentBets}
+                comments={item.recentComments}
+                mode={mode}
+                contractPath={
+                  getContractPath ? getContractPath(item.contract) : undefined
+                }
+              />
             </div>
           ))}
         </Col>
