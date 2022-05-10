@@ -65,7 +65,7 @@ export function FeedItems(props: {
   useSaveSeenContract(ref, contract)
 
   return (
-    <div className={clsx('flow-root pr-2 md:pr-0', className)} ref={ref}>
+    <div className={clsx('flow-root', className)} ref={ref}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
           <div
