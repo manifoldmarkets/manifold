@@ -26,7 +26,7 @@ export const updateFeed = functions.pubsub
   .onRun(async () => {
     const users = await getValues<User>(firestore.collection('users'))
 
-    const batchSize = 100
+    const batchSize = 10
     const userBatches: User[][] = []
     for (let i = 0; i < users.length; i += batchSize) {
       userBatches.push(users.slice(i, i + batchSize))
