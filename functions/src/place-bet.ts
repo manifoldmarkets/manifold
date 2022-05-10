@@ -7,12 +7,12 @@ import {
   getNewBinaryCpmmBetInfo,
   getNewBinaryDpmBetInfo,
   getNewMultiBetInfo,
-  getLoanAmount,
 } from '../../common/new-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { Bet } from '../../common/bet'
 import { redeemShares } from './redeem-shares'
 import { Fees } from '../../common/fees'
+import { hasUserHitManaLimit } from '../../common/calculate'
 
 export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -69,6 +69,13 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
           )
           if (!answerSnap.exists)
             return { status: 'error', message: 'Invalid contract' }
+
+          const { status, message } = hasUserHitManaLimit(
+            contract,
+            yourBets,
+            amount
+          )
+          if (status === 'error') return { status, message: message }
         }
 
         const newBetDoc = firestore

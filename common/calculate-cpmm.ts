@@ -74,7 +74,7 @@ export function getCpmmLiquidityFee(
   const totalFees = liquidityFee + platformFee + creatorFee
   const remainingBet = bet - totalFees
 
-  return { remainingBet, fees }
+  return { remainingBet, totalFees, fees }
 }
 
 export function calculateCpmmSharesAfterFee(
