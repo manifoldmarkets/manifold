@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 
-import { Contract } from '../../common/contract'
-import { PrivateUser, User } from '../../common/user'
+import { Contract } from 'common/contract'
+import { PrivateUser, User } from 'common/user'
 
 export const isProd =
   admin.instanceId().app.options.projectId === 'mantic-markets'

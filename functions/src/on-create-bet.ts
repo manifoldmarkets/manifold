@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
 import { getContract } from './utils'
-import { Bet } from '../../common/bet'
+import { Bet } from 'common/bet'
 
 const firestore = admin.firestore()
 
