@@ -53,9 +53,7 @@ export const ContractOverview = (props: {
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
 
-            {tradingAllowed(contract) && (
-              <BetRow contract={contract} labelClassName="hidden" />
-            )}
+            {tradingAllowed(contract) && <BetRow contract={contract} />}
           </Row>
         ) : (
           outcomeType === 'FREE_RESPONSE' &&
