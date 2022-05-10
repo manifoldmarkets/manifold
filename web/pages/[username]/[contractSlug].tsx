@@ -131,12 +131,6 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
     </Col>
   ) : null
 
-  // Create a map of userIds to total profits (including sales)
-  const betsByUser = _.groupBy(bets, 'userId')
-  const userProfits = _.mapValues(betsByUser, (bets) =>
-    _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
-  )
-
   return (
     <Page rightSidebar={rightSidebar}>
       {showConfetti && (
@@ -187,7 +181,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
         {isResolved && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
-              <ContractLeaderboard userProfits={userProfits} />
+              <ContractLeaderboard contract={contract} bets={bets} />
               <ContractTopTrades
                 contract={contract}
                 bets={bets}
@@ -209,25 +203,31 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
   )
 }
 
-function ContractLeaderboard(props: { userProfits: { [id: string]: number } }) {
-  const { userProfits } = props
+function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
   const [users, setUsers] = useState<User[]>()
 
-  useEffect(() => {
-    // Find the 5 users with the most profits
-    const top5Ids = _.entries(userProfits)
-      .sort(([i1, p1], [i2, p2]) => p2 - p1)
-      .filter(([, p]) => p > 0)
-      .slice(0, 5)
-      .map(([id]) => id)
+  // Create a map of userIds to total profits (including sales)
+  const betsByUser = _.groupBy(bets, 'userId')
+  const userProfits = _.mapValues(betsByUser, (bets) =>
+    _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
+  )
 
+  // Find the 5 users with the most profits
+  const top5Ids = _.entries(userProfits)
+    .sort(([i1, p1], [i2, p2]) => p2 - p1)
+    .filter(([, p]) => p > 0)
+    .slice(0, 5)
+    .map(([id]) => id)
+
+  useEffect(() => {
     if (top5Ids.length > 0) {
       listUsers(top5Ids).then((users) => {
         const sortedUsers = _.sortBy(users, (user) => -userProfits[user.id])
         setUsers(sortedUsers)
       })
     }
-  }, [userProfits])
+  }, [])
 
   return users && users.length > 0 ? (
     <Leaderboard
