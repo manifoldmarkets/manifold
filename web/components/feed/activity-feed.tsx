@@ -20,11 +20,11 @@ export function ActivityFeed(props: {
   const user = useUser()
 
   return (
-    <Col className="divide-y divide-gray-300 bg-white">
+    <Col className="gap-2">
       {feed.map((item) => (
         <ContractActivity
           key={item.contract.id}
-          className="py-6 px-2 sm:px-4"
+          className="rounded-md bg-white py-6 px-2 sm:px-4"
           user={user}
           contract={item.contract}
           bets={item.recentBets}
