@@ -4,6 +4,7 @@ import { Bet } from './bet'
 import { getProbability } from './calculate'
 import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
 import { Binary, CPMM, FixedPayouts, FullContract } from './contract'
+import { noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
 export const getFixedCancelPayouts = (
@@ -15,13 +16,16 @@ export const getFixedCancelPayouts = (
     payout: lp.amount,
   }))
 
-  return bets
+  const payouts = bets
     .filter((b) => !b.isAnte && !b.isLiquidityProvision)
     .map((bet) => ({
       userId: bet.userId,
       payout: bet.amount,
     }))
-    .concat(liquidityPayouts)
+
+  const creatorPayout = 0
+
+  return { payouts, creatorPayout, liquidityPayouts, collectedFees: noFees }
 }
 
 export const getStandardFixedPayouts = (
@@ -37,7 +41,8 @@ export const getStandardFixedPayouts = (
     payout: shares,
   }))
 
-  const creatorPayout = contract.collectedFees.creatorFee
+  const { collectedFees } = contract
+  const creatorPayout = collectedFees.creatorFee
 
   console.log(
     'resolved',
@@ -50,10 +55,13 @@ export const getStandardFixedPayouts = (
     creatorPayout
   )
 
-  return payouts
-    .map(({ userId, payout }) => ({ userId, payout }))
-    .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
-    .concat(getLiquidityPoolPayouts(contract, outcome, liquidities))
+  const liquidityPayouts = getLiquidityPoolPayouts(
+    contract,
+    outcome,
+    liquidities
+  )
+
+  return { payouts, creatorPayout, liquidityPayouts, collectedFees }
 }
 
 export const getLiquidityPoolPayouts = (
@@ -88,7 +96,8 @@ export const getMktFixedPayouts = (
     return { userId, payout: betP * shares }
   })
 
-  const creatorPayout = contract.collectedFees.creatorFee
+  const { collectedFees } = contract
+  const creatorPayout = collectedFees.creatorFee
 
   console.log(
     'resolved PROB',
@@ -101,10 +110,9 @@ export const getMktFixedPayouts = (
     creatorPayout
   )
 
-  return payouts
-    .map(({ userId, payout }) => ({ userId, payout }))
-    .concat([{ userId: contract.creatorId, payout: creatorPayout }]) // add creator fee
-    .concat(getLiquidityPoolProbPayouts(contract, p, liquidities))
+  const liquidityPayouts = getLiquidityPoolProbPayouts(contract, p, liquidities)
+
+  return { payouts, creatorPayout, liquidityPayouts, collectedFees }
 }
 
 export const getLiquidityPoolProbPayouts = (

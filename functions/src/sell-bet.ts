@@ -1,12 +1,12 @@
 import * as admin from 'firebase-admin'
 import * as functions from 'firebase-functions'
 
-import { Contract } from '../../common/contract'
-import { User } from '../../common/user'
-import { Bet } from '../../common/bet'
-import { getSellBetInfo } from '../../common/sell-bet'
-import { addObjects, removeUndefinedProps } from '../../common/util/object'
-import { Fees } from '../../common/fees'
+import { Contract } from 'common/contract'
+import { User } from 'common/user'
+import { Bet } from 'common/bet'
+import { getSellBetInfo } from 'common/sell-bet'
+import { addObjects, removeUndefinedProps } from 'common/util/object'
+import { Fees } from 'common/fees'
 
 export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (

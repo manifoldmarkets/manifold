@@ -4,10 +4,10 @@ import * as _ from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Bet } from '../../../common/bet'
-import { Contract } from '../../../common/contract'
-import { getLoanPayouts, getPayouts } from '../../../common/payouts'
-import { filterDefined } from '../../../common/util/array'
+import { Bet } from 'common/bet'
+import { Contract } from 'common/contract'
+import { getLoanPayouts, getPayouts } from 'common/payouts'
+import { filterDefined } from 'common/util/array'
 
 type DocRef = admin.firestore.DocumentReference
 
@@ -24,7 +24,8 @@ async function checkIfPayOutAgain(contractRef: DocRef, contract: Contract) {
 
   if (loanedBets.length && contract.resolution) {
     const { resolution, resolutions, resolutionProbability } = contract as any
-    const [payouts] = getPayouts(
+
+    const { payouts } = getPayouts(
       resolution,
       resolutions,
       contract,

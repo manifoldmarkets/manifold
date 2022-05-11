@@ -1,11 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract } from '../../common/contract'
-import { User } from '../../common/user'
-import { removeUndefinedProps } from '../../common/util/object'
+import { Contract } from 'common/contract'
+import { User } from 'common/user'
+import { removeUndefinedProps } from 'common/util/object'
 import { redeemShares } from './redeem-shares'
-import { getNewLiquidityProvision } from '../../common/add-liquidity'
+import { getNewLiquidityProvision } from 'common/add-liquidity'
 
 export const addLiquidity = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -54,18 +54,13 @@ export const addLiquidity = functions.runWith({ minInstances: 1 }).https.onCall(
           .collection(`contracts/${contractId}/liquidity`)
           .doc()
 
-        const {
-          newLiquidityProvision,
-          newPool,
-          newP,
-          newBalance,
-          newTotalLiquidity,
-        } = getNewLiquidityProvision(
-          user,
-          amount,
-          contract,
-          newLiquidityProvisionDoc.id
-        )
+        const { newLiquidityProvision, newPool, newP, newTotalLiquidity } =
+          getNewLiquidityProvision(
+            user,
+            amount,
+            contract,
+            newLiquidityProvisionDoc.id
+          )
 
         if (newP !== undefined && !isFinite(newP)) {
           return {
@@ -83,11 +78,17 @@ export const addLiquidity = functions.runWith({ minInstances: 1 }).https.onCall(
           })
         )
 
+        const newBalance = user.balance - amount
+        const newTotalDeposits = user.totalDeposits - amount
+
         if (!isFinite(newBalance)) {
           throw new Error('Invalid user balance for ' + user.username)
         }
 
-        transaction.update(userDoc, { balance: newBalance })
+        transaction.update(userDoc, {
+          balance: newBalance,
+          totalDeposits: newTotalDeposits,
+        })
 
         transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
 

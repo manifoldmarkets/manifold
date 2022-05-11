@@ -86,6 +86,11 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
               </tr>
 
               <tr>
+                <td>Creator earnings</td>
+                <td>{formatMoney(contract.collectedFees?.creatorFee ?? 0)}</td>
+              </tr>
+
+              <tr>
                 <td>Traders</td>
                 <td>{tradersCount}</td>
               </tr>

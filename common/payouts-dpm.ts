@@ -27,7 +27,12 @@ export const getDpmCancelPayouts = (
     payout: (bet.amount / betSum) * poolTotal,
   }))
 
-  return [payouts, contract.collectedFees ?? noFees]
+  return {
+    payouts,
+    creatorPayout: 0,
+    liquidityPayouts: [],
+    collectedFees: contract.collectedFees ?? noFees,
+  }
 }
 
 export const getDpmStandardPayouts = (
@@ -59,7 +64,10 @@ export const getDpmStandardPayouts = (
     liquidityFee: 0,
   }
 
-  const fees = addObjects<Fees>(finalFees, contract.collectedFees ?? {})
+  const collectedFees = addObjects<Fees>(
+    finalFees,
+    contract.collectedFees ?? {}
+  )
 
   console.log(
     'resolved',
@@ -72,11 +80,12 @@ export const getDpmStandardPayouts = (
     creatorFee
   )
 
-  const totalPayouts = payouts
-    .map(({ userId, payout }) => ({ userId, payout }))
-    .concat([{ userId: contract.creatorId, payout: creatorFee }]) // add creator fee
-
-  return [totalPayouts, fees]
+  return {
+    payouts: payouts.map(({ userId, payout }) => ({ userId, payout })),
+    creatorPayout: creatorFee,
+    liquidityPayouts: [],
+    collectedFees,
+  }
 }
 
 export const getDpmMktPayouts = (
@@ -114,7 +123,10 @@ export const getDpmMktPayouts = (
     liquidityFee: 0,
   }
 
-  const fees = addObjects<Fees>(finalFees, contract.collectedFees ?? {})
+  const collectedFees = addObjects<Fees>(
+    finalFees,
+    contract.collectedFees ?? {}
+  )
 
   console.log(
     'resolved MKT',
@@ -127,11 +139,12 @@ export const getDpmMktPayouts = (
     creatorFee
   )
 
-  const totalPayouts = payouts
-    .map(({ userId, payout }) => ({ userId, payout }))
-    .concat([{ userId: contract.creatorId, payout: creatorFee }]) // add creator fee
-
-  return [totalPayouts, fees]
+  return {
+    payouts: payouts.map(({ userId, payout }) => ({ userId, payout })),
+    creatorPayout: creatorFee,
+    liquidityPayouts: [],
+    collectedFees,
+  }
 }
 
 export const getPayoutsMultiOutcome = (
@@ -169,7 +182,10 @@ export const getPayoutsMultiOutcome = (
     liquidityFee: 0,
   }
 
-  const fees = addObjects<Fees>(finalFees, contract.collectedFees ?? noFees)
+  const collectedFees = addObjects<Fees>(
+    finalFees,
+    contract.collectedFees ?? noFees
+  )
 
   console.log(
     'resolved',
@@ -181,10 +197,10 @@ export const getPayoutsMultiOutcome = (
     'creator fee',
     creatorFee
   )
-
-  const totalPayouts = payouts
-    .map(({ userId, payout }) => ({ userId, payout }))
-    .concat([{ userId: contract.creatorId, payout: creatorFee }]) // add creator fee
-
-  return [totalPayouts, fees]
+  return {
+    payouts: payouts.map(({ userId, payout }) => ({ userId, payout })),
+    creatorPayout: creatorFee,
+    liquidityPayouts: [],
+    collectedFees,
+  }
 }

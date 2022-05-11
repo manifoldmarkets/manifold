@@ -10,17 +10,15 @@ import {
   foldPath,
   getFoldBySlug,
   getFoldContracts,
-} from 'web/lib/firebase/folds'
-import { ActivityFeed } from 'web/components/feed/activity-feed'
-import { TagsList } from 'web/components/tags-list'
-import { Row } from 'web/components/layout/row'
-import { UserLink } from 'web/components/user-page'
-import { getUser, User } from 'web/lib/firebase/users'
-import { Spacer } from 'web/components/layout/spacer'
-import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
-import { useFold } from 'web/hooks/use-fold'
-import { SearchableGrid } from 'web/components/contract/contracts-list'
+} from '../../../lib/firebase/folds'
+import { TagsList } from '../../../components/tags-list'
+import { Row } from '../../../components/layout/row'
+import { UserLink } from '../../../components/user-page'
+import { getUser, User } from '../../../lib/firebase/users'
+import { Spacer } from '../../../components/layout/spacer'
+import { Col } from '../../../components/layout/col'
+import { useUser } from '../../../hooks/use-user'
+import { useFold } from '../../../hooks/use-fold'
 import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
@@ -209,7 +207,7 @@ export default function FoldPage(props: {
         tabs={[
           {
             title: 'Markets',
-            content: <SearchableGrid contracts={contracts} />,
+            content: <div>This view is deprecated.</div>,
             href: foldPath(fold, 'markets'),
           },
           {

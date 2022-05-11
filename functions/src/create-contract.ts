@@ -13,10 +13,10 @@ import {
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
   outcomeType,
-} from '../../common/contract'
-import { slugify } from '../../common/util/slugify'
-import { randomString } from '../../common/util/random'
-import { getNewContract } from '../../common/new-contract'
+} from 'common/contract'
+import { slugify } from 'common/util/slugify'
+import { randomString } from 'common/util/random'
+import { getNewContract } from 'common/new-contract'
 import {
   FIXED_ANTE,
   getAnteBets,
@@ -24,8 +24,8 @@ import {
   getFreeAnswerAnte,
   HOUSE_LIQUIDITY_PROVIDER_ID,
   MINIMUM_ANTE,
-} from '../../common/antes'
-import { getNoneAnswer } from '../../common/answer'
+} from 'common/antes'
+import { getNoneAnswer } from 'common/answer'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })
@@ -39,6 +39,7 @@ export const createContract = functions
         ante: number
         closeTime: number
         tags?: string[]
+        manaLimitPerUser?: number
       },
       context
     ) => {
@@ -48,7 +49,14 @@ export const createContract = functions
       const creator = await getUser(userId)
       if (!creator) return { status: 'error', message: 'User not found' }
 
-      let { question, description, initialProb, closeTime, tags } = data
+      let {
+        question,
+        description,
+        initialProb,
+        closeTime,
+        tags,
+        manaLimitPerUser,
+      } = data
 
       if (!question || typeof question != 'string')
         return { status: 'error', message: 'Missing or invalid question field' }
@@ -115,10 +123,11 @@ export const createContract = functions
         initialProb,
         ante,
         closeTime,
-        tags ?? []
+        tags ?? [],
+        manaLimitPerUser ?? 0
       )
 
-      if (!isFree && ante) await chargeUser(creator.id, ante)
+      if (!isFree && ante) await chargeUser(creator.id, ante, true)
 
       await contractRef.create(contract)
 
