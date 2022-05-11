@@ -132,9 +132,10 @@ export const createContract = functions
         ante,
         closeTime,
         tags ?? [],
-        manaLimitPerUser ?? 0,
+        100,
         min ?? 0,
-        max ?? 100
+        max ?? 100,
+        manaLimitPerUser ?? 0
       )
 
       if (!isFree && ante) await chargeUser(creator.id, ante, true)
