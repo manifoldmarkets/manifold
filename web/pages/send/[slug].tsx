@@ -9,6 +9,7 @@ import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
 import { claimManalink } from 'web/lib/firebase/api-call'
 import { useManalink } from 'web/lib/firebase/manalinks'
+import { fromNow } from 'web/lib/util/time'
 
 export default function ClaimPage() {
   const router = useRouter()
@@ -31,18 +32,26 @@ export default function ClaimPage() {
       <Col className="mx-auto max-w-xl gap-2">
         <Title text={`Claim ${manalink.amount} mana`} />
 
-        <div className="min-h-20 group m-4 flex flex-col rounded-xl bg-indigo-500 shadow-lg transition-all hover:bg-indigo-600">
+        <div className="min-h-20 group m-4 flex flex-col rounded-xl bg-gradient-to-br from-indigo-200 via-indigo-400 to-indigo-800 shadow-lg transition-all">
+          <Col className="mx-4 mt-2 -mb-4 text-right text-sm text-gray-100">
+            <div>4 uses left</div>
+            <div>Expires {fromNow(manalink.expiresTime)}</div>
+          </Col>
+
           <img
             className="mb-6 block self-center transition-all group-hover:rotate-12"
             src="/logo-white.svg"
             width={200}
             height={200}
           />
-          <Row className="rounded-b-xl bg-white p-4">
+          <Row className="justify-end rounded-b-xl bg-white p-4">
             <Col>
-              <div className="text-lg text-indigo-500">Gift Card</div>
-              <div>{formatMoney(manalink.amount)}</div>
+              <div className="mb-1 text-xl text-indigo-500">
+                {formatMoney(manalink.amount)}
+              </div>
+              <div>From Austin</div>
             </Col>
+
             <div className="ml-auto">
               <button
                 className={clsx('btn', claiming ? 'loading disabled' : '')}
@@ -61,11 +70,6 @@ export default function ClaimPage() {
             </div>
           </Row>
         </div>
-
-        <p>
-          You can claim {manalink.amount} mana from {manalink.fromId} by
-          clicking the button below.
-        </p>
       </Col>
     </Page>
   )
