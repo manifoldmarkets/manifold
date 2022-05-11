@@ -9,6 +9,7 @@ import { useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 
 export async function getStaticProps() {
+  // These hardcoded markets will be shown in the frontpage for signed-out users:
   const hotContracts = await getContractsBySlugs([
     'if-boris-johnson-is-leader-of-the-c',
     'will-ethereum-merge-to-proofofstake',
@@ -18,6 +19,8 @@ export async function getStaticProps() {
     'how-many-us-supreme-court-justices',
     'who-will-win-the-nba-finals-champio',
     'what-database-will-manifold-be-prim',
+    'will-the-supreme-court-leakers-iden',
+    'will-over-25-of-participants-in-the-163d54309e43',
   ])
 
   return {

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Charity } from 'common/charity'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
-import { manaToUSD } from '../../pages/charity/[charitySlug]'
+import { manaToUSD } from '../../../common/util/format'
 import { Row } from '../layout/row'
 
 export function CharityCard(props: { charity: Charity }) {
