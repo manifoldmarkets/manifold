@@ -9,7 +9,7 @@ import { Contract, FreeResponseContract } from '../../common/contract'
 import { DPM_CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
 import { formatMoney, formatPercent } from '../../common/util/format'
-import { sendTemplateEmail, sendTextEmail } from './send-email'
+import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 
 export const sendMarketResolutionEmail = async (
@@ -130,6 +130,39 @@ export const sendWelcomeEmail = async (
     {
       name: firstName,
       unsubscribeLink,
+    },
+    {
+      from: 'David from Manifold <david@manifold.markets>',
+    }
+  )
+}
+
+// TODO: use manalinks to give out M$500
+export const sendOneWeekBonusEmail = async (
+  user: User,
+  privateUser: PrivateUser
+) => {
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser.unsubscribedFromGenericEmails
+  )
+    return
+
+  const { name, id: userId } = user
+  const firstName = name.split(' ')[0]
+
+  const emailType = 'generic'
+  const unsubscribeLink = `https://us-central1-${PROJECT_ID}.cloudfunctions.net/unsubscribe?id=${userId}&type=${emailType}`
+
+  await sendTemplateEmail(
+    privateUser.email,
+    'Manifold one week anniversary gift',
+    'one-week',
+    {
+      name: firstName,
+      unsubscribeLink,
+      manalink: '', // TODO
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
