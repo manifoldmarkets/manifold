@@ -7,7 +7,10 @@ import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet-panel'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import { ResolutionPanel } from 'web/components/resolution-panel'
+import {
+  NumericResolutionPanel,
+  ResolutionPanel,
+} from 'web/components/resolution-panel'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
 import { listUsers, User } from 'web/lib/firebase/users'
@@ -31,7 +34,13 @@ import { FeedBet, FeedComment } from 'web/components/feed/feed-items'
 import { useUserById } from 'web/hooks/use-users'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { FirstArgument } from 'common/util/types'
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import {
+  BinaryContract,
+  DPM,
+  FreeResponse,
+  FullContract,
+  NumericContract,
+} from 'common/contract'
 import { contractTextDetails } from 'web/components/contract/contract-details'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'

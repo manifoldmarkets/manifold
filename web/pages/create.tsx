@@ -19,6 +19,7 @@ import { Row } from 'web/components/layout/row'
 import { MAX_DESCRIPTION_LENGTH, outcomeType } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
+import { removeUndefinedProps } from 'common/util/object'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
