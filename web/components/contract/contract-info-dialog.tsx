@@ -87,7 +87,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
 
               <tr>
                 <td>Creator earnings</td>
-                <td>{formatMoney(contract.collectedFees.creatorFee)}</td>
+                <td>{formatMoney(contract.collectedFees?.creatorFee ?? 0)}</td>
               </tr>
 
               <tr>
