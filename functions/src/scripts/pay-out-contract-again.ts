@@ -24,7 +24,8 @@ async function checkIfPayOutAgain(contractRef: DocRef, contract: Contract) {
 
   if (loanedBets.length && contract.resolution) {
     const { resolution, resolutions, resolutionProbability } = contract as any
-    const [payouts] = getPayouts(
+
+    const { payouts } = getPayouts(
       resolution,
       resolutions,
       contract,

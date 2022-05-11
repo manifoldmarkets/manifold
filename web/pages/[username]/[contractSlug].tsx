@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
@@ -207,27 +207,30 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
   const [users, setUsers] = useState<User[]>()
 
-  // Create a map of userIds to total profits (including sales)
-  const betsByUser = _.groupBy(bets, 'userId')
-  const userProfits = _.mapValues(betsByUser, (bets) =>
-    _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
-  )
-
-  // Find the 5 users with the most profits
-  const top5Ids = _.entries(userProfits)
-    .sort(([i1, p1], [i2, p2]) => p2 - p1)
-    .filter(([, p]) => p > 0)
-    .slice(0, 5)
-    .map(([id]) => id)
+  const { userProfits, top5Ids } = useMemo(() => {
+    // Create a map of userIds to total profits (including sales)
+    const betsByUser = _.groupBy(bets, 'userId')
+    const userProfits = _.mapValues(betsByUser, (bets) =>
+      _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
+    )
+    // Find the 5 users with the most profits
+    const top5Ids = _.entries(userProfits)
+      .sort(([i1, p1], [i2, p2]) => p2 - p1)
+      .filter(([, p]) => p > 0)
+      .slice(0, 5)
+      .map(([id]) => id)
+    return { userProfits, top5Ids }
+  }, [contract, bets])
 
   useEffect(() => {
+    console.log('foo')
     if (top5Ids.length > 0) {
       listUsers(top5Ids).then((users) => {
         const sortedUsers = _.sortBy(users, (user) => -userProfits[user.id])
         setUsers(sortedUsers)
       })
     }
-  }, [])
+  }, [userProfits, top5Ids])
 
   return users && users.length > 0 ? (
     <Leaderboard

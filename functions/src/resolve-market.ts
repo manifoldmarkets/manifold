@@ -7,7 +7,12 @@ import { User } from 'common/user'
 import { Bet } from 'common/bet'
 import { getUser, isProd, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
-import { getLoanPayouts, getPayouts } from 'common/payouts'
+import {
+  getLoanPayouts,
+  getPayouts,
+  groupPayoutsByUser,
+  Payout,
+} from 'common/payouts'
 import { removeUndefinedProps } from 'common/util/object'
 import { LiquidityProvision } from 'common/liquidity-provision'
 
@@ -89,14 +94,15 @@ export const resolveMarket = functions
         (doc) => doc.data() as LiquidityProvision
       )
 
-      const [payouts, collectedFees] = getPayouts(
-        outcome,
-        resolutions ?? {},
-        contract,
-        bets,
-        liquidities,
-        resolutionProbability
-      )
+      const { payouts, creatorPayout, liquidityPayouts, collectedFees } =
+        getPayouts(
+          outcome,
+          resolutions ?? {},
+          contract,
+          bets,
+          liquidities,
+          resolutionProbability
+        )
 
       await contractDoc.update(
         removeUndefinedProps({
@@ -115,33 +121,32 @@ export const resolveMarket = functions
       const openBets = bets.filter((b) => !b.isSold && !b.sale)
       const loanPayouts = getLoanPayouts(openBets)
 
-      if (!isProd) console.log('payouts:', payouts)
+      if (!isProd)
+        console.log(
+          'payouts:',
+          payouts,
+          'creator payout:',
+          creatorPayout,
+          'liquidity payout:'
+        )
 
-      const groups = _.groupBy(
-        [...payouts, ...loanPayouts],
-        (payout) => payout.userId
-      )
-      const userPayouts = _.mapValues(groups, (group) =>
-        _.sumBy(group, (g) => g.payout)
-      )
+      if (creatorPayout)
+        await processPayouts(
+          [{ userId: creatorId, payout: creatorPayout }],
+          true
+        )
 
-      const groupsWithoutLoans = _.groupBy(payouts, (payout) => payout.userId)
-      const userPayoutsWithoutLoans = _.mapValues(groupsWithoutLoans, (group) =>
-        _.sumBy(group, (g) => g.payout)
-      )
+      await processPayouts(liquidityPayouts, true)
 
-      const payoutPromises = Object.entries(userPayouts).map(
-        ([userId, payout]) => payUser(userId, payout)
-      )
+      const result = await processPayouts([...payouts, ...loanPayouts])
 
-      const result = await Promise.all(payoutPromises)
-        .catch((e) => ({ status: 'error', message: e }))
-        .then(() => ({ status: 'success' }))
+      const userPayoutsWithoutLoans = groupPayoutsByUser(payouts)
 
       await sendResolutionEmails(
         openBets,
         userPayoutsWithoutLoans,
         creator,
+        creatorPayout,
         contract,
         outcome,
         resolutionProbability,
@@ -152,10 +157,23 @@ export const resolveMarket = functions
     }
   )
 
+const processPayouts = async (payouts: Payout[], isDeposit = false) => {
+  const userPayouts = groupPayoutsByUser(payouts)
+
+  const payoutPromises = Object.entries(userPayouts).map(([userId, payout]) =>
+    payUser(userId, payout, isDeposit)
+  )
+
+  return await Promise.all(payoutPromises)
+    .catch((e) => ({ status: 'error', message: e }))
+    .then(() => ({ status: 'success' }))
+}
+
 const sendResolutionEmails = async (
   openBets: Bet[],
   userPayouts: { [userId: string]: number },
   creator: User,
+  creatorPayout: number,
   contract: Contract,
   outcome: string,
   resolutionProbability?: number,
@@ -185,6 +203,7 @@ const sendResolutionEmails = async (
         investment,
         payout,
         creator,
+        creatorPayout,
         contract,
         outcome,
         resolutionProbability,
