@@ -1,48 +1,39 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
 import _ from 'lodash'
 
-import { useContractWithPreload } from '../../hooks/use-contract'
-import { ContractOverview } from '../../components/contract/contract-overview'
-import { BetPanel } from '../../components/bet-panel'
-import { Col } from '../../components/layout/col'
-import { useUser } from '../../hooks/use-user'
-import {
-  NumericResolutionPanel,
-  ResolutionPanel,
-} from '../../components/resolution-panel'
-import { Title } from '../../components/title'
-import { Spacer } from '../../components/layout/spacer'
-import { listUsers, User } from '../../lib/firebase/users'
+import { useContractWithPreload } from 'web/hooks/use-contract'
+import { ContractOverview } from 'web/components/contract/contract-overview'
+import { BetPanel } from 'web/components/bet-panel'
+import { Col } from 'web/components/layout/col'
+import { useUser } from 'web/hooks/use-user'
+import { ResolutionPanel } from 'web/components/resolution-panel'
+import { Title } from 'web/components/title'
+import { Spacer } from 'web/components/layout/spacer'
+import { listUsers, User } from 'web/lib/firebase/users'
 import {
   Contract,
   getContractFromSlug,
   tradingAllowed,
   getBinaryProbPercent,
-} from '../../lib/firebase/contracts'
-import { SEO } from '../../components/SEO'
-import { Page } from '../../components/page'
-import { Bet, listAllBets } from '../../lib/firebase/bets'
-import { Comment, listAllComments } from '../../lib/firebase/comments'
+} from 'web/lib/firebase/contracts'
+import { SEO } from 'web/components/SEO'
+import { Page } from 'web/components/page'
+import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { Comment, listAllComments } from 'web/lib/firebase/comments'
 import Custom404 from '../404'
-import { AnswersPanel } from '../../components/answers/answers-panel'
-import { fromPropz, usePropz } from '../../hooks/use-propz'
-import { Leaderboard } from '../../components/leaderboard'
-import { resolvedPayout } from '../../../common/calculate'
-import { formatMoney } from '../../../common/util/format'
-import { FeedBet, FeedComment } from '../../components/feed/feed-items'
-import { useUserById } from '../../hooks/use-users'
-import { ContractTabs } from '../../components/contract/contract-tabs'
-import { FirstArgument } from '../../../common/util/types'
-import {
-  BinaryContract,
-  DPM,
-  FreeResponse,
-  FullContract,
-  NumericContract,
-} from '../../../common/contract'
-import { contractTextDetails } from '../../components/contract/contract-details'
-import { useWindowSize } from '../../hooks/use-window-size'
+import { AnswersPanel } from 'web/components/answers/answers-panel'
+import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { Leaderboard } from 'web/components/leaderboard'
+import { resolvedPayout } from 'common/calculate'
+import { formatMoney } from 'common/util/format'
+import { FeedBet, FeedComment } from 'web/components/feed/feed-items'
+import { useUserById } from 'web/hooks/use-users'
+import { ContractTabs } from 'web/components/contract/contract-tabs'
+import { FirstArgument } from 'common/util/types'
+import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { contractTextDetails } from 'web/components/contract/contract-details'
+import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
 import { NumericBetPanel } from '../../components/numeric-bet-panel'
 
@@ -235,27 +226,30 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
   const [users, setUsers] = useState<User[]>()
 
-  // Create a map of userIds to total profits (including sales)
-  const betsByUser = _.groupBy(bets, 'userId')
-  const userProfits = _.mapValues(betsByUser, (bets) =>
-    _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
-  )
-
-  // Find the 5 users with the most profits
-  const top5Ids = _.entries(userProfits)
-    .sort(([i1, p1], [i2, p2]) => p2 - p1)
-    .filter(([, p]) => p > 0)
-    .slice(0, 5)
-    .map(([id]) => id)
+  const { userProfits, top5Ids } = useMemo(() => {
+    // Create a map of userIds to total profits (including sales)
+    const betsByUser = _.groupBy(bets, 'userId')
+    const userProfits = _.mapValues(betsByUser, (bets) =>
+      _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
+    )
+    // Find the 5 users with the most profits
+    const top5Ids = _.entries(userProfits)
+      .sort(([i1, p1], [i2, p2]) => p2 - p1)
+      .filter(([, p]) => p > 0)
+      .slice(0, 5)
+      .map(([id]) => id)
+    return { userProfits, top5Ids }
+  }, [contract, bets])
 
   useEffect(() => {
+    console.log('foo')
     if (top5Ids.length > 0) {
       listUsers(top5Ids).then((users) => {
         const sortedUsers = _.sortBy(users, (user) => -userProfits[user.id])
         setUsers(sortedUsers)
       })
     }
-  }, [])
+  }, [userProfits, top5Ids])
 
   return users && users.length > 0 ? (
     <Leaderboard

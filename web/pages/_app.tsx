@@ -1,13 +1,43 @@
 import 'tailwindcss/tailwind.css'
 import type { AppProps } from 'next/app'
+import { useEffect } from 'react'
 import Head from 'next/head'
-import { usePreserveScroll } from '../hooks/use-preserve-scroll'
+import Script from 'next/script'
+import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
+
+function firstLine(msg: string) {
+  return msg.replace(/\r?\n.*/s, '')
+}
+
+function printBuildInfo() {
+  // These are undefined if e.g. dev server
+  if (process.env.NEXT_PUBLIC_VERCEL_ENV) {
+    let env = process.env.NEXT_PUBLIC_VERCEL_ENV
+    let msg = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_MESSAGE
+    let owner = process.env.NEXT_PUBLIC_VERCEL_GIT_REPO_OWNER
+    let repo = process.env.NEXT_PUBLIC_VERCEL_GIT_REPO_SLUG
+    let sha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA
+    let url = `https://github.com/${owner}/${repo}/commit/${sha}`
+    console.info(`Build: ${env} / ${firstLine(msg || '???')} / ${url}`)
+  }
+}
 
 function MyApp({ Component, pageProps }: AppProps) {
   usePreserveScroll()
 
+  useEffect(printBuildInfo)
+
   return (
     <>
+      <Script src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D" />
+      <Script id="google-analytics">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-SSFK1Q138D');
+        `}
+      </Script>
       <Head>
         <title>Manifold Markets — A market for every question</title>
 

@@ -1,19 +1,19 @@
 import _ from 'lodash'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Fold } from '../../common/fold'
-import { CreateFoldButton } from '../components/folds/create-fold-button'
-import { FollowFoldButton } from '../components/folds/follow-fold-button'
-import { Col } from '../components/layout/col'
-import { Row } from '../components/layout/row'
-import { Page } from '../components/page'
-import { TagsList } from '../components/tags-list'
-import { Title } from '../components/title'
-import { UserLink } from '../components/user-page'
-import { useFolds, useFollowedFoldIds } from '../hooks/use-fold'
-import { useUser } from '../hooks/use-user'
-import { foldPath, listAllFolds } from '../lib/firebase/folds'
-import { getUser, User } from '../lib/firebase/users'
+import { Fold } from 'common/fold'
+import { CreateFoldButton } from 'web/components/folds/create-fold-button'
+import { FollowFoldButton } from 'web/components/folds/follow-fold-button'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Page } from 'web/components/page'
+import { TagsList } from 'web/components/tags-list'
+import { Title } from 'web/components/title'
+import { UserLink } from 'web/components/user-page'
+import { useFolds, useFollowedFoldIds } from 'web/hooks/use-fold'
+import { useUser } from 'web/hooks/use-user'
+import { foldPath, listAllFolds } from 'web/lib/firebase/folds'
+import { getUser, User } from 'web/lib/firebase/users'
 
 export async function getStaticProps() {
   const folds = await listAllFolds().catch((_) => [])
@@ -41,12 +41,9 @@ export default function Folds(props: {
 }) {
   const [curatorsDict, setCuratorsDict] = useState(props.curatorsDict)
 
-  let folds = useFolds() ?? props.folds
+  const folds = useFolds() ?? props.folds
   const user = useUser()
   const followedFoldIds = useFollowedFoldIds(user) || []
-  // First sort by follower count, then list followed folds first
-  folds = _.sortBy(folds, (fold) => -1 * fold.followCount)
-  folds = _.sortBy(folds, (fold) => !followedFoldIds.includes(fold.id))
 
   useEffect(() => {
     // Load User object for curator of new Folds.
@@ -61,7 +58,7 @@ export default function Folds(props: {
         }
       )
     }
-  }, [curatorsDict])
+  }, [curatorsDict, folds])
 
   const [query, setQuery] = useState('')
   // Copied from contracts-list.tsx; extract if we copy this again
@@ -70,7 +67,11 @@ export default function Folds(props: {
     return queryWords.every((word) => corpus.toLowerCase().includes(word))
   }
 
-  const matches = folds.filter(
+  // List followed folds first, then folds with the highest follower count
+  const matches = _.sortBy(folds, [
+    (fold) => !followedFoldIds.includes(fold.id),
+    (fold) => -1 * fold.followCount,
+  ]).filter(
     (f) =>
       check(f.name) ||
       check(f.about || '') ||

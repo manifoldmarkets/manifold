@@ -69,9 +69,14 @@ const contractToText = (contract: Contract) => {
   return `${creatorUsername} ${question} ${tags.join(' ')} ${description}`
 }
 
+const MAX_CHARS_IN_WORD = 100
+
 const getWordsCount = (text: string) => {
   const normalizedText = text.replace(/[^a-zA-Z]/g, ' ').toLowerCase()
-  const words = normalizedText.split(' ').filter((word) => word)
+  const words = normalizedText
+    .split(' ')
+    .filter((word) => word)
+    .filter((word) => word.length <= MAX_CHARS_IN_WORD)
 
   const counts: { [word: string]: number } = {}
   for (const word of words) {

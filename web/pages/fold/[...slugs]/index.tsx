@@ -1,17 +1,16 @@
 import _ from 'lodash'
 
-import { Fold } from '../../../../common/fold'
-import { Comment } from '../../../../common/comment'
-import { Page } from '../../../components/page'
-import { Title } from '../../../components/title'
-import { Bet, listAllBets } from '../../../lib/firebase/bets'
-import { Contract } from '../../../lib/firebase/contracts'
+import { Fold } from 'common/fold'
+import { Comment } from 'common/comment'
+import { Page } from 'web/components/page'
+import { Title } from 'web/components/title'
+import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { Contract } from 'web/lib/firebase/contracts'
 import {
   foldPath,
   getFoldBySlug,
   getFoldContracts,
 } from '../../../lib/firebase/folds'
-import { ActivityFeed } from '../../../components/feed/activity-feed'
 import { TagsList } from '../../../components/tags-list'
 import { Row } from '../../../components/layout/row'
 import { UserLink } from '../../../components/user-page'
@@ -20,21 +19,20 @@ import { Spacer } from '../../../components/layout/spacer'
 import { Col } from '../../../components/layout/col'
 import { useUser } from '../../../hooks/use-user'
 import { useFold } from '../../../hooks/use-fold'
-import { SearchableGrid } from '../../../components/contract/contracts-list'
 import { useRouter } from 'next/router'
-import { scoreCreators, scoreTraders } from '../../../../common/scoring'
-import { Leaderboard } from '../../../components/leaderboard'
-import { formatMoney } from '../../../../common/util/format'
-import { EditFoldButton } from '../../../components/folds/edit-fold-button'
+import { scoreCreators, scoreTraders } from 'common/scoring'
+import { Leaderboard } from 'web/components/leaderboard'
+import { formatMoney } from 'common/util/format'
+import { EditFoldButton } from 'web/components/folds/edit-fold-button'
 import Custom404 from '../../404'
-import { FollowFoldButton } from '../../../components/folds/follow-fold-button'
-import { SEO } from '../../../components/SEO'
-import { useTaggedContracts } from '../../../hooks/use-contracts'
-import { Linkify } from '../../../components/linkify'
-import { fromPropz, usePropz } from '../../../hooks/use-propz'
-import { filterDefined } from '../../../../common/util/array'
-import { findActiveContracts } from '../../../components/feed/find-active-contracts'
-import { Tabs } from '../../../components/layout/tabs'
+import { FollowFoldButton } from 'web/components/folds/follow-fold-button'
+import { SEO } from 'web/components/SEO'
+import { useTaggedContracts } from 'web/hooks/use-contracts'
+import { Linkify } from 'web/components/linkify'
+import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { filterDefined } from 'common/util/array'
+import { findActiveContracts } from 'web/components/feed/find-active-contracts'
+import { Tabs } from 'web/components/layout/tabs'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -209,7 +207,7 @@ export default function FoldPage(props: {
         tabs={[
           {
             title: 'Markets',
-            content: <SearchableGrid contracts={contracts} />,
+            content: <div>This view is deprecated.</div>,
             href: foldPath(fold, 'markets'),
           },
           {

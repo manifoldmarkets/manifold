@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { PrivateUser, User } from '../../common/user'
+import { PrivateUser, User } from 'common/user'
 import {
   getUser,
   listenForAllUsers,
   listenForPrivateUsers,
-} from '../lib/firebase/users'
+} from 'web/lib/firebase/users'
 
 export const useUsers = () => {
   const [users, setUsers] = useState<User[]>([])

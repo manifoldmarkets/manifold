@@ -2,24 +2,24 @@ import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 
 import { Col } from './layout/col'
-import { User } from '../lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector, YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
-import { resolveMarket } from '../lib/firebase/api-call'
+import { resolveMarket } from 'web/lib/firebase/api-call'
 import { ProbabilitySelector } from './probability-selector'
-import { DPM_CREATOR_FEE } from '../../common/fees'
-import { getProbability } from '../../common/calculate'
+import { DPM_CREATOR_FEE } from 'common/fees'
+import { getProbability } from 'common/calculate'
 import {
   Binary,
   CPMM,
   DPM,
   FullContract,
   NumericContract,
-} from '../../common/contract'
-import { formatMoney } from '../../common/util/format'
+} from 'common/contract'
+import { formatMoney } from 'common/util/format'
 import { BucketAmountInput } from './amount-input'
-import { getMappedBucket } from '../../common/calculate-dpm'
+import { getMappedBucket } from 'common/calculate-dpm'
 
 export function ResolutionPanel(props: {
   creator: User

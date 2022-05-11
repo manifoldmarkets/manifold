@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Contract, listenForContract } from '../lib/firebase/contracts'
+import { Contract, listenForContract } from 'web/lib/firebase/contracts'
 import { useStateCheckEquality } from './use-state-check-equality'
 
 export const useContract = (contractId: string) => {

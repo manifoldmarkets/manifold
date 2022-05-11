@@ -1,13 +1,14 @@
 import { useState } from 'react'
+import clsx from 'clsx'
 
 import { BetPanelSwitcher } from './bet-panel'
 import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
-import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
+import { Binary, CPMM, DPM, FullContract } from 'common/contract'
 import { Modal } from './layout/modal'
 import { SellButton } from './sell-button'
-import { useUser } from '../hooks/use-user'
-import { useUserContractBets } from '../hooks/use-user-bets'
+import { useUser } from 'web/hooks/use-user'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useSaveShares } from './use-save-shares'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
@@ -30,48 +31,46 @@ export default function BetRow(props: {
 
   return (
     <>
-      <div className={className}>
-        <Row className="mt-2 justify-end space-x-3">
-          {/* <div className={clsx('mr-2 text-gray-400', labelClassName)}>
-            Place a trade
-          </div> */}
-          <YesNoSelector
-            btnClassName="btn-sm w-24"
-            onSelect={(choice) => {
-              setOpen(true)
-              setBetChoice(choice)
-            }}
-            replaceNoButton={
-              yesFloorShares > 0 ? (
-                <SellButton
-                  contract={contract}
-                  user={user}
-                  sharesOutcome={'YES'}
-                  shares={yesShares}
-                />
-              ) : undefined
-            }
-            replaceYesButton={
-              noFloorShares > 0 ? (
-                <SellButton
-                  contract={contract}
-                  user={user}
-                  sharesOutcome={'NO'}
-                  shares={noShares}
-                />
-              ) : undefined
-            }
-          />
-        </Row>
-        <Modal open={open} setOpen={setOpen}>
-          <BetPanelSwitcher
-            contract={contract}
-            title={contract.question}
-            selected={betChoice}
-            onBetSuccess={() => setOpen(false)}
-          />
-        </Modal>
-      </div>
+      <Row className={clsx('mt-2 justify-end space-x-3', className)}>
+        {/* <div className={clsx('mr-2 text-gray-400', labelClassName)}>
+          Place a trade
+        </div> */}
+        <YesNoSelector
+          btnClassName="btn-sm w-24"
+          onSelect={(choice) => {
+            setOpen(true)
+            setBetChoice(choice)
+          }}
+          replaceNoButton={
+            yesFloorShares > 0 ? (
+              <SellButton
+                contract={contract}
+                user={user}
+                sharesOutcome={'YES'}
+                shares={yesShares}
+              />
+            ) : undefined
+          }
+          replaceYesButton={
+            noFloorShares > 0 ? (
+              <SellButton
+                contract={contract}
+                user={user}
+                sharesOutcome={'NO'}
+                shares={noShares}
+              />
+            ) : undefined
+          }
+        />
+      </Row>
+      <Modal open={open} setOpen={setOpen}>
+        <BetPanelSwitcher
+          contract={contract}
+          title={contract.question}
+          selected={betChoice}
+          onBetSuccess={() => setOpen(false)}
+        />
+      </Modal>
     </>
   )
 }

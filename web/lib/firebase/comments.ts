@@ -11,8 +11,8 @@ import _ from 'lodash'
 
 import { getValues, listenForValues } from './utils'
 import { db } from './init'
-import { User } from '../../../common/user'
-import { Comment } from '../../../common/comment'
+import { User } from 'common/user'
+import { Comment } from 'common/comment'
 
 export type { Comment }
 

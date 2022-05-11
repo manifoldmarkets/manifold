@@ -4,14 +4,11 @@ import * as _ from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Binary, Contract, DPM, FullContract } from '../../../common/contract'
-import { Bet } from '../../../common/bet'
-import {
-  calculateDpmShares,
-  getDpmProbability,
-} from '../../../common/calculate-dpm'
-import { getSellBetInfo } from '../../../common/sell-bet'
-import { User } from '../../../common/user'
+import { Binary, Contract, DPM, FullContract } from 'common/contract'
+import { Bet } from 'common/bet'
+import { calculateDpmShares, getDpmProbability } from 'common/calculate-dpm'
+import { getSellBetInfo } from 'common/sell-bet'
+import { User } from 'common/user'
 
 type DocRef = admin.firestore.DocumentReference
 

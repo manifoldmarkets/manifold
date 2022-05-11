@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { View } from '../../common/tracking'
+import { View } from 'common/tracking'
 
 const firestore = admin.firestore()
 

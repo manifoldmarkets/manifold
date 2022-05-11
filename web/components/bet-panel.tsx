@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 
-import { useUser } from '../hooks/use-user'
-import { Binary, CPMM, DPM, FullContract } from '../../common/contract'
+import { useUser } from 'web/hooks/use-user'
+import { Binary, CPMM, DPM, FullContract } from 'common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
@@ -11,11 +11,11 @@ import {
   formatMoney,
   formatPercent,
   formatWithCommas,
-} from '../../common/util/format'
+} from 'common/util/format'
 import { Title } from './title'
-import { firebaseLogin, User } from '../lib/firebase/users'
-import { Bet } from '../../common/bet'
-import { placeBet, sellShares } from '../lib/firebase/api-call'
+import { firebaseLogin, User } from 'web/lib/firebase/users'
+import { Bet } from 'common/bet'
+import { placeBet, sellShares } from 'web/lib/firebase/api-call'
 import { BuyAmountInput, SellAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel } from './outcome-label'
@@ -24,13 +24,14 @@ import {
   calculateShares,
   getProbability,
   getOutcomeProbabilityAfterBet,
-} from '../../common/calculate'
-import { useFocus } from '../hooks/use-focus'
-import { useUserContractBets } from '../hooks/use-user-bets'
+} from 'common/calculate'
+import { useFocus } from 'web/hooks/use-focus'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
 import {
   calculateCpmmSale,
   getCpmmProbability,
-} from '../../common/calculate-cpmm'
+  getCpmmLiquidityFee,
+} from 'common/calculate-cpmm'
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
 
@@ -72,7 +73,7 @@ export function BetPanel(props: {
             className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
             onClick={firebaseLogin}
           >
-            Sign up to trade!
+            Sign up to bet!
           </button>
         )}
       </Col>
@@ -187,7 +188,7 @@ export function BetPanelSwitcher(props: {
             className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
             onClick={firebaseLogin}
           >
-            Sign up to trade!
+            Sign up to bet!
           </button>
         )}
       </Col>
@@ -284,6 +285,10 @@ function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
+  const cpmmFees =
+    contract.mechanism === 'cpmm-1' &&
+    getCpmmLiquidityFee(contract, betAmount ?? 0, betChoice ?? 'YES').totalFees
+
   const dpmTooltip =
     contract.mechanism === 'dpm-2'
       ? `Current payout for ${formatWithCommas(shares)} / ${formatWithCommas(
@@ -337,6 +342,10 @@ function BuyPanel(props: {
                 </>
               )}
             </div>
+
+            {cpmmFees !== false && (
+              <InfoTooltip text={`Includes ${formatMoney(cpmmFees)} in fees`} />
+            )}
 
             {dpmTooltip && <InfoTooltip text={dpmTooltip} />}
           </Row>

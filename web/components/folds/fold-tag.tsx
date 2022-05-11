@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Fold } from '../../../common/fold'
+import { Fold } from 'common/fold'
 
 export function FoldTag(props: { fold: Fold }) {
   const { fold } = props

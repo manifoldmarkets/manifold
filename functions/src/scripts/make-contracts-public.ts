@@ -4,7 +4,7 @@ import * as _ from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Contract } from '../../../common/contract'
+import { Contract } from 'common/contract'
 
 const firestore = admin.firestore()
 

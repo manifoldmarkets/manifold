@@ -1,8 +1,8 @@
 // Next.js API route support: https://vercel.com/docs/concepts/functions/serverless-functions
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { listAllContracts } from '../../../lib/firebase/contracts'
+import { listAllContracts } from 'web/lib/firebase/contracts'
+import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { toLiteMarket } from './_types'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from '../../../lib/api/cors'
 
 type Data = any[]
 

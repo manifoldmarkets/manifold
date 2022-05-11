@@ -1,5 +1,5 @@
 import { Html, Head, Main, NextScript } from 'next/document'
-import { ENV_CONFIG } from '../../common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export default function Document() {
   return (
@@ -17,20 +17,11 @@ export default function Document() {
           href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Readex+Pro:wght@400;600;700&display=swap"
           rel="stylesheet"
         />
-
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-SSFK1Q138D');
-          `,
-          }}
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/instantsearch.css@7.4.5/themes/satellite-min.css"
+          integrity="sha256-TehzF/2QvNKhGQrrNpoOb2Ck4iGZ1J/DI4pkd2oUsBc="
+          crossOrigin="anonymous"
         />
       </Head>
 

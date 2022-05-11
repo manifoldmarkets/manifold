@@ -1,25 +1,21 @@
-import { Contract, tradingAllowed } from '../../lib/firebase/contracts'
+import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
-import { useUser } from '../../hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
 import clsx from 'clsx'
+
 import {
   FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
 } from './contract-card'
-import { Bet } from '../../../common/bet'
-import { Comment } from '../../../common/comment'
+import { Bet } from 'common/bet'
+import { Comment } from 'common/comment'
 import BetRow from '../bet-row'
 import { AnswersGraph } from '../answers/answers-graph'
-import {
-  DPM,
-  FreeResponse,
-  FullContract,
-  NumericContract,
-} from '../../../common/contract'
+import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { ShareMarket } from '../share-market'

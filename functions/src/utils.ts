@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 
-import { Contract } from '../../common/contract'
-import { PrivateUser, User } from '../../common/user'
+import { Contract } from 'common/contract'
+import { PrivateUser, User } from 'common/user'
 
 export const isProd =
   admin.instanceId().app.options.projectId === 'mantic-markets'
@@ -79,9 +79,13 @@ export const payUser = (userId: string, payout: number, isDeposit = false) => {
   return updateUserBalance(userId, payout, isDeposit)
 }
 
-export const chargeUser = (userId: string, charge: number) => {
+export const chargeUser = (
+  userId: string,
+  charge: number,
+  isAnte?: boolean
+) => {
   if (!isFinite(charge) || charge <= 0)
     throw new Error('User charge is not positive: ' + charge)
 
-  return updateUserBalance(userId, -charge)
+  return updateUserBalance(userId, -charge, isAnte)
 }

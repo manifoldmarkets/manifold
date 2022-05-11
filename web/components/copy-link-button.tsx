@@ -2,10 +2,10 @@ import { Fragment } from 'react'
 import { LinkIcon } from '@heroicons/react/outline'
 import { Menu, Transition } from '@headlessui/react'
 import clsx from 'clsx'
-import { Contract } from '../../common/contract'
-import { copyToClipboard } from '../lib/util/copy'
-import { contractPath } from '../lib/firebase/contracts'
-import { ENV_CONFIG } from '../../common/envs/constants'
+import { Contract } from 'common/contract'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { contractPath } from 'web/lib/firebase/contracts'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 function copyContractUrl(contract: Contract) {
   copyToClipboard(`https://${ENV_CONFIG.domain}${contractPath(contract)}`)

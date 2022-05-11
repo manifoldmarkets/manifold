@@ -2,9 +2,9 @@ import { StarIcon } from '@heroicons/react/solid'
 import _ from 'lodash'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Charity } from '../../../common/charity'
-import { useCharityTxns } from '../../hooks/use-charity-txns'
-import { manaToUSD } from '../../pages/charity/[charitySlug]'
+import { Charity } from 'common/charity'
+import { useCharityTxns } from 'web/hooks/use-charity-txns'
+import { manaToUSD } from '../../../common/util/format'
 import { Row } from '../layout/row'
 
 export function CharityCard(props: { charity: Charity }) {
@@ -16,7 +16,7 @@ export function CharityCard(props: { charity: Charity }) {
   return (
     <Link href={`/charity/${slug}`} passHref>
       <div className="card card-compact transition:shadow flex-1 cursor-pointer border-2 bg-white hover:shadow-md">
-        <Row className="mt-6">
+        <Row className="mt-6 mb-2">
           {tags?.includes('Featured') && <FeaturedBadge />}
         </Row>
         <div className="px-8">

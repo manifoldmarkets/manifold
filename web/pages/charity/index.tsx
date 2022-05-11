@@ -1,13 +1,13 @@
 import _ from 'lodash'
 import { useState, useMemo } from 'react'
-import { charities, Charity as CharityType } from '../../../common/charity'
-import { CharityCard } from '../../components/charity/charity-card'
-import { Col } from '../../components/layout/col'
-import { Spacer } from '../../components/layout/spacer'
-import { Page } from '../../components/page'
-import { SiteLink } from '../../components/site-link'
-import { Title } from '../../components/title'
-import { getAllCharityTxns } from '../../lib/firebase/txns'
+import { charities, Charity as CharityType } from 'common/charity'
+import { CharityCard } from 'web/components/charity/charity-card'
+import { Col } from 'web/components/layout/col'
+import { Spacer } from 'web/components/layout/spacer'
+import { Page } from 'web/components/page'
+import { SiteLink } from 'web/components/site-link'
+import { Title } from 'web/components/title'
+import { getAllCharityTxns } from 'web/lib/firebase/txns'
 
 export async function getStaticProps() {
   const txns = await getAllCharityTxns()
@@ -47,7 +47,7 @@ export default function Charity(props: {
           charity.description.toLowerCase().includes(query.toLowerCase()) ||
           (charity.tags as string[])?.includes(query.toLowerCase())
       ),
-    [query]
+    [charities, query]
   )
 
   return (
@@ -56,7 +56,8 @@ export default function Charity(props: {
         <Col className="max-w-xl gap-2">
           <Title className="!mt-0" text="Manifold for Good" />
           <div className="mb-6 text-gray-500">
-            Donate your winnings to charity! Through the month of May, every M$100 you contribute turns into $1 USD sent to your chosen charity.
+            Donate your winnings to charity! Through the month of May, every
+            M$100 you contribute turns into $1 USD sent to your chosen charity.
             <Spacer h={5} />
             Together we've donated over ${Math.floor(totalRaised / 100)} USD so
             far!
@@ -100,8 +101,8 @@ export default function Charity(props: {
           <br />
           <br />
           <span className="italic">
-            Note: Manifold is not affiliated with any of these charities (other
-            than being fans of their work!)
+            Note: Manifold is not affiliated with non-Featured charities; we're
+            just fans of their work!
             <br />
             As Manifold is a for-profit entity, your contributions will not be
             tax deductible.

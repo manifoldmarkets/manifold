@@ -3,14 +3,11 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import _ from 'lodash'
 import { useState } from 'react'
-import { Bet } from '../../../common/bet'
+import { Bet } from 'common/bet'
 
-import { Contract } from '../../../common/contract'
-import { formatMoney } from '../../../common/util/format'
-import {
-  contractPath,
-  getBinaryProbPercent,
-} from '../../lib/firebase/contracts'
+import { Contract } from 'common/contract'
+import { formatMoney } from 'common/util/format'
+import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { AddLiquidityPanel } from '../add-liquidity-panel'
 import { CopyLinkButton } from '../copy-link-button'
 import { Col } from '../layout/col'
@@ -86,6 +83,11 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
               <tr>
                 <td>Volume</td>
                 <td>{formatMoney(contract.volume)}</td>
+              </tr>
+
+              <tr>
+                <td>Creator earnings</td>
+                <td>{formatMoney(contract.collectedFees?.creatorFee ?? 0)}</td>
               </tr>
 
               <tr>
