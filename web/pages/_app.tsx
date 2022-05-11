@@ -4,7 +4,18 @@ import Head from 'next/head'
 import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
 
+function printBuildInfo() {
+  // undefined if e.g. dev server
+  if (process.env.NEXT_PUBLIC_VERCEL_ENV) {
+    let env = process.env.NEXT_PUBLIC_VERCEL_ENV
+    let sha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA
+    let msg = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_MESSAGE
+    console.info(`Build: ${env} / ${sha || '???'} / ${msg || '???'}`)
+  }
+}
+
 function MyApp({ Component, pageProps }: AppProps) {
+  printBuildInfo()
   usePreserveScroll()
 
   return (
