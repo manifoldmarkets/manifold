@@ -129,11 +129,7 @@ export default function Sidebar(props: { className?: string }) {
       <ManifoldLogo className="pb-6" twoLine />
       <div className="mb-2" style={{ minHeight: 80 }}>
         {user ? (
-          <Link href={`/${user.username}`}>
-            <a className="group">
-              <ProfileSummary user={user} />
-            </a>
-          </Link>
+          <ProfileSummary user={user} />
         ) : user === null ? (
           <div className="py-6 text-center">
             <button
