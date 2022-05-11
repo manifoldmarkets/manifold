@@ -303,6 +303,7 @@ function BuyPanel(props: {
     <>
       <YesNoSelector
         className="mb-4"
+        btnClassName="flex-1"
         selected={betChoice}
         onSelect={(choice) => onBetChoice(choice)}
       />
