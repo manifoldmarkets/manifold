@@ -12,7 +12,7 @@ export function Page(props: {
   const { margin, assertUser, children, rightSidebar, suspend } = props
 
   return (
-    <div>
+    <>
       <div
         className={clsx(
           'mx-auto w-full pb-14 lg:grid lg:grid-cols-12 lg:gap-8 lg:pt-6 xl:max-w-7xl',
@@ -38,7 +38,7 @@ export function Page(props: {
       </div>
 
       <BottomNavBar />
-    </div>
+    </>
   )
 }
 
