@@ -131,7 +131,9 @@ function NumericBuyPanel(props: {
 
   return (
     <>
-      <div className="my-3 text-left text-sm text-gray-500">Numeric value</div>
+      <div className="my-3 text-left text-sm text-gray-500">
+        Predicted value
+      </div>
       <BucketAmountInput
         bucket={bucket}
         min={min}
@@ -143,7 +145,7 @@ function NumericBuyPanel(props: {
         disabled={isSubmitting}
       />
 
-      <div className="my-3 text-left text-sm text-gray-500">Amount</div>
+      <div className="my-3 text-left text-sm text-gray-500">Bet amount</div>
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
