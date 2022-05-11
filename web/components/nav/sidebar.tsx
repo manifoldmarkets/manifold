@@ -126,10 +126,7 @@ export default function Sidebar(props: { className?: string }) {
 
   return (
     <nav aria-label="Sidebar" className={className}>
-      <div className="space-y-1 pb-6">
-        <ManifoldLogo twoLine />
-      </div>
-
+      <ManifoldLogo className="pb-6" twoLine />
       <div className="mb-2" style={{ minHeight: 80 }}>
         {user ? (
           <Link href={`/${user.username}`}>
