@@ -1,6 +1,7 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
 import React, { Fragment, useEffect, useRef, useState } from 'react'
 import * as _ from 'lodash'
+import { Dictionary } from 'lodash'
 import {
   BanIcon,
   CheckIcon,
@@ -15,8 +16,8 @@ import Textarea from 'react-expanding-textarea'
 
 import { OutcomeLabel } from '../outcome-label'
 import {
-  contractMetrics,
   Contract,
+  contractMetrics,
   contractPath,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
@@ -36,7 +37,7 @@ import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
 import { Answer } from 'common/answer'
 import { ActivityItem, GENERAL_COMMENTS_OUTCOME_ID } from './activity-items'
-import { Binary, CPMM, DPM, FreeResponse, FullContract } from 'common/contract'
+import { Binary, CPMM, FreeResponse, FullContract } from 'common/contract'
 import { BuyButton } from '../yes-no-selector'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { AnswerBetPanel } from '../answers/answer-bet-panel'
@@ -50,7 +51,6 @@ import NewContractBadge from '../new-contract-badge'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { calculateCpmmSale } from 'common/calculate-cpmm'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { useRouter } from 'next/router'
 
 export function FeedItems(props: {
   contract: Contract
@@ -126,50 +126,67 @@ function FeedItem(props: { item: ActivityItem }) {
 export function FeedCommentThread(props: {
   contract: Contract
   comments: Comment[]
-  betsBySameUser: Bet[]
+  parentComment: Comment
+  betsByUserId: Dictionary<[Bet, ...Bet[]]>
   truncate?: boolean
   smallAvatar?: boolean
 }) {
-  const { contract, comments, betsBySameUser, truncate, smallAvatar } = props
-  const [showCommentReplyInput, setShowCommentReplyInput] = useState(false)
+  const {
+    contract,
+    comments,
+    betsByUserId,
+    truncate,
+    smallAvatar,
+    parentComment,
+  } = props
+  const [showReply, setShowReply] = useState(false)
   const [replyToUsername, setReplyToUsername] = useState('')
-  const router = useRouter()
-  const scrollToId = '#' + comments[comments.length - 1].id
+  const user = useUser()
+  const commentsList = comments.filter(
+    (comment) => comment.replyToCommentId === parentComment.id
+  )
+  commentsList.unshift(parentComment)
+  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
   function scrollAndOpenReplyInput(comment: Comment) {
     setReplyToUsername(comment.userUsername)
-    // We should replace this with refs to detect if the comment is already in view
-    router.replace(scrollToId, undefined, { shallow: true })
-    setShowCommentReplyInput(true)
+    setShowReply(true)
+    inputRef?.focus()
   }
+  useEffect(() => {
+    if (showReply && inputRef) inputRef.focus()
+  }, [inputRef, showReply])
   return (
-    <div className={'w-full flex-col flex-col space-x-8 pr-6'}>
-      {comments.map((comment, commentIdx) => (
+    <div className={'w-full flex-col flex-col pr-6'}>
+      {commentsList.map((comment, commentIdx) => (
         <div
           key={comment.id}
           id={comment.id}
-          className={clsx('flex space-x-3', commentIdx === 0 ? '' : 'mt-4')}
+          className={clsx(
+            'flex space-x-3',
+            commentIdx === 0 ? '' : 'mt-4 ml-8'
+          )}
         >
           <FeedComment
             contract={contract}
             comment={comment}
-            betsBySameUser={betsBySameUser}
+            betsBySameUser={betsByUserId[comment.userId] ?? []}
             onReplyClick={scrollAndOpenReplyInput}
             smallAvatar={smallAvatar}
             truncate={truncate}
           />
         </div>
       ))}
-      {showCommentReplyInput && (
-        <div className={' w-full pt-6'}>
+      {showReply && (
+        <div className={' ml-8 w-full pt-6'}>
           <CommentInput
             contract={contract}
             // Should we allow replies to contain recent bet info?
-            betsByCurrentUser={[]}
-            comments={[]}
-            replyTo={comments[0]}
+            betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
+            comments={comments}
+            parentComment={parentComment}
             replyToUsername={replyToUsername}
-            autoFocusOnFirstRender={true}
             answerOutcome={comments[0].answerOutcome}
+            setRef={setInputRef}
           />
         </div>
       )}
@@ -243,7 +260,7 @@ export function FeedComment(props: {
           )}
           <>
             {bought} {money}
-            {outcome && (
+            {contract.outcomeType !== 'FREE_RESPONSE' && outcome && (
               <>
                 {' '}
                 of{' '}
@@ -284,42 +301,31 @@ export function CommentInput(props: {
   // Tie a comment to an free response answer outcome
   answerOutcome?: string
   // Tie a comment to another comment
-  replyTo?: Comment
+  parentComment?: Comment
   replyToUsername?: string
-  autoFocusOnFirstRender?: boolean
+  setRef?: (ref: any) => void
 }) {
   const {
     contract,
     betsByCurrentUser,
     comments,
     answerOutcome,
-    replyTo,
-    autoFocusOnFirstRender,
+    parentComment,
     replyToUsername,
+    setRef,
   } = props
   const user = useUser()
   const [comment, setComment] = useState('')
-  const [focused, setFocused] = useState(autoFocusOnFirstRender ?? false)
+  const [focused, setFocused] = useState(false)
   const { width } = useWindowSize()
-  // Should this be oldest bet or most recent bet?
-  const mostRecentCommentableBet = betsByCurrentUser
-    .filter((bet) => {
-      if (
-        canCommentOnBet(bet, user) &&
-        // The bet doesn't already have a comment
-        !comments.some((comment) => comment.betId == bet.id)
-      ) {
-        if (!answerOutcome) return true
-        // If we're in free response, don't allow commenting on ante bet
-        return (
-          bet.outcome !== GENERAL_COMMENTS_OUTCOME_ID &&
-          answerOutcome === bet.outcome
-        )
-      }
-      return false
-    })
-    .sort((b1, b2) => b1.createdTime - b2.createdTime)
-    .pop()
+
+  const mostRecentCommentableBet = getMostRecentCommentableBet(
+    betsByCurrentUser,
+    comments,
+    user,
+    answerOutcome
+  )
+  const { id } = mostRecentCommentableBet || { id: undefined }
 
   useEffect(() => {
     if (!replyToUsername || !user || replyToUsername === user.username) return
@@ -327,22 +333,23 @@ export function CommentInput(props: {
     setComment(replacement + comment.replace(replacement, ''))
   }, [user, replyToUsername])
 
-  const { id } = mostRecentCommentableBet || { id: undefined }
-
   async function submitComment(betId: string | undefined) {
     if (!user) {
       return await firebaseLogin()
     }
     if (!comment) return
+
+    // Update state asap to avoid double submission.
+    const commentValue = comment.toString()
+    setComment('')
     await createComment(
       contract.id,
-      comment,
+      commentValue,
       user,
       betId,
       answerOutcome,
-      replyTo?.id
+      parentComment?.id
     )
-    setComment('')
   }
 
   const { userPosition, userPositionMoney, yesFloorShares, noFloorShares } =
@@ -387,11 +394,12 @@ export function CommentInput(props: {
 
             <Row className="gap-1.5">
               <Textarea
+                ref={(ref) => setRef?.(ref)}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 className="textarea textarea-bordered w-full resize-none"
                 placeholder={
-                  replyTo || answerOutcome
+                  parentComment || answerOutcome
                     ? 'Write a reply... '
                     : 'Write a comment...'
                 }
@@ -404,6 +412,7 @@ export function CommentInput(props: {
                 maxLength={MAX_COMMENT_LENGTH}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey && !isMobile()) {
+                    e.preventDefault()
                     submitComment(id)
                   }
                 }}
@@ -440,7 +449,7 @@ export function CommentInput(props: {
                       }
                     }}
                   >
-                    {replyTo || answerOutcome ? 'Reply' : 'Comment'}
+                    {parentComment || answerOutcome ? 'Reply' : 'Comment'}
                   </button>
                 )}
               </div>
@@ -539,7 +548,6 @@ export function FeedBet(props: {
             bet={bet}
             contract={contract}
             isSelf={isSelf}
-            hideOutcome={hideOutcome}
             bettor={bettor}
           />
         </div>
@@ -552,10 +560,9 @@ function BetStatusText(props: {
   contract: Contract
   bet: Bet
   isSelf: boolean
-  hideOutcome?: boolean
   bettor?: User
 }) {
-  const { bet, contract, hideOutcome, bettor, isSelf } = props
+  const { bet, contract, bettor, isSelf } = props
   const { amount, outcome, createdTime } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
@@ -565,7 +572,7 @@ function BetStatusText(props: {
     <div className="text-sm text-gray-500">
       <span>{isSelf ? 'You' : bettor ? bettor.name : 'A trader'}</span> {bought}{' '}
       {money}
-      {!hideOutcome && (
+      {contract.outcomeType !== 'FREE_RESPONSE' && (
         <>
           {' '}
           of{' '}
@@ -683,6 +690,32 @@ export function FeedQuestion(props: {
       </div>
     </>
   )
+}
+
+function getMostRecentCommentableBet(
+  betsByCurrentUser: Bet[],
+  comments: Comment[],
+  user?: User | null,
+  answerOutcome?: string
+) {
+  return betsByCurrentUser
+    .filter((bet) => {
+      if (
+        canCommentOnBet(bet, user) &&
+        // The bet doesn't already have a comment
+        !comments.some((comment) => comment.betId == bet.id)
+      ) {
+        if (!answerOutcome) return true
+        // If we're in free response, don't allow commenting on ante bet
+        return (
+          bet.outcome !== GENERAL_COMMENTS_OUTCOME_ID &&
+          answerOutcome === bet.outcome
+        )
+      }
+      return false
+    })
+    .sort((b1, b2) => b1.createdTime - b2.createdTime)
+    .pop()
 }
 
 function canCommentOnBet(bet: Bet, user?: User | null) {
@@ -877,12 +910,31 @@ function FeedAnswerGroup(props: {
 }) {
   const { answer, items, contract, type, betsByCurrentUser, comments } = props
   const { username, avatarUrl, name, text } = answer
-
+  const user = useUser()
+  const mostRecentCommentableBet = getMostRecentCommentableBet(
+    betsByCurrentUser ?? [],
+    comments ?? [],
+    user,
+    answer.number + ''
+  )
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
   const [showReply, setShowReply] = useState(false)
   const isFreeResponseContractPage = type === 'answergroup' && comments
+  if (mostRecentCommentableBet && !showReply) setShowReplyAndFocus(true)
+  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
+
+  // If they've already opened the input box, focus it once again
+  function setShowReplyAndFocus(show: boolean) {
+    setShowReply(show)
+    inputRef?.focus()
+  }
+
+  useEffect(() => {
+    if (showReply && inputRef) inputRef.focus()
+  }, [inputRef, showReply])
+
   return (
     <Col
       className={
@@ -917,12 +969,12 @@ function FeedAnswerGroup(props: {
 
             <Row className="items-center justify-center gap-4">
               {isFreeResponseContractPage && (
-                <div className={'sm:hidden md:hidden lg:hidden'}>
+                <div className={'sm:hidden'}>
                   <button
                     className={
                       'btn btn-ghost btn-xs text-transform: text-xs capitalize text-gray-500'
                     }
-                    onClick={() => setShowReply(true)}
+                    onClick={() => setShowReplyAndFocus(true)}
                   >
                     Reply
                   </button>
@@ -951,14 +1003,12 @@ function FeedAnswerGroup(props: {
             </Row>
           </Col>
           {isFreeResponseContractPage && (
-            <div
-              className={'justify-initial hidden sm:block md:block lg:block'}
-            >
+            <div className={'justify-initial hidden sm:block'}>
               <button
                 className={
                   'btn btn-ghost btn-xs text-transform: text-xs capitalize text-gray-500'
                 }
-                onClick={() => setShowReply(true)}
+                onClick={() => setShowReplyAndFocus(true)}
               >
                 Reply
               </button>
@@ -974,8 +1024,8 @@ function FeedAnswerGroup(props: {
             betsByCurrentUser={betsByCurrentUser ?? []}
             comments={comments ?? []}
             answerOutcome={answer.number + ''}
-            autoFocusOnFirstRender={true}
             replyToUsername={answer.username}
+            setRef={setInputRef}
           />
         </div>
       )}

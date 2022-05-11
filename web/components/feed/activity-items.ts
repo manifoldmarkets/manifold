@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _, { Dictionary } from 'lodash'
 
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
@@ -60,8 +60,9 @@ export type CommentItem = BaseActivityItem & {
 
 export type CommentThreadItem = BaseActivityItem & {
   type: 'commentThread'
+  parentComment: Comment
   comments: Comment[]
-  betsBySameUser: Bet[]
+  betsByUserId: Dictionary<[Bet, ...Bet[]]>
 }
 
 export type BetGroupItem = BaseActivityItem & {
@@ -367,17 +368,14 @@ function getCommentThreads(
 ) {
   const betsByUserId = _.groupBy(bets, (bet) => bet.userId)
   const parentComments = comments.filter((comment) => !comment.replyToCommentId)
-  const childrenComments = comments.filter(
-    (comment) => comment.replyToCommentId
-  )
+
   const items = parentComments.map((comment) => ({
     type: 'commentThread' as const,
     id: comment.id,
     contract: contract,
-    comments: [comment].concat(
-      childrenComments.filter((child) => child.replyToCommentId === comment.id)
-    ),
-    betsBySameUser: betsByUserId[comment.userId] || [],
+    comments: comments,
+    parentComment: comment,
+    betsByUserId: betsByUserId,
   }))
 
   return items
