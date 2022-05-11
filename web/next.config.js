@@ -7,6 +7,10 @@ module.exports = {
     externalDir: true,
     optimizeCss: true,
   },
+
+  eslint: {
+    dirs: ['components', 'hooks', 'lib', 'pages'],
+  },
   images: {
     domains: ['lh3.googleusercontent.com', 'i.imgur.com'],
   },
