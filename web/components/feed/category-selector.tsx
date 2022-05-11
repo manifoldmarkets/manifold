@@ -45,9 +45,7 @@ export function CategorySelector(props: {
             if (!user?.id) return
 
             await updateUser(user.id, {
-              followedCategories: !followedCategories.includes(cat)
-                ? _.union([cat], followedCategories)
-                : _.difference(followedCategories, [cat]),
+              followedCategories: [cat],
             })
           }}
         />

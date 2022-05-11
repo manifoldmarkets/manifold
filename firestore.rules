@@ -35,7 +35,7 @@ service cloud.firestore {
       allow create: if userId == request.auth.uid;
     }
 
-    match /private-users/{userId}/cache/feed {
+    match /private-users/{userId}/cache/{docId} {
       allow read: if userId == request.auth.uid || isAdmin();
     }
 
