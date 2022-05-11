@@ -6,22 +6,21 @@ import { SiteLink } from './site-link'
 export function Linkify(props: { text: string; gray?: boolean }) {
   const { text, gray } = props
   const regex =
-    /(?:^|\s)(?:[@#][a-z0-9_]+|https?:\/\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#\/%=~_|])/gi
+    /(?<=^|\s|\()(?:[@#][a-z0-9_]+|https?:\/\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#\/%=~_|])/gi
+
   const matches = text.match(regex) || []
   const links = matches.map((match) => {
     // Matches are in the form: " @username" or "https://example.com"
-    const whitespace = match.match(/^\s/)
-    const symbol = match.trim().substring(0, 1)
-    const tag = match.trim().substring(1)
+    const symbol = match.substring(0, 1)
+    const tag = match.substring(1)
     const href =
       {
         '@': `/${tag}`,
         '#': `/tag/${tag}`,
-      }[symbol] ?? match.trim()
+      }[symbol] ?? match
 
     return (
       <>
-        {whitespace}
         <SiteLink
           className={gray ? 'text-gray-500' : 'text-indigo-700'}
           href={href}
