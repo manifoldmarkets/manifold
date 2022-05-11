@@ -67,8 +67,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb, setInitialProb] = useState(50)
-  const [min, setMin] = useState<number | undefined>()
-  const [max, setMax] = useState<number | undefined>()
+  const [minString, setMinString] = useState('')
+  const [maxString, setMaxString] = useState('')
   const [description, setDescription] = useState('')
   const [tagText, setTagText] = useState<string>(tag ?? '')
   const tags = parseWordsAsTags(tagText)
@@ -95,6 +95,9 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const balance = creator?.balance || 0
 
+  const min = parseFloat(minString)
+  const max = parseFloat(maxString)
+
   const isValid =
     initialProb > 0 &&
     initialProb < 100 &&
@@ -105,7 +108,9 @@ export function NewContract(props: { question: string; tag?: string }) {
     (ante <= balance || deservesDailyFreeMarket) &&
     // closeTime must be in the future
     closeTime &&
-    closeTime > Date.now()
+    closeTime > Date.now() &&
+    (outcomeType !== 'NUMERIC' ||
+      (isFinite(min) && isFinite(max) && min < max && max - min > 0.01))
 
   async function submit() {
     // TODO: Tell users why their contract is invalid
@@ -122,8 +127,8 @@ export function NewContract(props: { question: string; tag?: string }) {
         ante,
         closeTime,
         tags,
-        min,
-        max,
+        min: minString,
+        max: maxString,
       })
     ).then((r) => r.data || {})
 
@@ -180,7 +185,7 @@ export function NewContract(props: { question: string; tag?: string }) {
             value="NUMERIC"
             onChange={() => setOutcomeType('NUMERIC')}
           />
-          <span className="label-text">Numeric</span>
+          <span className="label-text">Numeric (experimental)</span>
         </label>
       </Row>
       <Spacer h={4} />
@@ -199,9 +204,10 @@ export function NewContract(props: { question: string; tag?: string }) {
       )}
 
       {outcomeType === 'NUMERIC' && (
-        <div className="form-control">
-          <label className="label">
-            <span className="mb-1">Value range (min, max)</span>
+        <div className="form-control items-start">
+          <label className="label gap-2">
+            <span className="mb-1">Range</span>
+            <InfoTooltip text="The minimum and maximum numbers across the numeric range." />
           </label>
 
           <Row className="gap-2">
@@ -210,26 +216,22 @@ export function NewContract(props: { question: string; tag?: string }) {
               className="input input-bordered"
               placeholder="MIN"
               onClick={(e) => e.stopPropagation()}
-              onChange={(e) =>
-                setMin(isNaN(+e.target.value) ? undefined : +e.target.value)
-              }
-              min={0}
+              onChange={(e) => setMinString(e.target.value)}
+              min={Number.MIN_SAFE_INTEGER}
               max={Number.MAX_SAFE_INTEGER}
               disabled={isSubmitting}
-              value={min}
+              value={minString ?? ''}
             />
             <input
               type="number"
               className="input input-bordered"
               placeholder="MAX"
               onClick={(e) => e.stopPropagation()}
-              onChange={(e) =>
-                setMax(isNaN(+e.target.value) ? undefined : +e.target.value)
-              }
-              min={0}
+              onChange={(e) => setMaxString(e.target.value)}
+              min={Number.MIN_SAFE_INTEGER}
               max={Number.MAX_SAFE_INTEGER}
               disabled={isSubmitting}
-              value={max}
+              value={maxString}
             />
           </Row>
         </div>
