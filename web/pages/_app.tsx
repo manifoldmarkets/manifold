@@ -5,6 +5,10 @@ import Head from 'next/head'
 import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
 
+function firstLine(msg: string) {
+  return msg.replace(/\r?\n.*/s, '')
+}
+
 function printBuildInfo() {
   // These are undefined if e.g. dev server
   if (process.env.NEXT_PUBLIC_VERCEL_ENV) {
@@ -14,7 +18,7 @@ function printBuildInfo() {
     let repo = process.env.NEXT_PUBLIC_VERCEL_GIT_REPO_SLUG
     let sha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA
     let url = `https://github.com/${owner}/${repo}/commit/${sha}`
-    console.info(`Build: ${env} / ${msg || '???'} / ${url}`)
+    console.info(`Build: ${env} / ${firstLine(msg || '???')} / ${url}`)
   }
 }
 
