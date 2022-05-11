@@ -1,11 +1,27 @@
 import 'tailwindcss/tailwind.css'
 import type { AppProps } from 'next/app'
+import { useEffect } from 'react'
 import Head from 'next/head'
 import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
 
+function printBuildInfo() {
+  // These are undefined if e.g. dev server
+  if (process.env.NEXT_PUBLIC_VERCEL_ENV) {
+    let env = process.env.NEXT_PUBLIC_VERCEL_ENV
+    let msg = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_MESSAGE
+    let owner = process.env.NEXT_PUBLIC_VERCEL_GIT_REPO_OWNER
+    let repo = process.env.NEXT_PUBLIC_VERCEL_GIT_REPO_SLUG
+    let sha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA
+    let url = `https://github.com/${owner}/${repo}/commit/${sha}`
+    console.info(`Build: ${env} / ${msg || '???'} / ${url}`)
+  }
+}
+
 function MyApp({ Component, pageProps }: AppProps) {
   usePreserveScroll()
+
+  useEffect(printBuildInfo)
 
   return (
     <>
