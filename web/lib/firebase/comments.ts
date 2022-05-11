@@ -13,6 +13,7 @@ import { getValues, listenForValues } from './utils'
 import { db } from './init'
 import { User } from 'common/user'
 import { Comment } from 'common/comment'
+import { removeUndefinedProps } from 'common/util/object'
 
 export type { Comment }
 
@@ -23,12 +24,13 @@ export async function createComment(
   text: string,
   commenter: User,
   betId?: string,
-  answerOutcome?: string
+  answerOutcome?: string,
+  replyToCommentId?: string
 ) {
   const ref = betId
     ? doc(getCommentsCollection(contractId), betId)
     : doc(getCommentsCollection(contractId))
-  const comment: Comment = {
+  const comment: Comment = removeUndefinedProps({
     id: ref.id,
     contractId,
     userId: commenter.id,
@@ -37,13 +39,10 @@ export async function createComment(
     userName: commenter.name,
     userUsername: commenter.username,
     userAvatarUrl: commenter.avatarUrl,
-  }
-  if (betId) {
-    comment.betId = betId
-  }
-  if (answerOutcome) {
-    comment.answerOutcome = answerOutcome
-  }
+    betId: betId,
+    answerOutcome: answerOutcome,
+    replyToCommentId: replyToCommentId,
+  })
   return await setDoc(ref, comment)
 }
 

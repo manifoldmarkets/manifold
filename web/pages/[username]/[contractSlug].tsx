@@ -290,7 +290,6 @@ function ContractTopTrades(props: {
               contract={contract}
               comment={commentsById[topCommentId]}
               betsBySameUser={[betsById[topCommentId]]}
-              hideOutcome={false}
               truncate={false}
               smallAvatar={false}
             />
