@@ -196,25 +196,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          <div>
-            <label className="label">API key</label>
-            <div className="input-group w-full">
-              <input
-                type="text"
-                placeholder="Click refresh to generate key"
-                className="input input-bordered w-full"
-                value={apiKey}
-                readOnly
-              />
-              <button
-                className="btn btn-primary btn-square p-2"
-                onClick={updateApiKey}
-              >
-                <RefreshIcon />
-              </button>
-            </div>
-          </div>
-
           {user && (
             <>
               {/* TODO: Allow users with M$ 2000 of assets to set custom banners */}
@@ -268,6 +249,25 @@ export default function ProfilePage() {
               {formatMoney(user?.balance || 0)}
               <AddFundsButton />
             </Row>
+          </div>
+
+          <div>
+            <label className="label">API key</label>
+            <div className="input-group w-full">
+              <input
+                type="text"
+                placeholder="Click refresh to generate key"
+                className="input input-bordered w-full"
+                value={apiKey}
+                readOnly
+              />
+              <button
+                className="btn btn-primary btn-square p-2"
+                onClick={updateApiKey}
+              >
+                <RefreshIcon />
+              </button>
+            </div>
           </div>
         </Col>
       </Col>
