@@ -9,11 +9,18 @@ import { Title } from 'web/components/title'
 import { useUser } from 'web/hooks/use-user'
 import { createManalink, useUserManalinks } from 'web/lib/firebase/manalinks'
 import { fromNow } from 'web/lib/util/time'
+import { useManalinkTxns } from 'web/lib/firebase/txns'
+import { useUserById } from 'web/hooks/use-users'
+import { Txn } from 'common/txn'
+import { Avatar } from 'web/components/avatar'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { UserLink } from 'web/components/user-page'
 
 export default function SendPage() {
   const user = useUser()
   const [amount, setAmount] = useState(100)
   const links = useUserManalinks(user?.id ?? '')
+  const manalinkTxns = useManalinkTxns(user?.id ?? '')
 
   return (
     <Page>
@@ -23,41 +30,90 @@ export default function SendPage() {
         url="/send"
       />
 
-      <Col className="gap-4">
+      <Col className="gap-4 px-4 sm:px-6 lg:px-8">
         <Title text="Send mana" />
 
         {/* Add a input form to set the amount */}
-        <label>
-          Amount M$
-          <input
-            className="input"
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(parseInt(e.target.value))}
-          />
-        </label>
+        <Col className="justify-center gap-4 rounded-xl bg-indigo-50 p-4">
+          <p>Send your M$ to anyone!</p>
 
-        {user && (
-          <button
-            className="btn"
-            onClick={async () => {
-              await createManalink({
-                fromId: user.id,
-                amount: amount,
-                expiresTime: Date.now() + 1000 * 60 * 60 * 24 * 7,
-                maxUses: 1,
-              })
-            }}
-          >
-            Create a new Manalink
-          </button>
+          <label>
+            M$
+            <input
+              className="input"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(parseInt(e.target.value))}
+            />
+          </label>
+
+          {user && (
+            <button
+              className="btn max-w-xs"
+              onClick={async () => {
+                await createManalink({
+                  fromId: user.id,
+                  amount: amount,
+                  expiresTime: Date.now() + 1000 * 60 * 60 * 24 * 7,
+                  maxUses: 1,
+                })
+              }}
+            >
+              Create
+            </button>
+          )}
+        </Col>
+
+        <Spacer h={20} />
+
+        {links.length > 0 && <LinksTable links={links} />}
+
+        {manalinkTxns.length > 0 && (
+          <Col className="mt-12">
+            <h1 className="text-xl font-semibold text-gray-900">
+              Claimed links
+            </h1>
+            {manalinkTxns.map((txn) => (
+              <Claim txn={txn} key={txn.id} />
+            ))}
+          </Col>
         )}
       </Col>
-
-      <Spacer h={20} />
-
-      <LinksTable links={links} />
     </Page>
+  )
+}
+
+export function Claim(props: { txn: Txn }) {
+  const { txn } = props
+  const from = useUserById(txn.fromId)
+  const to = useUserById(txn.toId)
+
+  if (!from || !to) {
+    return <>Loading...</>
+  }
+
+  return (
+    <div className="mb-2 flow-root pr-2 md:pr-0">
+      <div className="relative flex items-center space-x-3">
+        <Avatar username={to.name} avatarUrl={to.avatarUrl} size="sm" />
+        <div className="min-w-0 flex-1">
+          <p className="mt-0.5 text-sm text-gray-500">
+            <UserLink
+              className="text-gray-500"
+              username={to.username}
+              name={to.name}
+            />{' '}
+            claimed {formatMoney(txn.amount)} from{' '}
+            <UserLink
+              className="text-gray-500"
+              username={from.username}
+              name={from.name}
+            />
+            <RelativeTimestamp time={txn.createdTime} />
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -65,7 +121,7 @@ function LinksTable(props: { links: Manalink[] }) {
   const { links } = props
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
+    <div>
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-xl font-semibold text-gray-900">Your links</h1>
