@@ -3,7 +3,6 @@ import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
-import { SmoothScrollWithinPage } from 'web/components/smooth-scroll-within-page'
 
 function MyApp({ Component, pageProps }: AppProps) {
   usePreserveScroll()
@@ -57,9 +56,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           content="width=device-width, initial-scale=1, maximum-scale=1"
         />
       </Head>
-      <SmoothScrollWithinPage>
-        <Component {...pageProps} />
-      </SmoothScrollWithinPage>
+      <Component {...pageProps} />
     </>
   )
 }
