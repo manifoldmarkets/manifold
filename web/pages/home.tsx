@@ -40,27 +40,20 @@ const Home = () => {
   return (
     <>
       <Page assertUser="signed-in" suspend={!!contract}>
-        <Col className="items-center">
-          <Col className="w-full max-w-[700px]">
-            <FeedCreate user={user ?? undefined} />
-            <Spacer h={2} />
-
-            <CategorySelector user={user} />
-
-            <Spacer h={1} />
-
-            {feed ? (
-              <ActivityFeed
-                feed={feed}
-                mode="only-recent"
-                getContractPath={(c) =>
-                  `home?u=${c.creatorUsername}&s=${c.slug}`
-                }
-              />
-            ) : (
-              <LoadingIndicator className="mt-4" />
-            )}
-          </Col>
+        <Col className="mx-auto w-full max-w-[700px]">
+          <FeedCreate user={user ?? undefined} />
+          <Spacer h={2} />
+          <CategorySelector user={user} />
+          <Spacer h={1} />
+          {feed ? (
+            <ActivityFeed
+              feed={feed}
+              mode="only-recent"
+              getContractPath={(c) => `home?u=${c.creatorUsername}&s=${c.slug}`}
+            />
+          ) : (
+            <LoadingIndicator className="mt-4" />
+          )}
         </Col>
       </Page>
 
