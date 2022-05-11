@@ -137,6 +137,37 @@ export const sendWelcomeEmail = async (
   )
 }
 
+export const sendThankYouEmail = async (
+  user: User,
+  privateUser: PrivateUser
+) => {
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser.unsubscribedFromGenericEmails
+  )
+    return
+
+  const { name, id: userId } = user
+  const firstName = name.split(' ')[0]
+
+  const emailType = 'generic'
+  const unsubscribeLink = `https://us-central1-${PROJECT_ID}.cloudfunctions.net/unsubscribe?id=${userId}&type=${emailType}`
+
+  await sendTemplateEmail(
+    privateUser.email,
+    'Thanks for your Manifold purchase',
+    'thank-you',
+    {
+      name: firstName,
+      unsubscribeLink,
+    },
+    {
+      from: 'David from Manifold <david@manifold.markets>',
+    }
+  )
+}
+
 export const sendMarketCloseEmail = async (
   user: User,
   privateUser: PrivateUser,
