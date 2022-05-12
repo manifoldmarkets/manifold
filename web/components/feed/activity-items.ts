@@ -293,11 +293,9 @@ function getAnswerAndCommentInputGroups(
           comment.answerOutcome === outcome ||
           answerBets.some((bet) => bet.id === comment.betId)
       )
-      const items = getCommentThreads(
-        answerBets,
-        answerComments,
-        contract
-      ).reverse()
+      const items = getCommentThreads(answerBets, answerComments, contract)
+
+      if (outcome === GENERAL_COMMENTS_OUTCOME_ID) items.reverse()
 
       return {
         id: outcome,
