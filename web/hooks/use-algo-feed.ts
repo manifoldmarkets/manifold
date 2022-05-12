@@ -1,26 +1,18 @@
-import _ from 'lodash'
+import _, { Dictionary } from 'lodash'
 import { useState, useEffect } from 'react'
-import { Bet } from 'common/bet'
-import { Comment } from 'common/comment'
-import { Contract } from 'common/contract'
+import type { feed } from 'common/feed'
 import { useTimeSinceFirstRender } from './use-time-since-first-render'
 import { trackLatency } from 'web/lib/firebase/tracking'
 import { User } from 'common/user'
-import { getUserFeed } from 'web/lib/firebase/users'
-import { useUpdatedContracts } from './use-contracts'
+import { getCategoryFeeds, getUserFeed } from 'web/lib/firebase/users'
 import {
   getRecentBetsAndComments,
   getTopWeeklyContracts,
 } from 'web/lib/firebase/contracts'
 
-type feed = {
-  contract: Contract
-  recentBets: Bet[]
-  recentComments: Comment[]
-}[]
-
 export const useAlgoFeed = (user: User | null | undefined) => {
   const [feed, setFeed] = useState<feed>()
+  const [categoryFeeds, setCategoryFeeds] = useState<Dictionary<feed>>()
 
   const getTime = useTimeSinceFirstRender()
 
@@ -34,21 +26,21 @@ export const useAlgoFeed = (user: User | null | undefined) => {
         trackLatency('feed', getTime())
         console.log('feed load time', getTime())
       })
+
+      getCategoryFeeds(user.id).then((feeds) => {
+        setCategoryFeeds(feeds)
+        console.log('category feeds load time', getTime())
+      })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
-  return useUpdateFeed(feed)
-}
+  const followedCategory = user?.followedCategories?.[0] ?? 'all'
 
-const useUpdateFeed = (feed: feed | undefined) => {
-  const contracts = useUpdatedContracts(feed?.map((item) => item.contract))
+  const followedFeed =
+    followedCategory === 'all' ? feed : categoryFeeds?.[followedCategory]
 
-  return feed && contracts
-    ? feed.map(({ contract, ...other }, i) => ({
-        ...other,
-        contract: contracts[i],
-      }))
-    : undefined
+  return followedFeed
 }
 
 const getDefaultFeed = async () => {

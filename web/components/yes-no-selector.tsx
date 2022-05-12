@@ -22,7 +22,7 @@ export function YesNoSelector(props: {
   } = props
 
   const commonClassNames =
-    'inline-flex flex-1  items-center justify-center rounded-3xl border-2 p-2'
+    'inline-flex items-center justify-center rounded-3xl border-2 p-2'
 
   return (
     <Row className={clsx('space-x-3', className)}>
