@@ -32,6 +32,7 @@ export type PrivateUser = {
   unsubscribedFromResolutionEmails?: boolean
   unsubscribedFromCommentEmails?: boolean
   unsubscribedFromAnswerEmails?: boolean
+  unsubscribedFromGenericEmails?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string
 }

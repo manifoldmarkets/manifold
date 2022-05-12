@@ -111,7 +111,7 @@ export function AnswersPanel(props: {
         <FeedItems
           contract={contract}
           items={answerItems}
-          className={''}
+          className={'pr-2 md:pr-0'}
           betRowClassName={''}
         />
       )}

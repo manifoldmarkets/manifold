@@ -14,10 +14,10 @@ import {
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
   outcomeType,
-} from '../../common/contract'
-import { slugify } from '../../common/util/slugify'
-import { randomString } from '../../common/util/random'
-import { getNewContract } from '../../common/new-contract'
+} from 'common/contract'
+import { slugify } from 'common/util/slugify'
+import { randomString } from 'common/util/random'
+import { getNewContract } from 'common/new-contract'
 import {
   FIXED_ANTE,
   getAnteBets,
@@ -25,8 +25,8 @@ import {
   getFreeAnswerAnte,
   HOUSE_LIQUIDITY_PROVIDER_ID,
   MINIMUM_ANTE,
-} from '../../common/antes'
-import { getNoneAnswer } from '../../common/answer'
+} from 'common/antes'
+import { getNoneAnswer } from 'common/answer'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })

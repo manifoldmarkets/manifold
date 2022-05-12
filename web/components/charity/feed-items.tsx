@@ -2,7 +2,7 @@ import { Txn } from 'common/txn'
 import { Avatar } from '../avatar'
 import { useUserById } from 'web/hooks/use-users'
 import { UserLink } from '../user-page'
-import { manaToUSD } from '../../pages/charity/[charitySlug]'
+import { manaToUSD } from '../../../common/util/format'
 import { RelativeTimestamp } from '../relative-timestamp'
 
 export function Donation(props: { txn: Txn }) {

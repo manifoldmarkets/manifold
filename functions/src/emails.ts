@@ -1,15 +1,16 @@
 import * as _ from 'lodash'
 
-import { DOMAIN, PROJECT_ID } from '../../common/envs/constants'
-import { Answer } from '../../common/answer'
-import { Bet } from '../../common/bet'
-import { getProbability } from '../../common/calculate'
-import { Comment } from '../../common/comment'
-import { Contract, FreeResponseContract } from '../../common/contract'
-import { CREATOR_FEE } from '../../common/fees'
-import { PrivateUser, User } from '../../common/user'
-import { formatMoney, formatPercent } from '../../common/util/format'
-import { sendTemplateEmail, sendTextEmail } from './send-email'
+import { DOMAIN, PROJECT_ID } from 'common/envs/constants'
+import { Answer } from 'common/answer'
+import { Bet } from 'common/bet'
+import { getProbability } from 'common/calculate'
+import { Comment } from 'common/comment'
+import { Contract, FreeResponseContract } from 'common/contract'
+import { DPM_CREATOR_FEE } from 'common/fees'
+import { PrivateUser, User } from 'common/user'
+import { formatMoney, formatPercent } from 'common/util/format'
+
+import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 
 export const sendMarketResolutionEmail = async (
@@ -115,22 +116,89 @@ export const sendWelcomeEmail = async (
   user: User,
   privateUser: PrivateUser
 ) => {
-  const firstName = user.name.split(' ')[0]
+  if (!privateUser || !privateUser.email) return
 
-  await sendTextEmail(
-    privateUser.email || '',
+  const { name, id: userId } = user
+  const firstName = name.split(' ')[0]
+
+  const emailType = 'generic'
+  const unsubscribeLink = `https://us-central1-${PROJECT_ID}.cloudfunctions.net/unsubscribe?id=${userId}&type=${emailType}`
+
+  await sendTemplateEmail(
+    privateUser.email,
     'Welcome to Manifold Markets!',
-    `Hi ${firstName},
+    'welcome',
+    {
+      name: firstName,
+      unsubscribeLink,
+    },
+    {
+      from: 'David from Manifold <david@manifold.markets>',
+    }
+  )
+}
 
-Thanks for joining us! We can't wait to see what markets you create.
+// TODO: use manalinks to give out M$500
+export const sendOneWeekBonusEmail = async (
+  user: User,
+  privateUser: PrivateUser
+) => {
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser.unsubscribedFromGenericEmails
+  )
+    return
 
-Questions? Feedback? I'd love to hear from you - just reply to this email!
+  const { name, id: userId } = user
+  const firstName = name.split(' ')[0]
 
-Or come chat with us on Discord: https://discord.gg/eHQBNBqXuh
+  const emailType = 'generic'
+  const unsubscribeLink = `https://us-central1-${PROJECT_ID}.cloudfunctions.net/unsubscribe?id=${userId}&type=${emailType}`
 
-Best,
-Austin from Manifold
-https://${DOMAIN}/`
+  await sendTemplateEmail(
+    privateUser.email,
+    'Manifold one week anniversary gift',
+    'one-week',
+    {
+      name: firstName,
+      unsubscribeLink,
+      manalink: '', // TODO
+    },
+    {
+      from: 'David from Manifold <david@manifold.markets>',
+    }
+  )
+}
+
+export const sendThankYouEmail = async (
+  user: User,
+  privateUser: PrivateUser
+) => {
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser.unsubscribedFromGenericEmails
+  )
+    return
+
+  const { name, id: userId } = user
+  const firstName = name.split(' ')[0]
+
+  const emailType = 'generic'
+  const unsubscribeLink = `https://us-central1-${PROJECT_ID}.cloudfunctions.net/unsubscribe?id=${userId}&type=${emailType}`
+
+  await sendTemplateEmail(
+    privateUser.email,
+    'Thanks for your Manifold purchase',
+    'thank-you',
+    {
+      name: firstName,
+      unsubscribeLink,
+    },
+    {
+      from: 'David from Manifold <david@manifold.markets>',
+    }
   )
 }
 
@@ -149,8 +217,8 @@ export const sendMarketCloseEmail = async (
   const { username, name, id: userId } = user
   const firstName = name.split(' ')[0]
 
-  const { question, pool: pools, slug } = contract
-  const pool = formatMoney(_.sum(_.values(pools)))
+  const { question, slug, volume, mechanism, collectedFees } = contract
+
   const url = `https://${DOMAIN}/${username}/${slug}`
 
   await sendTemplateEmail(
@@ -158,12 +226,15 @@ export const sendMarketCloseEmail = async (
     'Your market has closed',
     'market-close',
     {
-      name: firstName,
       question,
-      pool,
       url,
       userId,
-      creatorFee: (CREATOR_FEE * 100).toString(),
+      name: firstName,
+      volume: formatMoney(volume),
+      creatorFee:
+        mechanism === 'dpm-2'
+          ? `${DPM_CREATOR_FEE * 100}% of the profits`
+          : formatMoney(collectedFees.creatorFee),
     }
   )
 }

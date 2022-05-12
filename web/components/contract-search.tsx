@@ -43,6 +43,7 @@ type filter = 'open' | 'closed' | 'resolved' | 'all'
 export function ContractSearch(props: {
   querySortOptions?: {
     defaultSort: Sort
+    defaultFilter?: filter
     filter?: {
       creatorId?: string
       tag?: string
@@ -60,7 +61,9 @@ export function ContractSearch(props: {
     ? initialSort
     : querySortOptions?.defaultSort
 
-  const [filter, setFilter] = useState<filter>('open')
+  const [filter, setFilter] = useState<filter>(
+    querySortOptions?.defaultFilter ?? 'open'
+  )
 
   if (!sort) return <></>
   return (

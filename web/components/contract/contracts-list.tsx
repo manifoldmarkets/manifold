@@ -59,6 +59,7 @@ export function CreatorContractsList(props: { creator: User }) {
           creatorId: creator.id,
         },
         defaultSort: 'newest',
+        defaultFilter: 'all',
         shouldLoadFromStorage: false,
       }}
     />
