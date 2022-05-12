@@ -950,6 +950,12 @@ function FeedAnswerGroup(props: {
         />
       </Modal>
 
+      {type == 'answer' && (
+        <div
+          className="absolute -m-3 h-full rounded-tl-md bg-green-600 bg-opacity-10"
+          style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
+        ></div>
+      )}
       <Row className="my-4 gap-3">
         <div className="px-1">
           <Avatar username={username} avatarUrl={avatarUrl} />
@@ -982,9 +988,7 @@ function FeedAnswerGroup(props: {
                 <span
                   className={clsx(
                     'text-2xl',
-                    tradingAllowed(contract)
-                      ? 'text-green-500'
-                      : 'text-gray-500'
+                    tradingAllowed(contract) ? 'text-primary' : 'text-gray-500'
                   )}
                 >
                   {probPercent}
