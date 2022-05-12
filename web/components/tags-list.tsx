@@ -8,7 +8,6 @@ import { SiteLink } from './site-link'
 function Hashtag(props: { tag: string; noLink?: boolean }) {
   const { tag, noLink } = props
   const category = CATEGORIES[tag.replace('#', '').toLowerCase()]
-  console.log(tag, category)
 
   const body = (
     <div
