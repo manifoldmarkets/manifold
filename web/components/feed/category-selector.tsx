@@ -64,7 +64,7 @@ function CategoryButton(props: {
     <div
       className={clsx(
         'rounded-full border-2 px-4 py-1 shadow-md',
-        'cursor-pointer',
+        'cursor-pointer select-none',
         isFollowed ? 'border-gray-300 bg-gray-300' : 'bg-white'
       )}
       onClick={toggle}
