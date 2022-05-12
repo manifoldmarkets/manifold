@@ -5,7 +5,6 @@ import { useTimeSinceFirstRender } from './use-time-since-first-render'
 import { trackLatency } from 'web/lib/firebase/tracking'
 import { User } from 'common/user'
 import { getCategoryFeeds, getUserFeed } from 'web/lib/firebase/users'
-import { useUpdatedContracts } from './use-contracts'
 import {
   getRecentBetsAndComments,
   getTopWeeklyContracts,
@@ -42,17 +41,6 @@ export const useAlgoFeed = (user: User | null | undefined) => {
     followedCategory === 'all' ? feed : categoryFeeds?.[followedCategory]
 
   return followedFeed
-}
-
-const useUpdateFeed = (feed: feed | undefined) => {
-  const contracts = useUpdatedContracts(feed?.map((item) => item.contract))
-
-  return feed && contracts
-    ? feed.map(({ contract, ...other }, i) => ({
-        ...other,
-        contract: contracts[i],
-      }))
-    : undefined
 }
 
 const getDefaultFeed = async () => {
