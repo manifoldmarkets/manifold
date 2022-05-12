@@ -63,7 +63,7 @@ function CategoryButton(props: {
   return (
     <div
       className={clsx(
-        'rounded-full border-2 px-4 py-1 shadow-md',
+        'rounded-full border-2 px-4 py-1 shadow-md hover:bg-gray-200',
         'cursor-pointer select-none',
         isFollowed ? 'border-gray-300 bg-gray-300' : 'bg-white'
       )}
