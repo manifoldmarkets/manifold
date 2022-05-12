@@ -19,11 +19,13 @@
   },
   "main": "lib/functions/src/index.js",
   "dependencies": {
+    "@react-query-firebase/firestore": "0.4.2",
     "fetch": "1.1.0",
     "firebase-admin": "10.0.0",
     "firebase-functions": "3.16.0",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
+    "react-query": "3.39.0",
     "stripe": "8.194.0"
   },
   "devDependencies": {
