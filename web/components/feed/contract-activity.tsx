@@ -10,6 +10,7 @@ import {
 } from './activity-items'
 import { FeedItems } from './feed-items'
 import { User } from 'common/user'
+import { useContract } from 'web/hooks/use-contract'
 
 export function ContractActivity(props: {
   contract: Contract
@@ -27,8 +28,9 @@ export function ContractActivity(props: {
   className?: string
   betRowClassName?: string
 }) {
-  const { contract, user, mode, contractPath, className, betRowClassName } =
-    props
+  const { user, mode, contractPath, className, betRowClassName } = props
+
+  const contract = useContract(props.contract.id) ?? props.contract
 
   const updatedComments =
     // eslint-disable-next-line react-hooks/rules-of-hooks
