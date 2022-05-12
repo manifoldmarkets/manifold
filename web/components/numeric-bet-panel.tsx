@@ -15,10 +15,10 @@ import { useUser } from '../hooks/use-user'
 import { placeBet } from '../lib/firebase/api-call'
 import { firebaseLogin, User } from '../lib/firebase/users'
 import { BuyAmountInput } from './amount-input'
+import { BucketInput } from './bucket-input'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
-import { NumberInput } from './number-input'
 
 export function NumericBetPanel(props: {
   contract: NumericContract
@@ -51,9 +51,10 @@ function NumericBuyPanel(props: {
   onBuySuccess?: () => void
 }) {
   const { contract, user, onBuySuccess } = props
-  const { min, max, bucketCount } = contract
 
-  const [numberString, setNumberString] = useState('')
+  const [bucketChoice, setBucketChoice] = useState<string | undefined>(
+    undefined
+  )
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
 
   const [valueError, setValueError] = useState<string | undefined>()
@@ -61,19 +62,13 @@ function NumericBuyPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
-  const value = parseFloat(numberString)
-  const index = Math.floor(((value - min) / (max - min)) * bucketCount)
-  const bucket = Math.max(Math.min(index, bucketCount - 1), 0)
-  const bucketChoice = `${bucket}`
-  console.log('value', value, 'bucket', bucket, 'min', min, 'max', max)
-
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
   }
 
   async function submitBet() {
-    if (!user || !betAmount || !isFinite(bucket)) return
+    if (!user || !betAmount || bucketChoice === undefined) return
 
     setError(undefined)
     setIsSubmitting(true)
@@ -134,13 +129,11 @@ function NumericBuyPanel(props: {
       <div className="my-3 text-left text-sm text-gray-500">
         Predicted value
       </div>
-      <NumberInput
-        inputClassName="w-full max-w-none"
-        onChange={setNumberString}
-        error={valueError}
-        disabled={isSubmitting}
-        numberString={numberString}
-        label="Value"
+
+      <BucketInput
+        contract={contract}
+        isSubmitting={isSubmitting}
+        onBucketChange={setBucketChoice}
       />
 
       <div className="my-3 text-left text-sm text-gray-500">Bet amount</div>

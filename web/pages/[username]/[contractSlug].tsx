@@ -7,10 +7,7 @@ import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet-panel'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import {
-  NumericResolutionPanel,
-  ResolutionPanel,
-} from 'web/components/resolution-panel'
+import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
 import { listUsers, User } from 'web/lib/firebase/users'
@@ -45,6 +42,7 @@ import { contractTextDetails } from 'web/components/contract/contract-details'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
 import { NumericBetPanel } from '../../components/numeric-bet-panel'
+import { NumericResolutionPanel } from '../../components/numeric-resolution-panel'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
