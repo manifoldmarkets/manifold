@@ -70,9 +70,9 @@ export function ContractDetails(props: {
   contract: Contract
   bets: Bet[]
   isCreator?: boolean
-  hideShareButtons?: boolean
+  disabled?: boolean
 }) {
-  const { contract, bets, isCreator, hideShareButtons } = props
+  const { contract, bets, isCreator, disabled } = props
   const { closeTime, creatorName, creatorUsername } = contract
   const { volumeLabel, createdDate, resolvedDate } = contractMetrics(contract)
 
@@ -83,13 +83,18 @@ export function ContractDetails(props: {
           <Avatar
             username={creatorUsername}
             avatarUrl={contract.creatorAvatarUrl}
+            noLink={disabled}
             size={6}
           />
-          <UserLink
-            className="whitespace-nowrap"
-            name={creatorName}
-            username={creatorUsername}
-          />
+          {disabled ? (
+            creatorName
+          ) : (
+            <UserLink
+              className="whitespace-nowrap"
+              name={creatorName}
+              username={creatorUsername}
+            />
+          )}
         </Row>
 
         {(!!closeTime || !!resolvedDate) && (
@@ -131,9 +136,7 @@ export function ContractDetails(props: {
           <div className="whitespace-nowrap">{volumeLabel}</div>
         </Row>
 
-        {!hideShareButtons && (
-          <ContractInfoDialog contract={contract} bets={bets} />
-        )}
+        {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
       </Row>
     </Col>
   )
