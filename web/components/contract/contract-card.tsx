@@ -9,7 +9,6 @@ import {
   getBinaryProbPercent,
 } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import { Spacer } from '../layout/spacer'
 import {
   Binary,
   CPMM,
@@ -38,13 +37,15 @@ export function ContractCard(props: {
   const { question, outcomeType, resolution } = contract
 
   const { tags } = contract
-  const category = tags.find((tag) => CATEGORY_LIST.includes(tag.toLowerCase()))
+  const categories = tags.filter((tag) =>
+    CATEGORY_LIST.includes(tag.toLowerCase())
+  )
 
   return (
     <div>
-      <div
+      <Col
         className={clsx(
-          'relative rounded-lg bg-white p-6 shadow-md hover:bg-gray-100',
+          'relative gap-3 rounded-lg bg-white p-6 shadow-md hover:bg-gray-100',
           className
         )}
       >
@@ -57,37 +58,39 @@ export function ContractCard(props: {
           showHotVolume={showHotVolume}
           showCloseTime={showCloseTime}
         />
-        <Spacer h={3} />
 
-        <Row
-          className={clsx(
-            'justify-between gap-4',
-            outcomeType === 'FREE_RESPONSE' && 'flex-col items-start !gap-2'
-          )}
-        >
-          <p
-            className="break-words font-medium text-indigo-700"
-            style={{ /* For iOS safari */ wordBreak: 'break-word' }}
-          >
-            {question}
-          </p>
+        <Row className={clsx('justify-between gap-4')}>
+          <Col className="gap-3">
+            <p
+              className="break-words font-medium text-indigo-700"
+              style={{ /* For iOS safari */ wordBreak: 'break-word' }}
+            >
+              {question}
+            </p>
+            {outcomeType !== 'FREE_RESPONSE' && categories.length > 0 && (
+              <TagsList tags={categories} noLabel />
+            )}
+          </Col>
           {outcomeType === 'BINARY' && (
             <BinaryResolutionOrChance
               className="items-center"
               contract={contract}
             />
           )}
-          {outcomeType === 'FREE_RESPONSE' && (
-            <FreeResponseResolutionOrChance
-              className="self-end text-gray-600"
-              contract={contract as FullContract<DPM, FreeResponse>}
-              truncate="long"
-            />
-          )}
         </Row>
 
-        {category && <TagsList tags={[category]} noLabel />}
-      </div>
+        {outcomeType === 'FREE_RESPONSE' && (
+          <FreeResponseResolutionOrChance
+            className="self-end text-gray-600"
+            contract={contract as FullContract<DPM, FreeResponse>}
+            truncate="long"
+          />
+        )}
+
+        {outcomeType === 'FREE_RESPONSE' && categories.length > 0 && (
+          <TagsList tags={categories} noLabel />
+        )}
+      </Col>
     </div>
   )
 }
