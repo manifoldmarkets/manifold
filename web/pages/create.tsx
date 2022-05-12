@@ -127,8 +127,8 @@ export function NewContract(props: { question: string; tag?: string }) {
         ante,
         closeTime,
         tags,
-        min: minString,
-        max: maxString,
+        min,
+        max,
       })
     ).then((r) => r.data || {})
 

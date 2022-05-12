@@ -83,6 +83,19 @@ export const createContract = functions
         return { status: 'error', message: 'Invalid outcomeType' }
 
       if (
+        outcomeType === 'NUMERIC' &&
+        !(
+          min !== undefined &&
+          max !== undefined &&
+          isFinite(min) &&
+          isFinite(max) &&
+          min < max &&
+          max - min > 0.01
+        )
+      )
+        return { status: 'error', message: 'Invalid range' }
+
+      if (
         outcomeType === 'BINARY' &&
         (!initialProb || initialProb < 1 || initialProb > 99)
       )
