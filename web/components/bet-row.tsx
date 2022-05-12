@@ -15,8 +15,9 @@ export default function BetRow(props: {
   contract: FullContract<DPM | CPMM, Binary>
   className?: string
   btnClassName?: string
+  betPanelClassName?: string
 }) {
-  const { className, btnClassName, contract } = props
+  const { className, btnClassName, betPanelClassName, contract } = props
   const [open, setOpen] = useState(false)
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
     undefined
@@ -60,6 +61,7 @@ export default function BetRow(props: {
       />
       <Modal open={open} setOpen={setOpen}>
         <BetPanelSwitcher
+          className={betPanelClassName}
           contract={contract}
           title={contract.question}
           selected={betChoice}

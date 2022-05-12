@@ -115,7 +115,10 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
           {isBinary && (
             <Row className="items-center gap-4">
-              <BetRow contract={contract as BinaryContract} />
+              <BetRow
+                contract={contract as BinaryContract}
+                betPanelClassName="scale-75"
+              />
               <BinaryResolutionOrChance contract={contract} />
             </Row>
           )}
