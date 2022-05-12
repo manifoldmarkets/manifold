@@ -534,6 +534,8 @@ export function getSpecificContractActivityItems(
 
   switch (mode) {
     case 'bets':
+      // Remove first bet (which is the ante):
+      if (contract.outcomeType === 'FREE_RESPONSE') bets = bets.slice(1)
       items.push(
         ...bets.map((bet) => ({
           type: 'bet' as const,
