@@ -31,7 +31,7 @@ export default function BetRow(props: {
   return (
     <>
       <YesNoSelector
-        className={clsx('mt-2 justify-end', className)}
+        className={clsx('justify-end', className)}
         btnClassName={clsx('btn-sm w-24', btnClassName)}
         onSelect={(choice) => {
           setOpen(true)

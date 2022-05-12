@@ -77,7 +77,7 @@ export function ContractDetails(props: {
   const { volumeLabel, createdDate, resolvedDate } = contractMetrics(contract)
 
   return (
-    <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-3 text-sm text-gray-500">
+    <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
       <Row className="items-center gap-2">
         <Avatar
           username={creatorUsername}
