@@ -48,7 +48,7 @@ export type Contract = FullContract<
 >
 export type BinaryContract = FullContract<DPM | CPMM, Binary>
 export type FreeResponseContract = FullContract<DPM | CPMM, FreeResponse>
-export type NumericContract = FullContract<DPM, Numeric>
+export type NumericContract = FullContract<any, Numeric>
 
 export type DPM = {
   mechanism: 'dpm-2'

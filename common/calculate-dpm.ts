@@ -74,6 +74,17 @@ export const getMappedBucket = (value: number, contract: NumericContract) => {
   return `${bucket}`
 }
 
+export const getValueFromBucket = (
+  bucket: string,
+  contract: NumericContract
+) => {
+  const { bucketCount, min, max } = contract
+  const index = parseInt(bucket)
+  const value = min + (index / bucketCount) * (max - min)
+  const rounded = Math.round(value * 1e4) / 1e4
+  return rounded
+}
+
 export function getDpmOutcomeProbabilityAfterBet(
   totalShares: {
     [outcome: string]: number

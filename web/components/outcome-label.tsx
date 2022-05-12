@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
+import { getValueFromBucket } from 'common/calculate-dpm'
 import {
   Binary,
   Contract,
@@ -22,6 +23,13 @@ export function OutcomeLabel(props: {
 
   if (contract.outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
+
+  if (contract.outcomeType === 'NUMERIC')
+    return (
+      <span className="text-indigo-500">
+        {getValueFromBucket(outcome, contract)}
+      </span>
+    )
 
   return (
     <FreeResponseOutcomeLabel

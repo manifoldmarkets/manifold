@@ -4,6 +4,7 @@ import { DOMAIN, PROJECT_ID } from 'common/envs/constants'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
+import { getValueFromBucket } from 'common/calculate-dpm'
 import { Comment } from 'common/comment'
 import { Contract, FreeResponseContract } from 'common/contract'
 import { DPM_CREATOR_FEE } from 'common/fees'
@@ -104,6 +105,9 @@ const toDisplayResolution = (
 
   if (resolution === 'MKT' && resolutions) return 'MULTI'
   if (resolution === 'CANCEL') return 'N/A'
+
+  if (contract.outcomeType === 'NUMERIC')
+    return getValueFromBucket(resolution, contract).toString()
 
   const answer = (contract as FreeResponseContract).answers?.find(
     (a) => a.id === resolution
