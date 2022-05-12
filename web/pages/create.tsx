@@ -220,9 +220,9 @@ export function NewContract(props: { question: string; tag?: string }) {
         >
           <option selected={category === ''}></option>
 
-          {CATEGORY_LIST.map((cat) => (
-            <option selected={category === cat} value={CATEGORIES[cat]}>
-              {CATEGORIES[cat]}
+          {Object.entries(CATEGORIES).map(([id, name]) => (
+            <option key={id} selected={category === id} value={name}>
+              {name}
             </option>
           ))}
         </select>
