@@ -1,7 +1,5 @@
 export const CATEGORIES = {
   politics: 'Politics',
-  personal: 'Personal',
-  friends: 'Friends / Community',
   technology: 'Technology',
   sports: 'Sports',
   gaming: 'Gaming / Esports',
@@ -10,6 +8,8 @@ export const CATEGORIES = {
   society: 'Society',
   geopolitics: 'Geopolitics',
   fun: 'Fun stuff',
+  personal: 'Personal',
+  friends: 'Friends / Community',
   business: 'Business',
   finance: 'Finance',
   crypto: 'Crypto',
@@ -23,7 +23,3 @@ export const TO_CATEGORY = Object.fromEntries(
 )
 
 export const CATEGORY_LIST = Object.keys(CATEGORIES)
-
-export const FEED_CATEGORY_LIST = Object.keys(CATEGORIES).filter(
-  (cat) => !['personal', 'friends'].includes(cat)
-)

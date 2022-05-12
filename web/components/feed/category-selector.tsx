@@ -3,7 +3,7 @@ import _ from 'lodash'
 
 import { User } from '../../../common/user'
 import { Row } from '../layout/row'
-import { CATEGORIES, FEED_CATEGORY_LIST } from '../../../common/categories'
+import { CATEGORIES, CATEGORY_LIST } from '../../../common/categories'
 import { updateUser } from '../../lib/firebase/users'
 
 export function CategorySelector(props: {
@@ -21,8 +21,6 @@ export function CategorySelector(props: {
         className
       )}
     >
-      <div className="mr-1 hidden text-gray-500 sm:flex">Categories</div>
-
       <CategoryButton
         key={'all' + followedCategories.length}
         category="All"
@@ -36,7 +34,7 @@ export function CategorySelector(props: {
         }}
       />
 
-      {FEED_CATEGORY_LIST.map((cat) => (
+      {CATEGORY_LIST.map((cat) => (
         <CategoryButton
           key={cat + followedCategories.length}
           category={CATEGORIES[cat].split(' ')[0]}
