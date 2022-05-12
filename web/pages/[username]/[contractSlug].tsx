@@ -204,6 +204,11 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
           </>
         )}
 
+        <NumericBetPanel
+          className="sm:hidden"
+          contract={contract as NumericContract}
+        />
+
         {isResolved && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
