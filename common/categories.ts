@@ -8,7 +8,7 @@ export const CATEGORIES = {
   world: 'World',
   fun: 'Fun stuff',
   personal: 'Personal',
-  finance: 'Finance',
+  economics: 'Economics',
   crypto: 'Crypto',
   health: 'Health',
   // entertainment: 'Entertainment',
