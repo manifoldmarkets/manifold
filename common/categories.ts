@@ -5,17 +5,17 @@ export const CATEGORIES = {
   gaming: 'Gaming / Esports',
   manifold: 'Manifold Markets',
   science: 'Science',
-  society: 'Society',
-  geopolitics: 'Geopolitics',
+  world: 'World',
   fun: 'Fun stuff',
   personal: 'Personal',
-  friends: 'Friends / Community',
-  business: 'Business',
   finance: 'Finance',
   crypto: 'Crypto',
   health: 'Health',
-  entertainment: 'Entertainment',
-  charity: 'Charities / Non-profits',
+  // entertainment: 'Entertainment',
+  // society: 'Society',
+  // friends: 'Friends / Community',
+  // business: 'Business',
+  // charity: 'Charities / Non-profits',
 } as { [category: string]: string }
 
 export const TO_CATEGORY = Object.fromEntries(
