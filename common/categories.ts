@@ -16,7 +16,6 @@ export const CATEGORIES = {
   health: 'Health',
   entertainment: 'Entertainment',
   charity: 'Charities / Non-profits',
-  other: 'Other',
 } as { [category: string]: string }
 
 export const TO_CATEGORY = Object.fromEntries(
