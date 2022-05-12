@@ -176,7 +176,7 @@ export function FeedCommentThread(props: {
         </div>
       ))}
       {showReply && (
-        <div className={' ml-8 w-full pt-6'}>
+        <div className={'ml-8 w-full pt-6'}>
           <CommentInput
             contract={contract}
             // Should we allow replies to contain recent bet info?
@@ -280,9 +280,7 @@ export function FeedComment(props: {
         />
         {onReplyClick && (
           <button
-            className={
-              'btn btn-ghost btn-xs text-transform: text-xs capitalize text-gray-500'
-            }
+            className={'text-xs font-bold text-gray-500 hover:underline'}
             onClick={() => onReplyClick(comment)}
           >
             Reply
@@ -969,7 +967,7 @@ function FeedAnswerGroup(props: {
                 <div className={'sm:hidden'}>
                   <button
                     className={
-                      'btn btn-ghost btn-xs text-transform: text-xs capitalize text-gray-500'
+                      'text-xs font-bold text-gray-500 hover:underline'
                     }
                     onClick={() => setShowReplyAndFocus(true)}
                   >
@@ -1002,9 +1000,7 @@ function FeedAnswerGroup(props: {
           {isFreeResponseContractPage && (
             <div className={'justify-initial hidden sm:block'}>
               <button
-                className={
-                  'btn btn-ghost btn-xs text-transform: text-xs capitalize text-gray-500'
-                }
+                className={'text-xs font-bold text-gray-500 hover:underline'}
                 onClick={() => setShowReplyAndFocus(true)}
               >
                 Reply
@@ -1035,7 +1031,7 @@ function FeedAnswerGroup(props: {
       ))}
 
       {showReply && (
-        <div className={'ml-8'}>
+        <div className={'ml-8 pt-4'}>
           <CommentInput
             contract={contract}
             betsByCurrentUser={betsByCurrentUser ?? []}
