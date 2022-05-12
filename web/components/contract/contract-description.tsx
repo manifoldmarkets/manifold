@@ -39,7 +39,9 @@ export function ContractDescription(props: {
   if (!isCreator && !contract.description.trim()) return null
 
   const { tags } = contract
-  const category = tags.find((tag) => CATEGORY_LIST.includes(tag.toLowerCase()))
+  const categories = tags.filter((tag) =>
+    CATEGORY_LIST.includes(tag.toLowerCase())
+  )
 
   return (
     <div
@@ -50,9 +52,9 @@ export function ContractDescription(props: {
     >
       <Linkify text={contract.description} />
 
-      {category && (
+      {categories.length > 0 && (
         <div className="mt-4">
-          <TagsList tags={[category]} label="Category" />
+          <TagsList tags={categories} label="Category" />
         </div>
       )}
 
