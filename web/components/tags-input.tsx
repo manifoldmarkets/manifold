@@ -15,9 +15,9 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const updateTags = () => {
+  const updateTags = async () => {
     setIsSubmitting(true)
-    updateContract(contract.id, {
+    await updateContract(contract.id, {
       tags: newTags,
       lowercaseTags: newTags.map((tag) => tag.toLowerCase()),
     })
@@ -37,6 +37,12 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
           disabled={isSubmitting}
           value={tagText}
           onChange={(e) => setTagText(e.target.value || '')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              updateTags()
+            }
+          }}
         />
         <button className="btn btn-xs btn-outline" onClick={updateTags}>
           Save tags
