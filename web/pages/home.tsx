@@ -11,6 +11,7 @@ import { useUser } from 'web/hooks/use-user'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { useAlgoFeed } from 'web/hooks/use-algo-feed'
 import { ContractPageContent } from './[username]/[contractSlug]'
+import { CategorySelector } from '../components/feed/category-selector'
 
 const Home = () => {
   const user = useUser()
@@ -42,7 +43,12 @@ const Home = () => {
         <Col className="items-center">
           <Col className="w-full max-w-[700px]">
             <FeedCreate user={user ?? undefined} />
-            <Spacer h={10} />
+            <Spacer h={2} />
+
+            <CategorySelector user={user} />
+
+            <Spacer h={1} />
+
             {feed ? (
               <ActivityFeed
                 feed={feed}

@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Head from 'next/head'
 import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
+import { QueryClient, QueryClientProvider } from 'react-query'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -76,9 +77,14 @@ function MyApp({ Component, pageProps }: AppProps) {
           content="width=device-width, initial-scale=1, maximum-scale=1"
         />
       </Head>
-      <Component {...pageProps} />
+
+      <QueryClientProvider client={queryClient}>
+        <Component {...pageProps} />
+      </QueryClientProvider>
     </>
   )
 }
+
+const queryClient = new QueryClient()
 
 export default MyApp

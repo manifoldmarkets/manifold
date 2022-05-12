@@ -79,6 +79,8 @@ export function tradingAllowed(contract: Contract) {
 
 const db = getFirestore(app)
 export const contractCollection = collection(db, 'contracts')
+export const contractDocRef = (contractId: string) =>
+  doc(db, 'contracts', contractId)
 
 // Push contract to Firestore
 export async function setContract(contract: Contract) {
