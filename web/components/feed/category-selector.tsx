@@ -17,10 +17,11 @@ export function CategorySelector(props: {
   return (
     <Row
       className={clsx(
-        'mx-2 items-center space-x-2 overflow-x-scroll pt-4 pb-4',
+        'mr-2 items-center space-x-2 space-y-2 overflow-x-scroll scroll-smooth pt-4 pb-4 sm:flex-wrap',
         className
       )}
     >
+      <div />
       <CategoryButton
         key={'all' + followedCategories.length}
         category="All"
