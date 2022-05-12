@@ -50,7 +50,6 @@ import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { calculateCpmmSale } from 'common/calculate-cpmm'
-import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function FeedItems(props: {
   contract: Contract
@@ -303,7 +302,7 @@ export function CommentInput(props: {
   // Tie a comment to another comment
   parentComment?: Comment
   replyToUsername?: string
-  setRef?: (ref: any) => void
+  setRef?: (ref: HTMLTextAreaElement) => void
 }) {
   const {
     contract,
@@ -317,7 +316,6 @@ export function CommentInput(props: {
   const user = useUser()
   const [comment, setComment] = useState('')
   const [focused, setFocused] = useState(false)
-  const { width } = useWindowSize()
 
   const mostRecentCommentableBet = getMostRecentCommentableBet(
     betsByCurrentUser,
@@ -357,10 +355,6 @@ export function CommentInput(props: {
 
   const shouldCollapseAfterClickOutside = false
 
-  function isMobile() {
-    return width ? width < 768 : false
-  }
-
   return (
     <>
       <Row className={'mb-2 flex w-full gap-2'}>
@@ -375,6 +369,7 @@ export function CommentInput(props: {
                   contract={contract}
                   bet={mostRecentCommentableBet}
                   isSelf={true}
+                  hideOutcome={contract.outcomeType === 'FREE_RESPONSE'}
                 />
               )}
               {!mostRecentCommentableBet && user && userPosition > 0 && (
@@ -394,7 +389,7 @@ export function CommentInput(props: {
 
             <Row className="gap-1.5">
               <Textarea
-                ref={(ref) => setRef?.(ref)}
+                ref={(ref: HTMLTextAreaElement) => setRef?.(ref)}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 className="textarea textarea-bordered w-full resize-none"
@@ -411,7 +406,7 @@ export function CommentInput(props: {
                 }
                 maxLength={MAX_COMMENT_LENGTH}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && !isMobile()) {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault()
                     submitComment(id)
                   }
@@ -436,7 +431,7 @@ export function CommentInput(props: {
                 {user && (
                   <button
                     className={clsx(
-                      'btn text-transform: block capitalize md:hidden lg:hidden',
+                      'btn text-transform: block capitalize',
                       focused && comment
                         ? 'btn-outline btn-sm '
                         : 'btn-ghost btn-sm text-gray-500'
@@ -549,6 +544,7 @@ export function FeedBet(props: {
             contract={contract}
             isSelf={isSelf}
             bettor={bettor}
+            hideOutcome={hideOutcome}
           />
         </div>
       </Row>
@@ -561,8 +557,9 @@ function BetStatusText(props: {
   bet: Bet
   isSelf: boolean
   bettor?: User
+  hideOutcome?: boolean
 }) {
-  const { bet, contract, bettor, isSelf } = props
+  const { bet, contract, bettor, isSelf, hideOutcome } = props
   const { amount, outcome, createdTime } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
@@ -572,7 +569,7 @@ function BetStatusText(props: {
     <div className="text-sm text-gray-500">
       <span>{isSelf ? 'You' : bettor ? bettor.name : 'A trader'}</span> {bought}{' '}
       {money}
-      {contract.outcomeType !== 'FREE_RESPONSE' && (
+      {!hideOutcome && (
         <>
           {' '}
           of{' '}
@@ -1017,19 +1014,6 @@ function FeedAnswerGroup(props: {
         </Col>
       </Row>
 
-      {showReply && (
-        <div className={'ml-8'}>
-          <CommentInput
-            contract={contract}
-            betsByCurrentUser={betsByCurrentUser ?? []}
-            comments={comments ?? []}
-            answerOutcome={answer.number + ''}
-            replyToUsername={answer.username}
-            setRef={setInputRef}
-          />
-        </div>
-      )}
-
       {items.map((item, index) => (
         <div
           key={item.id}
@@ -1049,6 +1033,19 @@ function FeedAnswerGroup(props: {
           </div>
         </div>
       ))}
+
+      {showReply && (
+        <div className={'ml-8'}>
+          <CommentInput
+            contract={contract}
+            betsByCurrentUser={betsByCurrentUser ?? []}
+            comments={comments ?? []}
+            answerOutcome={answer.number + ''}
+            replyToUsername={answer.username}
+            setRef={setInputRef}
+          />
+        </div>
+      )}
     </Col>
   )
 }
