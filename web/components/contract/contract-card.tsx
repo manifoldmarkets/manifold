@@ -25,6 +25,8 @@ import {
 } from '../outcome-label'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AbbrContractDetails } from './contract-details'
+import { TagsList } from '../tags-list'
+import { CATEGORY_LIST } from 'common/categories'
 
 export function ContractCard(props: {
   contract: Contract
@@ -34,6 +36,9 @@ export function ContractCard(props: {
 }) {
   const { contract, showHotVolume, showCloseTime, className } = props
   const { question, outcomeType, resolution } = contract
+
+  const { tags } = contract
+  const category = tags.find((tag) => CATEGORY_LIST.includes(tag.toLowerCase()))
 
   return (
     <div>
@@ -80,6 +85,8 @@ export function ContractCard(props: {
             />
           )}
         </Row>
+
+        {category && <TagsList tags={[category]} noLabel />}
       </div>
     </div>
   )
