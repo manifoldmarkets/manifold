@@ -50,6 +50,11 @@ import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { calculateCpmmSale } from 'common/calculate-cpmm'
+import { LinkIcon } from '@heroicons/react/outline'
+import { DateTimeTooltip } from 'web/components/datetime-tooltip'
+import { fromNow } from 'web/lib/util/time'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
 
 export function FeedItems(props: {
   contract: Contract
@@ -160,10 +165,7 @@ export function FeedCommentThread(props: {
         <div
           key={comment.id}
           id={comment.id}
-          className={clsx(
-            'flex space-x-3',
-            commentIdx === 0 ? '' : 'mt-4 ml-8'
-          )}
+          className={commentIdx === 0 ? '' : 'mt-4 ml-8'}
         >
           <FeedComment
             contract={contract}
@@ -221,6 +223,24 @@ export function FeedComment(props: {
     money = formatMoney(Math.abs(matchedBet.amount))
   }
 
+  const [highlighted, setHighlighted] = useState(false)
+  const router = useRouter()
+  useEffect(() => {
+    // Find the current pathname and identify if the #comment-id is in it
+    const pathname = router.asPath
+    if (pathname.includes(`#${comment.id}`)) {
+      setHighlighted(true)
+      setTimeout(() => setHighlighted(false), 3000)
+    }
+  }, [router.asPath])
+
+  function copyLink() {
+    navigator.clipboard.writeText(
+      `${router.basePath}/${router.asPath}#${comment.id}`
+    )
+    // TODO: show toast to user they've copied the link
+  }
+
   // Only calculated if they don't have a matching bet
   const { userPosition, userPositionMoney, yesFloorShares, noFloorShares } =
     getBettorsPosition(
@@ -230,7 +250,12 @@ export function FeedComment(props: {
     )
 
   return (
-    <>
+    <Row
+      className={clsx(
+        'flex space-x-3',
+        highlighted ? 'bg-base-200 rounded' : ''
+      )}
+    >
       <Avatar
         className={clsx(smallAvatar && 'ml-1')}
         size={smallAvatar ? 'sm' : undefined}
@@ -271,7 +296,25 @@ export function FeedComment(props: {
               </>
             )}
           </>
-          <RelativeTimestamp time={createdTime} />
+          <DateTimeTooltip time={createdTime}>
+            <Link
+              href={`/${contract.creatorUsername}/${contract.slug}#${comment.id}`}
+              passHref={true}
+            >
+              <a
+                onClick={(event) => copyLink()}
+                className={'cursor-pointer hover:underline'}
+              >
+                <span className="ml-2 whitespace-nowrap text-gray-400">
+                  {fromNow(createdTime)}
+                </span>
+                <LinkIcon
+                  className="ml-1 mb-0.5 inline-block text-gray-400"
+                  height={13}
+                />
+              </a>
+            </Link>
+          </DateTimeTooltip>
         </p>
         <TruncatedComment
           comment={text}
@@ -287,7 +330,7 @@ export function FeedComment(props: {
           </button>
         )}
       </div>
-    </>
+    </Row>
   )
 }
 
