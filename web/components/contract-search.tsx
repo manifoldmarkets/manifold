@@ -17,7 +17,7 @@ import {
 } from '../hooks/use-sort-and-query-params'
 import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { useRouter } from 'next/router'
 import { ENV } from 'common/envs/constants'
@@ -143,7 +143,13 @@ export function ContractSearchInner(props: {
     setQuery(query)
   }, [query])
 
+  const isFirstRender = useRef(true)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+
     const sort = index.split('contracts-')[1] as Sort
     if (sort) {
       setSort(sort)
