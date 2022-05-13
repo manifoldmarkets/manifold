@@ -40,7 +40,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         `}
       </Script>
       {/* Hotjar Tracking Code for https://manifold.markets */}
-      <Script>
+      <Script id="hotjar">
         {`
           function(h,o,t,j,a,r){
             h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
