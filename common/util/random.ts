@@ -1,7 +1,11 @@
-export const randomString = (length = 12) =>
-  Math.random()
-    .toString(16)
-    .substring(2, length + 2)
+// Returns a cryptographically random hexadecimal string of length `length`
+// (thus containing 4*`length` bits of entropy).
+export const randomString = (length = 12) => {
+  const bytes = new Uint8Array(Math.ceil(length / 2))
+  crypto.getRandomValues(bytes)
+  const hex = bytes.reduce((s, b) => s + ('0' + b.toString(16)).slice(-2), '')
+  return hex.substring(0, length)
+}
 
 export function genHash(str: string) {
   // xmur3
