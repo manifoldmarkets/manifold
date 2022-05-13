@@ -20,7 +20,7 @@ import { MAX_DESCRIPTION_LENGTH, outcomeType } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from '../../common/util/object'
-import { CATEGORIES, CATEGORY_LIST, TO_CATEGORY } from 'common/categories'
+import { CATEGORIES } from 'common/categories'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -214,15 +214,13 @@ export function NewContract(props: { question: string; tag?: string }) {
 
         <select
           className="select select-bordered w-full max-w-xs"
-          onChange={(e) =>
-            setCategory(TO_CATEGORY[e.currentTarget.value] ?? '')
-          }
+          value={category}
+          onChange={(e) => setCategory(e.currentTarget.value ?? '')}
         >
-          <option selected={category === ''}></option>
-
-          {CATEGORY_LIST.map((cat) => (
-            <option selected={category === cat} value={CATEGORIES[cat]}>
-              {CATEGORIES[cat]}
+          <option value={''}></option>
+          {Object.entries(CATEGORIES).map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
             </option>
           ))}
         </select>
