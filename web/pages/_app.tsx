@@ -26,7 +26,7 @@ function printBuildInfo() {
 function MyApp({ Component, pageProps }: AppProps) {
   usePreserveScroll()
 
-  useEffect(printBuildInfo)
+  useEffect(printBuildInfo, [])
 
   return (
     <>
