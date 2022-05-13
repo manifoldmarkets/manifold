@@ -17,7 +17,7 @@ export function CategorySelector(props: {
   return (
     <Row
       className={clsx(
-        'mr-2 items-center space-x-2 space-y-2 overflow-x-scroll scroll-smooth pt-4 pb-4 sm:flex-wrap',
+        'carousel mr-2 items-center space-x-2 space-y-2 overflow-x-scroll pt-4 pb-4 sm:flex-wrap',
         className
       )}
     >
