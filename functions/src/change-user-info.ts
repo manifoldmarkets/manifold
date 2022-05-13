@@ -5,7 +5,7 @@ import { getUser } from './utils'
 import { Contract } from 'common/contract'
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
-import { cleanUsername } from 'common/util/clean-username'
+import { cleanUsername, cleanDisplayName } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
 import { Answer } from 'common/answer'
 
@@ -61,6 +61,10 @@ export const changeUser = async (
       if (!sameNameUser.empty) {
         throw new Error('Username already exists')
       }
+    }
+
+    if (update.name) {
+      update.name = cleanDisplayName(update.name);
     }
 
     const userRef = firestore.collection('users').doc(user.id)
