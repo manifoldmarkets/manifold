@@ -54,7 +54,7 @@ export function ContractDescription(props: {
 
       {categories.length > 0 && (
         <div className="mt-4">
-          <TagsList tags={categories} label="Category" />
+          <TagsList tags={categories} noLabel />
         </div>
       )}
 
