@@ -40,7 +40,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         `}
       </Script>
       {/* Hotjar Tracking Code for https://manifold.markets */}
-      <Script id="hotjar">
+      {/* <Script id="hotjar">
         {`
           (function(h,o,t,j,a,r){
             h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
@@ -51,7 +51,7 @@ function MyApp({ Component, pageProps }: AppProps) {
             a.appendChild(r);
           })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
         `}
-      </Script>
+      </Script> */}
       <Head>
         <title>Manifold Markets — A market for every question</title>
 
