@@ -131,12 +131,7 @@ export default function Sidebar(props: { className?: string }) {
         ) : user === null ? (
           <div className="py-6 text-center">
             <button
-              className="btn btn-sm px-6 font-medium normal-case "
-              style={{
-                backgroundColor: 'white',
-                border: '2px solid',
-                color: '#3D4451',
-              }}
+              className="btn btn-sm border-2 bg-white px-6 font-medium normal-case text-gray-700"
               onClick={firebaseLogin}
             >
               Sign in
