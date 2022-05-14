@@ -1,5 +1,3 @@
-import _ from 'lodash'
-
 import { Contract } from '../../lib/firebase/contracts'
 import { User } from '../../lib/firebase/users'
 import { Col } from '../layout/col'

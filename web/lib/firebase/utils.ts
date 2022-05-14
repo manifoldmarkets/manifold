@@ -1,4 +1,3 @@
-import { db } from './init'
 import {
   getDoc,
   getDocs,
