@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { useState } from 'react'
 import { BottomNavBar } from './nav/nav-bar'
 import Sidebar from './nav/sidebar'
 
@@ -10,6 +11,7 @@ export function Page(props: {
   children?: any
 }) {
   const { margin, assertUser, children, rightSidebar, suspend } = props
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <>
@@ -20,7 +22,7 @@ export function Page(props: {
         )}
         style={suspend ? visuallyHiddenStyle : undefined}
       >
-        <Sidebar className="sticky top-4 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:block" />
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main
           className={clsx(
             'lg:col-span-8',
@@ -36,8 +38,7 @@ export function Page(props: {
           <div className="sticky top-4 space-y-4">{rightSidebar}</div>
         </aside>
       </div>
-
-      <BottomNavBar />
+      <BottomNavBar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
     </>
   )
 }

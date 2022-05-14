@@ -7,6 +7,7 @@ import {
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
+  XIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import _ from 'lodash'
@@ -108,8 +109,31 @@ function MoreButton() {
   )
 }
 
-export default function Sidebar(props: { className?: string }) {
-  const { className } = props
+function CloseButton(props: { onClick: React.MouseEventHandler }) {
+  return (
+    <div className="absolute top-0 right-0 -mr-12 pt-2 lg:hidden">
+      <button
+        className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+        onClick={props.onClick}
+      >
+        <span className="sr-only">Close sidebar</span>
+        <XIcon className="h-6 w-6 text-white" aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
+
+function ModalOverlay(props: { onClick: React.MouseEventHandler }) {
+  return (
+    <div
+      className="fixed inset-0 z-40 flex overflow-auto bg-gray-600 bg-opacity-75 lg:hidden"
+      onClick={props.onClick}
+    ></div>
+  )
+}
+
+export default function Sidebar(props: { open: boolean; onClose: () => void }) {
+  const { open, onClose } = props
   const router = useRouter()
   const currentPage = router.pathname
 
@@ -122,69 +146,92 @@ export default function Sidebar(props: { className?: string }) {
   const mobileNavigationOptions =
     user === null ? signedOutMobileNavigation : mobileNavigation
 
+  // TODO: I think this whole business would be simpler if the outer layout was flexbox...
+  const sidebarClass = clsx(
+    'lg:p-0 lg:pt-0 lg:bg-inherit lg:top-4 lg:sticky lg:col-span-2 lg:self-start lg:w-auto',
+    'p-4 pt-5 fixed bg-white w-80 transition-[left] duration-300 h-screen z-50 divide-gray-300',
+    open ? 'left-0' : '-left-80'
+  )
+
   return (
-    <nav aria-label="Sidebar" className={className}>
-      <ManifoldLogo className="pb-6" twoLine />
-      <div className="mb-2" style={{ minHeight: 80 }}>
-        {user ? (
-          <ProfileSummary user={user} />
-        ) : user === null ? (
-          <div className="py-6 text-center">
-            <button
-              className="btn btn-sm border-2 bg-white px-6 font-medium normal-case text-gray-700"
-              onClick={firebaseLogin}
-            >
-              Sign in
-            </button>
+    <>
+      {open && <ModalOverlay onClick={onClose} />}
+      <nav aria-label="Sidebar" className={sidebarClass}>
+        {open && <CloseButton onClick={onClose} />}
+        <ManifoldLogo className="pb-6" twoLine />
+        <div className="mb-2" style={{ minHeight: 80 }}>
+          {user ? (
+            <ProfileSummary user={user} />
+          ) : user === null ? (
+            <div className="py-6 text-center">
+              <button
+                className="btn btn-sm border-2 bg-white px-6 font-medium normal-case text-gray-700"
+                onClick={firebaseLogin}
+              >
+                Sign in
+              </button>
+            </div>
+          ) : (
+            <div />
+          )}
+        </div>
+
+        <div className="space-y-1 lg:hidden">
+          {mobileNavigationOptions.map((item) => (
+            <SidebarItem
+              key={item.name}
+              item={item}
+              currentPage={currentPage}
+            />
+          ))}
+
+          {user && (
+            <MenuButton
+              menuItems={[
+                {
+                  name: 'Sign out',
+                  href: '#',
+                  onClick: () => firebaseLogout(),
+                },
+              ]}
+              buttonContent={<MoreButton />}
+            />
+          )}
+        </div>
+
+        <div className="hidden space-y-1 lg:block">
+          {navigationOptions.map((item) => (
+            <SidebarItem
+              key={item.name}
+              item={item}
+              currentPage={currentPage}
+            />
+          ))}
+
+          <MenuButton
+            menuItems={getNavigationOptions(user)}
+            buttonContent={<MoreButton />}
+          />
+        </div>
+
+        {deservesDailyFreeMarket ? (
+          <div className=" text-primary mt-4 text-center">
+            Use your daily free market! 🎉
           </div>
         ) : (
           <div />
         )}
-      </div>
-
-      <div className="space-y-1 lg:hidden">
-        {mobileNavigationOptions.map((item) => (
-          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
-        ))}
 
         {user && (
-          <MenuButton
-            menuItems={[
-              { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
-            ]}
-            buttonContent={<MoreButton />}
-          />
+          <div className={'aligncenter flex justify-center'}>
+            <Link href={'/create'}>
+              <button className="btn btn-primary btn-md mt-4 capitalize">
+                Create Market
+              </button>
+            </Link>
+          </div>
         )}
-      </div>
-
-      <div className="hidden space-y-1 lg:block">
-        {navigationOptions.map((item) => (
-          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
-        ))}
-
-        <MenuButton
-          menuItems={getNavigationOptions(user)}
-          buttonContent={<MoreButton />}
-        />
-      </div>
-
-      {deservesDailyFreeMarket ? (
-        <div className=" text-primary mt-4 text-center">
-          Use your daily free market! 🎉
-        </div>
-      ) : (
-        <div />
-      )}
-
-      {user && (
-        <div className={'aligncenter flex justify-center'}>
-          <Link href={'/create'}>
-            <button className="btn btn-primary btn-md mt-4 capitalize">
-              Create Market
-            </button>
-          </Link>
-        </div>
-      )}
-    </nav>
+      </nav>
+    </>
   )
 }
