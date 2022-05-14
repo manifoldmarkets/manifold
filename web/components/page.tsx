@@ -1,6 +1,8 @@
 import clsx from 'clsx'
+import { useEffect } from 'react'
 import { BottomNavBar } from './nav/nav-bar'
 import Sidebar from './nav/sidebar'
+import { initPreviews } from 'link-summoner'
 
 export function Page(props: {
   margin?: boolean
@@ -10,6 +12,14 @@ export function Page(props: {
   children?: any
 }) {
   const { margin, assertUser, children, rightSidebar, suspend } = props
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      // This seems to work...
+      console.log(document)
+      // But not this...
+      initPreviews()
+    }
+  }, [])
 
   return (
     <>
