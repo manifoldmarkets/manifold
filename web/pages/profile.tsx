@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { PencilIcon } from '@heroicons/react/outline'
 import Router from 'next/router'
 
 import { AddFundsButton } from 'web/components/add-funds-button'

@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import _ from 'lodash'
 import { Row } from '../layout/row'
 import { formatPercent } from 'common/util/format'
 import {

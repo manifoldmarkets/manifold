@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 
 import { User } from '../../../common/user'
 import { Row } from '../layout/row'

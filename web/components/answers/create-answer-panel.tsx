@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
