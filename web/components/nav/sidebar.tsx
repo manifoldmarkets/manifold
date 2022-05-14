@@ -146,7 +146,7 @@ export default function Sidebar(props: { open: boolean; onClose: () => void }) {
 
   // TODO: I think this whole business would be simpler if the outer layout was flexbox...
   const sidebarClass = clsx(
-    'lg:p-0 lg:pt-0 lg:bg-inherit lg:top-4 lg:sticky lg:col-span-2 lg:self-start lg:w-auto',
+    'lg:p-0 lg:pt-0 lg:bg-inherit lg:top-6 lg:sticky lg:col-span-2 lg:self-start lg:w-auto',
     'p-4 pt-5 fixed bg-white w-80 transition-[left] duration-300 h-screen z-50 divide-gray-300',
     open ? 'left-0' : '-left-80'
   )
