@@ -1,9 +1,7 @@
 import {
   HomeIcon,
-  UserGroupIcon,
   CakeIcon,
   SearchIcon,
-  ChatIcon,
   BookOpenIcon,
   DotsHorizontalIcon,
   CashIcon,
