@@ -1,7 +1,5 @@
 import React, { useEffect } from 'react'
 import Router, { useRouter } from 'next/router'
-import _ from 'lodash'
-
 import { Page } from 'web/components/page'
 import { ActivityFeed } from 'web/components/feed/activity-feed'
 import FeedCreate from 'web/components/feed-create'

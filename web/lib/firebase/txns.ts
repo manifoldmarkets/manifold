@@ -1,5 +1,4 @@
 import { collection, query, where, orderBy } from 'firebase/firestore'
-import _ from 'lodash'
 import { Txn } from 'common/txn'
 
 import { db } from './init'
