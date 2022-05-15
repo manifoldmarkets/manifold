@@ -17,7 +17,7 @@ import { Title } from './title'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 import { placeBet, sellShares } from 'web/lib/firebase/api-call'
-import { BuyAmountInput, SellAmountInput } from './amount-input'
+import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel } from './outcome-label'
 import {
@@ -474,9 +474,7 @@ export function SellPanel(props: {
 
   return (
     <>
-      <SellAmountInput
-        inputClassName="w-full"
-        contract={contract}
+      <AmountInput
         amount={
           amount
             ? Math.round(amount) === 0
@@ -485,8 +483,10 @@ export function SellPanel(props: {
             : undefined
         }
         onChange={onAmountChange}
+        label="Qty"
         error={error}
         disabled={isSubmitting}
+        inputClassName="w-full"
       />
 
       <Col className="gap-3 text-sm">

@@ -17,7 +17,6 @@ export function AmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  children?: any
 }) {
   const {
     amount,
@@ -28,7 +27,6 @@ export function AmountInput(props: {
     className,
     inputClassName,
     inputRef,
-    children,
   } = props
 
   const onAmountChange = (str: string) => {
@@ -75,8 +73,6 @@ export function AmountInput(props: {
           )}
         </div>
       )}
-
-      {children}
     </Col>
   )
 }
@@ -133,40 +129,5 @@ export function BuyAmountInput(props: {
       inputClassName={inputClassName}
       inputRef={inputRef}
     />
-  )
-}
-
-export function SellAmountInput(props: {
-  contract: FullContract<CPMM, Binary>
-  amount: number | undefined
-  onChange: (newAmount: number | undefined) => void
-  error: string | undefined
-  disabled?: boolean
-  className?: string
-  inputClassName?: string
-  // Needed to focus the amount input
-  inputRef?: React.MutableRefObject<any>
-}) {
-  const {
-    amount,
-    onChange,
-    error,
-    disabled,
-    className,
-    inputClassName,
-    inputRef,
-  } = props
-
-  return (
-    <AmountInput
-      amount={amount}
-      onChange={onChange}
-      label="Qty"
-      error={error}
-      disabled={disabled}
-      className={className}
-      inputClassName={inputClassName}
-      inputRef={inputRef}
-    ></AmountInput>
   )
 }
