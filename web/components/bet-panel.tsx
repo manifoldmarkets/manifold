@@ -67,7 +67,7 @@ export function BetPanel(props: {
         <div className="mb-6 text-2xl">Place your bet</div>
         {/* <Title className={clsx('!mt-0 text-neutral')} text="Place a trade" /> */}
 
-        <BuyPanel contract={contract} user={user} userBets={userBets ?? []} />
+        <BuyPanel contract={contract} user={user} />
 
         {user === null && (
           <button
@@ -178,7 +178,6 @@ export function BetPanelSwitcher(props: {
           <BuyPanel
             contract={contract}
             user={user}
-            userBets={userBets ?? []}
             selected={selected}
             onBuySuccess={onBetSuccess}
           />
@@ -200,11 +199,10 @@ export function BetPanelSwitcher(props: {
 function BuyPanel(props: {
   contract: FullContract<DPM | CPMM, Binary>
   user: User | null | undefined
-  userBets: Bet[]
   selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
 }) {
-  const { contract, user, userBets, selected, onBuySuccess } = props
+  const { contract, user, selected, onBuySuccess } = props
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
