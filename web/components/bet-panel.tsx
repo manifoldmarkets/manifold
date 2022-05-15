@@ -321,11 +321,11 @@ function BuyPanel(props: {
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
           <div className="text-gray-500">Probability</div>
-          <Row>
-            <div>{formatPercent(initialProb)}</div>
-            <div className="mx-2">→</div>
-            <div>{formatPercent(resultProb)}</div>
-          </Row>
+          <div>
+            {formatPercent(initialProb)}
+            <span className="mx-2">→</span>
+            {formatPercent(resultProb)}
+          </div>
         </Row>
 
         <Row className="items-center justify-between gap-2 text-sm">
@@ -350,12 +350,12 @@ function BuyPanel(props: {
 
             {dpmTooltip && <InfoTooltip text={dpmTooltip} />}
           </Row>
-          <Row className="flex-wrap items-end justify-end gap-2">
-            <span className="whitespace-nowrap">
+          <div>
+            <span className="mr-2 whitespace-nowrap">
               {formatMoney(currentPayout)}
             </span>
-            <span>(+{currentReturnPercent})</span>
-          </Row>
+            (+{currentReturnPercent})
+          </div>
         </Row>
       </Col>
 
@@ -459,11 +459,11 @@ export function SellPanel(props: {
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
           <div className="text-gray-500">Probability</div>
-          <Row>
-            <div>{formatPercent(initialProb)}</div>
-            <div className="mx-2">→</div>
-            <div>{formatPercent(resultProb)}</div>
-          </Row>
+          <div>
+            {formatPercent(initialProb)}
+            <span className="mx-2">→</span>
+            {formatPercent(resultProb)}
+          </div>
         </Row>
       </Col>
 
