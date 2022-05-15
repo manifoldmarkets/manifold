@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import _ from 'lodash'
 import React, { useEffect, useState } from 'react'
 
 import { useUser } from 'web/hooks/use-user'
@@ -437,6 +438,40 @@ export function SellPanel(props: {
   )
   const resultProb = getCpmmProbability(newPool, contract.p)
 
+  const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
+  const [yesBets, noBets] = _.partition(
+    openUserBets,
+    (bet) => bet.outcome === 'YES'
+  )
+  const [yesShares, noShares] = [
+    _.sumBy(yesBets, (bet) => bet.shares),
+    _.sumBy(noBets, (bet) => bet.shares),
+  ]
+
+  const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
+  const ownedShares = Math.round(yesShares) || Math.round(noShares)
+
+  const sharesSold = Math.min(amount ?? 0, ownedShares)
+
+  const { saleValue } = calculateCpmmSale(
+    contract,
+    sharesSold,
+    sellOutcome as 'YES' | 'NO'
+  )
+
+  const onAmountChange = (amount: number | undefined) => {
+    setAmount(amount)
+
+    // Check for errors.
+    if (amount !== undefined) {
+      if (amount > ownedShares) {
+        setError(`Maximum ${formatWithCommas(Math.floor(ownedShares))} shares`)
+      } else {
+        setError(undefined)
+      }
+    }
+  }
+
   return (
     <>
       <SellAmountInput
@@ -449,12 +484,17 @@ export function SellPanel(props: {
               : Math.floor(amount)
             : undefined
         }
-        onChange={setAmount}
-        userBets={userBets}
+        onChange={onAmountChange}
         error={error}
-        setError={setError}
         disabled={isSubmitting}
       />
+
+      <Col className="gap-3 text-sm">
+        <Row className="items-center justify-between gap-2 text-gray-500">
+          Sale proceeds{' '}
+          <span className="text-neutral">{formatMoney(saleValue)}</span>
+        </Row>
+      </Col>
 
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
