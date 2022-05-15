@@ -3,9 +3,9 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { getValue, getValues } from './utils'
-import { Contract } from 'common/contract'
-import { logInterpolation } from 'common/util/math'
-import { DAY_MS } from 'common/util/time'
+import { Contract } from '../../common/contract'
+import { logInterpolation } from '../../common/util/math'
+import { DAY_MS } from '../../common/util/time'
 import {
   getProbability,
   getOutcomeProbability,
@@ -15,7 +15,7 @@ import { User } from '../../common/user'
 import {
   getContractScore,
   MAX_FEED_CONTRACTS,
-} from 'common/recommended-contracts'
+} from '../../common/recommended-contracts'
 import { callCloudFunction } from './call-cloud-function'
 import {
   getFeedContracts,
