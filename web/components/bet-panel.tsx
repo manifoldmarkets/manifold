@@ -350,12 +350,12 @@ function BuyPanel(props: {
 
             {dpmTooltip && <InfoTooltip text={dpmTooltip} />}
           </Row>
-          <Row className="flex-wrap items-end justify-end gap-2">
-            <span className="whitespace-nowrap">
+          <div>
+            <span className="mr-2 whitespace-nowrap">
               {formatMoney(currentPayout)}
             </span>
-            <span>(+{currentReturnPercent})</span>
-          </Row>
+            (+{currentReturnPercent})
+          </div>
         </Row>
       </Col>
 
