@@ -1,10 +1,8 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
-import { Binary, CPMM, FullContract } from 'common/contract'
 import { SiteLink } from './site-link'
 
 export function AmountInput(props: {
