@@ -489,15 +489,12 @@ export function SellPanel(props: {
         inputClassName="w-full"
       />
 
-      <Col className="gap-3 text-sm">
+      <Col className="mt-3 w-full gap-3 text-sm">
         <Row className="items-center justify-between gap-2 text-gray-500">
-          Sale proceeds{' '}
+          Sale proceeds
           <span className="text-neutral">{formatMoney(saleValue)}</span>
         </Row>
-      </Col>
-
-      <Col className="mt-3 w-full gap-3">
-        <Row className="items-center justify-between text-sm">
+        <Row className="items-center justify-between">
           <div className="text-gray-500">Probability</div>
           <div>
             {formatPercent(initialProb)}
