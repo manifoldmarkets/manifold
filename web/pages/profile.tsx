@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { RefreshIcon } from '@heroicons/react/outline'
 import Router from 'next/router'
 
 import { AddFundsButton } from 'web/components/add-funds-button'
@@ -13,7 +14,7 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { User } from 'common/user'
-import { updateUser } from 'web/lib/firebase/users'
+import { updateUser, updatePrivateUser } from 'web/lib/firebase/users'
 import { defaultBannerUrl } from 'web/components/user-page'
 import { SiteLink } from 'web/components/site-link'
 import Textarea from 'react-expanding-textarea'
@@ -63,6 +64,7 @@ export default function ProfilePage() {
   const [avatarLoading, setAvatarLoading] = useState(false)
   const [name, setName] = useState(user?.name || '')
   const [username, setUsername] = useState(user?.username || '')
+  const [apiKey, setApiKey] = useState(privateUser?.apiKey || '')
 
   useEffect(() => {
     if (user) {
@@ -71,6 +73,12 @@ export default function ProfilePage() {
       setUsername(user.username || '')
     }
   }, [user])
+
+  useEffect(() => {
+    if (privateUser) {
+      setApiKey(privateUser.apiKey || '')
+    }
+  }, [privateUser])
 
   const updateDisplayName = async () => {
     const newName = cleanDisplayName(name)
@@ -101,6 +109,17 @@ export default function ProfilePage() {
     } else {
       setUsername(user?.username || '')
     }
+  }
+
+  const updateApiKey = async (e: React.MouseEvent) => {
+    const newApiKey = crypto.randomUUID()
+    if (user?.id != null) {
+      setApiKey(newApiKey)
+      await updatePrivateUser(user.id, { apiKey: newApiKey }).catch(() => {
+        setApiKey(privateUser?.apiKey || '')
+      })
+    }
+    e.preventDefault()
   }
 
   const fileHandler = async (event: any) => {
@@ -155,7 +174,6 @@ export default function ProfilePage() {
 
           <div>
             <label className="label">Display name</label>
-
             <input
               type="text"
               placeholder="Display name"
@@ -168,7 +186,6 @@ export default function ProfilePage() {
 
           <div>
             <label className="label">Username</label>
-
             <input
               type="text"
               placeholder="Username"
@@ -232,6 +249,25 @@ export default function ProfilePage() {
               {formatMoney(user?.balance || 0)}
               <AddFundsButton />
             </Row>
+          </div>
+
+          <div>
+            <label className="label">API key</label>
+            <div className="input-group w-full">
+              <input
+                type="text"
+                placeholder="Click refresh to generate key"
+                className="input input-bordered w-full"
+                value={apiKey}
+                readOnly
+              />
+              <button
+                className="btn btn-primary btn-square p-2"
+                onClick={updateApiKey}
+              >
+                <RefreshIcon />
+              </button>
+            </div>
           </div>
         </Col>
       </Col>
