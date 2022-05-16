@@ -17,6 +17,7 @@ import {
   FreeResponse,
   FreeResponseContract,
   FullContract,
+  NumericContract,
 } from 'common/contract'
 import {
   AnswerLabel,
@@ -25,6 +26,7 @@ import {
 } from '../outcome-label'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AbbrContractDetails } from './contract-details'
+import { getValueFromBucket } from 'common/calculate-dpm'
 
 export function ContractCard(props: {
   contract: Contract
@@ -161,6 +163,23 @@ export function FreeResponseResolutionOrChance(props: {
           </Row>
         )
       )}
+    </Col>
+  )
+}
+
+export function NumericResolution(props: {
+  contract: NumericContract
+  className?: string
+}) {
+  const { contract, className } = props
+  const { resolution } = contract
+
+  const resolutionValue = getValueFromBucket(resolution, contract)
+
+  return (
+    <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
+      <div className={clsx('text-base text-gray-500')}>Resolved</div>
+      <div className="text-blue-400">{resolutionValue}</div>
     </Col>
   )
 }

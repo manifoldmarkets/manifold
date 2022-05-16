@@ -5,6 +5,7 @@ import { AnswersGraph } from 'web/components/answers/answers-graph'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
+  NumericResolution,
 } from 'web/components/contract/contract-card'
 import { ContractDetails } from 'web/components/contract/contract-details'
 import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
@@ -118,6 +119,10 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
               contract={contract}
               truncate="long"
             />
+          )}
+
+          {outcomeType === 'NUMERIC' && resolution && (
+            <NumericResolution contract={contract} />
           )}
         </Row>
 
