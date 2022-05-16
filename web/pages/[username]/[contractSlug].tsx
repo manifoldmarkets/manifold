@@ -120,7 +120,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
     return <Custom404 />
   }
 
-  const { creatorId, isResolved, question, outcomeType, resolution } = contract
+  const { creatorId, isResolved, question, outcomeType } = contract
 
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
@@ -204,10 +204,12 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
           </>
         )}
 
-        <NumericBetPanel
-          className="sm:hidden"
-          contract={contract as NumericContract}
-        />
+        {isNumeric && (
+          <NumericBetPanel
+            className="sm:hidden"
+            contract={contract as NumericContract}
+          />
+        )}
 
         {isResolved && (
           <>
