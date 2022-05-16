@@ -38,13 +38,13 @@ export function AbbrContractDetails(props: {
     creatorName,
     creatorUsername,
     closeTime,
-    outcomeType,
     tags,
   } = contract
   const { volumeLabel } = contractMetrics(contract)
-  const categories = tags.filter((tag) =>
-    CATEGORY_LIST.includes(tag.toLowerCase())
-  )
+  // Show at most one category that this contract is tagged by
+  const categories = CATEGORY_LIST.filter((category) =>
+    tags.map((t) => t.toLowerCase()).includes(category)
+  ).slice(0, 1)
 
   return (
     <Col className={clsx('gap-2 text-sm text-gray-500')}>
