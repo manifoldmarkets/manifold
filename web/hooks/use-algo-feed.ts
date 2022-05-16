@@ -10,8 +10,11 @@ import {
   getTopWeeklyContracts,
 } from 'web/lib/firebase/contracts'
 
-export const useAlgoFeed = (user: User | null | undefined) => {
-  const [feed, setFeed] = useState<feed>()
+export const useAlgoFeed = (
+  user: User | null | undefined,
+  category: string
+) => {
+  const [allFeed, setAllFeed] = useState<feed>()
   const [categoryFeeds, setCategoryFeeds] = useState<Dictionary<feed>>()
 
   const getTime = useTimeSinceFirstRender()
@@ -20,11 +23,11 @@ export const useAlgoFeed = (user: User | null | undefined) => {
     if (user) {
       getUserFeed(user.id).then((feed) => {
         if (feed.length === 0) {
-          getDefaultFeed().then((feed) => setFeed(feed))
-        } else setFeed(feed)
+          getDefaultFeed().then((feed) => setAllFeed(feed))
+        } else setAllFeed(feed)
 
         trackLatency('feed', getTime())
-        console.log('feed load time', getTime())
+        console.log('"all" feed load time', getTime())
       })
 
       getCategoryFeeds(user.id).then((feeds) => {
@@ -35,12 +38,9 @@ export const useAlgoFeed = (user: User | null | undefined) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
-  const followedCategory = user?.followedCategories?.[0] ?? 'all'
+  const feed = category === 'all' ? allFeed : categoryFeeds?.[category]
 
-  const followedFeed =
-    followedCategory === 'all' ? feed : categoryFeeds?.[followedCategory]
-
-  return followedFeed
+  return feed
 }
 
 const getDefaultFeed = async () => {

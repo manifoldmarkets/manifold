@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import Router, { useRouter } from 'next/router'
 import _ from 'lodash'
 
@@ -15,8 +15,9 @@ import { CategorySelector } from '../components/feed/category-selector'
 
 const Home = () => {
   const user = useUser()
+  const [category, setCategory] = useState<string>('all')
 
-  const feed = useAlgoFeed(user)
+  const feed = useAlgoFeed(user, category)
 
   const router = useRouter()
   const { u: username, s: slug } = router.query
@@ -45,7 +46,11 @@ const Home = () => {
             <FeedCreate user={user ?? undefined} />
             <Spacer h={2} />
 
-            <CategorySelector user={user} />
+            <CategorySelector
+              user={user}
+              category={category}
+              setCategory={setCategory}
+            />
 
             <Spacer h={1} />
 
