@@ -683,10 +683,10 @@
     protobufjs "^6.10.0"
     yargs "^16.2.0"
 
-"@headlessui/react@1.5.0":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@headlessui/react/-/react-1.5.0.tgz#483b44ba2c8b8d4391e1d2c863898d7dd0cc0296"
-  integrity sha512-aaRnYxBb3MU2FNJf3Ut9RMTUqqU3as0aI1lQhgo2n9Fa67wRu14iOGqx93xB+uMNVfNwZ5B3y/Ndm7qZGuFeMQ==
+"@headlessui/react@1.6.1":
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/@headlessui/react/-/react-1.6.1.tgz#d822792e589aac005462491dd62f86095e0c3bef"
+  integrity sha512-gMd6uIs1U4Oz718Z5gFoV0o/vD43/4zvbyiJN9Dt7PK9Ubxn+TmJwTmYwyNJc5KxxU1t0CmgTNgwZX9+4NjCnQ==
 
 "@heroicons/react@1.0.5":
   version "1.0.5"
@@ -958,7 +958,7 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
 
-"@react-query-firebase/firestore@^0.4.2":
+"@react-query-firebase/firestore@0.4.2":
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/@react-query-firebase/firestore/-/firestore-0.4.2.tgz#6ae52768715aa0a5c0d903dd4fd953ed417ba635"
   integrity sha512-7eYp905+sfBRcBTdj7W7BAc3bI3V0D0kKca4/juOTnN4gyoNyaCNOCjLPY467dTq325hGs7BX0ol7Pw3JENdHA==
@@ -4754,7 +4754,7 @@ react-motion@^0.5.2:
     prop-types "^15.5.8"
     raf "^3.1.0"
 
-react-query@^3.39.0:
+react-query@3.39.0:
   version "3.39.0"
   resolved "https://registry.yarnpkg.com/react-query/-/react-query-3.39.0.tgz#0caca7b0da98e65008bbcd4df0d25618c2100050"
   integrity sha512-Od0IkSuS79WJOhzWBx/ys0x13+7wFqgnn64vBqqAAnZ9whocVhl/y1padD5uuZ6EIkXbFbInax0qvY7zGM0thA==

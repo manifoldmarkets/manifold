@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 import { ClockIcon, DatabaseIcon, PencilIcon } from '@heroicons/react/outline'
 import { TrendingUpIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'

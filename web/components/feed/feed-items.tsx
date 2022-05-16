@@ -977,7 +977,7 @@ function FeedAnswerGroup(props: {
     <Col
       className={
         type === 'answer'
-          ? 'border-base-200 bg-base-200 flex-1 rounded-md p-3'
+          ? 'border-base-200 bg-base-200 flex-1 rounded-md px-2'
           : 'flex-1 gap-2'
       }
     >
@@ -991,6 +991,12 @@ function FeedAnswerGroup(props: {
         />
       </Modal>
 
+      {type == 'answer' && (
+        <div
+          className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 bg-opacity-10"
+          style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
+        ></div>
+      )}
       <Row className="my-4 gap-3">
         <div className="px-1">
           <Avatar username={username} avatarUrl={avatarUrl} />
@@ -1023,9 +1029,7 @@ function FeedAnswerGroup(props: {
                 <span
                   className={clsx(
                     'text-2xl',
-                    tradingAllowed(contract)
-                      ? 'text-green-500'
-                      : 'text-gray-500'
+                    tradingAllowed(contract) ? 'text-primary' : 'text-gray-500'
                   )}
                 >
                   {probPercent}

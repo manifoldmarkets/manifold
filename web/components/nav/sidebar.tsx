@@ -1,9 +1,7 @@
 import {
   HomeIcon,
-  UserGroupIcon,
   CakeIcon,
   SearchIcon,
-  ChatIcon,
   BookOpenIcon,
   DotsHorizontalIcon,
   CashIcon,
@@ -110,7 +108,8 @@ function MoreButton() {
   )
 }
 
-export default function Sidebar() {
+export default function Sidebar(props: { className?: string }) {
+  const { className } = props
   const router = useRouter()
   const currentPage = router.pathname
 
@@ -124,27 +123,15 @@ export default function Sidebar() {
     user === null ? signedOutMobileNavigation : mobileNavigation
 
   return (
-    <nav aria-label="Sidebar" className="sticky top-4 divide-gray-300 pl-2">
-      <div className="space-y-1 pb-6">
-        <ManifoldLogo twoLine />
-      </div>
-
+    <nav aria-label="Sidebar" className={className}>
+      <ManifoldLogo className="pb-6" twoLine />
       <div className="mb-2" style={{ minHeight: 80 }}>
         {user ? (
-          <Link href={`/${user.username}`}>
-            <a className="group">
-              <ProfileSummary user={user} />
-            </a>
-          </Link>
+          <ProfileSummary user={user} />
         ) : user === null ? (
           <div className="py-6 text-center">
             <button
-              className="btn btn-sm px-6 font-medium normal-case "
-              style={{
-                backgroundColor: 'white',
-                border: '2px solid',
-                color: '#3D4451',
-              }}
+              className="btn btn-sm border-2 bg-white px-6 font-medium normal-case text-gray-700"
               onClick={firebaseLogin}
             >
               Sign in

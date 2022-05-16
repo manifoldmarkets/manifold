@@ -3,9 +3,9 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { getValue, getValues } from './utils'
-import { Contract } from 'common/contract'
-import { logInterpolation } from 'common/util/math'
-import { DAY_MS } from 'common/util/time'
+import { Contract } from '../../common/contract'
+import { logInterpolation } from '../../common/util/math'
+import { DAY_MS } from '../../common/util/time'
 import {
   getProbability,
   getOutcomeProbability,
@@ -15,7 +15,7 @@ import { User } from '../../common/user'
 import {
   getContractScore,
   MAX_FEED_CONTRACTS,
-} from 'common/recommended-contracts'
+} from '../../common/recommended-contracts'
 import { callCloudFunction } from './call-cloud-function'
 import {
   getFeedContracts,
@@ -26,18 +26,25 @@ import { CATEGORY_LIST } from '../../common/categories'
 
 const firestore = admin.firestore()
 
+const BATCH_SIZE = 30
+const MAX_BATCHES = 50
+
+const getUserBatches = async () => {
+  const users = _.shuffle(await getValues<User>(firestore.collection('users')))
+  let userBatches: User[][] = []
+  for (let i = 0; i < users.length; i += BATCH_SIZE) {
+    userBatches.push(users.slice(i, i + BATCH_SIZE))
+  }
+
+  console.log('updating feed batches', MAX_BATCHES, 'of', userBatches.length)
+
+  return userBatches.slice(0, MAX_BATCHES)
+}
+
 export const updateFeed = functions.pubsub
-  .schedule('every 60 minutes')
+  .schedule('every 5 minutes')
   .onRun(async () => {
-    const users = await getValues<User>(firestore.collection('users'))
-
-    const batchSize = 100
-    let userBatches: User[][] = []
-    for (let i = 0; i < users.length; i += batchSize) {
-      userBatches.push(users.slice(i, i + batchSize))
-    }
-
-    console.log('updating feed batch')
+    const userBatches = await getUserBatches()
 
     await Promise.all(
       userBatches.map((users) =>
@@ -72,13 +79,7 @@ export const updateFeedBatch = functions.https.onCall(
 export const updateCategoryFeed = functions.https.onCall(
   async (data: { category: string }) => {
     const { category } = data
-    const users = await getValues<User>(firestore.collection('users'))
-
-    const batchSize = 100
-    const userBatches: User[][] = []
-    for (let i = 0; i < users.length; i += batchSize) {
-      userBatches.push(users.slice(i, i + batchSize))
-    }
+    const userBatches = await getUserBatches()
 
     await Promise.all(
       userBatches.map(async (users) => {

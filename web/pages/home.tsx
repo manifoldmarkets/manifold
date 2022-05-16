@@ -1,7 +1,5 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import Router, { useRouter } from 'next/router'
-import _ from 'lodash'
-
 import { Page } from 'web/components/page'
 import { ActivityFeed } from 'web/components/feed/activity-feed'
 import FeedCreate from 'web/components/feed-create'
@@ -15,8 +13,9 @@ import { CategorySelector } from '../components/feed/category-selector'
 
 const Home = () => {
   const user = useUser()
+  const [category, setCategory] = useState<string>('all')
 
-  const feed = useAlgoFeed(user)
+  const feed = useAlgoFeed(user, category)
 
   const router = useRouter()
   const { u: username, s: slug } = router.query
@@ -40,27 +39,24 @@ const Home = () => {
   return (
     <>
       <Page assertUser="signed-in" suspend={!!contract}>
-        <Col className="items-center">
-          <Col className="w-full max-w-[700px]">
-            <FeedCreate user={user ?? undefined} />
-            <Spacer h={2} />
-
-            <CategorySelector user={user} />
-
-            <Spacer h={1} />
-
-            {feed ? (
-              <ActivityFeed
-                feed={feed}
-                mode="only-recent"
-                getContractPath={(c) =>
-                  `home?u=${c.creatorUsername}&s=${c.slug}`
-                }
-              />
-            ) : (
-              <LoadingIndicator className="mt-4" />
-            )}
-          </Col>
+        <Col className="mx-auto w-full max-w-[700px]">
+          <FeedCreate user={user ?? undefined} />
+          <Spacer h={2} />
+          <CategorySelector
+            user={user}
+            category={category}
+            setCategory={setCategory}
+          />
+          <Spacer h={1} />
+          {feed ? (
+            <ActivityFeed
+              feed={feed}
+              mode="only-recent"
+              getContractPath={(c) => `home?u=${c.creatorUsername}&s=${c.slug}`}
+            />
+          ) : (
+            <LoadingIndicator className="mt-4" />
+          )}
         </Col>
       </Page>
 

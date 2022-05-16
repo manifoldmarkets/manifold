@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 
 import { Answer } from 'common/answer'
 import { DPM, FreeResponse, FullContract } from 'common/contract'

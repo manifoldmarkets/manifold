@@ -1,51 +1,43 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 
 import { User } from '../../../common/user'
 import { Row } from '../layout/row'
 import { CATEGORIES, CATEGORY_LIST } from '../../../common/categories'
-import { updateUser } from '../../lib/firebase/users'
 
 export function CategorySelector(props: {
   user: User | null | undefined
+  category: string
+  setCategory: (category: string) => void
   className?: string
 }) {
-  const { className, user } = props
-
-  const followedCategories = user?.followedCategories ?? []
+  const { className, user, category, setCategory } = props
 
   return (
     <Row
       className={clsx(
-        'mr-2 items-center space-x-2 space-y-2 overflow-x-scroll scroll-smooth pt-4 pb-4 sm:flex-wrap',
+        'carousel mr-2 items-center space-x-2 space-y-2 overflow-x-scroll pt-4 pb-4 sm:flex-wrap',
         className
       )}
     >
       <div />
       <CategoryButton
-        key={'all' + followedCategories.length}
+        key="all"
         category="All"
-        isFollowed={followedCategories.length === 0}
+        isFollowed={category === 'all'}
         toggle={async () => {
           if (!user?.id) return
-
-          await updateUser(user.id, {
-            followedCategories: [],
-          })
+          setCategory('all')
         }}
       />
 
       {CATEGORY_LIST.map((cat) => (
         <CategoryButton
-          key={cat + followedCategories.length}
+          key={cat}
           category={CATEGORIES[cat].split(' ')[0]}
-          isFollowed={followedCategories.includes(cat)}
+          isFollowed={cat === category}
           toggle={async () => {
             if (!user?.id) return
-
-            await updateUser(user.id, {
-              followedCategories: [cat],
-            })
+            setCategory(cat)
           }}
         />
       ))}
@@ -63,7 +55,7 @@ function CategoryButton(props: {
   return (
     <div
       className={clsx(
-        'rounded-full border-2 px-4 py-1 shadow-md',
+        'rounded-full border-2 px-4 py-1 shadow-md hover:bg-gray-200',
         'cursor-pointer select-none',
         isFollowed ? 'border-gray-300 bg-gray-300' : 'bg-white'
       )}

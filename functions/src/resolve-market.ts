@@ -2,9 +2,9 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
-import { Contract } from 'common/contract'
-import { User } from 'common/user'
-import { Bet } from 'common/bet'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
+import { Bet } from '../../common/bet'
 import { getUser, isProd, payUser } from './utils'
 import { sendMarketResolutionEmail } from './emails'
 import {
@@ -12,9 +12,9 @@ import {
   getPayouts,
   groupPayoutsByUser,
   Payout,
-} from 'common/payouts'
-import { removeUndefinedProps } from 'common/util/object'
-import { LiquidityProvision } from 'common/liquidity-provision'
+} from '../../common/payouts'
+import { removeUndefinedProps } from '../../common/util/object'
+import { LiquidityProvision } from '../../common/liquidity-provision'
 
 export const resolveMarket = functions
   .runWith({ minInstances: 1 })

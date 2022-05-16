@@ -12,7 +12,7 @@ export function Page(props: {
   const { margin, assertUser, children, rightSidebar, suspend } = props
 
   return (
-    <div>
+    <>
       <div
         className={clsx(
           'mx-auto w-full pb-14 lg:grid lg:grid-cols-12 lg:gap-8 lg:pt-6 xl:max-w-7xl',
@@ -20,9 +20,7 @@ export function Page(props: {
         )}
         style={suspend ? visuallyHiddenStyle : undefined}
       >
-        <div className="hidden lg:col-span-2 lg:block">
-          <Sidebar />
-        </div>
+        <Sidebar className="sticky top-4 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:block" />
         <main
           className={clsx(
             'lg:col-span-8',
@@ -40,7 +38,7 @@ export function Page(props: {
       </div>
 
       <BottomNavBar />
-    </div>
+    </>
   )
 }
 

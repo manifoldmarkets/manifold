@@ -2,7 +2,6 @@ import { useState } from 'react'
 import clsx from 'clsx'
 
 import { BetPanelSwitcher } from './bet-panel'
-import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
 import { Binary, CPMM, DPM, FullContract } from 'common/contract'
 import { Modal } from './layout/modal'
