@@ -3,15 +3,14 @@ import clsx from 'clsx'
 import { User } from '../../../common/user'
 import { Row } from '../layout/row'
 import { CATEGORIES, CATEGORY_LIST } from '../../../common/categories'
-import { updateUser } from '../../lib/firebase/users'
 
 export function CategorySelector(props: {
   user: User | null | undefined
+  category: string
+  setCategory: (category: string) => void
   className?: string
 }) {
-  const { className, user } = props
-
-  const followedCategories = user?.followedCategories ?? []
+  const { className, user, category, setCategory } = props
 
   return (
     <Row
@@ -22,29 +21,23 @@ export function CategorySelector(props: {
     >
       <div />
       <CategoryButton
-        key={'all' + followedCategories.length}
+        key="all"
         category="All"
-        isFollowed={followedCategories.length === 0}
+        isFollowed={category === 'all'}
         toggle={async () => {
           if (!user?.id) return
-
-          await updateUser(user.id, {
-            followedCategories: [],
-          })
+          setCategory('all')
         }}
       />
 
       {CATEGORY_LIST.map((cat) => (
         <CategoryButton
-          key={cat + followedCategories.length}
+          key={cat}
           category={CATEGORIES[cat].split(' ')[0]}
-          isFollowed={followedCategories.includes(cat)}
+          isFollowed={cat === category}
           toggle={async () => {
             if (!user?.id) return
-
-            await updateUser(user.id, {
-              followedCategories: [cat],
-            })
+            setCategory(cat)
           }}
         />
       ))}
