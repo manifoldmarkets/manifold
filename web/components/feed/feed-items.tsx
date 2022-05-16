@@ -950,7 +950,7 @@ function FeedAnswerGroup(props: {
 
       {type == 'answer' && (
         <div
-          className="absolute -mx-2 h-full rounded-tl-md bg-green-600 bg-opacity-10"
+          className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 bg-opacity-10"
           style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
         ></div>
       )}
