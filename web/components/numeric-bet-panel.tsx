@@ -4,12 +4,9 @@ import { useState } from 'react'
 
 import { Bet } from '../../common/bet'
 import {
-  getOutcomeProbabilityAfterBet,
-  calculateShares,
   calculatePayoutAfterCorrectBet,
   getOutcomeProbability,
 } from '../../common/calculate'
-import { getNumericBets } from '../../common/calculate-dpm'
 import { NumericContract } from '../../common/contract'
 import { formatPercent, formatMoney } from '../../common/util/format'
 import { useUser } from '../hooks/use-user'
@@ -96,7 +93,7 @@ function NumericBuyPanel(props: {
   const betDisabled = isSubmitting || !betAmount || !bucketChoice || error
 
   const { newBet, newPool, newTotalShares, newTotalBets } = getNumericBetsInfo(
-    { id: 'dummy', balance: 0 } as User,
+    { id: 'dummy', balance: 0 } as User, // a little hackish
     bucketChoice ?? 'NaN',
     betAmount ?? 0,
     contract,

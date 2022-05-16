@@ -1,4 +1,4 @@
-import { Bet } from './bet'
+import { Bet, NumericBet } from './bet'
 import { getDpmProbability } from './calculate-dpm'
 import {
   Binary,
@@ -115,30 +115,40 @@ export function getFreeAnswerAnte(
   return anteBet
 }
 
-export function getNumericAntes(
+export function getNumericAnte(
   creator: User,
   contract: FullContract<DPM, Numeric>,
-  ante: number
+  ante: number,
+  newBetId: string
 ) {
   const { bucketCount, createdTime } = contract
 
   const betAnte = ante / bucketCount
   const betShares = Math.sqrt(ante ** 2 / bucketCount)
 
-  return _.range(0, bucketCount).map((i) => {
-    const anteBet: Omit<Bet, 'id'> = {
-      userId: creator.id,
-      contractId: contract.id,
-      amount: betAnte,
-      shares: betShares,
-      outcome: i.toString(),
-      probBefore: 0,
-      probAfter: 1 / bucketCount,
-      createdTime,
-      isAnte: true,
-      fees: noFees,
-    }
+  const allOutcomeShares = Object.fromEntries(
+    _.range(0, bucketCount).map((_, i) => [i, betShares])
+  )
 
-    return anteBet
-  })
+  const allBetAmounts = Object.fromEntries(
+    _.range(0, bucketCount).map((_, i) => [i, betAnte])
+  )
+
+  const anteBet: NumericBet = {
+    id: newBetId,
+    userId: creator.id,
+    contractId: contract.id,
+    amount: betAnte,
+    allBetAmounts,
+    outcome: '0',
+    shares: betShares,
+    allOutcomeShares,
+    probBefore: 0,
+    probAfter: 1 / bucketCount,
+    createdTime,
+    isAnte: true,
+    fees: noFees,
+  }
+
+  return anteBet
 }

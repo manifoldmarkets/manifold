@@ -10,6 +10,7 @@ import clsx from 'clsx'
 import {
   FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
+  NumericResolution,
 } from './contract-card'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
@@ -70,6 +71,10 @@ export const ContractOverview = (props: {
               truncate="none"
             />
           )
+        )}
+
+        {outcomeType === 'NUMERIC' && resolution && (
+          <NumericResolution contract={contract} />
         )}
 
         <ContractDetails

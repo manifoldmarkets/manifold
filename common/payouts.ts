@@ -1,6 +1,6 @@
 import * as _ from 'lodash'
 
-import { Bet } from './bet'
+import { Bet, NumericBet } from './bet'
 import {
   Binary,
   Contract,
@@ -16,6 +16,7 @@ import {
   getDpmCancelPayouts,
   getDpmMktPayouts,
   getDpmStandardPayouts,
+  getNumericDpmPayouts,
   getPayoutsMultiOutcome,
 } from './payouts-dpm'
 import {
@@ -131,6 +132,9 @@ export const getDpmPayouts = (
       return getDpmCancelPayouts(contract, openBets)
 
     default:
+      if (contract.outcomeType === 'NUMERIC')
+        return getNumericDpmPayouts(outcome, contract, openBets as NumericBet[])
+
       // Outcome is a free response answer id.
       return getDpmStandardPayouts(outcome, contract, openBets)
   }

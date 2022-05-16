@@ -113,7 +113,7 @@ export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
                   newBetDoc.id
                 ) as any)
             : outcomeType === 'NUMERIC' && mechanism === 'dpm-2'
-            ? getNumericBetsInfo(user, outcome, amount, contract)
+            ? getNumericBetsInfo(user, outcome, amount, contract, newBetDoc.id)
             : getNewMultiBetInfo(
                 user,
                 outcome,

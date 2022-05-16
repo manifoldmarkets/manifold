@@ -24,7 +24,7 @@ import {
   getAnteBets,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
-  getNumericAntes,
+  getNumericAnte,
   HOUSE_LIQUIDITY_PROVIDER_ID,
   MINIMUM_ANTE,
 } from 'common/antes'
@@ -207,26 +207,21 @@ export const createContract = functions
             contract as FullContract<DPM, FreeResponse>,
             anteBetDoc.id
           )
+
           await anteBetDoc.set(anteBet)
         } else if (outcomeType === 'NUMERIC') {
-          const antes = getNumericAntes(
+          const anteBetDoc = firestore
+            .collection(`contracts/${contract.id}/bets`)
+            .doc()
+
+          const anteBet = getNumericAnte(
             creator,
             contract as FullContract<DPM, Numeric>,
-            ante
+            ante,
+            anteBetDoc.id
           )
 
-          await Promise.all(
-            antes.map(async (ante) => {
-              const anteBetDoc = firestore
-                .collection(`contracts/${contract.id}/bets`)
-                .doc()
-
-              await anteBetDoc.set({
-                id: anteBetDoc.id,
-                ...ante,
-              })
-            })
-          )
+          await anteBetDoc.set(anteBet)
         }
       }
 

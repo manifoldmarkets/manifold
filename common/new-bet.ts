@@ -1,6 +1,6 @@
 import * as _ from 'lodash'
 
-import { Bet, MAX_LOAN_PER_CONTRACT } from './bet'
+import { Bet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
 import {
   calculateDpmShares,
   getDpmProbability,
@@ -162,42 +162,48 @@ export const getNumericBetsInfo = (
   user: User,
   outcome: string,
   amount: number,
-  contract: NumericContract
+  contract: NumericContract,
+  newBetId: string
 ) => {
   const { pool, totalShares, totalBets } = contract
 
   const bets = getNumericBets(contract, outcome, amount)
-  const newPool = addObjects(pool, Object.fromEntries(bets))
+  const allBetAmounts = Object.fromEntries(bets)
+
+  const newPool = addObjects(pool, allBetAmounts)
 
   const { shares, totalShares: newTotalShares } = calculateNumericDpmShares(
     contract.totalShares,
     bets
   )
 
-  const newTotalBets = addObjects(totalBets, Object.fromEntries(bets))
+  const newTotalBets = addObjects(totalBets, allBetAmounts)
 
-  const newBets = bets.map(([outcome, amount], i) => {
-    const probBefore = getDpmOutcomeProbability(totalShares, outcome)
-    const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
+  const allOutcomeShares = Object.fromEntries(
+    bets.map(([outcome], i) => [outcome, shares[i]])
+  )
 
-    const newBet: Omit<Bet, 'id'> = {
-      userId: user.id,
-      contractId: contract.id,
-      amount,
-      shares: shares[i],
-      outcome,
-      probBefore,
-      probAfter,
-      createdTime: Date.now(),
-      fees: noFees,
-    }
+  const probBefore = getDpmOutcomeProbability(totalShares, outcome)
+  const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
 
-    return newBet
-  })
+  const newBet: NumericBet = {
+    id: newBetId,
+    userId: user.id,
+    contractId: contract.id,
+    amount,
+    allBetAmounts,
+    shares: shares.find((s, i) => bets[i][0] === outcome) ?? 0,
+    allOutcomeShares,
+    outcome,
+    probBefore,
+    probAfter,
+    createdTime: Date.now(),
+    fees: noFees,
+  }
 
   const newBalance = user.balance - amount
 
-  return { newBets, newPool, newTotalShares, newTotalBets, newBalance }
+  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
 }
 
 export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {
