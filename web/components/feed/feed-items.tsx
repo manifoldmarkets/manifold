@@ -50,11 +50,13 @@ import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { calculateCpmmSale } from 'common/calculate-cpmm'
-import { LinkIcon } from '@heroicons/react/outline'
+import { ClipboardCopyIcon, LinkIcon } from '@heroicons/react/outline'
 import { DateTimeTooltip } from 'web/components/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import { ClientRender } from 'web/components/client-render'
+import { InfoTooltip } from 'web/components/info-tooltip'
 
 export function FeedItems(props: {
   contract: Contract
@@ -224,21 +226,24 @@ export function FeedComment(props: {
   }
 
   const [highlighted, setHighlighted] = useState(false)
+  const [showToast, setShowToast] = useState(false)
   const router = useRouter()
   useEffect(() => {
-    // Find the current pathname and identify if the #comment-id is in it
-    const pathname = router.asPath
-    if (pathname.includes(`#${comment.id}`)) {
+    if (router.asPath.includes(`#${comment.id}`)) {
       setHighlighted(true)
       setTimeout(() => setHighlighted(false), 3000)
     }
   }, [router.asPath])
 
-  function copyLink() {
-    navigator.clipboard.writeText(
-      `${router.basePath}/${router.asPath}#${comment.id}`
-    )
-    // TODO: show toast to user they've copied the link
+  function copyLink(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
+    event.preventDefault()
+    let currentLocation = window.location.href
+    if (currentLocation.includes('#')) {
+      currentLocation = currentLocation.split('#')[0]
+    }
+    navigator.clipboard.writeText(`${currentLocation}#${comment.id}`)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 2000)
   }
 
   // Only calculated if they don't have a matching bet
@@ -252,8 +257,8 @@ export function FeedComment(props: {
   return (
     <Row
       className={clsx(
-        'flex space-x-3',
-        highlighted ? 'bg-base-200 rounded' : ''
+        'flex space-x-3 transition-all duration-1000',
+        highlighted ? `bg-primary/[0.3] rounded` : ''
       )}
     >
       <Avatar
@@ -302,11 +307,23 @@ export function FeedComment(props: {
               passHref={true}
             >
               <a
-                onClick={(event) => copyLink()}
+                onClick={(event) => copyLink(event)}
                 className={'cursor-pointer hover:underline'}
               >
                 <span className="ml-2 whitespace-nowrap text-gray-400">
                   {fromNow(createdTime)}
+                  {showToast && (
+                    <div
+                      className="w-100 border-base-300 absolute left-40 flex items-center space-x-2 divide-x
+                       divide-gray-200 rounded-md border-2 bg-white p-2
+                       text-gray-500 sm:-left-16 "
+                    >
+                      <ClipboardCopyIcon height={20} />
+                      <div className="pl-4 text-sm font-normal">
+                        Link copied to clipboard!
+                      </div>
+                    </div>
+                  )}
                 </span>
                 <LinkIcon
                   className="ml-1 mb-0.5 inline-block text-gray-400"
