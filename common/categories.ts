@@ -1,21 +1,17 @@
 export const CATEGORIES = {
   politics: 'Politics',
   technology: 'Technology',
-  sports: 'Sports',
-  gaming: 'Gaming',
-  manifold: 'Manifold',
   science: 'Science',
   world: 'World',
-  fun: 'Fun',
-  personal: 'Personal',
+  sports: 'Sports',
   economics: 'Economics',
+  personal: 'Personal',
+  culture: 'Culture',
+  manifold: 'Manifold',
+  covid: 'Covid',
   crypto: 'Crypto',
-  health: 'Health',
-  // entertainment: 'Entertainment',
-  // society: 'Society',
-  // friends: 'Friends / Community',
-  // business: 'Business',
-  // charity: 'Charities / Non-profits',
+  gaming: 'Gaming',
+  fun: 'Fun',
 } as { [category: string]: string }
 
 export const TO_CATEGORY = Object.fromEntries(

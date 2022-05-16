@@ -35,11 +35,10 @@ const getUserBatches = async () => {
   for (let i = 0; i < users.length; i += BATCH_SIZE) {
     userBatches.push(users.slice(i, i + BATCH_SIZE))
   }
-  userBatches = userBatches.slice(0, MAX_BATCHES)
 
-  console.log('updating feed batches', userBatches.length, 'of', MAX_BATCHES)
+  console.log('updating feed batches', MAX_BATCHES, 'of', userBatches.length)
 
-  return userBatches
+  return userBatches.slice(0, MAX_BATCHES)
 }
 
 export const updateFeed = functions.pubsub
