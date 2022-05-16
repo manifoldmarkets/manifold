@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { getNumericBetsInfo } from 'common/new-bet'
 import { useState } from 'react'
 
 import { Bet } from '../../common/bet'
@@ -94,30 +95,35 @@ function NumericBuyPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || !bucketChoice || error
 
+  const { newBet, newPool, newTotalShares, newTotalBets } = getNumericBetsInfo(
+    { id: 'dummy', balance: 0 } as User,
+    bucketChoice ?? 'NaN',
+    betAmount ?? 0,
+    contract,
+    'dummy id'
+  )
+
+  const { probAfter: outcomeProb, shares } = newBet
+
   const initialProb = bucketChoice
     ? getOutcomeProbability(contract, bucketChoice)
     : 0
-  const numericBets =
-    bucketChoice && betAmount
-      ? getNumericBets(contract, bucketChoice, betAmount)
-      : []
-  const outcomeBet = numericBets.find(([choice]) => choice === bucketChoice)
-  const outcomeProb =
-    bucketChoice && outcomeBet
-      ? getOutcomeProbabilityAfterBet(contract, bucketChoice, outcomeBet[1])
-      : initialProb
-
-  const shares = bucketChoice
-    ? calculateShares(contract, betAmount ?? 0, bucketChoice)
-    : initialProb
 
   const currentPayout =
     betAmount && bucketChoice
-      ? calculatePayoutAfterCorrectBet(contract, {
-          outcome: bucketChoice,
-          amount: betAmount,
-          shares,
-        } as Bet)
+      ? calculatePayoutAfterCorrectBet(
+          {
+            ...contract,
+            pool: newPool,
+            totalShares: newTotalShares,
+            totalBets: newTotalBets,
+          },
+          {
+            outcome: bucketChoice,
+            amount: betAmount,
+            shares,
+          } as Bet
+        )
       : 0
 
   const currentReturn =
