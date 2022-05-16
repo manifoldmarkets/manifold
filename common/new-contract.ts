@@ -1,5 +1,4 @@
-import * as _ from 'lodash'
-
+import { range } from 'lodash'
 import { PHANTOM_ANTE } from './antes'
 import {
   Binary,
@@ -131,7 +130,7 @@ const getNumericProps = (
   min: number,
   max: number
 ) => {
-  const buckets = _.range(0, bucketCount).map((i) => i.toString())
+  const buckets = range(0, bucketCount).map((i) => i.toString())
 
   const betAnte = ante / bucketCount
   const pool = Object.fromEntries(buckets.map((answer) => [answer, betAnte]))

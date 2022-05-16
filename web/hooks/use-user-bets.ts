@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 import {
   Bet,
@@ -51,7 +51,7 @@ export const useUserBetContracts = (
       return listenForUserBets(
         userId,
         (bets) => {
-          const contractIds = _.uniq(bets.map((bet) => bet.contractId))
+          const contractIds = uniq(bets.map((bet) => bet.contractId))
           setContractIds(contractIds)
           localStorage.setItem(key, JSON.stringify(contractIds))
         },

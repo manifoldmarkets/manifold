@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { last, findLastIndex, uniq, sortBy } from 'lodash'
 
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
@@ -200,17 +200,17 @@ function getAnswerGroups(
 ) {
   const { sortByProb, abbreviated, reversed } = options
 
-  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
+  let outcomes = uniq(bets.map((bet) => bet.outcome)).filter(
     (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
   )
   if (abbreviated) {
-    const lastComment = _.last(comments)
+    const lastComment = last(comments)
     const lastCommentOutcome = bets.find(
       (bet) => bet.id === lastComment?.betId
     )?.outcome
-    const lastBetOutcome = _.last(bets)?.outcome
+    const lastBetOutcome = last(bets)?.outcome
     if (lastCommentOutcome && lastBetOutcome) {
-      outcomes = _.uniq([
+      outcomes = uniq([
         ...outcomes.filter(
           (outcome) =>
             outcome !== lastCommentOutcome && outcome !== lastBetOutcome
@@ -222,13 +222,13 @@ function getAnswerGroups(
     outcomes = outcomes.slice(-2)
   }
   if (sortByProb) {
-    outcomes = _.sortBy(outcomes, (outcome) =>
+    outcomes = sortBy(outcomes, (outcome) =>
       getOutcomeProbability(contract, outcome)
     )
   } else {
     // Sort by recent bet.
-    outcomes = _.sortBy(outcomes, (outcome) =>
-      _.findLastIndex(bets, (bet) => bet.outcome === outcome)
+    outcomes = sortBy(outcomes, (outcome) =>
+      findLastIndex(bets, (bet) => bet.outcome === outcome)
     )
   }
 
@@ -274,10 +274,10 @@ function getAnswerAndCommentInputGroups(
   comments: Comment[],
   user: User | undefined | null
 ) {
-  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
+  let outcomes = uniq(bets.map((bet) => bet.outcome)).filter(
     (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
   )
-  outcomes = _.sortBy(outcomes, (outcome) =>
+  outcomes = sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   )
   const betsByCurrentUser = bets.filter((bet) => bet.userId === user?.id)
@@ -343,7 +343,7 @@ function groupBetsAndComments(
 
   // iterate through the bets and comment activity items and add them to the items in order of comment creation time:
   const unorderedBetsAndComments = [...commentsWithoutBets, ...groupedBets]
-  let sortedBetsAndComments = _.sortBy(unorderedBetsAndComments, (item) => {
+  let sortedBetsAndComments = sortBy(unorderedBetsAndComments, (item) => {
     if (item.type === 'comment') {
       return item.comment.createdTime
     } else if (item.type === 'bet') {

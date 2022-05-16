@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sortBy, sumBy } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
@@ -35,7 +35,7 @@ async function recalculateContract(
     const contract = contractDoc.data() as FullContract<DPM, Binary>
 
     const betDocs = await transaction.get(contractRef.collection('bets'))
-    const bets = _.sortBy(
+    const bets = sortBy(
       betDocs.docs.map((d) => d.data() as Bet),
       (b) => b.createdTime
     )
@@ -43,8 +43,8 @@ async function recalculateContract(
     const phantomAnte = startPool.YES + startPool.NO
 
     const leftovers =
-      _.sumBy(bets, (b) => b.amount) -
-      _.sumBy(bets, (b) => {
+      sumBy(bets, (b) => b.amount) -
+      sumBy(bets, (b) => {
         if (!b.sale) return b.amount
         const soldBet = bets.find((bet) => bet.id === b.sale?.betId)
         return soldBet?.amount || 0

@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
 
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
@@ -187,13 +187,13 @@ const sendResolutionEmails = async (
   resolutionProbability?: number,
   resolutions?: { [outcome: string]: number }
 ) => {
-  const nonWinners = _.difference(
-    _.uniq(openBets.map(({ userId }) => userId)),
+  const nonWinners = difference(
+    uniq(openBets.map(({ userId }) => userId)),
     Object.keys(userPayouts)
   )
-  const investedByUser = _.mapValues(
-    _.groupBy(openBets, (bet) => bet.userId),
-    (bets) => _.sumBy(bets, (bet) => bet.amount)
+  const investedByUser = mapValues(
+    groupBy(openBets, (bet) => bet.userId),
+    (bets) => sumBy(bets, (bet) => bet.amount)
   )
   const emailPayouts = [
     ...Object.entries(userPayouts),

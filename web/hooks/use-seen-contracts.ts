@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { mapValues } from 'lodash'
 import { useEffect, useState } from 'react'
 import { Contract } from 'common/contract'
 import { trackView } from 'web/lib/firebase/tracking'
@@ -38,7 +38,7 @@ export const useSaveSeenContract = (
 const key = 'feed-seen-contracts'
 
 const getSeenContracts = () => {
-  return _.mapValues(
+  return mapValues(
     JSON.parse(localStorage.getItem(key) ?? '{}'),
     (time) => +time
   )

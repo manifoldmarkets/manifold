@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { flatten, take, partition, sortBy } from 'lodash'
 
 import { Fold } from 'common/fold'
 import { Comment } from 'common/comment'
@@ -47,8 +47,8 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     contracts.map((contract) => listAllBets(contract.id))
   )
 
-  let activeContracts = findActiveContracts(contracts, [], _.flatten(bets), {})
-  const [resolved, unresolved] = _.partition(
+  let activeContracts = findActiveContracts(contracts, [], flatten(bets), {})
+  const [resolved, unresolved] = partition(
     activeContracts,
     ({ isResolved }) => isResolved
   )
@@ -80,8 +80,8 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 }
 
 async function toTopUsers(userScores: { [userId: string]: number }) {
-  const topUserPairs = _.take(
-    _.sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
+  const topUserPairs = take(
+    sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
     10
   ).filter(([_, score]) => score >= 0.5)
 
@@ -134,7 +134,7 @@ export default function FoldPage(props: {
   const isCurator = user && fold && user.id === fold.curatorId
 
   const taggedContracts = useTaggedContracts(fold?.tags) ?? props.contracts
-  const contractsMap = _.fromPairs(
+  const contractsMap = Object.fromEntries(
     taggedContracts.map((contract) => [contract.id, contract])
   )
 

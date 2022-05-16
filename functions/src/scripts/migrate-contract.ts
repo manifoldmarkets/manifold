@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sumBy } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
@@ -25,8 +25,8 @@ async function migrateContract(contractRef: DocRef, contract: Contract) {
     .then((snap) => snap.docs.map((bet) => bet.data() as Bet))
 
   const totalShares = {
-    YES: _.sumBy(bets, (bet) => (bet.outcome === 'YES' ? bet.shares : 0)),
-    NO: _.sumBy(bets, (bet) => (bet.outcome === 'NO' ? bet.shares : 0)),
+    YES: sumBy(bets, (bet) => (bet.outcome === 'YES' ? bet.shares : 0)),
+    NO: sumBy(bets, (bet) => (bet.outcome === 'NO' ? bet.shares : 0)),
   }
 
   await contractRef.update({ totalShares })

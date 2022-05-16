@@ -1,5 +1,4 @@
-import * as _ from 'lodash'
-
+import { cloneDeep, range, sum, sumBy, sortBy, mapValues } from 'lodash'
 import { Bet, NumericBet } from './bet'
 import {
   Binary,
@@ -24,7 +23,7 @@ export function getDpmOutcomeProbability(
   },
   outcome: string
 ) {
-  const squareSum = _.sumBy(Object.values(totalShares), (shares) => shares ** 2)
+  const squareSum = sumBy(Object.values(totalShares), (shares) => shares ** 2)
   const shares = totalShares[outcome] ?? 0
   return shares ** 2 / squareSum
 }
@@ -32,8 +31,8 @@ export function getDpmOutcomeProbability(
 export function getDpmOutcomeProbabilities(totalShares: {
   [outcome: string]: number
 }) {
-  const squareSum = _.sumBy(Object.values(totalShares), (shares) => shares ** 2)
-  return _.mapValues(totalShares, (shares) => shares ** 2 / squareSum)
+  const squareSum = sumBy(Object.values(totalShares), (shares) => shares ** 2)
+  return mapValues(totalShares, (shares) => shares ** 2 / squareSum)
 }
 
 export function getNumericBets(
@@ -44,20 +43,20 @@ export function getNumericBets(
 ) {
   const { bucketCount } = contract
   const bucketNumber = parseInt(bucket)
-  const buckets = _.range(0, bucketCount)
+  const buckets = range(0, bucketCount)
 
   const mean = bucketNumber / bucketCount
 
   const allDensities = buckets.map((i) =>
     normpdf(i / bucketCount, mean, variance)
   )
-  const densitySum = _.sum(allDensities)
+  const densitySum = sum(allDensities)
 
   const rawBetAmounts = allDensities
     .map((d) => (d / densitySum) * betAmount)
     .map((x) => (x >= 1 / bucketCount ? x : 0))
 
-  const rawSum = _.sum(rawBetAmounts)
+  const rawSum = sum(rawBetAmounts)
   const scaledBetAmounts = rawBetAmounts.map((x) => (x / rawSum) * betAmount)
 
   const bets = scaledBetAmounts
@@ -90,26 +89,24 @@ export const getValueFromBucket = (
 export const getExpectedValue = (contract: NumericContract) => {
   const { bucketCount, min, max, totalShares } = contract
 
-  const totalShareSum = _.sumBy(
+  const totalShareSum = sumBy(
     Object.values(totalShares),
     (shares) => shares ** 2
   )
-  const probs = _.range(0, bucketCount).map(
+  const probs = range(0, bucketCount).map(
     (i) => totalShares[i] ** 2 / totalShareSum
   )
 
-  const values = _.range(0, bucketCount).map(
+  const values = range(0, bucketCount).map(
     (i) =>
       // use mid point within bucket
       0.5 * (min + (i / bucketCount) * (max - min)) +
       0.5 * (min + ((i + 1) / bucketCount) * (max - min))
   )
 
-  const weightedValues = _.range(0, bucketCount).map(
-    (i) => probs[i] * values[i]
-  )
+  const weightedValues = range(0, bucketCount).map((i) => probs[i] * values[i])
 
-  const expectation = _.sum(weightedValues)
+  const expectation = sum(weightedValues)
   const rounded = Math.round(expectation * 1e2) / 1e2
   return rounded
 }
@@ -150,7 +147,7 @@ export function calculateDpmShares(
   bet: number,
   betChoice: string
 ) {
-  const squareSum = _.sumBy(Object.values(totalShares), (shares) => shares ** 2)
+  const squareSum = sumBy(Object.values(totalShares), (shares) => shares ** 2)
   const shares = totalShares[betChoice] ?? 0
 
   const c = 2 * bet * Math.sqrt(squareSum)
@@ -166,9 +163,9 @@ export function calculateNumericDpmShares(
 ) {
   const shares: number[] = []
 
-  totalShares = _.cloneDeep(totalShares)
+  totalShares = cloneDeep(totalShares)
 
-  const order = _.sortBy(
+  const order = sortBy(
     bets.map(([, amount], i) => [amount, i]),
     ([amount]) => amount
   ).map(([, i]) => i)
@@ -190,11 +187,11 @@ export function calculateDpmRawShareValue(
   betChoice: string
 ) {
   const currentValue = Math.sqrt(
-    _.sumBy(Object.values(totalShares), (shares) => shares ** 2)
+    sumBy(Object.values(totalShares), (shares) => shares ** 2)
   )
 
   const postSaleValue = Math.sqrt(
-    _.sumBy(Object.keys(totalShares), (outcome) =>
+    sumBy(Object.keys(totalShares), (outcome) =>
       outcome === betChoice
         ? Math.max(0, totalShares[outcome] - shares) ** 2
         : totalShares[outcome] ** 2
@@ -214,12 +211,12 @@ export function calculateDpmMoneyRatio(
 
   const p = getDpmOutcomeProbability(totalShares, outcome)
 
-  const actual = _.sum(Object.values(pool)) - shareValue
+  const actual = sum(Object.values(pool)) - shareValue
 
   const betAmount = p * amount
 
   const expected =
-    _.sumBy(
+    sumBy(
       Object.keys(totalBets),
       (outcome) =>
         getDpmOutcomeProbability(totalShares, outcome) *
@@ -271,8 +268,8 @@ export function calculateDpmCancelPayout(
   bet: Bet
 ) {
   const { totalBets, pool } = contract
-  const betTotal = _.sum(Object.values(totalBets))
-  const poolTotal = _.sum(Object.values(pool))
+  const betTotal = sum(Object.values(totalBets))
+  const poolTotal = sum(Object.values(pool))
 
   return (bet.amount / betTotal) * poolTotal
 }
@@ -295,7 +292,7 @@ export function calculateStandardDpmPayout(
   const { totalShares, phantomShares, pool } = contract
   if (!totalShares[outcome]) return 0
 
-  const poolTotal = _.sum(Object.values(pool))
+  const poolTotal = sum(Object.values(pool))
 
   const total =
     totalShares[outcome] - (phantomShares ? phantomShares[outcome] : 0)
@@ -356,19 +353,19 @@ function calculateMktDpmPayout(
   let probs: { [outcome: string]: number }
 
   if (resolutions) {
-    const probTotal = _.sum(Object.values(resolutions))
-    probs = _.mapValues(
+    const probTotal = sum(Object.values(resolutions))
+    probs = mapValues(
       totalShares,
       (_, outcome) => (resolutions[outcome] ?? 0) / probTotal
     )
   } else {
-    const squareSum = _.sum(
+    const squareSum = sum(
       Object.values(totalShares).map((shares) => shares ** 2)
     )
-    probs = _.mapValues(totalShares, (shares) => shares ** 2 / squareSum)
+    probs = mapValues(totalShares, (shares) => shares ** 2 / squareSum)
   }
 
-  const weightedShareTotal = _.sumBy(Object.keys(totalShares), (outcome) => {
+  const weightedShareTotal = sumBy(Object.keys(totalShares), (outcome) => {
     return probs[outcome] * totalShares[outcome]
   })
 
@@ -376,7 +373,7 @@ function calculateMktDpmPayout(
 
   const poolFrac =
     outcomeType === 'NUMERIC'
-      ? _.sumBy(
+      ? sumBy(
           Object.keys((bet as NumericBet).allOutcomeShares ?? {}),
           (outcome) => {
             return (
@@ -387,7 +384,7 @@ function calculateMktDpmPayout(
         )
       : (probs[outcome] * shares) / weightedShareTotal
 
-  const totalPool = _.sum(Object.values(pool))
+  const totalPool = sum(Object.values(pool))
   const winnings = poolFrac * totalPool
   return deductDpmFees(amount, winnings)
 }

@@ -1,6 +1,6 @@
-import * as _ from 'lodash'
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { shuffle, sortBy } from 'lodash'
 
 import { getValue, getValues } from './utils'
 import { Contract } from '../../common/contract'
@@ -30,7 +30,7 @@ const BATCH_SIZE = 30
 const MAX_BATCHES = 50
 
 const getUserBatches = async () => {
-  const users = _.shuffle(await getValues<User>(firestore.collection('users')))
+  const users = shuffle(await getValues<User>(firestore.collection('users')))
   let userBatches: User[][] = []
   for (let i = 0; i < users.length; i += BATCH_SIZE) {
     userBatches.push(users.slice(i, i + BATCH_SIZE))
@@ -128,7 +128,7 @@ export const computeFeed = async (user: User, contracts: Contract[]) => {
     return [contract, score] as [Contract, number]
   })
 
-  const sortedContracts = _.sortBy(
+  const sortedContracts = sortBy(
     scoredContracts,
     ([_, score]) => score
   ).reverse()

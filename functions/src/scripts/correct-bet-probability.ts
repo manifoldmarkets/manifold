@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sortBy } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
@@ -20,7 +20,7 @@ async function migrateContract(
     .get()
     .then((snap) => snap.docs.map((bet) => bet.data() as Bet))
 
-  const lastBet = _.sortBy(bets, (bet) => -bet.createdTime)[0]
+  const lastBet = sortBy(bets, (bet) => -bet.createdTime)[0]
   if (lastBet) {
     const probAfter = getDpmProbability(contract.totalShares)
 

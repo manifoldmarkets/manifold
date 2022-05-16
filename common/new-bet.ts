@@ -1,4 +1,4 @@
-import * as _ from 'lodash'
+import { sumBy } from 'lodash'
 
 import { Bet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
 import {
@@ -210,7 +210,7 @@ export const getNumericBetsInfo = (
 
 export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {
   const openBets = yourBets.filter((bet) => !bet.isSold && !bet.sale)
-  const prevLoanAmount = _.sumBy(openBets, (bet) => bet.loanAmount ?? 0)
+  const prevLoanAmount = sumBy(openBets, (bet) => bet.loanAmount ?? 0)
   const loanAmount = Math.min(
     newBetAmount,
     MAX_LOAN_PER_CONTRACT - prevLoanAmount
