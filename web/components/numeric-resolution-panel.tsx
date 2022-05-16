@@ -8,7 +8,6 @@ import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { resolveMarket } from 'web/lib/firebase/api-call'
 import { NumericContract } from 'common/contract'
-import { getMappedBucket } from 'common/calculate-dpm'
 import { BucketInput } from './bucket-input'
 
 export function NumericResolutionPanel(props: {
@@ -32,18 +31,13 @@ export function NumericResolutionPanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
 
   const resolve = async () => {
-    if (!outcome) return
-
-    let outcomeChoice = outcome
-    if (outcome !== 'CANCEL') {
-      const bucket = getMappedBucket(+outcome, contract)
-      outcomeChoice = `${bucket}`
-    }
+    const finalOutcome = outcomeMode === 'NUMBER' ? outcome : 'CANCEL'
+    if (finalOutcome === undefined) return
 
     setIsSubmitting(true)
 
     const result = await resolveMarket({
-      outcome: outcomeChoice,
+      outcome: finalOutcome,
       contractId: contract.id,
     }).then((r) => r.data)
 
@@ -56,9 +50,9 @@ export function NumericResolutionPanel(props: {
   }
 
   const submitButtonClass =
-    outcome === 'CANCEL'
+    outcomeMode === 'CANCEL'
       ? 'bg-yellow-400 hover:bg-yellow-500'
-      : outcome
+      : outcome !== undefined
       ? 'btn-primary'
       : 'btn-disabled'
 
