@@ -55,8 +55,6 @@ import { DateTimeTooltip } from 'web/components/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
-import { ClientRender } from 'web/components/client-render'
-import { InfoTooltip } from 'web/components/info-tooltip'
 
 export function FeedItems(props: {
   contract: Contract
