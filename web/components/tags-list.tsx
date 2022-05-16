@@ -10,13 +10,8 @@ function Hashtag(props: { tag: string; noLink?: boolean }) {
   const category = CATEGORIES[tag.replace('#', '').toLowerCase()]
 
   const body = (
-    <div
-      className={clsx(
-        'rounded-full border-2 bg-gray-100 px-3 py-1 shadow-md',
-        !noLink && 'cursor-pointer'
-      )}
-    >
-      <span className="text-sm text-gray-600">{category ?? tag}</span>
+    <div className={clsx('', !noLink && 'cursor-pointer')}>
+      <span className="text-sm text-gray-500">#{category ?? tag} </span>
     </div>
   )
 

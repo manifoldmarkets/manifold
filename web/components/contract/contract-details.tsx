@@ -1,6 +1,11 @@
 import clsx from 'clsx'
-import { ClockIcon, DatabaseIcon, PencilIcon } from '@heroicons/react/outline'
-import { TrendingUpIcon } from '@heroicons/react/solid'
+import {
+  ClockIcon,
+  DatabaseIcon,
+  PencilIcon,
+  CurrencyDollarIcon,
+  TrendingUpIcon,
+} from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
@@ -18,6 +23,8 @@ import { useState } from 'react'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
+import { CATEGORY_LIST } from 'common/categories'
+import { TagsList } from '../tags-list'
 
 export function AbbrContractDetails(props: {
   contract: Contract
@@ -25,9 +32,19 @@ export function AbbrContractDetails(props: {
   showCloseTime?: boolean
 }) {
   const { contract, showHotVolume, showCloseTime } = props
-  const { volume, volume24Hours, creatorName, creatorUsername, closeTime } =
-    contract
+  const {
+    volume,
+    volume24Hours,
+    creatorName,
+    creatorUsername,
+    closeTime,
+    outcomeType,
+    tags,
+  } = contract
   const { volumeLabel } = contractMetrics(contract)
+  const categories = tags.filter((tag) =>
+    CATEGORY_LIST.includes(tag.toLowerCase())
+  )
 
   return (
     <Col className={clsx('gap-2 text-sm text-gray-500')}>
@@ -45,21 +62,26 @@ export function AbbrContractDetails(props: {
           />
         </Row>
 
-        {showHotVolume ? (
-          <Row className="gap-1">
-            <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
-          </Row>
-        ) : showCloseTime ? (
-          <Row className="gap-1">
-            <ClockIcon className="h-5 w-5" />
-            {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
-            {fromNow(closeTime || 0)}
-          </Row>
-        ) : volume > 0 ? (
-          <Row>{volumeLabel}</Row>
-        ) : (
-          <NewContractBadge />
-        )}
+        <Row className="gap-3">
+          {categories.length > 0 && <TagsList tags={categories} noLabel />}
+
+          {showHotVolume ? (
+            <Row className="gap-0.5">
+              <TrendingUpIcon className="h-5 w-5" />{' '}
+              {formatMoney(volume24Hours)}
+            </Row>
+          ) : showCloseTime ? (
+            <Row className="gap-0.5">
+              <ClockIcon className="h-5 w-5" />
+              {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
+              {fromNow(closeTime || 0)}
+            </Row>
+          ) : volume > 0 ? (
+            <Row>{volumeLabel}</Row>
+          ) : (
+            <NewContractBadge />
+          )}
+        </Row>
       </Row>
     </Col>
   )
