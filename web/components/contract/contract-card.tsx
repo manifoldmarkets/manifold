@@ -27,7 +27,7 @@ import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AbbrContractDetails } from './contract-details'
 
 // Return a number from 0 to 1 for this contract
-// Resolved contracts are set to 1, for coloring purposes
+// Resolved contracts are set to 1, for coloring purposes (even if NO)
 function getProb(contract: Contract) {
   const { outcomeType, resolution } = contract
   return resolution
@@ -118,18 +118,18 @@ export function ContractCard(props: {
         <div
           className={clsx(
             'absolute right-0 top-0 w-2 rounded-tr-md',
-            showTopBar ? `bg-${color}` : 'bg-gray-200',
-            // If we're showing the full bar, also round the bottom
-            prob === 1 ? 'rounded-br-md' : ''
+            'bg-gray-200'
           )}
-          style={{ height: `${100 * prob}%` }}
+          style={{ height: `${100 * (1 - prob)}%` }}
         ></div>
         <div
           className={clsx(
             'absolute right-0 bottom-0 w-2 rounded-br-md',
-            !showTopBar ? `bg-${color}` : 'bg-gray-200'
+            `bg-${color}`,
+            // If we're showing the full bar, also round the top
+            prob === 1 ? 'rounded-tr-md' : ''
           )}
-          style={{ height: `${100 * (1 - prob)}%` }}
+          style={{ height: `${100 * prob}%` }}
         ></div>
       </Col>
     </div>
