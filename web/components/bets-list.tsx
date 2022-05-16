@@ -431,8 +431,9 @@ export function ContractBetsTable(props: {
     (bet) => bet.loanAmount ?? 0
   )
 
-  const { isResolved, mechanism } = contract
+  const { isResolved, mechanism, outcomeType } = contract
   const isCPMM = mechanism === 'cpmm-1'
+  const isNumeric = outcomeType === 'NUMERIC'
 
   return (
     <div className={clsx('overflow-x-auto', className)}>
@@ -462,7 +463,9 @@ export function ContractBetsTable(props: {
             {isCPMM && <th>Type</th>}
             <th>Outcome</th>
             <th>Amount</th>
-            {!isCPMM && <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>}
+            {!isCPMM && !isNumeric && (
+              <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
+            )}
             {!isCPMM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
             <th>Probability</th>
@@ -497,11 +500,12 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     isAnte,
   } = bet
 
-  const { isResolved, closeTime, mechanism } = contract
+  const { isResolved, closeTime, mechanism, outcomeType } = contract
 
   const isClosed = closeTime && Date.now() > closeTime
 
   const isCPMM = mechanism === 'cpmm-1'
+  const isNumeric = outcomeType === 'NUMERIC'
 
   const saleAmount = saleBet?.sale?.amount
 
@@ -525,9 +529,12 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   return (
     <tr>
       <td className="text-neutral">
-        {!isCPMM && !isResolved && !isClosed && !isSold && !isAnte && (
-          <SellButton contract={contract} bet={bet} />
-        )}
+        {!isCPMM &&
+          !isResolved &&
+          !isClosed &&
+          !isSold &&
+          !isAnte &&
+          !isNumeric && <SellButton contract={contract} bet={bet} />}
       </td>
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
@@ -542,7 +549,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
         )}
       </td>
       <td>{formatMoney(Math.abs(amount))}</td>
-      {!isCPMM && <td>{saleDisplay}</td>}
+      {!isCPMM && !isNumeric && <td>{saleDisplay}</td>}
       {!isCPMM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>{formatWithCommas(Math.abs(shares))}</td>
       <td>

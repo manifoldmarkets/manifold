@@ -85,7 +85,7 @@ export function ContractTabs(props: {
         ...(outcomeType === 'NUMERIC'
           ? []
           : [{ title: 'Bets', content: betActivity }]),
-        ...(!user || !userBets?.length || outcomeType === 'NUMERIC'
+        ...(!user || !userBets?.length // || outcomeType === 'NUMERIC'
           ? []
           : [{ title: 'Your bets', content: yourTrades }]),
       ]}
