@@ -62,8 +62,10 @@ export function AbbrContractDetails(props: {
           />
         </Row>
 
-        <Row className="gap-3">
-          {categories.length > 0 && <TagsList tags={categories} noLabel />}
+        <Row className="gap-3 text-gray-400">
+          {categories.length > 0 && (
+            <TagsList className="text-gray-400" tags={categories} noLabel />
+          )}
 
           {showHotVolume ? (
             <Row className="gap-0.5">

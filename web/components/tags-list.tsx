@@ -11,7 +11,7 @@ function Hashtag(props: { tag: string; noLink?: boolean }) {
 
   const body = (
     <div className={clsx('', !noLink && 'cursor-pointer')}>
-      <span className="text-sm text-gray-500">#{category ?? tag} </span>
+      <span className="text-sm">#{category ?? tag} </span>
     </div>
   )
 
@@ -33,7 +33,7 @@ export function TagsList(props: {
   const { tags, className, noLink, noLabel, label } = props
   return (
     <Row className={clsx('flex-wrap items-center gap-2', className)}>
-      {!noLabel && <div className="mr-1 text-gray-500">{label || 'Tags'}</div>}
+      {!noLabel && <div className="mr-1">{label || 'Tags'}</div>}
       {tags.map((tag) => (
         <Hashtag
           key={tag}
