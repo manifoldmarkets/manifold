@@ -11,7 +11,7 @@ function Hashtag(props: { tag: string; noLink?: boolean }) {
 
   const body = (
     <div className={clsx('', !noLink && 'cursor-pointer')}>
-      <span className="text-sm">#{category ?? tag} </span>
+      <span className="text-sm">{category ? '#' + category : tag} </span>
     </div>
   )
 
