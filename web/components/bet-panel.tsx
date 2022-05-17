@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import _ from 'lodash'
 import React, { useEffect, useState } from 'react'
 
 import { useUser } from 'web/hooks/use-user'
@@ -16,7 +17,7 @@ import { Title } from './title'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 import { placeBet, sellShares } from 'web/lib/firebase/api-call'
-import { BuyAmountInput, SellAmountInput } from './amount-input'
+import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel } from './outcome-label'
 import {
@@ -66,7 +67,7 @@ export function BetPanel(props: {
         <div className="mb-6 text-2xl">Place your bet</div>
         {/* <Title className={clsx('!mt-0 text-neutral')} text="Place a trade" /> */}
 
-        <BuyPanel contract={contract} user={user} userBets={userBets ?? []} />
+        <BuyPanel contract={contract} user={user} />
 
         {user === null && (
           <button
@@ -177,7 +178,6 @@ export function BetPanelSwitcher(props: {
           <BuyPanel
             contract={contract}
             user={user}
-            userBets={userBets ?? []}
             selected={selected}
             onBuySuccess={onBetSuccess}
           />
@@ -199,11 +199,10 @@ export function BetPanelSwitcher(props: {
 function BuyPanel(props: {
   contract: FullContract<DPM | CPMM, Binary>
   user: User | null | undefined
-  userBets: Bet[]
   selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
 }) {
-  const { contract, user, userBets, selected, onBuySuccess } = props
+  const { contract, user, selected, onBuySuccess } = props
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
@@ -437,11 +436,43 @@ export function SellPanel(props: {
   )
   const resultProb = getCpmmProbability(newPool, contract.p)
 
+  const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
+  const [yesBets, noBets] = _.partition(
+    openUserBets,
+    (bet) => bet.outcome === 'YES'
+  )
+  const [yesShares, noShares] = [
+    _.sumBy(yesBets, (bet) => bet.shares),
+    _.sumBy(noBets, (bet) => bet.shares),
+  ]
+
+  const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
+  const ownedShares = Math.round(yesShares) || Math.round(noShares)
+
+  const sharesSold = Math.min(amount ?? 0, ownedShares)
+
+  const { saleValue } = calculateCpmmSale(
+    contract,
+    sharesSold,
+    sellOutcome as 'YES' | 'NO'
+  )
+
+  const onAmountChange = (amount: number | undefined) => {
+    setAmount(amount)
+
+    // Check for errors.
+    if (amount !== undefined) {
+      if (amount > ownedShares) {
+        setError(`Maximum ${formatWithCommas(Math.floor(ownedShares))} shares`)
+      } else {
+        setError(undefined)
+      }
+    }
+  }
+
   return (
     <>
-      <SellAmountInput
-        inputClassName="w-full"
-        contract={contract}
+      <AmountInput
         amount={
           amount
             ? Math.round(amount) === 0
@@ -449,15 +480,19 @@ export function SellPanel(props: {
               : Math.floor(amount)
             : undefined
         }
-        onChange={setAmount}
-        userBets={userBets}
+        onChange={onAmountChange}
+        label="Qty"
         error={error}
-        setError={setError}
         disabled={isSubmitting}
+        inputClassName="w-full"
       />
 
-      <Col className="mt-3 w-full gap-3">
-        <Row className="items-center justify-between text-sm">
+      <Col className="mt-3 w-full gap-3 text-sm">
+        <Row className="items-center justify-between gap-2 text-gray-500">
+          Sale proceeds
+          <span className="text-neutral">{formatMoney(saleValue)}</span>
+        </Row>
+        <Row className="items-center justify-between">
           <div className="text-gray-500">Probability</div>
           <div>
             {formatPercent(initialProb)}
