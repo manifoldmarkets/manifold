@@ -42,7 +42,8 @@ export const createUser = functions
     const name = cleanDisplayName(rawName)
     let username = cleanUsername(name)
 
-    while (await getUserByUsername(username)) {
+    const sameNameUser = await getUserByUsername(username)
+    if (sameNameUser) {
       username += randomString(4)
     }
 
