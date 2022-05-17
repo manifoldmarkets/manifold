@@ -23,7 +23,7 @@
     "@nivo/line": "0.74.0",
     "algoliasearch": "4.13.0",
     "clsx": "1.1.1",
-    "cors": "^2.8.5",
+    "cors": "2.8.5",
     "daisyui": "1.16.4",
     "dayjs": "1.10.7",
     "firebase": "9.6.0",
