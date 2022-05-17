@@ -391,7 +391,7 @@ export function CommentInput(props: {
               )}
             </div>
 
-            <Row className="gap-1.5">
+            <Row className="gap-1.5 text-gray-700">
               <Textarea
                 ref={(ref: HTMLTextAreaElement) => setRef?.(ref)}
                 value={comment}
