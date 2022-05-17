@@ -6,8 +6,8 @@ import { SiteLink } from './site-link'
 export function Linkify(props: { text: string; gray?: boolean }) {
   let { text, gray } = props
   // Replace "m1234" with "ϻ1234"
-  const mRegex = /(\W|^)m(\d+)/g
-  text = text.replace(mRegex, (_, pre, num) => `${pre}ϻ${num}`)
+  // const mRegex = /(\W|^)m(\d+)/g
+  // text = text.replace(mRegex, (_, pre, num) => `${pre}ϻ${num}`)
 
   // Find instances of @username, #hashtag, and https://...
   const regex =
