@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import React, { Fragment } from 'react'
 import { LinkIcon } from '@heroicons/react/outline'
 import { Menu, Transition } from '@headlessui/react'
 import clsx from 'clsx'
@@ -6,6 +6,7 @@ import { Contract } from 'common/contract'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { ToastClipboard } from 'web/components/toast-clipboard'
 
 function copyContractUrl(contract: Contract) {
   copyToClipboard(`https://${ENV_CONFIG.domain}${contractPath(contract)}`)
@@ -14,8 +15,9 @@ function copyContractUrl(contract: Contract) {
 export function CopyLinkButton(props: {
   contract: Contract
   buttonClassName?: string
+  toastClassName?: string
 }) {
-  const { contract, buttonClassName } = props
+  const { contract, buttonClassName, toastClassName } = props
 
   return (
     <Menu
@@ -42,9 +44,9 @@ export function CopyLinkButton(props: {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="origin-top-center absolute left-0 mt-2 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <Menu.Items>
           <Menu.Item>
-            <div className="px-2 py-1">Link copied!</div>
+            <ToastClipboard className={toastClassName} />
           </Menu.Item>
         </Menu.Items>
       </Transition>
