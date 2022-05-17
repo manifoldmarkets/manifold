@@ -1,13 +1,8 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 import { useUser } from 'web/hooks/use-user'
-import { formatMoney, formatWithCommas } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
-import { Row } from './layout/row'
-import { Bet } from 'common/bet'
 import { Spacer } from './layout/spacer'
-import { calculateCpmmSale } from 'common/calculate-cpmm'
-import { Binary, CPMM, FullContract } from 'common/contract'
 import { SiteLink } from './site-link'
 
 export function AmountInput(props: {
@@ -20,7 +15,6 @@ export function AmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  children?: any
 }) {
   const {
     amount,
@@ -31,7 +25,6 @@ export function AmountInput(props: {
     className,
     inputClassName,
     inputRef,
-    children,
   } = props
 
   const onAmountChange = (str: string) => {
@@ -78,8 +71,6 @@ export function AmountInput(props: {
           )}
         </div>
       )}
-
-      {children}
     </Col>
   )
 }
@@ -136,90 +127,5 @@ export function BuyAmountInput(props: {
       inputClassName={inputClassName}
       inputRef={inputRef}
     />
-  )
-}
-
-export function SellAmountInput(props: {
-  contract: FullContract<CPMM, Binary>
-  amount: number | undefined
-  onChange: (newAmount: number | undefined) => void
-  userBets: Bet[]
-  error: string | undefined
-  setError: (error: string | undefined) => void
-  disabled?: boolean
-  className?: string
-  inputClassName?: string
-  // Needed to focus the amount input
-  inputRef?: React.MutableRefObject<any>
-}) {
-  const {
-    contract,
-    amount,
-    onChange,
-    userBets,
-    error,
-    setError,
-    disabled,
-    className,
-    inputClassName,
-    inputRef,
-  } = props
-
-  const user = useUser()
-
-  const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
-  const [yesBets, noBets] = _.partition(
-    openUserBets,
-    (bet) => bet.outcome === 'YES'
-  )
-  const [yesShares, noShares] = [
-    _.sumBy(yesBets, (bet) => bet.shares),
-    _.sumBy(noBets, (bet) => bet.shares),
-  ]
-
-  const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
-  const shares = Math.round(yesShares) || Math.round(noShares)
-
-  const sharesSold = Math.min(amount ?? 0, shares)
-
-  const { saleValue } = calculateCpmmSale(
-    contract,
-    sharesSold,
-    sellOutcome as 'YES' | 'NO'
-  )
-
-  const onAmountChange = (amount: number | undefined) => {
-    onChange(amount)
-
-    // Check for errors.
-    if (amount !== undefined) {
-      if (amount > shares) {
-        setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
-      } else {
-        setError(undefined)
-      }
-    }
-  }
-
-  return (
-    <AmountInput
-      amount={amount}
-      onChange={onAmountChange}
-      label="Qty"
-      error={error}
-      disabled={disabled}
-      className={className}
-      inputClassName={inputClassName}
-      inputRef={inputRef}
-    >
-      {user && (
-        <Col className="gap-3 text-sm">
-          <Row className="items-center justify-between gap-2 text-gray-500">
-            Sale proceeds{' '}
-            <span className="text-neutral">{formatMoney(saleValue)}</span>
-          </Row>
-        </Col>
-      )}
-    </AmountInput>
   )
 }
