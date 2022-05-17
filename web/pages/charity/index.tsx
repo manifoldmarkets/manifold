@@ -8,6 +8,7 @@ import { Page } from 'web/components/page'
 import { SiteLink } from 'web/components/site-link'
 import { Title } from 'web/components/title'
 import { getAllCharityTxns } from 'web/lib/firebase/txns'
+import { formatMoney } from 'common/util/format'
 
 export async function getStaticProps() {
   const txns = await getAllCharityTxns()
@@ -57,7 +58,8 @@ export default function Charity(props: {
           <Title className="!mt-0" text="Manifold for Good" />
           <div className="mb-6 text-gray-500">
             Donate your winnings to charity! Through the month of May, every
-            M$100 you contribute turns into $1 USD sent to your chosen charity.
+            {formatMoney(100)} you contribute turns into $1 USD sent to your
+            chosen charity.
             <Spacer h={5} />
             Together we've donated over ${Math.floor(totalRaised / 100)} USD so
             far!

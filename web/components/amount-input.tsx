@@ -4,6 +4,7 @@ import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import { SiteLink } from './site-link'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -120,7 +121,7 @@ export function BuyAmountInput(props: {
     <AmountInput
       amount={amount}
       onChange={onAmountChange}
-      label="M$"
+      label={ENV_CONFIG.moneyMoniker}
       error={error}
       disabled={disabled}
       className={className}
