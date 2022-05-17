@@ -50,11 +50,14 @@ import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { calculateCpmmSale } from 'common/calculate-cpmm'
-import { ClipboardCopyIcon, LinkIcon } from '@heroicons/react/outline'
+import { LinkIcon } from '@heroicons/react/outline'
 import { DateTimeTooltip } from 'web/components/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import { ToastClipboard } from 'web/components/toast-clipboard'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function FeedItems(props: {
   contract: Contract
@@ -229,17 +232,21 @@ export function FeedComment(props: {
   useEffect(() => {
     if (router.asPath.includes(`#${comment.id}`)) {
       setHighlighted(true)
-      setTimeout(() => setHighlighted(false), 3000)
     }
   }, [router.asPath])
 
-  function copyLink(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
+  function copyLinkToComment(
+    event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
+  ) {
     event.preventDefault()
-    let currentLocation = window.location.href
+
+    let currentLocation = window.location.href.includes('/home?u=')
+      ? `https://${ENV_CONFIG.domain}${contractPath(contract)}#${comment.id}`
+      : window.location.href
     if (currentLocation.includes('#')) {
       currentLocation = currentLocation.split('#')[0]
     }
-    navigator.clipboard.writeText(`${currentLocation}#${comment.id}`)
+    copyToClipboard(`${currentLocation}#${comment.id}`)
     setShowToast(true)
     setTimeout(() => setShowToast(false), 2000)
   }
@@ -256,7 +263,7 @@ export function FeedComment(props: {
     <Row
       className={clsx(
         'flex space-x-3 transition-all duration-1000',
-        highlighted ? `bg-primary/[0.3] rounded` : ''
+        highlighted ? `bg-primary/[0.2] -m-2 rounded p-2` : ''
       )}
     >
       <Avatar
@@ -305,22 +312,13 @@ export function FeedComment(props: {
               passHref={true}
             >
               <a
-                onClick={(event) => copyLink(event)}
+                onClick={(event) => copyLinkToComment(event)}
                 className={'cursor-pointer hover:underline'}
               >
                 <span className="ml-2 whitespace-nowrap text-gray-400">
                   {fromNow(createdTime)}
                   {showToast && (
-                    <div
-                      className="w-100 border-base-300 absolute left-40 flex items-center space-x-2 divide-x
-                       divide-gray-200 rounded-md border-2 bg-white p-2
-                       text-gray-500 sm:-left-16 "
-                    >
-                      <ClipboardCopyIcon height={20} />
-                      <div className="pl-4 text-sm font-normal">
-                        Link copied to clipboard!
-                      </div>
-                    </div>
+                    <ToastClipboard className={'left-24 sm:-left-16'} />
                   )}
                 </span>
                 <LinkIcon
@@ -1010,7 +1008,7 @@ function FeedAnswerGroup(props: {
         <div
           className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 bg-opacity-10"
           style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
-        ></div>
+        />
       )}
       <Row className="my-4 gap-3">
         <div className="px-1">
