@@ -21,10 +21,12 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
     <>
       <Col className="my-6 rounded-xl text-center sm:m-12">
         <h1 className="text-4xl sm:text-6xl xl:text-6xl">
-          <div className="font-semibold sm:mb-2">A market for</div>
-          <span className="bg-gradient-to-r from-teal-400 to-green-400 bg-clip-text font-bold text-transparent">
-            every question
-          </span>
+          <div className="font-semibold sm:mb-2">
+            Bet on{' '}
+            <span className="bg-gradient-to-r from-teal-400 to-green-400 bg-clip-text font-bold text-transparent">
+              any question!
+            </span>
+          </div>
         </h1>
         <Spacer h={6} />
         <div className="mb-4 px-2 text-gray-500">
