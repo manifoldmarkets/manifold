@@ -49,12 +49,15 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <div>Share</div>
 
           <Row className="justify-start gap-4">
-            <CopyLinkButton contract={contract} />
+            <CopyLinkButton
+              contract={contract}
+              toastClassName={'sm:-left-10 -left-4 min-w-[250%]'}
+            />
             <TweetButton
               className="self-start"
               tweetText={getTweetText(contract, false)}
             />
-            <ShareEmbedButton contract={contract} />
+            <ShareEmbedButton contract={contract} toastClassName={'-left-20'} />
           </Row>
           <div />
 

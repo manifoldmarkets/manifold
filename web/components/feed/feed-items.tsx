@@ -25,7 +25,7 @@ import { useUser } from 'web/hooks/use-user'
 import { Linkify } from '../linkify'
 import { Row } from '../layout/row'
 import { createComment, MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { Comment } from 'common/comment'
 import { BinaryResolutionOrChance } from '../contract/contract-card'
 import { SiteLink } from '../site-link'
@@ -35,21 +35,20 @@ import { Bet } from 'web/lib/firebase/bets'
 import { JoinSpans } from '../join-spans'
 import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
-import { Answer } from 'common/answer'
-import { ActivityItem, GENERAL_COMMENTS_OUTCOME_ID } from './activity-items'
-import { Binary, CPMM, FreeResponse, FullContract } from 'common/contract'
-import { BuyButton } from '../yes-no-selector'
-import { getDpmOutcomeProbability } from 'common/calculate-dpm'
-import { AnswerBetPanel } from '../answers/answer-bet-panel'
+import { ActivityItem } from './activity-items'
+import { Binary, CPMM, FullContract } from 'common/contract'
 import { useSaveSeenContract } from 'web/hooks/use-seen-contracts'
 import { User } from 'common/user'
-import { Modal } from '../layout/modal'
 import { trackClick } from 'web/lib/firebase/tracking'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { calculateCpmmSale } from 'common/calculate-cpmm'
+import { useRouter } from 'next/router'
+import { FeedAnswerCommentGroup } from 'web/components/feed/feed-answer-comment-group'
+import { getMostRecentCommentableBet } from 'web/components/feed/feed-comments'
+import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 
 export function FeedItems(props: {
   contract: Contract
@@ -67,12 +66,7 @@ export function FeedItems(props: {
     <div className={clsx('flow-root', className)} ref={ref}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
-          <div
-            key={item.id}
-            className={
-              item.type === 'answer' ? 'relative pb-2' : 'relative pb-6'
-            }
-          >
+          <div key={item.id} className={'relative pb-6'}>
             {activityItemIdx !== items.length - 1 ||
             item.type === 'answergroup' ? (
               <span
@@ -93,7 +87,7 @@ export function FeedItems(props: {
   )
 }
 
-function FeedItem(props: { item: ActivityItem }) {
+export function FeedItem(props: { item: ActivityItem }) {
   const { item } = props
 
   switch (item.type) {
@@ -108,9 +102,7 @@ function FeedItem(props: { item: ActivityItem }) {
     case 'betgroup':
       return <FeedBetGroup {...item} />
     case 'answergroup':
-      return <FeedAnswerGroup {...item} />
-    case 'answer':
-      return <FeedAnswerGroup {...item} />
+      return <FeedAnswerCommentGroup {...item} />
     case 'close':
       return <FeedClose {...item} />
     case 'resolve':
@@ -160,10 +152,7 @@ export function FeedCommentThread(props: {
         <div
           key={comment.id}
           id={comment.id}
-          className={clsx(
-            'flex space-x-3',
-            commentIdx === 0 ? '' : 'mt-4 ml-8'
-          )}
+          className={commentIdx === 0 ? '' : 'mt-4 ml-8'}
         >
           <FeedComment
             contract={contract}
@@ -221,6 +210,14 @@ export function FeedComment(props: {
     money = formatMoney(Math.abs(matchedBet.amount))
   }
 
+  const [highlighted, setHighlighted] = useState(false)
+  const router = useRouter()
+  useEffect(() => {
+    if (router.asPath.includes(`#${comment.id}`)) {
+      setHighlighted(true)
+    }
+  }, [router.asPath])
+
   // Only calculated if they don't have a matching bet
   const { userPosition, userPositionMoney, yesFloorShares, noFloorShares } =
     getBettorsPosition(
@@ -230,7 +227,12 @@ export function FeedComment(props: {
     )
 
   return (
-    <>
+    <Row
+      className={clsx(
+        'flex space-x-3 transition-all duration-1000',
+        highlighted ? `-m-2 rounded bg-indigo-500/[0.2] p-2` : ''
+      )}
+    >
       <Avatar
         className={clsx(smallAvatar && 'ml-1')}
         size={smallAvatar ? 'sm' : undefined}
@@ -271,7 +273,11 @@ export function FeedComment(props: {
               </>
             )}
           </>
-          <RelativeTimestamp time={createdTime} />
+          <CopyLinkDateTimeComponent
+            contract={contract}
+            createdTime={createdTime}
+            elementId={comment.id}
+          />
         </p>
         <TruncatedComment
           comment={text}
@@ -287,7 +293,7 @@ export function FeedComment(props: {
           </button>
         )}
       </div>
-    </>
+    </Row>
   )
 }
 
@@ -687,39 +693,6 @@ export function FeedQuestion(props: {
   )
 }
 
-function getMostRecentCommentableBet(
-  betsByCurrentUser: Bet[],
-  comments: Comment[],
-  user?: User | null,
-  answerOutcome?: string
-) {
-  return betsByCurrentUser
-    .filter((bet) => {
-      if (
-        canCommentOnBet(bet, user) &&
-        // The bet doesn't already have a comment
-        !comments.some((comment) => comment.betId == bet.id)
-      ) {
-        if (!answerOutcome) return true
-        // If we're in free response, don't allow commenting on ante bet
-        return (
-          bet.outcome !== GENERAL_COMMENTS_OUTCOME_ID &&
-          answerOutcome === bet.outcome
-        )
-      }
-      return false
-    })
-    .sort((b1, b2) => b1.createdTime - b2.createdTime)
-    .pop()
-}
-
-function canCommentOnBet(bet: Bet, user?: User | null) {
-  const { userId, createdTime, isRedemption } = bet
-  const isSelf = user?.id === userId
-  // You can comment if your bet was posted in the last hour
-  return !isRedemption && isSelf && Date.now() - createdTime < 60 * 60 * 1000
-}
-
 function FeedDescription(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername } = contract
@@ -892,161 +865,6 @@ function FeedBetGroup(props: {
         </div>
       </div>
     </>
-  )
-}
-
-function FeedAnswerGroup(props: {
-  contract: FullContract<any, FreeResponse>
-  answer: Answer
-  items: ActivityItem[]
-  type: string
-  betsByCurrentUser?: Bet[]
-  comments?: Comment[]
-}) {
-  const { answer, items, contract, type, betsByCurrentUser, comments } = props
-  const { username, avatarUrl, name, text } = answer
-  const user = useUser()
-  const mostRecentCommentableBet = getMostRecentCommentableBet(
-    betsByCurrentUser ?? [],
-    comments ?? [],
-    user,
-    answer.number + ''
-  )
-  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
-  const probPercent = formatPercent(prob)
-  const [open, setOpen] = useState(false)
-  const [showReply, setShowReply] = useState(false)
-  const isFreeResponseContractPage = type === 'answergroup' && comments
-  if (mostRecentCommentableBet && !showReply) setShowReplyAndFocus(true)
-  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
-
-  // If they've already opened the input box, focus it once again
-  function setShowReplyAndFocus(show: boolean) {
-    setShowReply(show)
-    inputRef?.focus()
-  }
-
-  useEffect(() => {
-    if (showReply && inputRef) inputRef.focus()
-  }, [inputRef, showReply])
-
-  return (
-    <Col
-      className={
-        type === 'answer'
-          ? 'border-base-200 bg-base-200 flex-1 rounded-md px-2'
-          : 'flex-1 gap-2'
-      }
-    >
-      <Modal open={open} setOpen={setOpen}>
-        <AnswerBetPanel
-          answer={answer}
-          contract={contract}
-          closePanel={() => setOpen(false)}
-          className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
-          isModal={true}
-        />
-      </Modal>
-
-      {type == 'answer' && (
-        <div
-          className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 bg-opacity-10"
-          style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
-        ></div>
-      )}
-      <Row className="my-4 gap-3">
-        <div className="px-1">
-          <Avatar username={username} avatarUrl={avatarUrl} />
-        </div>
-        <Col className="min-w-0 flex-1 lg:gap-1">
-          <div className="text-sm text-gray-500">
-            <UserLink username={username} name={name} /> answered
-          </div>
-
-          <Col className="align-items justify-between gap-4 sm:flex-row">
-            <span className="whitespace-pre-line text-lg">
-              <Linkify text={text} />
-            </span>
-
-            <Row className="items-center justify-center gap-4">
-              {isFreeResponseContractPage && (
-                <div className={'sm:hidden'}>
-                  <button
-                    className={
-                      'text-xs font-bold text-gray-500 hover:underline'
-                    }
-                    onClick={() => setShowReplyAndFocus(true)}
-                  >
-                    Reply
-                  </button>
-                </div>
-              )}
-
-              <div className={'align-items flex w-full justify-end gap-4 '}>
-                <span
-                  className={clsx(
-                    'text-2xl',
-                    tradingAllowed(contract) ? 'text-primary' : 'text-gray-500'
-                  )}
-                >
-                  {probPercent}
-                </span>
-                <BuyButton
-                  className={clsx(
-                    'btn-sm flex-initial !px-6 sm:flex',
-                    tradingAllowed(contract) ? '' : '!hidden'
-                  )}
-                  onClick={() => setOpen(true)}
-                />
-              </div>
-            </Row>
-          </Col>
-          {isFreeResponseContractPage && (
-            <div className={'justify-initial hidden sm:block'}>
-              <button
-                className={'text-xs font-bold text-gray-500 hover:underline'}
-                onClick={() => setShowReplyAndFocus(true)}
-              >
-                Reply
-              </button>
-            </div>
-          )}
-        </Col>
-      </Row>
-
-      {items.map((item, index) => (
-        <div
-          key={item.id}
-          className={clsx(
-            'relative ml-8',
-            index !== items.length - 1 && 'pb-4'
-          )}
-        >
-          {index !== items.length - 1 ? (
-            <span
-              className="absolute top-5 left-5 -ml-px h-[calc(100%-1rem)] w-0.5 bg-gray-200"
-              aria-hidden="true"
-            />
-          ) : null}
-          <div className="relative flex items-start space-x-3">
-            <FeedItem item={item} />
-          </div>
-        </div>
-      ))}
-
-      {showReply && (
-        <div className={'ml-8 pt-4'}>
-          <CommentInput
-            contract={contract}
-            betsByCurrentUser={betsByCurrentUser ?? []}
-            comments={comments ?? []}
-            answerOutcome={answer.number + ''}
-            replyToUsername={answer.username}
-            setRef={setInputRef}
-          />
-        </div>
-      )}
-    </Col>
   )
 }
 

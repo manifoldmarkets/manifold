@@ -20,6 +20,7 @@ export function ShareMarket(props: { contract: Contract; className?: string }) {
         <CopyLinkButton
           contract={contract}
           buttonClassName="btn-md rounded-l-none"
+          toastClassName={'-left-28 mt-1'}
         />
       </Row>
     </Col>
