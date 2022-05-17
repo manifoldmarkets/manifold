@@ -6,7 +6,7 @@ import { Answer } from 'common/answer'
 import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { placeBet } from 'web/lib/firebase/api-call'
+import { placeBet } from 'web/lib/firebase/fn-call'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import {

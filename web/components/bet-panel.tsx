@@ -16,7 +16,7 @@ import {
 import { Title } from './title'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
-import { placeBet, sellShares } from 'web/lib/firebase/api-call'
+import { placeBet, sellShares } from 'web/lib/firebase/fn-call'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel } from './outcome-label'

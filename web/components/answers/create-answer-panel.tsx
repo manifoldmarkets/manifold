@@ -5,7 +5,7 @@ import Textarea from 'react-expanding-textarea'
 import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { createAnswer } from 'web/lib/firebase/api-call'
+import { createAnswer } from 'web/lib/firebase/fn-call'
 import { Row } from '../layout/row'
 import {
   formatMoney,
