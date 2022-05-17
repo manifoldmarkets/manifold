@@ -215,7 +215,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           value={category}
           onChange={(e) => setCategory(e.currentTarget.value ?? '')}
         >
-          <option value={''}></option>
+          <option value={''}>(none)</option>
           {Object.entries(CATEGORIES).map(([id, name]) => (
             <option key={id} value={id}>
               {name}
