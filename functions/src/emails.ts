@@ -244,7 +244,8 @@ export const sendNewCommentEmail = async (
   contract: Contract,
   comment: Comment,
   bet?: Bet,
-  answer?: Answer
+  answerText?: string,
+  answerId?: string
 ) => {
   const privateUser = await getPrivateUser(userId)
   if (
@@ -274,15 +275,14 @@ export const sendNewCommentEmail = async (
   const from = `${commentorName} <info@manifold.markets>`
 
   if (contract.outcomeType === 'FREE_RESPONSE') {
-    const answerText = answer?.text ?? ''
-    const answerNumber = `#${answer?.id ?? ''}`
+    const answerNumber = answerId ? `#${answerId}` : ''
 
     await sendTemplateEmail(
       privateUser.email,
       subject,
       'market-answer-comment',
       {
-        answer: answerText,
+        answer: answerText ?? '',
         answerNumber,
         commentorName,
         commentorAvatarUrl: commentorAvatarUrl ?? '',
