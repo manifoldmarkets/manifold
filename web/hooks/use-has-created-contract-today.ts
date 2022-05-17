@@ -2,7 +2,7 @@ import { listContracts } from 'web/lib/firebase/contracts'
 import { useEffect, useState } from 'react'
 import { User } from 'common/user'
 
-let sessionCreatedContractToday = false
+let sessionCreatedContractToday = true
 
 export const useHasCreatedContractToday = (user: User | null | undefined) => {
   const [hasCreatedContractToday, setHasCreatedContractToday] = useState(
