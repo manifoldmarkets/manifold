@@ -41,6 +41,7 @@ export default function BetRow(props: {
         replaceNoButton={
           yesFloorShares > 0 ? (
             <SellButton
+              panelClassName={betPanelClassName}
               contract={contract}
               user={user}
               sharesOutcome={'YES'}
@@ -51,6 +52,7 @@ export default function BetRow(props: {
         replaceYesButton={
           noFloorShares > 0 ? (
             <SellButton
+              panelClassName={betPanelClassName}
               contract={contract}
               user={user}
               sharesOutcome={'NO'}
