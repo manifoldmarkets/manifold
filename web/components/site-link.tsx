@@ -16,6 +16,8 @@ export const SiteLink = (props: {
           'z-10 break-words hover:underline hover:decoration-indigo-400 hover:decoration-2',
           className
         )}
+        href={href}
+        target={href.startsWith('http') ? '_blank' : undefined}
         style={{ /* For iOS safari */ wordBreak: 'break-word' }}
         onClick={(e) => {
           e.stopPropagation()
