@@ -293,7 +293,7 @@ function getAnswerAndCommentInputGroups(
           comment.answerOutcome === outcome ||
           answerBets.some((bet) => bet.id === comment.betId)
       )
-      const items = getCommentThreads(answerBets, answerComments, contract)
+      const items = getCommentThreads(bets, answerComments, contract)
 
       if (outcome === GENERAL_COMMENTS_OUTCOME_ID) items.reverse()
 
@@ -304,7 +304,7 @@ function getAnswerAndCommentInputGroups(
         answer,
         items,
         user,
-        betsByCurrentUser: answerBets.filter((bet) => bet.userId === user?.id),
+        betsByCurrentUser: bets.filter((bet) => bet.userId === user?.id),
         comments: answerComments,
       }
     })

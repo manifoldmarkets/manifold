@@ -199,13 +199,13 @@ export function FeedComment(props: {
     onReplyClick,
   } = props
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
-  let outcome: string | undefined,
+  let betOutcome: string | undefined,
     bought: string | undefined,
     money: string | undefined
 
   const matchedBet = betsBySameUser.find((bet) => bet.id === comment.betId)
   if (matchedBet) {
-    outcome = matchedBet.outcome
+    betOutcome = matchedBet.outcome
     bought = matchedBet.amount >= 0 ? 'bought' : 'sold'
     money = formatMoney(Math.abs(matchedBet.amount))
   }
@@ -219,12 +219,11 @@ export function FeedComment(props: {
   }, [router.asPath])
 
   // Only calculated if they don't have a matching bet
-  const { userPosition, userPositionMoney, yesFloorShares, noFloorShares } =
-    getBettorsPosition(
-      contract,
-      comment.createdTime,
-      matchedBet ? [] : betsBySameUser
-    )
+  const { userPosition, outcome } = getBettorsPosition(
+    contract,
+    comment.createdTime,
+    matchedBet ? [] : betsBySameUser
+  )
 
   return (
     <Row
@@ -248,11 +247,10 @@ export function FeedComment(props: {
           />{' '}
           {!matchedBet && userPosition > 0 && (
             <>
-              {'had ' + userPositionMoney + ' '}
+              {'had majority '}
               <>
-                {' of '}
                 <OutcomeLabel
-                  outcome={yesFloorShares > noFloorShares ? 'YES' : 'NO'}
+                  outcome={outcome}
                   contract={contract}
                   truncate="short"
                 />
@@ -261,12 +259,12 @@ export function FeedComment(props: {
           )}
           <>
             {bought} {money}
-            {contract.outcomeType !== 'FREE_RESPONSE' && outcome && (
+            {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
               <>
                 {' '}
                 of{' '}
                 <OutcomeLabel
-                  outcome={outcome ? outcome : ''}
+                  outcome={betOutcome ? betOutcome : ''}
                   contract={contract}
                   truncate="short"
                 />
@@ -354,8 +352,11 @@ export function CommentInput(props: {
     )
   }
 
-  const { userPosition, userPositionMoney, yesFloorShares, noFloorShares } =
-    getBettorsPosition(contract, Date.now(), betsByCurrentUser)
+  const { userPosition, outcome } = getBettorsPosition(
+    contract,
+    Date.now(),
+    betsByCurrentUser
+  )
 
   const shouldCollapseAfterClickOutside = false
 
@@ -378,11 +379,10 @@ export function CommentInput(props: {
               )}
               {!mostRecentCommentableBet && user && userPosition > 0 && (
                 <>
-                  {'You have ' + userPositionMoney + ' '}
+                  {'You have majority '}
                   <>
-                    {' of '}
                     <OutcomeLabel
-                      outcome={yesFloorShares > noFloorShares ? 'YES' : 'NO'}
+                      outcome={outcome}
                       contract={contract}
                       truncate="short"
                     />
@@ -472,23 +472,38 @@ function getBettorsPosition(
 
   const emptyReturn = {
     userPosition: 0,
-    userPositionMoney: 0,
-    yesFloorShares,
-    noFloorShares,
+    outcome: '',
   }
+  const previousBets = bets.filter(
+    (prevBet) => prevBet.createdTime < createdTime && !prevBet.isAnte
+  )
 
-  // TODO: show which of the answers was their majority stake at time of comment for FR?
-  if (contract.outcomeType != 'BINARY') {
-    return emptyReturn
+  if (contract.outcomeType !== 'BINARY') {
+    const answerCounts: any = {}
+    for (const bet of previousBets) {
+      if (bet.outcome) {
+        if (!answerCounts[bet.outcome]) {
+          answerCounts[bet.outcome] = bet.amount
+        } else {
+          answerCounts[bet.outcome] += bet.amount
+        }
+      }
+    }
+    const majorityAnswer = Object.keys(answerCounts).reduce(
+      (a, b) => (answerCounts[a] > answerCounts[b] ? a : b),
+      ''
+    )
+    return {
+      userPosition: majorityAnswer,
+      outcome: majorityAnswer,
+    }
   }
   if (bets.length === 0) {
     return emptyReturn
   }
 
-  // Calculate the majority shares they had when they made the comment
-  const betsBefore = bets.filter((prevBet) => prevBet.createdTime < createdTime)
   const [yesBets, noBets] = _.partition(
-    betsBefore ?? [],
+    previousBets ?? [],
     (bet) => bet.outcome === 'YES'
   )
   yesShares = _.sumBy(yesBets, (bet) => bet.shares)
@@ -497,13 +512,8 @@ function getBettorsPosition(
   noFloorShares = Math.floor(noShares)
 
   const userPosition = yesFloorShares || noFloorShares
-  const { saleValue } = calculateCpmmSale(
-    contract as FullContract<CPMM, Binary>,
-    yesShares || noShares,
-    yesFloorShares > noFloorShares ? 'YES' : 'NO'
-  )
-  const userPositionMoney = formatMoney(Math.abs(saleValue))
-  return { userPosition, userPositionMoney, yesFloorShares, noFloorShares }
+  const outcome = yesFloorShares > noFloorShares ? 'YES' : 'NO'
+  return { userPosition, outcome }
 }
 
 export function FeedBet(props: {
