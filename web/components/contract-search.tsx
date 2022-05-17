@@ -3,6 +3,7 @@ import {
   InstantSearch,
   SearchBox,
   SortBy,
+  useCurrentRefinements,
   useInfiniteHits,
   useRange,
   useRefinementList,
@@ -21,6 +22,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { useRouter } from 'next/router'
 import { ENV } from 'common/envs/constants'
+import { CategorySelector } from './feed/category-selector'
+import { useUser } from 'web/hooks/use-user'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -44,15 +47,18 @@ export function ContractSearch(props: {
   querySortOptions?: {
     defaultSort: Sort
     defaultFilter?: filter
-    filter?: {
-      creatorId?: string
-      tag?: string
-    }
     shouldLoadFromStorage?: boolean
   }
+  additionalFilter?: {
+    creatorId?: string
+    tag?: string
+    category?: string
+  }
+  showCategorySelector: boolean
 }) {
-  const { querySortOptions } = props
+  const { querySortOptions, additionalFilter, showCategorySelector } = props
 
+  const user = useUser()
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
   const sort = sortIndexes
@@ -65,15 +71,15 @@ export function ContractSearch(props: {
     querySortOptions?.defaultFilter ?? 'open'
   )
 
+  const [category, setCategory] = useState<string>('all')
+
   if (!sort) return <></>
   return (
     <InstantSearch
       searchClient={searchClient}
       indexName={`${indexPrefix}contracts-${sort}`}
       key={`search-${
-        querySortOptions?.filter?.tag ??
-        querySortOptions?.filter?.creatorId ??
-        ''
+        additionalFilter?.tag ?? additionalFilter?.creatorId ?? ''
       }`}
     >
       <Row className="flex-wrap gap-2">
@@ -105,10 +111,25 @@ export function ContractSearch(props: {
           />
         </Row>
       </Row>
-      <ContractSearchInner
-        querySortOptions={querySortOptions}
-        filter={filter}
-      />
+      <div>
+        {showCategorySelector && (
+          <>
+            <Spacer h={4} />
+            <CategorySelector
+              user={user}
+              category={category}
+              setCategory={setCategory}
+            />
+          </>
+        )}
+        <Spacer h={4} />
+
+        <ContractSearchInner
+          querySortOptions={querySortOptions}
+          filter={filter}
+          additionalFilter={{ category, ...additionalFilter }}
+        />
+      </div>
     </InstantSearch>
   )
 }
@@ -116,15 +137,16 @@ export function ContractSearch(props: {
 export function ContractSearchInner(props: {
   querySortOptions?: {
     defaultSort: Sort
-    filter?: {
-      creatorId?: string
-      tag?: string
-    }
     shouldLoadFromStorage?: boolean
   }
   filter: filter
+  additionalFilter: {
+    creatorId?: string
+    tag?: string
+    category?: string
+  }
 }) {
-  const { querySortOptions, filter } = props
+  const { querySortOptions, filter, additionalFilter } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
   const { query, setQuery, setSort } = useUpdateQueryAndSort({
@@ -156,11 +178,11 @@ export function ContractSearchInner(props: {
     }
   }, [index])
 
-  const creatorId = querySortOptions?.filter?.creatorId
+  const { creatorId, category, tag } = additionalFilter
+
   useFilterCreator(creatorId)
 
-  const tag = querySortOptions?.filter?.tag
-  useFilterTag(tag)
+  useFilterTag(tag ?? (category === 'all' ? undefined : category))
 
   useFilterClosed(
     filter === 'closed'
@@ -173,25 +195,21 @@ export function ContractSearchInner(props: {
     filter === 'resolved' ? true : filter === 'all' ? undefined : false
   )
 
-  const { showMore, hits, isLastPage } = useInfiniteHits()
+  const { showMore, hits, isLastPage, results } = useInfiniteHits()
   const contracts = hits as any as Contract[]
 
   const router = useRouter()
   const hasLoaded = contracts.length > 0 || router.isReady
 
-  return (
-    <div>
-      <Spacer h={8} />
+  if (!hasLoaded || !results) return <></>
 
-      {hasLoaded && (
-        <ContractsGrid
-          contracts={contracts}
-          loadMore={showMore}
-          hasMore={!isLastPage}
-          showCloseTime={index === 'contracts-closing-soon'}
-        />
-      )}
-    </div>
+  return (
+    <ContractsGrid
+      contracts={contracts}
+      loadMore={showMore}
+      hasMore={!isLastPage}
+      showCloseTime={index === 'contracts-closing-soon'}
+    />
   )
 }
 
@@ -203,10 +221,15 @@ const useFilterCreator = (creatorId: string | undefined) => {
 }
 
 const useFilterTag = (tag: string | undefined) => {
+  const { items, refine: deleteRefinement } = useCurrentRefinements({
+    includedAttributes: ['lowercaseTags'],
+  })
   const { refine } = useRefinementList({ attribute: 'lowercaseTags' })
   useEffect(() => {
+    const refinements = items[0]?.refinements ?? []
     if (tag) refine(tag.toLowerCase())
-  }, [tag, refine])
+    if (refinements[0]) deleteRefinement(refinements[0])
+  }, [tag])
 }
 
 const useFilterClosed = (value: boolean | undefined) => {
