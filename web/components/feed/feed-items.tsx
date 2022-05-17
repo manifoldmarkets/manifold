@@ -46,10 +46,7 @@ import NewContractBadge from '../new-contract-badge'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { calculateCpmmSale } from 'common/calculate-cpmm'
 import { useRouter } from 'next/router'
-import {
-  FeedAnswer,
-  FeedAnswerCommentGroup,
-} from 'web/components/feed/feed-answers'
+import { FeedAnswerCommentGroup } from 'web/components/feed/feed-answer-comment-group'
 import { getMostRecentCommentableBet } from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 
@@ -69,12 +66,7 @@ export function FeedItems(props: {
     <div className={clsx('flow-root', className)} ref={ref}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
-          <div
-            key={item.id}
-            className={
-              item.type === 'answer' ? 'relative pb-2' : 'relative pb-6'
-            }
-          >
+          <div key={item.id} className={'relative pb-6'}>
             {activityItemIdx !== items.length - 1 ||
             item.type === 'answergroup' ? (
               <span
@@ -111,8 +103,6 @@ export function FeedItem(props: { item: ActivityItem }) {
       return <FeedBetGroup {...item} />
     case 'answergroup':
       return <FeedAnswerCommentGroup {...item} />
-    case 'answer':
-      return <FeedAnswer {...item} />
     case 'close':
       return <FeedClose {...item} />
     case 'resolve':
@@ -240,7 +230,7 @@ export function FeedComment(props: {
     <Row
       className={clsx(
         'flex space-x-3 transition-all duration-1000',
-        highlighted ? `bg-primary/[0.2] -m-2 rounded p-2` : ''
+        highlighted ? `-m-2 rounded bg-indigo-500/[0.2] p-2` : ''
       )}
     >
       <Avatar

@@ -81,7 +81,7 @@ export function FeedAnswerCommentGroup(props: {
       <Row
         className={clsx(
           'my-4 flex gap-3 space-x-3 transition-all duration-1000',
-          highlighted ? `bg-primary/[0.2] -m-2 my-3 rounded p-2` : ''
+          highlighted ? `-m-2 my-3 rounded bg-indigo-500/[0.2] p-2` : ''
         )}
         id={answerElementId}
       >
@@ -181,75 +181,6 @@ export function FeedAnswerCommentGroup(props: {
           />
         </div>
       )}
-    </Col>
-  )
-}
-
-export function FeedAnswer(props: {
-  contract: FullContract<any, FreeResponse>
-  answer: Answer
-  items: ActivityItem[]
-  type: string
-}) {
-  const { answer, contract } = props
-  const { username, avatarUrl, name, text } = answer
-  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
-  const probPercent = formatPercent(prob)
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Col className={'border-base-200 bg-base-200 flex-1 rounded-md px-2'}>
-      <Modal open={open} setOpen={setOpen}>
-        <AnswerBetPanel
-          answer={answer}
-          contract={contract}
-          closePanel={() => setOpen(false)}
-          className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
-          isModal={true}
-        />
-      </Modal>
-
-      <div
-        className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 bg-opacity-10"
-        style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
-      />
-
-      <Row className="my-4 gap-3">
-        <div className="px-1">
-          <Avatar username={username} avatarUrl={avatarUrl} />
-        </div>
-        <Col className="min-w-0 flex-1 lg:gap-1">
-          <div className="text-sm text-gray-500">
-            <UserLink username={username} name={name} /> answered
-          </div>
-
-          <Col className="align-items justify-between gap-4 sm:flex-row">
-            <span className="whitespace-pre-line text-lg">
-              <Linkify text={text} />
-            </span>
-
-            <Row className="items-center justify-center gap-4">
-              <div className={'align-items flex w-full justify-end gap-4 '}>
-                <span
-                  className={clsx(
-                    'text-2xl',
-                    tradingAllowed(contract) ? 'text-primary' : 'text-gray-500'
-                  )}
-                >
-                  {probPercent}
-                </span>
-                <BuyButton
-                  className={clsx(
-                    'btn-sm flex-initial !px-6 sm:flex',
-                    tradingAllowed(contract) ? '' : '!hidden'
-                  )}
-                  onClick={() => setOpen(true)}
-                />
-              </div>
-            </Row>
-          </Col>
-        </Col>
-      </Row>
     </Col>
   )
 }
