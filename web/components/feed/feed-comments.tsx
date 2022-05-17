@@ -21,6 +21,7 @@ import * as _ from 'lodash'
 import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
 import { BetStatusText } from 'web/components/feed/feed-bets'
+import { Col } from 'web/components/layout/col'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -76,7 +77,6 @@ export function FeedCommentThread(props: {
         <div className={'ml-8 w-full pt-6'}>
           <CommentInput
             contract={contract}
-            // Should we allow replies to contain recent bet info?
             betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
             commentsByCurrentUser={comments}
             parentComment={parentComment}
@@ -213,7 +213,6 @@ export function getMostRecentCommentableBet(
     .filter((bet) => {
       if (
         canCommentOnBet(bet, user) &&
-        // There is no comment with a createdTime greater than this bet
         !commentsByCurrentUser.some(
           (comment) => comment.createdTime > bet.createdTime
         )
@@ -324,35 +323,37 @@ export function CommentInput(props: {
               )}
             </div>
 
-            <Row className="gap-1.5 text-gray-700">
-              <Textarea
-                ref={(ref: HTMLTextAreaElement) => setRef?.(ref)}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="textarea textarea-bordered w-full resize-none"
-                placeholder={
-                  parentComment || answerOutcome
-                    ? 'Write a reply... '
-                    : 'Write a comment...'
-                }
-                autoFocus={focused}
-                rows={focused ? 3 : 1}
-                onFocus={() => setFocused(true)}
-                onBlur={() =>
-                  shouldCollapseAfterClickOutside && setFocused(false)
-                }
-                maxLength={MAX_COMMENT_LENGTH}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault()
-                    submitComment(id)
+            <Row className="grid grid-cols-8 gap-1.5 text-gray-700">
+              <Col className={'col-span-4 sm:col-span-6'}>
+                <Textarea
+                  ref={(ref: HTMLTextAreaElement) => setRef?.(ref)}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className={clsx('textarea textarea-bordered resize-none')}
+                  placeholder={
+                    parentComment || answerOutcome
+                      ? 'Write a reply... '
+                      : 'Write a comment...'
                   }
-                }}
-              />
-              <div
+                  autoFocus={focused}
+                  rows={focused ? 3 : 1}
+                  onFocus={() => setFocused(true)}
+                  onBlur={() =>
+                    shouldCollapseAfterClickOutside && setFocused(false)
+                  }
+                  maxLength={MAX_COMMENT_LENGTH}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault()
+                      submitComment(id)
+                    }
+                  }}
+                />
+              </Col>
+              <Col
                 className={clsx(
-                  'flex justify-center',
-                  focused ? 'items-end' : 'items-center'
+                  'col-span-4 sm:col-span-2',
+                  focused ? 'justify-end' : 'justify-center'
                 )}
               >
                 {!user && (
@@ -384,7 +385,7 @@ export function CommentInput(props: {
                     {parentComment || answerOutcome ? 'Reply' : 'Comment'}
                   </button>
                 )}
-              </div>
+              </Col>
             </Row>
           </div>
         </div>
