@@ -214,7 +214,7 @@ function BuyPanel(props: {
 
   useEffect(() => {
     // warm up cloud function
-    placeBet({}).catch()
+    placeBet({}).catch(() => {})
   }, [])
 
   useEffect(() => {

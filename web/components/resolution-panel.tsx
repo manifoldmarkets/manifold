@@ -20,7 +20,7 @@ export function ResolutionPanel(props: {
 }) {
   useEffect(() => {
     // warm up cloud function
-    resolveMarket({} as any).catch()
+    resolveMarket({} as any).catch(() => {})
   }, [])
 
   const { contract, className } = props

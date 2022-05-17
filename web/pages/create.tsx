@@ -61,7 +61,7 @@ export function NewContract(props: { question: string; tag?: string }) {
   }, [creator])
 
   useEffect(() => {
-    createContract({}).catch() // warm up function
+    createContract({}).catch(() => {}) // warm up function
   }, [])
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
