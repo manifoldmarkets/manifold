@@ -12,6 +12,7 @@ import {
 import clsx from 'clsx'
 import _ from 'lodash'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from 'web/hooks/use-fold'
 import { useUser } from 'web/hooks/use-user'
@@ -121,11 +122,34 @@ function CloseButton(props: { onClick: React.MouseEventHandler }) {
   )
 }
 
-function ModalOverlay(props: { onClick: React.MouseEventHandler }) {
+function ModalOverlay(props: {
+  open: boolean
+  onClick: React.MouseEventHandler
+}) {
+  const { open, onClick } = props
+  const [visible, setVisible] = useState(open)
+
+  useEffect(() => {
+    // Disable scrolling page when sidebar is open
+    document.body.style.overflow = open ? 'hidden' : 'auto'
+    // If it's opened, make sure it's visible immediately so the fade-in will be apparent,
+    // but if it's closed, we wait and set it invisible only after the fade-out is done,
+    // via the onTransitionEnd handler.
+    if (open) {
+      setVisible(true)
+    }
+  }, [open])
+
+  const overlayClass = clsx(
+    'inset-0 z-40 flex fixed overflow-auto bg-gray-600 transition-opacity duration-300 lg:hidden',
+    visible ? 'visible' : 'invisible',
+    open ? 'opacity-75' : 'opacity-0'
+  )
   return (
     <div
-      className="fixed inset-0 z-40 flex overflow-auto bg-gray-600 bg-opacity-75 lg:hidden"
-      onClick={props.onClick}
+      className={overlayClass}
+      onClick={onClick}
+      onTransitionEnd={() => setVisible(open)}
     ></div>
   )
 }
@@ -153,7 +177,7 @@ export default function Sidebar(props: { open: boolean; onClose: () => void }) {
 
   return (
     <>
-      {open && <ModalOverlay onClick={onClose} />}
+      <ModalOverlay open={open} onClick={onClose} />
       <nav aria-label="Sidebar" className={sidebarClass}>
         {open && <CloseButton onClick={onClose} />}
         <ManifoldLogo className="pb-6" twoLine />
