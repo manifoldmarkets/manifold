@@ -87,7 +87,6 @@ export type ResolveItem = BaseActivityItem & {
   type: 'resolve'
 }
 
-export const GENERAL_COMMENTS_OUTCOME_ID = 'General Comments'
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 const ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW = 3
 
@@ -294,8 +293,6 @@ function getAnswerAndCommentInputGroups(
           answerBets.some((bet) => bet.id === comment.betId)
       )
       const items = getCommentThreads(bets, answerComments, contract)
-
-      if (outcome === GENERAL_COMMENTS_OUTCOME_ID) items.reverse()
 
       return {
         id: outcome,
@@ -520,6 +517,13 @@ export function getRecentContractActivityItems(
   return [questionItem, ...items]
 }
 
+function commentIsGeneralComment(comment: Comment, contract: Contract) {
+  return (
+    comment.answerOutcome === undefined &&
+    (contract.outcomeType !== 'BINARY' ? comment.betId === undefined : true)
+  )
+}
+
 export function getSpecificContractActivityItems(
   contract: Contract,
   bets: Bet[],
@@ -550,8 +554,8 @@ export function getSpecificContractActivityItems(
       break
 
     case 'comments':
-      const nonFreeResponseComments = comments.filter(
-        (comment) => comment.answerOutcome === undefined
+      const nonFreeResponseComments = comments.filter((comment) =>
+        commentIsGeneralComment(comment, contract)
       )
       const nonFreeResponseBets =
         contract.outcomeType === 'FREE_RESPONSE' ? [] : bets

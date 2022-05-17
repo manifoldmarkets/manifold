@@ -1,7 +1,6 @@
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
-import { GENERAL_COMMENTS_OUTCOME_ID } from 'web/components/feed/activity-items'
 
 // TODO: move feed commment and comment thread in here when sinclair confirms they're not working on them rn
 export function getMostRecentCommentableBet(
@@ -19,10 +18,7 @@ export function getMostRecentCommentableBet(
       ) {
         if (!answerOutcome) return true
         // If we're in free response, don't allow commenting on ante bet
-        return (
-          bet.outcome !== GENERAL_COMMENTS_OUTCOME_ID &&
-          answerOutcome === bet.outcome
-        )
+        return answerOutcome === bet.outcome
       }
       return false
     })
