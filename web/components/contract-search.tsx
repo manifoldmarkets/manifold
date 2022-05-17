@@ -21,6 +21,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { useRouter } from 'next/router'
 import { ENV } from 'common/envs/constants'
+import { CategorySelector } from './feed/category-selector'
+import { useUser } from 'web/hooks/use-user'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -54,6 +56,7 @@ export function ContractSearch(props: {
 }) {
   const { querySortOptions, additionalFilter } = props
 
+  const user = useUser()
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
   const sort = sortIndexes
@@ -65,6 +68,8 @@ export function ContractSearch(props: {
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
   )
+
+  const [category, setCategory] = useState<string>('all')
 
   if (!sort) return <></>
   return (
@@ -105,12 +110,18 @@ export function ContractSearch(props: {
         </Row>
       </Row>
       <div>
-        <Spacer h={8} />
+        <Spacer h={4} />
+        <CategorySelector
+          user={user}
+          category={category}
+          setCategory={setCategory}
+        />
+        <Spacer h={4} />
 
         <ContractSearchInner
           querySortOptions={querySortOptions}
           filter={filter}
-          additionalFilter={additionalFilter}
+          additionalFilter={{ category, ...additionalFilter }}
         />
       </div>
     </InstantSearch>
@@ -123,7 +134,7 @@ export function ContractSearchInner(props: {
     shouldLoadFromStorage?: boolean
   }
   filter: filter
-  additionalFilter?: {
+  additionalFilter: {
     creatorId?: string
     tag?: string
     category?: string
@@ -161,11 +172,11 @@ export function ContractSearchInner(props: {
     }
   }, [index])
 
-  const creatorId = additionalFilter?.creatorId
+  const { creatorId, category, tag } = additionalFilter
+
   useFilterCreator(creatorId)
 
-  const tag = additionalFilter?.tag
-  useFilterTag(tag)
+  useFilterTag(category === 'all' ? tag : category)
 
   useFilterClosed(
     filter === 'closed'
