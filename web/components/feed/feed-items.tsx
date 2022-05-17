@@ -213,7 +213,7 @@ export function FeedComment(props: {
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
   useEffect(() => {
-    if (router.asPath.includes(`#${comment.id}`)) {
+    if (router.asPath.endsWith(`#${comment.id}`)) {
       setHighlighted(true)
     }
   }, [router.asPath])

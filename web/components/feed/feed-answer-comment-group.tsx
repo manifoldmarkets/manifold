@@ -61,7 +61,7 @@ export function FeedAnswerCommentGroup(props: {
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
   useEffect(() => {
-    if (router.asPath.includes(`#${answerElementId}`)) {
+    if (router.asPath.endsWith(`#${answerElementId}`)) {
       setHighlighted(true)
     }
   }, [router.asPath])
