@@ -169,7 +169,7 @@ export default function Sidebar(props: { className?: string }) {
       </div>
 
       {deservesDailyFreeMarket ? (
-        <div className=" text-primary mt-4 text-center">
+        <div className=" mt-4 text-center text-indigo-500">
           Use your daily free market! 🎉
         </div>
       ) : (
@@ -179,8 +179,9 @@ export default function Sidebar(props: { className?: string }) {
       {user && (
         <div className={'aligncenter flex justify-center'}>
           <Link href={'/create'}>
-            <button className="btn btn-primary btn-md mt-4 capitalize">
-              Create Market
+            <button className="btn btn-md mt-4  bg-indigo-500 capitalize hover:bg-indigo-700">
+              {/* Create Market */}
+              Ask question
             </button>
           </Link>
         </div>
