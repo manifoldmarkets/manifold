@@ -11,8 +11,9 @@ export function SellButton(props: {
   user: User | null | undefined
   sharesOutcome: 'YES' | 'NO' | undefined
   shares: number
+  panelClassName?: string
 }) {
-  const { contract, user, sharesOutcome, shares } = props
+  const { contract, user, sharesOutcome, shares, panelClassName } = props
   const userBets = useUserContractBets(user?.id, contract.id)
   const [showSellModal, setShowSellModal] = useState(false)
   const { mechanism } = contract
@@ -24,7 +25,7 @@ export function SellButton(props: {
           className={clsx(
             'btn-sm w-24 gap-1',
             // from the yes-no-selector:
-            'flex inline-flex flex-row  items-center justify-center rounded-3xl border-2 p-2',
+            'inline-flex items-center justify-center rounded-3xl border-2 p-2',
             sharesOutcome === 'NO'
               ? 'hover:bg-primary-focus border-primary hover:border-primary-focus text-primary hover:text-white'
               : 'border-red-400 text-red-500 hover:border-red-500 hover:bg-red-500 hover:text-white'
@@ -38,6 +39,7 @@ export function SellButton(props: {
         </div>
         {showSellModal && (
           <SellSharesModal
+            className={panelClassName}
             contract={contract as FullContract<CPMM, Binary>}
             user={user}
             userBets={userBets ?? []}

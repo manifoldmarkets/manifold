@@ -46,7 +46,7 @@ export function AnswerItem(props: {
         wasResolvedTo
           ? resolution === 'MKT'
             ? 'mb-2 bg-blue-50'
-            : 'mb-8 bg-green-50'
+            : 'mb-10 bg-green-50'
           : chosenProb === undefined
           ? 'bg-gray-50'
           : showChoice === 'radio'

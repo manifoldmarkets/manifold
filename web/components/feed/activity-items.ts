@@ -72,7 +72,7 @@ export type BetGroupItem = BaseActivityItem & {
 }
 
 export type AnswerGroupItem = BaseActivityItem & {
-  type: 'answergroup' | 'answer'
+  type: 'answergroup'
   answer: Answer
   items: ActivityItem[]
   betsByCurrentUser?: Bet[]

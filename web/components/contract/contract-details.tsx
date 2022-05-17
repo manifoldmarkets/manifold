@@ -93,72 +93,73 @@ export function ContractDetails(props: {
   contract: Contract
   bets: Bet[]
   isCreator?: boolean
-  hideShareButtons?: boolean
+  disabled?: boolean
 }) {
-  const { contract, bets, isCreator, hideShareButtons } = props
+  const { contract, bets, isCreator, disabled } = props
   const { closeTime, creatorName, creatorUsername } = contract
   const { volumeLabel, createdDate, resolvedDate } = contractMetrics(contract)
 
   return (
-    <Col className="gap-2 text-sm text-gray-500 sm:flex-row sm:flex-wrap">
-      <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-3">
-        <Row className="items-center gap-2">
-          <Avatar
-            username={creatorUsername}
-            avatarUrl={contract.creatorAvatarUrl}
-            size={6}
-          />
+    <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
+      <Row className="items-center gap-2">
+        <Avatar
+          username={creatorUsername}
+          avatarUrl={contract.creatorAvatarUrl}
+          noLink={disabled}
+          size={6}
+        />
+        {disabled ? (
+          creatorName
+        ) : (
           <UserLink
             className="whitespace-nowrap"
             name={creatorName}
             username={creatorUsername}
           />
-        </Row>
+        )}
+      </Row>
 
-        {(!!closeTime || !!resolvedDate) && (
-          <Row className="items-center gap-1">
-            <ClockIcon className="h-5 w-5" />
+      {(!!closeTime || !!resolvedDate) && (
+        <Row className="items-center gap-1">
+          <ClockIcon className="h-5 w-5" />
 
-            {/* <DateTimeTooltip text="Market created:" time={contract.createdTime}>
+          {/* <DateTimeTooltip text="Market created:" time={contract.createdTime}>
             {createdDate}
           </DateTimeTooltip> */}
 
-            {resolvedDate && contract.resolutionTime ? (
-              <>
-                {/* {' - '} */}
-                <DateTimeTooltip
-                  text="Market resolved:"
-                  time={contract.resolutionTime}
-                >
-                  {resolvedDate}
-                </DateTimeTooltip>
-              </>
-            ) : null}
+          {resolvedDate && contract.resolutionTime ? (
+            <>
+              {/* {' - '} */}
+              <DateTimeTooltip
+                text="Market resolved:"
+                time={contract.resolutionTime}
+              >
+                {resolvedDate}
+              </DateTimeTooltip>
+            </>
+          ) : null}
 
-            {!resolvedDate && closeTime && (
-              <>
-                {/* {' - '}{' '} */}
-                <EditableCloseDate
-                  closeTime={closeTime}
-                  contract={contract}
-                  isCreator={isCreator ?? false}
-                />
-              </>
-            )}
-          </Row>
-        )}
-
-        <Row className="items-center gap-1">
-          <DatabaseIcon className="h-5 w-5" />
-
-          <div className="whitespace-nowrap">{volumeLabel}</div>
+          {!resolvedDate && closeTime && (
+            <>
+              {/* {' - '}{' '} */}
+              <EditableCloseDate
+                closeTime={closeTime}
+                contract={contract}
+                isCreator={isCreator ?? false}
+              />
+            </>
+          )}
         </Row>
+      )}
 
-        {!hideShareButtons && (
-          <ContractInfoDialog contract={contract} bets={bets} />
-        )}
+      <Row className="items-center gap-1">
+        <DatabaseIcon className="h-5 w-5" />
+
+        <div className="whitespace-nowrap">{volumeLabel}</div>
       </Row>
-    </Col>
+
+      {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
+    </Row>
   )
 }
 
