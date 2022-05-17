@@ -19,8 +19,14 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
 
   return (
     <>
-      <Col className="my-6 rounded-xl text-center sm:m-12">
-        <h1 className="text-4xl sm:text-6xl xl:text-6xl">
+      <Col className="mb-6 rounded-xl text-center sm:m-12 sm:mt-0">
+        <img
+          height={250}
+          width={250}
+          className="self-center"
+          src="/flappy-logo.gif"
+        />
+        <h1 className="text-3xl sm:text-6xl xl:text-6xl">
           <div className="font-semibold sm:mb-2">
             Bet on{' '}
             <span className="bg-gradient-to-r from-teal-400 to-green-400 bg-clip-text font-bold text-transparent">
@@ -30,7 +36,9 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
         </h1>
         <Spacer h={6} />
         <div className="mb-4 px-2 text-gray-500">
-          Bet on any topic imaginable. Or create your own market!
+          Bet on any topic imaginable with play-money markets. Or create your
+          own!
+          <br />
           <br />
           Sign up and get {formatMoney(1000)} - worth $10 to your{' '}
           <SiteLink className="font-semibold" href="/charity">
