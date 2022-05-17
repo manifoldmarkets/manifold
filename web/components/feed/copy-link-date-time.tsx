@@ -22,7 +22,7 @@ export function CopyLinkDateTimeComponent(props: {
   ) {
     event.preventDefault()
 
-    let currentLocation = window.location.href.includes('/home?u=')
+    let currentLocation = window.location.href.includes('/home')
       ? `https://${ENV_CONFIG.domain}${contractPath(contract)}#${elementId}`
       : window.location.href
     if (currentLocation.includes('#')) {
