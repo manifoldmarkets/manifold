@@ -17,8 +17,11 @@ import { Linkify } from 'web/components/linkify'
 import clsx from 'clsx'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { BuyButton } from 'web/components/yes-no-selector'
-import { CommentInput, FeedItem } from 'web/components/feed/feed-items'
-import { getMostRecentCommentableBet } from 'web/components/feed/feed-comments'
+import { FeedItem } from 'web/components/feed/feed-items'
+import {
+  CommentInput,
+  getMostRecentCommentableBet,
+} from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
 
@@ -28,15 +31,16 @@ export function FeedAnswerCommentGroup(props: {
   items: ActivityItem[]
   type: string
   betsByCurrentUser?: Bet[]
-  comments?: Comment[]
+  commentsByCurrentUser?: Comment[]
 }) {
-  const { answer, items, contract, betsByCurrentUser, comments } = props
+  const { answer, items, contract, betsByCurrentUser, commentsByCurrentUser } =
+    props
   const { username, avatarUrl, name, text } = answer
   const answerElementId = `answer-${answer.id}`
   const user = useUser()
   const mostRecentCommentableBet = getMostRecentCommentableBet(
     betsByCurrentUser ?? [],
-    comments ?? [],
+    commentsByCurrentUser ?? [],
     user,
     answer.number + ''
   )
@@ -44,7 +48,7 @@ export function FeedAnswerCommentGroup(props: {
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
   const [showReply, setShowReply] = useState(false)
-  const isFreeResponseContractPage = comments
+  const isFreeResponseContractPage = commentsByCurrentUser
   if (mostRecentCommentableBet && !showReply) setShowReplyAndFocus(true)
   const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
 
@@ -174,7 +178,7 @@ export function FeedAnswerCommentGroup(props: {
           <CommentInput
             contract={contract}
             betsByCurrentUser={betsByCurrentUser ?? []}
-            comments={comments ?? []}
+            commentsByCurrentUser={commentsByCurrentUser ?? []}
             answerOutcome={answer.number + ''}
             replyToUsername={answer.username}
             setRef={setInputRef}

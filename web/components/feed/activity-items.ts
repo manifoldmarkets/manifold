@@ -28,7 +28,7 @@ type BaseActivityItem = {
 export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
   betsByCurrentUser: Bet[]
-  comments: Comment[]
+  commentsByCurrentUser: Comment[]
   answerOutcome?: string
 }
 
@@ -76,7 +76,7 @@ export type AnswerGroupItem = BaseActivityItem & {
   answer: Answer
   items: ActivityItem[]
   betsByCurrentUser?: Bet[]
-  comments?: Comment[]
+  commentsByCurrentUser?: Comment[]
 }
 
 export type CloseItem = BaseActivityItem & {
@@ -302,7 +302,9 @@ function getAnswerAndCommentInputGroups(
         items,
         user,
         betsByCurrentUser: bets.filter((bet) => bet.userId === user?.id),
-        comments: answerComments,
+        commentsByCurrentUser: answerComments.filter(
+          (comment) => comment.userId === user?.id
+        ),
       }
     })
     .filter((group) => group.answer) as ActivityItem[]
@@ -430,7 +432,7 @@ export function getAllContractActivityItems(
       id: 'commentInput',
       contract,
       betsByCurrentUser: [],
-      comments: [],
+      commentsByCurrentUser: [],
     })
   } else {
     items.push(
@@ -456,7 +458,7 @@ export function getAllContractActivityItems(
       id: 'commentInput',
       contract,
       betsByCurrentUser: [],
-      comments: [],
+      commentsByCurrentUser: [],
     })
   }
 
@@ -571,10 +573,12 @@ export function getSpecificContractActivityItems(
         type: 'commentInput',
         id: 'commentInput',
         contract,
-        betsByCurrentUser: user
-          ? nonFreeResponseBets.filter((bet) => bet.userId === user.id)
-          : [],
-        comments: nonFreeResponseComments,
+        betsByCurrentUser: nonFreeResponseBets.filter(
+          (bet) => bet.userId === user?.id
+        ),
+        commentsByCurrentUser: nonFreeResponseComments.filter(
+          (comment) => comment.userId === user?.id
+        ),
       })
       break
     case 'free-response-comment-answer-groups':

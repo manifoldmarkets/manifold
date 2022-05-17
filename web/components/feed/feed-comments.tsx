@@ -78,7 +78,7 @@ export function FeedCommentThread(props: {
             contract={contract}
             // Should we allow replies to contain recent bet info?
             betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
-            comments={comments}
+            commentsByCurrentUser={comments}
             parentComment={parentComment}
             replyToUsername={replyToUsername}
             answerOutcome={comments[0].answerOutcome}
@@ -205,7 +205,7 @@ export function FeedComment(props: {
 
 export function getMostRecentCommentableBet(
   betsByCurrentUser: Bet[],
-  comments: Comment[],
+  commentsByCurrentUser: Comment[],
   user?: User | null,
   answerOutcome?: string
 ) {
@@ -213,8 +213,10 @@ export function getMostRecentCommentableBet(
     .filter((bet) => {
       if (
         canCommentOnBet(bet, user) &&
-        // The bet doesn't already have a comment
-        !comments.some((comment) => comment.betId == bet.id)
+        // There is no comment with a createdTime greater than this bet
+        !commentsByCurrentUser.some(
+          (comment) => comment.createdTime > bet.createdTime
+        )
       ) {
         if (!answerOutcome) return true
         // If we're in free response, don't allow commenting on ante bet
@@ -229,7 +231,7 @@ export function getMostRecentCommentableBet(
 export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
-  comments: Comment[]
+  commentsByCurrentUser: Comment[]
   // Tie a comment to an free response answer outcome
   answerOutcome?: string
   // Tie a comment to another comment
@@ -240,7 +242,7 @@ export function CommentInput(props: {
   const {
     contract,
     betsByCurrentUser,
-    comments,
+    commentsByCurrentUser,
     answerOutcome,
     parentComment,
     replyToUsername,
@@ -252,7 +254,7 @@ export function CommentInput(props: {
 
   const mostRecentCommentableBet = getMostRecentCommentableBet(
     betsByCurrentUser,
-    comments,
+    commentsByCurrentUser,
     user,
     answerOutcome
   )
