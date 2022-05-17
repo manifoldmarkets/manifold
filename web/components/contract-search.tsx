@@ -3,6 +3,7 @@ import {
   InstantSearch,
   SearchBox,
   SortBy,
+  useCurrentRefinements,
   useInfiniteHits,
   useRange,
   useRefinementList,
@@ -53,8 +54,9 @@ export function ContractSearch(props: {
     tag?: string
     category?: string
   }
+  showCategorySelector: boolean
 }) {
-  const { querySortOptions, additionalFilter } = props
+  const { querySortOptions, additionalFilter, showCategorySelector } = props
 
   const user = useUser()
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
@@ -110,12 +112,16 @@ export function ContractSearch(props: {
         </Row>
       </Row>
       <div>
-        <Spacer h={4} />
-        <CategorySelector
-          user={user}
-          category={category}
-          setCategory={setCategory}
-        />
+        {showCategorySelector && (
+          <>
+            <Spacer h={4} />
+            <CategorySelector
+              user={user}
+              category={category}
+              setCategory={setCategory}
+            />
+          </>
+        )}
         <Spacer h={4} />
 
         <ContractSearchInner
@@ -176,7 +182,7 @@ export function ContractSearchInner(props: {
 
   useFilterCreator(creatorId)
 
-  useFilterTag(category === 'all' ? tag : category)
+  useFilterTag(tag ?? (category === 'all' ? undefined : category))
 
   useFilterClosed(
     filter === 'closed'
@@ -215,10 +221,15 @@ const useFilterCreator = (creatorId: string | undefined) => {
 }
 
 const useFilterTag = (tag: string | undefined) => {
+  const { items, refine: deleteRefinement } = useCurrentRefinements({
+    includedAttributes: ['lowercaseTags'],
+  })
   const { refine } = useRefinementList({ attribute: 'lowercaseTags' })
   useEffect(() => {
+    const refinements = items[0]?.refinements ?? []
     if (tag) refine(tag.toLowerCase())
-  }, [tag, refine])
+    if (refinements[0]) deleteRefinement(refinements[0])
+  }, [tag])
 }
 
 const useFilterClosed = (value: boolean | undefined) => {

@@ -11,7 +11,7 @@ export default function Markets() {
         description="Discover what's new, trending, or soon-to-close. Or search among our hundreds of markets."
         url="/markets"
       />
-      <ContractSearch />
+      <ContractSearch showCategorySelector />
     </Page>
   )
 }

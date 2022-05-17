@@ -60,6 +60,7 @@ export function CreatorContractsList(props: { creator: User }) {
       additionalFilter={{
         creatorId: creator.id,
       }}
+      showCategorySelector={false}
     />
   )
 }

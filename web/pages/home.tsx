@@ -21,6 +21,7 @@ const Home = () => {
             shouldLoadFromStorage: false,
             defaultSort: '24-hour-vol',
           }}
+          showCategorySelector
         />
       </Col>
     </Page>
