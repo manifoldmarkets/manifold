@@ -12,6 +12,7 @@ import clsx from 'clsx'
 import { Row } from './layout/row'
 import { ENV_CONFIG } from '../../common/envs/constants'
 import { SiteLink } from './site-link'
+import { formatMoney } from 'common/util/format'
 
 export function FeedPromo(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
@@ -29,7 +30,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
         <div className="mb-4 px-2 text-gray-500">
           Bet on any topic imaginable. Or create your own market!
           <br />
-          Sign up and get M$1,000 - worth $10 to your{' '}
+          Sign up and get {formatMoney(1000)} - worth $10 to your{' '}
           <SiteLink className="font-semibold" href="/charity">
             favorite charity.
           </SiteLink>
