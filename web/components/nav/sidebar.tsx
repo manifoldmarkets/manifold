@@ -7,6 +7,7 @@ import {
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
+  ChatAltIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import _ from 'lodash'
@@ -29,7 +30,7 @@ function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
 
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
-  { name: 'Explore', href: '/markets', icon: SearchIcon },
+  { name: 'Activity', href: '/activity', icon: ChatAltIcon },
   { name: 'Portfolio', href: '/portfolio', icon: PresentationChartLineIcon },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
 ]
