@@ -44,14 +44,15 @@ export function ContractSearch(props: {
   querySortOptions?: {
     defaultSort: Sort
     defaultFilter?: filter
-    filter?: {
-      creatorId?: string
-      tag?: string
-    }
     shouldLoadFromStorage?: boolean
   }
+  additionalFilter?: {
+    creatorId?: string
+    tag?: string
+    category?: string
+  }
 }) {
-  const { querySortOptions } = props
+  const { querySortOptions, additionalFilter } = props
 
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
@@ -71,9 +72,7 @@ export function ContractSearch(props: {
       searchClient={searchClient}
       indexName={`${indexPrefix}contracts-${sort}`}
       key={`search-${
-        querySortOptions?.filter?.tag ??
-        querySortOptions?.filter?.creatorId ??
-        ''
+        additionalFilter?.tag ?? additionalFilter?.creatorId ?? ''
       }`}
     >
       <Row className="flex-wrap gap-2">
@@ -105,10 +104,15 @@ export function ContractSearch(props: {
           />
         </Row>
       </Row>
-      <ContractSearchInner
-        querySortOptions={querySortOptions}
-        filter={filter}
-      />
+      <div>
+        <Spacer h={8} />
+
+        <ContractSearchInner
+          querySortOptions={querySortOptions}
+          filter={filter}
+          additionalFilter={additionalFilter}
+        />
+      </div>
     </InstantSearch>
   )
 }
@@ -116,15 +120,16 @@ export function ContractSearch(props: {
 export function ContractSearchInner(props: {
   querySortOptions?: {
     defaultSort: Sort
-    filter?: {
-      creatorId?: string
-      tag?: string
-    }
     shouldLoadFromStorage?: boolean
   }
   filter: filter
+  additionalFilter?: {
+    creatorId?: string
+    tag?: string
+    category?: string
+  }
 }) {
-  const { querySortOptions, filter } = props
+  const { querySortOptions, filter, additionalFilter } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
   const { query, setQuery, setSort } = useUpdateQueryAndSort({
@@ -156,10 +161,10 @@ export function ContractSearchInner(props: {
     }
   }, [index])
 
-  const creatorId = querySortOptions?.filter?.creatorId
+  const creatorId = additionalFilter?.creatorId
   useFilterCreator(creatorId)
 
-  const tag = querySortOptions?.filter?.tag
+  const tag = additionalFilter?.tag
   useFilterTag(tag)
 
   useFilterClosed(
@@ -179,19 +184,15 @@ export function ContractSearchInner(props: {
   const router = useRouter()
   const hasLoaded = contracts.length > 0 || router.isReady
 
-  return (
-    <div>
-      <Spacer h={8} />
+  if (!hasLoaded) return <></>
 
-      {hasLoaded && (
-        <ContractsGrid
-          contracts={contracts}
-          loadMore={showMore}
-          hasMore={!isLastPage}
-          showCloseTime={index === 'contracts-closing-soon'}
-        />
-      )}
-    </div>
+  return (
+    <ContractsGrid
+      contracts={contracts}
+      loadMore={showMore}
+      hasMore={!isLastPage}
+      showCloseTime={index === 'contracts-closing-soon'}
+    />
   )
 }
 

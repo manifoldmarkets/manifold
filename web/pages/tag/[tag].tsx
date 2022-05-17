@@ -13,10 +13,10 @@ export default function TagPage() {
       <Title text={`#${tag}`} />
       <ContractSearch
         querySortOptions={{
-          filter: { tag },
           defaultSort: 'newest',
           shouldLoadFromStorage: false,
         }}
+        additionalFilter={{ tag }}
       />
     </Page>
   )
