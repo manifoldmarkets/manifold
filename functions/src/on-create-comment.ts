@@ -47,6 +47,13 @@ export const onCreateComment = functions.firestore
         contract.outcomeType === 'FREE_RESPONSE' && contract.answers
           ? contract.answers.find((answer) => answer.id === bet?.outcome)
           : undefined
+    } else if (comment.answerOutcome) {
+      answer =
+        contract.outcomeType === 'FREE_RESPONSE' && contract.answers
+          ? contract.answers?.find(
+              (answer) => answer.id === comment.answerOutcome
+            )
+          : undefined
     }
 
     const comments = await getValues<Comment>(
