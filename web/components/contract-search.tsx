@@ -195,13 +195,13 @@ export function ContractSearchInner(props: {
     filter === 'resolved' ? true : filter === 'all' ? undefined : false
   )
 
-  const { showMore, hits, isLastPage } = useInfiniteHits()
+  const { showMore, hits, isLastPage, results } = useInfiniteHits()
   const contracts = hits as any as Contract[]
 
   const router = useRouter()
   const hasLoaded = contracts.length > 0 || router.isReady
 
-  if (!hasLoaded) return <></>
+  if (!hasLoaded || !results) return <></>
 
   return (
     <ContractsGrid

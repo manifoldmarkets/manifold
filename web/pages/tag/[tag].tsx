@@ -14,6 +14,7 @@ export default function TagPage() {
       <ContractSearch
         querySortOptions={{
           defaultSort: 'newest',
+          defaultFilter: 'all',
           shouldLoadFromStorage: false,
         }}
         additionalFilter={{ tag }}
