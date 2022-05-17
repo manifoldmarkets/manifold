@@ -59,11 +59,11 @@ export function FeedItems(props: {
   const { contract, items, className, betRowClassName } = props
   const { outcomeType } = contract
 
-  const ref = useRef<HTMLDivElement | null>(null)
-  useSaveSeenContract(ref, contract)
+  const [elem, setElem] = useState<HTMLElement | null>(null)
+  useSaveSeenContract(elem, contract)
 
   return (
-    <div className={clsx('flow-root', className)} ref={ref}>
+    <div className={clsx('flow-root', className)} ref={setElem}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
           <div key={item.id} className={'relative pb-6'}>

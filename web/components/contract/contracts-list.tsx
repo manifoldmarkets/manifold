@@ -4,6 +4,8 @@ import { Col } from '../layout/col'
 import { SiteLink } from '../site-link'
 import { ContractCard } from './contract-card'
 import { ContractSearch } from '../contract-search'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { useEffect, useState } from 'react'
 
 export function ContractsGrid(props: {
   contracts: Contract[]
@@ -12,6 +14,16 @@ export function ContractsGrid(props: {
   showCloseTime?: boolean
 }) {
   const { contracts, showCloseTime, hasMore, loadMore } = props
+
+  const [elem, setElem] = useState<HTMLElement | null>(null)
+  const isBottomVisible = useIsVisible(elem)
+
+  useEffect(() => {
+    console.log({ isBottomVisible, hasMore })
+    if (isBottomVisible) {
+      loadMore()
+    }
+  }, [isBottomVisible, hasMore, loadMore])
 
   if (contracts.length === 0) {
     return (
@@ -35,14 +47,7 @@ export function ContractsGrid(props: {
           />
         ))}
       </ul>
-      {hasMore && (
-        <button
-          className="btn btn-primary self-center normal-case"
-          onClick={loadMore}
-        >
-          Show more
-        </button>
-      )}
+      <div ref={setElem} className="relative -top-96 h-1" />
     </Col>
   )
 }
