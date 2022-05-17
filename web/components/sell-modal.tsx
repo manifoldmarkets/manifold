@@ -7,8 +7,10 @@ import { Title } from './title'
 import { formatWithCommas } from 'common/util/format'
 import { OutcomeLabel } from './outcome-label'
 import { SellPanel } from './bet-panel'
+import clsx from 'clsx'
 
 export function SellSharesModal(props: {
+  className?: string
   contract: FullContract<CPMM, Binary>
   userBets: Bet[]
   shares: number
@@ -16,11 +18,19 @@ export function SellSharesModal(props: {
   user: User
   setOpen: (open: boolean) => void
 }) {
-  const { contract, shares, sharesOutcome, userBets, user, setOpen } = props
+  const {
+    className,
+    contract,
+    shares,
+    sharesOutcome,
+    userBets,
+    user,
+    setOpen,
+  } = props
 
   return (
     <Modal open={true} setOpen={setOpen}>
-      <Col className="rounded-md bg-white px-8 py-6">
+      <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
         <Title className="!mt-0" text={'Sell shares'} />
 
         <div className="mb-6">

@@ -151,8 +151,7 @@ export function BetPanelSwitcher(props: {
       <Col
         className={clsx(
           'rounded-b-md bg-white px-8 py-6',
-          !sharesOutcome && 'rounded-t-md',
-          className
+          !sharesOutcome && 'rounded-t-md'
         )}
       >
         <Title
