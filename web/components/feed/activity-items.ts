@@ -279,6 +279,7 @@ function getAnswerAndCommentInputGroups(
   outcomes = _.sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   )
+  const betsByCurrentUser = bets.filter((bet) => bet.userId === user?.id)
 
   const answerGroups = outcomes
     .map((outcome) => {
@@ -301,7 +302,7 @@ function getAnswerAndCommentInputGroups(
         answer,
         items,
         user,
-        betsByCurrentUser: bets.filter((bet) => bet.userId === user?.id),
+        betsByCurrentUser: betsByCurrentUser,
         commentsByCurrentUser: answerComments.filter(
           (comment) => comment.userId === user?.id
         ),
