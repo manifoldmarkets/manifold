@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { Children } from 'react'
 
 export const SiteLink = (props: {
   href: string
@@ -29,10 +28,10 @@ export const SiteLink = (props: {
   )
 }
 
-function MaybeLink(props: { href: string; children: any }) {
+function MaybeLink(props: { href: string; children: React.ReactNode }) {
   const { href, children } = props
   return href.startsWith('http') ? (
-    children
+    <>{children}</>
   ) : (
     <Link href={href}>{children}</Link>
   )
