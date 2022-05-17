@@ -9,8 +9,6 @@ import { functions } from './init'
 export const cloudFunction = <RequestData, ResponseData>(name: string) =>
   httpsCallable<RequestData, ResponseData>(functions, name)
 
-export const createContract = cloudFunction('createContract')
-
 export const createFold = cloudFunction<
   { name: string; about: string; tags: string[] },
   { status: 'error' | 'success'; message?: string; fold?: Fold }
@@ -20,8 +18,6 @@ export const transact = cloudFunction<
   Omit<Txn, 'id' | 'createdTime'>,
   { status: 'error' | 'success'; message?: string; txn?: Txn }
 >('transact')
-
-export const placeBet = cloudFunction('placeBet')
 
 export const sellBet = cloudFunction('sellBet')
 

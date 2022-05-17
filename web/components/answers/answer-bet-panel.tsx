@@ -6,7 +6,7 @@ import { Answer } from 'common/answer'
 import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { placeBet } from 'web/lib/firebase/fn-call'
+import { APIError, placeBet } from 'web/lib/firebase/api-call'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import {
@@ -52,22 +52,26 @@ export function AnswerBetPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    const result = await placeBet({
+    placeBet({
       amount: betAmount,
       outcome: answerId,
       contractId: contract.id,
-    }).then((r) => r.data as any)
-
-    console.log('placed bet. Result:', result)
-
-    if (result?.status === 'success') {
-      setIsSubmitting(false)
-      setBetAmount(undefined)
-      props.closePanel()
-    } else {
-      setError(result?.message || 'Error placing bet')
-      setIsSubmitting(false)
-    }
+    })
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        setBetAmount(undefined)
+        props.closePanel()
+      })
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.toString())
+        } else {
+          console.error(e)
+          setError('Error placing bet')
+        }
+        setIsSubmitting(false)
+      })
   }
 
   const betDisabled = isSubmitting || !betAmount || error

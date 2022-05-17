@@ -16,7 +16,7 @@ import { Linkify } from 'web/components/linkify'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { useUser } from 'web/hooks/use-user'
-import { createContract } from 'web/lib/firebase/fn-call'
+import { createContract } from 'web/lib/firebase/api-call'
 import { contractPath } from 'web/lib/firebase/contracts'
 
 type Prediction = {
@@ -155,7 +155,7 @@ ${TEST_VALUE}
         ante,
         closeTime,
         tags: parseWordsAsTags(tags),
-      }).then((r) => (r.data as any).contract)
+      }).then((r) => r.data.contract)
 
       setCreatedContracts((prev) => [...prev, contract])
     }
@@ -237,7 +237,7 @@ ${TEST_VALUE}
           <label className="label mb-1 gap-2">
             <span>Market ante</span>
             <InfoTooltip
-              text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
+              text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability.
               You earn ${0.01 * 100}% of trading volume.`}
             />
           </label>

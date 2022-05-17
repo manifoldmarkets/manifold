@@ -7,7 +7,7 @@ import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
 import { useUser } from 'web/hooks/use-user'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
-import { createContract } from 'web/lib/firebase/fn-call'
+import { createContract } from 'web/lib/firebase/api-call'
 import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
@@ -124,26 +124,24 @@ export function NewContract(props: { question: string; tag?: string }) {
 
     setIsSubmitting(true)
 
-    const result: any = await createContract(
-      removeUndefinedProps({
-        question,
-        outcomeType,
-        description,
-        initialProb,
-        ante,
-        closeTime,
-        tags: category ? [category] : undefined,
-        min,
-        max,
-      })
-    ).then((r) => r.data || {})
-
-    if (result.status !== 'success') {
-      console.log('error creating contract', result)
-      return
+    try {
+      const result = await createContract(
+        removeUndefinedProps({
+          question,
+          outcomeType,
+          description,
+          initialProb,
+          ante,
+          closeTime,
+          tags: category ? [category] : undefined,
+          min,
+          max,
+        })
+      )
+      await router.push(contractPath(result.data.contract as Contract))
+    } catch (e) {
+      console.log('error creating contract', e)
     }
-
-    await router.push(contractPath(result.contract as Contract))
   }
 
   const descriptionPlaceholder =
