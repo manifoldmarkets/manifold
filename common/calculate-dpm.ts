@@ -287,7 +287,7 @@ export function calculateDpmPayoutAfterCorrectBet(
   contract: FullContract<DPM, any>,
   bet: Bet
 ) {
-  const { totalShares, pool, totalBets } = contract
+  const { totalShares, pool, totalBets, outcomeType } = contract
   const { shares, amount, outcome } = bet
 
   const prevShares = totalShares[outcome] ?? 0
@@ -308,6 +308,10 @@ export function calculateDpmPayoutAfterCorrectBet(
       ...totalBets,
       [outcome]: prevTotalBet + amount,
     },
+    outcomeType:
+      outcomeType === 'NUMERIC'
+        ? 'FREE_RESPONSE' // hack to show payout at particular bet point estimate
+        : outcomeType,
   }
 
   return calculateStandardDpmPayout(newContract, bet, outcome)
