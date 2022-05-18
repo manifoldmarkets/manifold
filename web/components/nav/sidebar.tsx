@@ -169,7 +169,7 @@ export default function Sidebar(props: { className?: string }) {
         />
       </div>
 
-      {deservesDailyFreeMarket ? (
+      {user && deservesDailyFreeMarket ? (
         <div className=" mt-4 text-center text-indigo-500">
           Use your daily free market! 🎉
         </div>
