@@ -12,14 +12,11 @@ export function Page(props: {
   children?: any
 }) {
   const { margin, assertUser, children, rightSidebar, suspend } = props
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      // This seems to work...
-      console.log(document)
-      // But not this...
-      initPreviews()
-    }
-  }, [])
+
+  if (typeof document !== 'undefined') {
+    // Seems to be undefined; because of https://i.imgur.com/4bMQ8rA.png ?
+    console.log(initPreviews)
+  }
 
   return (
     <>
