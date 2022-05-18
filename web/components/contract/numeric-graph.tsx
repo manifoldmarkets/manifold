@@ -21,7 +21,7 @@ export const NumericGraph = memo(function NumericGraph(props: {
   const probs = _.range(bucketCount).map((i) => bucketProbs[`${i}`] * 100)
   const points = probs.map((prob, i) => ({ x: xs[i], y: prob }))
   const maxProb = Math.max(...probs)
-  const data = [{ id: 'Probability', data: points, color: '#6366f1' }]
+  const data = [{ id: 'Probability', data: points, color: '#5fa5f9' }] // text-blue-500
 
   const yTickValues = [
     0,

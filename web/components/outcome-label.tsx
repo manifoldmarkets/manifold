@@ -26,7 +26,7 @@ export function OutcomeLabel(props: {
 
   if (contract.outcomeType === 'NUMERIC')
     return (
-      <span className="text-indigo-500">
+      <span className="text-blue-500">
         {getValueFromBucket(outcome, contract)}
       </span>
     )
