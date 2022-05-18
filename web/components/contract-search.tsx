@@ -82,54 +82,49 @@ export function ContractSearch(props: {
         additionalFilter?.tag ?? additionalFilter?.creatorId ?? ''
       }`}
     >
-      <Row className="flex-wrap gap-2">
+      <Row className="gap-1 sm:gap-2">
         <SearchBox
           className="flex-1"
           classNames={{
             form: 'before:top-6',
-            input: '!pl-10 !input !input-bordered shadow-none',
-            resetIcon: 'mt-2',
+            input: '!pl-10 !input !input-bordered shadow-none w-[100px]',
+            resetIcon: 'mt-2 hidden sm:flex',
           }}
-          placeholder="Search markets"
         />
-        <Row className="mt-2 gap-2 sm:mt-0">
-          <select
-            className="!select !select-bordered"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as filter)}
-          >
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
-            <option value="resolved">Resolved</option>
-            <option value="all">All</option>
-          </select>
-          <SortBy
-            items={sortIndexes}
-            classNames={{
-              select: '!select !select-bordered',
-            }}
-          />
-        </Row>
+        <select
+          className="!select !select-bordered"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as filter)}
+        >
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+          <option value="resolved">Resolved</option>
+          <option value="all">All</option>
+        </select>
+        <SortBy
+          items={sortIndexes}
+          classNames={{
+            select: '!select !select-bordered',
+          }}
+        />
       </Row>
-      <div>
-        {showCategorySelector && (
-          <>
-            <Spacer h={4} />
-            <CategorySelector
-              user={user}
-              category={category}
-              setCategory={setCategory}
-            />
-          </>
-        )}
-        <Spacer h={4} />
 
-        <ContractSearchInner
-          querySortOptions={querySortOptions}
-          filter={filter}
-          additionalFilter={{ category, ...additionalFilter }}
+      <Spacer h={3} />
+
+      {showCategorySelector && (
+        <CategorySelector
+          className="mb-2"
+          user={user}
+          category={category}
+          setCategory={setCategory}
         />
-      </div>
+      )}
+
+      <ContractSearchInner
+        querySortOptions={querySortOptions}
+        filter={filter}
+        additionalFilter={{ category, ...additionalFilter }}
+      />
     </InstantSearch>
   )
 }
