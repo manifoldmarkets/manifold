@@ -255,7 +255,7 @@ export function calculateStandardDpmPayout(
   bet: Bet,
   outcome: string
 ) {
-  const { amount, outcome: betOutcome } = bet
+  const { outcome: betOutcome } = bet
   const isNumeric = contract.outcomeType === 'NUMERIC'
   if (!isNumeric && betOutcome !== outcome) return 0
 
@@ -274,8 +274,13 @@ export function calculateStandardDpmPayout(
     totalShares[outcome] - (phantomShares ? phantomShares[outcome] : 0)
 
   const winnings = (shares / total) * poolTotal
-  // profit can be negative if using phantom shares
-  return amount + (1 - DPM_FEES) * Math.max(0, winnings - amount)
+
+  const amount = isNumeric
+    ? (bet as NumericBet).allBetAmounts[outcome]
+    : bet.amount
+
+  const payout = amount + (1 - DPM_FEES) * Math.max(0, winnings - amount)
+  return payout
 }
 
 export function calculateDpmPayoutAfterCorrectBet(
