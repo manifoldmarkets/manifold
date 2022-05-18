@@ -197,6 +197,8 @@ export function UserPage(props: {
             onClick={(tabName) => {
               const tabId = tabName.toLowerCase()
               const subpath = tabId === 'markets' ? '' : '/' + tabId
+              // BUG: if you start on `/Bob/bets`, then click on Markets, use-query-and-sort-params
+              // rewrites the url incorrectly to `/Bob/bets` instead of `/Bob`
               window.history.replaceState('', '', `/${user.username}${subpath}`)
             }}
             tabs={[
