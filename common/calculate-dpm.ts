@@ -260,7 +260,7 @@ export function calculateStandardDpmPayout(
   if (!isNumeric && betOutcome !== outcome) return 0
 
   const shares = isNumeric
-    ? (bet as NumericBet).allOutcomeShares[outcome]
+    ? ((bet as NumericBet).allOutcomeShares ?? {})[outcome]
     : bet.shares
 
   if (!shares) return 0
