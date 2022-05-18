@@ -60,6 +60,12 @@ export function listenForBets(
   })
 }
 
+export async function getUserBets(userId: string) {
+  return getValues<Bet>(
+    query(collectionGroup(db, 'bets'), where('userId', '==', userId))
+  )
+}
+
 export function listenForUserBets(
   userId: string,
   setBets: (bets: Bet[]) => void

@@ -47,7 +47,6 @@ export function useInitialQueryAndSort(options?: {
         }
         setInitialSort(localSort ?? defaultSort)
       } else {
-        console.log('ready setting to ', sort ?? defaultSort)
         setInitialSort(sort ?? defaultSort)
       }
     }
