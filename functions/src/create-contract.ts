@@ -11,7 +11,7 @@ import {
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
   Numeric,
-  OUTCOMES_TYPES as OUTCOME_TYPES,
+  OUTCOME_TYPES,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
