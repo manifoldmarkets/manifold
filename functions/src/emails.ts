@@ -274,15 +274,15 @@ export const sendNewCommentEmail = async (
   const subject = `Comment on ${question}`
   const from = `${commentorName} <info@manifold.markets>`
 
-  if (contract.outcomeType === 'FREE_RESPONSE') {
-    const answerNumber = answerId ? `#${answerId}` : ''
+  if (contract.outcomeType === 'FREE_RESPONSE' && answerId && answerText) {
+    const answerNumber = `#${answerId}`
 
     await sendTemplateEmail(
       privateUser.email,
       subject,
       'market-answer-comment',
       {
-        answer: answerText ?? '',
+        answer: answerText,
         answerNumber,
         commentorName,
         commentorAvatarUrl: commentorAvatarUrl ?? '',

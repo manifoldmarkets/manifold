@@ -33,17 +33,14 @@ export const onCreateComment = functions.firestore
       .update({ lastCommentTime, lastUpdatedTime: Date.now() })
 
     let bet: Bet | undefined
-    let answerText: string | undefined
-    let answerId: string | undefined
+    let answer: Answer | undefined
     if (comment.answerOutcome) {
-      const answer =
+      answer =
         contract.outcomeType === 'FREE_RESPONSE' && contract.answers
           ? contract.answers?.find(
               (answer) => answer.id === comment.answerOutcome
             )
           : undefined
-      answerText = answer?.text
-      answerId = answer?.id
     } else if (comment.betId) {
       const betSnapshot = await firestore
         .collection('contracts')
@@ -53,14 +50,10 @@ export const onCreateComment = functions.firestore
         .get()
       bet = betSnapshot.data() as Bet
 
-      const answer =
+      answer =
         contract.outcomeType === 'FREE_RESPONSE' && contract.answers
           ? contract.answers.find((answer) => answer.id === bet?.outcome)
           : undefined
-      answerText = answer?.text
-      answerId = answer?.id
-    } else if (contract.outcomeType === 'FREE_RESPONSE') {
-      answerText = 'General Comments'
     }
 
     const comments = await getValues<Comment>(
@@ -80,8 +73,8 @@ export const onCreateComment = functions.firestore
           contract,
           comment,
           bet,
-          answerText,
-          answerId
+          answer?.text,
+          answer?.id
         )
       )
     )
