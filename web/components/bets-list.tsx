@@ -522,7 +522,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   )
 
   const payoutIfChosenDisplay =
-    bet.outcome === '0' && bet.isAnte
+    bet.isAnte && outcomeType === 'FREE_RESPONSE' && bet.outcome === '0'
       ? 'N/A'
       : formatMoney(calculatePayout(contract, bet, bet.outcome))
 
@@ -538,7 +538,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
       </td>
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
-        {outcome === '0' ? (
+        {bet.isAnte ? (
           'ANTE'
         ) : (
           <OutcomeLabel
