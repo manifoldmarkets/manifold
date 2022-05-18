@@ -21,7 +21,7 @@ import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
 import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
-import { getOutcomeProbability, getProbability } from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export function FeedCommentThread(props: {
