@@ -138,7 +138,7 @@ export function getNumericAnte(
     id: newBetId,
     userId: creator.id,
     contractId: contract.id,
-    amount: betAnte,
+    amount: ante,
     allBetAmounts,
     outcome: '0',
     shares: betShares,
