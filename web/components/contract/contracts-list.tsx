@@ -37,7 +37,7 @@ export function ContractsGrid(props: {
 
   return (
     <Col className="gap-8">
-      <ul className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
+      <ul className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
         {contracts.map((contract) => (
           <ContractCard
             contract={contract}
