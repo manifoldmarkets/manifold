@@ -29,7 +29,7 @@
     "firebase": "9.6.0",
     "gridjs": "5.0.2",
     "gridjs-react": "5.0.2",
-    "link-summoner": "^1.2.0",
+    "link-summoner": "1.3.0",
     "lodash": "4.17.21",
     "next": "12.1.2",
     "react": "17.0.2",
