@@ -8,6 +8,7 @@ import {
   HeartIcon,
   PresentationChartLineIcon,
   ChatAltIcon,
+  SparklesIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import _ from 'lodash'
@@ -20,6 +21,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
+import { Row } from '../layout/row'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
@@ -178,22 +180,23 @@ export default function Sidebar(props: { className?: string }) {
         />
       </div>
 
-      {user && deservesDailyFreeMarket ? (
-        <div className=" mt-4 text-center text-indigo-500">
-          Use your daily free market! 🎉
-        </div>
-      ) : (
-        <div />
-      )}
-
       {user && (
         <div className={'aligncenter flex justify-center'}>
           <Link href={'/create'} passHref>
-            <button className="btn btn-md mt-4 border-0 bg-indigo-500 capitalize hover:bg-indigo-700">
-              Ask question
+            <button className="mx-auto mt-4 -ml-1 w-full rounded-md border border-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700">
+              Ask a question
             </button>
           </Link>
         </div>
+      )}
+
+      {user && deservesDailyFreeMarket && (
+        <Row className="mt-2 justify-center">
+          <Row className="gap-1 align-middle text-sm text-indigo-400">
+            Daily free market
+            <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
+          </Row>
+        </Row>
       )}
     </nav>
   )
