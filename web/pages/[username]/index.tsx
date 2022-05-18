@@ -6,12 +6,10 @@ import { UserPage } from 'web/components/user-page'
 import { useUser } from 'web/hooks/use-user'
 import Custom404 from '../404'
 
-export default function UserProfile(props: {
-  tab?: 'markets' | 'comments' | 'bets'
-}) {
+export default function UserProfile() {
   const router = useRouter()
   const [user, setUser] = useState<User | null | 'loading'>('loading')
-  const { username } = router.query as { username: string }
+  const { username, tab } = router.query as { username: string; tab: string }
   useEffect(() => {
     if (username) {
       getUserByUsername(username).then(setUser)
@@ -26,7 +24,7 @@ export default function UserProfile(props: {
     <UserPage
       user={user}
       currentUser={currentUser || undefined}
-      defaultTabTitle={props.tab}
+      defaultTabTitle={tab}
     />
   ) : (
     <Custom404 />
