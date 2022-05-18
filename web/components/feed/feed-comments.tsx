@@ -44,7 +44,8 @@ export function FeedCommentThread(props: {
   const [replyToUsername, setReplyToUsername] = useState('')
   const user = useUser()
   const commentsList = comments.filter(
-    (comment) => comment.replyToCommentId === parentComment.id
+    (comment) =>
+      parentComment.id && comment.replyToCommentId === parentComment.id
   )
   commentsList.unshift(parentComment)
   const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
