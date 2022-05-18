@@ -1,10 +1,12 @@
 import * as _ from 'lodash'
-import { Bet } from './bet'
+
+import { Bet, NumericBet } from './bet'
 import {
   Binary,
   DPM,
   FreeResponse,
   FullContract,
+  Numeric,
   NumericContract,
 } from './contract'
 import { DPM_FEES } from './fees'
@@ -253,8 +255,15 @@ export function calculateStandardDpmPayout(
   bet: Bet,
   outcome: string
 ) {
-  const { amount, outcome: betOutcome, shares } = bet
-  if (betOutcome !== outcome) return 0
+  const { amount, outcome: betOutcome } = bet
+  const isNumeric = contract.outcomeType === 'NUMERIC'
+  if (!isNumeric && betOutcome !== outcome) return 0
+
+  const shares = isNumeric
+    ? (bet as NumericBet).allOutcomeShares[outcome]
+    : bet.shares
+
+  if (!shares) return 0
 
   const { totalShares, phantomShares, pool } = contract
   if (!totalShares[outcome]) return 0
@@ -299,14 +308,14 @@ export function calculateDpmPayoutAfterCorrectBet(
   return calculateStandardDpmPayout(newContract, bet, outcome)
 }
 
-function calculateMktDpmPayout(contract: FullContract<DPM, any>, bet: Bet) {
+function calculateMktDpmPayout(
+  contract: FullContract<DPM, Binary | FreeResponse | Numeric>,
+  bet: Bet
+) {
   if (contract.outcomeType === 'BINARY')
     return calculateBinaryMktDpmPayout(contract, bet)
 
-  const { totalShares, pool, resolutions } = contract as FullContract<
-    DPM,
-    FreeResponse
-  >
+  const { totalShares, pool, resolutions, outcomeType } = contract
 
   let probs: { [outcome: string]: number }
 
@@ -329,10 +338,21 @@ function calculateMktDpmPayout(contract: FullContract<DPM, any>, bet: Bet) {
 
   const { outcome, amount, shares } = bet
 
-  const totalPool = _.sum(Object.values(pool))
-  const poolFrac = (probs[outcome] * shares) / weightedShareTotal
-  const winnings = poolFrac * totalPool
+  const poolFrac =
+    outcomeType === 'NUMERIC'
+      ? _.sumBy(
+          Object.keys((bet as NumericBet).allOutcomeShares ?? {}),
+          (outcome) => {
+            return (
+              (probs[outcome] * (bet as NumericBet).allOutcomeShares[outcome]) /
+              weightedShareTotal
+            )
+          }
+        )
+      : (probs[outcome] * shares) / weightedShareTotal
 
+  const totalPool = _.sum(Object.values(pool))
+  const winnings = poolFrac * totalPool
   return deductDpmFees(amount, winnings)
 }
 
