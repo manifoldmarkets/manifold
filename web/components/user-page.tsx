@@ -227,7 +227,15 @@ export function UserPage(props: {
               },
               {
                 title: 'Bets',
-                content: <BetsList user={user} />,
+                content: (
+                  <div>
+                    <AlertBox
+                      title="Bets are becoming public on June 1st"
+                      text="hi"
+                    />
+                    {isCurrentUser && <BetsList user={user} />}
+                  </div>
+                ),
                 tabIcon: (
                   <div className="px-0.5 font-bold">{usersBets.length}</div>
                 ),
@@ -253,4 +261,28 @@ export function defaultBannerUrl(userId: string) {
     'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
   ]
   return defaultBanner[genHash(userId)() % defaultBanner.length]
+}
+
+import { ExclamationIcon } from '@heroicons/react/solid'
+
+function AlertBox(props: { title: string; text: string }) {
+  const { title, text } = props
+  return (
+    <div className="rounded-md bg-yellow-50 p-4">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <ExclamationIcon
+            className="h-5 w-5 text-yellow-400"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="ml-3">
+          <h3 className="text-sm font-medium text-yellow-800">{title}</h3>
+          <div className="mt-2 text-sm text-yellow-700">
+            <Linkify text={text} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
