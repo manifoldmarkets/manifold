@@ -71,7 +71,7 @@ const mobileNavigation = [
   ...signedOutMobileNavigation,
 ]
 
-type Item = {
+export type Item = {
   name: string
   href: string
   icon: React.ComponentType<{ className?: string }>
