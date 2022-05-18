@@ -1,19 +1,15 @@
 import * as _ from 'lodash'
 
-import { DOMAIN, PROJECT_ID } from 'common/envs/constants'
-import { Answer } from 'common/answer'
-import { Bet } from 'common/bet'
-import { getProbability } from 'common/calculate'
-import { getValueFromBucket } from 'common/calculate-dpm'
-import { Comment } from 'common/comment'
-import {
-  Contract,
-  FreeResponseContract,
-  NumericContract,
-} from 'common/contract'
-import { DPM_CREATOR_FEE } from 'common/fees'
-import { PrivateUser, User } from 'common/user'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { DOMAIN, PROJECT_ID } from '../../common/envs/constants'
+import { Answer } from '../../common/answer'
+import { Bet } from '../../common/bet'
+import { getProbability } from '../../common/calculate'
+import { Comment } from '../../common/comment'
+import { Contract, FreeResponseContract } from '../../common/contract'
+import { DPM_CREATOR_FEE } from '../../common/fees'
+import { PrivateUser, User } from '../../common/user'
+import { formatMoney, formatPercent } from '../../common/util/format'
+import { getValueFromBucket } from '../../common/calculate-dpm'
 
 import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
@@ -253,7 +249,8 @@ export const sendNewCommentEmail = async (
   contract: Contract,
   comment: Comment,
   bet?: Bet,
-  answer?: Answer
+  answerText?: string,
+  answerId?: string
 ) => {
   const privateUser = await getPrivateUser(userId)
   if (
@@ -282,9 +279,8 @@ export const sendNewCommentEmail = async (
   const subject = `Comment on ${question}`
   const from = `${commentorName} <info@manifold.markets>`
 
-  if (contract.outcomeType === 'FREE_RESPONSE') {
-    const answerText = answer?.text ?? ''
-    const answerNumber = `#${answer?.id ?? ''}`
+  if (contract.outcomeType === 'FREE_RESPONSE' && answerId && answerText) {
+    const answerNumber = `#${answerId}`
 
     await sendTemplateEmail(
       privateUser.email,

@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { useEffect, RefObject, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Contract } from 'common/contract'
 import { trackView } from 'web/lib/firebase/tracking'
 import { useIsVisible } from './use-is-visible'
@@ -17,10 +17,10 @@ export const useSeenContracts = () => {
 }
 
 export const useSaveSeenContract = (
-  ref: RefObject<Element>,
+  elem: HTMLElement | null,
   contract: Contract
 ) => {
-  const isVisible = useIsVisible(ref)
+  const isVisible = useIsVisible(elem)
 
   useEffect(() => {
     if (isVisible) {

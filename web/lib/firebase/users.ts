@@ -55,6 +55,13 @@ export async function updateUser(userId: string, update: Partial<User>) {
   await updateDoc(doc(db, 'users', userId), { ...update })
 }
 
+export async function updatePrivateUser(
+  userId: string,
+  update: Partial<PrivateUser>
+) {
+  await updateDoc(doc(db, 'private-users', userId), { ...update })
+}
+
 export function listenForUser(
   userId: string,
   setUser: (user: User | null) => void

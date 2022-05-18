@@ -21,6 +21,9 @@ service cloud.firestore {
 
     match /private-users/{userId} {
       allow read: if resource.data.id == request.auth.uid || isAdmin();
+      allow update: if (resource.data.id == request.auth.uid || isAdmin())
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['apiKey']);
     }
 
     match /private-users/{userId}/views/{viewId} {

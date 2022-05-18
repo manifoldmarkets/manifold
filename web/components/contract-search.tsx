@@ -3,6 +3,7 @@ import {
   InstantSearch,
   SearchBox,
   SortBy,
+  useCurrentRefinements,
   useInfiniteHits,
   useRange,
   useRefinementList,
@@ -17,10 +18,12 @@ import {
 } from '../hooks/use-sort-and-query-params'
 import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { useRouter } from 'next/router'
 import { ENV } from 'common/envs/constants'
+import { CategorySelector } from './feed/category-selector'
+import { useUser } from 'web/hooks/use-user'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -44,15 +47,18 @@ export function ContractSearch(props: {
   querySortOptions?: {
     defaultSort: Sort
     defaultFilter?: filter
-    filter?: {
-      creatorId?: string
-      tag?: string
-    }
     shouldLoadFromStorage?: boolean
   }
+  additionalFilter?: {
+    creatorId?: string
+    tag?: string
+    category?: string
+  }
+  showCategorySelector: boolean
 }) {
-  const { querySortOptions } = props
+  const { querySortOptions, additionalFilter, showCategorySelector } = props
 
+  const user = useUser()
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
   const sort = sortIndexes
@@ -65,49 +71,59 @@ export function ContractSearch(props: {
     querySortOptions?.defaultFilter ?? 'open'
   )
 
+  const [category, setCategory] = useState<string>('all')
+
   if (!sort) return <></>
   return (
     <InstantSearch
       searchClient={searchClient}
       indexName={`${indexPrefix}contracts-${sort}`}
       key={`search-${
-        querySortOptions?.filter?.tag ??
-        querySortOptions?.filter?.creatorId ??
-        ''
+        additionalFilter?.tag ?? additionalFilter?.creatorId ?? ''
       }`}
     >
-      <Row className="flex-wrap gap-2">
+      <Row className="gap-1 sm:gap-2">
         <SearchBox
           className="flex-1"
           classNames={{
             form: 'before:top-6',
-            input: '!pl-10 !input !input-bordered shadow-none',
-            resetIcon: 'mt-2',
+            input: '!pl-10 !input !input-bordered shadow-none w-[100px]',
+            resetIcon: 'mt-2 hidden sm:flex',
           }}
-          placeholder="Search markets"
         />
-        <Row className="mt-2 gap-2 sm:mt-0">
-          <select
-            className="!select !select-bordered"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as filter)}
-          >
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
-            <option value="resolved">Resolved</option>
-            <option value="all">All</option>
-          </select>
-          <SortBy
-            items={sortIndexes}
-            classNames={{
-              select: '!select !select-bordered',
-            }}
-          />
-        </Row>
+        <select
+          className="!select !select-bordered"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as filter)}
+        >
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+          <option value="resolved">Resolved</option>
+          <option value="all">All</option>
+        </select>
+        <SortBy
+          items={sortIndexes}
+          classNames={{
+            select: '!select !select-bordered',
+          }}
+        />
       </Row>
+
+      <Spacer h={3} />
+
+      {showCategorySelector && (
+        <CategorySelector
+          className="mb-2"
+          user={user}
+          category={category}
+          setCategory={setCategory}
+        />
+      )}
+
       <ContractSearchInner
         querySortOptions={querySortOptions}
         filter={filter}
+        additionalFilter={{ category, ...additionalFilter }}
       />
     </InstantSearch>
   )
@@ -116,15 +132,16 @@ export function ContractSearch(props: {
 export function ContractSearchInner(props: {
   querySortOptions?: {
     defaultSort: Sort
-    filter?: {
-      creatorId?: string
-      tag?: string
-    }
     shouldLoadFromStorage?: boolean
   }
   filter: filter
+  additionalFilter: {
+    creatorId?: string
+    tag?: string
+    category?: string
+  }
 }) {
-  const { querySortOptions, filter } = props
+  const { querySortOptions, filter, additionalFilter } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
   const { query, setQuery, setSort } = useUpdateQueryAndSort({
@@ -143,18 +160,24 @@ export function ContractSearchInner(props: {
     setQuery(query)
   }, [query])
 
+  const isFirstRender = useRef(true)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+
     const sort = index.split('contracts-')[1] as Sort
     if (sort) {
       setSort(sort)
     }
   }, [index])
 
-  const creatorId = querySortOptions?.filter?.creatorId
+  const { creatorId, category, tag } = additionalFilter
+
   useFilterCreator(creatorId)
 
-  const tag = querySortOptions?.filter?.tag
-  useFilterTag(tag)
+  useFilterTag(tag ?? (category === 'all' ? undefined : category))
 
   useFilterClosed(
     filter === 'closed'
@@ -167,25 +190,21 @@ export function ContractSearchInner(props: {
     filter === 'resolved' ? true : filter === 'all' ? undefined : false
   )
 
-  const { showMore, hits, isLastPage } = useInfiniteHits()
+  const { showMore, hits, isLastPage, results } = useInfiniteHits()
   const contracts = hits as any as Contract[]
 
   const router = useRouter()
   const hasLoaded = contracts.length > 0 || router.isReady
 
-  return (
-    <div>
-      <Spacer h={8} />
+  if (!hasLoaded || !results) return <></>
 
-      {hasLoaded && (
-        <ContractsGrid
-          contracts={contracts}
-          loadMore={showMore}
-          hasMore={!isLastPage}
-          showCloseTime={index === 'contracts-closing-soon'}
-        />
-      )}
-    </div>
+  return (
+    <ContractsGrid
+      contracts={contracts}
+      loadMore={showMore}
+      hasMore={!isLastPage}
+      showCloseTime={index === 'contracts-closing-soon'}
+    />
   )
 }
 
@@ -197,10 +216,15 @@ const useFilterCreator = (creatorId: string | undefined) => {
 }
 
 const useFilterTag = (tag: string | undefined) => {
+  const { items, refine: deleteRefinement } = useCurrentRefinements({
+    includedAttributes: ['lowercaseTags'],
+  })
   const { refine } = useRefinementList({ attribute: 'lowercaseTags' })
   useEffect(() => {
+    const refinements = items[0]?.refinements ?? []
     if (tag) refine(tag.toLowerCase())
-  }, [tag, refine])
+    if (refinements[0]) deleteRefinement(refinements[0])
+  }, [tag])
 }
 
 const useFilterClosed = (value: boolean | undefined) => {

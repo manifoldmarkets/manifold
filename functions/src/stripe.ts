@@ -54,7 +54,7 @@ export const createCheckoutSession = functions
     }
 
     const referrer =
-      req.query.referer || req.headers.referer || 'https://mantic.markets'
+      req.query.referer || req.headers.referer || 'https://manifold.markets'
 
     const session = await stripe.checkout.sessions.create({
       metadata: {

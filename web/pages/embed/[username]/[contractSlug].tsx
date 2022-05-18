@@ -1,5 +1,6 @@
 import { Bet } from 'common/bet'
 import {
+  BinaryContract,
   Contract,
   DPM,
   FreeResponse,
@@ -8,6 +9,7 @@ import {
 } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { AnswersGraph } from 'web/components/answers/answers-graph'
+import BetRow from 'web/components/bet-row'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
@@ -99,13 +101,8 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   return (
     <Col className="w-full flex-1 bg-white">
       <div className="relative flex flex-col pt-2" ref={setElem}>
-        <SiteLink
-          className="absolute top-0 left-0 z-20 h-full w-full"
-          href={href}
-        />
-
         <div className="px-3 text-xl text-indigo-700 md:text-2xl">
-          <Linkify text={question} />
+          <SiteLink href={href}>{question}</SiteLink>
         </div>
 
         <Spacer h={3} />
@@ -115,10 +112,18 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
             contract={contract}
             bets={bets}
             isCreator={false}
-            hideShareButtons
+            disabled
           />
 
-          {isBinary && <BinaryResolutionOrChance contract={contract} />}
+          {isBinary && (
+            <Row className="items-center gap-4">
+              <BetRow
+                contract={contract as BinaryContract}
+                betPanelClassName="scale-75"
+              />
+              <BinaryResolutionOrChance contract={contract} />
+            </Row>
+          )}
 
           {outcomeType === 'FREE_RESPONSE' && resolution && (
             <FreeResponseResolutionOrChance

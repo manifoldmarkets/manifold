@@ -5,6 +5,7 @@ import {
   MenuAlt3Icon,
   PresentationChartLineIcon,
   SearchIcon,
+  ChatAltIcon,
   XIcon,
 } from '@heroicons/react/outline'
 import { Transition, Dialog } from '@headlessui/react'
@@ -29,15 +30,24 @@ export function BottomNavBar() {
         </a>
       </Link>
 
-      <Link href="/markets">
-        <a className="block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
-          <SearchIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
-          Explore
-        </a>
-      </Link>
+      {user === null ? (
+        <Link href="/markets">
+          <a className="block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
+            <SearchIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
+            Explore
+          </a>
+        </Link>
+      ) : (
+        <Link href="/activity">
+          <a className="block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
+            <ChatAltIcon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
+            Activity
+          </a>
+        </Link>
+      )}
 
       {user !== null && (
-        <Link href="/portfolio">
+        <Link href={`${user}/bets`}>
           <a className="block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
             <PresentationChartLineIcon
               className="my-1 mx-auto h-6 w-6"
@@ -137,7 +147,7 @@ export function MobileSidebar(props: {
                 </div>
               </Transition.Child>
               <div className="mx-2 mt-5 h-0 flex-1 overflow-y-auto">
-                <Sidebar />
+                <Sidebar className="pl-2" />
               </div>
             </div>
           </Transition.Child>

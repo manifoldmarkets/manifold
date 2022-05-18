@@ -1,5 +1,3 @@
-import _ from 'lodash'
-
 import { Contract } from 'web/lib/firebase/contracts'
 import { Comment } from 'web/lib/firebase/comments'
 import { Col } from '../layout/col'

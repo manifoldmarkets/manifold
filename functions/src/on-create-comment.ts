@@ -3,10 +3,10 @@ import * as admin from 'firebase-admin'
 import * as _ from 'lodash'
 
 import { getContract, getUser, getValues } from './utils'
-import { Comment } from 'common/comment'
+import { Comment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
-import { Bet } from 'common/bet'
-import { Answer } from 'common/answer'
+import { Bet } from '../../common/bet'
+import { Answer } from '../../common/answer'
 
 const firestore = admin.firestore()
 
@@ -34,7 +34,14 @@ export const onCreateComment = functions.firestore
 
     let bet: Bet | undefined
     let answer: Answer | undefined
-    if (comment.betId) {
+    if (comment.answerOutcome) {
+      answer =
+        contract.outcomeType === 'FREE_RESPONSE' && contract.answers
+          ? contract.answers?.find(
+              (answer) => answer.id === comment.answerOutcome
+            )
+          : undefined
+    } else if (comment.betId) {
       const betSnapshot = await firestore
         .collection('contracts')
         .doc(contractId)
@@ -66,7 +73,8 @@ export const onCreateComment = functions.firestore
           contract,
           comment,
           bet,
-          answer
+          answer?.text,
+          answer?.id
         )
       )
     )

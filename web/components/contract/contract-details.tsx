@@ -1,7 +1,11 @@
 import clsx from 'clsx'
-import _ from 'lodash'
-import { ClockIcon, DatabaseIcon, PencilIcon } from '@heroicons/react/outline'
-import { TrendingUpIcon } from '@heroicons/react/solid'
+import {
+  ClockIcon,
+  DatabaseIcon,
+  PencilIcon,
+  CurrencyDollarIcon,
+  TrendingUpIcon,
+} from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
@@ -19,6 +23,8 @@ import { useState } from 'react'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
+import { CATEGORY_LIST } from 'common/categories'
+import { TagsList } from '../tags-list'
 
 export function AbbrContractDetails(props: {
   contract: Contract
@@ -26,9 +32,19 @@ export function AbbrContractDetails(props: {
   showCloseTime?: boolean
 }) {
   const { contract, showHotVolume, showCloseTime } = props
-  const { volume, volume24Hours, creatorName, creatorUsername, closeTime } =
-    contract
+  const {
+    volume,
+    volume24Hours,
+    creatorName,
+    creatorUsername,
+    closeTime,
+    tags,
+  } = contract
   const { volumeLabel } = contractMetrics(contract)
+  // Show at most one category that this contract is tagged by
+  const categories = CATEGORY_LIST.filter((category) =>
+    tags.map((t) => t.toLowerCase()).includes(category)
+  ).slice(0, 1)
 
   return (
     <Col className={clsx('gap-2 text-sm text-gray-500')}>
@@ -46,21 +62,28 @@ export function AbbrContractDetails(props: {
           />
         </Row>
 
-        {showHotVolume ? (
-          <Row className="gap-1">
-            <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
-          </Row>
-        ) : showCloseTime ? (
-          <Row className="gap-1">
-            <ClockIcon className="h-5 w-5" />
-            {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
-            {fromNow(closeTime || 0)}
-          </Row>
-        ) : volume > 0 ? (
-          <Row>{volumeLabel}</Row>
-        ) : (
-          <NewContractBadge />
-        )}
+        <Row className="gap-3 text-gray-400">
+          {categories.length > 0 && (
+            <TagsList className="text-gray-400" tags={categories} noLabel />
+          )}
+
+          {showHotVolume ? (
+            <Row className="gap-0.5">
+              <TrendingUpIcon className="h-5 w-5" />{' '}
+              {formatMoney(volume24Hours)}
+            </Row>
+          ) : showCloseTime ? (
+            <Row className="gap-0.5">
+              <ClockIcon className="h-5 w-5" />
+              {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
+              {fromNow(closeTime || 0)}
+            </Row>
+          ) : volume > 0 ? (
+            <Row>{volumeLabel}</Row>
+          ) : (
+            <NewContractBadge />
+          )}
+        </Row>
       </Row>
     </Col>
   )
@@ -70,72 +93,73 @@ export function ContractDetails(props: {
   contract: Contract
   bets: Bet[]
   isCreator?: boolean
-  hideShareButtons?: boolean
+  disabled?: boolean
 }) {
-  const { contract, bets, isCreator, hideShareButtons } = props
+  const { contract, bets, isCreator, disabled } = props
   const { closeTime, creatorName, creatorUsername } = contract
   const { volumeLabel, createdDate, resolvedDate } = contractMetrics(contract)
 
   return (
-    <Col className="gap-2 text-sm text-gray-500 sm:flex-row sm:flex-wrap">
-      <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-3">
-        <Row className="items-center gap-2">
-          <Avatar
-            username={creatorUsername}
-            avatarUrl={contract.creatorAvatarUrl}
-            size={6}
-          />
+    <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
+      <Row className="items-center gap-2">
+        <Avatar
+          username={creatorUsername}
+          avatarUrl={contract.creatorAvatarUrl}
+          noLink={disabled}
+          size={6}
+        />
+        {disabled ? (
+          creatorName
+        ) : (
           <UserLink
             className="whitespace-nowrap"
             name={creatorName}
             username={creatorUsername}
           />
-        </Row>
+        )}
+      </Row>
 
-        {(!!closeTime || !!resolvedDate) && (
-          <Row className="items-center gap-1">
-            <ClockIcon className="h-5 w-5" />
+      {(!!closeTime || !!resolvedDate) && (
+        <Row className="items-center gap-1">
+          <ClockIcon className="h-5 w-5" />
 
-            {/* <DateTimeTooltip text="Market created:" time={contract.createdTime}>
+          {/* <DateTimeTooltip text="Market created:" time={contract.createdTime}>
             {createdDate}
           </DateTimeTooltip> */}
 
-            {resolvedDate && contract.resolutionTime ? (
-              <>
-                {/* {' - '} */}
-                <DateTimeTooltip
-                  text="Market resolved:"
-                  time={contract.resolutionTime}
-                >
-                  {resolvedDate}
-                </DateTimeTooltip>
-              </>
-            ) : null}
+          {resolvedDate && contract.resolutionTime ? (
+            <>
+              {/* {' - '} */}
+              <DateTimeTooltip
+                text="Market resolved:"
+                time={contract.resolutionTime}
+              >
+                {resolvedDate}
+              </DateTimeTooltip>
+            </>
+          ) : null}
 
-            {!resolvedDate && closeTime && (
-              <>
-                {/* {' - '}{' '} */}
-                <EditableCloseDate
-                  closeTime={closeTime}
-                  contract={contract}
-                  isCreator={isCreator ?? false}
-                />
-              </>
-            )}
-          </Row>
-        )}
-
-        <Row className="items-center gap-1">
-          <DatabaseIcon className="h-5 w-5" />
-
-          <div className="whitespace-nowrap">{volumeLabel}</div>
+          {!resolvedDate && closeTime && (
+            <>
+              {/* {' - '}{' '} */}
+              <EditableCloseDate
+                closeTime={closeTime}
+                contract={contract}
+                isCreator={isCreator ?? false}
+              />
+            </>
+          )}
         </Row>
+      )}
 
-        {!hideShareButtons && (
-          <ContractInfoDialog contract={contract} bets={bets} />
-        )}
+      <Row className="items-center gap-1">
+        <DatabaseIcon className="h-5 w-5" />
+
+        <div className="whitespace-nowrap">{volumeLabel}</div>
       </Row>
-    </Col>
+
+      {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
+    </Row>
   )
 }
 

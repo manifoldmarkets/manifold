@@ -2,7 +2,6 @@ import { useState } from 'react'
 import clsx from 'clsx'
 
 import { BetPanelSwitcher } from './bet-panel'
-import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
 import { Binary, CPMM, DPM, FullContract } from 'common/contract'
 import { Modal } from './layout/modal'
@@ -16,8 +15,9 @@ export default function BetRow(props: {
   contract: FullContract<DPM | CPMM, Binary>
   className?: string
   btnClassName?: string
+  betPanelClassName?: string
 }) {
-  const { className, btnClassName, contract } = props
+  const { className, btnClassName, betPanelClassName, contract } = props
   const [open, setOpen] = useState(false)
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
     undefined
@@ -32,7 +32,7 @@ export default function BetRow(props: {
   return (
     <>
       <YesNoSelector
-        className={clsx('mt-2 justify-end', className)}
+        className={clsx('justify-end', className)}
         btnClassName={clsx('btn-sm w-24', btnClassName)}
         onSelect={(choice) => {
           setOpen(true)
@@ -41,6 +41,7 @@ export default function BetRow(props: {
         replaceNoButton={
           yesFloorShares > 0 ? (
             <SellButton
+              panelClassName={betPanelClassName}
               contract={contract}
               user={user}
               sharesOutcome={'YES'}
@@ -51,6 +52,7 @@ export default function BetRow(props: {
         replaceYesButton={
           noFloorShares > 0 ? (
             <SellButton
+              panelClassName={betPanelClassName}
               contract={contract}
               user={user}
               sharesOutcome={'NO'}
@@ -61,6 +63,7 @@ export default function BetRow(props: {
       />
       <Modal open={open} setOpen={setOpen}>
         <BetPanelSwitcher
+          className={betPanelClassName}
           contract={contract}
           title={contract.question}
           selected={betChoice}

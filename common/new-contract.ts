@@ -45,8 +45,6 @@ export function getNewContract(
       ? getNumericProps(ante, bucketCount, min, max)
       : getFreeAnswerProps(ante)
 
-  const volume = outcomeType === 'BINARY' ? 0 : ante
-
   const contract: Contract = removeUndefinedProps({
     id,
     slug,
@@ -66,7 +64,7 @@ export function getNewContract(
     createdTime: Date.now(),
     closeTime,
 
-    volume,
+    volume: 0,
     volume24Hours: 0,
     volume7Days: 0,
 
