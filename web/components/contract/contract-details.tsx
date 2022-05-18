@@ -55,11 +55,7 @@ export function AbbrContractDetails(props: {
             avatarUrl={contract.creatorAvatarUrl}
             size={6}
           />
-          <UserLink
-            className="whitespace-nowrap"
-            name={creatorName}
-            username={creatorUsername}
-          />
+          <UserLink name={creatorName} username={creatorUsername} />
         </Row>
 
         <Row className="gap-3 text-gray-400">
