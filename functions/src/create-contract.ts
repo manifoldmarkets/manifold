@@ -28,8 +28,8 @@ import {
   MINIMUM_ANTE,
 } from '../../common/antes'
 import { getNoneAnswer } from '../../common/answer'
-import { getNewContract } from 'common/new-contract'
-import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
+import { getNewContract } from '../../common/new-contract'
+import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 
 export const createContract = newEndpoint(['POST'], async (req, _res) => {
   const [creator, _privateUser] = await lookupUser(await parseCredentials(req))
