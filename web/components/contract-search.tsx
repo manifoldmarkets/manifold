@@ -203,7 +203,7 @@ export function ContractSearchInner(props: {
       contracts={contracts}
       loadMore={showMore}
       hasMore={!isLastPage}
-      showCloseTime={index === 'contracts-closing-soon'}
+      showCloseTime={index.endsWith('close-date')}
     />
   )
 }
