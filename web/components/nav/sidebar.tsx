@@ -172,14 +172,14 @@ export default function Sidebar(props: { className?: string }) {
       <div className={'aligncenter flex justify-center'}>
         {user ? (
           <Link href={'/create'} passHref>
-            <button className="mx-auto mt-4 -ml-1 w-full rounded-md border border-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700">
+            <button className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700">
               Ask a question
             </button>
           </Link>
         ) : (
           <button
             onClick={firebaseLogin}
-            className="mx-auto mt-4 -ml-1 w-full rounded-md border border-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700"
+            className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700"
           >
             Sign in
           </button>
