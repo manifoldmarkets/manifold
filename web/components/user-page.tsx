@@ -21,6 +21,9 @@ import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
 import { LoadingIndicator } from './loading-indicator'
 import { useRouter } from 'next/router'
 import _ from 'lodash'
+import { BetsList } from './bets-list'
+import { Bet } from 'common/bet'
+import { getUserBets } from 'web/lib/firebase/bets'
 
 export function UserLink(props: {
   name: string
@@ -38,12 +41,13 @@ export function UserLink(props: {
   )
 }
 
+export const TAB_IDS = ['markets', 'comments', 'bets']
+
 export function UserPage(props: {
   user: User
   currentUser?: User
-  defaultTabTitle?: string
+  defaultTabTitle?: 'markets' | 'comments' | 'bets'
 }) {
-  const router = useRouter()
   const { user, currentUser, defaultTabTitle } = props
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
@@ -51,6 +55,7 @@ export function UserPage(props: {
   const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
     'loading'
   )
+  const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
@@ -59,6 +64,7 @@ export function UserPage(props: {
     if (!user) return
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
+    getUserBets(user.id).then(setUsersBets)
   }, [user])
 
   useEffect(() => {
@@ -187,17 +193,14 @@ export function UserPage(props: {
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
             className={'pb-2 pt-1 '}
-            defaultIndex={defaultTabTitle === 'Comments' ? 1 : 0}
-            onClick={(tabName) =>
-              router.push(
-                {
-                  pathname: `/${user.username}`,
-                  query: { tab: tabName },
-                },
-                undefined,
-                { shallow: true }
-              )
-            }
+            defaultIndex={TAB_IDS.indexOf(defaultTabTitle || 'markets')}
+            onClick={(tabName) => {
+              const tabId = tabName.toLowerCase()
+              const subpath = tabId === 'markets' ? '' : '/' + tabId
+              // BUG: if you start on `/Bob/bets`, then click on Markets, use-query-and-sort-params
+              // rewrites the url incorrectly to `/Bob/bets` instead of `/Bob`
+              window.history.replaceState('', '', `/${user.username}${subpath}`)
+            }}
             tabs={[
               {
                 title: 'Markets',
@@ -218,6 +221,24 @@ export function UserPage(props: {
                 ),
                 tabIcon: (
                   <div className="px-0.5 font-bold">{usersComments.length}</div>
+                ),
+              },
+              {
+                title: 'Bets',
+                content: (
+                  <div>
+                    <AlertBox
+                      title="Bets are becoming publicly visible on 2022-06-01"
+                      text="Bettor identities have always been traceable through the Manifold API.
+                      However, our interface implied that they were private.
+                      As we develop new features such as leaderboards and bet history, it won't be technically feasible to keep this info private.
+                      For more context, or if you'd like to wipe your bet history, see: https://manifold.markets/Austin/will-all-bets-on-manifold-be-public"
+                    />
+                    {isCurrentUser && <BetsList user={user} />}
+                  </div>
+                ),
+                tabIcon: (
+                  <div className="px-0.5 font-bold">{usersBets.length}</div>
                 ),
               },
             ]}
@@ -241,4 +262,28 @@ export function defaultBannerUrl(userId: string) {
     'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
   ]
   return defaultBanner[genHash(userId)() % defaultBanner.length]
+}
+
+import { ExclamationIcon } from '@heroicons/react/solid'
+
+function AlertBox(props: { title: string; text: string }) {
+  const { title, text } = props
+  return (
+    <div className="rounded-md bg-yellow-50 p-4">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <ExclamationIcon
+            className="h-5 w-5 text-yellow-400"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="ml-3">
+          <h3 className="text-sm font-medium text-yellow-800">{title}</h3>
+          <div className="mt-2 text-sm text-yellow-700">
+            <Linkify text={text} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
