@@ -192,7 +192,9 @@ export function UserPage(props: {
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
             className={'pb-2 pt-1 '}
-            defaultIndex={defaultTabTitle === 'Comments' ? 1 : 0}
+            defaultIndex={['Markets', 'Comments', 'Bets'].indexOf(
+              defaultTabTitle
+            )}
             onClick={(tabName) =>
               router.push(
                 {
