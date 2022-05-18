@@ -30,7 +30,7 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
           <div className="font-semibold sm:mb-2">
             Bet on{' '}
             <span className="bg-gradient-to-r from-teal-400 to-green-400 bg-clip-text font-bold text-transparent">
-              any question!
+              anything!
             </span>
           </div>
         </h1>
