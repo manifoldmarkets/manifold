@@ -23,6 +23,7 @@ import { SiteLink } from 'web/components/site-link'
 import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
 import { getOutcomeProbability } from 'common/calculate'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -372,14 +373,13 @@ export function CommentInput(props: {
                     Sign in to Comment
                   </button>
                 )}
-                {user && (
+                {user && !isSubmitting && (
                   <button
-                    disabled={isSubmitting}
                     className={clsx(
                       'btn text-transform: block capitalize',
                       focused && comment
                         ? 'btn-outline btn-sm '
-                        : 'btn-ghost btn-sm text-gray-500'
+                        : 'btn-ghost btn-sm pointer-events-none text-gray-500'
                     )}
                     onClick={() => {
                       if (!focused) return
@@ -390,6 +390,9 @@ export function CommentInput(props: {
                   >
                     {parentComment || answerOutcome ? 'Reply' : 'Comment'}
                   </button>
+                )}
+                {isSubmitting && (
+                  <LoadingIndicator spinnerClassName={'border-gray-500'} />
                 )}
               </Col>
             </Row>
