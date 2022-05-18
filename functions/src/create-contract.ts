@@ -11,6 +11,7 @@ import {
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
   Numeric,
+  OUTCOMES_TYPES as OUTCOME_TYPES,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
@@ -63,7 +64,8 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
   )
 
   outcomeType = outcomeType ?? 'BINARY'
-  if (!['BINARY', 'MULTI', 'FREE_RESPONSE'].includes(outcomeType))
+
+  if (!OUTCOME_TYPES.includes(outcomeType))
     throw new APIError(400, 'Invalid outcomeType')
 
   if (
