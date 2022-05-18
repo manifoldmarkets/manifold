@@ -28,7 +28,7 @@ type BaseActivityItem = {
 export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
   betsByCurrentUser: Bet[]
-  comments: Comment[]
+  commentsByCurrentUser: Comment[]
   answerOutcome?: string
 }
 
@@ -76,7 +76,7 @@ export type AnswerGroupItem = BaseActivityItem & {
   answer: Answer
   items: ActivityItem[]
   betsByCurrentUser?: Bet[]
-  comments?: Comment[]
+  commentsByCurrentUser?: Comment[]
 }
 
 export type CloseItem = BaseActivityItem & {
@@ -87,7 +87,6 @@ export type ResolveItem = BaseActivityItem & {
   type: 'resolve'
 }
 
-export const GENERAL_COMMENTS_OUTCOME_ID = 'General Comments'
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 const ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW = 3
 
@@ -280,6 +279,7 @@ function getAnswerAndCommentInputGroups(
   outcomes = _.sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   )
+  const betsByCurrentUser = bets.filter((bet) => bet.userId === user?.id)
 
   const answerGroups = outcomes
     .map((outcome) => {
@@ -293,9 +293,7 @@ function getAnswerAndCommentInputGroups(
           comment.answerOutcome === outcome ||
           answerBets.some((bet) => bet.id === comment.betId)
       )
-      const items = getCommentThreads(answerBets, answerComments, contract)
-
-      if (outcome === GENERAL_COMMENTS_OUTCOME_ID) items.reverse()
+      const items = getCommentThreads(bets, answerComments, contract)
 
       return {
         id: outcome,
@@ -304,8 +302,10 @@ function getAnswerAndCommentInputGroups(
         answer,
         items,
         user,
-        betsByCurrentUser: answerBets.filter((bet) => bet.userId === user?.id),
-        comments: answerComments,
+        betsByCurrentUser,
+        commentsByCurrentUser: answerComments.filter(
+          (comment) => comment.userId === user?.id
+        ),
       }
     })
     .filter((group) => group.answer) as ActivityItem[]
@@ -433,7 +433,7 @@ export function getAllContractActivityItems(
       id: 'commentInput',
       contract,
       betsByCurrentUser: [],
-      comments: [],
+      commentsByCurrentUser: [],
     })
   } else {
     items.push(
@@ -459,7 +459,7 @@ export function getAllContractActivityItems(
       id: 'commentInput',
       contract,
       betsByCurrentUser: [],
-      comments: [],
+      commentsByCurrentUser: [],
     })
   }
 
@@ -520,6 +520,15 @@ export function getRecentContractActivityItems(
   return [questionItem, ...items]
 }
 
+function commentIsGeneralComment(comment: Comment, contract: Contract) {
+  return (
+    comment.answerOutcome === undefined &&
+    (contract.outcomeType === 'FREE_RESPONSE'
+      ? comment.betId === undefined
+      : true)
+  )
+}
+
 export function getSpecificContractActivityItems(
   contract: Contract,
   bets: Bet[],
@@ -550,8 +559,8 @@ export function getSpecificContractActivityItems(
       break
 
     case 'comments':
-      const nonFreeResponseComments = comments.filter(
-        (comment) => comment.answerOutcome === undefined
+      const nonFreeResponseComments = comments.filter((comment) =>
+        commentIsGeneralComment(comment, contract)
       )
       const nonFreeResponseBets =
         contract.outcomeType === 'FREE_RESPONSE' ? [] : bets
@@ -567,10 +576,12 @@ export function getSpecificContractActivityItems(
         type: 'commentInput',
         id: 'commentInput',
         contract,
-        betsByCurrentUser: user
-          ? nonFreeResponseBets.filter((bet) => bet.userId === user.id)
-          : [],
-        comments: nonFreeResponseComments,
+        betsByCurrentUser: nonFreeResponseBets.filter(
+          (bet) => bet.userId === user?.id
+        ),
+        commentsByCurrentUser: nonFreeResponseComments.filter(
+          (comment) => comment.userId === user?.id
+        ),
       })
       break
     case 'free-response-comment-answer-groups':
