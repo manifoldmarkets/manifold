@@ -27,7 +27,6 @@ import { Leaderboard } from 'web/components/leaderboard'
 import _ from 'lodash'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
-import { FeedBet, FeedComment } from 'web/components/feed/feed-items'
 import { useUserById } from 'web/hooks/use-users'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { FirstArgument } from 'common/util/types'
@@ -35,6 +34,8 @@ import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { contractTextDetails } from 'web/components/contract/contract-details'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
+import { FeedComment } from 'web/components/feed/feed-comments'
+import { FeedBet } from 'web/components/feed/feed-bets'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
