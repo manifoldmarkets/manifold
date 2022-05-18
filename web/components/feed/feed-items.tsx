@@ -1,12 +1,11 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import React, { Fragment, useRef } from 'react'
+import React, { useState } from 'react'
 import * as _ from 'lodash'
 import {
   BanIcon,
   CheckIcon,
   DotsVerticalIcon,
   LockClosedIcon,
-  UsersIcon,
   XIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -18,14 +17,10 @@ import {
   contractPath,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
-import { useUser } from 'web/hooks/use-user'
-import { formatMoney } from 'common/util/format'
 import { BinaryResolutionOrChance } from '../contract/contract-card'
 import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
 import { UserLink } from '../user-page'
-import { Bet } from 'web/lib/firebase/bets'
-import { JoinSpans } from '../join-spans'
 import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
 import { ActivityItem } from './activity-items'
@@ -182,8 +177,6 @@ export function FeedQuestion(props: {
 function FeedDescription(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername } = contract
-  const user = useUser()
-  const isCreator = user?.id === contract.creatorId
 
   return (
     <>
