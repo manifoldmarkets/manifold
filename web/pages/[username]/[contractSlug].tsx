@@ -36,6 +36,8 @@ import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
 import { FeedComment } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
+import { inIframe, useInIframe } from 'web/lib/util/embed'
+import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -104,6 +106,11 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
     )
     setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
+
+  const inIframe = useInIframe()
+  if (inIframe) {
+    return <ContractEmbedPage {...props} />
+  }
 
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
