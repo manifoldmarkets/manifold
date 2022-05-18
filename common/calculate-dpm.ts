@@ -40,7 +40,7 @@ export function getNumericBets(
   contract: NumericContract,
   bucket: string,
   betAmount: number,
-  variance = 0.01
+  variance: number
 ) {
   const { bucketCount } = contract
   const bucketNumber = parseInt(bucket)

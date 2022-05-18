@@ -29,6 +29,7 @@ import {
   MINIMUM_ANTE,
 } from 'common/antes'
 import { getNoneAnswer } from 'common/answer'
+import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
 
 export const createContract = functions
   .runWith({ minInstances: 1 })
@@ -146,7 +147,7 @@ export const createContract = functions
         ante,
         closeTime,
         tags ?? [],
-        100,
+        NUMERIC_BUCKET_COUNT,
         min ?? 0,
         max ?? 100,
         manaLimitPerUser ?? 0

@@ -21,6 +21,7 @@ import {
 import { User } from './user'
 import { noFees } from './fees'
 import { addObjects } from './util/object'
+import { NUMERIC_FIXED_VAR } from './numeric-constants'
 
 export const getNewBinaryCpmmBetInfo = (
   user: User,
@@ -167,7 +168,7 @@ export const getNumericBetsInfo = (
 ) => {
   const { pool, totalShares, totalBets } = contract
 
-  const bets = getNumericBets(contract, outcome, amount)
+  const bets = getNumericBets(contract, outcome, amount, NUMERIC_FIXED_VAR)
   const allBetAmounts = Object.fromEntries(bets)
 
   const newPool = addObjects(pool, allBetAmounts)
