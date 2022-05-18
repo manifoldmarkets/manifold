@@ -28,13 +28,13 @@ function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
   }
 }
 
-function getNavigation(userName: string) {
+function getNavigation(username: string) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
     { name: 'Activity', href: '/activity', icon: ChatAltIcon },
     {
       name: 'Portfolio',
-      href: `/${userName}/bets`,
+      href: `/${username}/bets`,
       icon: PresentationChartLineIcon,
     },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
@@ -126,7 +126,9 @@ export default function Sidebar(props: { className?: string }) {
   const deservesDailyFreeMarket = !useHasCreatedContractToday(user)
 
   const navigationOptions =
-    user === null ? signedOutNavigation : getNavigation(user?.name || 'error')
+    user === null
+      ? signedOutNavigation
+      : getNavigation(user?.username || 'error')
   const mobileNavigationOptions =
     user === null ? signedOutMobileNavigation : mobileNavigation
 
