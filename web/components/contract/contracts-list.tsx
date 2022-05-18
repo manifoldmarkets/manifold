@@ -19,7 +19,6 @@ export function ContractsGrid(props: {
   const isBottomVisible = useIsVisible(elem)
 
   useEffect(() => {
-    console.log({ isBottomVisible, hasMore })
     if (isBottomVisible) {
       loadMore()
     }
