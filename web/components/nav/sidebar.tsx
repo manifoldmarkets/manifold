@@ -34,7 +34,7 @@ function getNavigation(userName: string) {
     { name: 'Activity', href: '/activity', icon: ChatAltIcon },
     {
       name: 'Portfolio',
-      href: `${userName}?tab=Bets`,
+      href: `${userName}/bets`,
       icon: PresentationChartLineIcon,
     },
     { name: 'Charity', href: '/charity', icon: HeartIcon },

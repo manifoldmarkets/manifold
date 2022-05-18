@@ -41,12 +41,13 @@ export function UserLink(props: {
   )
 }
 
+export const TAB_IDS = ['markets', 'comments', 'bets']
+
 export function UserPage(props: {
   user: User
   currentUser?: User
-  defaultTabTitle?: string
+  defaultTabTitle?: 'markets' | 'comments' | 'bets'
 }) {
-  const router = useRouter()
   const { user, currentUser, defaultTabTitle } = props
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
@@ -192,19 +193,12 @@ export function UserPage(props: {
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
             className={'pb-2 pt-1 '}
-            defaultIndex={['Markets', 'Comments', 'Bets'].indexOf(
-              defaultTabTitle
-            )}
-            onClick={(tabName) =>
-              router.push(
-                {
-                  pathname: `/${user.username}`,
-                  query: { tab: tabName },
-                },
-                undefined,
-                { shallow: true }
-              )
-            }
+            defaultIndex={TAB_IDS.indexOf(defaultTabTitle || 'markets')}
+            onClick={(tabName) => {
+              const tabId = tabName.toLowerCase()
+              const subpath = tabId === 'markets' ? '' : '/' + tabId
+              window.history.pushState('', '', `/${user.username}${subpath}`)
+            }}
             tabs={[
               {
                 title: 'Markets',

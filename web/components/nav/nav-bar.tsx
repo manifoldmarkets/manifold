@@ -47,7 +47,7 @@ export function BottomNavBar() {
       )}
 
       {user !== null && (
-        <Link href={`${user}?tab=Bets`}>
+        <Link href={`${user}/bets`}>
           <a className="block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700">
             <PresentationChartLineIcon
               className="my-1 mx-auto h-6 w-6"
