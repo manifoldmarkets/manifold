@@ -48,7 +48,7 @@ export function FeedAnswerCommentGroup(props: {
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
   const [showReply, setShowReply] = useState(false)
-  const isFreeResponseContractPage = commentsByCurrentUser
+  const isFreeResponseContractPage = !!commentsByCurrentUser
   if (mostRecentCommentableBet && !showReply) setShowReplyAndFocus(true)
   const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
 

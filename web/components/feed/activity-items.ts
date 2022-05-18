@@ -302,7 +302,7 @@ function getAnswerAndCommentInputGroups(
         answer,
         items,
         user,
-        betsByCurrentUser: betsByCurrentUser,
+        betsByCurrentUser,
         commentsByCurrentUser: answerComments.filter(
           (comment) => comment.userId === user?.id
         ),
@@ -523,7 +523,9 @@ export function getRecentContractActivityItems(
 function commentIsGeneralComment(comment: Comment, contract: Contract) {
   return (
     comment.answerOutcome === undefined &&
-    (contract.outcomeType !== 'BINARY' ? comment.betId === undefined : true)
+    (contract.outcomeType === 'FREE_RESPONSE'
+      ? comment.betId === undefined
+      : true)
   )
 }
 

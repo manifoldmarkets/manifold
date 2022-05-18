@@ -22,6 +22,7 @@ import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
 import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
+import { getOutcomeProbability } from 'common/calculate'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -155,14 +156,8 @@ export function FeedComment(props: {
           />{' '}
           {!matchedBet && userPosition > 0 && (
             <>
-              {'was betting on '}
-              <>
-                <OutcomeLabel
-                  outcome={outcome}
-                  contract={contract}
-                  truncate="short"
-                />
-              </>
+              {'is '}
+              <CommentStatus outcome={outcome} contract={contract} />
             </>
           )}
           <>
@@ -227,6 +222,19 @@ export function getMostRecentCommentableBet(
     .pop()
 }
 
+function CommentStatus(props: { contract: Contract; outcome: string }) {
+  const { contract, outcome } = props
+  return (
+    <>
+      {' betting '}
+      <OutcomeLabel outcome={outcome} contract={contract} truncate="short" />
+      {' at ' +
+        Math.round(getOutcomeProbability(contract, outcome) * 100) +
+        '%'}
+    </>
+  )
+}
+
 export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
@@ -250,6 +258,7 @@ export function CommentInput(props: {
   const user = useUser()
   const [comment, setComment] = useState('')
   const [focused, setFocused] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const mostRecentCommentableBet = getMostRecentCommentableBet(
     betsByCurrentUser,
@@ -269,19 +278,19 @@ export function CommentInput(props: {
     if (!user) {
       return await firebaseLogin()
     }
-    if (!comment) return
-
-    // Update state asap to avoid double submission.
-    const commentValue = comment.toString()
-    setComment('')
+    if (!comment || isSubmitting) return
+    setIsSubmitting(true)
     await createComment(
       contract.id,
-      commentValue,
+      comment,
       user,
       betId,
       answerOutcome,
       parentComment?.id
     )
+    setComment('')
+    setFocused(false)
+    setIsSubmitting(false)
   }
 
   const { userPosition, outcome } = getBettorsPosition(
@@ -311,14 +320,8 @@ export function CommentInput(props: {
               )}
               {!mostRecentCommentableBet && user && userPosition > 0 && (
                 <>
-                  {"You're betting on "}
-                  <>
-                    <OutcomeLabel
-                      outcome={outcome}
-                      contract={contract}
-                      truncate="short"
-                    />
-                  </>
+                  {"You're"}
+                  <CommentStatus outcome={outcome} contract={contract} />
                 </>
               )}
             </div>
@@ -326,7 +329,7 @@ export function CommentInput(props: {
             <Row className="grid grid-cols-8 gap-1.5 text-gray-700">
               <Col className={'col-span-4 sm:col-span-6'}>
                 <Textarea
-                  ref={(ref: HTMLTextAreaElement) => setRef?.(ref)}
+                  ref={setRef}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   className={clsx('textarea textarea-bordered resize-none')}
@@ -342,10 +345,12 @@ export function CommentInput(props: {
                     shouldCollapseAfterClickOutside && setFocused(false)
                   }
                   maxLength={MAX_COMMENT_LENGTH}
+                  disabled={isSubmitting}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                       e.preventDefault()
                       submitComment(id)
+                      e.currentTarget.blur()
                     }
                   }}
                 />
@@ -368,6 +373,7 @@ export function CommentInput(props: {
                 )}
                 {user && (
                   <button
+                    disabled={isSubmitting}
                     className={clsx(
                       'btn text-transform: block capitalize',
                       focused && comment
@@ -378,7 +384,6 @@ export function CommentInput(props: {
                       if (!focused) return
                       else {
                         submitComment(id)
-                        setFocused(false)
                       }
                     }}
                   >
@@ -444,8 +449,8 @@ function getBettorsPosition(
     (prevBet) => prevBet.createdTime < createdTime && !prevBet.isAnte
   )
 
-  if (contract.outcomeType !== 'BINARY') {
-    const answerCounts: any = {}
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    const answerCounts: { [outcome: string]: number } = {}
     for (const bet of previousBets) {
       if (bet.outcome) {
         if (!answerCounts[bet.outcome]) {
@@ -455,12 +460,11 @@ function getBettorsPosition(
         }
       }
     }
-    const majorityAnswer = Object.keys(answerCounts).reduce(
-      (a, b) => (answerCounts[a] > answerCounts[b] ? a : b),
+    const majorityAnswer =
+      _.maxBy(Object.keys(answerCounts), (outcome) => answerCounts[outcome]) ??
       ''
-    )
     return {
-      userPosition: majorityAnswer,
+      userPosition: answerCounts[majorityAnswer] || 0,
       outcome: majorityAnswer,
     }
   }
