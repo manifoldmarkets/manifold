@@ -10,6 +10,7 @@ import {
   FreeResponse,
   FreeResponseContract,
   FullContract,
+  NumericContract,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
@@ -27,7 +28,7 @@ export function OutcomeLabel(props: {
   if (contract.outcomeType === 'NUMERIC')
     return (
       <span className="text-blue-500">
-        {getValueFromBucket(outcome, contract)}
+        {getValueFromBucket(outcome, contract as NumericContract)}
       </span>
     )
 

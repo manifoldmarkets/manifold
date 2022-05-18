@@ -74,7 +74,7 @@ export const ContractOverview = (props: {
         )}
 
         {outcomeType === 'NUMERIC' && resolution && (
-          <NumericResolution contract={contract} />
+          <NumericResolution contract={contract as NumericContract} />
         )}
 
         <ContractDetails

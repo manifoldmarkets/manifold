@@ -1,5 +1,11 @@
 import { Bet } from 'common/bet'
-import { Contract, DPM, FreeResponse, FullContract } from 'common/contract'
+import {
+  Contract,
+  DPM,
+  FreeResponse,
+  FullContract,
+  NumericContract,
+} from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { AnswersGraph } from 'web/components/answers/answers-graph'
 import {
@@ -122,7 +128,7 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
           )}
 
           {outcomeType === 'NUMERIC' && resolution && (
-            <NumericResolution contract={contract} />
+            <NumericResolution contract={contract as NumericContract} />
           )}
         </Row>
 

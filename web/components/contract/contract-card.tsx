@@ -174,7 +174,7 @@ export function NumericResolution(props: {
   const { contract, className } = props
   const { resolution } = contract
 
-  const resolutionValue = getValueFromBucket(resolution, contract)
+  const resolutionValue = getValueFromBucket(resolution ?? '', contract)
 
   return (
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
