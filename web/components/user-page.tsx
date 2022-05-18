@@ -197,7 +197,7 @@ export function UserPage(props: {
             onClick={(tabName) => {
               const tabId = tabName.toLowerCase()
               const subpath = tabId === 'markets' ? '' : '/' + tabId
-              window.history.pushState('', '', `/${user.username}${subpath}`)
+              window.history.replaceState('', '', `/${user.username}${subpath}`)
             }}
             tabs={[
               {
