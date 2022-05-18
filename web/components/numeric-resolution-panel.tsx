@@ -56,8 +56,6 @@ export function NumericResolutionPanel(props: {
       ? 'btn-primary'
       : 'btn-disabled'
 
-  console.log('outcome', outcome)
-
   return (
     <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
       <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
