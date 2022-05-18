@@ -179,9 +179,8 @@ export default function Sidebar(props: { className?: string }) {
 
       {user && (
         <div className={'aligncenter flex justify-center'}>
-          <Link href={'/create'}>
-            <button className="btn btn-md mt-4  bg-indigo-500 capitalize hover:bg-indigo-700">
-              {/* Create Market */}
+          <Link href={'/create'} passHref>
+            <button className="btn btn-md mt-4 border-0 bg-indigo-500 capitalize hover:bg-indigo-700">
               Ask question
             </button>
           </Link>
