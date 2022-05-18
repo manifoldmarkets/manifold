@@ -228,8 +228,11 @@ export function UserPage(props: {
                 content: (
                   <div>
                     <AlertBox
-                      title="Bets are becoming public on June 1st"
-                      text="hi"
+                      title="Bets are becoming publicly visible on 2022-06-01"
+                      text="Bettor identities have always been traceable through the Manifold API.
+                      However, our interface implied that they were private.
+                      As we develop new features such as leaderboards and bet history, it won't be technically feasible to keep this info private.
+                      For more context, or if you'd like to wipe your bet history, see: https://manifold.markets/Austin/will-all-bets-on-manifold-be-public"
                     />
                     {isCurrentUser && <BetsList user={user} />}
                   </div>
