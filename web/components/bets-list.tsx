@@ -22,7 +22,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
-import { sellBet } from 'web/lib/firebase/api-call'
+import { sellBet } from 'web/lib/firebase/fn-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from 'common/util/array'
