@@ -8,7 +8,6 @@ import { ContractSearch } from 'web/components/contract-search'
 
 const Home = () => {
   const user = useUser()
-  const [category, setCategory] = useState<string>('all')
 
   if (user === null) {
     Router.replace('/')
