@@ -74,7 +74,10 @@ export const ContractOverview = (props: {
         )}
 
         {outcomeType === 'NUMERIC' && resolution && (
-          <NumericResolution contract={contract as NumericContract} />
+          <NumericResolution
+            contract={contract as NumericContract}
+            className="hidden items-end xl:flex"
+          />
         )}
 
         <ContractDetails
