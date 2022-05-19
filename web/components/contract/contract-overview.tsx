@@ -55,6 +55,13 @@ export const ContractOverview = (props: {
               large
             />
           )}
+
+          {outcomeType === 'NUMERIC' && (
+            <NumericResolutionOrExpectation
+              contract={contract as NumericContract}
+              className="hidden items-end xl:flex"
+            />
+          )}
         </Row>
 
         {isBinary ? (
@@ -74,10 +81,11 @@ export const ContractOverview = (props: {
         )}
 
         {outcomeType === 'NUMERIC' && (
-          <NumericResolutionOrExpectation
-            contract={contract as NumericContract}
-            className="hidden items-end justify-between xl:flex"
-          />
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <NumericResolutionOrExpectation
+              contract={contract as NumericContract}
+            />
+          </Row>
         )}
 
         <ContractDetails
