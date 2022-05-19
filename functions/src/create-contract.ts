@@ -44,7 +44,7 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     min,
     max,
     manaLimitPerUser,
-  } = req.body.data || {}
+  } = req.body || {}
 
   if (!question || typeof question != 'string')
     throw new APIError(400, 'Missing or invalid question field')
@@ -205,7 +205,7 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     await anteBetDoc.set(anteBet)
   }
 
-  return { contract: contract }
+  return contract
 })
 
 const getSlug = async (question: string) => {

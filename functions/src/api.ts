@@ -117,13 +117,13 @@ export const newEndpoint = (methods: [string], fn: Handler) =>
       }
       const data = await fn(req, res)
       data.status = 'success'
-      res.status(200).json({ data: data })
+      res.status(200).json(data)
     } catch (e) {
       if (e instanceof APIError) {
         // Emit a 200 anyway here for now, for backwards compatibility
-        res.status(200).json({ data: { status: 'error', message: e.msg } })
+        res.status(200).json({ status: 'error', message: e.msg })
       } else {
-        res.status(500).json({ data: { status: 'error', message: '???' } })
+        res.status(500).json({ status: 'error', message: '???' })
       }
     }
   })
