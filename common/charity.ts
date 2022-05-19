@@ -393,6 +393,23 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     description:
       'The mission of the Alliance to Feed the Earth in Disasters is to help create resilience to global food shocks. We seek to identify various resilient food solutions and to help governments implement these solutions, to increase the chances that people have enough to eat in the event of a global catastrophe. We focus on events that could deplete food supplies or access to 5% of the global population or more.Our ultimate goal is to feed everyone, no matter what. An important aspect of this goal is that we need to establish equitable solutions so that all people can access the nutrition they need, regardless of wealth or location.ALLFED is inspired by effective altruism, using reason and evidence to identify how to do the most good. Our solutions are backed by science and research, and we also identify the most cost-effective solutions, to be able to provide more nutrition in catastrophes.',
   },
+  {
+    name: 'The Trevor Project',
+    website: 'https://www.thetrevorproject.org/',
+    photo: 'https://www.thetrevorproject.org/wp-content/uploads/2021/09/METADATA_IMG_ORANGE-BG.jpg',
+    preview: 'The Trevor Project is the world’s largest suicide prevention and crisis intervention organization for LGBTQ (lesbian, gay, bisexual, transgender, queer, and questioning) young people.',
+    description:
+      `Two decades ago, we responded to a health crisis. Now we’re building a safer, more-inclusive world. LGBTQ young people are four times more likely to attempt suicide, and suicide remains the second leading cause of death among all young people in the U.S.
+
+      Our Mission
+      To end suicide among lesbian, gay, bisexual, transgender, queer & questioning young people.
+      
+      Our Vision
+      A world where all LGBTQ young people see a bright future for themselves.
+      
+      Our Goal
+      To serve 1.8 million crisis contacts annually, by the end of our 25th year, while continuing to innovate on our core services.`,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
