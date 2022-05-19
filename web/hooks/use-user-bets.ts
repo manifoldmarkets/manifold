@@ -33,7 +33,10 @@ export const useUserContractBets = (
   return bets
 }
 
-export const useUserBetContracts = (userId: string | undefined) => {
+export const useUserBetContracts = (
+  userId: string | undefined,
+  options: { includeRedemptions: boolean }
+) => {
   const [contractIds, setContractIds] = useState<string[] | undefined>()
 
   useEffect(() => {
@@ -52,7 +55,7 @@ export const useUserBetContracts = (userId: string | undefined) => {
           setContractIds(contractIds)
           localStorage.setItem(key, JSON.stringify(contractIds))
         },
-        { includeRedemptions: false }
+        options
       )
     }
   }, [userId])
