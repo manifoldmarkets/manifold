@@ -18,10 +18,11 @@ import { getDailyNewUsers } from 'web/lib/firebase/users'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
-  const numberOfDays = 45
+  const numberOfDays = 10
   const tomorrow = dayjs(dayjs().format('YYYY-MM-DD'))
     .add(1, 'day')
-    .subtract(7, 'hours')
+    // Convert from UTC midnight to PT midnight.
+    .add(7, 'hours')
 
   const startDate = tomorrow.subtract(numberOfDays, 'day')
 
@@ -147,7 +148,7 @@ export async function getStaticPropz() {
 
   return {
     props: {
-      startDate: startDate.add(1, 'day').valueOf(),
+      startDate,
       dailyActiveUsers,
       weeklyActiveUsers,
       monthlyActiveUsers,
@@ -208,7 +209,6 @@ export function CustomAnalytics(props: {
   weeklyActivationRate: number[]
 }) {
   const {
-    startDate,
     dailyActiveUsers,
     dailyBetCounts,
     dailyContractCounts,
@@ -219,6 +219,8 @@ export function CustomAnalytics(props: {
     monthlyRetention,
     weeklyActivationRate,
   } = props
+
+  const startDate = dayjs(props.startDate).add(12, 'hours').valueOf()
 
   const dailyDividedByWeekly = dailyActiveUsers
     .map((dailyActive, i) =>
