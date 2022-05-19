@@ -1,7 +1,8 @@
-import { ResponsiveLine } from '@nivo/line'
+import { Point, ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
 import _ from 'lodash'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { Col } from '../layout/col'
 
 export function DailyCountChart(props: {
   startDate: number
@@ -46,6 +47,10 @@ export function DailyCountChart(props: {
         enableGridX={!!width && width >= 800}
         enableArea
         margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+        sliceTooltip={({ slice }) => {
+          const point = slice.points[0]
+          return <Tooltip point={point} />
+        }}
       />
     </div>
   )
@@ -97,7 +102,34 @@ export function DailyPercentChart(props: {
         enableGridX={!!width && width >= 800}
         enableArea
         margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+        sliceTooltip={({ slice }) => {
+          const point = slice.points[0]
+          return <Tooltip point={point} />
+        }}
       />
     </div>
+  )
+}
+
+function Tooltip(props: { point: Point }) {
+  const { point } = props
+  return (
+    <Col
+      className="border bg-white py-1 px-3 "
+      style={{
+        border: '1px solid #ccc',
+      }}
+    >
+      <div
+        key={point.id}
+        style={{
+          color: point.serieColor,
+          padding: '3px 0',
+        }}
+      >
+        <strong>{point.serieId}</strong> {point.data.yFormatted}
+      </div>
+      <div>{dayjs(point.data.x).format('MMM DD')}</div>
+    </Col>
   )
 }
