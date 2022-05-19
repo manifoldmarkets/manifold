@@ -145,6 +145,7 @@ export async function getStaticPropz() {
     const frac = activatedCount / (newUsers || 1)
     return Math.round(frac * 100 * 100) / 100
   })
+  const dailySignups = dailyNewUsers.map((users) => users.length)
 
   return {
     props: {
@@ -155,6 +156,7 @@ export async function getStaticPropz() {
       dailyBetCounts,
       dailyContractCounts,
       dailyCommentCounts,
+      dailySignups,
       weekOnWeekRetention,
       weeklyActivationRate,
       monthlyRetention,
@@ -171,6 +173,7 @@ export default function Analytics(props: {
   dailyBetCounts: number[]
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
+  dailySignups: number[]
   weekOnWeekRetention: number[]
   monthlyRetention: number[]
   weeklyActivationRate: number[]
@@ -183,6 +186,7 @@ export default function Analytics(props: {
     dailyBetCounts: [],
     dailyContractCounts: [],
     dailyCommentCounts: [],
+    dailySignups: [],
     weekOnWeekRetention: [],
     monthlyRetention: [],
     weeklyActivationRate: [],
@@ -204,6 +208,7 @@ export function CustomAnalytics(props: {
   dailyBetCounts: number[]
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
+  dailySignups: number[]
   weekOnWeekRetention: number[]
   monthlyRetention: number[]
   weeklyActivationRate: number[]
@@ -213,6 +218,7 @@ export function CustomAnalytics(props: {
     dailyBetCounts,
     dailyContractCounts,
     dailyCommentCounts,
+    dailySignups,
     weeklyActiveUsers,
     monthlyActiveUsers,
     weekOnWeekRetention,
@@ -317,6 +323,16 @@ export function CustomAnalytics(props: {
             content: (
               <DailyCountChart
                 dailyCounts={dailyCommentCounts}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Signups',
+            content: (
+              <DailyCountChart
+                dailyCounts={dailySignups}
                 startDate={startDate}
                 small
               />
