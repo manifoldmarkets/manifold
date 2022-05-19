@@ -39,6 +39,7 @@ import {
 } from 'common/calculate'
 import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
 import { trackLatency } from 'web/lib/firebase/tracking'
+import { NumericContract } from 'common/contract'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
@@ -228,6 +229,8 @@ function MyContractBets(props: {
   const { bets, contract, metric } = props
   const { resolution, outcomeType } = contract
 
+  const resolutionValue = (contract as NumericContract).resolutionValue
+
   const [collapsed, setCollapsed] = useState(true)
 
   const isBinary = outcomeType === 'BINARY'
@@ -273,6 +276,7 @@ function MyContractBets(props: {
                     Resolved{' '}
                     <OutcomeLabel
                       outcome={resolution}
+                      value={resolutionValue}
                       contract={contract}
                       truncate="short"
                     />

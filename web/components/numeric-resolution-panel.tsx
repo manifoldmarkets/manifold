@@ -26,6 +26,7 @@ export function NumericResolutionPanel(props: {
     'NUMBER' | 'CANCEL' | undefined
   >()
   const [outcome, setOutcome] = useState<string | undefined>()
+  const [value, setValue] = useState<number | undefined>()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
@@ -38,6 +39,7 @@ export function NumericResolutionPanel(props: {
 
     const result = await resolveMarket({
       outcome: finalOutcome,
+      value,
       contractId: contract.id,
     }).then((r) => r.data)
 
@@ -72,7 +74,7 @@ export function NumericResolutionPanel(props: {
         <BucketInput
           contract={contract}
           isSubmitting={isSubmitting}
-          onBucketChange={setOutcome}
+          onBucketChange={(v, o) => (setValue(v), setOutcome(o))}
         />
       )}
 

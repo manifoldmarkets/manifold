@@ -94,6 +94,7 @@ export type Numeric = {
   min: number
   max: number
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
+  resolutionValue?: number
 }
 
 export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE' | 'NUMERIC'

@@ -107,7 +107,10 @@ const toDisplayResolution = (
   if (resolution === 'CANCEL') return 'N/A'
 
   if (contract.outcomeType === 'NUMERIC' && contract.mechanism === 'dpm-2')
-    return getValueFromBucket(resolution, contract).toString()
+    return (
+      contract.resolutionValue?.toString() ??
+      getValueFromBucket(resolution, contract).toString()
+    )
 
   const answer = (contract as FreeResponseContract).answers?.find(
     (a) => a.id === resolution

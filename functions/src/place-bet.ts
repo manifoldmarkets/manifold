@@ -24,7 +24,7 @@ export const placeBet = newEndpoint(['POST'], async (req, _res) => {
   if (outcome !== 'YES' && outcome !== 'NO' && isNaN(+outcome))
     throw new APIError(400, 'Invalid outcome')
 
-  if (value !== undefined && !isFinite(amount))
+  if (value !== undefined && !isFinite(value))
     throw new APIError(400, 'Invalid value')
 
   // run as transaction to prevent race conditions
