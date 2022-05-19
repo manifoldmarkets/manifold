@@ -170,16 +170,15 @@ export const getNumericBetsInfo = (
   const { pool, totalShares, totalBets } = contract
 
   const bets = getNumericBets(contract, outcome, amount, NUMERIC_FIXED_VAR)
-  const allBetAmounts = Object.fromEntries(bets)
 
+  const allBetAmounts = Object.fromEntries(bets)
+  const newTotalBets = addObjects(totalBets, allBetAmounts)
   const newPool = addObjects(pool, allBetAmounts)
 
   const { shares, totalShares: newTotalShares } = calculateNumericDpmShares(
     contract.totalShares,
     bets
   )
-
-  const newTotalBets = addObjects(totalBets, allBetAmounts)
 
   const allOutcomeShares = Object.fromEntries(
     bets.map(([outcome], i) => [outcome, shares[i]])
