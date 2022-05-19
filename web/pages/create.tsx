@@ -96,8 +96,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const balance = creator?.balance || 0
 
-  const min = parseFloat(minString)
-  const max = parseFloat(maxString)
+  const min = minString ? parseFloat(minString) : undefined
+  const max = maxString ? parseFloat(maxString) : undefined
 
   const isValid =
     initialProb > 0 &&
@@ -111,7 +111,12 @@ export function NewContract(props: { question: string; tag?: string }) {
     closeTime &&
     closeTime > Date.now() &&
     (outcomeType !== 'NUMERIC' ||
-      (isFinite(min) && isFinite(max) && min < max && max - min > 0.01))
+      (min !== undefined &&
+        max !== undefined &&
+        isFinite(min) &&
+        isFinite(max) &&
+        min < max &&
+        max - min > 0.01))
 
   async function submit() {
     // TODO: Tell users why their contract is invalid
