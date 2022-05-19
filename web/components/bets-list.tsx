@@ -330,16 +330,20 @@ export function MyBetsSummary(props: {
   bets: Bet[]
   className?: string
 }) {
-  const { bets, contract, className } = props
+  const { contract, className } = props
   const { resolution, outcomeType, mechanism } = contract
   const isBinary = outcomeType === 'BINARY'
   const isCpmm = mechanism === 'cpmm-1'
 
-  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-  const yesWinnings = _.sumBy(excludeSales, (bet) =>
+  const bets = props.bets.filter((b) => !b.isAnte)
+
+  const excludeSalesAndAntes = bets.filter(
+    (b) => !b.isAnte && !b.isSold && !b.sale
+  )
+  const yesWinnings = _.sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'YES')
   )
-  const noWinnings = _.sumBy(excludeSales, (bet) =>
+  const noWinnings = _.sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
   const { invested, profitPercent, payout, profit } = getContractBetMetrics(
@@ -413,7 +417,9 @@ export function ContractBetsTable(props: {
   bets: Bet[]
   className?: string
 }) {
-  const { contract, bets, className } = props
+  const { contract, className } = props
+
+  const bets = props.bets.filter((b) => !b.isAnte)
 
   const [sales, buys] = _.partition(bets, (bet) => bet.sale)
 
