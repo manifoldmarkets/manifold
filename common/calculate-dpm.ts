@@ -10,7 +10,7 @@ import {
   NumericContract,
 } from './contract'
 import { DPM_FEES } from './fees'
-import { normpdf } from 'common/util/math'
+import { normpdf } from '../common/util/math'
 import { addObjects } from './util/object'
 
 export function getDpmProbability(totalShares: { [outcome: string]: number }) {
