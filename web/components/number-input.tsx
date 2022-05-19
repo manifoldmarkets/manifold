@@ -41,10 +41,10 @@ export function NumberInput(props: {
           ref={inputRef}
           type="number"
           placeholder="0"
-          maxLength={6}
+          maxLength={9}
           value={numberString}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value.substring(0, 9))}
         />
       </label>
 
