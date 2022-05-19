@@ -39,6 +39,7 @@ import {
 } from 'common/calculate'
 import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
 import { trackLatency } from 'web/lib/firebase/tracking'
+import { NumericContract } from 'common/contract'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
@@ -227,6 +228,8 @@ function MyContractBets(props: {
   const { bets, contract, metric } = props
   const { resolution, outcomeType } = contract
 
+  const resolutionValue = (contract as NumericContract).resolutionValue
+
   const [collapsed, setCollapsed] = useState(true)
 
   const isBinary = outcomeType === 'BINARY'
@@ -272,6 +275,7 @@ function MyContractBets(props: {
                     Resolved{' '}
                     <OutcomeLabel
                       outcome={resolution}
+                      value={resolutionValue}
                       contract={contract}
                       truncate="short"
                     />
@@ -430,8 +434,9 @@ export function ContractBetsTable(props: {
     (bet) => bet.loanAmount ?? 0
   )
 
-  const { isResolved, mechanism } = contract
+  const { isResolved, mechanism, outcomeType } = contract
   const isCPMM = mechanism === 'cpmm-1'
+  const isNumeric = outcomeType === 'NUMERIC'
 
   return (
     <div className={clsx('overflow-x-auto', className)}>
@@ -461,7 +466,9 @@ export function ContractBetsTable(props: {
             {isCPMM && <th>Type</th>}
             <th>Outcome</th>
             <th>Amount</th>
-            {!isCPMM && <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>}
+            {!isCPMM && !isNumeric && (
+              <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
+            )}
             {!isCPMM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
             <th>Probability</th>
@@ -496,11 +503,12 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     isAnte,
   } = bet
 
-  const { isResolved, closeTime, mechanism } = contract
+  const { isResolved, closeTime, mechanism, outcomeType } = contract
 
   const isClosed = closeTime && Date.now() > closeTime
 
   const isCPMM = mechanism === 'cpmm-1'
+  const isNumeric = outcomeType === 'NUMERIC'
 
   const saleAmount = saleBet?.sale?.amount
 
@@ -517,31 +525,35 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   )
 
   const payoutIfChosenDisplay =
-    bet.outcome === '0' && bet.isAnte
+    bet.isAnte && outcomeType === 'FREE_RESPONSE' && bet.outcome === '0'
       ? 'N/A'
       : formatMoney(calculatePayout(contract, bet, bet.outcome))
 
   return (
     <tr>
       <td className="text-neutral">
-        {!isCPMM && !isResolved && !isClosed && !isSold && !isAnte && (
-          <SellButton contract={contract} bet={bet} />
-        )}
+        {!isCPMM &&
+          !isResolved &&
+          !isClosed &&
+          !isSold &&
+          !isAnte &&
+          !isNumeric && <SellButton contract={contract} bet={bet} />}
       </td>
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
-        {outcome === '0' ? (
+        {bet.isAnte ? (
           'ANTE'
         ) : (
           <OutcomeLabel
             outcome={outcome}
+            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />
         )}
       </td>
       <td>{formatMoney(Math.abs(amount))}</td>
-      {!isCPMM && <td>{saleDisplay}</td>}
+      {!isCPMM && !isNumeric && <td>{saleDisplay}</td>}
       {!isCPMM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>{formatWithCommas(Math.abs(shares))}</td>
       <td>

@@ -16,6 +16,7 @@ import {
   FreeResponse,
   FreeResponseContract,
   FullContract,
+  NumericContract,
 } from 'common/contract'
 import {
   AnswerLabel,
@@ -25,6 +26,7 @@ import {
 } from '../outcome-label'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AbbrContractDetails } from './contract-details'
+import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
@@ -103,6 +105,13 @@ export function ContractCard(props: {
             <BinaryResolutionOrChance
               className="items-center"
               contract={contract}
+            />
+          )}
+
+          {outcomeType === 'NUMERIC' && (
+            <NumericResolutionOrExpectation
+              className="items-center"
+              contract={contract as NumericContract}
             />
           )}
         </Row>
@@ -210,6 +219,35 @@ export function FreeResponseResolutionOrChance(props: {
             </Col>
           </Row>
         )
+      )}
+    </Col>
+  )
+}
+
+export function NumericResolutionOrExpectation(props: {
+  contract: NumericContract
+  className?: string
+}) {
+  const { contract, className } = props
+  const { resolution } = contract
+
+  const resolutionValue =
+    contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
+
+  return (
+    <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
+      {resolution ? (
+        <>
+          <div className={clsx('text-base text-gray-500')}>Resolved</div>
+          <div className="text-blue-400">{resolutionValue}</div>
+        </>
+      ) : (
+        <>
+          <div className="text-3xl text-blue-400">
+            {getExpectedValue(contract)}
+          </div>
+          <div className="text-base text-blue-400">expected</div>
+        </>
       )}
     </Col>
   )

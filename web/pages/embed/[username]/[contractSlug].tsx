@@ -5,6 +5,7 @@ import {
   DPM,
   FreeResponse,
   FullContract,
+  NumericContract,
 } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { AnswersGraph } from 'web/components/answers/answers-graph'
@@ -12,6 +13,7 @@ import BetRow from 'web/components/bet-row'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
+  NumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
 import { ContractDetails } from 'web/components/contract/contract-details'
 import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
@@ -127,6 +129,12 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
             <FreeResponseResolutionOrChance
               contract={contract}
               truncate="long"
+            />
+          )}
+
+          {outcomeType === 'NUMERIC' && resolution && (
+            <NumericResolutionOrExpectation
+              contract={contract as NumericContract}
             />
           )}
         </Row>

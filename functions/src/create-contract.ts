@@ -1,7 +1,5 @@
 import * as admin from 'firebase-admin'
 
-import { chargeUser } from './utils'
-import { APIError, newEndpoint, parseCredentials, lookupUser } from './api'
 import {
   Binary,
   Contract,
@@ -12,19 +10,27 @@ import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
+  Numeric,
+  OUTCOME_TYPES,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
-import { getNewContract } from '../../common/new-contract'
+
+import { chargeUser } from './utils'
+import { APIError, newEndpoint, parseCredentials, lookupUser } from './api'
+
 import {
   FIXED_ANTE,
   getAnteBets,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
+  getNumericAnte,
   HOUSE_LIQUIDITY_PROVIDER_ID,
   MINIMUM_ANTE,
 } from '../../common/antes'
 import { getNoneAnswer } from '../../common/answer'
+import { getNewContract } from '../../common/new-contract'
+import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 
 export const createContract = newEndpoint(['POST'], async (req, _res) => {
   const [creator, _privateUser] = await lookupUser(await parseCredentials(req))
@@ -35,6 +41,8 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     initialProb,
     closeTime,
     tags,
+    min,
+    max,
     manaLimitPerUser,
   } = req.body.data || {}
 
@@ -56,8 +64,22 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
   )
 
   outcomeType = outcomeType ?? 'BINARY'
-  if (!['BINARY', 'MULTI', 'FREE_RESPONSE'].includes(outcomeType))
+
+  if (!OUTCOME_TYPES.includes(outcomeType))
     throw new APIError(400, 'Invalid outcomeType')
+
+  if (
+    outcomeType === 'NUMERIC' &&
+    !(
+      min !== undefined &&
+      max !== undefined &&
+      isFinite(min) &&
+      isFinite(max) &&
+      min < max &&
+      max - min > 0.01
+    )
+  )
+    throw new APIError(400, 'Invalid range')
 
   if (
     outcomeType === 'BINARY' &&
@@ -109,6 +131,9 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     ante,
     closeTime,
     tags ?? [],
+    NUMERIC_BUCKET_COUNT,
+    min ?? 0,
+    max ?? 0,
     manaLimitPerUser ?? 0
   )
 
@@ -167,6 +192,19 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
         contract as FullContract<DPM, FreeResponse>,
         anteBetDoc.id
       )
+      await anteBetDoc.set(anteBet)
+    } else if (outcomeType === 'NUMERIC') {
+      const anteBetDoc = firestore
+        .collection(`contracts/${contract.id}/bets`)
+        .doc()
+
+      const anteBet = getNumericAnte(
+        creator,
+        contract as FullContract<DPM, Numeric>,
+        ante,
+        anteBetDoc.id
+      )
+
       await anteBetDoc.set(anteBet)
     }
   }

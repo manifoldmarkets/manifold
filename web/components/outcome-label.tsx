@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
+import { getValueFromBucket } from 'common/calculate-dpm'
 import {
   Binary,
   Contract,
@@ -9,6 +10,7 @@ import {
   FreeResponse,
   FreeResponseContract,
   FullContract,
+  NumericContract,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
@@ -17,11 +19,19 @@ export function OutcomeLabel(props: {
   contract: Contract
   outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string
   truncate: 'short' | 'long' | 'none'
+  value?: number
 }) {
-  const { outcome, contract, truncate } = props
+  const { outcome, contract, truncate, value } = props
 
   if (contract.outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
+
+  if (contract.outcomeType === 'NUMERIC')
+    return (
+      <span className="text-blue-500">
+        {value ?? getValueFromBucket(outcome, contract as NumericContract)}
+      </span>
+    )
 
   return (
     <FreeResponseOutcomeLabel
