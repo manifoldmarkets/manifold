@@ -1,14 +1,19 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract, DPM, FreeResponse, FullContract } from 'common/contract'
-import { User } from 'common/user'
-import { getNewMultiBetInfo } from 'common/new-bet'
-import { Answer, MAX_ANSWER_LENGTH } from 'common/answer'
+import {
+  Contract,
+  DPM,
+  FreeResponse,
+  FullContract,
+} from '../../common/contract'
+import { User } from '../../common/user'
+import { getNewMultiBetInfo } from '../../common/new-bet'
+import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
 import { getContract, getValues } from './utils'
 import { sendNewAnswerEmail } from './emails'
-import { Bet } from 'common/bet'
-import { hasUserHitManaLimit } from 'common/calculate'
+import { Bet } from '../../common/bet'
+import { hasUserHitManaLimit } from '../../common/calculate'
 
 export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (

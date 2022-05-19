@@ -17,6 +17,8 @@ export type User = {
   totalDeposits: number
   totalPnLCached: number
   creatorVolumeCached: number
+
+  followedCategories?: string[]
 }
 
 export const STARTING_BALANCE = 1000
@@ -30,6 +32,8 @@ export type PrivateUser = {
   unsubscribedFromResolutionEmails?: boolean
   unsubscribedFromCommentEmails?: boolean
   unsubscribedFromAnswerEmails?: boolean
+  unsubscribedFromGenericEmails?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string
+  apiKey?: string
 }

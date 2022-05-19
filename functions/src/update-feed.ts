@@ -3,39 +3,62 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { getValue, getValues } from './utils'
-import { Contract } from 'common/contract'
-import { logInterpolation } from 'common/util/math'
-import { DAY_MS } from 'common/util/time'
+import { Contract } from '../../common/contract'
+import { logInterpolation } from '../../common/util/math'
+import { DAY_MS } from '../../common/util/time'
 import {
   getProbability,
   getOutcomeProbability,
   getTopAnswer,
-} from 'common/calculate'
-import { Bet } from 'common/bet'
-import { Comment } from 'common/comment'
-import { User } from 'common/user'
+} from '../../common/calculate'
+import { User } from '../../common/user'
 import {
   getContractScore,
   MAX_FEED_CONTRACTS,
-} from 'common/recommended-contracts'
+} from '../../common/recommended-contracts'
 import { callCloudFunction } from './call-cloud-function'
+import {
+  getFeedContracts,
+  getRecentBetsAndComments,
+  getTaggedContracts,
+} from './get-feed-data'
+import { CATEGORY_LIST } from '../../common/categories'
 
 const firestore = admin.firestore()
 
-export const updateFeed = functions.pubsub
-  .schedule('every 60 minutes')
-  .onRun(async () => {
-    const users = await getValues<User>(firestore.collection('users'))
+const BATCH_SIZE = 30
+const MAX_BATCHES = 50
 
-    const batchSize = 100
-    const userBatches: User[][] = []
-    for (let i = 0; i < users.length; i += batchSize) {
-      userBatches.push(users.slice(i, i + batchSize))
-    }
+const getUserBatches = async () => {
+  const users = _.shuffle(await getValues<User>(firestore.collection('users')))
+  let userBatches: User[][] = []
+  for (let i = 0; i < users.length; i += BATCH_SIZE) {
+    userBatches.push(users.slice(i, i + BATCH_SIZE))
+  }
+
+  console.log('updating feed batches', MAX_BATCHES, 'of', userBatches.length)
+
+  return userBatches.slice(0, MAX_BATCHES)
+}
+
+export const updateFeed = functions.pubsub
+  .schedule('every 15 minutes')
+  .onRun(async () => {
+    const userBatches = await getUserBatches()
 
     await Promise.all(
-      userBatches.map(async (users) =>
+      userBatches.map((users) =>
         callCloudFunction('updateFeedBatch', { users })
+      )
+    )
+
+    console.log('updating category feed')
+
+    await Promise.all(
+      CATEGORY_LIST.map((category) =>
+        callCloudFunction('updateCategoryFeed', {
+          category,
+        })
       )
     )
   })
@@ -45,40 +68,50 @@ export const updateFeedBatch = functions.https.onCall(
     const { users } = data
     const contracts = await getFeedContracts()
 
-    await Promise.all(users.map((user) => doUserFeedUpdate(user, contracts)))
+    await Promise.all(
+      users.map(async (user) => {
+        const feed = await computeFeed(user, contracts)
+        await getUserCacheCollection(user).doc('feed').set({ feed })
+      })
+    )
+  }
+)
+export const updateCategoryFeed = functions.https.onCall(
+  async (data: { category: string }) => {
+    const { category } = data
+    const userBatches = await getUserBatches()
+
+    await Promise.all(
+      userBatches.map(async (users) => {
+        await callCloudFunction('updateCategoryFeedBatch', {
+          users,
+          category,
+        })
+      })
+    )
   }
 )
 
-export async function getFeedContracts() {
-  // Get contracts bet on or created in last week.
-  const contracts = await Promise.all([
-    getValues<Contract>(
-      firestore
-        .collection('contracts')
-        .where('isResolved', '==', false)
-        .where('volume7Days', '>', 0)
-    ),
+export const updateCategoryFeedBatch = functions.https.onCall(
+  async (data: { users: User[]; category: string }) => {
+    const { users, category } = data
+    const contracts = await getTaggedContracts(category)
 
-    getValues<Contract>(
-      firestore
-        .collection('contracts')
-        .where('isResolved', '==', false)
-        .where('createdTime', '>', Date.now() - DAY_MS * 7)
-        .where('volume7Days', '==', 0)
-    ),
-  ]).then(([activeContracts, inactiveContracts]) => {
-    const combined = [...activeContracts, ...inactiveContracts]
-    // Remove closed contracts.
-    return combined.filter((c) => (c.closeTime ?? Infinity) > Date.now())
-  })
+    await Promise.all(
+      users.map(async (user) => {
+        const feed = await computeFeed(user, contracts)
+        await getUserCacheCollection(user).doc(`feed-${category}`).set({ feed })
+      })
+    )
+  }
+)
 
-  return contracts
-}
+const getUserCacheCollection = (user: User) =>
+  firestore.collection(`private-users/${user.id}/cache`)
 
-export const doUserFeedUpdate = async (user: User, contracts: Contract[]) => {
-  const userCacheCollection = firestore.collection(
-    `private-users/${user.id}/cache`
-  )
+export const computeFeed = async (user: User, contracts: Contract[]) => {
+  const userCacheCollection = getUserCacheCollection(user)
+
   const [wordScores, lastViewedTime] = await Promise.all([
     getValue<{ [word: string]: number }>(userCacheCollection.doc('wordScores')),
     getValue<{ [contractId: string]: number }>(
@@ -109,8 +142,7 @@ export const doUserFeedUpdate = async (user: User, contracts: Contract[]) => {
   const feed = await Promise.all(
     feedContracts.map((contract) => getRecentBetsAndComments(contract))
   )
-
-  await userCacheCollection.doc('feed').set({ feed })
+  return feed
 }
 
 function scoreContract(
@@ -179,32 +211,4 @@ function getLastViewedScore(viewTime: number | undefined) {
 
   const frac = logInterpolation(0.5, 14, daysAgo)
   return 0.75 + 0.25 * frac
-}
-
-async function getRecentBetsAndComments(contract: Contract) {
-  const contractDoc = firestore.collection('contracts').doc(contract.id)
-
-  const [recentBets, recentComments] = await Promise.all([
-    getValues<Bet>(
-      contractDoc
-        .collection('bets')
-        .where('createdTime', '>', Date.now() - DAY_MS)
-        .orderBy('createdTime', 'desc')
-        .limit(1)
-    ),
-
-    getValues<Comment>(
-      contractDoc
-        .collection('comments')
-        .where('createdTime', '>', Date.now() - 3 * DAY_MS)
-        .orderBy('createdTime', 'desc')
-        .limit(3)
-    ),
-  ])
-
-  return {
-    contract,
-    recentBets,
-    recentComments,
-  }
 }

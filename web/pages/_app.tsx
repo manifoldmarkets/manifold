@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Head from 'next/head'
 import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
+import { QueryClient, QueryClientProvider } from 'react-query'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -25,7 +26,7 @@ function printBuildInfo() {
 function MyApp({ Component, pageProps }: AppProps) {
   usePreserveScroll()
 
-  useEffect(printBuildInfo)
+  useEffect(printBuildInfo, [])
 
   return (
     <>
@@ -36,6 +37,19 @@ function MyApp({ Component, pageProps }: AppProps) {
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', 'G-SSFK1Q138D');
+        `}
+      </Script>
+      {/* Hotjar Tracking Code for https://manifold.markets */}
+      <Script id="hotjar">
+        {`
+          (function(h,o,t,j,a,r){
+            h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+            h._hjSettings={hjid:2968940,hjsv:6};
+            a=o.getElementsByTagName('head')[0];
+            r=o.createElement('script');r.async=1;
+            r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+            a.appendChild(r);
+          })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
         `}
       </Script>
       <Head>
@@ -77,9 +91,13 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
       </Head>
 
-      <Component {...pageProps} />
+      <QueryClientProvider client={queryClient}>
+        <Component {...pageProps} />
+      </QueryClientProvider>
     </>
   )
 }
+
+const queryClient = new QueryClient()
 
 export default MyApp

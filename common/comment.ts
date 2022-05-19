@@ -5,6 +5,7 @@ export type Comment = {
   contractId: string
   betId?: string
   answerOutcome?: string
+  replyToCommentId?: string
   userId: string
 
   text: string

@@ -25,9 +25,8 @@ import { PrivateUser, User } from 'common/user'
 import { createUser } from './api-call'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
 import { DAY_MS } from 'common/util/time'
-import { Contract } from './contracts'
-import { Bet } from './bets'
-import { Comment } from './comments'
+import { feed } from 'common/feed'
+import { CATEGORY_LIST } from 'common/categories'
 
 export type { User }
 
@@ -54,6 +53,13 @@ export async function setUser(userId: string, user: User) {
 
 export async function updateUser(userId: string, update: Partial<User>) {
   await updateDoc(doc(db, 'users', userId), { ...update })
+}
+
+export async function updatePrivateUser(
+  userId: string,
+  update: Partial<PrivateUser>
+) {
+  await updateDoc(doc(db, 'private-users', userId), { ...update })
 }
 
 export function listenForUser(
@@ -216,11 +222,18 @@ export async function getDailyNewUsers(
 export async function getUserFeed(userId: string) {
   const feedDoc = doc(db, 'private-users', userId, 'cache', 'feed')
   const userFeed = await getValue<{
-    feed: {
-      contract: Contract
-      recentBets: Bet[]
-      recentComments: Comment[]
-    }[]
+    feed: feed
   }>(feedDoc)
   return userFeed?.feed ?? []
+}
+
+export async function getCategoryFeeds(userId: string) {
+  const cacheCollection = collection(db, 'private-users', userId, 'cache')
+  const feedData = await Promise.all(
+    CATEGORY_LIST.map((category) =>
+      getValue<{ feed: feed }>(doc(cacheCollection, `feed-${category}`))
+    )
+  )
+  const feeds = feedData.map((data) => data?.feed ?? [])
+  return _.fromPairs(_.zip(CATEGORY_LIST, feeds) as [string, feed][])
 }

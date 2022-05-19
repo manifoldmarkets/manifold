@@ -39,11 +39,12 @@ export const PROD_CONFIG: EnvConfig = {
     'akrolsmir@gmail.com', // Austin
     'jahooma@gmail.com', // James
     'taowell@gmail.com', // Stephen
+    'abc.sinclair@gmail.com', // Sinclair
     'manticmarkets@gmail.com', // Manifold
   ],
   visibility: 'PUBLIC',
 
-  moneyMoniker: 'M$',
+  moneyMoniker: 'ϻ',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',
   newQuestionPlaceholders: [

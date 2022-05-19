@@ -2,7 +2,8 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 
-import { isProd, payUser } from './utils'
+import { getPrivateUser, getUser, isProd, payUser } from './utils'
+import { sendThankYouEmail } from './emails'
 
 export type StripeTransaction = {
   userId: string
@@ -53,7 +54,7 @@ export const createCheckoutSession = functions
     }
 
     const referrer =
-      req.query.referer || req.headers.referer || 'https://mantic.markets'
+      req.query.referer || req.headers.referer || 'https://manifold.markets'
 
     const session = await stripe.checkout.sessions.create({
       metadata: {
@@ -129,8 +130,15 @@ const issueMoneys = async (session: any) => {
   await firestore.collection('stripe-transactions').add(transaction)
 
   await payUser(userId, payout, true)
-
   console.log('user', userId, 'paid M$', payout)
+
+  const user = await getUser(userId)
+  if (!user) return
+
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+
+  await sendThankYouEmail(user, privateUser)
 }
 
 const firestore = admin.firestore()

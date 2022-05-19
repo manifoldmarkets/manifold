@@ -2,7 +2,6 @@ import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 
 import { Col } from './layout/col'
-import { Title } from './title'
 import { User } from 'web/lib/firebase/users'
 import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
@@ -21,7 +20,7 @@ export function ResolutionPanel(props: {
 }) {
   useEffect(() => {
     // warm up cloud function
-    resolveMarket({} as any).catch()
+    resolveMarket({} as any).catch(() => {})
   }, [])
 
   const { contract, className } = props

@@ -1,8 +1,8 @@
+import Link from 'next/link'
 import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
-import { Row } from '../layout/row'
 
 export function getNavigationOptions(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
@@ -27,18 +27,18 @@ export function getNavigationOptions(user?: User | null) {
   ]
 }
 
-export function ProfileSummary(props: { user: User | undefined }) {
+export function ProfileSummary(props: { user: User }) {
   const { user } = props
   return (
-    <Row className="group items-center gap-4 rounded-md py-3 text-gray-500 group-hover:bg-gray-100 group-hover:text-gray-700">
-      <Avatar avatarUrl={user?.avatarUrl} username={user?.username} noLink />
+    <Link href={`/${user.username}`}>
+      <a className="group flex flex-row items-center gap-4 rounded-md py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+        <Avatar avatarUrl={user.avatarUrl} username={user.username} noLink />
 
-      <div className="truncate text-left">
-        <div>{user?.name}</div>
-        <div className="text-sm">
-          {user ? formatMoney(Math.floor(user.balance)) : ' '}
+        <div className="truncate">
+          <div>{user.name}</div>
+          <div className="text-sm">{formatMoney(Math.floor(user.balance))}</div>
         </div>
-      </div>
-    </Row>
+      </a>
+    </Link>
   )
 }

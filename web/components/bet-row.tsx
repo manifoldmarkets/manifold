@@ -2,7 +2,6 @@ import { useState } from 'react'
 import clsx from 'clsx'
 
 import { BetPanelSwitcher } from './bet-panel'
-import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
 import { Binary, CPMM, DPM, FullContract } from 'common/contract'
 import { Modal } from './layout/modal'
@@ -15,9 +14,10 @@ import { useSaveShares } from './use-save-shares'
 export default function BetRow(props: {
   contract: FullContract<DPM | CPMM, Binary>
   className?: string
-  labelClassName?: string
+  btnClassName?: string
+  betPanelClassName?: string
 }) {
-  const { className, labelClassName, contract } = props
+  const { className, btnClassName, betPanelClassName, contract } = props
   const [open, setOpen] = useState(false)
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
     undefined
@@ -31,40 +31,39 @@ export default function BetRow(props: {
 
   return (
     <>
-      <Row className={clsx('mt-2 justify-end space-x-3', className)}>
-        {/* <div className={clsx('mr-2 text-gray-400', labelClassName)}>
-          Place a trade
-        </div> */}
-        <YesNoSelector
-          btnClassName="btn-sm w-24"
-          onSelect={(choice) => {
-            setOpen(true)
-            setBetChoice(choice)
-          }}
-          replaceNoButton={
-            yesFloorShares > 0 ? (
-              <SellButton
-                contract={contract}
-                user={user}
-                sharesOutcome={'YES'}
-                shares={yesShares}
-              />
-            ) : undefined
-          }
-          replaceYesButton={
-            noFloorShares > 0 ? (
-              <SellButton
-                contract={contract}
-                user={user}
-                sharesOutcome={'NO'}
-                shares={noShares}
-              />
-            ) : undefined
-          }
-        />
-      </Row>
+      <YesNoSelector
+        className={clsx('justify-end', className)}
+        btnClassName={clsx('btn-sm w-24', btnClassName)}
+        onSelect={(choice) => {
+          setOpen(true)
+          setBetChoice(choice)
+        }}
+        replaceNoButton={
+          yesFloorShares > 0 ? (
+            <SellButton
+              panelClassName={betPanelClassName}
+              contract={contract}
+              user={user}
+              sharesOutcome={'YES'}
+              shares={yesShares}
+            />
+          ) : undefined
+        }
+        replaceYesButton={
+          noFloorShares > 0 ? (
+            <SellButton
+              panelClassName={betPanelClassName}
+              contract={contract}
+              user={user}
+              sharesOutcome={'NO'}
+              shares={noShares}
+            />
+          ) : undefined
+        }
+      />
       <Modal open={open} setOpen={setOpen}>
         <BetPanelSwitcher
+          className={betPanelClassName}
           contract={contract}
           title={contract.question}
           selected={betChoice}

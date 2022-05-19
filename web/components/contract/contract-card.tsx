@@ -1,15 +1,14 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import _ from 'lodash'
 import { Row } from '../layout/row'
 import { formatPercent } from 'common/util/format'
 import {
   Contract,
   contractPath,
   getBinaryProbPercent,
+  getBinaryProb,
 } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import { Spacer } from '../layout/spacer'
 import {
   Binary,
   CPMM,
@@ -22,9 +21,42 @@ import {
   AnswerLabel,
   BinaryContractOutcomeLabel,
   FreeResponseOutcomeLabel,
+  OUTCOME_TO_COLOR,
 } from '../outcome-label'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AbbrContractDetails } from './contract-details'
+
+// Return a number from 0 to 1 for this contract
+// Resolved contracts are set to 1, for coloring purposes (even if NO)
+function getProb(contract: Contract) {
+  const { outcomeType, resolution } = contract
+  return resolution
+    ? 1
+    : outcomeType === 'BINARY'
+    ? getBinaryProb(contract)
+    : outcomeType === 'FREE_RESPONSE'
+    ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
+    : 1 // Should not happen
+}
+
+function getColor(contract: Contract) {
+  const { resolution } = contract
+  if (resolution) {
+    return (
+      // @ts-ignore; TODO: Have better typing for contract.resolution?
+      OUTCOME_TO_COLOR[resolution] ||
+      // If resolved to a FR answer, use 'primary'
+      'primary'
+    )
+  }
+
+  const marketClosed = (contract.closeTime || Infinity) < Date.now()
+  return marketClosed
+    ? 'gray-400'
+    : getProb(contract) >= 0.5
+    ? 'primary'
+    : 'red-400'
+}
 
 export function ContractCard(props: {
   contract: Contract
@@ -33,13 +65,18 @@ export function ContractCard(props: {
   className?: string
 }) {
   const { contract, showHotVolume, showCloseTime, className } = props
-  const { question, outcomeType, resolution } = contract
+  const { question, outcomeType } = contract
+
+  const prob = getProb(contract)
+  const color = getColor(contract)
+  const marketClosed = (contract.closeTime || Infinity) < Date.now()
+  const showTopBar = prob >= 0.5 || marketClosed
 
   return (
     <div>
-      <div
+      <Col
         className={clsx(
-          'relative rounded-lg bg-white p-6 shadow-md hover:bg-gray-100',
+          'relative gap-3 rounded-lg bg-white p-6 pr-7 shadow-md hover:bg-gray-100',
           className
         )}
       >
@@ -52,35 +89,49 @@ export function ContractCard(props: {
           showHotVolume={showHotVolume}
           showCloseTime={showCloseTime}
         />
-        <Spacer h={3} />
 
-        <Row
-          className={clsx(
-            'justify-between gap-4',
-            outcomeType === 'FREE_RESPONSE' && 'flex-col items-start !gap-2'
-          )}
-        >
-          <p
-            className="break-words font-medium text-indigo-700"
-            style={{ /* For iOS safari */ wordBreak: 'break-word' }}
-          >
-            {question}
-          </p>
+        <Row className={clsx('justify-between gap-4')}>
+          <Col className="gap-3">
+            <p
+              className="break-words font-medium text-indigo-700"
+              style={{ /* For iOS safari */ wordBreak: 'break-word' }}
+            >
+              {question}
+            </p>
+          </Col>
           {outcomeType === 'BINARY' && (
             <BinaryResolutionOrChance
               className="items-center"
               contract={contract}
             />
           )}
-          {outcomeType === 'FREE_RESPONSE' && (
-            <FreeResponseResolutionOrChance
-              className="self-end text-gray-600"
-              contract={contract as FullContract<DPM, FreeResponse>}
-              truncate="long"
-            />
-          )}
         </Row>
-      </div>
+
+        {outcomeType === 'FREE_RESPONSE' && (
+          <FreeResponseResolutionOrChance
+            className="self-end text-gray-600"
+            contract={contract as FullContract<DPM, FreeResponse>}
+            truncate="long"
+          />
+        )}
+
+        <div
+          className={clsx(
+            'absolute right-0 top-0 w-2 rounded-tr-md',
+            'bg-gray-200'
+          )}
+          style={{ height: `${100 * (1 - prob)}%` }}
+        ></div>
+        <div
+          className={clsx(
+            'absolute right-0 bottom-0 w-2 rounded-br-md',
+            `bg-${color}`,
+            // If we're showing the full bar, also round the top
+            prob === 1 ? 'rounded-tr-md' : ''
+          )}
+          style={{ height: `${100 * prob}%` }}
+        ></div>
+      </Col>
     </div>
   )
 }
@@ -92,9 +143,7 @@ export function BinaryResolutionOrChance(props: {
 }) {
   const { contract, large, className } = props
   const { resolution } = contract
-
-  const marketClosed = (contract.closeTime || Infinity) < Date.now()
-  const probColor = marketClosed ? 'text-gray-400' : 'text-primary'
+  const textColor = `text-${getColor(contract)}`
 
   return (
     <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
@@ -112,8 +161,8 @@ export function BinaryResolutionOrChance(props: {
         </>
       ) : (
         <>
-          <div className={probColor}>{getBinaryProbPercent(contract)}</div>
-          <div className={clsx(probColor, large ? 'text-xl' : 'text-base')}>
+          <div className={textColor}>{getBinaryProbPercent(contract)}</div>
+          <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
             chance
           </div>
         </>
@@ -131,6 +180,7 @@ export function FreeResponseResolutionOrChance(props: {
   const { resolution } = contract
 
   const topAnswer = getTopAnswer(contract)
+  const textColor = `text-${getColor(contract)}`
 
   return (
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
@@ -152,7 +202,7 @@ export function FreeResponseResolutionOrChance(props: {
               answer={topAnswer}
               truncate={truncate}
             />
-            <Col className="text-primary text-3xl">
+            <Col className={clsx('text-3xl', textColor)}>
               <div>
                 {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
               </div>

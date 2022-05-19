@@ -4,7 +4,7 @@ import * as _ from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { PrivateUser, STARTING_BALANCE, User } from 'common/user'
+import { PrivateUser, STARTING_BALANCE, User } from '../../../common/user'
 
 const firestore = admin.firestore()
 

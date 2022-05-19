@@ -1,19 +1,5 @@
-/* This use of module-alias hackily simulates the Typescript base URL so that
- * the Firebase deploy machinery, which just uses the compiled Javascript in the
- * lib directory, will be able to do imports from the root directory
- * (i.e. "common/foo" instead of "../../../common/foo") just like we can in
- * Typescript-land.
- *
- * Note that per the module-alias docs, this need to come before any other
- * imports in order to work.
- *
- * Suggested by https://github.com/firebase/firebase-tools/issues/986 where many
- * people complain about this problem.
- */
-import { addPath } from 'module-alias'
-addPath('./lib')
-
 import * as admin from 'firebase-admin'
+
 admin.initializeApp()
 
 // export * from './keep-awake'

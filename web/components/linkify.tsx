@@ -4,7 +4,12 @@ import { SiteLink } from './site-link'
 // Return a JSX span, linkifying @username, #hashtags, and https://...
 // TODO: Use a markdown parser instead of rolling our own here.
 export function Linkify(props: { text: string; gray?: boolean }) {
-  const { text, gray } = props
+  let { text, gray } = props
+  // Replace "m1234" with "ϻ1234"
+  const mRegex = /(\W|^)m(\d+)/g
+  text = text.replace(mRegex, (_, pre, num) => `${pre}ϻ${num}`)
+
+  // Find instances of @username, #hashtag, and https://...
   const regex =
     /(?:^|\s)(?:[@#][a-z0-9_]+|https?:\/\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#\/%=~_|])/gi
   const matches = text.match(regex) || []

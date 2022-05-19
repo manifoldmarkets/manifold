@@ -42,8 +42,6 @@ export function createRNG(seed: string) {
 export const shuffle = (array: any[], rand: () => number) => {
   for (let i = 0; i < array.length; i++) {
     const swapIndex = Math.floor(rand() * (array.length - i))
-    const temp = array[i]
-    array[i] = array[swapIndex]
-    array[swapIndex] = temp
+    ;[array[i], array[swapIndex]] = [array[swapIndex], array[i]]
   }
 }

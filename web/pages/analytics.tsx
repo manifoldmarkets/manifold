@@ -18,9 +18,12 @@ import { getDailyNewUsers } from 'web/lib/firebase/users'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
-  const numberOfDays = 90
-  const today = dayjs(dayjs().format('YYYY-MM-DD'))
-  const startDate = today.subtract(numberOfDays, 'day')
+  const numberOfDays = 45
+  const tomorrow = dayjs(dayjs().format('YYYY-MM-DD'))
+    .add(1, 'day')
+    .subtract(7, 'hours')
+
+  const startDate = tomorrow.subtract(numberOfDays, 'day')
 
   const [dailyBets, dailyContracts, dailyComments, dailyNewUsers] =
     await Promise.all([
@@ -144,7 +147,7 @@ export async function getStaticPropz() {
 
   return {
     props: {
-      startDate: startDate.valueOf(),
+      startDate: startDate.add(1, 'day').valueOf(),
       dailyActiveUsers,
       weeklyActiveUsers,
       monthlyActiveUsers,
@@ -155,7 +158,7 @@ export async function getStaticPropz() {
       weeklyActivationRate,
       monthlyRetention,
     },
-    revalidate: 12 * 60 * 60, // regenerate after half a day
+    revalidate: 60 * 60, // Regenerate after an hour
   }
 }
 

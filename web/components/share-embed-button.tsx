@@ -1,10 +1,11 @@
-import { Fragment } from 'react'
+import React, { Fragment } from 'react'
 import { CodeIcon } from '@heroicons/react/outline'
 import { Menu, Transition } from '@headlessui/react'
 import { Contract } from 'common/contract'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { DOMAIN } from 'common/envs/constants'
 import { copyToClipboard } from 'web/lib/util/copy'
+import { ToastClipboard } from 'web/components/toast-clipboard'
 
 function copyEmbedCode(contract: Contract) {
   const title = contract.question
@@ -15,8 +16,11 @@ function copyEmbedCode(contract: Contract) {
   copyToClipboard(embedCode)
 }
 
-export function ShareEmbedButton(props: { contract: Contract }) {
-  const { contract } = props
+export function ShareEmbedButton(props: {
+  contract: Contract
+  toastClassName?: string
+}) {
+  const { contract, toastClassName } = props
 
   return (
     <Menu
@@ -45,9 +49,9 @@ export function ShareEmbedButton(props: { contract: Contract }) {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="origin-top-center absolute left-0 mt-2 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <Menu.Items>
           <Menu.Item>
-            <div className="px-2 py-1">Embed code copied!</div>
+            <ToastClipboard className={toastClassName} />
           </Menu.Item>
         </Menu.Items>
       </Transition>

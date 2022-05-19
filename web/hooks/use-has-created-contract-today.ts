@@ -2,8 +2,12 @@ import { listContracts } from 'web/lib/firebase/contracts'
 import { useEffect, useState } from 'react'
 import { User } from 'common/user'
 
+let sessionCreatedContractToday = true
+
 export const useHasCreatedContractToday = (user: User | null | undefined) => {
-  const [hasCreatedContractToday, setHasCreatedContractToday] = useState(true)
+  const [hasCreatedContractToday, setHasCreatedContractToday] = useState(
+    sessionCreatedContractToday
+  )
 
   useEffect(() => {
     // Uses utc time like the server.
@@ -17,7 +21,9 @@ export const useHasCreatedContractToday = (user: User | null | undefined) => {
       const todayContracts = contracts.filter(
         (contract) => contract.createdTime > todayAtMidnight
       )
-      setHasCreatedContractToday(todayContracts.length > 0)
+
+      sessionCreatedContractToday = todayContracts.length > 0
+      setHasCreatedContractToday(sessionCreatedContractToday)
     }
 
     listUserContractsForToday()

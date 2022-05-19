@@ -1,14 +1,14 @@
 import {
   HomeIcon,
-  UserGroupIcon,
   CakeIcon,
   SearchIcon,
-  ChatIcon,
   BookOpenIcon,
   DotsHorizontalIcon,
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
+  ChatAltIcon,
+  SparklesIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import _ from 'lodash'
@@ -21,6 +21,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
+import { Row } from '../layout/row'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
@@ -29,12 +30,18 @@ function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
   }
 }
 
-const navigation = [
-  { name: 'Home', href: '/home', icon: HomeIcon },
-  { name: 'Explore', href: '/markets', icon: SearchIcon },
-  { name: 'Portfolio', href: '/portfolio', icon: PresentationChartLineIcon },
-  { name: 'Charity', href: '/charity', icon: HeartIcon },
-]
+function getNavigation(username: string) {
+  return [
+    { name: 'Home', href: '/home', icon: HomeIcon },
+    { name: 'Activity', href: '/activity', icon: ChatAltIcon },
+    {
+      name: 'Portfolio',
+      href: `/${username}/bets`,
+      icon: PresentationChartLineIcon,
+    },
+    { name: 'Charity', href: '/charity', icon: HeartIcon },
+  ]
+}
 
 const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
@@ -64,7 +71,7 @@ const mobileNavigation = [
   ...signedOutMobileNavigation,
 ]
 
-type Item = {
+export type Item = {
   name: string
   href: string
   icon: React.ComponentType<{ className?: string }>
@@ -110,7 +117,8 @@ function MoreButton() {
   )
 }
 
-export default function Sidebar() {
+export default function Sidebar(props: { className?: string }) {
+  const { className } = props
   const router = useRouter()
   const currentPage = router.pathname
 
@@ -119,41 +127,21 @@ export default function Sidebar() {
   folds = _.sortBy(folds, 'followCount').reverse()
   const deservesDailyFreeMarket = !useHasCreatedContractToday(user)
 
-  const navigationOptions = user === null ? signedOutNavigation : navigation
+  const navigationOptions =
+    user === null
+      ? signedOutNavigation
+      : getNavigation(user?.username || 'error')
   const mobileNavigationOptions =
     user === null ? signedOutMobileNavigation : mobileNavigation
 
   return (
-    <nav aria-label="Sidebar" className="sticky top-4 divide-gray-300 pl-2">
-      <div className="space-y-1 pb-6">
-        <ManifoldLogo twoLine />
-      </div>
-
-      <div className="mb-2" style={{ minHeight: 80 }}>
-        {user ? (
-          <Link href={`/${user.username}`}>
-            <a className="group">
-              <ProfileSummary user={user} />
-            </a>
-          </Link>
-        ) : user === null ? (
-          <div className="py-6 text-center">
-            <button
-              className="btn btn-sm px-6 font-medium normal-case "
-              style={{
-                backgroundColor: 'white',
-                border: '2px solid',
-                color: '#3D4451',
-              }}
-              onClick={firebaseLogin}
-            >
-              Sign in
-            </button>
-          </div>
-        ) : (
-          <div />
-        )}
-      </div>
+    <nav aria-label="Sidebar" className={className}>
+      <ManifoldLogo className="pb-6" twoLine />
+      {user && (
+        <div className="mb-2" style={{ minHeight: 80 }}>
+          <ProfileSummary user={user} />
+        </div>
+      )}
 
       <div className="space-y-1 lg:hidden">
         {mobileNavigationOptions.map((item) => (
@@ -181,22 +169,30 @@ export default function Sidebar() {
         />
       </div>
 
-      {deservesDailyFreeMarket ? (
-        <div className=" text-primary mt-4 text-center">
-          Use your daily free market! 🎉
-        </div>
-      ) : (
-        <div />
-      )}
-
-      {user && (
-        <div className={'aligncenter flex justify-center'}>
-          <Link href={'/create'}>
-            <button className="btn btn-primary btn-md mt-4 capitalize">
-              Create Market
+      <div className={'aligncenter flex justify-center'}>
+        {user ? (
+          <Link href={'/create'} passHref>
+            <button className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700">
+              Ask a question
             </button>
           </Link>
-        </div>
+        ) : (
+          <button
+            onClick={firebaseLogin}
+            className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700"
+          >
+            Sign in
+          </button>
+        )}
+      </div>
+
+      {user && deservesDailyFreeMarket && (
+        <Row className="mt-2 justify-center">
+          <Row className="gap-1 align-middle text-sm text-indigo-400">
+            Daily free market
+            <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
+          </Row>
+        </Row>
       )}
     </nav>
   )

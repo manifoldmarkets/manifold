@@ -1,11 +1,11 @@
-import { RefObject, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
-export function useIsVisible(elementRef: RefObject<Element>) {
-  return !!useIntersectionObserver(elementRef)?.isIntersecting
+export function useIsVisible(element: HTMLElement | null) {
+  return !!useIntersectionObserver(element)?.isIntersecting
 }
 
 function useIntersectionObserver(
-  elementRef: RefObject<Element>
+  elem: HTMLElement | null
 ): IntersectionObserverEntry | undefined {
   const [entry, setEntry] = useState<IntersectionObserverEntry>()
 
@@ -14,16 +14,15 @@ function useIntersectionObserver(
   }
 
   useEffect(() => {
-    const node = elementRef?.current
     const hasIOSupport = !!window.IntersectionObserver
 
-    if (!hasIOSupport || !node) return
+    if (!hasIOSupport || !elem) return
 
     const observer = new IntersectionObserver(updateEntry, {})
-    observer.observe(node)
+    observer.observe(elem)
 
     return () => observer.disconnect()
-  }, [elementRef])
+  }, [elem])
 
   return entry
 }
