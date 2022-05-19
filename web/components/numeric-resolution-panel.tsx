@@ -33,7 +33,7 @@ export function NumericResolutionPanel(props: {
 
   const resolve = async () => {
     const finalOutcome = outcomeMode === 'NUMBER' ? outcome : 'CANCEL'
-    if (finalOutcome === undefined) return
+    if (outcomeMode === undefined || finalOutcome === undefined) return
 
     setIsSubmitting(true)
 
