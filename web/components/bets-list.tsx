@@ -543,6 +543,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
         ) : (
           <OutcomeLabel
             outcome={outcome}
+            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />

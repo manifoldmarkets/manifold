@@ -19,8 +19,9 @@ export function OutcomeLabel(props: {
   contract: Contract
   outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string
   truncate: 'short' | 'long' | 'none'
+  value?: number
 }) {
-  const { outcome, contract, truncate } = props
+  const { outcome, contract, truncate, value } = props
 
   if (contract.outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
@@ -28,7 +29,7 @@ export function OutcomeLabel(props: {
   if (contract.outcomeType === 'NUMERIC')
     return (
       <span className="text-blue-500">
-        {getValueFromBucket(outcome, contract as NumericContract)}
+        {value ?? getValueFromBucket(outcome, contract as NumericContract)}
       </span>
     )
 

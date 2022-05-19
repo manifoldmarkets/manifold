@@ -53,6 +53,9 @@ function NumericBuyPanel(props: {
   const [bucketChoice, setBucketChoice] = useState<string | undefined>(
     undefined
   )
+
+  const [value, setValue] = useState<number | undefined>(undefined)
+
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
 
   const [valueError, setValueError] = useState<string | undefined>()
@@ -66,7 +69,13 @@ function NumericBuyPanel(props: {
   }
 
   async function submitBet() {
-    if (!user || !betAmount || bucketChoice === undefined) return
+    if (
+      !user ||
+      !betAmount ||
+      bucketChoice === undefined ||
+      value === undefined
+    )
+      return
 
     setError(undefined)
     setIsSubmitting(true)
@@ -74,6 +83,7 @@ function NumericBuyPanel(props: {
     const result = await placeBet({
       amount: betAmount,
       outcome: bucketChoice,
+      value,
       contractId: contract.id,
     }).then((r) => r.data as any)
 
@@ -94,6 +104,7 @@ function NumericBuyPanel(props: {
 
   const { newBet, newPool, newTotalShares, newTotalBets } = getNumericBetsInfo(
     { id: 'dummy', balance: 0 } as User, // a little hackish
+    value ?? 0,
     bucketChoice ?? 'NaN',
     betAmount ?? 0,
     contract,
@@ -136,7 +147,7 @@ function NumericBuyPanel(props: {
       <BucketInput
         contract={contract}
         isSubmitting={isSubmitting}
-        onBucketChange={setBucketChoice}
+        onBucketChange={(v, b) => (setValue(v), setBucketChoice(b))}
       />
 
       <div className="my-3 text-left text-sm text-gray-500">Bet amount</div>

@@ -161,6 +161,7 @@ export const getNewMultiBetInfo = (
 
 export const getNumericBetsInfo = (
   user: User,
+  value: number,
   outcome: string,
   amount: number,
   contract: NumericContract,
@@ -191,6 +192,7 @@ export const getNumericBetsInfo = (
     id: newBetId,
     userId: user.id,
     contractId: contract.id,
+    value,
     amount,
     allBetAmounts,
     shares: shares.find((s, i) => bets[i][0] === outcome) ?? 0,

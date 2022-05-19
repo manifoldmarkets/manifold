@@ -179,6 +179,7 @@ export function FeedComment(props: {
                 of{' '}
                 <OutcomeLabel
                   outcome={betOutcome ? betOutcome : ''}
+                  value={(matchedBet as any).value}
                   contract={contract}
                   truncate="short"
                 />

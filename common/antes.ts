@@ -1,5 +1,5 @@
 import { Bet, NumericBet } from './bet'
-import { getDpmProbability } from './calculate-dpm'
+import { getDpmProbability, getValueFromBucket } from './calculate-dpm'
 import {
   Binary,
   CPMM,
@@ -141,6 +141,7 @@ export function getNumericAnte(
     amount: ante,
     allBetAmounts,
     outcome: '0',
+    value: getValueFromBucket('0', contract),
     shares: betShares,
     allOutcomeShares,
     probBefore: 0,

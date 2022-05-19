@@ -16,13 +16,16 @@ import { Fees } from '../../common/fees'
 
 export const placeBet = newEndpoint(['POST'], async (req, _res) => {
   const [bettor, _privateUser] = await lookupUser(await parseCredentials(req))
-  const { amount, outcome, contractId } = req.body.data || {}
+  const { amount, outcome, contractId, value } = req.body.data || {}
 
   if (amount <= 0 || isNaN(amount) || !isFinite(amount))
     throw new APIError(400, 'Invalid amount')
 
   if (outcome !== 'YES' && outcome !== 'NO' && isNaN(+outcome))
     throw new APIError(400, 'Invalid outcome')
+
+  if (value !== undefined && !isFinite(amount))
+    throw new APIError(400, 'Invalid value')
 
   // run as transaction to prevent race conditions
   return await firestore
@@ -90,7 +93,14 @@ export const placeBet = newEndpoint(['POST'], async (req, _res) => {
                 newBetDoc.id
               ) as any)
           : outcomeType === 'NUMERIC' && mechanism === 'dpm-2'
-          ? getNumericBetsInfo(user, outcome, amount, contract, newBetDoc.id)
+          ? getNumericBetsInfo(
+              user,
+              value,
+              outcome,
+              amount,
+              contract,
+              newBetDoc.id
+            )
           : getNewMultiBetInfo(
               user,
               outcome,

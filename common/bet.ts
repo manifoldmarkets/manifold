@@ -30,6 +30,7 @@ export type Bet = {
 }
 
 export type NumericBet = Bet & {
+  value: number
   allOutcomeShares: { [outcome: string]: number }
   allBetAmounts: { [outcome: string]: number }
 }

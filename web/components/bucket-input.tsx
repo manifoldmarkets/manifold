@@ -9,7 +9,7 @@ import { NumberInput } from './number-input'
 export function BucketInput(props: {
   contract: NumericContract
   isSubmitting?: boolean
-  onBucketChange: (bucket?: string) => void
+  onBucketChange: (value?: number, bucket?: string) => void
 }) {
   const { contract, isSubmitting, onBucketChange } = props
 
@@ -20,11 +20,14 @@ export function BucketInput(props: {
 
     const value = parseFloat(s)
 
-    const bucket = isFinite(value)
-      ? getMappedBucket(value, contract)
-      : undefined
+    if (!isFinite(value)) {
+      onBucketChange(undefined, undefined)
+      return
+    }
 
-    onBucketChange(bucket)
+    const bucket = getMappedBucket(value, contract)
+
+    onBucketChange(value, bucket)
   }
 
   return (
