@@ -115,15 +115,13 @@ export const newEndpoint = (methods: [string], fn: Handler) =>
         const allowed = methods.join(', ')
         throw new APIError(405, `This endpoint supports only ${allowed}.`)
       }
-      const data = await fn(req, res)
-      data.status = 'success'
-      res.status(200).json(data)
+      res.status(200).json(await fn(req, res))
     } catch (e) {
       if (e instanceof APIError) {
         // Emit a 200 anyway here for now, for backwards compatibility
-        res.status(200).json({ status: 'error', message: e.msg })
+        res.status(e.code).json({ message: e.msg })
       } else {
-        res.status(500).json({ status: 'error', message: '???' })
+        res.status(500).json({ message: 'An unknown error occurred.' })
       }
     }
   })
