@@ -82,10 +82,8 @@ export function ContractTabs(props: {
     <Tabs
       tabs={[
         { title: 'Comments', content: commentActivity },
-        ...(outcomeType === 'NUMERIC'
-          ? []
-          : [{ title: 'Bets', content: betActivity }]),
-        ...(!user || !userBets?.length // || outcomeType === 'NUMERIC'
+        { title: 'Bets', content: betActivity },
+        ...(!user || !userBets?.length
           ? []
           : [{ title: 'Your bets', content: yourTrades }]),
       ]}
