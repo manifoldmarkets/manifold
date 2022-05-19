@@ -172,14 +172,14 @@ export default function Sidebar(props: { className?: string }) {
       <div className={'aligncenter flex justify-center'}>
         {user ? (
           <Link href={'/create'} passHref>
-            <button className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700">
+            <button className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700 lg:-ml-0">
               Ask a question
             </button>
           </Link>
         ) : (
           <button
             onClick={firebaseLogin}
-            className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700"
+            className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700 lg:-ml-0"
           >
             Sign in
           </button>
@@ -188,7 +188,7 @@ export default function Sidebar(props: { className?: string }) {
 
       {user && deservesDailyFreeMarket && (
         <Row className="mt-2 justify-center">
-          <Row className="gap-1 align-middle text-sm text-indigo-400">
+          <Row className="gap-1 text-sm text-indigo-400">
             Daily free market
             <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
           </Row>
