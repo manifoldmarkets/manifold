@@ -9,6 +9,8 @@ import { Contract, FreeResponseContract } from '../../common/contract'
 import { DPM_CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
 import { formatMoney, formatPercent } from '../../common/util/format'
+import { getValueFromBucket } from '../../common/calculate-dpm'
+
 import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 
@@ -103,6 +105,12 @@ const toDisplayResolution = (
 
   if (resolution === 'MKT' && resolutions) return 'MULTI'
   if (resolution === 'CANCEL') return 'N/A'
+
+  if (contract.outcomeType === 'NUMERIC' && contract.mechanism === 'dpm-2')
+    return (
+      contract.resolutionValue?.toString() ??
+      getValueFromBucket(resolution, contract).toString()
+    )
 
   const answer = (contract as FreeResponseContract).answers?.find(
     (a) => a.id === resolution

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
+import _ from 'lodash'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -24,16 +25,23 @@ import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Leaderboard } from 'web/components/leaderboard'
-import _ from 'lodash'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
 import { useUserById } from 'web/hooks/use-users'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { FirstArgument } from 'common/util/types'
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import {
+  BinaryContract,
+  DPM,
+  FreeResponse,
+  FullContract,
+  NumericContract,
+} from 'common/contract'
 import { contractTextDetails } from 'web/components/contract/contract-details'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
+import { NumericBetPanel } from '../../components/numeric-bet-panel'
+import { NumericResolutionPanel } from '../../components/numeric-resolution-panel'
 import { FeedComment } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
 
@@ -113,22 +121,40 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
     return <Custom404 />
   }
 
-  const { creatorId, isResolved, question, outcomeType, resolution } = contract
+  const { creatorId, isResolved, question, outcomeType } = contract
 
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
+  const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
-  const hasSidePanel = isBinary && (allowTrade || allowResolve)
+  const hasSidePanel = (isBinary || isNumeric) && (allowTrade || allowResolve)
 
   const ogCardProps = getOpenGraphProps(contract)
 
   const rightSidebar = hasSidePanel ? (
     <Col className="gap-4">
-      {allowTrade && (
-        <BetPanel className="hidden xl:flex" contract={contract} />
-      )}
-      {allowResolve && <ResolutionPanel creator={user} contract={contract} />}
+      {allowTrade &&
+        (isNumeric ? (
+          <NumericBetPanel
+            className="hidden xl:flex"
+            contract={contract as NumericContract}
+          />
+        ) : (
+          <BetPanel className="hidden xl:flex" contract={contract} />
+        ))}
+      {allowResolve &&
+        (isNumeric ? (
+          <NumericResolutionPanel
+            creator={user}
+            contract={contract as NumericContract}
+          />
+        ) : (
+          <ResolutionPanel
+            creator={user}
+            contract={contract as BinaryContract}
+          />
+        ))}
     </Col>
   ) : null
 
@@ -177,6 +203,13 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
             />
             <Spacer h={4} />
           </>
+        )}
+
+        {isNumeric && (
+          <NumericBetPanel
+            className="sm:hidden"
+            contract={contract as NumericContract}
+          />
         )}
 
         {isResolved && (

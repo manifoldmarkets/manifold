@@ -13,7 +13,6 @@ import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
 import { getContract, getValues } from './utils'
 import { sendNewAnswerEmail } from './emails'
 import { Bet } from '../../common/bet'
-import { hasUserHitManaLimit } from '../../common/calculate'
 
 export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -66,13 +65,6 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         contractDoc.collection('bets').where('userId', '==', userId)
       )
       const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
-
-      const { status, message } = hasUserHitManaLimit(
-        contract,
-        yourBets,
-        amount
-      )
-      if (status === 'error') return { status, message: message }
 
       const [lastAnswer] = await getValues<Answer>(
         firestore

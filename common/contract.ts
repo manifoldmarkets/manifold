@@ -1,9 +1,10 @@
+import * as _ from 'lodash'
 import { Answer } from './answer'
 import { Fees } from './fees'
 
 export type FullContract<
   M extends DPM | CPMM,
-  T extends Binary | Multi | FreeResponse
+  T extends Binary | Multi | FreeResponse | Numeric
 > = {
   id: string
   slug: string // auto-generated; must be unique
@@ -11,7 +12,7 @@ export type FullContract<
   creatorId: string
   creatorName: string
   creatorUsername: string
-  creatorAvatarUrl?: string // Start requiring after 2022-03-01
+  creatorAvatarUrl?: string
 
   question: string
   description: string // More info about what the contract is about
@@ -41,9 +42,13 @@ export type FullContract<
 } & M &
   T
 
-export type Contract = FullContract<DPM | CPMM, Binary | Multi | FreeResponse>
+export type Contract = FullContract<
+  DPM | CPMM,
+  Binary | Multi | FreeResponse | Numeric
+>
 export type BinaryContract = FullContract<DPM | CPMM, Binary>
 export type FreeResponseContract = FullContract<DPM | CPMM, FreeResponse>
+export type NumericContract = FullContract<DPM, Numeric>
 
 export type DPM = {
   mechanism: 'dpm-2'
@@ -83,7 +88,17 @@ export type FreeResponse = {
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
-export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE'
+export type Numeric = {
+  outcomeType: 'NUMERIC'
+  bucketCount: number
+  min: number
+  max: number
+  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
+  resolutionValue?: number
+}
+
+export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE' | 'NUMERIC'
+export const OUTCOME_TYPES = ['BINARY', 'MULTI', 'FREE_RESPONSE', 'NUMERIC']
 
 export const MAX_QUESTION_LENGTH = 480
 export const MAX_DESCRIPTION_LENGTH = 10000

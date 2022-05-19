@@ -161,16 +161,18 @@ export function FeedComment(props: {
             username={userUsername}
             name={userName}
           />{' '}
-          {!matchedBet && userPosition > 0 && (
-            <>
-              {'is '}
-              <CommentStatus
-                prob={probAtCreatedTime}
-                outcome={outcome}
-                contract={contract}
-              />
-            </>
-          )}
+          {!matchedBet &&
+            userPosition > 0 &&
+            contract.outcomeType !== 'NUMERIC' && (
+              <>
+                {'is '}
+                <CommentStatus
+                  prob={probAtCreatedTime}
+                  outcome={outcome}
+                  contract={contract}
+                />
+              </>
+            )}
           <>
             {bought} {money}
             {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
@@ -179,6 +181,7 @@ export function FeedComment(props: {
                 of{' '}
                 <OutcomeLabel
                   outcome={betOutcome ? betOutcome : ''}
+                  value={(matchedBet as any).value}
                   contract={contract}
                   truncate="short"
                 />
@@ -314,6 +317,8 @@ export function CommentInput(props: {
 
   const shouldCollapseAfterClickOutside = false
 
+  const isNumeric = contract.outcomeType === 'NUMERIC'
+
   return (
     <>
       <Row className={'mb-2 flex w-full gap-2'}>
@@ -328,23 +333,28 @@ export function CommentInput(props: {
                   contract={contract}
                   bet={mostRecentCommentableBet}
                   isSelf={true}
-                  hideOutcome={contract.outcomeType === 'FREE_RESPONSE'}
+                  hideOutcome={
+                    isNumeric || contract.outcomeType === 'FREE_RESPONSE'
+                  }
                 />
               )}
-              {!mostRecentCommentableBet && user && userPosition > 0 && (
-                <>
-                  {"You're"}
-                  <CommentStatus
-                    outcome={outcome}
-                    contract={contract}
-                    prob={
-                      contract.outcomeType === 'BINARY'
-                        ? getProbability(contract)
-                        : undefined
-                    }
-                  />
-                </>
-              )}
+              {!mostRecentCommentableBet &&
+                user &&
+                userPosition > 0 &&
+                !isNumeric && (
+                  <>
+                    {"You're"}
+                    <CommentStatus
+                      outcome={outcome}
+                      contract={contract}
+                      prob={
+                        contract.outcomeType === 'BINARY'
+                          ? getProbability(contract)
+                          : undefined
+                      }
+                    />
+                  </>
+                )}
             </div>
 
             <Row className="grid grid-cols-8 gap-1.5 text-gray-700">

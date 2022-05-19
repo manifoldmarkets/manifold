@@ -7,22 +7,25 @@ import {
   getNewBinaryCpmmBetInfo,
   getNewBinaryDpmBetInfo,
   getNewMultiBetInfo,
+  getNumericBetsInfo,
 } from '../../common/new-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { Bet } from '../../common/bet'
 import { redeemShares } from './redeem-shares'
 import { Fees } from '../../common/fees'
-import { hasUserHitManaLimit } from '../../common/calculate'
 
 export const placeBet = newEndpoint(['POST'], async (req, _res) => {
   const [bettor, _privateUser] = await lookupUser(await parseCredentials(req))
-  const { amount, outcome, contractId } = req.body.data || {}
+  const { amount, outcome, contractId, value } = req.body.data || {}
 
   if (amount <= 0 || isNaN(amount) || !isFinite(amount))
     throw new APIError(400, 'Invalid amount')
 
   if (outcome !== 'YES' && outcome !== 'NO' && isNaN(+outcome))
     throw new APIError(400, 'Invalid outcome')
+
+  if (value !== undefined && !isFinite(value))
+    throw new APIError(400, 'Invalid value')
 
   // run as transaction to prevent race conditions
   return await firestore
@@ -55,13 +58,6 @@ export const placeBet = newEndpoint(['POST'], async (req, _res) => {
           contractDoc.collection('answers').doc(outcome)
         )
         if (!answerSnap.exists) throw new APIError(400, 'Invalid contract')
-
-        const { status, message } = hasUserHitManaLimit(
-          contract,
-          yourBets,
-          amount
-        )
-        if (status === 'error') throw new APIError(400, message)
       }
 
       const newBetDoc = firestore
@@ -96,6 +92,15 @@ export const placeBet = newEndpoint(['POST'], async (req, _res) => {
                 loanAmount,
                 newBetDoc.id
               ) as any)
+          : outcomeType === 'NUMERIC' && mechanism === 'dpm-2'
+          ? getNumericBetsInfo(
+              user,
+              value,
+              outcome,
+              amount,
+              contract,
+              newBetDoc.id
+            )
           : getNewMultiBetInfo(
               user,
               outcome,

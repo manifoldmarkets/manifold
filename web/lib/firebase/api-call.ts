@@ -43,6 +43,7 @@ export const createAnswer = cloudFunction<
 export const resolveMarket = cloudFunction<
   {
     outcome: string
+    value?: number
     contractId: string
     probabilityInt?: number
     resolutions?: { [outcome: string]: number }
