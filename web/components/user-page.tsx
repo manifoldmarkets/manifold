@@ -19,7 +19,6 @@ import { Comment, getUsersComments } from 'web/lib/firebase/comments'
 import { Contract } from 'common/contract'
 import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
 import { LoadingIndicator } from './loading-indicator'
-import { useRouter } from 'next/router'
 import _ from 'lodash'
 import { BetsList } from './bets-list'
 import { Bet } from 'common/bet'
@@ -34,7 +33,10 @@ export function UserLink(props: {
   const { name, username, showUsername, className } = props
 
   return (
-    <SiteLink href={`/${username}`} className={clsx('z-10', className)}>
+    <SiteLink
+      href={`/${username}`}
+      className={clsx('z-10 truncate', className)}
+    >
       {name}
       {showUsername && ` (@${username})`}
     </SiteLink>

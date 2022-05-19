@@ -2,7 +2,6 @@ import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
-import { Dictionary } from 'lodash'
 import React, { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
@@ -22,27 +21,22 @@ import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
 import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
-import { getOutcomeProbability } from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export function FeedCommentThread(props: {
   contract: Contract
   comments: Comment[]
   parentComment: Comment
-  betsByUserId: Dictionary<[Bet, ...Bet[]]>
+  bets: Bet[]
   truncate?: boolean
   smallAvatar?: boolean
 }) {
-  const {
-    contract,
-    comments,
-    betsByUserId,
-    truncate,
-    smallAvatar,
-    parentComment,
-  } = props
+  const { contract, comments, bets, truncate, smallAvatar, parentComment } =
+    props
   const [showReply, setShowReply] = useState(false)
   const [replyToUsername, setReplyToUsername] = useState('')
+  const betsByUserId = _.groupBy(bets, (bet) => bet.userId)
   const user = useUser()
   const commentsList = comments.filter(
     (comment) =>
@@ -71,6 +65,15 @@ export function FeedCommentThread(props: {
             comment={comment}
             betsBySameUser={betsByUserId[comment.userId] ?? []}
             onReplyClick={scrollAndOpenReplyInput}
+            probAtCreatedTime={
+              contract.outcomeType === 'BINARY'
+                ? _.minBy(bets, (bet) => {
+                    return bet.createdTime < comment.createdTime
+                      ? comment.createdTime - bet.createdTime
+                      : comment.createdTime
+                  })?.probAfter
+                : undefined
+            }
             smallAvatar={smallAvatar}
             truncate={truncate}
           />
@@ -97,6 +100,7 @@ export function FeedComment(props: {
   contract: Contract
   comment: Comment
   betsBySameUser: Bet[]
+  probAtCreatedTime?: number
   truncate?: boolean
   smallAvatar?: boolean
   onReplyClick?: (comment: Comment) => void
@@ -105,6 +109,7 @@ export function FeedComment(props: {
     contract,
     comment,
     betsBySameUser,
+    probAtCreatedTime,
     truncate,
     smallAvatar,
     onReplyClick,
@@ -130,7 +135,7 @@ export function FeedComment(props: {
   }, [router.asPath])
 
   // Only calculated if they don't have a matching bet
-  const { userPosition, outcome } = getBettorsPosition(
+  const { userPosition, outcome } = getBettorsLargestPositionBeforeTime(
     contract,
     comment.createdTime,
     matchedBet ? [] : betsBySameUser
@@ -159,7 +164,11 @@ export function FeedComment(props: {
           {!matchedBet && userPosition > 0 && (
             <>
               {'is '}
-              <CommentStatus outcome={outcome} contract={contract} />
+              <CommentStatus
+                prob={probAtCreatedTime}
+                outcome={outcome}
+                contract={contract}
+              />
             </>
           )}
           <>
@@ -224,15 +233,17 @@ export function getMostRecentCommentableBet(
     .pop()
 }
 
-function CommentStatus(props: { contract: Contract; outcome: string }) {
-  const { contract, outcome } = props
+function CommentStatus(props: {
+  contract: Contract
+  outcome: string
+  prob?: number
+}) {
+  const { contract, outcome, prob } = props
   return (
     <>
       {' betting '}
       <OutcomeLabel outcome={outcome} contract={contract} truncate="short" />
-      {' at ' +
-        Math.round(getOutcomeProbability(contract, outcome) * 100) +
-        '%'}
+      {prob && ' at ' + Math.round(prob * 100) + '%'}
     </>
   )
 }
@@ -295,7 +306,7 @@ export function CommentInput(props: {
     setIsSubmitting(false)
   }
 
-  const { userPosition, outcome } = getBettorsPosition(
+  const { userPosition, outcome } = getBettorsLargestPositionBeforeTime(
     contract,
     Date.now(),
     betsByCurrentUser
@@ -323,7 +334,15 @@ export function CommentInput(props: {
               {!mostRecentCommentableBet && user && userPosition > 0 && (
                 <>
                   {"You're"}
-                  <CommentStatus outcome={outcome} contract={contract} />
+                  <CommentStatus
+                    outcome={outcome}
+                    contract={contract}
+                    prob={
+                      contract.outcomeType === 'BINARY'
+                        ? getProbability(contract)
+                        : undefined
+                    }
+                  />
                 </>
               )}
             </div>
@@ -435,7 +454,7 @@ export function TruncatedComment(props: {
   )
 }
 
-function getBettorsPosition(
+function getBettorsLargestPositionBeforeTime(
   contract: Contract,
   createdTime: number,
   bets: Bet[]

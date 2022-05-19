@@ -1,4 +1,4 @@
-import _, { Dictionary } from 'lodash'
+import _ from 'lodash'
 
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
@@ -54,6 +54,7 @@ export type CommentItem = BaseActivityItem & {
   type: 'comment'
   comment: Comment
   betsBySameUser: Bet[]
+  probAtCreatedTime?: number
   truncate?: boolean
   smallAvatar?: boolean
 }
@@ -62,7 +63,7 @@ export type CommentThreadItem = BaseActivityItem & {
   type: 'commentThread'
   parentComment: Comment
   comments: Comment[]
-  betsByUserId: Dictionary<[Bet, ...Bet[]]>
+  bets: Bet[]
 }
 
 export type BetGroupItem = BaseActivityItem & {
@@ -325,6 +326,7 @@ function groupBetsAndComments(
   }
 ) {
   const { smallAvatar, abbreviated, reversed } = options
+  // Comments in feed don't show user's position?
   const commentsWithoutBets = comments
     .filter((comment) => !comment.betId)
     .map((comment) => ({
@@ -364,7 +366,6 @@ function getCommentThreads(
   comments: Comment[],
   contract: Contract
 ) {
-  const betsByUserId = _.groupBy(bets, (bet) => bet.userId)
   const parentComments = comments.filter((comment) => !comment.replyToCommentId)
 
   const items = parentComments.map((comment) => ({
@@ -373,7 +374,7 @@ function getCommentThreads(
     contract: contract,
     comments: comments,
     parentComment: comment,
-    betsByUserId: betsByUserId,
+    bets: bets,
   }))
 
   return items
