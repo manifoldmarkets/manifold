@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Textarea from 'react-expanding-textarea'
-
 import { Spacer } from 'web/components/layout/spacer'
 import { useUser } from 'web/hooks/use-user'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
@@ -11,14 +10,14 @@ import { createContract } from 'web/lib/firebase/api-call'
 import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
-import { Title } from 'web/components/title'
-import { ProbabilitySelector } from 'web/components/probability-selector'
 import { Row } from 'web/components/layout/row'
 import { MAX_DESCRIPTION_LENGTH, outcomeType } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
-import { removeUndefinedProps } from '../../common/util/object'
+import { removeUndefinedProps } from 'common/util/object'
 import { CATEGORIES } from 'common/categories'
+import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
+import { CalculatorIcon } from '@heroicons/react/outline'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -26,13 +25,13 @@ export default function Create() {
   return (
     <Page>
       <div className="mx-auto w-full max-w-2xl">
-        <Title text="Create a new prediction market" />
-
-        <div className="rounded-lg bg-gray-100 px-6 py-4 shadow-md">
+        <div className="rounded-lg  px-6 py-4">
           <form>
             <div className="form-control w-full">
               <label className="label">
-                <span className="mb-1">Question</span>
+                <span className="mb-1">
+                  Question<span className={'text-red-700'}>*</span>
+                </span>
               </label>
 
               <Textarea
@@ -67,6 +66,8 @@ export function NewContract(props: { question: string; tag?: string }) {
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb, setInitialProb] = useState(50)
   const [description, setDescription] = useState('')
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [showNumInput, setShowNumInput] = useState(false)
 
   const [category, setCategory] = useState<string>('')
   // const [tagText, setTagText] = useState<string>(tag ?? '')
@@ -85,7 +86,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   // const [anteError, setAnteError] = useState<string | undefined>()
   // By default, close the market a week from today
-  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DDT23:59')
+  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
   const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -105,6 +106,12 @@ export function NewContract(props: { question: string; tag?: string }) {
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now()
+
+  function setCloseDateInDays(days: number) {
+    setShowCalendar(days === 60)
+    const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
+    setCloseDate(newCloseDate)
+  }
 
   async function submit() {
     // TODO: Tell users why their contract is invalid
@@ -134,7 +141,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const descriptionPlaceholder =
     outcomeType === 'BINARY'
-      ? `e.g. This market resolves to "YES" if, two weeks after closing, the...`
+      ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
       : `e.g. I will choose the answer according to...`
 
   if (!creator) return <></>
@@ -153,6 +160,7 @@ export function NewContract(props: { question: string; tag?: string }) {
             checked={outcomeType === 'BINARY'}
             value="BINARY"
             onChange={() => setOutcomeType('BINARY')}
+            disabled={isSubmitting}
           />
           <span className="label-text">Yes / No</span>
         </label>
@@ -165,6 +173,7 @@ export function NewContract(props: { question: string; tag?: string }) {
             checked={outcomeType === 'FREE_RESPONSE'}
             value="FREE_RESPONSE"
             onChange={() => setOutcomeType('FREE_RESPONSE')}
+            disabled={isSubmitting}
           />
           <span className="label-text">Free response</span>
         </label>
@@ -173,14 +182,46 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       {outcomeType === 'BINARY' && (
         <div className="form-control">
-          <label className="label">
-            <span className="mb-1">Initial probability</span>
-          </label>
-
-          <ProbabilitySelector
-            probabilityInt={initialProb}
-            setProbabilityInt={setInitialProb}
-          />
+          <Row className="label justify-start">
+            <span className="mb-1">How likely is it to happen?</span>
+            <CalculatorIcon
+              className={clsx(
+                'ml-2 cursor-pointer rounded-md',
+                'hover:bg-gray-200',
+                showNumInput && 'stroke-indigo-700'
+              )}
+              height={20}
+              onClick={() => setShowNumInput(!showNumInput)}
+            />
+          </Row>
+          <Row className={'w-full items-center sm:gap-2'}>
+            <ChoicesToggleGroup
+              currentChoice={initialProb}
+              setChoice={setInitialProb}
+              choices={[25, 50, 75]}
+              titles={['Unlikely', 'Unsure', 'Likely']}
+              isSubmitting={isSubmitting}
+            />
+            {showNumInput && (
+              <>
+                <input
+                  type="number"
+                  value={initialProb}
+                  className={
+                    'max-w-[16%] sm:max-w-[15%] ' +
+                    'input-bordered input-md mt-2 rounded-md p-1 text-lg sm:p-4'
+                  }
+                  disabled={isSubmitting}
+                  min={10}
+                  max={90}
+                  onChange={(e) =>
+                    setInitialProb(parseInt(e.target.value.substring(0, 2)))
+                  }
+                />
+                <span className={'mt-2'}>%</span>
+              </>
+            )}
+          </Row>
         </div>
       )}
 
@@ -228,18 +269,31 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
-          <span>Market close</span>
-          <InfoTooltip text="Trading will be halted after this time (local timezone)." />
+          <span>Question expires in a:</span>
+          <InfoTooltip text="Betting will be halted after this time (local timezone)." />
         </label>
-        <input
-          type="datetime-local"
-          className="input input-bordered"
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => setCloseDate(e.target.value || '')}
-          min={Date.now()}
-          disabled={isSubmitting}
-          value={closeDate}
-        />
+        <Row className={'w-full items-center gap-2'}>
+          <ChoicesToggleGroup
+            currentChoice={
+              closeTime ? dayjs(closeTime).diff(dayjs(), 'day') + 1 : -1
+            }
+            setChoice={setCloseDateInDays}
+            choices={[1, 7, 30, 60]}
+            titles={['Day', 'Week', 'Month', 'Custom']}
+            isSubmitting={isSubmitting}
+          />
+        </Row>
+        {showCalendar && (
+          <input
+            type={'date'}
+            className="input input-bordered mt-4"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setCloseDate(e.target.value || '')}
+            min={Date.now()}
+            disabled={isSubmitting}
+            value={closeDate}
+          />
+        )}
       </div>
 
       <Spacer h={4} />
@@ -254,7 +308,9 @@ export function NewContract(props: { question: string; tag?: string }) {
           )}
         </label>
         {deservesDailyFreeMarket ? (
-          <div className="label-text text-primary pl-1">FREE</div>
+          <div className="label-text text-primary pl-1">
+            {formatMoney(ante)} FREE{' '}
+          </div>
         ) : (
           <div className="label-text text-neutral pl-1">
             {formatMoney(ante)}
