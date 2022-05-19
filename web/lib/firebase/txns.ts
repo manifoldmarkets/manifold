@@ -4,6 +4,7 @@ import { Txn } from 'common/txn'
 import { db } from './init'
 import { getValues, listenForValues } from './utils'
 import { useState, useEffect } from 'react'
+import { sortBy } from 'lodash'
 
 const txnCollection = collection(db, 'txns')
 
@@ -52,5 +53,5 @@ export function useManalinkTxns(userId: string) {
     listenForValues(toQuery, setToTxns)
   }, [userId])
 
-  return _.sortBy([...fromTxns, ...toTxns], 'createdTime').reverse()
+  return sortBy([...fromTxns, ...toTxns], 'createdTime').reverse()
 }
