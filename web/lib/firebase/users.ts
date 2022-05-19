@@ -22,7 +22,7 @@ import _ from 'lodash'
 
 import { app } from './init'
 import { PrivateUser, User } from 'common/user'
-import { createUser } from './api-call'
+import { createUser } from './fn-call'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
 import { DAY_MS } from 'common/util/time'
 import { feed } from 'common/feed'

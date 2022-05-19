@@ -155,7 +155,7 @@ ${TEST_VALUE}
         ante,
         closeTime,
         tags: parseWordsAsTags(tags),
-      }).then((r) => (r.data as any).contract)
+      }).then((r) => r.contract)
 
       setCreatedContracts((prev) => [...prev, contract])
     }
@@ -237,7 +237,7 @@ ${TEST_VALUE}
           <label className="label mb-1 gap-2">
             <span>Market ante</span>
             <InfoTooltip
-              text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
+              text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability.
               You earn ${0.01 * 100}% of trading volume.`}
             />
           </label>

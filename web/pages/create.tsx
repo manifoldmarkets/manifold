@@ -124,26 +124,24 @@ export function NewContract(props: { question: string; tag?: string }) {
 
     setIsSubmitting(true)
 
-    const result: any = await createContract(
-      removeUndefinedProps({
-        question,
-        outcomeType,
-        description,
-        initialProb,
-        ante,
-        closeTime,
-        tags: category ? [category] : undefined,
-        min,
-        max,
-      })
-    ).then((r) => r.data || {})
-
-    if (result.status !== 'success') {
-      console.log('error creating contract', result)
-      return
+    try {
+      const result = await createContract(
+        removeUndefinedProps({
+          question,
+          outcomeType,
+          description,
+          initialProb,
+          ante,
+          closeTime,
+          tags: category ? [category] : undefined,
+          min,
+          max,
+        })
+      )
+      await router.push(contractPath(result.contract as Contract))
+    } catch (e) {
+      console.log('error creating contract', e)
     }
-
-    await router.push(contractPath(result.contract as Contract))
   }
 
   const descriptionPlaceholder =
