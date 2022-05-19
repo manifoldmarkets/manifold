@@ -138,7 +138,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           max,
         })
       )
-      await router.push(contractPath(result.data.contract as Contract))
+      await router.push(contractPath(result.contract as Contract))
     } catch (e) {
       console.log('error creating contract', e)
     }

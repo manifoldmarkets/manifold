@@ -155,7 +155,7 @@ ${TEST_VALUE}
         ante,
         closeTime,
         tags: parseWordsAsTags(tags),
-      }).then((r) => r.data.contract)
+      }).then((r) => r.contract)
 
       setCreatedContracts((prev) => [...prev, contract])
     }
