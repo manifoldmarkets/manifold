@@ -18,7 +18,7 @@ import { getDailyNewUsers } from 'web/lib/firebase/users'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
-  const numberOfDays = 10
+  const numberOfDays = 45
   const tomorrow = dayjs(dayjs().format('YYYY-MM-DD'))
     .add(1, 'day')
     // Convert from UTC midnight to PT midnight.
@@ -148,7 +148,7 @@ export async function getStaticPropz() {
 
   return {
     props: {
-      startDate,
+      startDate: startDate.valueOf(),
       dailyActiveUsers,
       weeklyActiveUsers,
       monthlyActiveUsers,
