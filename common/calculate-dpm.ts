@@ -87,6 +87,33 @@ export const getValueFromBucket = (
   return rounded
 }
 
+export const getExpectedValue = (contract: NumericContract) => {
+  const { bucketCount, min, max, totalShares } = contract
+
+  const totalShareSum = _.sumBy(
+    Object.values(totalShares),
+    (shares) => shares ** 2
+  )
+  const probs = _.range(0, bucketCount).map(
+    (i) => totalShares[i] ** 2 / totalShareSum
+  )
+
+  const values = _.range(0, bucketCount).map(
+    (i) =>
+      // use mid point within bucket
+      0.5 * (min + (i / bucketCount) * (max - min)) +
+      0.5 * (min + ((i + 1) / bucketCount) * (max - min))
+  )
+
+  const weightedValues = _.range(0, bucketCount).map(
+    (i) => probs[i] * values[i]
+  )
+
+  const expectation = _.sum(weightedValues)
+  const rounded = Math.round(expectation * 1e2) / 1e2
+  return rounded
+}
+
 export function getDpmOutcomeProbabilityAfterBet(
   totalShares: {
     [outcome: string]: number
