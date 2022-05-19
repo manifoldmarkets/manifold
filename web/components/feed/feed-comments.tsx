@@ -348,7 +348,7 @@ export function CommentInput(props: {
             </div>
 
             <Row className="grid grid-cols-8 gap-1.5 text-gray-700">
-              <Col className={'col-span-4 sm:col-span-6'}>
+              <Col className={'col-span-8 sm:col-span-6'}>
                 <Textarea
                   ref={setRef}
                   value={comment}
@@ -378,7 +378,7 @@ export function CommentInput(props: {
               </Col>
               <Col
                 className={clsx(
-                  'col-span-4 sm:col-span-2',
+                  'col-span-8 sm:col-span-2',
                   focused ? 'justify-end' : 'justify-center'
                 )}
               >
@@ -395,7 +395,7 @@ export function CommentInput(props: {
                 {user && !isSubmitting && (
                   <button
                     className={clsx(
-                      'btn text-transform: block capitalize',
+                      'btn text-transform: col-span-8 block capitalize sm:col-span-2',
                       focused && comment
                         ? 'btn-outline btn-sm '
                         : 'btn-ghost btn-sm pointer-events-none text-gray-500'
