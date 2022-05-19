@@ -45,8 +45,8 @@ type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
-  const bets = useUserBets(user.id)
-
+  let bets = useUserBets(user.id)
+  console.log('bets', bets?.length)
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   const [sort, setSort] = useState<BetSort>('newest')

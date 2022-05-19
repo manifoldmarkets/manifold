@@ -64,6 +64,8 @@ export async function getUserBets(userId: string) {
   return getValues<Bet>(
     query(collectionGroup(db, 'bets'), where('userId', '==', userId))
   )
+    .then((bets) => bets.filter((bet) => !bet.isRedemption && !bet.isAnte))
+    .catch((reason) => reason)
 }
 
 export function listenForUserBets(
@@ -72,11 +74,11 @@ export function listenForUserBets(
 ) {
   const userQuery = query(
     collectionGroup(db, 'bets'),
-    where('userId', '==', userId)
+    where('userId', '==', userId),
+    orderBy('createdTime', 'desc')
   )
   return listenForValues<Bet>(userQuery, (bets) => {
-    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-    setBets(bets)
+    setBets(bets.filter((bet) => !bet.isRedemption && !bet.isAnte))
   })
 }
 
