@@ -66,7 +66,7 @@ export function UserPage(props: {
     if (!user) return
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
-    getUserBets(user.id).then(setUsersBets)
+    getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
   }, [user])
 
   useEffect(() => {
