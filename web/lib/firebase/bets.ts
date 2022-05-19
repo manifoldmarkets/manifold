@@ -60,23 +60,39 @@ export function listenForBets(
   })
 }
 
-export async function getUserBets(userId: string) {
+export async function getUserBets(
+  userId: string,
+  options: { includeRedemptions: boolean }
+) {
+  const { includeRedemptions } = options
   return getValues<Bet>(
     query(collectionGroup(db, 'bets'), where('userId', '==', userId))
   )
+    .then((bets) =>
+      bets.filter(
+        (bet) => (includeRedemptions || !bet.isRedemption) && !bet.isAnte
+      )
+    )
+    .catch((reason) => reason)
 }
 
 export function listenForUserBets(
   userId: string,
-  setBets: (bets: Bet[]) => void
+  setBets: (bets: Bet[]) => void,
+  options: { includeRedemptions: boolean }
 ) {
+  const { includeRedemptions } = options
   const userQuery = query(
     collectionGroup(db, 'bets'),
-    where('userId', '==', userId)
+    where('userId', '==', userId),
+    orderBy('createdTime', 'desc')
   )
   return listenForValues<Bet>(userQuery, (bets) => {
-    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-    setBets(bets)
+    setBets(
+      bets.filter(
+        (bet) => (includeRedemptions || !bet.isRedemption) && !bet.isAnte
+      )
+    )
   })
 }
 
