@@ -6,11 +6,14 @@ import {
   listenForUserContractBets,
 } from 'web/lib/firebase/bets'
 
-export const useUserBets = (userId: string | undefined) => {
+export const useUserBets = (
+  userId: string | undefined,
+  options: { includeRedemptions: boolean }
+) => {
   const [bets, setBets] = useState<Bet[] | undefined>(undefined)
 
   useEffect(() => {
-    if (userId) return listenForUserBets(userId, setBets)
+    if (userId) return listenForUserBets(userId, setBets, options)
   }, [userId])
 
   return bets
@@ -42,11 +45,15 @@ export const useUserBetContracts = (userId: string | undefined) => {
         setContractIds(JSON.parse(userBetContractJson))
       }
 
-      return listenForUserBets(userId, (bets) => {
-        const contractIds = _.uniq(bets.map((bet) => bet.contractId))
-        setContractIds(contractIds)
-        localStorage.setItem(key, JSON.stringify(contractIds))
-      })
+      return listenForUserBets(
+        userId,
+        (bets) => {
+          const contractIds = _.uniq(bets.map((bet) => bet.contractId))
+          setContractIds(contractIds)
+          localStorage.setItem(key, JSON.stringify(contractIds))
+        },
+        { includeRedemptions: false }
+      )
     }
   }, [userId])
 
