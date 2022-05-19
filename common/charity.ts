@@ -396,7 +396,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
   {
     name: 'The Trevor Project',
     website: 'https://www.thetrevorproject.org/',
-    photo: 'https://www.thetrevorproject.org/wp-content/uploads/2021/09/METADATA_IMG_ORANGE-BG.jpg',
+    photo: 'https://i.imgur.com/QN4mVNn.jpeg',
     preview: 'The Trevor Project is the world’s largest suicide prevention and crisis intervention organization for LGBTQ (lesbian, gay, bisexual, transgender, queer, and questioning) young people.',
     description:
       `Two decades ago, we responded to a health crisis. Now we’re building a safer, more-inclusive world. LGBTQ young people are four times more likely to attempt suicide, and suicide remains the second leading cause of death among all young people in the U.S.
