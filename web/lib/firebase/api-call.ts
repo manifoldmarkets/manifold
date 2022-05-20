@@ -25,14 +25,14 @@ export async function call(name: string, method: string, params: any) {
       'Content-Type': 'application/json',
     },
     method: method,
-    body: JSON.stringify({ data: params }),
+    body: JSON.stringify(params),
   })
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
-    if (json.data.status == 'error') {
-      throw new APIError(resp.status, json.data.message)
+    if (!resp.ok) {
+      throw new APIError(resp.status, json?.message)
     }
-    return json.data
+    return json
   })
 }
 
