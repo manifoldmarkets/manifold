@@ -1,16 +1,17 @@
 import clsx from 'clsx'
-import { getNumericBetsInfo } from 'common/new-bet'
 import { useState } from 'react'
 
-import { Bet } from '../../common/bet'
+import { getNumericBetsInfo } from 'common/new-bet'
+import { Bet } from 'common/bet'
 import {
   calculatePayoutAfterCorrectBet,
   getOutcomeProbability,
-} from '../../common/calculate'
-import { NumericContract } from '../../common/contract'
-import { formatPercent, formatMoney } from '../../common/util/format'
+} from 'common/calculate'
+import { NumericContract } from 'common/contract'
+import { formatPercent, formatMoney } from 'common/util/format'
+
 import { useUser } from '../hooks/use-user'
-import { placeBet } from '../lib/firebase/api-call'
+import { APIError, placeBet } from '../lib/firebase/api-call'
 import { firebaseLogin, User } from '../lib/firebase/users'
 import { BuyAmountInput } from './amount-input'
 import { BucketInput } from './bucket-input'
@@ -80,24 +81,28 @@ function NumericBuyPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    const result = await placeBet({
+    await placeBet({
       amount: betAmount,
       outcome: bucketChoice,
       value,
       contractId: contract.id,
-    }).then((r) => r.data as any)
-
-    console.log('placed bet. Result:', result)
-
-    if (result?.status === 'success') {
-      setIsSubmitting(false)
-      setWasSubmitted(true)
-      setBetAmount(undefined)
-      if (onBuySuccess) onBuySuccess()
-    } else {
-      setError(result?.message || 'Error placing bet')
-      setIsSubmitting(false)
-    }
+    })
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        setWasSubmitted(true)
+        setBetAmount(undefined)
+        if (onBuySuccess) onBuySuccess()
+      })
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.toString())
+        } else {
+          console.error(e)
+          setError('Error placing bet')
+        }
+        setIsSubmitting(false)
+      })
   }
 
   const betDisabled = isSubmitting || !betAmount || !bucketChoice || error
