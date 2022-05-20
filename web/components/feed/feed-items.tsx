@@ -55,7 +55,7 @@ export function FeedItems(props: {
     <div className={clsx('flow-root', className)} ref={setElem}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
-          <div key={item.id} className={'relative pb-6'}>
+          <div key={item.id} className={'relative pb-4'}>
             {activityItemIdx !== items.length - 1 ||
             item.type === 'answergroup' ? (
               <span
@@ -63,7 +63,7 @@ export function FeedItems(props: {
                 aria-hidden="true"
               />
             ) : null}
-            <div className="relative flex items-start space-x-3">
+            <div className="relative flex-col items-start space-x-3">
               <FeedItem item={item} />
             </div>
           </div>
@@ -122,7 +122,7 @@ export function FeedQuestion(props: {
   const isNew = createdTime > Date.now() - DAY_MS
 
   return (
-    <>
+    <div className={'flex gap-2'}>
       <Avatar
         username={contract.creatorUsername}
         avatarUrl={contract.creatorAvatarUrl}
@@ -171,7 +171,7 @@ export function FeedQuestion(props: {
           />
         )}
       </div>
-    </>
+    </div>
   )
 }
 

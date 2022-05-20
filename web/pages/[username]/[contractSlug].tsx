@@ -185,7 +185,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
         />
       )}
 
-      <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white px-2 py-6 md:px-6 md:py-8">
+      <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white px-1 py-6 sm:px-2 md:px-6 md:py-8">
         {backToHome && (
           <button
             className="btn btn-sm mb-4 items-center gap-2 self-start border-0 border-gray-700 bg-white normal-case text-gray-700 hover:bg-white hover:text-gray-700 lg:hidden"
