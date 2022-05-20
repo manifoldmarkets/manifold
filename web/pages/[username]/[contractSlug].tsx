@@ -44,6 +44,8 @@ import { NumericBetPanel } from '../../components/numeric-bet-panel'
 import { NumericResolutionPanel } from '../../components/numeric-resolution-panel'
 import { FeedComment } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
+import { useIsIframe } from 'web/hooks/use-is-iframe'
+import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -112,6 +114,11 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
     )
     setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
+
+  const inIframe = useIsIframe()
+  if (inIframe) {
+    return <ContractEmbedPage {...props} />
+  }
 
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
