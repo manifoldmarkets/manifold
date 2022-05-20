@@ -16,7 +16,7 @@ const Home = () => {
 
   return (
     <Page assertUser="signed-in">
-      <Col className="mx-auto w-full">
+      <Col className="mx-auto w-full p-2">
         <ContractSearch
           querySortOptions={{
             shouldLoadFromStorage: false,
