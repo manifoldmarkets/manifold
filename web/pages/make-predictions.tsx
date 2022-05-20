@@ -148,14 +148,14 @@ ${TEST_VALUE}
     }
     setIsSubmitting(true)
     for (const prediction of predictions) {
-      const contract = await createContract({
+      const contract = (await createContract({
         question: prediction.question,
         description: prediction.description,
         initialProb: prediction.initialProb,
         ante,
         closeTime,
         tags: parseWordsAsTags(tags),
-      }).then((r) => r.contract)
+      })) as FullContract<DPM | CPMM, Binary>
 
       setCreatedContracts((prev) => [...prev, contract])
     }
