@@ -70,7 +70,7 @@ export default function SendPage() {
 
         {manalinkTxns.length > 0 && (
           <Col className="mt-12">
-            <h1 className="text-xl font-semibold text-gray-900">
+            <h1 className="mb-4 text-xl font-semibold text-gray-900">
               Claimed links
             </h1>
             {manalinkTxns.map((txn) => (
