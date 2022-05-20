@@ -3,6 +3,10 @@ import * as functions from 'firebase-functions'
 import * as Cors from 'cors'
 
 import { User, PrivateUser } from 'common/user'
+import {
+  CORS_ORIGIN_MANIFOLD,
+  CORS_ORIGIN_LOCALHOST,
+} from 'common/envs/constants'
 
 type Request = functions.https.Request
 type Response = functions.Response
@@ -89,9 +93,6 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
       throw new APIError(500, 'Invalid credential type.')
   }
 }
-
-export const CORS_ORIGIN_MANIFOLD = /^https?:\/\/(?:.+\.)manifold\.markets$/
-export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/
 
 export const applyCors = (req: any, res: any, params: object) => {
   return new Promise((resolve, reject) => {
