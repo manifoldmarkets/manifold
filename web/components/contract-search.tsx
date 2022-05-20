@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import algoliasearch from 'algoliasearch/lite'
 import {
   InstantSearch,
@@ -8,7 +9,6 @@ import {
   useRange,
   useRefinementList,
   useSortBy,
-  useToggleRefinement,
 } from 'react-instantsearch-hooks-web'
 import { Contract } from '../../common/contract'
 import {
@@ -237,13 +237,16 @@ const useFilterClosed = (value: boolean | undefined) => {
 }
 
 const useFilterResolved = (value: boolean | undefined) => {
-  // Note (James): I don't know why this works.
-  const { refine: refineResolved } = useToggleRefinement({
-    attribute: value === undefined ? 'non-existant-field' : 'isResolved',
-    on: true,
-    off: value === undefined ? undefined : false,
+  const { items, refine: deleteRefinement } = useCurrentRefinements({
+    includedAttributes: ['isResolved'],
   })
+
+  const { refine } = useRefinementList({ attribute: 'isResolved' })
+
   useEffect(() => {
-    refineResolved({ isRefined: !value })
+    const refinements = items[0]?.refinements ?? []
+
+    if (value !== undefined) refine(`${value}`)
+    refinements.forEach((refinement) => deleteRefinement(refinement))
   }, [value])
 }
