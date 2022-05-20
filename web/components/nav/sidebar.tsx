@@ -130,7 +130,7 @@ export default function Sidebar(props: { className?: string }) {
     const utcMidnightToLocalDate = new Date(getUtcMidnightToday())
     const interval = setInterval(() => {
       const timeUntil = utcMidnightToLocalDate.getTime() - new Date().getTime()
-      const hoursUntil = 22 + timeUntil / 1000 / 60 / 60
+      const hoursUntil = 24 + timeUntil / 1000 / 60 / 60
       const minutesUntil = Math.floor((hoursUntil * 60) % 60)
       const secondsUntil = Math.floor((hoursUntil * 60 * 60) % 60)
       const hoursUntilFloor = Math.floor(hoursUntil)
