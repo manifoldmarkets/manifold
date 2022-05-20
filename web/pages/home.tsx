@@ -19,7 +19,7 @@ const Home = () => {
       <Col className="mx-auto w-full p-2">
         <ContractSearch
           querySortOptions={{
-            shouldLoadFromStorage: false,
+            shouldLoadFromStorage: true,
             defaultSort: '24-hour-vol',
           }}
           showCategorySelector
