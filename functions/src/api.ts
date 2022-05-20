@@ -90,7 +90,7 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
   }
 }
 
-export const CORS_ORIGIN_MANIFOLD = /^https?:\/\/.+\.manifold\.markets$/
+export const CORS_ORIGIN_MANIFOLD = /^https?:\/\/(?:.+\.)manifold\.markets$/
 export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/
 
 export const applyCors = (req: any, res: any, params: object) => {
@@ -107,7 +107,7 @@ export const applyCors = (req: any, res: any, params: object) => {
 export const newEndpoint = (methods: [string], fn: Handler) =>
   functions.runWith({ minInstances: 1 }).https.onRequest(async (req, res) => {
     await applyCors(req, res, {
-      origins: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
+      origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
       methods: methods,
     })
     try {
