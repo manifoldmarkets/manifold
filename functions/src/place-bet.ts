@@ -45,11 +45,6 @@ export const placeBet = newEndpoint(['POST'], async (req, _res) => {
       if (closeTime && Date.now() > closeTime)
         throw new APIError(400, 'Trading is closed')
 
-      const yourBetsSnap = await transaction.get(
-        contractDoc.collection('bets').where('userId', '==', bettor.id)
-      )
-      const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
-
       const loanAmount = 0 // getLoanAmount(yourBets, amount)
       if (user.balance < amount) throw new APIError(400, 'Insufficient balance')
 
