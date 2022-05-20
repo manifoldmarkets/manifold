@@ -94,7 +94,11 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
   }
 }
 
-export const applyCors = (req: any, res: any, params: object) => {
+export const applyCors = (
+  req: Request,
+  res: Response,
+  params: Cors.CorsOptions
+) => {
   return new Promise((resolve, reject) => {
     Cors(params)(req, res, (result) => {
       if (result instanceof Error) {
