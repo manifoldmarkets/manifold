@@ -210,7 +210,7 @@ export default function Sidebar(props: { className?: string }) {
       mustWaitForFreeMarketStatus ? (
         <Row className="mt-2 justify-center">
           <Row className="gap-1 text-sm text-gray-400">
-            Next daily free market in {countdown}
+            Next free market in {countdown}
           </Row>
         </Row>
       ) : (
