@@ -88,7 +88,7 @@ export function getAnteBets(
 }
 
 export function getFreeAnswerAnte(
-  creator: User,
+  anteBettorId: string,
   contract: FullContract<DPM, FreeResponse>,
   anteBetId: string
 ) {
@@ -100,7 +100,7 @@ export function getFreeAnswerAnte(
 
   const anteBet: Bet = {
     id: anteBetId,
-    userId: creator.id,
+    userId: anteBettorId,
     contractId: contract.id,
     amount,
     shares,
