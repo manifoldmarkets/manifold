@@ -81,7 +81,7 @@ export function FeedCommentThread(props: {
         </div>
       ))}
       {showReply && (
-        <div className={'ml-5 flex flex-col pt-6'}>
+        <div className={'-pb-2 ml-5 flex flex-col pt-6'}>
           <CommentInput
             contract={contract}
             betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
@@ -155,7 +155,7 @@ export function FeedComment(props: {
         avatarUrl={userAvatarUrl}
       />
       <div className="min-w-0 flex-1">
-        <p className="mt-0.5 text-sm text-gray-500">
+        <p className="mt-0.5 pl-0.5 text-sm text-gray-500">
           <UserLink
             className="text-gray-500"
             username={userUsername}
@@ -331,7 +331,7 @@ export function CommentInput(props: {
           />
         </div>
         <div className={'min-w-0 flex-1'}>
-          <div className="text-sm text-gray-500">
+          <div className="pl-0.5 text-sm text-gray-500">
             <div className={'mb-1'}>
               {mostRecentCommentableBet && (
                 <BetStatusText
@@ -365,7 +365,7 @@ export function CommentInput(props: {
             <Row className="grid grid-cols-8 gap-1.5 text-gray-700">
               <Col
                 className={clsx(
-                  'col-span-7 sm:col-span-6',
+                  'col-span-8 sm:col-span-6',
                   !user && 'col-span-8'
                 )}
               >
@@ -423,11 +423,13 @@ export function CommentInput(props: {
                 {user && !isSubmitting && (
                   <button
                     className={clsx(
-                      'btn col-span-1 block flex flex-row capitalize',
-                      'sm:col-span-2',
+                      'btn btn-ghost btn-sm block flex flex-row capitalize',
+                      'absolute bottom-4 right-1 col-span-1',
+                      parentComment ? ' bottom-6 right-2.5' : '',
+                      'sm:relative sm:bottom-0 sm:right-0 sm:col-span-2',
                       focused && comment
-                        ? 'btn-outline btn-sm'
-                        : 'btn-ghost btn-sm pointer-events-none text-gray-500'
+                        ? 'sm:btn-outline'
+                        : 'pointer-events-none text-gray-500'
                     )}
                     onClick={() => {
                       if (!focused) return
@@ -439,10 +441,12 @@ export function CommentInput(props: {
                     <span className={'hidden sm:block'}>
                       {parentComment || answerOutcome ? 'Reply' : 'Comment'}
                     </span>
-                    <PaperAirplaneIcon
-                      className={'m-0 min-w-[22px] rotate-90 p-0 sm:hidden'}
-                      height={25}
-                    />
+                    {focused && (
+                      <PaperAirplaneIcon
+                        className={'m-0 min-w-[22px] rotate-90 p-0 sm:hidden'}
+                        height={25}
+                      />
+                    )}
                   </button>
                 )}
                 {isSubmitting && (
