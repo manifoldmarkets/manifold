@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../layout/row'
-import { formatPercent } from 'common/util/format'
+import { formatLargeNumber, formatPercent } from 'common/util/format'
 import {
   Contract,
   contractPath,
@@ -255,7 +255,7 @@ export function NumericResolutionOrExpectation(props: {
       ) : (
         <>
           <div className="text-3xl text-blue-400">
-            {getExpectedValue(contract)}
+            {formatLargeNumber(getExpectedValue(contract))}
           </div>
           <div className="text-base text-blue-400">expected</div>
         </>
