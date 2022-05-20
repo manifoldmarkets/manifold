@@ -36,7 +36,7 @@ import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
 import { FeedComment } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
-import { inIframe, useInIframe } from 'web/lib/util/embed'
+import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -107,7 +107,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
     setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
 
-  const inIframe = useInIframe()
+  const inIframe = useIsIframe()
   if (inIframe) {
     return <ContractEmbedPage {...props} />
   }
