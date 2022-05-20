@@ -141,72 +141,68 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
 
   await contractRef.create(contract)
 
-  if (ante) {
-    if (outcomeType === 'BINARY' && contract.mechanism === 'dpm-2') {
-      const yesBetDoc = firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc()
+  const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : creator.id
 
-      const noBetDoc = firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc()
+  if (outcomeType === 'BINARY' && contract.mechanism === 'dpm-2') {
+    const yesBetDoc = firestore
+      .collection(`contracts/${contract.id}/bets`)
+      .doc()
 
-      const { yesBet, noBet } = getAnteBets(
-        creator,
-        contract as FullContract<DPM, Binary>,
-        yesBetDoc.id,
-        noBetDoc.id
-      )
+    const noBetDoc = firestore.collection(`contracts/${contract.id}/bets`).doc()
 
-      await yesBetDoc.set(yesBet)
-      await noBetDoc.set(noBet)
-    } else if (outcomeType === 'BINARY') {
-      const liquidityDoc = firestore
-        .collection(`contracts/${contract.id}/liquidity`)
-        .doc()
+    const { yesBet, noBet } = getAnteBets(
+      creator,
+      contract as FullContract<DPM, Binary>,
+      yesBetDoc.id,
+      noBetDoc.id
+    )
 
-      const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : creator.id
+    await yesBetDoc.set(yesBet)
+    await noBetDoc.set(noBet)
+  } else if (outcomeType === 'BINARY') {
+    const liquidityDoc = firestore
+      .collection(`contracts/${contract.id}/liquidity`)
+      .doc()
 
-      const lp = getCpmmInitialLiquidity(
-        providerId,
-        contract as FullContract<CPMM, Binary>,
-        liquidityDoc.id,
-        ante
-      )
+    const lp = getCpmmInitialLiquidity(
+      providerId,
+      contract as FullContract<CPMM, Binary>,
+      liquidityDoc.id,
+      ante
+    )
 
-      await liquidityDoc.set(lp)
-    } else if (outcomeType === 'FREE_RESPONSE') {
-      const noneAnswerDoc = firestore
-        .collection(`contracts/${contract.id}/answers`)
-        .doc('0')
+    await liquidityDoc.set(lp)
+  } else if (outcomeType === 'FREE_RESPONSE') {
+    const noneAnswerDoc = firestore
+      .collection(`contracts/${contract.id}/answers`)
+      .doc('0')
 
-      const noneAnswer = getNoneAnswer(contract.id, creator)
-      await noneAnswerDoc.set(noneAnswer)
+    const noneAnswer = getNoneAnswer(contract.id, creator)
+    await noneAnswerDoc.set(noneAnswer)
 
-      const anteBetDoc = firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc()
+    const anteBetDoc = firestore
+      .collection(`contracts/${contract.id}/bets`)
+      .doc()
 
-      const anteBet = getFreeAnswerAnte(
-        creator,
-        contract as FullContract<DPM, FreeResponse>,
-        anteBetDoc.id
-      )
-      await anteBetDoc.set(anteBet)
-    } else if (outcomeType === 'NUMERIC') {
-      const anteBetDoc = firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc()
+    const anteBet = getFreeAnswerAnte(
+      providerId,
+      contract as FullContract<DPM, FreeResponse>,
+      anteBetDoc.id
+    )
+    await anteBetDoc.set(anteBet)
+  } else if (outcomeType === 'NUMERIC') {
+    const anteBetDoc = firestore
+      .collection(`contracts/${contract.id}/bets`)
+      .doc()
 
-      const anteBet = getNumericAnte(
-        creator,
-        contract as FullContract<DPM, Numeric>,
-        ante,
-        anteBetDoc.id
-      )
+    const anteBet = getNumericAnte(
+      creator,
+      contract as FullContract<DPM, Numeric>,
+      ante,
+      anteBetDoc.id
+    )
 
-      await anteBetDoc.set(anteBet)
-    }
+    await anteBetDoc.set(anteBet)
   }
 
   return { contract: contract }
