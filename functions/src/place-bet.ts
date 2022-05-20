@@ -18,7 +18,7 @@ export const placeBet = newEndpoint(['POST'], async (req, _res) => {
   const [bettor, _privateUser] = await lookupUser(await parseCredentials(req))
   const { amount, outcome, contractId, value } = req.body.data || {}
 
-  if (amount <= 0 || isNaN(amount) || !isFinite(amount))
+  if (amount < 1 || isNaN(amount) || !isFinite(amount))
     throw new APIError(400, 'Invalid amount')
 
   if (outcome !== 'YES' && outcome !== 'NO' && isNaN(+outcome))
