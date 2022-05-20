@@ -38,7 +38,15 @@ function getProb(contract: Contract) {
     ? getBinaryProb(contract)
     : outcomeType === 'FREE_RESPONSE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
+    : outcomeType === 'NUMERIC'
+    ? getNumericScale(contract as NumericContract)
     : 1 // Should not happen
+}
+
+function getNumericScale(contract: NumericContract) {
+  const { min, max } = contract
+  const ev = getExpectedValue(contract)
+  return (ev - min) / (max - min)
 }
 
 function getColor(contract: Contract) {
@@ -50,6 +58,9 @@ function getColor(contract: Contract) {
       // If resolved to a FR answer, use 'primary'
       'primary'
     )
+  }
+  if (contract.outcomeType === 'NUMERIC') {
+    return 'blue-400'
   }
 
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
