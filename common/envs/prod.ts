@@ -44,7 +44,7 @@ export const PROD_CONFIG: EnvConfig = {
   ],
   visibility: 'PUBLIC',
 
-  moneyMoniker: 'ϻ',
+  moneyMoniker: 'M$',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',
   newQuestionPlaceholders: [
