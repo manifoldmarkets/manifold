@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { FIREBASE_CONFIG } from 'common/envs/constants'
-import { pipeline } from 'node:stream/promises'
+import { promisify } from 'util'
+import { pipeline } from 'stream'
 import fetch, { Headers, Request, Response } from 'node-fetch'
 
 function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
@@ -63,6 +64,6 @@ export const forwardResponse = async (
   ])
   res.writeHead(backendRes.status, headers)
   if (backendRes.body != null) {
-    return await pipeline(backendRes.body, res)
+    return await promisify(pipeline)(backendRes.body, res)
   }
 }
