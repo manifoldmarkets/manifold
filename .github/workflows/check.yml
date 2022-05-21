@@ -25,7 +25,12 @@ jobs:
         with:
           node-version: latest
           cache: 'yarn'
-      - name: Install dependencies
+      - name: Restore cached node_modules
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ matrix.node-version }}-nodemodules-${{ hashFiles('**/yarn.lock') }}
+      - name: Install missing dependencies
         run: yarn install --prefer-offline --frozen-lockfile
       - name: Run Prettier
         run: npx prettier --check .
