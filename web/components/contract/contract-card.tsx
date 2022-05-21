@@ -87,19 +87,17 @@ export function ContractCard(props: {
 
   const prob = getProb(contract)
   const color = getColor(contract)
-  const marketClosed = (contract.closeTime || Infinity) < Date.now()
-  const showTopBar = prob >= 0.5 || marketClosed
 
   return (
     <div>
       <Col
         className={clsx(
-          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-7 shadow-md hover:bg-gray-100',
+          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:cursor-pointer',
           className
         )}
       >
-        <Row className={clsx('justify-between gap-4')}>
-          <Col className="relative gap-3">
+        <Row className="justify-between">
+          <Col className="relative gap-3 pr-1.5">
             <AvatarDetails contract={contract} />
             <p
               className="break-words font-medium text-indigo-700"
@@ -121,27 +119,28 @@ export function ContractCard(props: {
               showCloseTime={showCloseTime}
             />
             <Link href={contractPath(contract)}>
-              <a className="absolute -left-6 right-0 -top-4 -bottom-4" />
+              <a className="absolute -left-6 right-0 -top-4 -bottom-4 rounded-l-lg hover:bg-gray-400 hover:bg-opacity-10" />
             </Link>
           </Col>
 
-          <Col className="relative -my-4 justify-center gap-2">
+          <Col className="relative -my-4 -mr-5 justify-center gap-2 pr-5 pl-3 ">
             <div className="mt-4">
               <div
-                className="peer absolute top-0 -left-4 -right-7 h-[50%]"
-                onClick={(e) => {
+                className="peer absolute top-0 left-0 right-0 rounded-tr-lg hover:bg-gray-400 hover:bg-opacity-10"
+                style={{ height: 'calc(50% + 0.5rem)' }}
+                onClick={() => {
                   // console.log('e', e)
                 }}
               ></div>
               {contract.createdTime % 3 == 0 ? (
                 <TriangleFillIcon
                   className={clsx(
-                    'mx-auto h-5 w-5 peer-hover:text-opacity-60',
+                    'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
                     `text-${color}`
                   )}
                 />
               ) : (
-                <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+                <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-300" />
               )}
             </div>
 
@@ -169,15 +168,16 @@ export function ContractCard(props: {
 
             <div className="mb-4">
               <div
-                className="peer absolute bottom-0 -left-4 -right-7 h-[50%]"
-                onClick={(e) => {
+                className="peer absolute bottom-0 left-0 right-0 rounded-br-lg hover:bg-gray-400 hover:bg-opacity-10"
+                style={{ height: 'calc(50% - 0.5rem)' }}
+                onClick={() => {
                   // console.log('e2', e)
                 }}
               ></div>
               {contract.createdTime % 3 == 2 ? (
                 <TriangleDownFillIcon
                   className={clsx(
-                    'mx-auto h-5 w-5 peer-hover:text-opacity-60',
+                    'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
                     `text-${color}`
                   )}
                 />
@@ -249,7 +249,7 @@ function FreeResponseTopAnswer(props: {
   truncate: 'short' | 'long' | 'none'
   className?: string
 }) {
-  const { contract, truncate, className } = props
+  const { contract, truncate } = props
   const { resolution } = contract
 
   const topAnswer = getTopAnswer(contract)
