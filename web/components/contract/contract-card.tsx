@@ -27,8 +27,8 @@ import {
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-import TriangleIcon from 'web/lib/icons/triangle-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
@@ -94,7 +94,7 @@ export function ContractCard(props: {
     <div>
       <Col
         className={clsx(
-          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-7 shadow-md hover:cursor-pointer hover:bg-gray-100',
+          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-7 shadow-md hover:bg-gray-100',
           className
         )}
       >
@@ -126,22 +126,24 @@ export function ContractCard(props: {
           </Col>
 
           <Col className="relative -my-4 justify-center gap-2">
-            <div
-              className="peer absolute top-0 -left-4 -right-7 h-[50%]"
-              onClick={(e) => {
-                // console.log('e', e)
-              }}
-            ></div>
-            {contract.createdTime % 3 == 0 ? (
-              <TriangleFillIcon
-                className={clsx(
-                  'mx-auto h-5 w-5 peer-hover:text-opacity-60',
-                  `text-${color}`
-                )}
-              />
-            ) : (
-              <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
-            )}
+            <div className="mt-4">
+              <div
+                className="peer absolute top-0 -left-4 -right-7 h-[50%]"
+                onClick={(e) => {
+                  // console.log('e', e)
+                }}
+              ></div>
+              {contract.createdTime % 3 == 0 ? (
+                <TriangleFillIcon
+                  className={clsx(
+                    'mx-auto h-5 w-5 peer-hover:text-opacity-60',
+                    `text-${color}`
+                  )}
+                />
+              ) : (
+                <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+              )}
+            </div>
 
             {outcomeType === 'BINARY' && (
               <BinaryResolutionOrChance
@@ -165,23 +167,22 @@ export function ContractCard(props: {
               />
             )}
 
-            <div>
+            <div className="mb-4">
               <div
                 className="peer absolute bottom-0 -left-4 -right-7 h-[50%]"
                 onClick={(e) => {
                   // console.log('e2', e)
                 }}
               ></div>
-              {/* Note: Something about rotate-180 screws with the hitbox. Rotate the SVG instead. */}
               {contract.createdTime % 3 == 2 ? (
-                <TriangleFillIcon
+                <TriangleDownFillIcon
                   className={clsx(
-                    'mx-auto h-5 w-5 rotate-180 peer-hover:text-opacity-60',
+                    'mx-auto h-5 w-5 peer-hover:text-opacity-60',
                     `text-${color}`
                   )}
                 />
               ) : (
-                <TriangleFillIcon className="mx-auto h-5 w-5 rotate-180 text-gray-200 peer-hover:text-gray-400" />
+                <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
               )}
             </div>
           </Col>
