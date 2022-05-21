@@ -94,16 +94,12 @@ export function ContractCard(props: {
     <div>
       <Col
         className={clsx(
-          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-7 shadow-md hover:bg-gray-100',
+          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-7 shadow-md hover:cursor-pointer hover:bg-gray-100',
           className
         )}
       >
-        <Link href={contractPath(contract)}>
-          <a className="absolute left-0 right-0 top-0 bottom-0" />
-        </Link>
-
         <Row className={clsx('justify-between gap-4')}>
-          <Col className="gap-3">
+          <Col className="relative gap-3">
             <AvatarDetails contract={contract} />
             <p
               className="break-words font-medium text-indigo-700"
@@ -124,15 +120,27 @@ export function ContractCard(props: {
               showHotVolume={showHotVolume}
               showCloseTime={showCloseTime}
             />
+            <Link href={contractPath(contract)}>
+              <a className="absolute -left-6 right-0 -top-4 -bottom-4" />
+            </Link>
           </Col>
 
-          <Col className="gap-2">
+          <Col className="relative -my-4 justify-center gap-2">
+            <div
+              className="peer absolute top-0 -left-4 -right-7 h-[50%]"
+              onClick={(e) => {
+                // console.log('e', e)
+              }}
+            ></div>
             {contract.createdTime % 3 == 0 ? (
               <TriangleFillIcon
-                className={clsx('mx-auto h-5 w-5', `text-${color}`)}
+                className={clsx(
+                  'mx-auto h-5 w-5 peer-hover:text-opacity-60',
+                  `text-${color}`
+                )}
               />
             ) : (
-              <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200" />
+              <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
             )}
 
             {outcomeType === 'BINARY' && (
@@ -157,13 +165,25 @@ export function ContractCard(props: {
               />
             )}
 
-            {contract.createdTime % 3 == 2 ? (
-              <TriangleFillIcon
-                className={clsx('mx-auto h-5 w-5 rotate-180', `text-${color}`)}
-              />
-            ) : (
-              <TriangleFillIcon className="mx-auto h-5 w-5 rotate-180 text-gray-200" />
-            )}
+            <div>
+              <div
+                className="peer absolute bottom-0 -left-4 -right-7 h-[50%]"
+                onClick={(e) => {
+                  // console.log('e2', e)
+                }}
+              ></div>
+              {/* Note: Something about rotate-180 screws with the hitbox. Rotate the SVG instead. */}
+              {contract.createdTime % 3 == 2 ? (
+                <TriangleFillIcon
+                  className={clsx(
+                    'mx-auto h-5 w-5 rotate-180 peer-hover:text-opacity-60',
+                    `text-${color}`
+                  )}
+                />
+              ) : (
+                <TriangleFillIcon className="mx-auto h-5 w-5 rotate-180 text-gray-200 peer-hover:text-gray-400" />
+              )}
+            </div>
           </Col>
         </Row>
 
