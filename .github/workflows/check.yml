@@ -12,7 +12,7 @@ on:
 
 jobs:
   check:
-    name: Perform static analysis checks
+    name: Static analysis
     runs-on: ubuntu-latest
     permissions:
       contents: read
