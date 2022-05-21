@@ -2,11 +2,11 @@ import * as admin from 'firebase-admin'
 import * as functions from 'firebase-functions'
 import * as Cors from 'cors'
 
-import { User, PrivateUser } from 'common/user'
+import { User, PrivateUser } from '../../common/user'
 import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
-} from 'common/envs/constants'
+} from '../../common/envs/constants'
 
 type Request = functions.https.Request
 type Response = functions.Response
