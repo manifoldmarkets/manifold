@@ -94,7 +94,7 @@ export function ContractCard(props: {
     <div>
       <Col
         className={clsx(
-          'relative gap-3 rounded-lg bg-white p-6 pr-7 shadow-md hover:bg-gray-100',
+          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-7 shadow-md hover:bg-gray-100',
           className
         )}
       >
@@ -111,6 +111,13 @@ export function ContractCard(props: {
             >
               {question}
             </p>
+
+            {outcomeType === 'FREE_RESPONSE' && (
+              <FreeResponseTopAnswer
+                contract={contract as FullContract<DPM, FreeResponse>}
+                truncate="long"
+              />
+            )}
 
             <MiscDetails
               contract={contract}
@@ -216,6 +223,25 @@ export function BinaryResolutionOrChance(props: {
   )
 }
 
+function FreeResponseTopAnswer(props: {
+  contract: FreeResponseContract
+  truncate: 'short' | 'long' | 'none'
+  className?: string
+}) {
+  const { contract, truncate, className } = props
+  const { resolution } = contract
+
+  const topAnswer = getTopAnswer(contract)
+
+  return topAnswer ? (
+    <AnswerLabel
+      className="!text-gray-600"
+      answer={topAnswer}
+      truncate={truncate}
+    />
+  ) : null
+}
+
 export function FreeResponseResolutionOrChance(props: {
   contract: FreeResponseContract
   truncate: 'short' | 'long' | 'none'
@@ -242,11 +268,6 @@ export function FreeResponseResolutionOrChance(props: {
       ) : (
         topAnswer && (
           <Row className="items-center gap-6">
-            <AnswerLabel
-              className="!text-gray-600"
-              answer={topAnswer}
-              truncate={truncate}
-            />
             <Col className={clsx('text-3xl', textColor)}>
               <div>
                 {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
