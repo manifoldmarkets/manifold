@@ -25,7 +25,11 @@ import {
   OUTCOME_TO_COLOR,
 } from '../outcome-label'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
-import { AbbrContractDetails } from './contract-details'
+import {
+  AbbrContractDetails,
+  AvatarDetails,
+  MiscDetails,
+} from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import {
   ArrowCircleUpIcon,
@@ -33,6 +37,7 @@ import {
   StarIcon,
   PaperAirplaneIcon,
 } from '@heroicons/react/outline'
+import { PaperAirplaneIcon as SolidPlaneIcon } from '@heroicons/react/solid'
 
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
@@ -56,6 +61,9 @@ function getNumericScale(contract: NumericContract) {
 }
 
 function getColor(contract: Contract) {
+  // TODO: Not sure why eg green-400 doesn't work here; try upgrading Tailwind
+  // TODO: Try injecting a gradient here
+  // return 'primary'
   const { resolution } = contract
   if (resolution) {
     return (
@@ -103,65 +111,63 @@ export function ContractCard(props: {
           <a className="absolute left-0 right-0 top-0 bottom-0" />
         </Link>
 
-        <AbbrContractDetails
-          contract={contract}
-          showHotVolume={showHotVolume}
-          showCloseTime={showCloseTime}
-        />
-
         <Row className={clsx('justify-between gap-4')}>
           <Col className="gap-3">
+            <AvatarDetails contract={contract} />
             <p
               className="break-words font-medium text-indigo-700"
               style={{ /* For iOS safari */ wordBreak: 'break-word' }}
             >
               {question}
             </p>
-          </Col>
-          {outcomeType === 'BINARY' && (
-            <BinaryResolutionOrChance
-              className="items-center"
+
+            <MiscDetails
               contract={contract}
+              showHotVolume={showHotVolume}
+              showCloseTime={showCloseTime}
             />
-          )}
+          </Col>
 
-          {outcomeType === 'NUMERIC' && (
-            <NumericResolutionOrExpectation
-              className="items-center"
-              contract={contract as NumericContract}
-            />
-          )}
+          <Col className="gap-2">
+            {contract.createdTime % 3 == 0 ? (
+              <SolidPlaneIcon
+                className={clsx('mx-auto h-6 w-6', `text-${color}`)}
+              />
+            ) : (
+              <PaperAirplaneIcon className="mx-auto h-6 w-6 text-gray-400" />
+            )}
+
+            {outcomeType === 'BINARY' && (
+              <BinaryResolutionOrChance
+                className="items-center"
+                contract={contract}
+              />
+            )}
+
+            {outcomeType === 'NUMERIC' && (
+              <NumericResolutionOrExpectation
+                className="items-center"
+                contract={contract as NumericContract}
+              />
+            )}
+
+            {outcomeType === 'FREE_RESPONSE' && (
+              <FreeResponseResolutionOrChance
+                className="self-end text-gray-600"
+                contract={contract as FullContract<DPM, FreeResponse>}
+                truncate="long"
+              />
+            )}
+
+            {contract.createdTime % 3 == 2 ? (
+              <SolidPlaneIcon
+                className={clsx('mx-auto h-6 w-6 rotate-180', `text-${color}`)}
+              />
+            ) : (
+              <PaperAirplaneIcon className="mx-auto h-6 w-6 rotate-180 text-gray-400" />
+            )}
+          </Col>
         </Row>
-
-        {outcomeType === 'FREE_RESPONSE' && (
-          <FreeResponseResolutionOrChance
-            className="self-end text-gray-600"
-            contract={contract as FullContract<DPM, FreeResponse>}
-            truncate="long"
-          />
-        )}
-
-        {/* Show a row with 3 clickable icons: star, upvote, downvote */}
-        <div className="grid grid-cols-3">
-          <PaperAirplaneIcon
-            className={clsx(
-              'mx-auto h-5 w-5',
-              contract.createdTime % 3 == 0 ? 'text-primary' : 'text-gray-400'
-            )}
-          />
-          <StarIcon
-            className={clsx(
-              'mx-auto h-5 w-5',
-              contract.createdTime % 3 == 1 ? 'text-blue-400' : 'text-gray-400'
-            )}
-          />
-          <PaperAirplaneIcon
-            className={clsx(
-              'mx-auto h-5 w-5 rotate-180',
-              contract.createdTime % 3 == 2 ? 'text-red-400' : 'text-gray-400'
-            )}
-          />
-        </div>
 
         <div
           className={clsx(
@@ -269,6 +275,7 @@ export function NumericResolutionOrExpectation(props: {
 }) {
   const { contract, className } = props
   const { resolution } = contract
+  const textColor = `text-${getColor(contract)}`
 
   const resolutionValue =
     contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
@@ -282,10 +289,10 @@ export function NumericResolutionOrExpectation(props: {
         </>
       ) : (
         <>
-          <div className="text-3xl text-blue-400">
+          <div className={clsx('text-3xl', textColor)}>
             {formatLargeNumber(getExpectedValue(contract))}
           </div>
-          <div className="text-base text-blue-400">expected</div>
+          <div className={clsx('text-base', textColor)}>expected</div>
         </>
       )}
     </Col>
