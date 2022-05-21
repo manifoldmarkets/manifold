@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { FIREBASE_CONFIG } from 'common/envs/constants'
 import { promisify } from 'util'
 import { pipeline } from 'stream'
-import fetch, { Headers, Request, Response } from 'node-fetch'
+import fetch, { Headers, Response } from 'node-fetch'
 
 function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
   const result = new Headers()
@@ -35,19 +35,13 @@ function getProxiedResponseHeaders(res: Response, whitelist: string[]) {
 export const fetchBackend = (req: NextApiRequest, endpoint: string) => {
   const { projectId, region } = FIREBASE_CONFIG
   const url = `https://${region}-${projectId}.cloudfunctions.net/${endpoint}`
-  const proxyHeaders = getProxiedRequestHeaders(req, [
+  const headers = getProxiedRequestHeaders(req, [
     'Authorization',
     'Content-Length',
     'Content-Type',
     'Origin',
   ])
-  return fetch(
-    new Request(url, {
-      headers: proxyHeaders,
-      method: req.method,
-      body: req,
-    })
-  )
+  return fetch(url, { headers, method: req.method, body: req })
 }
 
 export const forwardResponse = async (
@@ -56,7 +50,6 @@ export const forwardResponse = async (
 ) => {
   const headers = getProxiedResponseHeaders(backendRes, [
     'Access-Control-Allow-Origin',
-    'Content-Length',
     'Content-Type',
     'Cache-Control',
     'ETag',
