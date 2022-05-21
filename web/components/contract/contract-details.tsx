@@ -43,11 +43,11 @@ export function MiscDetails(props: {
 
   return (
     <Row className="items-center gap-3 text-sm text-gray-400">
-      {contract.createdTime % 3 == 1 ? (
+      {/* {contract.createdTime % 3 == 1 ? (
         <SolidStarIcon className="h-6 w-6 text-indigo-600" />
       ) : (
         <StarIcon className="h-6 w-6 text-gray-400" />
-      )}
+      )} */}
 
       {categories.length > 0 && (
         <TagsList className="text-gray-400" tags={categories} noLabel />

@@ -25,18 +25,9 @@ import {
   OUTCOME_TO_COLOR,
 } from '../outcome-label'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
-import {
-  AbbrContractDetails,
-  AvatarDetails,
-  MiscDetails,
-} from './contract-details'
+import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-import {
-  ArrowCircleUpIcon,
-  ArrowCircleDownIcon,
-  StarIcon,
-  PaperAirplaneIcon,
-} from '@heroicons/react/outline'
+import { PaperAirplaneIcon } from '@heroicons/react/outline'
 import { PaperAirplaneIcon as SolidPlaneIcon } from '@heroicons/react/solid'
 
 // Return a number from 0 to 1 for this contract
