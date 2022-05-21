@@ -191,13 +191,16 @@ export function ContractSearchInner(props: {
     filter === 'resolved' ? true : filter === 'all' ? undefined : false
   )
 
-  const { showMore, hits, isLastPage, results } = useInfiniteHits()
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  useEffect(() => {
+    const id = setTimeout(() => setIsInitialLoad(false), 1000)
+    return () => clearTimeout(id)
+  }, [])
+
+  const { showMore, hits, isLastPage } = useInfiniteHits()
   const contracts = hits as any as Contract[]
 
-  const router = useRouter()
-  const hasLoaded = contracts.length > 0 || router.isReady
-
-  if (!hasLoaded || !results) return <></>
+  if (isInitialLoad && contracts.length === 0) return <></>
 
   return (
     <ContractsGrid
