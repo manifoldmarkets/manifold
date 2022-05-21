@@ -10,9 +10,9 @@ export type Sort =
   | 'oldest'
   | 'most-traded'
   | '24-hour-vol'
-  | 'closing-soon'
-  | 'closed'
-  | 'resolved'
+  | 'close-date'
+  | 'resolve-date'
+  | 'last-updated'
 
 export function useInitialQueryAndSort(options?: {
   defaultSort: Sort
