@@ -132,7 +132,7 @@ export function FeedComment(props: {
     if (router.asPath.endsWith(`#${comment.id}`)) {
       setHighlighted(true)
     }
-  }, [router.asPath])
+  }, [comment.id, router.asPath])
 
   // Only calculated if they don't have a matching bet
   const { userPosition, outcome } = getBettorsLargestPositionBeforeTime(
@@ -287,7 +287,7 @@ export function CommentInput(props: {
   useEffect(() => {
     if (!replyToUsername || !user || replyToUsername === user.username) return
     const replacement = `@${replyToUsername} `
-    setComment(replacement + comment.replace(replacement, ''))
+    setComment((comment) => replacement + comment.replace(replacement, ''))
   }, [user, replyToUsername])
 
   async function submitComment(betId: string | undefined) {
