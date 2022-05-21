@@ -32,11 +32,15 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.node-version }}-nodemodules-${{ hashFiles('**/yarn.lock') }}
       - name: Install missing dependencies
         run: yarn install --prefer-offline --frozen-lockfile
-      - name: Run Prettier
+      - name: Run Prettier on web client
+        working-directory: web
         run: npx prettier --check .
       - name: Run ESLint on web client
-        run: cd web && yarn lint
+        working-directory: web
+        run: yarn lint
       - name: Run Typescript checker on web client
-        run: tsc --pretty --project web/tsconfig.json --noEmit
+        working-directory: web
+        run: tsc --pretty --project tsconfig.json --noEmit
       - name: Run Typescript checker on cloud functions
-        run: tsc --pretty --project functions/tsconfig.json --noEmit
+        working-directory: functions
+        run: tsc --pretty --project tsconfig.json --noEmit
