@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Run Prettier
-        run: npx prettier .
+        run: npx prettier --check .
       - name: Run ESLint on web client
         run: cd web && yarn lint
       - name: Run Typescript checker on web client
