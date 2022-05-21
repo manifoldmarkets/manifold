@@ -27,8 +27,8 @@ import {
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-import { PaperAirplaneIcon } from '@heroicons/react/outline'
-import { PaperAirplaneIcon as SolidPlaneIcon } from '@heroicons/react/solid'
+import TriangleIcon from 'web/lib/icons/triangle-icon'
+import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
@@ -128,11 +128,11 @@ export function ContractCard(props: {
 
           <Col className="gap-2">
             {contract.createdTime % 3 == 0 ? (
-              <SolidPlaneIcon
-                className={clsx('mx-auto h-6 w-6', `text-${color}`)}
+              <TriangleFillIcon
+                className={clsx('mx-auto h-5 w-5', `text-${color}`)}
               />
             ) : (
-              <PaperAirplaneIcon className="mx-auto h-6 w-6 text-gray-400" />
+              <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200" />
             )}
 
             {outcomeType === 'BINARY' && (
@@ -158,11 +158,11 @@ export function ContractCard(props: {
             )}
 
             {contract.createdTime % 3 == 2 ? (
-              <SolidPlaneIcon
-                className={clsx('mx-auto h-6 w-6 rotate-180', `text-${color}`)}
+              <TriangleFillIcon
+                className={clsx('mx-auto h-5 w-5 rotate-180', `text-${color}`)}
               />
             ) : (
-              <PaperAirplaneIcon className="mx-auto h-6 w-6 rotate-180 text-gray-400" />
+              <TriangleFillIcon className="mx-auto h-5 w-5 rotate-180 text-gray-200" />
             )}
           </Col>
         </Row>
