@@ -6,6 +6,7 @@ export const THEOREMONE_CONFIG: EnvConfig = {
     apiKey: 'AIzaSyBSXL6Ys7InNHnCKSy-_E_luhh4Fkj4Z6M',
     authDomain: 'theoremone-manifold.firebaseapp.com',
     projectId: 'theoremone-manifold',
+    region: 'us-central1',
     storageBucket: 'theoremone-manifold.appspot.com',
     messagingSenderId: '698012149198',
     appId: '1:698012149198:web:b342af75662831aa84b79f',
