@@ -34,16 +34,15 @@ jobs:
       - name: Run Prettier on web client
         working-directory: web
         run: npx prettier --check .
-        continue-on-error: true
       - name: Run ESLint on web client
+        if: ${{ success() || failure() }}
         working-directory: web
         run: yarn lint --max-warnings 0
-        continue-on-error: true
       - name: Run Typescript checker on web client
+        if: ${{ success() || failure() }}
         working-directory: web
         run: tsc --pretty --project tsconfig.json --noEmit
-        continue-on-error: true
       - name: Run Typescript checker on cloud functions
+        if: ${{ success() || failure() }}
         working-directory: functions
         run: tsc --pretty --project tsconfig.json --noEmit
-        continue-on-error: true
