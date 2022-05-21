@@ -27,23 +27,27 @@ jobs:
   prettier:
     needs: setup
     name: Run Prettier
+    runs-on: ubuntu-latest
     steps:
       - run: npx prettier .
 
   eslint:
     needs: setup
     name: Run ESLint on web client
+    runs-on: ubuntu-latest
     steps:
       - run: cd web && yarn lint
 
   tsc-web:
     needs: setup
     name: Run Typescript checker on web client
+    runs-on: ubuntu-latest
     steps:
       - run: tsc --pretty --project web/tsconfig.json --noEmit
 
   tsc-functions:
     needs: setup
     name: Run Typescript checker on cloud functions
+    runs-on: ubuntu-latest
     steps:
       - run: tsc --pretty --project functions/tsconfig.json --noEmit
