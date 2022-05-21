@@ -27,6 +27,12 @@ import {
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AbbrContractDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
+import {
+  ArrowCircleUpIcon,
+  ArrowCircleDownIcon,
+  StarIcon,
+  PaperAirplaneIcon,
+} from '@heroicons/react/outline'
 
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
@@ -134,6 +140,28 @@ export function ContractCard(props: {
             truncate="long"
           />
         )}
+
+        {/* Show a row with 3 clickable icons: star, upvote, downvote */}
+        <div className="grid grid-cols-3">
+          <PaperAirplaneIcon
+            className={clsx(
+              'mx-auto h-5 w-5',
+              contract.createdTime % 3 == 0 ? 'text-primary' : 'text-gray-400'
+            )}
+          />
+          <StarIcon
+            className={clsx(
+              'mx-auto h-5 w-5',
+              contract.createdTime % 3 == 1 ? 'text-blue-400' : 'text-gray-400'
+            )}
+          />
+          <PaperAirplaneIcon
+            className={clsx(
+              'mx-auto h-5 w-5 rotate-180',
+              contract.createdTime % 3 == 2 ? 'text-red-400' : 'text-gray-400'
+            )}
+          />
+        </div>
 
         <div
           className={clsx(
