@@ -37,6 +37,7 @@ const sortIndexes = [
   { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
   { label: 'Most traded', value: indexPrefix + 'contracts-most-traded' },
   { label: '24h volume', value: indexPrefix + 'contracts-24-hour-vol' },
+  { label: 'Last updated', value: indexPrefix + 'contracts-last-updated' },
   { label: 'Close date', value: indexPrefix + 'contracts-close-date' },
   { label: 'Resolve date', value: indexPrefix + 'contracts-resolve-date' },
 ]
