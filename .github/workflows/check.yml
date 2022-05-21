@@ -1,0 +1,49 @@
+name: Check PRs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  setup:
+    name: Set up test environment
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Prepare Node environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: latest
+          cache: 'yarn'
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+  prettier:
+    needs: setup
+    name: Run Prettier
+    steps:
+      - run: npx prettier .
+
+  eslint:
+    needs: setup
+    name: Run ESLint on web client
+    steps:
+      - run: cd web && yarn lint
+
+  tsc-web:
+    needs: setup
+    name: Run Typescript checker on web client
+    steps:
+      - run: tsc --pretty --project web/tsconfig.json --noEmit
+
+  tsc-functions:
+    needs: setup
+    name: Run Typescript checker on cloud functions
+    steps:
+      - run: tsc --pretty --project functions/tsconfig.json --noEmit
