@@ -103,9 +103,20 @@ export function ContractCard(props: {
       >
         <Row>
           <Col className="relative flex-1 gap-3 pr-1">
+            <div
+              className={clsx(
+                'peer absolute -left-6 -top-4 -bottom-4 z-10',
+                // Hack: Extend the clickable area for closed markets
+                marketClosed ? 'right-[-6.5rem]' : 'right-0'
+              )}
+            >
+              <Link href={contractPath(contract)}>
+                <a className="absolute top-0 left-0 right-0 bottom-0" />
+              </Link>
+            </div>
             <AvatarDetails contract={contract} />
             <p
-              className="break-words font-medium text-indigo-700"
+              className="break-words font-medium text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
               style={{ /* For iOS safari */ wordBreak: 'break-word' }}
             >
               {question}
@@ -123,15 +134,6 @@ export function ContractCard(props: {
               showHotVolume={showHotVolume}
               showCloseTime={showCloseTime}
             />
-            <Link href={contractPath(contract)}>
-              {/* Note: Extends bg but not click target on closed markets */}
-              <a
-                className={clsx(
-                  'absolute -left-6 -top-4 -bottom-4',
-                  marketClosed ? 'right-[-6rem]' : 'right-0'
-                )}
-              />
-            </Link>
           </Col>
 
           <Col className="relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle">
@@ -186,8 +188,7 @@ export function ContractCard(props: {
               <div>
                 <div
                   className="peer absolute bottom-0 left-0 right-0 h-[50%]"
-                  onClick={() => {
-                  }}
+                  onClick={() => {}}
                 ></div>
                 {contract.createdTime % 3 == 2 ? (
                   <TriangleDownFillIcon
