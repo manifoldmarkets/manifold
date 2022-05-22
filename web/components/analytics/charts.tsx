@@ -114,17 +114,11 @@ export function DailyPercentChart(props: {
 function Tooltip(props: { point: Point }) {
   const { point } = props
   return (
-    <Col
-      className="border bg-white py-1 px-3 "
-      style={{
-        border: '1px solid #ccc',
-      }}
-    >
+    <Col className="border border-gray-300 bg-white py-2 px-3">
       <div
-        key={point.id}
+        className="pb-1"
         style={{
           color: point.serieColor,
-          padding: '3px 0',
         }}
       >
         <strong>{point.serieId}</strong> {point.data.yFormatted}
