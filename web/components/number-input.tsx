@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'

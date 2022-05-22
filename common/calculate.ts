@@ -1,4 +1,4 @@
-import * as _ from 'lodash'
+import { maxBy } from 'lodash'
 import { Bet } from './bet'
 import {
   calculateCpmmSale,
@@ -180,7 +180,7 @@ export function getContractBetNullMetrics() {
 
 export function getTopAnswer(contract: FreeResponseContract) {
   const { answers } = contract
-  const top = _.maxBy(
+  const top = maxBy(
     answers?.map((answer) => ({
       answer,
       prob: getOutcomeProbability(contract, answer.id),

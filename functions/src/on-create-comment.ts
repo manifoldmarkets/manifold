@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { uniq } from 'lodash'
 
 import { getContract, getUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
@@ -60,7 +60,7 @@ export const onCreateComment = functions.firestore
       firestore.collection('contracts').doc(contractId).collection('comments')
     )
 
-    const recipientUserIds = _.uniq([
+    const recipientUserIds = uniq([
       contract.creatorId,
       ...comments.map((comment) => comment.userId),
     ]).filter((id) => id !== comment.userId)

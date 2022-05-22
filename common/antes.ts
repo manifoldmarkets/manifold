@@ -1,3 +1,4 @@
+import { range } from 'lodash'
 import { Bet, NumericBet } from './bet'
 import { getDpmProbability, getValueFromBucket } from './calculate-dpm'
 import {
@@ -11,7 +12,6 @@ import {
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
-import * as _ from 'lodash'
 
 export const FIXED_ANTE = 100
 
@@ -127,11 +127,11 @@ export function getNumericAnte(
   const betShares = Math.sqrt(ante ** 2 / bucketCount)
 
   const allOutcomeShares = Object.fromEntries(
-    _.range(0, bucketCount).map((_, i) => [i, betShares])
+    range(0, bucketCount).map((_, i) => [i, betShares])
   )
 
   const allBetAmounts = Object.fromEntries(
-    _.range(0, bucketCount).map((_, i) => [i, betAnte])
+    range(0, bucketCount).map((_, i) => [i, betAnte])
   )
 
   const anteBet: NumericBet = {

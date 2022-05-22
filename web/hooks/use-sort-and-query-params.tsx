@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { defaults, debounce } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchBox } from 'react-instantsearch-hooks-web'
@@ -18,7 +18,7 @@ export function useInitialQueryAndSort(options?: {
   defaultSort: Sort
   shouldLoadFromStorage?: boolean
 }) {
-  const { defaultSort, shouldLoadFromStorage } = _.defaults(options, {
+  const { defaultSort, shouldLoadFromStorage } = defaults(options, {
     defaultSort: '24-hour-vol',
     shouldLoadFromStorage: true,
   })
@@ -79,7 +79,7 @@ export function useUpdateQueryAndSort(props: {
   // Debounce router query update.
   const pushQuery = useMemo(
     () =>
-      _.debounce((query: string | undefined) => {
+      debounce((query: string | undefined) => {
         if (query) {
           router.query.q = query
         } else {

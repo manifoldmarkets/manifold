@@ -11,7 +11,7 @@ import {
   SparklesIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import _ from 'lodash'
+import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from 'web/hooks/use-fold'
@@ -124,7 +124,7 @@ export default function Sidebar(props: { className?: string }) {
 
   const user = useUser()
   let folds = useFollowedFolds(user) || []
-  folds = _.sortBy(folds, 'followCount').reverse()
+  folds = sortBy(folds, 'followCount').reverse()
   const deservesDailyFreeMarket = !useHasCreatedContractToday(user)
 
   const navigationOptions =

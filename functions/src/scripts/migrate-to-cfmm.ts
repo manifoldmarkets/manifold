@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sortBy } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
@@ -48,7 +48,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
 
     const betsRef = contractRef.collection('bets')
     const betDocs = await transaction.get(betsRef)
-    const bets = _.sortBy(
+    const bets = sortBy(
       betDocs.docs.map((d) => d.data() as Bet),
       (b) => b.createdTime
     )
