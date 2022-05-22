@@ -90,10 +90,7 @@ function QuickBet(props: {
   setLiveUpdate: (liveUpdate: boolean) => void
 }) {
   const { contract, setLiveUpdate } = props
-  const { outcomeType } = contract
-
   const color = getColor(contract)
-  const marketClosed = (contract.closeTime || Infinity) < Date.now()
 
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
     setLiveUpdate(true)
@@ -131,30 +128,65 @@ function QuickBet(props: {
   }
 
   return (
-    <Col className="relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle">
-      {!marketClosed && (
-        <div>
-          <div
-            className="peer absolute top-0 left-0 right-0 h-[50%]"
-            onClick={() => placeQuickBet('UP')}
-          ></div>
-          <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
-            {formatMoney(10)}
-          </div>
-
-          {contract.createdTime % 3 == 0 ? (
-            <TriangleFillIcon
-              className={clsx(
-                'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
-                `text-${color}`
-              )}
-            />
-          ) : (
-            <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
-          )}
-        </div>
+    <Col
+      className={clsx(
+        'relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle',
+        // Use this for colored QuickBet panes
+        // `bg-opacity-10 bg-${color}`
+        'bg-gray-50'
       )}
+    >
+      <div>
+        <div
+          className="peer absolute top-0 left-0 right-0 h-[50%]"
+          onClick={() => placeQuickBet('UP')}
+        ></div>
+        <div className="mt-2 text-center text-xs text-transparent peer-hover:text-gray-400">
+          {formatMoney(10)}
+        </div>
 
+        {contract.createdTime % 3 == 0 ? (
+          <TriangleFillIcon
+            className={clsx(
+              'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
+              `text-${color}`
+            )}
+          />
+        ) : (
+          <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+        )}
+      </div>
+
+      <QuickOutcomeView contract={contract} />
+
+      <div>
+        <div
+          className="peer absolute bottom-0 left-0 right-0 h-[50%]"
+          onClick={() => placeQuickBet('DOWN')}
+        ></div>
+        {contract.createdTime % 3 == 2 ? (
+          <TriangleDownFillIcon
+            className={clsx(
+              'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
+              `text-${color}`
+            )}
+          />
+        ) : (
+          <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+        )}
+        <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400">
+          {formatMoney(10)}
+        </div>
+      </div>
+    </Col>
+  )
+}
+
+function QuickOutcomeView(props: { contract: Contract }) {
+  const { contract } = props
+  const { outcomeType } = contract
+  return (
+    <>
       {outcomeType === 'BINARY' && (
         <BinaryResolutionOrChance
           className="items-center"
@@ -176,29 +208,7 @@ function QuickBet(props: {
           truncate="long"
         />
       )}
-
-      {!marketClosed && (
-        <div>
-          <div
-            className="peer absolute bottom-0 left-0 right-0 h-[50%]"
-            onClick={() => placeQuickBet('DOWN')}
-          ></div>
-          {contract.createdTime % 3 == 2 ? (
-            <TriangleDownFillIcon
-              className={clsx(
-                'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
-                `text-${color}`
-              )}
-            />
-          ) : (
-            <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
-          )}
-          <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
-            {formatMoney(10)}
-          </div>
-        </div>
-      )}
-    </Col>
+    </>
   )
 }
 
@@ -232,7 +242,7 @@ export function ContractCard(props: {
           className
         )}
       >
-        <Row>
+        <Row className={clsx(marketClosed ? '' : 'divide-x')}>
           <Col className="relative flex-1 gap-3 pr-1">
             <div
               className={clsx(
@@ -266,7 +276,13 @@ export function ContractCard(props: {
               showCloseTime={showCloseTime}
             />
           </Col>
-          <QuickBet contract={contract} setLiveUpdate={setLiveUpdate} />
+          {marketClosed ? (
+            <Col className="m-auto pl-2">
+              <QuickOutcomeView contract={contract} />
+            </Col>
+          ) : (
+            <QuickBet contract={contract} setLiveUpdate={setLiveUpdate} />
+          )}
         </Row>
 
         <div
