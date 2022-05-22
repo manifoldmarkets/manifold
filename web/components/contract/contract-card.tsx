@@ -103,18 +103,39 @@ export function ContractCard(props: {
     }
   }, [liveUpdate])
 
-  async function quickBet(outcome: string) {
+  async function quickBet(direction: 'UP' | 'DOWN') {
     setLiveUpdate(true)
-    const betPromise = placeBet({
-      amount: 10,
-      outcome,
-      contractId: contract.id,
+    const betPromise = async () => {
+      const outcome = quickOutcome(contract, direction)
+      return await placeBet({
+        amount: 10,
+        outcome,
+        contractId: contract.id,
+      })
+    }
+    const shortQ = contract.question.slice(0, 20)
+    toast.promise(betPromise(), {
+      loading: `${formatMoney(10)} on "${shortQ}"...`,
+      success: `${formatMoney(10)} on "${shortQ}"...`,
+      error: (err) => `${err.message}`,
     })
-    toast.promise(betPromise, {
-      loading: `Betting ${formatMoney(10)} on ${outcome}`,
-      success: `Bet ${formatMoney(10)} on ${outcome}`,
-      error: (err: APIError) => `Betting failed: ${err.message}`,
-    })
+  }
+
+  function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
+    if (contract.outcomeType === 'BINARY') {
+      return direction === 'UP' ? 'YES' : 'NO'
+    }
+    if (contract.outcomeType === 'FREE_RESPONSE') {
+      // TODO: Implement shorting of free response answers
+      if (direction === 'DOWN') {
+        throw new Error("Can't short free response answers")
+      }
+      return getTopAnswer(contract)?.id
+    }
+    if (contract.outcomeType === 'NUMERIC') {
+      // TODO: Ideally an 'UP' bet would be a uniform bet between [current, max]
+      throw new Error("Can't quick bet on numeric markets")
+    }
   }
 
   const prob = getProb(contract)
@@ -169,7 +190,7 @@ export function ContractCard(props: {
               <div>
                 <div
                   className="peer absolute top-0 left-0 right-0 h-[50%]"
-                  onClick={() => quickBet('YES')}
+                  onClick={() => quickBet('UP')}
                 ></div>
                 <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
                   {formatMoney(20)}
@@ -214,7 +235,7 @@ export function ContractCard(props: {
               <div>
                 <div
                   className="peer absolute bottom-0 left-0 right-0 h-[50%]"
-                  onClick={() => quickBet('NO')}
+                  onClick={() => quickBet('DOWN')}
                 ></div>
                 {contract.createdTime % 3 == 2 ? (
                   <TriangleDownFillIcon
@@ -293,7 +314,6 @@ function FreeResponseTopAnswer(props: {
   className?: string
 }) {
   const { contract, truncate } = props
-  const { resolution } = contract
 
   const topAnswer = getTopAnswer(contract)
 
