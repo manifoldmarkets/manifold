@@ -233,6 +233,10 @@ export function ContractCard(props: {
   const prob = getProb(contract)
   const color = getColor(contract)
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
+  const showQuickBet = !(
+    marketClosed ||
+    (outcomeType === 'FREE_RESPONSE' && getTopAnswer(contract) === undefined)
+  )
 
   return (
     <div>
@@ -242,13 +246,13 @@ export function ContractCard(props: {
           className
         )}
       >
-        <Row className={clsx(marketClosed ? '' : 'divide-x')}>
+        <Row className={clsx(showQuickBet ? 'divide-x' : '')}>
           <Col className="relative flex-1 gap-3 pr-1">
             <div
               className={clsx(
                 'peer absolute -left-6 -top-4 -bottom-4 z-10',
                 // Hack: Extend the clickable area for closed markets
-                marketClosed ? 'right-[-6.5rem]' : 'right-0'
+                showQuickBet ? 'right-0' : 'right-[-6.5rem]'
               )}
             >
               <Link href={contractPath(contract)}>
@@ -276,12 +280,12 @@ export function ContractCard(props: {
               showCloseTime={showCloseTime}
             />
           </Col>
-          {marketClosed ? (
+          {showQuickBet ? (
+            <QuickBet contract={contract} setLiveUpdate={setLiveUpdate} />
+          ) : (
             <Col className="m-auto pl-2">
               <QuickOutcomeView contract={contract} />
             </Col>
-          ) : (
-            <QuickBet contract={contract} setLiveUpdate={setLiveUpdate} />
           )}
         </Row>
 
