@@ -96,8 +96,8 @@ export function ContractCard(props: {
           className
         )}
       >
-        <Row className="justify-between">
-          <Col className="relative gap-3 pr-1.5">
+        <Row className="justify-between divide-x">
+          <Col className="relative gap-3 pr-1">
             <AvatarDetails contract={contract} />
             <p
               className="break-words font-medium text-indigo-700"
@@ -123,11 +123,10 @@ export function ContractCard(props: {
             </Link>
           </Col>
 
-          <Col className="relative -my-4 -mr-5 justify-center gap-2 pr-5 pl-3 ">
+          <Col className="relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle">
             <div className="mt-4">
               <div
-                className="peer absolute top-0 left-0 right-0 rounded-tr-lg hover:bg-gray-400 hover:bg-opacity-10"
-                style={{ height: 'calc(50% + 0.5rem)' }}
+                className="peer absolute top-0 left-0 right-0 h-[50%] rounded-tr-lg hover:bg-gray-400 hover:bg-opacity-10"
                 onClick={() => {
                   // console.log('e', e)
                 }}
@@ -140,7 +139,7 @@ export function ContractCard(props: {
                   )}
                 />
               ) : (
-                <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-300" />
+                <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
               )}
             </div>
 
@@ -168,8 +167,7 @@ export function ContractCard(props: {
 
             <div className="mb-4">
               <div
-                className="peer absolute bottom-0 left-0 right-0 rounded-br-lg hover:bg-gray-400 hover:bg-opacity-10"
-                style={{ height: 'calc(50% - 0.5rem)' }}
+                className="peer absolute bottom-0 left-0 right-0 h-[50%] rounded-br-lg hover:bg-gray-400 hover:bg-opacity-10"
                 onClick={() => {
                   // console.log('e2', e)
                 }}
@@ -235,9 +233,6 @@ export function BinaryResolutionOrChance(props: {
       ) : (
         <>
           <div className={textColor}>{getBinaryProbPercent(contract)}</div>
-          <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
-            chance
-          </div>
         </>
       )}
     </Col>
@@ -293,7 +288,6 @@ export function FreeResponseResolutionOrChance(props: {
               <div>
                 {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
               </div>
-              <div className="text-base">chance</div>
             </Col>
           </Row>
         )
@@ -325,7 +319,6 @@ export function NumericResolutionOrExpectation(props: {
           <div className={clsx('text-3xl', textColor)}>
             {formatLargeNumber(getExpectedValue(contract))}
           </div>
-          <div className={clsx('text-base', textColor)}>expected</div>
         </>
       )}
     </Col>
