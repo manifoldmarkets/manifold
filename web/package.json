@@ -35,6 +35,7 @@
     "react-confetti": "6.0.1",
     "react-dom": "17.0.2",
     "react-expanding-textarea": "2.3.5",
+    "react-hot-toast": "^2.2.0",
     "react-instantsearch-hooks-web": "6.24.1"
   },
   "devDependencies": {
