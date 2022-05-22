@@ -11,6 +11,7 @@ import {
   contractPath,
   getBinaryProbPercent,
   getBinaryProb,
+  listenForContract,
 } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
@@ -33,6 +34,10 @@ import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import { APIError, placeBet } from 'web/lib/firebase/api-call'
+import toast from 'react-hot-toast'
+import { useEffect, useState } from 'react'
+import { useContract, useContractWithPreload } from 'web/hooks/use-contract'
 
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
@@ -86,8 +91,31 @@ export function ContractCard(props: {
   showCloseTime?: boolean
   className?: string
 }) {
-  const { contract, showHotVolume, showCloseTime, className } = props
+  const { showHotVolume, showCloseTime, className } = props
+  const [liveUpdate, setLiveUpdate] = useState(false)
+  const [contract, setContract] = useState<Contract>(props.contract)
   const { question, outcomeType } = contract
+
+  // When liveUpdate is true, start keeping this contract in sync
+  useEffect(() => {
+    if (liveUpdate) {
+      listenForContract(contract.id, (c) => setContract(c || contract))
+    }
+  }, [liveUpdate])
+
+  async function quickBet(outcome: string) {
+    setLiveUpdate(true)
+    const betPromise = placeBet({
+      amount: 10,
+      outcome,
+      contractId: contract.id,
+    })
+    toast.promise(betPromise, {
+      loading: `Betting ${formatMoney(10)} on ${outcome}`,
+      success: `Bet ${formatMoney(10)} on ${outcome}`,
+      error: (err: APIError) => `Betting failed: ${err.message}`,
+    })
+  }
 
   const prob = getProb(contract)
   const color = getColor(contract)
@@ -141,9 +169,7 @@ export function ContractCard(props: {
               <div>
                 <div
                   className="peer absolute top-0 left-0 right-0 h-[50%]"
-                  onClick={() => {
-                    console.log('success')
-                  }}
+                  onClick={() => quickBet('YES')}
                 ></div>
                 <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
                   {formatMoney(20)}
@@ -188,7 +214,7 @@ export function ContractCard(props: {
               <div>
                 <div
                   className="peer absolute bottom-0 left-0 right-0 h-[50%]"
-                  onClick={() => {}}
+                  onClick={() => quickBet('NO')}
                 ></div>
                 {contract.createdTime % 3 == 2 ? (
                   <TriangleDownFillIcon
