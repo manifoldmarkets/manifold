@@ -1,7 +1,11 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../layout/row'
-import { formatLargeNumber, formatPercent } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatPercent,
+} from 'common/util/format'
 import {
   Contract,
   contractPath,
@@ -87,17 +91,18 @@ export function ContractCard(props: {
 
   const prob = getProb(contract)
   const color = getColor(contract)
+  const marketClosed = (contract.closeTime || Infinity) < Date.now()
 
   return (
     <div>
       <Col
         className={clsx(
-          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:cursor-pointer',
+          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:cursor-pointer hover:bg-gray-100',
           className
         )}
       >
-        <Row className="justify-between divide-x">
-          <Col className="relative gap-3 pr-1">
+        <Row>
+          <Col className="relative flex-1 gap-3 pr-1">
             <AvatarDetails contract={contract} />
             <p
               className="break-words font-medium text-indigo-700"
@@ -119,29 +124,41 @@ export function ContractCard(props: {
               showCloseTime={showCloseTime}
             />
             <Link href={contractPath(contract)}>
-              <a className="absolute -left-6 right-0 -top-4 -bottom-4 rounded-l-lg hover:bg-gray-400 hover:bg-opacity-10" />
+              {/* Note: Extends bg but not click target on closed markets */}
+              <a
+                className={clsx(
+                  'absolute -left-6 -top-4 -bottom-4',
+                  marketClosed ? 'right-[-6rem]' : 'right-0'
+                )}
+              />
             </Link>
           </Col>
 
           <Col className="relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle">
-            <div className="mt-4">
-              <div
-                className="peer absolute top-0 left-0 right-0 h-[50%] rounded-tr-lg hover:bg-gray-400 hover:bg-opacity-10"
-                onClick={() => {
-                  // console.log('e', e)
-                }}
-              ></div>
-              {contract.createdTime % 3 == 0 ? (
-                <TriangleFillIcon
-                  className={clsx(
-                    'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
-                    `text-${color}`
-                  )}
-                />
-              ) : (
-                <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
-              )}
-            </div>
+            {!marketClosed && (
+              <div>
+                <div
+                  className="peer absolute top-0 left-0 right-0 h-[50%]"
+                  onClick={() => {
+                    console.log('success')
+                  }}
+                ></div>
+                <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
+                  {formatMoney(20)}
+                </div>
+
+                {contract.createdTime % 3 == 0 ? (
+                  <TriangleFillIcon
+                    className={clsx(
+                      'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
+                      `text-${color}`
+                    )}
+                  />
+                ) : (
+                  <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+                )}
+              </div>
+            )}
 
             {outcomeType === 'BINARY' && (
               <BinaryResolutionOrChance
@@ -165,24 +182,28 @@ export function ContractCard(props: {
               />
             )}
 
-            <div className="mb-4">
-              <div
-                className="peer absolute bottom-0 left-0 right-0 h-[50%] rounded-br-lg hover:bg-gray-400 hover:bg-opacity-10"
-                onClick={() => {
-                  // console.log('e2', e)
-                }}
-              ></div>
-              {contract.createdTime % 3 == 2 ? (
-                <TriangleDownFillIcon
-                  className={clsx(
-                    'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
-                    `text-${color}`
-                  )}
-                />
-              ) : (
-                <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
-              )}
-            </div>
+            {!marketClosed && (
+              <div>
+                <div
+                  className="peer absolute bottom-0 left-0 right-0 h-[50%]"
+                  onClick={() => {
+                  }}
+                ></div>
+                {contract.createdTime % 3 == 2 ? (
+                  <TriangleDownFillIcon
+                    className={clsx(
+                      'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
+                      `text-${color}`
+                    )}
+                  />
+                ) : (
+                  <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+                )}
+                <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
+                  {formatMoney(20)}
+                </div>
+              </div>
+            )}
           </Col>
         </Row>
 
