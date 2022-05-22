@@ -84,11 +84,12 @@ export function FreeResponseOutcomeLabel(props: {
   if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
     <FreeResponseAnswerToolTip text={chosen.text}>
-      <AnswerLabel
+      <span className="text-blue-400">TOP</span>
+      {/* <AnswerLabel
         answer={chosen}
         truncate={truncate}
         className={answerClassName}
-      />
+      /> */}
     </FreeResponseAnswerToolTip>
   )
 }
@@ -117,7 +118,7 @@ export function ProbLabel() {
 }
 
 export function MultiLabel() {
-  return <span className="text-blue-400">MULTI</span>
+  return <span className="text-blue-400">MANY</span>
 }
 
 export function ProbPercentLabel(props: { prob: number }) {
