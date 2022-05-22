@@ -95,7 +95,7 @@ function QuickBet(props: {
   const color = getColor(contract)
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
 
-  async function quickBet(direction: 'UP' | 'DOWN') {
+  async function placeQuickBet(direction: 'UP' | 'DOWN') {
     setLiveUpdate(true)
     const betPromise = async () => {
       const outcome = quickOutcome(contract, direction)
@@ -136,10 +136,10 @@ function QuickBet(props: {
         <div>
           <div
             className="peer absolute top-0 left-0 right-0 h-[50%]"
-            onClick={() => quickBet('UP')}
+            onClick={() => placeQuickBet('UP')}
           ></div>
           <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
-            {formatMoney(20)}
+            {formatMoney(10)}
           </div>
 
           {contract.createdTime % 3 == 0 ? (
@@ -181,7 +181,7 @@ function QuickBet(props: {
         <div>
           <div
             className="peer absolute bottom-0 left-0 right-0 h-[50%]"
-            onClick={() => quickBet('DOWN')}
+            onClick={() => placeQuickBet('DOWN')}
           ></div>
           {contract.createdTime % 3 == 2 ? (
             <TriangleDownFillIcon
@@ -194,7 +194,7 @@ function QuickBet(props: {
             <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
           )}
           <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
-            {formatMoney(20)}
+            {formatMoney(10)}
           </div>
         </div>
       )}
