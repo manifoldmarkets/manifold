@@ -85,23 +85,15 @@ function getColor(contract: Contract) {
     : 'red-400'
 }
 
-export function ContractCard(props: {
+function QuickBet(props: {
   contract: Contract
-  showHotVolume?: boolean
-  showCloseTime?: boolean
-  className?: string
+  setLiveUpdate: (liveUpdate: boolean) => void
 }) {
-  const { showHotVolume, showCloseTime, className } = props
-  const [liveUpdate, setLiveUpdate] = useState(false)
-  const [contract, setContract] = useState<Contract>(props.contract)
-  const { question, outcomeType } = contract
+  const { contract, setLiveUpdate } = props
+  const { outcomeType } = contract
 
-  // When liveUpdate is true, start keeping this contract in sync
-  useEffect(() => {
-    if (liveUpdate) {
-      listenForContract(contract.id, (c) => setContract(c || contract))
-    }
-  }, [liveUpdate])
+  const color = getColor(contract)
+  const marketClosed = (contract.closeTime || Infinity) < Date.now()
 
   async function quickBet(direction: 'UP' | 'DOWN') {
     setLiveUpdate(true)
@@ -137,6 +129,96 @@ export function ContractCard(props: {
       throw new Error("Can't quick bet on numeric markets")
     }
   }
+
+  return (
+    <Col className="relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle">
+      {!marketClosed && (
+        <div>
+          <div
+            className="peer absolute top-0 left-0 right-0 h-[50%]"
+            onClick={() => quickBet('UP')}
+          ></div>
+          <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
+            {formatMoney(20)}
+          </div>
+
+          {contract.createdTime % 3 == 0 ? (
+            <TriangleFillIcon
+              className={clsx(
+                'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
+                `text-${color}`
+              )}
+            />
+          ) : (
+            <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+          )}
+        </div>
+      )}
+
+      {outcomeType === 'BINARY' && (
+        <BinaryResolutionOrChance
+          className="items-center"
+          contract={contract}
+        />
+      )}
+
+      {outcomeType === 'NUMERIC' && (
+        <NumericResolutionOrExpectation
+          className="items-center"
+          contract={contract as NumericContract}
+        />
+      )}
+
+      {outcomeType === 'FREE_RESPONSE' && (
+        <FreeResponseResolutionOrChance
+          className="self-end text-gray-600"
+          contract={contract as FullContract<DPM, FreeResponse>}
+          truncate="long"
+        />
+      )}
+
+      {!marketClosed && (
+        <div>
+          <div
+            className="peer absolute bottom-0 left-0 right-0 h-[50%]"
+            onClick={() => quickBet('DOWN')}
+          ></div>
+          {contract.createdTime % 3 == 2 ? (
+            <TriangleDownFillIcon
+              className={clsx(
+                'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
+                `text-${color}`
+              )}
+            />
+          ) : (
+            <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+          )}
+          <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
+            {formatMoney(20)}
+          </div>
+        </div>
+      )}
+    </Col>
+  )
+}
+
+export function ContractCard(props: {
+  contract: Contract
+  showHotVolume?: boolean
+  showCloseTime?: boolean
+  className?: string
+}) {
+  const { showHotVolume, showCloseTime, className } = props
+  const [liveUpdate, setLiveUpdate] = useState(false)
+  const [contract, setContract] = useState<Contract>(props.contract)
+  const { question, outcomeType } = contract
+
+  // When liveUpdate is true, start keeping this contract in sync
+  useEffect(() => {
+    if (liveUpdate) {
+      listenForContract(contract.id, (c) => setContract(c || contract))
+    }
+  }, [liveUpdate])
 
   const prob = getProb(contract)
   const color = getColor(contract)
@@ -184,75 +266,7 @@ export function ContractCard(props: {
               showCloseTime={showCloseTime}
             />
           </Col>
-
-          <Col className="relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle">
-            {!marketClosed && (
-              <div>
-                <div
-                  className="peer absolute top-0 left-0 right-0 h-[50%]"
-                  onClick={() => quickBet('UP')}
-                ></div>
-                <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
-                  {formatMoney(20)}
-                </div>
-
-                {contract.createdTime % 3 == 0 ? (
-                  <TriangleFillIcon
-                    className={clsx(
-                      'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
-                      `text-${color}`
-                    )}
-                  />
-                ) : (
-                  <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
-                )}
-              </div>
-            )}
-
-            {outcomeType === 'BINARY' && (
-              <BinaryResolutionOrChance
-                className="items-center"
-                contract={contract}
-              />
-            )}
-
-            {outcomeType === 'NUMERIC' && (
-              <NumericResolutionOrExpectation
-                className="items-center"
-                contract={contract as NumericContract}
-              />
-            )}
-
-            {outcomeType === 'FREE_RESPONSE' && (
-              <FreeResponseResolutionOrChance
-                className="self-end text-gray-600"
-                contract={contract as FullContract<DPM, FreeResponse>}
-                truncate="long"
-              />
-            )}
-
-            {!marketClosed && (
-              <div>
-                <div
-                  className="peer absolute bottom-0 left-0 right-0 h-[50%]"
-                  onClick={() => quickBet('DOWN')}
-                ></div>
-                {contract.createdTime % 3 == 2 ? (
-                  <TriangleDownFillIcon
-                    className={clsx(
-                      'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
-                      `text-${color}`
-                    )}
-                  />
-                ) : (
-                  <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
-                )}
-                <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
-                  {formatMoney(20)}
-                </div>
-              </div>
-            )}
-          </Col>
+          <QuickBet contract={contract} setLiveUpdate={setLiveUpdate} />
         </Row>
 
         <div
