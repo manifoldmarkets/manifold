@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sumBy } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
@@ -20,13 +20,13 @@ async function recalculateContract(contractRef: DocRef, contract: Contract) {
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
 
   const totalShares = {
-    YES: _.sumBy(openBets, (bet) => (bet.outcome === 'YES' ? bet.shares : 0)),
-    NO: _.sumBy(openBets, (bet) => (bet.outcome === 'NO' ? bet.shares : 0)),
+    YES: sumBy(openBets, (bet) => (bet.outcome === 'YES' ? bet.shares : 0)),
+    NO: sumBy(openBets, (bet) => (bet.outcome === 'NO' ? bet.shares : 0)),
   }
 
   const totalBets = {
-    YES: _.sumBy(openBets, (bet) => (bet.outcome === 'YES' ? bet.amount : 0)),
-    NO: _.sumBy(openBets, (bet) => (bet.outcome === 'NO' ? bet.amount : 0)),
+    YES: sumBy(openBets, (bet) => (bet.outcome === 'YES' ? bet.amount : 0)),
+    NO: sumBy(openBets, (bet) => (bet.outcome === 'NO' ? bet.amount : 0)),
   }
 
   await contractRef.update({ totalShares, totalBets })

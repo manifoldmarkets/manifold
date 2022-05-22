@@ -6,6 +6,11 @@ module.exports = {
   experimental: {
     externalDir: true,
     optimizeCss: true,
+    modularizeImports: {
+      lodash: {
+        transform: 'lodash/{{member}}',
+      },
+    },
   },
   images: {
     domains: ['lh3.googleusercontent.com', 'i.imgur.com'],

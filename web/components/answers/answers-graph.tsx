@@ -1,7 +1,7 @@
 import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
-import _ from 'lodash'
+import { groupBy, sortBy, sumBy } from 'lodash'
 import { memo } from 'react'
 
 import { Bet } from 'common/bet'
@@ -48,7 +48,7 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
         // to the right.
         latestTime.add(1, 'month').valueOf()
 
-  const times = _.sortBy([
+  const times = sortBy([
     createdTime,
     ...bets.map((bet) => bet.createdTime),
     endTime,
@@ -167,7 +167,7 @@ const computeProbsByOutcome = (
 ) => {
   const { totalBets } = contract
 
-  const betsByOutcome = _.groupBy(bets, (bet) => bet.outcome)
+  const betsByOutcome = groupBy(bets, (bet) => bet.outcome)
   const outcomes = Object.keys(betsByOutcome).filter((outcome) => {
     const maxProb = Math.max(
       ...betsByOutcome[outcome].map((bet) => bet.probAfter)
@@ -175,15 +175,15 @@ const computeProbsByOutcome = (
     return outcome !== '0' && maxProb > 0.02 && totalBets[outcome] > 0.000000001
   })
 
-  const trackedOutcomes = _.sortBy(
+  const trackedOutcomes = sortBy(
     outcomes,
     (outcome) => -1 * getOutcomeProbability(contract, outcome)
   ).slice(0, NUM_LINES)
 
-  const probsByOutcome = _.fromPairs(
+  const probsByOutcome = Object.fromEntries(
     trackedOutcomes.map((outcome) => [outcome, [] as number[]])
   )
-  const sharesByOutcome = _.fromPairs(
+  const sharesByOutcome = Object.fromEntries(
     Object.keys(betsByOutcome).map((outcome) => [outcome, 0])
   )
 
@@ -191,7 +191,7 @@ const computeProbsByOutcome = (
     const { outcome, shares } = bet
     sharesByOutcome[outcome] += shares
 
-    const sharesSquared = _.sumBy(
+    const sharesSquared = sumBy(
       Object.values(sharesByOutcome).map((shares) => shares ** 2)
     )
 

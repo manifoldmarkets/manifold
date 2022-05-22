@@ -1,4 +1,5 @@
 module.exports = {
+  plugins: ['lodash'],
   extends: ['eslint:recommended'],
   ignorePatterns: ['lib'],
   env: {
@@ -17,5 +18,6 @@ module.exports = {
   rules: {
     'no-unused-vars': 'off',
     'no-constant-condition': ['error', { checkLoops: false }],
+    'lodash/import-scope': [2, 'member'],
   },
 }

@@ -1,6 +1,6 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 import React, { useEffect, useState } from 'react'
+import { partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
 import { Binary, CPMM, DPM, FullContract } from 'common/contract'
@@ -441,13 +441,13 @@ export function SellPanel(props: {
   const resultProb = getCpmmProbability(newPool, contract.p)
 
   const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
-  const [yesBets, noBets] = _.partition(
+  const [yesBets, noBets] = partition(
     openUserBets,
     (bet) => bet.outcome === 'YES'
   )
   const [yesShares, noShares] = [
-    _.sumBy(yesBets, (bet) => bet.shares),
-    _.sumBy(noBets, (bet) => bet.shares),
+    sumBy(yesBets, (bet) => bet.shares),
+    sumBy(noBets, (bet) => bet.shares),
   ]
 
   const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined

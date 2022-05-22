@@ -1,8 +1,8 @@
 import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import _ from 'lodash'
 import { memo } from 'react'
+import { range } from 'lodash'
 import { getDpmOutcomeProbabilities } from '../../../common/calculate-dpm'
 import { NumericContract } from '../../../common/contract'
 import { useWindowSize } from '../../hooks/use-window-size'
@@ -16,10 +16,10 @@ export const NumericGraph = memo(function NumericGraph(props: {
 
   const bucketProbs = getDpmOutcomeProbabilities(totalShares)
 
-  const xs = _.range(bucketCount).map(
+  const xs = range(bucketCount).map(
     (i) => min + ((max - min) * i) / bucketCount
   )
-  const probs = _.range(bucketCount).map((i) => bucketProbs[`${i}`] * 100)
+  const probs = range(bucketCount).map((i) => bucketProbs[`${i}`] * 100)
   const points = probs.map((prob, i) => ({ x: xs[i], y: prob }))
   const maxProb = Math.max(...probs)
   const data = [{ id: 'Probability', data: points, color: NUMERIC_GRAPH_COLOR }]

@@ -1,6 +1,6 @@
 import { Point, ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
-import _ from 'lodash'
+import { zip } from 'lodash'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Col } from '../layout/col'
 
@@ -16,7 +16,7 @@ export function DailyCountChart(props: {
     dayjs(startDate).add(i, 'day').toDate()
   )
 
-  const points = _.zip(dates, dailyCounts).map(([date, betCount]) => ({
+  const points = zip(dates, dailyCounts).map(([date, betCount]) => ({
     x: date,
     y: betCount,
   }))
@@ -68,7 +68,7 @@ export function DailyPercentChart(props: {
     dayjs(startDate).add(i, 'day').toDate()
   )
 
-  const points = _.zip(dates, dailyPercent).map(([date, betCount]) => ({
+  const points = zip(dates, dailyPercent).map(([date, betCount]) => ({
     x: date,
     y: betCount,
   }))

@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { sample } from 'lodash'
 import { SparklesIcon, XIcon } from '@heroicons/react/solid'
 import { Avatar } from './avatar'
 import { useEffect, useRef, useState } from 'react'
@@ -86,9 +86,7 @@ export default function FeedCreate(props: {
   // Take care not to produce a different placeholder on the server and client
   const [defaultPlaceholder, setDefaultPlaceholder] = useState('')
   useEffect(() => {
-    setDefaultPlaceholder(
-      `e.g. ${_.sample(ENV_CONFIG.newQuestionPlaceholders)}`
-    )
+    setDefaultPlaceholder(`e.g. ${sample(ENV_CONFIG.newQuestionPlaceholders)}`)
   }, [])
 
   const placeholder = props.placeholder ?? defaultPlaceholder

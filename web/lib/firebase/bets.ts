@@ -5,7 +5,7 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore'
-import _ from 'lodash'
+import { range } from 'lodash'
 
 import { db } from './init'
 import { Bet } from 'common/bet'
@@ -138,7 +138,7 @@ export async function getDailyBets(startTime: number, numberOfDays: number) {
   const query = getBetsQuery(startTime, startTime + DAY_IN_MS * numberOfDays)
   const bets = await getValues<Bet>(query)
 
-  const betsByDay = _.range(0, numberOfDays).map(() => [] as Bet[])
+  const betsByDay = range(0, numberOfDays).map(() => [] as Bet[])
   for (const bet of bets) {
     const dayIndex = Math.floor((bet.createdTime - startTime) / DAY_IN_MS)
     betsByDay[dayIndex].push(bet)

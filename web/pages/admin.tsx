@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 import { usePrivateUsers, useUsers } from 'web/hooks/use-users'
 import Custom404 from './404'
 import { useContracts } from 'web/hooks/use-contracts'
-import _ from 'lodash'
+import { mapKeys } from 'lodash'
 import { useAdmin } from 'web/hooks/use-admin'
 import { contractPath } from 'web/lib/firebase/contracts'
 
@@ -23,7 +23,7 @@ function UsersTable() {
   let privateUsers = usePrivateUsers()
 
   // Map private users by user id
-  const privateUsersById = _.mapKeys(privateUsers, 'id')
+  const privateUsersById = mapKeys(privateUsers, 'id')
   console.log('private users by id', privateUsersById)
 
   // For each user, set their email from the PrivateUser
@@ -64,7 +64,7 @@ function UsersTable() {
             id: 'username',
             name: 'Username',
             formatter: (cell) =>
-              html(`<a 
+              html(`<a
               class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
               href="/${cell}">@${cell}</a>`),
           },
@@ -134,7 +134,7 @@ function ContractsTable() {
           id: 'creatorUsername',
           name: 'Username',
           formatter: (cell) =>
-            html(`<a 
+            html(`<a
               class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
               target="_blank"
               href="/${cell}">@${cell}</a>`),

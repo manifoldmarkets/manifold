@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import _ from 'lodash'
+import { sum, mapValues } from 'lodash'
 import { useState } from 'react'
 
 import { DPM, FreeResponse, FullContract } from 'common/contract'
@@ -30,8 +30,8 @@ export function AnswerResolvePanel(props: {
 
     setIsSubmitting(true)
 
-    const totalProb = _.sum(Object.values(chosenAnswers))
-    const normalizedProbs = _.mapValues(
+    const totalProb = sum(Object.values(chosenAnswers))
+    const normalizedProbs = mapValues(
       chosenAnswers,
       (prob) => (100 * prob) / totalProb
     )
