@@ -33,6 +33,10 @@ import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import toast from 'react-hot-toast'
+import { CheckIcon, XIcon } from '@heroicons/react/solid'
+import { useEffect, useState } from 'react'
+import { APIError, placeBet } from 'web/lib/firebase/api-call'
 
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
@@ -93,6 +97,53 @@ export function ContractCard(props: {
   const color = getColor(contract)
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
 
+  // TODO: switch to useContract after you place a bet on it
+
+  function betToast(outcome: string) {
+    let canceled = false
+    const toastId = toast.custom(
+      <BetToast
+        outcome={outcome}
+        seconds={3}
+        onToastFinish={onToastFinish}
+        onToastCancel={onToastCancel}
+      />,
+      {
+        duration: 3000,
+      }
+    )
+
+    function onToastCancel() {
+      toast.remove(toastId)
+      canceled = true
+    }
+
+    function onToastFinish() {
+      if (canceled) return
+      console.log('Finishing toast')
+      toast.remove(toastId)
+      placeBet({
+        amount: 10,
+        outcome,
+        contractId: contract.id,
+      })
+        .then((r) => {
+          // Success
+          console.log('placed bet. Result:', r)
+          toast.success('Bet placed!', { duration: 1000 })
+        })
+        .catch((e) => {
+          // Failure
+          if (e instanceof APIError) {
+            toast.error(e.toString(), { duration: 1000 })
+          } else {
+            console.error(e)
+            toast.error('Could not place bet')
+          }
+        })
+    }
+  }
+
   return (
     <div>
       <Col
@@ -141,9 +192,7 @@ export function ContractCard(props: {
               <div>
                 <div
                   className="peer absolute top-0 left-0 right-0 h-[50%]"
-                  onClick={() => {
-                    console.log('success')
-                  }}
+                  onClick={() => betToast('YES')}
                 ></div>
                 <div className="my-1 text-center text-xs text-transparent peer-hover:text-gray-400">
                   {formatMoney(20)}
@@ -188,7 +237,7 @@ export function ContractCard(props: {
               <div>
                 <div
                   className="peer absolute bottom-0 left-0 right-0 h-[50%]"
-                  onClick={() => {}}
+                  onClick={() => betToast('NO')}
                 ></div>
                 {contract.createdTime % 3 == 2 ? (
                   <TriangleDownFillIcon
@@ -344,5 +393,66 @@ export function NumericResolutionOrExpectation(props: {
         </>
       )}
     </Col>
+  )
+}
+
+function BetToast(props: {
+  outcome: string
+  seconds: number
+  onToastFinish: () => void
+  onToastCancel: () => void
+}) {
+  const { outcome, seconds, onToastFinish, onToastCancel } = props
+
+  // Track the number of seconds left, starting with durationMs
+  const [secondsLeft, setSecondsLeft] = useState(seconds)
+  console.log('renderings using', secondsLeft)
+
+  // Update the secondsLeft state every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSecondsLeft((seconds) => seconds - 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  if (secondsLeft <= 0) {
+    console.log('finishing')
+    onToastFinish()
+    // return null
+  }
+
+  return (
+    <div className="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+      <div className="p-4">
+        <div className="flex items-center">
+          <div className="flex w-0 flex-1 justify-between">
+            <p className="w-0 flex-1 text-sm font-medium text-gray-900">
+              Betting M$10 on {outcome} in {secondsLeft}s
+            </p>
+            <button
+              type="button"
+              onClick={onToastCancel}
+              className="ml-3 flex-shrink-0 rounded-md bg-white text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              Cancel
+            </button>
+          </div>
+          {/* <div className="ml-4 flex flex-shrink-0">
+            <button
+              type="button"
+              className="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              onClick={() => {
+                // TODO
+                // setShow(false)
+              }}
+            >
+              <span className="sr-only">Close</span>
+              <CheckIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div> */}
+        </div>
+      </div>
+    </div>
   )
 }
