@@ -156,6 +156,12 @@ export default function Sidebar(props: { className?: string }) {
   const mobileNavigationOptions =
     user === null ? signedOutMobileNavigation : mobileNavigation
 
+  const gradient =
+    'from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700'
+
+  const buttonStyle =
+    'border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r py-2.5 text-base font-semibold text-white shadow-sm lg:-ml-0'
+
   return (
     <nav aria-label="Sidebar" className={className}>
       <ManifoldLogo className="pb-6" twoLine />
@@ -194,14 +200,14 @@ export default function Sidebar(props: { className?: string }) {
       <div className={'aligncenter flex justify-center'}>
         {user ? (
           <Link href={'/create'} passHref>
-            <button className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700 lg:-ml-0">
+            <button className={clsx(gradient, buttonStyle)}>
               Ask a question
             </button>
           </Link>
         ) : (
           <button
             onClick={firebaseLogin}
-            className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700 lg:-ml-0"
+            className={clsx(gradient, buttonStyle)}
           >
             Sign in
           </button>
