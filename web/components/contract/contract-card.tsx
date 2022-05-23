@@ -34,10 +34,12 @@ import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
-import { APIError, placeBet } from 'web/lib/firebase/api-call'
+import { placeBet } from 'web/lib/firebase/api-call'
 import toast from 'react-hot-toast'
 import { useEffect, useState } from 'react'
-import { useContract, useContractWithPreload } from 'web/hooks/use-contract'
+import { useUser } from 'web/hooks/use-user'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { useSaveShares } from '../use-save-shares'
 
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
@@ -90,6 +92,19 @@ function QuickBet(props: {
   setLiveUpdate: (liveUpdate: boolean) => void
 }) {
   const { contract, setLiveUpdate } = props
+
+  const user = useUser()
+  const userBets = useUserContractBets(user?.id, contract.id)
+  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
+    contract as FullContract<CPMM | DPM, Binary>,
+    userBets
+  )
+  // For some reason, Floor Shares are inverted for Free Response markets
+  const hasUpShares =
+    contract.outcomeType === 'FREE_RESPONSE' ? !yesFloorShares : yesFloorShares
+  const hasDownShares =
+    contract.outcomeType === 'FREE_RESPONSE' ? !noFloorShares : noFloorShares
+
   const color = getColor(contract)
 
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
@@ -145,7 +160,7 @@ function QuickBet(props: {
           {formatMoney(10)}
         </div>
 
-        {contract.createdTime % 3 == 0 ? (
+        {hasUpShares > 0 ? (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
@@ -164,7 +179,7 @@ function QuickBet(props: {
           className="peer absolute bottom-0 left-0 right-0 h-[50%]"
           onClick={() => placeQuickBet('DOWN')}
         ></div>
-        {contract.createdTime % 3 == 2 ? (
+        {hasDownShares > 0 ? (
           <TriangleDownFillIcon
             className={clsx(
               'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
