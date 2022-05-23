@@ -59,8 +59,15 @@ export function FeedCommentThread(props: {
         <div
           key={comment.id}
           id={comment.id}
-          className={commentIdx === 0 ? '' : 'mt-4 ml-5'}
+          className={clsx('relative', commentIdx === 0 ? '' : 'mt-3 ml-6')}
         >
+          {/*draw a gray line from the comment to the left:*/}
+          {commentIdx != 0 && (
+            <span
+              className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+              aria-hidden="true"
+            />
+          )}
           <FeedComment
             contract={contract}
             comment={comment}
@@ -81,7 +88,11 @@ export function FeedCommentThread(props: {
         </div>
       ))}
       {showReply && (
-        <div className={'-pb-2 ml-5 flex flex-col pt-6'}>
+        <div className={'-pb-2 ml-6 flex flex-col pt-5'}>
+          <span
+            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            aria-hidden="true"
+          />
           <CommentInput
             contract={contract}
             betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
