@@ -1,4 +1,4 @@
-import * as _ from 'lodash'
+import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet, NumericBet } from './bet'
 import {
@@ -32,16 +32,19 @@ export type Payout = {
 
 export const getLoanPayouts = (bets: Bet[]): Payout[] => {
   const betsWithLoans = bets.filter((bet) => bet.loanAmount)
-  const betsByUser = _.groupBy(betsWithLoans, (bet) => bet.userId)
-  const loansByUser = _.mapValues(betsByUser, (bets) =>
-    _.sumBy(bets, (bet) => -(bet.loanAmount ?? 0))
+  const betsByUser = groupBy(betsWithLoans, (bet) => bet.userId)
+  const loansByUser = mapValues(betsByUser, (bets) =>
+    sumBy(bets, (bet) => -(bet.loanAmount ?? 0))
   )
-  return _.toPairs(loansByUser).map(([userId, payout]) => ({ userId, payout }))
+  return Object.entries(loansByUser).map(([userId, payout]) => ({
+    userId,
+    payout,
+  }))
 }
 
 export const groupPayoutsByUser = (payouts: Payout[]) => {
-  const groups = _.groupBy(payouts, (payout) => payout.userId)
-  return _.mapValues(groups, (group) => _.sumBy(group, (g) => g.payout))
+  const groups = groupBy(payouts, (payout) => payout.userId)
+  return mapValues(groups, (group) => sumBy(group, (g) => g.payout))
 }
 
 export type PayoutInfo = {

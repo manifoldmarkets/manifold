@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import _ from 'lodash'
+import { isEqual } from 'lodash'
 import clsx from 'clsx'
 import { PencilIcon } from '@heroicons/react/outline'
 
@@ -29,7 +29,7 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
 
   const saveDisabled =
     name === fold.name &&
-    _.isEqual(tags, fold.tags) &&
+    isEqual(tags, fold.tags) &&
     about === (fold.about ?? '')
 
   const onSubmit = async () => {

@@ -1,4 +1,4 @@
-import * as _ from 'lodash'
+import { sum } from 'lodash'
 
 import { Bet } from './bet'
 import { getProbability } from './calculate'
@@ -50,7 +50,7 @@ export const getStandardFixedPayouts = (
     'pool',
     contract.pool[outcome],
     'payouts',
-    _.sum(payouts),
+    sum(payouts),
     'creator fee',
     creatorPayout
   )
@@ -105,7 +105,7 @@ export const getMktFixedPayouts = (
     'pool',
     p * contract.pool.YES + (1 - p) * contract.pool.NO,
     'payouts',
-    _.sum(payouts),
+    sum(payouts),
     'creator fee',
     creatorPayout
   )

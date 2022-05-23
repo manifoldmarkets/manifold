@@ -1,4 +1,3 @@
-import _ from 'lodash'
 import { useState } from 'react'
 
 import { NumericContract } from 'common/contract'
