@@ -42,7 +42,7 @@ const getUserBatches = async () => {
 }
 
 export const updateFeed = functions.pubsub
-  .schedule('every 15 minutes')
+  .schedule('every 60 minutes')
   .onRun(async () => {
     const userBatches = await getUserBatches()
 
