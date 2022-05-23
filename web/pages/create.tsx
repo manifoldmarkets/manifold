@@ -77,7 +77,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [ante, setAnte] = useState(FIXED_ANTE)
 
-  const deservesDailyFreeMarket = !useHasCreatedContractToday(creator)
+  const mustWaitForDailyFreeMarketStatus = useHasCreatedContractToday(creator)
 
   // useEffect(() => {
   //   if (ante === null && creator) {
@@ -107,7 +107,9 @@ export function NewContract(props: { question: string; tag?: string }) {
     ante !== undefined &&
     ante !== null &&
     ante >= MINIMUM_ANTE &&
-    (ante <= balance || deservesDailyFreeMarket) &&
+    (ante <= balance ||
+      (mustWaitForDailyFreeMarketStatus != 'loading' &&
+        !mustWaitForDailyFreeMarketStatus)) &&
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now() &&
@@ -368,13 +370,15 @@ export function NewContract(props: { question: string; tag?: string }) {
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
           <span>Cost</span>
-          {!deservesDailyFreeMarket && (
-            <InfoTooltip
-              text={`Cost to create your market. This amount is used to subsidize trading.`}
-            />
-          )}
+          {mustWaitForDailyFreeMarketStatus != 'loading' &&
+            mustWaitForDailyFreeMarketStatus && (
+              <InfoTooltip
+                text={`Cost to create your market. This amount is used to subsidize trading.`}
+              />
+            )}
         </label>
-        {deservesDailyFreeMarket ? (
+        {mustWaitForDailyFreeMarketStatus != 'loading' &&
+        !mustWaitForDailyFreeMarketStatus ? (
           <div className="label-text text-primary pl-1">
             <span className={'label-text text-neutral line-through '}>
               {formatMoney(ante)}
@@ -382,21 +386,25 @@ export function NewContract(props: { question: string; tag?: string }) {
             FREE
           </div>
         ) : (
-          <div className="label-text text-neutral pl-1">
-            {formatMoney(ante)}
-          </div>
+          mustWaitForDailyFreeMarketStatus != 'loading' && (
+            <div className="label-text text-neutral pl-1">
+              {formatMoney(ante)}
+            </div>
+          )
         )}
-        {!deservesDailyFreeMarket && ante > balance && (
-          <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-            <span className="mr-2 text-red-500">Insufficient balance</span>
-            <button
-              className="btn btn-xs btn-primary"
-              onClick={() => (window.location.href = '/add-funds')}
-            >
-              Add funds
-            </button>
-          </div>
-        )}
+        {mustWaitForDailyFreeMarketStatus != 'loading' &&
+          mustWaitForDailyFreeMarketStatus &&
+          ante > balance && (
+            <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+              <span className="mr-2 text-red-500">Insufficient balance</span>
+              <button
+                className="btn btn-xs btn-primary"
+                onClick={() => (window.location.href = '/add-funds')}
+              >
+                Add funds
+              </button>
+            </div>
+          )}
 
         {/* <BuyAmountInput
           amount={ante ?? undefined}
