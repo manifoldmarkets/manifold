@@ -17,10 +17,10 @@ import {
 } from 'web/components/contract/contract-card'
 import { ContractDetails } from 'web/components/contract/contract-details'
 import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
+import { NumericGraph } from 'web/components/contract/numeric-graph'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
@@ -125,14 +125,14 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
             </Row>
           )}
 
-          {outcomeType === 'FREE_RESPONSE' && resolution && (
+          {outcomeType === 'FREE_RESPONSE' && (
             <FreeResponseResolutionOrChance
               contract={contract}
               truncate="long"
             />
           )}
 
-          {outcomeType === 'NUMERIC' && resolution && (
+          {outcomeType === 'NUMERIC' && (
             <NumericResolutionOrExpectation
               contract={contract as NumericContract}
             />
@@ -143,16 +143,25 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
       </div>
 
       <div className="mx-1" style={{ paddingBottom }}>
-        {isBinary ? (
+        {isBinary && (
           <ContractProbGraph
             contract={contract}
             bets={bets}
             height={graphHeight}
           />
-        ) : (
+        )}
+
+        {outcomeType === 'FREE_RESPONSE' && (
           <AnswersGraph
             contract={contract as FullContract<DPM, FreeResponse>}
             bets={bets}
+            height={graphHeight}
+          />
+        )}
+
+        {outcomeType === 'NUMERIC' && (
+          <NumericGraph
+            contract={contract as NumericContract}
             height={graphHeight}
           />
         )}
