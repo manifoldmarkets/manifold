@@ -11,7 +11,7 @@ import {
   SparklesIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import _ from 'lodash'
+import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from 'web/hooks/use-fold'
@@ -20,8 +20,12 @@ import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
-import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
+import {
+  getUtcFreeMarketResetTimeToday,
+  useHasCreatedContractToday,
+} from 'web/hooks/use-has-created-contract-today'
 import { Row } from '../layout/row'
+import { useEffect, useState } from 'react'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
@@ -121,12 +125,30 @@ export default function Sidebar(props: { className?: string }) {
   const { className } = props
   const router = useRouter()
   const currentPage = router.pathname
+  const [countdown, setCountdown] = useState('...')
+  useEffect(() => {
+    const utcMidnightToLocalDate = new Date(getUtcFreeMarketResetTimeToday())
+    const interval = setInterval(() => {
+      const timeUntil = utcMidnightToLocalDate.getTime() - new Date().getTime()
+      const hoursUntil = 24 + timeUntil / 1000 / 60 / 60
+      const minutesUntil = Math.floor((hoursUntil * 60) % 60)
+      const secondsUntil = Math.floor((hoursUntil * 60 * 60) % 60)
+      const hoursUntilFloor = Math.floor(hoursUntil)
+      const timeString =
+        minutesUntil < 1
+          ? `${secondsUntil}s`
+          : hoursUntilFloor < 1
+          ? `${minutesUntil}m`
+          : `${hoursUntilFloor}h`
+      setCountdown(timeString)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const user = useUser()
   let folds = useFollowedFolds(user) || []
-  folds = _.sortBy(folds, 'followCount').reverse()
-  const deservesDailyFreeMarket = !useHasCreatedContractToday(user)
-
+  folds = sortBy(folds, 'followCount').reverse()
+  const mustWaitForFreeMarketStatus = useHasCreatedContractToday(user)
   const navigationOptions =
     user === null
       ? signedOutNavigation
@@ -186,13 +208,25 @@ export default function Sidebar(props: { className?: string }) {
         )}
       </div>
 
-      {user && deservesDailyFreeMarket && (
+      {user &&
+      mustWaitForFreeMarketStatus != 'loading' &&
+      mustWaitForFreeMarketStatus ? (
         <Row className="mt-2 justify-center">
-          <Row className="gap-1 text-sm text-indigo-400">
-            Daily free market
-            <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
+          <Row className="gap-1 text-sm text-gray-400">
+            Next free market in {countdown}
           </Row>
         </Row>
+      ) : (
+        user &&
+        mustWaitForFreeMarketStatus != 'loading' &&
+        !mustWaitForFreeMarketStatus && (
+          <Row className="mt-2 justify-center">
+            <Row className="gap-1 text-sm text-indigo-400">
+              Daily free market
+              <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
+            </Row>
+          </Row>
+        )
       )}
     </nav>
   )

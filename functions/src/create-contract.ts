@@ -44,7 +44,7 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     min,
     max,
     manaLimitPerUser,
-  } = req.body.data || {}
+  } = req.body || {}
 
   if (!question || typeof question != 'string')
     throw new APIError(400, 'Missing or invalid question field')
@@ -87,13 +87,17 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
   )
     throw new APIError(400, 'Invalid initial probability')
 
-  // uses utc time on server:
-  const today = new Date().setHours(0, 0, 0, 0)
+  // Uses utc time on server:
+  const yesterday = new Date()
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+  const freeMarketResetTime = yesterday.setUTCHours(16, 0, 0, 0)
+
   const userContractsCreatedTodaySnapshot = await firestore
     .collection(`contracts`)
     .where('creatorId', '==', creator.id)
-    .where('createdTime', '>=', today)
+    .where('createdTime', '>=', freeMarketResetTime)
     .get()
+  console.log('free market reset time: ', freeMarketResetTime)
   const isFree = userContractsCreatedTodaySnapshot.size === 0
 
   const ante = FIXED_ANTE
@@ -205,7 +209,7 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     await anteBetDoc.set(anteBet)
   }
 
-  return { contract: contract }
+  return contract
 })
 
 const getSlug = async (question: string) => {

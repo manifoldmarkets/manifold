@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { sortBy, debounce } from 'lodash'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Fold } from 'common/fold'
@@ -21,7 +21,7 @@ export async function getStaticProps() {
   const curators = await Promise.all(
     folds.map((fold) => getUser(fold.curatorId))
   )
-  const curatorsDict = _.fromPairs(
+  const curatorsDict = Object.fromEntries(
     curators.map((curator) => [curator.id, curator])
   )
 
@@ -37,7 +37,7 @@ export async function getStaticProps() {
 
 export default function Folds(props: {
   folds: Fold[]
-  curatorsDict: _.Dictionary<User>
+  curatorsDict: { [k: string]: User }
 }) {
   const [curatorsDict, setCuratorsDict] = useState(props.curatorsDict)
 
@@ -51,7 +51,7 @@ export default function Folds(props: {
     if (newFolds.length > 0) {
       Promise.all(newFolds.map(({ curatorId }) => getUser(curatorId))).then(
         (newUsers) => {
-          const newUsersDict = _.fromPairs(
+          const newUsersDict = Object.fromEntries(
             newUsers.map((user) => [user.id, user])
           )
           setCuratorsDict({ ...curatorsDict, ...newUsersDict })
@@ -68,7 +68,7 @@ export default function Folds(props: {
   }
 
   // List followed folds first, then folds with the highest follower count
-  const matches = _.sortBy(folds, [
+  const matches = sortBy(folds, [
     (fold) => !followedFoldIds.includes(fold.id),
     (fold) => -1 * fold.followCount,
   ]).filter(
@@ -79,7 +79,7 @@ export default function Folds(props: {
       check(f.lowercaseTags.map((tag) => `#${tag}`).join(' '))
   )
   // Not strictly necessary, but makes the "hold delete" experience less laggy
-  const debouncedQuery = _.debounce(setQuery, 50)
+  const debouncedQuery = debounce(setQuery, 50)
 
   return (
     <Page>

@@ -3,6 +3,7 @@ import { Comment } from 'common/comment'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
+import { minBy, maxBy, groupBy, partition, sumBy } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -16,7 +17,6 @@ import { contractPath } from 'web/lib/firebase/contracts'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { createComment, MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
 import Textarea from 'react-expanding-textarea'
-import * as _ from 'lodash'
 import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
 import { BetStatusText } from 'web/components/feed/feed-bets'
@@ -37,7 +37,7 @@ export function FeedCommentThread(props: {
     props
   const [showReply, setShowReply] = useState(false)
   const [replyToUsername, setReplyToUsername] = useState('')
-  const betsByUserId = _.groupBy(bets, (bet) => bet.userId)
+  const betsByUserId = groupBy(bets, (bet) => bet.userId)
   const user = useUser()
   const commentsList = comments.filter(
     (comment) =>
@@ -68,7 +68,7 @@ export function FeedCommentThread(props: {
             onReplyClick={scrollAndOpenReplyInput}
             probAtCreatedTime={
               contract.outcomeType === 'BINARY'
-                ? _.minBy(bets, (bet) => {
+                ? minBy(bets, (bet) => {
                     return bet.createdTime < comment.createdTime
                       ? comment.createdTime - bet.createdTime
                       : comment.createdTime
@@ -132,7 +132,7 @@ export function FeedComment(props: {
     if (router.asPath.endsWith(`#${comment.id}`)) {
       setHighlighted(true)
     }
-  }, [router.asPath])
+  }, [comment.id, router.asPath])
 
   // Only calculated if they don't have a matching bet
   const { userPosition, outcome } = getBettorsLargestPositionBeforeTime(
@@ -287,7 +287,7 @@ export function CommentInput(props: {
   useEffect(() => {
     if (!replyToUsername || !user || replyToUsername === user.username) return
     const replacement = `@${replyToUsername} `
-    setComment(replacement + comment.replace(replacement, ''))
+    setComment((comment) => replacement + comment.replace(replacement, ''))
   }, [user, replyToUsername])
 
   async function submitComment(betId: string | undefined) {
@@ -523,8 +523,7 @@ function getBettorsLargestPositionBeforeTime(
       }
     }
     const majorityAnswer =
-      _.maxBy(Object.keys(answerCounts), (outcome) => answerCounts[outcome]) ??
-      ''
+      maxBy(Object.keys(answerCounts), (outcome) => answerCounts[outcome]) ?? ''
     return {
       userPosition: answerCounts[majorityAnswer] || 0,
       outcome: majorityAnswer,
@@ -534,12 +533,12 @@ function getBettorsLargestPositionBeforeTime(
     return emptyReturn
   }
 
-  const [yesBets, noBets] = _.partition(
+  const [yesBets, noBets] = partition(
     previousBets ?? [],
     (bet) => bet.outcome === 'YES'
   )
-  yesShares = _.sumBy(yesBets, (bet) => bet.shares)
-  noShares = _.sumBy(noBets, (bet) => bet.shares)
+  yesShares = sumBy(yesBets, (bet) => bet.shares)
+  noShares = sumBy(noBets, (bet) => bet.shares)
   yesFloorShares = Math.floor(yesShares)
   noFloorShares = Math.floor(noShares)
 

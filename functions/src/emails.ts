@@ -1,5 +1,3 @@
-import * as _ from 'lodash'
-
 import { DOMAIN, PROJECT_ID } from '../../common/envs/constants'
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'

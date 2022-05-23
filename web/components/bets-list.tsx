@@ -1,5 +1,13 @@
 import Link from 'next/link'
-import _ from 'lodash'
+import {
+  uniq,
+  groupBy,
+  mapValues,
+  sortBy,
+  partition,
+  sumBy,
+  throttle,
+} from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
@@ -54,7 +62,7 @@ export function BetsList(props: { user: User }) {
 
   useEffect(() => {
     if (bets) {
-      const contractIds = _.uniq(bets.map((bet) => bet.contractId))
+      const contractIds = uniq(bets.map((bet) => bet.contractId))
 
       let disposed = false
       Promise.all(contractIds.map((id) => getContractFromId(id))).then(
@@ -84,10 +92,10 @@ export function BetsList(props: { user: User }) {
   if (bets.length === 0) return <NoBets />
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
-  const contractBets = _.groupBy(bets, 'contractId')
-  const contractsById = _.fromPairs(contracts.map((c) => [c.id, c]))
+  const contractBets = groupBy(bets, 'contractId')
+  const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
 
-  const contractsMetrics = _.mapValues(contractBets, (bets, contractId) => {
+  const contractsMetrics = mapValues(contractBets, (bets, contractId) => {
     const contract = contractsById[contractId]
     if (!contract) return getContractBetNullMetrics()
     return getContractBetMetrics(contract, bets)
@@ -110,7 +118,7 @@ export function BetsList(props: { user: User }) {
       (filter === 'open' ? -1 : 1) *
       (c.resolutionTime ?? c.closeTime ?? Infinity),
   }
-  const displayedContracts = _.sortBy(contracts, SORTS[sort])
+  const displayedContracts = sortBy(contracts, SORTS[sort])
     .reverse()
     .filter(FILTERS[filter])
     .filter((c) => {
@@ -121,20 +129,20 @@ export function BetsList(props: { user: User }) {
       return metrics.payout > 0
     })
 
-  const [settled, unsettled] = _.partition(
+  const [settled, unsettled] = partition(
     contracts,
     (c) => c.isResolved || contractsMetrics[c.id].invested === 0
   )
 
-  const currentInvested = _.sumBy(
+  const currentInvested = sumBy(
     unsettled,
     (c) => contractsMetrics[c.id].invested
   )
-  const currentBetsValue = _.sumBy(
+  const currentBetsValue = sumBy(
     unsettled,
     (c) => contractsMetrics[c.id].payout
   )
-  const currentNetInvestment = _.sumBy(
+  const currentNetInvestment = sumBy(
     unsettled,
     (c) => contractsMetrics[c.id].netPayout
   )
@@ -340,10 +348,10 @@ export function MyBetsSummary(props: {
   const excludeSalesAndAntes = bets.filter(
     (b) => !b.isAnte && !b.isSold && !b.sale
   )
-  const yesWinnings = _.sumBy(excludeSalesAndAntes, (bet) =>
+  const yesWinnings = sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'YES')
   )
-  const noWinnings = _.sumBy(excludeSalesAndAntes, (bet) =>
+  const noWinnings = sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
   const { invested, profitPercent, payout, profit } = getContractBetMetrics(
@@ -421,21 +429,19 @@ export function ContractBetsTable(props: {
 
   const bets = props.bets.filter((b) => !b.isAnte)
 
-  const [sales, buys] = _.partition(bets, (bet) => bet.sale)
+  const [sales, buys] = partition(bets, (bet) => bet.sale)
 
-  const salesDict = _.fromPairs(
+  const salesDict = Object.fromEntries(
     sales.map((sale) => [sale.sale?.betId ?? '', sale])
   )
 
-  const [redemptions, normalBets] = _.partition(
+  const [redemptions, normalBets] = partition(
     contract.mechanism === 'cpmm-1' ? bets : buys,
     (b) => b.isRedemption
   )
-  const amountRedeemed = Math.floor(
-    -0.5 * _.sumBy(redemptions, (b) => b.shares)
-  )
+  const amountRedeemed = Math.floor(-0.5 * sumBy(redemptions, (b) => b.shares))
 
-  const amountLoaned = _.sumBy(
+  const amountLoaned = sumBy(
     bets.filter((bet) => !bet.isSold && !bet.sale),
     (bet) => bet.loanAmount ?? 0
   )
@@ -570,10 +576,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   )
 }
 
-const warmUpSellBet = _.throttle(
-  () => sellBet({}).catch(() => {}),
-  5000 /* ms */
-)
+const warmUpSellBet = throttle(() => sellBet({}).catch(() => {}), 5000 /* ms */)
 
 function SellButton(props: { contract: Contract; bet: Bet }) {
   useEffect(() => {

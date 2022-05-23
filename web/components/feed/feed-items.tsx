@@ -1,6 +1,5 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
 import React, { useState } from 'react'
-import * as _ from 'lodash'
 import {
   BanIcon,
   CheckIcon,

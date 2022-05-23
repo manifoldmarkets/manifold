@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { sortBy, sumBy, uniqBy } from 'lodash'
 import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -41,13 +41,13 @@ function CharityPage(props: { charity: Charity }) {
   const user = useUser()
 
   const txns = useCharityTxns(charity.id)
-  const newToOld = _.sortBy(txns, (txn) => -txn.createdTime)
-  const totalRaised = _.sumBy(txns, (txn) => txn.amount)
-  const fromYou = _.sumBy(
+  const newToOld = sortBy(txns, (txn) => -txn.createdTime)
+  const totalRaised = sumBy(txns, (txn) => txn.amount)
+  const fromYou = sumBy(
     txns.filter((txn) => txn.fromId === user?.id),
     (txn) => txn.amount
   )
-  const numSupporters = _.uniqBy(txns, (txn) => txn.fromId).length
+  const numSupporters = uniqBy(txns, (txn) => txn.fromId).length
 
   const { width, height } = useWindowSize()
   const [showConfetti, setShowConfetti] = useState(false)

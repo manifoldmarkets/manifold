@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import _ from 'lodash'
+import { zip, uniq, sumBy } from 'lodash'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   DailyCountChart,
@@ -19,12 +19,11 @@ import { getDailyNewUsers } from 'web/lib/firebase/users'
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
   const numberOfDays = 45
-  const tomorrow = dayjs(dayjs().format('YYYY-MM-DD'))
-    .add(1, 'day')
+  const today = dayjs(dayjs().format('YYYY-MM-DD'))
     // Convert from UTC midnight to PT midnight.
     .add(7, 'hours')
 
-  const startDate = tomorrow.subtract(numberOfDays, 'day')
+  const startDate = today.subtract(numberOfDays, 'day')
 
   const [dailyBets, dailyContracts, dailyComments, dailyNewUsers] =
     await Promise.all([
@@ -40,12 +39,12 @@ export async function getStaticPropz() {
   )
   const dailyCommentCounts = dailyComments.map((comments) => comments.length)
 
-  const dailyUserIds = _.zip(dailyContracts, dailyBets, dailyComments).map(
+  const dailyUserIds = zip(dailyContracts, dailyBets, dailyComments).map(
     ([contracts, bets, comments]) => {
       const creatorIds = (contracts ?? []).map((c) => c.creatorId)
       const betUserIds = (bets ?? []).map((bet) => bet.userId)
       const commentUserIds = (comments ?? []).map((comment) => comment.userId)
-      return _.uniq([...creatorIds, ...betUserIds, ...commentUserIds])
+      return uniq([...creatorIds, ...betUserIds, ...commentUserIds])
     }
   )
 
@@ -87,7 +86,7 @@ export async function getStaticPropz() {
     for (let j = lastWeek.start; j <= lastWeek.end; j++) {
       dailyUserIds[j].forEach((userId) => activeLastWeek.add(userId))
     }
-    const retainedCount = _.sumBy(Array.from(activeTwoWeeksAgo), (userId) =>
+    const retainedCount = sumBy(Array.from(activeTwoWeeksAgo), (userId) =>
       activeLastWeek.has(userId) ? 1 : 0
     )
     const retainedFrac = retainedCount / activeTwoWeeksAgo.size
@@ -112,7 +111,7 @@ export async function getStaticPropz() {
     for (let j = lastMonth.start; j <= lastMonth.end; j++) {
       dailyUserIds[j].forEach((userId) => activeLastMonth.add(userId))
     }
-    const retainedCount = _.sumBy(Array.from(activeTwoMonthsAgo), (userId) =>
+    const retainedCount = sumBy(Array.from(activeTwoMonthsAgo), (userId) =>
       activeLastMonth.has(userId) ? 1 : 0
     )
     const retainedFrac = retainedCount / activeTwoMonthsAgo.size

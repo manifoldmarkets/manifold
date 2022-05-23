@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { debounce } from 'lodash'
 import { RefObject, useMemo, useLayoutEffect, useRef, useState } from 'react'
 
 type elem_size =
@@ -21,7 +21,7 @@ export function useListenElemSize<T extends HTMLElement>(
     }
 
     return debounceMs
-      ? _.debounce(updateSize, debounceMs, { leading: false, trailing: true })
+      ? debounce(updateSize, debounceMs, { leading: false, trailing: true })
       : updateSize
   }, [callback, elemRef, debounceMs])
 

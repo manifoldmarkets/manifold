@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
-import _ from 'lodash'
+import { keyBy, sortBy, groupBy, sumBy, mapValues } from 'lodash'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -214,7 +214,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
 
         {isNumeric && (
           <NumericBetPanel
-            className="sm:hidden"
+            className="xl:hidden"
             contract={contract as NumericContract}
           />
         )}
@@ -250,13 +250,13 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
 
   const { userProfits, top5Ids } = useMemo(() => {
     // Create a map of userIds to total profits (including sales)
-    const betsByUser = _.groupBy(bets, 'userId')
-    const userProfits = _.mapValues(betsByUser, (bets) =>
-      _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
+    const betsByUser = groupBy(bets, 'userId')
+    const userProfits = mapValues(betsByUser, (bets) =>
+      sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
     )
     // Find the 5 users with the most profits
-    const top5Ids = _.entries(userProfits)
-      .sort(([i1, p1], [i2, p2]) => p2 - p1)
+    const top5Ids = Object.entries(userProfits)
+      .sort(([_i1, p1], [_i2, p2]) => p2 - p1)
       .filter(([, p]) => p > 0)
       .slice(0, 5)
       .map(([id]) => id)
@@ -267,7 +267,7 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
     console.log('foo')
     if (top5Ids.length > 0) {
       listUsers(top5Ids).then((users) => {
-        const sortedUsers = _.sortBy(users, (user) => -userProfits[user.id])
+        const sortedUsers = sortBy(users, (user) => -userProfits[user.id])
         setUsers(sortedUsers)
       })
     }
@@ -294,8 +294,8 @@ function ContractTopTrades(props: {
   comments: Comment[]
 }) {
   const { contract, bets, comments } = props
-  const commentsById = _.keyBy(comments, 'id')
-  const betsById = _.keyBy(bets, 'id')
+  const commentsById = keyBy(comments, 'id')
+  const betsById = keyBy(bets, 'id')
 
   // If 'id2' is the sale of 'id1', both are logged with (id2 - id1) of profit
   // Otherwise, we record the profit at resolution time
@@ -312,11 +312,11 @@ function ContractTopTrades(props: {
   }
 
   // Now find the betId with the highest profit
-  const topBetId = _.sortBy(bets, (b) => -profitById[b.id])[0]?.id
+  const topBetId = sortBy(bets, (b) => -profitById[b.id])[0]?.id
   const topBettor = useUserById(betsById[topBetId]?.userId)
 
   // And also the commentId of the comment with the highest profit
-  const topCommentId = _.sortBy(
+  const topCommentId = sortBy(
     comments,
     (c) => c.betId && -profitById[c.betId]
   )[0]?.id
