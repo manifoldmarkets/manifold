@@ -97,8 +97,12 @@ export type Numeric = {
 }
 
 export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE' | 'NUMERIC'
-export const OUTCOME_TYPES = ['BINARY', 'MULTI', 'FREE_RESPONSE', 'NUMERIC']
-
+export const OUTCOME_TYPES = [
+  'BINARY',
+  'MULTI',
+  'FREE_RESPONSE',
+  'NUMERIC',
+] as const
 export const MAX_QUESTION_LENGTH = 480
 export const MAX_DESCRIPTION_LENGTH = 10000
 export const MAX_TAG_LENGTH = 60

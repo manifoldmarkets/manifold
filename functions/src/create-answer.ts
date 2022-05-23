@@ -105,7 +105,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
 
       const loanAmount = 0 // getLoanAmount(yourBets, amount)
 
-      const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
+      const { newBet, newPool, newTotalShares, newTotalBets } =
         getNewMultiBetInfo(
           user,
           answerId,
@@ -115,7 +115,9 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
           newBetDoc.id
         )
 
+      const newBalance = user.balance - amount
       transaction.create(newBetDoc, newBet)
+      transaction.update(userDoc, { balance: newBalance })
       transaction.update(contractDoc, {
         pool: newPool,
         totalShares: newTotalShares,
@@ -123,12 +125,6 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         answers: [...(contract.answers ?? []), answer],
         volume: volume + amount,
       })
-
-      if (!isFinite(newBalance)) {
-        throw new Error('Invalid user balance for ' + user.username)
-      }
-
-      transaction.update(userDoc, { balance: newBalance })
 
       return { status: 'success', answerId, betId: newBetDoc.id, answer }
     })

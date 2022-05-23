@@ -23,6 +23,15 @@ import { noFees } from './fees'
 import { addObjects } from './util/object'
 import { NUMERIC_FIXED_VAR } from './numeric-constants'
 
+export type BetInfo = {
+  newBet: Bet
+  newPool?: object
+  newTotalShares?: object
+  newTotalBets?: object
+  newTotalLiquidity?: number
+  newP?: number
+}
+
 export const getNewBinaryCpmmBetInfo = (
   user: User,
   outcome: 'YES' | 'NO',
@@ -36,8 +45,6 @@ export const getNewBinaryCpmmBetInfo = (
     amount,
     outcome
   )
-
-  const newBalance = user.balance - (amount - loanAmount)
 
   const { pool, p, totalLiquidity } = contract
   const probBefore = getCpmmProbability(pool, p)
@@ -60,7 +67,7 @@ export const getNewBinaryCpmmBetInfo = (
   const { liquidityFee } = fees
   const newTotalLiquidity = (totalLiquidity ?? 0) + liquidityFee
 
-  return { newBet, newPool, newP, newBalance, newTotalLiquidity, fees }
+  return { newBet, newPool, newP, newTotalLiquidity }
 }
 
 export const getNewBinaryDpmBetInfo = (
@@ -111,9 +118,7 @@ export const getNewBinaryDpmBetInfo = (
     fees: noFees,
   }
 
-  const newBalance = user.balance - (amount - loanAmount)
-
-  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+  return { newBet, newPool, newTotalShares, newTotalBets }
 }
 
 export const getNewMultiBetInfo = (
@@ -154,9 +159,7 @@ export const getNewMultiBetInfo = (
     fees: noFees,
   }
 
-  const newBalance = user.balance - (amount - loanAmount)
-
-  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+  return { newBet, newPool, newTotalShares, newTotalBets }
 }
 
 export const getNumericBetsInfo = (
@@ -203,9 +206,7 @@ export const getNumericBetsInfo = (
     fees: noFees,
   }
 
-  const newBalance = user.balance - amount
-
-  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+  return { newBet, newPool, newTotalShares, newTotalBets }
 }
 
 export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {
