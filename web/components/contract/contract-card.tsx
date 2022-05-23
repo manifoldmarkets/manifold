@@ -99,11 +99,11 @@ function QuickBet(props: {
     contract as FullContract<CPMM | DPM, Binary>,
     userBets
   )
-  // For some reason, Floor Shares are inverted for Free Response markets
+  // For some reason, Floor Shares are inverted for non-BINARY markets
   const hasUpShares =
-    contract.outcomeType === 'FREE_RESPONSE' ? !yesFloorShares : yesFloorShares
+    contract.outcomeType === 'BINARY' ? yesFloorShares : noFloorShares
   const hasDownShares =
-    contract.outcomeType === 'FREE_RESPONSE' ? !noFloorShares : noFloorShares
+    contract.outcomeType === 'BINARY' ? noFloorShares : yesFloorShares
 
   const color = getColor(contract)
 
@@ -306,14 +306,14 @@ export function ContractCard(props: {
 
         <div
           className={clsx(
-            'absolute right-0 top-0 w-2 rounded-tr-md',
+            'absolute right-0 top-0 w-2 rounded-tr-md transition-all',
             'bg-gray-200'
           )}
           style={{ height: `${100 * (1 - prob)}%` }}
         ></div>
         <div
           className={clsx(
-            'absolute right-0 bottom-0 w-2 rounded-br-md',
+            'absolute right-0 bottom-0 w-2 rounded-br-md transition-all',
             `bg-${color}`,
             // If we're showing the full bar, also round the top
             prob === 1 ? 'rounded-tr-md' : ''
