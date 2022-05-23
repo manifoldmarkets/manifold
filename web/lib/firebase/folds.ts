@@ -10,7 +10,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import _ from 'lodash'
+import { sortBy } from 'lodash'
 import { Fold } from 'common/fold'
 import { Contract, contractCollection } from './contracts'
 import { db } from './init'
@@ -171,7 +171,7 @@ export async function getFoldsByTags(tags: string[]) {
     )
   )
 
-  return _.sortBy(folds, (fold) => -1 * fold.followCount)
+  return sortBy(folds, (fold) => -1 * fold.followCount)
 }
 
 export function listenForFoldsWithTags(
@@ -187,7 +187,7 @@ export function listenForFoldsWithTags(
   )
 
   return listenForValues<Fold>(q, (folds) => {
-    const sorted = _.sortBy(folds, (fold) => -1 * fold.followCount)
+    const sorted = sortBy(folds, (fold) => -1 * fold.followCount)
     setFolds(sorted)
   })
 }

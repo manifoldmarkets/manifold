@@ -1,7 +1,7 @@
 import { Binary, CPMM, DPM, FullContract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { useEffect, useState } from 'react'
-import _ from 'lodash'
+import { partition, sumBy } from 'lodash'
 
 export const useSaveShares = (
   contract: FullContract<CPMM | DPM, Binary>,
@@ -17,13 +17,13 @@ export const useSaveShares = (
     | undefined
   >()
 
-  const [yesBets, noBets] = _.partition(
+  const [yesBets, noBets] = partition(
     userBets ?? [],
     (bet) => bet.outcome === 'YES'
   )
   const [yesShares, noShares] = [
-    _.sumBy(yesBets, (bet) => bet.shares),
-    _.sumBy(noBets, (bet) => bet.shares),
+    sumBy(yesBets, (bet) => bet.shares),
+    sumBy(noBets, (bet) => bet.shares),
   ]
 
   const yesFloorShares = Math.round(yesShares) === 0 ? 0 : Math.floor(yesShares)

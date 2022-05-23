@@ -68,7 +68,7 @@ export function FeedAnswerCommentGroup(props: {
     if (router.asPath.endsWith(`#${answerElementId}`)) {
       setHighlighted(true)
     }
-  }, [router.asPath])
+  }, [answerElementId, router.asPath])
 
   return (
     <Col className={'flex-1 gap-2'}>

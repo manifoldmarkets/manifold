@@ -1,9 +1,10 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
+  plugins: ['lodash'],
   extends: ['plugin:react-hooks/recommended', 'plugin:@next/next/recommended'],
   rules: {
-    // Add or disable rules here.
     '@next/next/no-img-element': 'off',
     '@next/next/no-typos': 'off',
+    'lodash/import-scope': [2, 'member'],
   },
 }

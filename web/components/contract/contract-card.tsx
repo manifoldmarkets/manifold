@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../layout/row'
-import { formatPercent } from 'common/util/format'
+import { formatLargeNumber, formatPercent } from 'common/util/format'
 import {
   Contract,
   contractPath,
@@ -16,6 +16,7 @@ import {
   FreeResponse,
   FreeResponseContract,
   FullContract,
+  NumericContract,
 } from 'common/contract'
 import {
   AnswerLabel,
@@ -25,6 +26,7 @@ import {
 } from '../outcome-label'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AbbrContractDetails } from './contract-details'
+import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
@@ -36,7 +38,15 @@ function getProb(contract: Contract) {
     ? getBinaryProb(contract)
     : outcomeType === 'FREE_RESPONSE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
+    : outcomeType === 'NUMERIC'
+    ? getNumericScale(contract as NumericContract)
     : 1 // Should not happen
+}
+
+function getNumericScale(contract: NumericContract) {
+  const { min, max } = contract
+  const ev = getExpectedValue(contract)
+  return (ev - min) / (max - min)
 }
 
 function getColor(contract: Contract) {
@@ -48,6 +58,9 @@ function getColor(contract: Contract) {
       // If resolved to a FR answer, use 'primary'
       'primary'
     )
+  }
+  if (contract.outcomeType === 'NUMERIC') {
+    return 'blue-400'
   }
 
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
@@ -103,6 +116,13 @@ export function ContractCard(props: {
             <BinaryResolutionOrChance
               className="items-center"
               contract={contract}
+            />
+          )}
+
+          {outcomeType === 'NUMERIC' && (
+            <NumericResolutionOrExpectation
+              className="items-center"
+              contract={contract as NumericContract}
             />
           )}
         </Row>
@@ -210,6 +230,35 @@ export function FreeResponseResolutionOrChance(props: {
             </Col>
           </Row>
         )
+      )}
+    </Col>
+  )
+}
+
+export function NumericResolutionOrExpectation(props: {
+  contract: NumericContract
+  className?: string
+}) {
+  const { contract, className } = props
+  const { resolution } = contract
+
+  const resolutionValue =
+    contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
+
+  return (
+    <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
+      {resolution ? (
+        <>
+          <div className={clsx('text-base text-gray-500')}>Resolved</div>
+          <div className="text-blue-400">{resolutionValue}</div>
+        </>
+      ) : (
+        <>
+          <div className="text-3xl text-blue-400">
+            {formatLargeNumber(getExpectedValue(contract))}
+          </div>
+          <div className="text-base text-blue-400">expected</div>
+        </>
       )}
     </Col>
   )

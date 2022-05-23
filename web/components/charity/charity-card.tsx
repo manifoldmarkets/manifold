@@ -1,5 +1,5 @@
 import { StarIcon } from '@heroicons/react/solid'
-import _ from 'lodash'
+import { sumBy } from 'lodash'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Charity } from 'common/charity'
@@ -11,7 +11,7 @@ export function CharityCard(props: { charity: Charity }) {
   const { name, slug, photo, preview, id, tags } = props.charity
 
   const txns = useCharityTxns(id)
-  const raised = _.sumBy(txns, (txn) => txn.amount)
+  const raised = sumBy(txns, (txn) => txn.amount)
 
   return (
     <Link href={`/charity/${slug}`} passHref>

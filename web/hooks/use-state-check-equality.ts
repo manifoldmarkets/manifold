@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { isEqual } from 'lodash'
 import { useMemo, useRef, useState } from 'react'
 
 export const useStateCheckEquality = <T>(initialState: T) => {
@@ -10,7 +10,7 @@ export const useStateCheckEquality = <T>(initialState: T) => {
   const checkSetState = useMemo(
     () => (newState: T) => {
       const state = stateRef.current
-      if (!_.isEqual(state, newState)) {
+      if (!isEqual(state, newState)) {
         setState(newState)
       }
     },

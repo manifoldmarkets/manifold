@@ -10,7 +10,7 @@ import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import React, { Fragment } from 'react'
-import * as _ from 'lodash'
+import { uniqBy, partition, sumBy, groupBy } from 'lodash'
 import { JoinSpans } from 'web/components/join-spans'
 
 export function FeedBet(props: {
@@ -86,6 +86,7 @@ export function BetStatusText(props: {
           of{' '}
           <OutcomeLabel
             outcome={outcome}
+            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />
@@ -103,11 +104,11 @@ function BetGroupSpan(props: {
 }) {
   const { contract, bets, outcome } = props
 
-  const numberTraders = _.uniqBy(bets, (b) => b.userId).length
+  const numberTraders = uniqBy(bets, (b) => b.userId).length
 
-  const [buys, sells] = _.partition(bets, (bet) => bet.amount >= 0)
-  const buyTotal = _.sumBy(buys, (b) => b.amount)
-  const sellTotal = _.sumBy(sells, (b) => -b.amount)
+  const [buys, sells] = partition(bets, (bet) => bet.amount >= 0)
+  const buyTotal = sumBy(buys, (b) => b.amount)
+  const sellTotal = sumBy(sells, (b) => -b.amount)
 
   return (
     <span>
@@ -138,7 +139,7 @@ export function FeedBetGroup(props: {
 }) {
   const { contract, bets, hideOutcome } = props
 
-  const betGroups = _.groupBy(bets, (bet) => bet.outcome)
+  const betGroups = groupBy(bets, (bet) => bet.outcome)
   const outcomes = Object.keys(betGroups)
 
   // Use the time of the last bet for the entire group

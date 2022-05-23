@@ -1,6 +1,5 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
 import React, { useState } from 'react'
-import * as _ from 'lodash'
 import {
   BanIcon,
   CheckIcon,
@@ -37,6 +36,7 @@ import {
   TruncatedComment,
 } from 'web/components/feed/feed-comments'
 import { FeedBet, FeedBetGroup } from 'web/components/feed/feed-bets'
+import { NumericContract } from 'common/contract'
 
 export function FeedItems(props: {
   contract: Contract
@@ -215,7 +215,10 @@ function OutcomeIcon(props: { outcome?: string }) {
 function FeedResolve(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername } = contract
+
   const resolution = contract.resolution || 'CANCEL'
+
+  const resolutionValue = (contract as NumericContract).resolutionValue
 
   return (
     <>
@@ -236,6 +239,7 @@ function FeedResolve(props: { contract: Contract }) {
           resolved this market to{' '}
           <OutcomeLabel
             outcome={resolution}
+            value={resolutionValue}
             contract={contract}
             truncate="long"
           />{' '}

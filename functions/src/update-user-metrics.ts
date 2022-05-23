@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sum, sumBy } from 'lodash'
 
 import { getValues } from './utils'
 import { Contract } from '../../common/contract'
@@ -19,7 +19,7 @@ export const updateUserMetrics = functions.pubsub
       getValues<Contract>(firestore.collection('contracts')),
     ])
 
-    const contractsDict = _.fromPairs(
+    const contractsDict = Object.fromEntries(
       contracts.map((contract) => [contract.id, contract])
     )
 
@@ -43,12 +43,12 @@ export const updateUserMetrics = functions.pubsub
 
 const computeInvestmentValue = async (
   user: User,
-  contractsDict: _.Dictionary<Contract>
+  contractsDict: { [k: string]: Contract }
 ) => {
   const query = firestore.collectionGroup('bets').where('userId', '==', user.id)
   const bets = await getValues<Bet>(query)
 
-  return _.sumBy(bets, (bet) => {
+  return sumBy(bets, (bet) => {
     const contract = contractsDict[bet.contractId]
     if (!contract || contract.isResolved) return 0
     if (bet.sale || bet.isSold) return 0
@@ -60,20 +60,20 @@ const computeInvestmentValue = async (
 
 const computeTotalPool = async (
   user: User,
-  contractsDict: _.Dictionary<Contract>
+  contractsDict: { [k: string]: Contract }
 ) => {
   const creatorContracts = Object.values(contractsDict).filter(
     (contract) => contract.creatorId === user.id
   )
   const pools = creatorContracts.map((contract) =>
-    _.sum(Object.values(contract.pool))
+    sum(Object.values(contract.pool))
   )
-  return _.sum(pools)
+  return sum(pools)
 }
 
 const computeVolume = async (contract: Contract) => {
   const bets = await getValues<Bet>(
     firestore.collection(`contracts/${contract.id}/bets`)
   )
-  return _.sumBy(bets, (bet) => Math.abs(bet.amount))
+  return sumBy(bets, (bet) => Math.abs(bet.amount))
 }

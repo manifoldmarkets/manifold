@@ -1,10 +1,12 @@
-import * as _ from 'lodash'
+import { sumBy } from 'lodash'
 
-import { Bet, MAX_LOAN_PER_CONTRACT } from './bet'
+import { Bet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
 import {
   calculateDpmShares,
   getDpmProbability,
   getDpmOutcomeProbability,
+  getNumericBets,
+  calculateNumericDpmShares,
 } from './calculate-dpm'
 import { calculateCpmmPurchase, getCpmmProbability } from './calculate-cpmm'
 import {
@@ -14,9 +16,12 @@ import {
   FreeResponse,
   FullContract,
   Multi,
+  NumericContract,
 } from './contract'
 import { User } from './user'
 import { noFees } from './fees'
+import { addObjects } from './util/object'
+import { NUMERIC_FIXED_VAR } from './numeric-constants'
 
 export const getNewBinaryCpmmBetInfo = (
   user: User,
@@ -154,9 +159,58 @@ export const getNewMultiBetInfo = (
   return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
 }
 
+export const getNumericBetsInfo = (
+  user: User,
+  value: number,
+  outcome: string,
+  amount: number,
+  contract: NumericContract,
+  newBetId: string
+) => {
+  const { pool, totalShares, totalBets } = contract
+
+  const bets = getNumericBets(contract, outcome, amount, NUMERIC_FIXED_VAR)
+
+  const allBetAmounts = Object.fromEntries(bets)
+  const newTotalBets = addObjects(totalBets, allBetAmounts)
+  const newPool = addObjects(pool, allBetAmounts)
+
+  const { shares, totalShares: newTotalShares } = calculateNumericDpmShares(
+    contract.totalShares,
+    bets
+  )
+
+  const allOutcomeShares = Object.fromEntries(
+    bets.map(([outcome], i) => [outcome, shares[i]])
+  )
+
+  const probBefore = getDpmOutcomeProbability(totalShares, outcome)
+  const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
+
+  const newBet: NumericBet = {
+    id: newBetId,
+    userId: user.id,
+    contractId: contract.id,
+    value,
+    amount,
+    allBetAmounts,
+    shares: shares.find((s, i) => bets[i][0] === outcome) ?? 0,
+    allOutcomeShares,
+    outcome,
+    probBefore,
+    probAfter,
+    createdTime: Date.now(),
+    fees: noFees,
+  }
+
+  const newBalance = user.balance - amount
+
+  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+}
+
 export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {
   const openBets = yourBets.filter((bet) => !bet.isSold && !bet.sale)
-  const prevLoanAmount = _.sumBy(openBets, (bet) => bet.loanAmount ?? 0)
+  const prevLoanAmount = sumBy(openBets, (bet) => bet.loanAmount ?? 0)
   const loanAmount = Math.min(
     newBetAmount,
     MAX_LOAN_PER_CONTRACT - prevLoanAmount

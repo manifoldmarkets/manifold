@@ -65,6 +65,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb, setInitialProb] = useState(50)
+  const [minString, setMinString] = useState('')
+  const [maxString, setMaxString] = useState('')
   const [description, setDescription] = useState('')
   const [showCalendar, setShowCalendar] = useState(false)
   const [showNumInput, setShowNumInput] = useState(false)
@@ -95,6 +97,9 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const balance = creator?.balance || 0
 
+  const min = minString ? parseFloat(minString) : undefined
+  const max = maxString ? parseFloat(maxString) : undefined
+
   const isValid =
     initialProb > 0 &&
     initialProb < 100 &&
@@ -105,7 +110,14 @@ export function NewContract(props: { question: string; tag?: string }) {
     (ante <= balance || deservesDailyFreeMarket) &&
     // closeTime must be in the future
     closeTime &&
-    closeTime > Date.now()
+    closeTime > Date.now() &&
+    (outcomeType !== 'NUMERIC' ||
+      (min !== undefined &&
+        max !== undefined &&
+        isFinite(min) &&
+        isFinite(max) &&
+        min < max &&
+        max - min > 0.01))
 
   function setCloseDateInDays(days: number) {
     setShowCalendar(days === 60)
@@ -119,24 +131,24 @@ export function NewContract(props: { question: string; tag?: string }) {
 
     setIsSubmitting(true)
 
-    const result: any = await createContract(
-      removeUndefinedProps({
-        question,
-        outcomeType,
-        description,
-        initialProb,
-        ante,
-        closeTime,
-        tags: category ? [category] : undefined,
-      })
-    ).then((r) => r.data || {})
-
-    if (result.status !== 'success') {
-      console.log('error creating contract', result)
-      return
+    try {
+      const result = await createContract(
+        removeUndefinedProps({
+          question,
+          outcomeType,
+          description,
+          initialProb,
+          ante,
+          closeTime,
+          tags: category ? [category] : undefined,
+          min,
+          max,
+        })
+      )
+      await router.push(contractPath(result as Contract))
+    } catch (e) {
+      console.log('error creating contract', e)
     }
-
-    await router.push(contractPath(result.contract as Contract))
   }
 
   const descriptionPlaceholder =
@@ -176,6 +188,17 @@ export function NewContract(props: { question: string; tag?: string }) {
             disabled={isSubmitting}
           />
           <span className="label-text">Free response</span>
+        </label>
+        <label className="label cursor-pointer gap-2">
+          <input
+            className="radio"
+            type="radio"
+            name="opt"
+            checked={outcomeType === 'NUMERIC'}
+            value="NUMERIC"
+            onChange={() => setOutcomeType('NUMERIC')}
+          />
+          <span className="label-text">Numeric (experimental)</span>
         </label>
       </Row>
       <Spacer h={4} />
@@ -221,6 +244,40 @@ export function NewContract(props: { question: string; tag?: string }) {
                 <span className={'mt-2'}>%</span>
               </>
             )}
+          </Row>
+        </div>
+      )}
+
+      {outcomeType === 'NUMERIC' && (
+        <div className="form-control items-start">
+          <label className="label gap-2">
+            <span className="mb-1">Range</span>
+            <InfoTooltip text="The minimum and maximum numbers across the numeric range." />
+          </label>
+
+          <Row className="gap-2">
+            <input
+              type="number"
+              className="input input-bordered"
+              placeholder="MIN"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setMinString(e.target.value)}
+              min={Number.MIN_SAFE_INTEGER}
+              max={Number.MAX_SAFE_INTEGER}
+              disabled={isSubmitting}
+              value={minString ?? ''}
+            />
+            <input
+              type="number"
+              className="input input-bordered"
+              placeholder="MAX"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setMaxString(e.target.value)}
+              min={Number.MIN_SAFE_INTEGER}
+              max={Number.MAX_SAFE_INTEGER}
+              disabled={isSubmitting}
+              value={maxString}
+            />
           </Row>
         </div>
       )}

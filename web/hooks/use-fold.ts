@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { isEqual, sortBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { Fold } from 'common/fold'
 import { User } from 'common/user'
@@ -95,9 +95,9 @@ export const useFollowedFolds = (user: User | null | undefined) => {
         setFollowedFolds(JSON.parse(followedFoldJson))
         // Exit early if ids and followedFoldIds have all the same elements.
         if (
-          _.isEqual(
-            _.sortBy(ids),
-            _.sortBy(JSON.parse(followedFoldJson).map((f: Fold) => f.id))
+          isEqual(
+            sortBy(ids),
+            sortBy(JSON.parse(followedFoldJson).map((f: Fold) => f.id))
           )
         ) {
           return

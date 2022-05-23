@@ -148,14 +148,14 @@ ${TEST_VALUE}
     }
     setIsSubmitting(true)
     for (const prediction of predictions) {
-      const contract = await createContract({
+      const contract = (await createContract({
         question: prediction.question,
         description: prediction.description,
         initialProb: prediction.initialProb,
         ante,
         closeTime,
         tags: parseWordsAsTags(tags),
-      }).then((r) => (r.data as any).contract)
+      })) as FullContract<DPM | CPMM, Binary>
 
       setCreatedContracts((prev) => [...prev, contract])
     }
@@ -237,7 +237,7 @@ ${TEST_VALUE}
           <label className="label mb-1 gap-2">
             <span>Market ante</span>
             <InfoTooltip
-              text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
+              text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability.
               You earn ${0.01 * 100}% of trading volume.`}
             />
           </label>

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import algoliasearch from 'algoliasearch/lite'
 import {
   InstantSearch,
@@ -8,7 +9,6 @@ import {
   useRange,
   useRefinementList,
   useSortBy,
-  useToggleRefinement,
 } from 'react-instantsearch-hooks-web'
 import { Contract } from '../../common/contract'
 import {
@@ -37,6 +37,7 @@ const sortIndexes = [
   { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
   { label: 'Most traded', value: indexPrefix + 'contracts-most-traded' },
   { label: '24h volume', value: indexPrefix + 'contracts-24-hour-vol' },
+  { label: 'Last updated', value: indexPrefix + 'contracts-last-updated' },
   { label: 'Close date', value: indexPrefix + 'contracts-close-date' },
   { label: 'Resolve date', value: indexPrefix + 'contracts-resolve-date' },
 ]
@@ -190,13 +191,16 @@ export function ContractSearchInner(props: {
     filter === 'resolved' ? true : filter === 'all' ? undefined : false
   )
 
-  const { showMore, hits, isLastPage, results } = useInfiniteHits()
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  useEffect(() => {
+    const id = setTimeout(() => setIsInitialLoad(false), 1000)
+    return () => clearTimeout(id)
+  }, [])
+
+  const { showMore, hits, isLastPage } = useInfiniteHits()
   const contracts = hits as any as Contract[]
 
-  const router = useRouter()
-  const hasLoaded = contracts.length > 0 || router.isReady
-
-  if (!hasLoaded || !results) return <></>
+  if (isInitialLoad && contracts.length === 0) return <></>
 
   return (
     <ContractsGrid
@@ -237,13 +241,16 @@ const useFilterClosed = (value: boolean | undefined) => {
 }
 
 const useFilterResolved = (value: boolean | undefined) => {
-  // Note (James): I don't know why this works.
-  const { refine: refineResolved } = useToggleRefinement({
-    attribute: value === undefined ? 'non-existant-field' : 'isResolved',
-    on: true,
-    off: value === undefined ? undefined : false,
+  const { items, refine: deleteRefinement } = useCurrentRefinements({
+    includedAttributes: ['isResolved'],
   })
+
+  const { refine } = useRefinementList({ attribute: 'isResolved' })
+
   useEffect(() => {
-    refineResolved({ isRefined: !value })
+    const refinements = items[0]?.refinements ?? []
+
+    if (value !== undefined) refine(`${value}`)
+    refinements.forEach((refinement) => deleteRefinement(refinement))
   }, [value])
 }

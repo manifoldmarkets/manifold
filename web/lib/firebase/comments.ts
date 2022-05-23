@@ -7,7 +7,7 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore'
-import _ from 'lodash'
+import { range } from 'lodash'
 
 import { getValues, listenForValues } from './utils'
 import { db } from './init'
@@ -117,7 +117,7 @@ export async function getDailyComments(
   )
   const comments = await getValues<Comment>(query)
 
-  const commentsByDay = _.range(0, numberOfDays).map(() => [] as Comment[])
+  const commentsByDay = range(0, numberOfDays).map(() => [] as Comment[])
   for (const comment of comments) {
     const dayIndex = Math.floor((comment.createdTime - startTime) / DAY_IN_MS)
     commentsByDay[dayIndex].push(comment)

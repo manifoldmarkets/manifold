@@ -1,7 +1,5 @@
 import * as admin from 'firebase-admin'
 
-import { chargeUser } from './utils'
-import { APIError, newEndpoint, parseCredentials, lookupUser } from './api'
 import {
   Binary,
   Contract,
@@ -12,19 +10,27 @@ import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
+  Numeric,
+  OUTCOME_TYPES,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
-import { getNewContract } from '../../common/new-contract'
+
+import { chargeUser } from './utils'
+import { APIError, newEndpoint, parseCredentials, lookupUser } from './api'
+
 import {
   FIXED_ANTE,
   getAnteBets,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
+  getNumericAnte,
   HOUSE_LIQUIDITY_PROVIDER_ID,
   MINIMUM_ANTE,
 } from '../../common/antes'
 import { getNoneAnswer } from '../../common/answer'
+import { getNewContract } from '../../common/new-contract'
+import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 
 export const createContract = newEndpoint(['POST'], async (req, _res) => {
   const [creator, _privateUser] = await lookupUser(await parseCredentials(req))
@@ -35,8 +41,10 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     initialProb,
     closeTime,
     tags,
+    min,
+    max,
     manaLimitPerUser,
-  } = req.body.data || {}
+  } = req.body || {}
 
   if (!question || typeof question != 'string')
     throw new APIError(400, 'Missing or invalid question field')
@@ -56,8 +64,22 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
   )
 
   outcomeType = outcomeType ?? 'BINARY'
-  if (!['BINARY', 'MULTI', 'FREE_RESPONSE'].includes(outcomeType))
+
+  if (!OUTCOME_TYPES.includes(outcomeType))
     throw new APIError(400, 'Invalid outcomeType')
+
+  if (
+    outcomeType === 'NUMERIC' &&
+    !(
+      min !== undefined &&
+      max !== undefined &&
+      isFinite(min) &&
+      isFinite(max) &&
+      min < max &&
+      max - min > 0.01
+    )
+  )
+    throw new APIError(400, 'Invalid range')
 
   if (
     outcomeType === 'BINARY' &&
@@ -109,6 +131,9 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     ante,
     closeTime,
     tags ?? [],
+    NUMERIC_BUCKET_COUNT,
+    min ?? 0,
+    max ?? 0,
     manaLimitPerUser ?? 0
   )
 
@@ -116,62 +141,71 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
 
   await contractRef.create(contract)
 
-  if (ante) {
-    if (outcomeType === 'BINARY' && contract.mechanism === 'dpm-2') {
-      const yesBetDoc = firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc()
+  const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : creator.id
 
-      const noBetDoc = firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc()
+  if (outcomeType === 'BINARY' && contract.mechanism === 'dpm-2') {
+    const yesBetDoc = firestore
+      .collection(`contracts/${contract.id}/bets`)
+      .doc()
 
-      const { yesBet, noBet } = getAnteBets(
-        creator,
-        contract as FullContract<DPM, Binary>,
-        yesBetDoc.id,
-        noBetDoc.id
-      )
+    const noBetDoc = firestore.collection(`contracts/${contract.id}/bets`).doc()
 
-      await yesBetDoc.set(yesBet)
-      await noBetDoc.set(noBet)
-    } else if (outcomeType === 'BINARY') {
-      const liquidityDoc = firestore
-        .collection(`contracts/${contract.id}/liquidity`)
-        .doc()
+    const { yesBet, noBet } = getAnteBets(
+      creator,
+      contract as FullContract<DPM, Binary>,
+      yesBetDoc.id,
+      noBetDoc.id
+    )
 
-      const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : creator.id
+    await yesBetDoc.set(yesBet)
+    await noBetDoc.set(noBet)
+  } else if (outcomeType === 'BINARY') {
+    const liquidityDoc = firestore
+      .collection(`contracts/${contract.id}/liquidity`)
+      .doc()
 
-      const lp = getCpmmInitialLiquidity(
-        providerId,
-        contract as FullContract<CPMM, Binary>,
-        liquidityDoc.id,
-        ante
-      )
+    const lp = getCpmmInitialLiquidity(
+      providerId,
+      contract as FullContract<CPMM, Binary>,
+      liquidityDoc.id,
+      ante
+    )
 
-      await liquidityDoc.set(lp)
-    } else if (outcomeType === 'FREE_RESPONSE') {
-      const noneAnswerDoc = firestore
-        .collection(`contracts/${contract.id}/answers`)
-        .doc('0')
+    await liquidityDoc.set(lp)
+  } else if (outcomeType === 'FREE_RESPONSE') {
+    const noneAnswerDoc = firestore
+      .collection(`contracts/${contract.id}/answers`)
+      .doc('0')
 
-      const noneAnswer = getNoneAnswer(contract.id, creator)
-      await noneAnswerDoc.set(noneAnswer)
+    const noneAnswer = getNoneAnswer(contract.id, creator)
+    await noneAnswerDoc.set(noneAnswer)
 
-      const anteBetDoc = firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc()
+    const anteBetDoc = firestore
+      .collection(`contracts/${contract.id}/bets`)
+      .doc()
 
-      const anteBet = getFreeAnswerAnte(
-        creator,
-        contract as FullContract<DPM, FreeResponse>,
-        anteBetDoc.id
-      )
-      await anteBetDoc.set(anteBet)
-    }
+    const anteBet = getFreeAnswerAnte(
+      providerId,
+      contract as FullContract<DPM, FreeResponse>,
+      anteBetDoc.id
+    )
+    await anteBetDoc.set(anteBet)
+  } else if (outcomeType === 'NUMERIC') {
+    const anteBetDoc = firestore
+      .collection(`contracts/${contract.id}/bets`)
+      .doc()
+
+    const anteBet = getNumericAnte(
+      creator,
+      contract as FullContract<DPM, Numeric>,
+      ante,
+      anteBetDoc.id
+    )
+
+    await anteBetDoc.set(anteBet)
   }
 
-  return { contract: contract }
+  return contract
 })
 
 const getSlug = async (question: string) => {

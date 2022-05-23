@@ -13,7 +13,7 @@ import {
   updateDoc,
   limit,
 } from 'firebase/firestore'
-import _ from 'lodash'
+import { range, sortBy } from 'lodash'
 
 import { app } from './init'
 import { getValues, listenForValue, listenForValues } from './utils'
@@ -225,7 +225,7 @@ export function listenForHotContracts(
   setHotContracts: (contracts: Contract[]) => void
 ) {
   return listenForValues<Contract>(hotContractsQuery, (contracts) => {
-    const hotContracts = _.sortBy(
+    const hotContracts = sortBy(
       chooseRandomSubset(contracts, 4),
       (contract) => contract.volume24Hours
     )
@@ -235,7 +235,7 @@ export function listenForHotContracts(
 
 export async function getHotContracts() {
   const contracts = await getValues<Contract>(hotContractsQuery)
-  return _.sortBy(
+  return sortBy(
     chooseRandomSubset(contracts, 10),
     (contract) => -1 * contract.volume24Hours
   )
@@ -245,7 +245,7 @@ export async function getContractsBySlugs(slugs: string[]) {
   const q = query(contractCollection, where('slug', 'in', slugs))
   const snapshot = await getDocs(q)
   const contracts = snapshot.docs.map((doc) => doc.data() as Contract)
-  return _.sortBy(contracts, (contract) => -1 * contract.volume24Hours)
+  return sortBy(contracts, (contract) => -1 * contract.volume24Hours)
 }
 
 const topWeeklyQuery = query(
@@ -269,7 +269,7 @@ const closingSoonQuery = query(
 
 export async function getClosingSoonContracts() {
   const contracts = await getValues<Contract>(closingSoonQuery)
-  return _.sortBy(
+  return sortBy(
     chooseRandomSubset(contracts, 2),
     (contract) => contract.closeTime
   )
@@ -295,7 +295,7 @@ export async function getDailyContracts(
   )
   const contracts = await getValues<Contract>(query)
 
-  const contractsByDay = _.range(0, numberOfDays).map(() => [] as Contract[])
+  const contractsByDay = range(0, numberOfDays).map(() => [] as Contract[])
   for (const contract of contracts) {
     const dayIndex = Math.floor((contract.createdTime - startTime) / DAY_IN_MS)
     contractsByDay[dayIndex].push(contract)

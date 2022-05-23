@@ -1,4 +1,4 @@
-import * as _ from 'lodash'
+import { maxBy } from 'lodash'
 import { Bet } from './bet'
 import {
   calculateCpmmSale,
@@ -161,7 +161,6 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
 
   return {
     invested: Math.max(0, currentInvested),
-    currentInvested,
     payout,
     netPayout,
     profit,
@@ -181,7 +180,7 @@ export function getContractBetNullMetrics() {
 
 export function getTopAnswer(contract: FreeResponseContract) {
   const { answers } = contract
-  const top = _.maxBy(
+  const top = maxBy(
     answers?.map((answer) => ({
       answer,
       prob: getOutcomeProbability(contract, answer.id),
@@ -189,30 +188,4 @@ export function getTopAnswer(contract: FreeResponseContract) {
     ({ prob }) => prob
   )
   return top?.answer
-}
-
-export function hasUserHitManaLimit(
-  contract: FreeResponseContract,
-  bets: Bet[],
-  amount: number
-) {
-  const { manaLimitPerUser } = contract
-  if (manaLimitPerUser) {
-    const contractMetrics = getContractBetMetrics(contract, bets)
-    const currentInvested = contractMetrics.currentInvested
-    console.log('user current invested amount', currentInvested)
-    console.log('mana limit:', manaLimitPerUser)
-
-    if (currentInvested + amount > manaLimitPerUser) {
-      const manaAllowed = manaLimitPerUser - currentInvested
-      return {
-        status: 'error',
-        message: `Market bet cap is M$${manaLimitPerUser}, you've M$${manaAllowed} left`,
-      }
-    }
-  }
-  return {
-    status: 'success',
-    message: '',
-  }
 }
