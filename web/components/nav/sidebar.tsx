@@ -11,7 +11,7 @@ import {
   SparklesIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import _ from 'lodash'
+import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from 'web/hooks/use-fold'

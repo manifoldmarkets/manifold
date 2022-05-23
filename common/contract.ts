@@ -1,4 +1,3 @@
-import * as _ from 'lodash'
 import { Answer } from './answer'
 import { Fees } from './fees'
 

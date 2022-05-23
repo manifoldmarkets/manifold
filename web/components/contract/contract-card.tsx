@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../layout/row'
-import { formatPercent } from 'common/util/format'
+import { formatLargeNumber, formatPercent } from 'common/util/format'
 import {
   Contract,
   contractPath,
@@ -38,7 +38,15 @@ function getProb(contract: Contract) {
     ? getBinaryProb(contract)
     : outcomeType === 'FREE_RESPONSE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
+    : outcomeType === 'NUMERIC'
+    ? getNumericScale(contract as NumericContract)
     : 1 // Should not happen
+}
+
+function getNumericScale(contract: NumericContract) {
+  const { min, max } = contract
+  const ev = getExpectedValue(contract)
+  return (ev - min) / (max - min)
 }
 
 function getColor(contract: Contract) {
@@ -50,6 +58,9 @@ function getColor(contract: Contract) {
       // If resolved to a FR answer, use 'primary'
       'primary'
     )
+  }
+  if (contract.outcomeType === 'NUMERIC') {
+    return 'blue-400'
   }
 
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
@@ -244,7 +255,7 @@ export function NumericResolutionOrExpectation(props: {
       ) : (
         <>
           <div className="text-3xl text-blue-400">
-            {getExpectedValue(contract)}
+            {formatLargeNumber(getExpectedValue(contract))}
           </div>
           <div className="text-base text-blue-400">expected</div>
         </>

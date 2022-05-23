@@ -2,7 +2,11 @@ import * as admin from 'firebase-admin'
 import * as functions from 'firebase-functions'
 import * as Cors from 'cors'
 
-import { User, PrivateUser } from 'common/user'
+import { User, PrivateUser } from '../../common/user'
+import {
+  CORS_ORIGIN_MANIFOLD,
+  CORS_ORIGIN_LOCALHOST,
+} from '../../common/envs/constants'
 
 type Request = functions.https.Request
 type Response = functions.Response
@@ -90,10 +94,11 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
   }
 }
 
-export const CORS_ORIGIN_MANIFOLD = /^https?:\/\/.+\.manifold\.markets$/
-export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/
-
-export const applyCors = (req: any, res: any, params: object) => {
+export const applyCors = (
+  req: Request,
+  res: Response,
+  params: Cors.CorsOptions
+) => {
   return new Promise((resolve, reject) => {
     Cors(params)(req, res, (result) => {
       if (result instanceof Error) {
@@ -107,7 +112,7 @@ export const applyCors = (req: any, res: any, params: object) => {
 export const newEndpoint = (methods: [string], fn: Handler) =>
   functions.runWith({ minInstances: 1 }).https.onRequest(async (req, res) => {
     await applyCors(req, res, {
-      origins: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
+      origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
       methods: methods,
     })
     try {
@@ -115,15 +120,13 @@ export const newEndpoint = (methods: [string], fn: Handler) =>
         const allowed = methods.join(', ')
         throw new APIError(405, `This endpoint supports only ${allowed}.`)
       }
-      const data = await fn(req, res)
-      data.status = 'success'
-      res.status(200).json({ data: data })
+      res.status(200).json(await fn(req, res))
     } catch (e) {
       if (e instanceof APIError) {
         // Emit a 200 anyway here for now, for backwards compatibility
-        res.status(200).json({ data: { status: 'error', message: e.msg } })
+        res.status(e.code).json({ message: e.msg })
       } else {
-        res.status(500).json({ data: { status: 'error', message: '???' } })
+        res.status(500).json({ message: 'An unknown error occurred.' })
       }
     }
   })

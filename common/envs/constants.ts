@@ -1,3 +1,4 @@
+import { escapeRegExp } from 'lodash'
 import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 import { THEOREMONE_CONFIG } from './theoremone'
@@ -28,3 +29,10 @@ export const DOMAIN = ENV_CONFIG.domain
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
 export const PROJECT_ID = ENV_CONFIG.firebaseConfig.projectId
 export const IS_PRIVATE_MANIFOLD = ENV_CONFIG.visibility === 'PRIVATE'
+
+// Manifold's domain or any subdomains thereof
+export const CORS_ORIGIN_MANIFOLD = new RegExp(
+  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.domain) + '$'
+)
+// Any localhost server on any port
+export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/

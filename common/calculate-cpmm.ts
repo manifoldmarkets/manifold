@@ -1,4 +1,4 @@
-import * as _ from 'lodash'
+import { sum, groupBy, mapValues, sumBy } from 'lodash'
 
 import { Binary, CPMM, FullContract } from './contract'
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, noFees, PLATFORM_FEE } from './fees'
@@ -278,16 +278,16 @@ export function getCpmmLiquidityPoolWeights(
     return liquidity
   })
 
-  const shareSum = _.sum(liquidityShares)
+  const shareSum = sum(liquidityShares)
 
   const weights = liquidityShares.map((s, i) => ({
     weight: s / shareSum,
     providerId: liquidities[i].userId,
   }))
 
-  const userWeights = _.groupBy(weights, (w) => w.providerId)
-  const totalUserWeights = _.mapValues(userWeights, (userWeight) =>
-    _.sumBy(userWeight, (w) => w.weight)
+  const userWeights = groupBy(weights, (w) => w.providerId)
+  const totalUserWeights = mapValues(userWeights, (userWeight) =>
+    sumBy(userWeight, (w) => w.weight)
   )
   return totalUserWeights
 }

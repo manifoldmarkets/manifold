@@ -1,4 +1,3 @@
-import _, { Dictionary } from 'lodash'
 import { useState, useEffect } from 'react'
 import type { feed } from 'common/feed'
 import { useTimeSinceFirstRender } from './use-time-since-first-render'
@@ -15,7 +14,7 @@ export const useAlgoFeed = (
   category: string
 ) => {
   const [allFeed, setAllFeed] = useState<feed>()
-  const [categoryFeeds, setCategoryFeeds] = useState<Dictionary<feed>>()
+  const [categoryFeeds, setCategoryFeeds] = useState<{ [x: string]: feed }>()
 
   const getTime = useTimeSinceFirstRender()
 

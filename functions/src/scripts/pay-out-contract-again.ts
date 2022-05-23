@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { flatten, groupBy, sumBy, mapValues } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
@@ -35,12 +35,12 @@ async function checkIfPayOutAgain(contractRef: DocRef, contract: Contract) {
     )
 
     const loanPayouts = getLoanPayouts(openBets)
-    const groups = _.groupBy(
+    const groups = groupBy(
       [...payouts, ...loanPayouts],
       (payout) => payout.userId
     )
-    const userPayouts = _.mapValues(groups, (group) =>
-      _.sumBy(group, (g) => g.payout)
+    const userPayouts = mapValues(groups, (group) =>
+      sumBy(group, (g) => g.payout)
     )
 
     const entries = Object.entries(userPayouts)
@@ -93,7 +93,7 @@ async function payOutContractAgain() {
     )
   )
 
-  const flattened = _.flatten(toPayOutAgain.map((d) => d.toBePaidOut))
+  const flattened = flatten(toPayOutAgain.map((d) => d.toBePaidOut))
 
   for (const [userId, payout] of flattened) {
     console.log('Paying out', userId, payout)
