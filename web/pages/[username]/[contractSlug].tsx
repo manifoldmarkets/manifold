@@ -214,7 +214,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
 
         {isNumeric && (
           <NumericBetPanel
-            className="sm:hidden"
+            className="xl:hidden"
             contract={contract as NumericContract}
           />
         )}
