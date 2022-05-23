@@ -90,6 +90,7 @@ export function QuickBet(props: {
         'bg-gray-50'
       )}
     >
+      {/* Up bet triangle */}
       <div>
         <div
           className="peer absolute top-0 left-0 right-0 h-[50%]"
@@ -113,6 +114,7 @@ export function QuickBet(props: {
 
       <QuickOutcomeView contract={contract} />
 
+      {/* Down bet triangle */}
       <div>
         <div
           className="peer absolute bottom-0 left-0 right-0 h-[50%]"
