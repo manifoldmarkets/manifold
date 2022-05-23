@@ -19,6 +19,7 @@ import { getBinaryProb } from 'web/lib/firebase/contracts'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { Col } from '../layout/col'
+import { OUTCOME_TO_COLOR } from '../outcome-label'
 import { useSaveShares } from '../use-save-shares'
 import {
   BinaryResolutionOrChance,
