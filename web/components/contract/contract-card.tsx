@@ -163,8 +163,8 @@ function QuickBet(props: {
         {hasUpShares > 0 ? (
           <TriangleFillIcon
             className={clsx(
-              'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
-              `text-${color}`
+              'mx-auto h-5 w-5',
+              `text-${color} text-opacity-70 peer-hover:text-gray-400`
             )}
           />
         ) : (
@@ -182,8 +182,8 @@ function QuickBet(props: {
         {hasDownShares > 0 ? (
           <TriangleDownFillIcon
             className={clsx(
-              'mx-auto h-5 w-5 text-opacity-60 peer-hover:text-opacity-100',
-              `text-${color}`
+              'mx-auto h-5 w-5',
+              `text-${color} text-opacity-70 peer-hover:text-gray-400`
             )}
           />
         ) : (
