@@ -332,9 +332,13 @@ export function NewContract(props: { question: string; tag?: string }) {
         <Row className={'w-full items-center gap-2'}>
           <ChoicesToggleGroup
             currentChoice={
-              closeDate ?
-                [1, 7, 30, 365, 0].includes(dayjs(closeDate).diff(dayjs(), 'day'))?
-                dayjs(closeDate).diff(dayjs(), 'day') : 0 : -1
+              closeDate
+                ? [1, 7, 30, 365, 0].includes(
+                    dayjs(closeDate).diff(dayjs(), 'day')
+                  )
+                  ? dayjs(closeDate).diff(dayjs(), 'day')
+                  : 0
+                : -1
             }
             setChoice={setCloseDateInDays}
             choices={[1, 7, 30, 0]}
@@ -347,7 +351,11 @@ export function NewContract(props: { question: string; tag?: string }) {
             type={'date'}
             className="input input-bordered mt-4"
             onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setCloseDate(dayjs(e.target.value).format('YYYY-MM-DDT23:59') || '')}
+            onChange={(e) =>
+              setCloseDate(
+                dayjs(e.target.value).format('YYYY-MM-DDT23:59') || ''
+              )
+            }
             min={Date.now()}
             disabled={isSubmitting}
             value={dayjs(closeDate).format('YYYY-MM-DD')}
@@ -368,8 +376,10 @@ export function NewContract(props: { question: string; tag?: string }) {
         </label>
         {deservesDailyFreeMarket ? (
           <div className="label-text text-primary pl-1">
-            <span className={"line-through label-text text-neutral "}>{formatMoney(ante)}</span>
-            {' '}FREE
+            <span className={'label-text text-neutral line-through '}>
+              {formatMoney(ante)}
+            </span>{' '}
+            FREE
           </div>
         ) : (
           <div className="label-text text-neutral pl-1">
