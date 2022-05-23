@@ -1,5 +1,4 @@
 import { auth } from './users'
-import { app, functions } from './init'
 
 export class APIError extends Error {
   code: number
@@ -10,15 +9,12 @@ export class APIError extends Error {
   }
 }
 
-export async function call(name: string, method: string, params: any) {
+export async function call(url: string, method: string, params: any) {
   const user = auth.currentUser
   if (user == null) {
     throw new Error('Must be signed in to make API calls.')
   }
   const token = await user.getIdToken()
-  const region = functions.region
-  const projectId = app.options.projectId
-  const url = `https://${region}-${projectId}.cloudfunctions.net/${name}`
   const req = new Request(url, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -37,9 +33,9 @@ export async function call(name: string, method: string, params: any) {
 }
 
 export function createContract(params: any) {
-  return call('createContract', 'POST', params)
+  return call('/api/v0/market', 'POST', params)
 }
 
 export function placeBet(params: any) {
-  return call('placeBet', 'POST', params)
+  return call('/api/v0/bets', 'POST', params)
 }
