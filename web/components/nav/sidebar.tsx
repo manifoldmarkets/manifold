@@ -21,7 +21,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
 import {
-  getUtcMidnightToday,
+  getUtcFreeMarketResetTimeToday,
   useHasCreatedContractToday,
 } from 'web/hooks/use-has-created-contract-today'
 import { Row } from '../layout/row'
@@ -127,16 +127,19 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
   const [countdown, setCountdown] = useState('...')
   useEffect(() => {
-    const utcMidnightToLocalDate = new Date(getUtcMidnightToday())
+    const utcMidnightToLocalDate = new Date(getUtcFreeMarketResetTimeToday())
     const interval = setInterval(() => {
       const timeUntil = utcMidnightToLocalDate.getTime() - new Date().getTime()
       const hoursUntil = 24 + timeUntil / 1000 / 60 / 60
       const minutesUntil = Math.floor((hoursUntil * 60) % 60)
       const secondsUntil = Math.floor((hoursUntil * 60 * 60) % 60)
       const hoursUntilFloor = Math.floor(hoursUntil)
-      const timeString = `${hoursUntilFloor}h ${minutesUntil}m ${
-        hoursUntilFloor < 1 && minutesUntil < 1 ? secondsUntil + 's' : ''
-      }`
+      const timeString =
+        minutesUntil < 1
+          ? `${secondsUntil}s`
+          : hoursUntilFloor < 1
+          ? `${minutesUntil}m`
+          : `${hoursUntilFloor}h`
       setCountdown(timeString)
     }, 1000)
     return () => clearInterval(interval)
@@ -144,7 +147,7 @@ export default function Sidebar(props: { className?: string }) {
 
   const user = useUser()
   let folds = useFollowedFolds(user) || []
-  folds = _.sortBy(folds, 'followCount').reverse()
+  folds = sortBy(folds, 'followCount').reverse()
   const mustWaitForFreeMarketStatus = useHasCreatedContractToday(user)
   const navigationOptions =
     user === null

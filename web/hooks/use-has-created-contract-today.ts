@@ -4,10 +4,12 @@ import { User } from 'common/user'
 
 let sessionCreatedContractToday = true
 
-export function getUtcMidnightToday() {
+export function getUtcFreeMarketResetTimeToday() {
   // Uses utc time like the server.
-  const utcTimeString = new Date().toISOString()
-  return new Date(utcTimeString).setUTCHours(0, 0, 0, 0)
+  const utcFreeMarketResetTime = new Date()
+  utcFreeMarketResetTime.setUTCDate(utcFreeMarketResetTime.getUTCDate() - 1)
+  const utcFreeMarketMS = utcFreeMarketResetTime.setUTCHours(16, 0, 0, 0)
+  return utcFreeMarketMS
 }
 
 export const useHasCreatedContractToday = (user: User | null | undefined) => {
@@ -17,7 +19,7 @@ export const useHasCreatedContractToday = (user: User | null | undefined) => {
 
   useEffect(() => {
     setHasCreatedContractToday('loading')
-    const todayAtMidnight = getUtcMidnightToday()
+    const todayAtMidnight = getUtcFreeMarketResetTimeToday()
     async function listUserContractsForToday() {
       if (!user) return
 
