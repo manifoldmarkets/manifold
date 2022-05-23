@@ -6,6 +6,7 @@ export const DEV_CONFIG: EnvConfig = {
     apiKey: 'AIzaSyBoq3rzUa8Ekyo3ZaTnlycQYPRCA26VpOw',
     authDomain: 'dev-mantic-markets.firebaseapp.com',
     projectId: 'dev-mantic-markets',
+    region: 'us-central1',
     storageBucket: 'dev-mantic-markets.appspot.com',
     messagingSenderId: '134303100058',
     appId: '1:134303100058:web:27f9ea8b83347251f80323',
