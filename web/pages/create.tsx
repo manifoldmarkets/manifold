@@ -88,7 +88,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   // const [anteError, setAnteError] = useState<string | undefined>()
   // By default, close the market a week from today
-  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
+  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DDT23:59')
   const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -120,8 +120,8 @@ export function NewContract(props: { question: string; tag?: string }) {
         max - min > 0.01))
 
   function setCloseDateInDays(days: number) {
-    setShowCalendar(days === 60)
-    const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
+    setShowCalendar(days === 0)
+    const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DDT23:59')
     setCloseDate(newCloseDate)
   }
 
@@ -160,8 +160,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   return (
     <div>
-      <label className="label">
-        <span className="mb-1">Answer type</span>
+      <label className="label mt-1">
+        <span className="my-1">Answer type</span>
       </label>
       <Row className="form-control gap-2">
         <label className="label cursor-pointer gap-2">
@@ -327,15 +327,17 @@ export function NewContract(props: { question: string; tag?: string }) {
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
           <span>Question expires in a:</span>
-          <InfoTooltip text="Betting will be halted after this time (local timezone)." />
+          <InfoTooltip text="Betting will be halted after this date (local timezone)." />
         </label>
         <Row className={'w-full items-center gap-2'}>
           <ChoicesToggleGroup
             currentChoice={
-              closeTime ? dayjs(closeTime).diff(dayjs(), 'day') + 1 : -1
+              closeDate ?
+                [1, 7, 30, 365, 0].includes(dayjs(closeDate).diff(dayjs(), 'day'))?
+                dayjs(closeDate).diff(dayjs(), 'day') : 0 : -1
             }
             setChoice={setCloseDateInDays}
-            choices={[1, 7, 30, 60]}
+            choices={[1, 7, 30, 0]}
             titles={['Day', 'Week', 'Month', 'Custom']}
             isSubmitting={isSubmitting}
           />
@@ -345,10 +347,10 @@ export function NewContract(props: { question: string; tag?: string }) {
             type={'date'}
             className="input input-bordered mt-4"
             onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setCloseDate(e.target.value || '')}
+            onChange={(e) => setCloseDate(dayjs(e.target.value).format('YYYY-MM-DDT23:59') || '')}
             min={Date.now()}
             disabled={isSubmitting}
-            value={closeDate}
+            value={dayjs(closeDate).format('YYYY-MM-DD')}
           />
         )}
       </div>
@@ -366,7 +368,8 @@ export function NewContract(props: { question: string; tag?: string }) {
         </label>
         {deservesDailyFreeMarket ? (
           <div className="label-text text-primary pl-1">
-            {formatMoney(ante)} FREE{' '}
+            <span className={"line-through label-text text-neutral "}>{formatMoney(ante)}</span>
+            {' '}FREE
           </div>
         ) : (
           <div className="label-text text-neutral pl-1">
