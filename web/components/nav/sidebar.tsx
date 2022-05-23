@@ -21,7 +21,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { getNavigationOptions, ProfileSummary } from './profile-menu'
 import {
-  getUtcFreeMarketResetTimeToday,
+  getUtcFreeMarketResetTime,
   useHasCreatedContractToday,
 } from 'web/hooks/use-has-created-contract-today'
 import { Row } from '../layout/row'
@@ -127,7 +127,7 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
   const [countdown, setCountdown] = useState('...')
   useEffect(() => {
-    const utcMidnightToLocalDate = new Date(getUtcFreeMarketResetTimeToday())
+    const utcMidnightToLocalDate = new Date(getUtcFreeMarketResetTime(false))
     const interval = setInterval(() => {
       const timeUntil = utcMidnightToLocalDate.getTime() - new Date().getTime()
       const hoursUntil = 24 + timeUntil / 1000 / 60 / 60
