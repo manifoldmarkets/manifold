@@ -94,7 +94,6 @@ export function ContractCard(props: {
             </Col>
           )}
         </Row>
-        <ProbBar contract={contract} />
       </Col>
     </div>
   )

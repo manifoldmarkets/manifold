@@ -51,24 +51,20 @@ export function QuickBet(props: { contract: Contract }) {
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
 
-  let override
+  let previewProb = undefined
   try {
-    override = upHover
-      ? formatPercent(
-          getOutcomeProbabilityAfterBet(
-            contract,
-            quickOutcome(contract, 'UP') || '',
-            10
-          )
+    previewProb = upHover
+      ? getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'UP') || '',
+          10
         )
       : downHover
-      ? formatPercent(
-          1 -
-            getOutcomeProbabilityAfterBet(
-              contract,
-              quickOutcome(contract, 'DOWN') || '',
-              10
-            )
+      ? 1 -
+        getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'DOWN') || '',
+          10
         )
       : undefined
   } catch (e) {
@@ -144,7 +140,7 @@ export function QuickBet(props: { contract: Contract }) {
         )}
       </div>
 
-      <QuickOutcomeView contract={contract} override={override} />
+      <QuickOutcomeView contract={contract} previewProb={previewProb} />
 
       {/* Down bet triangle */}
       <div>
@@ -172,10 +168,11 @@ export function QuickBet(props: { contract: Contract }) {
   )
 }
 
-export function ProbBar(props: { contract: Contract }) {
-  const { contract } = props
+export function ProbBar(props: { contract: Contract; previewProb?: number }) {
+  const { contract, previewProb } = props
+  // TODO: Switch preview color as it changes from green to red
   const color = getColor(contract)
-  const prob = getProb(contract)
+  const prob = previewProb ?? getProb(contract)
   return (
     <>
       <div
@@ -202,10 +199,12 @@ export function ProbBar(props: { contract: Contract }) {
 // code resuse. Too many differences anyways
 export function QuickOutcomeView(props: {
   contract: Contract
-  override?: string
+  previewProb?: number
 }) {
-  const { contract, override } = props
+  const { contract, previewProb } = props
   const { outcomeType } = contract
+  const override =
+    previewProb === undefined ? undefined : formatPercent(previewProb)
   return (
     <>
       {outcomeType === 'BINARY' && (
@@ -235,6 +234,7 @@ export function QuickOutcomeView(props: {
           override={override}
         />
       )}
+      <ProbBar contract={contract} previewProb={previewProb} />
     </>
   )
 }
