@@ -183,12 +183,14 @@ export function FreeResponseResolutionOrChance(props: {
       {resolution ? (
         <>
           <div className={clsx('text-base text-gray-500')}>Resolved</div>
-          <FreeResponseOutcomeLabel
-            contract={contract}
-            resolution={resolution}
-            truncate={truncate}
-            answerClassName="text-3xl uppercase text-blue-500"
-          />
+          {(resolution === 'CANCEL' || resolution === 'MKT') && (
+            <FreeResponseOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+              truncate={truncate}
+              answerClassName="text-3xl uppercase text-blue-500"
+            />
+          )}
         </>
       ) : (
         topAnswer && (
