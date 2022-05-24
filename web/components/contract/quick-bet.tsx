@@ -1,5 +1,9 @@
 import clsx from 'clsx'
-import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
+import {
+  getOutcomeProbability,
+  getOutcomeProbabilityAfterBet,
+  getTopAnswer,
+} from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import {
   Contract,
@@ -10,7 +14,8 @@ import {
   NumericContract,
   FreeResponse,
 } from 'common/contract'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -41,6 +46,34 @@ export function QuickBet(props: { contract: Contract }) {
     contract.outcomeType === 'BINARY' ? yesFloorShares : noFloorShares
   const hasDownShares =
     contract.outcomeType === 'BINARY' ? noFloorShares : yesFloorShares
+
+  // TODO: Consider making up/down two different components, for code reuse?
+  const [upHover, setUpHover] = useState(false)
+  const [downHover, setDownHover] = useState(false)
+
+  let override
+  try {
+    override = upHover
+      ? formatPercent(
+          getOutcomeProbabilityAfterBet(
+            contract,
+            quickOutcome(contract, 'UP') || '',
+            10
+          )
+        )
+      : downHover
+      ? formatPercent(
+          1 -
+            getOutcomeProbabilityAfterBet(
+              contract,
+              quickOutcome(contract, 'DOWN') || '',
+              10
+            )
+        )
+      : undefined
+  } catch (e) {
+    // Catch any errors from hovering on an invalid option
+  }
 
   const color = getColor(contract)
 
@@ -91,6 +124,8 @@ export function QuickBet(props: { contract: Contract }) {
       <div>
         <div
           className="peer absolute top-0 left-0 right-0 h-[50%]"
+          onMouseEnter={() => setUpHover(true)}
+          onMouseLeave={() => setUpHover(false)}
           onClick={() => placeQuickBet('UP')}
         ></div>
         <div className="mt-2 text-center text-xs text-transparent peer-hover:text-gray-400">
@@ -109,12 +144,14 @@ export function QuickBet(props: { contract: Contract }) {
         )}
       </div>
 
-      <QuickOutcomeView contract={contract} />
+      <QuickOutcomeView contract={contract} override={override} />
 
       {/* Down bet triangle */}
       <div>
         <div
           className="peer absolute bottom-0 left-0 right-0 h-[50%]"
+          onMouseEnter={() => setDownHover(true)}
+          onMouseLeave={() => setDownHover(false)}
           onClick={() => placeQuickBet('DOWN')}
         ></div>
         {hasDownShares > 0 ? (
@@ -161,8 +198,13 @@ export function ProbBar(props: { contract: Contract }) {
   )
 }
 
-export function QuickOutcomeView(props: { contract: Contract }) {
-  const { contract } = props
+// TODO: just directly code in the outcomes for quick bet, rather than relying on
+// code resuse. Too many differences anyways
+export function QuickOutcomeView(props: {
+  contract: Contract
+  override?: string
+}) {
+  const { contract, override } = props
   const { outcomeType } = contract
   return (
     <>
@@ -171,6 +213,7 @@ export function QuickOutcomeView(props: { contract: Contract }) {
           className="items-center"
           contract={contract}
           hideText
+          override={override}
         />
       )}
 
@@ -179,6 +222,7 @@ export function QuickOutcomeView(props: { contract: Contract }) {
           className="items-center"
           contract={contract as NumericContract}
           hideText
+          override={override}
         />
       )}
 
@@ -188,6 +232,7 @@ export function QuickOutcomeView(props: { contract: Contract }) {
           contract={contract as FullContract<DPM, FreeResponse>}
           truncate="long"
           hideText
+          override={override}
         />
       )}
     </>

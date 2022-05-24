@@ -6,7 +6,6 @@ import {
   Contract,
   contractPath,
   getBinaryProbPercent,
-  listenForContract,
 } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
@@ -26,7 +25,6 @@ import {
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-import { useEffect, useState } from 'react'
 import { QuickBet, QuickOutcomeView, ProbBar, getColor } from './quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 
@@ -107,8 +105,9 @@ export function BinaryResolutionOrChance(props: {
   large?: boolean
   className?: string
   hideText?: boolean
+  override?: string
 }) {
-  const { contract, large, className, hideText } = props
+  const { contract, large, className, hideText, override } = props
   const { resolution } = contract
   const textColor = `text-${getColor(contract)}`
 
@@ -128,7 +127,9 @@ export function BinaryResolutionOrChance(props: {
         </>
       ) : (
         <>
-          <div className={textColor}>{getBinaryProbPercent(contract)}</div>
+          <div className={clsx(textColor, 'transition-all')}>
+            {override ?? getBinaryProbPercent(contract)}
+          </div>
           {!hideText && (
             <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
               chance
@@ -163,8 +164,9 @@ export function FreeResponseResolutionOrChance(props: {
   truncate: 'short' | 'long' | 'none'
   className?: string
   hideText?: boolean
+  override?: string
 }) {
-  const { contract, truncate, className, hideText } = props
+  const { contract, truncate, className, hideText, override } = props
   const { resolution } = contract
 
   const topAnswer = getTopAnswer(contract)
@@ -187,7 +189,8 @@ export function FreeResponseResolutionOrChance(props: {
           <Row className="items-center gap-6">
             <Col className={clsx('text-3xl', textColor)}>
               <div>
-                {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
+                {override ??
+                  formatPercent(getOutcomeProbability(contract, topAnswer.id))}
               </div>
               {!hideText && <div className="text-base">chance</div>}
             </Col>
@@ -202,8 +205,9 @@ export function NumericResolutionOrExpectation(props: {
   contract: NumericContract
   className?: string
   hideText?: boolean
+  override?: string
 }) {
-  const { contract, className, hideText } = props
+  const { contract, className, hideText, override } = props
   const { resolution } = contract
   const textColor = `text-${getColor(contract)}`
 
@@ -220,7 +224,7 @@ export function NumericResolutionOrExpectation(props: {
       ) : (
         <>
           <div className={clsx('text-3xl', textColor)}>
-            {formatLargeNumber(getExpectedValue(contract))}
+            {override ?? formatLargeNumber(getExpectedValue(contract))}
           </div>
           {!hideText && (
             <div className={clsx('text-base', textColor)}>expected</div>
