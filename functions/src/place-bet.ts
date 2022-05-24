@@ -126,7 +126,7 @@ export const placeBet = newEndpoint(['POST'], async (req, [bettor, _]) => {
         totalBets: newTotalBets,
         totalLiquidity: newTotalLiquidity,
         collectedFees: addObjects(newBet.fees, collectedFees),
-        volume: volume + Math.abs(amount),
+        volume: volume + amount,
       })
     )
 
