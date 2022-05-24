@@ -170,6 +170,7 @@ export function QuickOutcomeView(props: { contract: Contract }) {
         <BinaryResolutionOrChance
           className="items-center"
           contract={contract}
+          hideText
         />
       )}
 
@@ -177,6 +178,7 @@ export function QuickOutcomeView(props: { contract: Contract }) {
         <NumericResolutionOrExpectation
           className="items-center"
           contract={contract as NumericContract}
+          hideText
         />
       )}
 
@@ -185,6 +187,7 @@ export function QuickOutcomeView(props: { contract: Contract }) {
           className="self-end text-gray-600"
           contract={contract as FullContract<DPM, FreeResponse>}
           truncate="long"
+          hideText
         />
       )}
     </>

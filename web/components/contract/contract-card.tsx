@@ -106,8 +106,9 @@ export function BinaryResolutionOrChance(props: {
   contract: FullContract<DPM | CPMM, Binary>
   large?: boolean
   className?: string
+  hideText?: boolean
 }) {
-  const { contract, large, className } = props
+  const { contract, large, className, hideText } = props
   const { resolution } = contract
   const textColor = `text-${getColor(contract)}`
 
@@ -128,6 +129,11 @@ export function BinaryResolutionOrChance(props: {
       ) : (
         <>
           <div className={textColor}>{getBinaryProbPercent(contract)}</div>
+          {!hideText && (
+            <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
+              chance
+            </div>
+          )}
         </>
       )}
     </Col>
@@ -156,8 +162,9 @@ export function FreeResponseResolutionOrChance(props: {
   contract: FreeResponseContract
   truncate: 'short' | 'long' | 'none'
   className?: string
+  hideText?: boolean
 }) {
-  const { contract, truncate, className } = props
+  const { contract, truncate, className, hideText } = props
   const { resolution } = contract
 
   const topAnswer = getTopAnswer(contract)
@@ -182,6 +189,7 @@ export function FreeResponseResolutionOrChance(props: {
               <div>
                 {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
               </div>
+              {!hideText && <div className="text-base">chance</div>}
             </Col>
           </Row>
         )
@@ -193,8 +201,9 @@ export function FreeResponseResolutionOrChance(props: {
 export function NumericResolutionOrExpectation(props: {
   contract: NumericContract
   className?: string
+  hideText?: boolean
 }) {
-  const { contract, className } = props
+  const { contract, className, hideText } = props
   const { resolution } = contract
   const textColor = `text-${getColor(contract)}`
 
@@ -213,6 +222,9 @@ export function NumericResolutionOrExpectation(props: {
           <div className={clsx('text-3xl', textColor)}>
             {formatLargeNumber(getExpectedValue(contract))}
           </div>
+          {!hideText && (
+            <div className={clsx('text-base', textColor)}>expected</div>
+          )}
         </>
       )}
     </Col>
