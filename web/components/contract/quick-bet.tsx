@@ -121,7 +121,7 @@ export function QuickBet(props: { contract: Contract }) {
           onMouseEnter={() => setUpHover(true)}
           onMouseLeave={() => setUpHover(false)}
           onClick={() => placeQuickBet('UP')}
-        ></div>
+        />
         <div className="mt-2 text-center text-xs text-transparent peer-hover:text-gray-400">
           {formatMoney(10)}
         </div>
@@ -147,7 +147,7 @@ export function QuickBet(props: { contract: Contract }) {
           onMouseEnter={() => setDownHover(true)}
           onMouseLeave={() => setDownHover(false)}
           onClick={() => placeQuickBet('DOWN')}
-        ></div>
+        />
         {hasDownShares > 0 ? (
           <TriangleDownFillIcon
             className={clsx(
@@ -178,7 +178,7 @@ export function ProbBar(props: { contract: Contract; previewProb?: number }) {
           'bg-gray-200'
         )}
         style={{ height: `${100 * (1 - prob)}%` }}
-      ></div>
+      />
       <div
         className={clsx(
           'absolute right-0 bottom-0 w-2 rounded-br-md transition-all',
@@ -187,7 +187,7 @@ export function ProbBar(props: { contract: Contract; previewProb?: number }) {
           prob === 1 ? 'rounded-tr-md' : ''
         )}
         style={{ height: `${100 * prob}%` }}
-      ></div>
+      />
     </>
   )
 }
