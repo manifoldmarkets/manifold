@@ -42,7 +42,8 @@ export function QuickBet(props: { contract: Contract }) {
     contract as FullContract<CPMM | DPM, Binary>,
     userBets
   )
-  // TODO: For some reason, Floor Shares are inverted for non-BINARY markets
+  // TODO: This relies on a hack in useSaveShares, where noFloorShares includes
+  // all non-YES shares. Ideally, useSaveShares should group by all outcomes
   const hasUpShares =
     contract.outcomeType === 'BINARY' ? yesFloorShares : noFloorShares
   const hasDownShares =
