@@ -30,17 +30,17 @@ export function formatPercent(zeroToOne: number) {
 }
 
 // Eg 1234567.89 => 1.23M; 5678 => 5.68K
-export function formatLargeNumber(num: number, sigfigs = 3): string {
+export function formatLargeNumber(num: number, sigfigs = 2): string {
   const absNum = Math.abs(num)
   if (absNum < 1000) {
-    return num.toPrecision(sigfigs)
+    return '' + Number(num.toPrecision(sigfigs))
   }
 
   const suffix = ['', 'K', 'M', 'B', 'T', 'Q']
   const suffixIdx = Math.floor(Math.log10(absNum) / 3)
   const suffixStr = suffix[suffixIdx]
   const numStr = (num / Math.pow(10, 3 * suffixIdx)).toPrecision(sigfigs)
-  return `${numStr}${suffixStr}`
+  return `${Number(numStr)}${suffixStr}`
 }
 
 export function toCamelCase(words: string) {
