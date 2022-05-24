@@ -110,10 +110,9 @@ export function QuickBet(props: { contract: Contract }) {
   return (
     <Col
       className={clsx(
-        'relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle',
+        'relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle'
         // Use this for colored QuickBet panes
         // `bg-opacity-10 bg-${color}`
-        'bg-gray-50'
       )}
     >
       {/* Up bet triangle */}
