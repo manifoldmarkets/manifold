@@ -20,6 +20,7 @@ export type LiteMarket = {
   description: string
   tags: string[]
   url: string
+  outcomeType: string
   mechanism: string
 
   pool: number
@@ -57,6 +58,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     tags,
     slug,
     pool,
+    outcomeType,
     mechanism,
     volume7Days,
     volume24Hours,
@@ -88,6 +90,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     probability,
     p,
     totalLiquidity,
+    outcomeType,
     mechanism,
     volume7Days,
     volume24Hours,
