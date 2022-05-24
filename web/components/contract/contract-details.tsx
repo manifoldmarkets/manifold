@@ -71,7 +71,7 @@ export function AvatarDetails(props: { contract: Contract }) {
   const { creatorName, creatorUsername } = contract
 
   return (
-    <Row className="items-center gap-2 text-sm text-gray-500">
+    <Row className="items-center gap-2 text-sm text-gray-400">
       <Avatar
         username={creatorUsername}
         avatarUrl={contract.creatorAvatarUrl}
