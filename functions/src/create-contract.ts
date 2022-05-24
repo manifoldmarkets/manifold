@@ -12,6 +12,7 @@ import {
   MAX_TAG_LENGTH,
   Numeric,
   OUTCOME_TYPES,
+  RESOLUTION_TYPES
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
@@ -44,6 +45,7 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     min,
     max,
     manaLimitPerUser,
+    resolutionType,
   } = req.body || {}
 
   if (!question || typeof question != 'string')
@@ -86,6 +88,11 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     (!initialProb || initialProb < 1 || initialProb > 99)
   )
     throw new APIError(400, 'Invalid initial probability')
+
+  resolutionType = resolutionType ?? 'MANUAL'
+
+  if (!RESOLUTION_TYPES.includes(resolutionType))
+  throw new APIError(400, 'Invalid resolutionType')
 
   // Uses utc time on server:
   const yesterday = new Date()
@@ -138,7 +145,8 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0,
-    manaLimitPerUser ?? 0
+    manaLimitPerUser ?? 0,
+    resolutionType,
   )
 
   if (!isFree && ante) await chargeUser(creator.id, ante, true)

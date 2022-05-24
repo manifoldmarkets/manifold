@@ -11,7 +11,7 @@ import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
 import { Row } from 'web/components/layout/row'
-import { MAX_DESCRIPTION_LENGTH, outcomeType } from 'common/contract'
+import { MAX_DESCRIPTION_LENGTH, outcomeType, resolutionType } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from 'common/util/object'
@@ -64,6 +64,7 @@ export function NewContract(props: { question: string; tag?: string }) {
   }, [])
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
+  const [resolutionType, setResolutionType] = useState<resolutionType>('MANUAL')
   const [initialProb, setInitialProb] = useState(50)
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
@@ -365,6 +366,48 @@ export function NewContract(props: { question: string; tag?: string }) {
         )}
       </div>
 
+      <Spacer h={4} />
+      <label className="label mt-1">
+        <span className="my-1">Resolution type</span>
+      </label>
+      <Row className="form-control gap-2">
+        <label className="label cursor-pointer gap-2">
+          <input
+            className="radio"
+            type="radio"
+            name="res"
+            checked={resolutionType === 'MANUAL'}
+            value="MANUAL"
+            onChange={() => setResolutionType('MANUAL')}
+            disabled={isSubmitting}
+          />
+          <span className="label-text">Manual</span>
+        </label>
+
+        <label className="label cursor-pointer gap-2">
+          <input
+            className="radio"
+            type="radio"
+            name="res"
+            checked={resolutionType === 'COMBINED'}
+            value="COMBINED"
+            onChange={() => setResolutionType('COMBINED')}
+            disabled={isSubmitting}
+          />
+          <span className="label-text">Combined (experimental)</span>
+        </label>
+        <label className="label cursor-pointer gap-2">
+          <input
+            className="radio"
+            type="radio"
+            name="res"
+            checked={resolutionType === 'AUTOMATIC'}
+            value="AUTOMATIC"
+            onChange={() => setResolutionType('AUTOMATIC')}
+          />
+          <span className="label-text">Automatic (experimental)</span>
+        </label>
+      </Row>
       <Spacer h={4} />
 
       <div className="form-control mb-1 items-start">

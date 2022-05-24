@@ -28,6 +28,7 @@ export type FullContract<
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
   resolution?: string
+  resolutionType: 'manual' | 'combined' | 'automatic'
 
   closeEmailsSent?: number
 
@@ -97,7 +98,9 @@ export type Numeric = {
 }
 
 export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE' | 'NUMERIC'
+export type resolutionType = 'MANUAL' | 'COMBINED' | 'AUTOMATIC'
 export const OUTCOME_TYPES = ['BINARY', 'MULTI', 'FREE_RESPONSE', 'NUMERIC']
+export const RESOLUTION_TYPES = ['MANUAL', 'COMBINED', 'AUTOMATIC']
 
 export const MAX_QUESTION_LENGTH = 480
 export const MAX_DESCRIPTION_LENGTH = 10000
