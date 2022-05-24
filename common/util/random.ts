@@ -5,6 +5,7 @@ export const randomString = (length = 12) =>
 
 export function genHash(str: string) {
   // xmur3
+  let h: number
   for (let i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
     h = Math.imul(h ^ str.charCodeAt(i), 3432918353)
     h = (h << 13) | (h >>> 19)
@@ -39,7 +40,7 @@ export function createRNG(seed: string) {
   }
 }
 
-export const shuffle = (array: any[], rand: () => number) => {
+export const shuffle = (array: unknown[], rand: () => number) => {
   for (let i = 0; i < array.length; i++) {
     const swapIndex = Math.floor(rand() * (array.length - i))
     ;[array[i], array[swapIndex]] = [array[swapIndex], array[i]]
