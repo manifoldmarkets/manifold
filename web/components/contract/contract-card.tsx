@@ -52,7 +52,7 @@ export function ContractCard(props: {
           className
         )}
       >
-        <Row className={clsx(showQuickBet ? 'divide-x' : '')}>
+        <Row className={clsx(showQuickBet ? '' : '')}>
           <Col className="relative flex-1 gap-3 pr-1">
             <div
               className={clsx(

@@ -31,6 +31,50 @@ import { Col } from '../layout/col'
 import { OUTCOME_TO_COLOR } from '../outcome-label'
 import { useSaveShares } from '../use-save-shares'
 
+function previewProb(contract: Contract, amount: number) {
+  if (amount === 0) {
+    return getProb(contract)
+  }
+  try {
+    if (amount > 0) {
+      return getOutcomeProbabilityAfterBet(
+        contract,
+        quickOutcome(contract, 'UP') || '',
+        amount
+      )
+    }
+    if (amount < 0) {
+      return (
+        1 -
+        getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'DOWN') || '',
+          -amount
+        )
+      )
+    }
+  } catch (e) {
+    return getProb(contract)
+  }
+}
+
+function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
+  if (contract.outcomeType === 'BINARY') {
+    return direction === 'UP' ? 'YES' : 'NO'
+  }
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    // TODO: Implement shorting of free response answers
+    if (direction === 'DOWN') {
+      throw new Error("Can't short free response answers")
+    }
+    return getTopAnswer(contract)?.id
+  }
+  if (contract.outcomeType === 'NUMERIC') {
+    // TODO: Ideally an 'UP' bet would be a uniform bet between [current, max]
+    throw new Error("Can't quick bet on numeric markets")
+  }
+}
+
 export function QuickBet(props: { contract: Contract }) {
   const { contract } = props
 
@@ -88,30 +132,12 @@ export function QuickBet(props: { contract: Contract }) {
     })
   }
 
-  function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
-    if (contract.outcomeType === 'BINARY') {
-      return direction === 'UP' ? 'YES' : 'NO'
-    }
-    if (contract.outcomeType === 'FREE_RESPONSE') {
-      // TODO: Implement shorting of free response answers
-      if (direction === 'DOWN') {
-        throw new Error("Can't short free response answers")
-      }
-      return getTopAnswer(contract)?.id
-    }
-    if (contract.outcomeType === 'NUMERIC') {
-      // TODO: Ideally an 'UP' bet would be a uniform bet between [current, max]
-      throw new Error("Can't quick bet on numeric markets")
-    }
-  }
-
   return (
     <Col
       className={clsx(
-        'relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle',
+        'relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle'
         // Use this for colored QuickBet panes
-        // `bg-opacity-10 bg-${color}`
-        'bg-gray-50'
+        // upHover || downHover ? `bg-${color} bg-opacity-5` : 'bg-gray-50'
       )}
     >
       {/* Up bet triangle */}
@@ -174,20 +200,88 @@ export function ProbBar(props: { contract: Contract; previewProb?: number }) {
     <>
       <div
         className={clsx(
-          'absolute right-0 top-0 w-2 rounded-tr-md transition-all',
+          'absolute right-0 top-0 w-4 rounded-tr-md transition-all',
           'bg-gray-200'
         )}
         style={{ height: `${100 * (1 - prob)}%` }}
       ></div>
       <div
         className={clsx(
-          'absolute right-0 bottom-0 w-2 rounded-br-md transition-all',
+          'absolute right-0 bottom-0 w-4 rounded-br-md transition-all',
           `bg-${color}`,
           // If we're showing the full bar, also round the top
           prob === 1 ? 'rounded-tr-md' : ''
         )}
         style={{ height: `${100 * prob}%` }}
       ></div>
+    </>
+  )
+}
+
+export function LiquidityBar(props: {
+  contract: Contract
+  previewProb?: number
+}) {
+  const { contract } = props
+  const color = getColor(contract)
+  const up10 = previewProb(contract, 10)
+  const up100 = previewProb(contract, 100)
+  const down10 = previewProb(contract, -10)
+  const down100 = previewProb(contract, -100)
+  console.log('up, down', up10, down10)
+  return (
+    <>
+      {/* Gray background */}
+      {/* <div
+        className={clsx(
+          'absolute right-0 top-0 h-full w-2 rounded-r-md transition-all',
+          'bg-gray-100 bg-opacity-50'
+        )}
+      ></div> */}
+      {/* indigo-200 liquidity range for 100 */}
+
+      {/* indigo-400 liquidity range for 10 */}
+      <div
+        className={clsx(
+          'absolute -right-1 w-1 transition-all',
+          `bg-blue-300 bg-opacity-100`
+        )}
+        style={{
+          height: `${100 * (up100 - down100)}%`,
+          bottom: `${100 * down100}%`,
+        }}
+      ></div>
+
+      {/* indigo-400 liquidity range for 10 */}
+      <div
+        className={clsx(
+          'absolute -right-1.5 w-1.5 transition-all',
+          `bg-blue-600 bg-opacity-100`
+        )}
+        style={{
+          height: `${100 * (up10 - down10)}%`,
+          bottom: `${100 * down10}%`,
+        }}
+      ></div>
+
+      {/* Try a tailwind gradient for 100 */}
+      {/* <div
+        className="absolute right-0 w-2 bg-gradient-to-b from-red-50 via-red-500 to-red-500 opacity-50"
+        style={{
+          height: `${100 * (up100 - down100)}%`,
+          bottom: `${100 * down100}%`,
+        }}
+      ></div> */}
+
+      {/* <div
+        className={clsx(
+          'absolute right-0 bottom-0 w-24 rounded-br-md transition-all',
+          `bg-indigo-500 bg-opacity-20`,
+          // If we're showing the full bar, also round the top
+          prob === 1 ? 'rounded-tr-md' : ''
+        )}
+        style={{ height: `${100 * prob}%` }}
+      ></div> */}
     </>
   )
 }
@@ -225,6 +319,7 @@ function QuickOutcomeView(props: {
       {override ?? display}
       {caption && <div className="text-base">{caption}</div>}
       <ProbBar contract={contract} previewProb={previewProb} />
+      <LiquidityBar contract={contract} previewProb={previewProb} />
     </Col>
   )
 }
