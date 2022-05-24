@@ -84,7 +84,11 @@ export function FreeResponseOutcomeLabel(props: {
   if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
     <FreeResponseAnswerToolTip text={chosen.text}>
-      <span className="text-blue-400">TOP</span>
+      <AnswerLabel
+        answer={chosen}
+        truncate={truncate}
+        className={answerClassName}
+      />
     </FreeResponseAnswerToolTip>
   )
 }
