@@ -31,6 +31,8 @@ import { Col } from '../layout/col'
 import { OUTCOME_TO_COLOR } from '../outcome-label'
 import { useSaveShares } from '../use-save-shares'
 
+const BET_SIZE = 10
+
 export function QuickBet(props: { contract: Contract }) {
   const { contract } = props
 
@@ -55,14 +57,14 @@ export function QuickBet(props: { contract: Contract }) {
       ? getOutcomeProbabilityAfterBet(
           contract,
           quickOutcome(contract, 'UP') || '',
-          10
+          BET_SIZE
         )
       : downHover
       ? 1 -
         getOutcomeProbabilityAfterBet(
           contract,
           quickOutcome(contract, 'DOWN') || '',
-          10
+          BET_SIZE
         )
       : undefined
   } catch (e) {
@@ -75,15 +77,15 @@ export function QuickBet(props: { contract: Contract }) {
     const betPromise = async () => {
       const outcome = quickOutcome(contract, direction)
       return await placeBet({
-        amount: 10,
+        amount: BET_SIZE,
         outcome,
         contractId: contract.id,
       })
     }
     const shortQ = contract.question.slice(0, 20)
     toast.promise(betPromise(), {
-      loading: `${formatMoney(10)} on "${shortQ}"...`,
-      success: `${formatMoney(10)} on "${shortQ}"...`,
+      loading: `${formatMoney(BET_SIZE)} on "${shortQ}"...`,
+      success: `${formatMoney(BET_SIZE)} on "${shortQ}"...`,
       error: (err) => `${err.message}`,
     })
   }
