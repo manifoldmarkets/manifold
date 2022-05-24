@@ -1,5 +1,9 @@
 import clsx from 'clsx'
-import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
+import {
+  getOutcomeProbability,
+  getOutcomeProbabilityAfterBet,
+  getTopAnswer,
+} from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import {
   Contract,
@@ -8,55 +12,81 @@ import {
   DPM,
   Binary,
   NumericContract,
-  FreeResponse,
+  FreeResponseContract,
 } from 'common/contract'
-import { formatMoney } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatPercent,
+} from 'common/util/format'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { placeBet } from 'web/lib/firebase/api-call'
-import { getBinaryProb } from 'web/lib/firebase/contracts'
+import { getBinaryProb, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { Col } from '../layout/col'
 import { OUTCOME_TO_COLOR } from '../outcome-label'
 import { useSaveShares } from '../use-save-shares'
-import {
-  BinaryResolutionOrChance,
-  NumericResolutionOrExpectation,
-  FreeResponseResolutionOrChance,
-} from './contract-card'
+
+const BET_SIZE = 10
 
 export function QuickBet(props: { contract: Contract }) {
   const { contract } = props
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
-  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
+  const { yesFloorShares, noFloorShares } = useSaveShares(
     contract as FullContract<CPMM | DPM, Binary>,
     userBets
   )
-  // TODO: For some reason, Floor Shares are inverted for non-BINARY markets
+  // TODO: This relies on a hack in useSaveShares, where noFloorShares includes
+  // all non-YES shares. Ideally, useSaveShares should group by all outcomes
   const hasUpShares =
     contract.outcomeType === 'BINARY' ? yesFloorShares : noFloorShares
   const hasDownShares =
     contract.outcomeType === 'BINARY' ? noFloorShares : yesFloorShares
 
-  const color = getColor(contract)
+  const [upHover, setUpHover] = useState(false)
+  const [downHover, setDownHover] = useState(false)
+
+  let previewProb = undefined
+  try {
+    previewProb = upHover
+      ? getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'UP') || '',
+          BET_SIZE
+        )
+      : downHover
+      ? 1 -
+        getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'DOWN') || '',
+          BET_SIZE
+        )
+      : undefined
+  } catch (e) {
+    // Catch any errors from hovering on an invalid option
+  }
+
+  const color = getColor(contract, previewProb)
 
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
     const betPromise = async () => {
       const outcome = quickOutcome(contract, direction)
       return await placeBet({
-        amount: 10,
+        amount: BET_SIZE,
         outcome,
         contractId: contract.id,
       })
     }
     const shortQ = contract.question.slice(0, 20)
     toast.promise(betPromise(), {
-      loading: `${formatMoney(10)} on "${shortQ}"...`,
-      success: `${formatMoney(10)} on "${shortQ}"...`,
+      loading: `${formatMoney(BET_SIZE)} on "${shortQ}"...`,
+      success: `${formatMoney(BET_SIZE)} on "${shortQ}"...`,
       error: (err) => `${err.message}`,
     })
   }
@@ -68,7 +98,7 @@ export function QuickBet(props: { contract: Contract }) {
     if (contract.outcomeType === 'FREE_RESPONSE') {
       // TODO: Implement shorting of free response answers
       if (direction === 'DOWN') {
-        throw new Error("Can't short free response answers")
+        throw new Error("Can't bet against free response answers")
       }
       return getTopAnswer(contract)?.id
     }
@@ -81,18 +111,19 @@ export function QuickBet(props: { contract: Contract }) {
   return (
     <Col
       className={clsx(
-        'relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle',
+        'relative -my-4 -mr-5 min-w-[6rem] justify-center gap-2 pr-5 pl-3 align-middle'
         // Use this for colored QuickBet panes
         // `bg-opacity-10 bg-${color}`
-        'bg-gray-50'
       )}
     >
       {/* Up bet triangle */}
       <div>
         <div
           className="peer absolute top-0 left-0 right-0 h-[50%]"
+          onMouseEnter={() => setUpHover(true)}
+          onMouseLeave={() => setUpHover(false)}
           onClick={() => placeQuickBet('UP')}
-        ></div>
+        />
         <div className="mt-2 text-center text-xs text-transparent peer-hover:text-gray-400">
           {formatMoney(10)}
         </div>
@@ -101,31 +132,43 @@ export function QuickBet(props: { contract: Contract }) {
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              `text-${color} text-opacity-70 peer-hover:text-gray-400`
+              upHover ? `text-${color}` : 'text-gray-400'
             )}
           />
         ) : (
-          <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+          <TriangleFillIcon
+            className={clsx(
+              'mx-auto h-5 w-5',
+              upHover ? `text-${color}` : 'text-gray-200'
+            )}
+          />
         )}
       </div>
 
-      <QuickOutcomeView contract={contract} />
+      <QuickOutcomeView contract={contract} previewProb={previewProb} />
 
       {/* Down bet triangle */}
       <div>
         <div
           className="peer absolute bottom-0 left-0 right-0 h-[50%]"
+          onMouseEnter={() => setDownHover(true)}
+          onMouseLeave={() => setDownHover(false)}
           onClick={() => placeQuickBet('DOWN')}
         ></div>
         {hasDownShares > 0 ? (
           <TriangleDownFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              `text-${color} text-opacity-70 peer-hover:text-gray-400`
+              downHover ? `text-${color}` : 'text-gray-400'
             )}
           />
         ) : (
-          <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+          <TriangleDownFillIcon
+            className={clsx(
+              'mx-auto h-5 w-5',
+              downHover ? `text-${color}` : 'text-gray-200'
+            )}
+          />
         )}
         <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400">
           {formatMoney(10)}
@@ -135,10 +178,10 @@ export function QuickBet(props: { contract: Contract }) {
   )
 }
 
-export function ProbBar(props: { contract: Contract }) {
-  const { contract } = props
-  const color = getColor(contract)
-  const prob = getProb(contract)
+export function ProbBar(props: { contract: Contract; previewProb?: number }) {
+  const { contract, previewProb } = props
+  const color = getColor(contract, previewProb)
+  const prob = previewProb ?? getProb(contract)
   return (
     <>
       <div
@@ -147,7 +190,7 @@ export function ProbBar(props: { contract: Contract }) {
           'bg-gray-200'
         )}
         style={{ height: `${100 * (1 - prob)}%` }}
-      ></div>
+      />
       <div
         className={clsx(
           'absolute right-0 bottom-0 w-2 rounded-br-md transition-all',
@@ -156,41 +199,45 @@ export function ProbBar(props: { contract: Contract }) {
           prob === 1 ? 'rounded-tr-md' : ''
         )}
         style={{ height: `${100 * prob}%` }}
-      ></div>
+      />
     </>
   )
 }
 
-export function QuickOutcomeView(props: { contract: Contract }) {
-  const { contract } = props
+function QuickOutcomeView(props: {
+  contract: Contract
+  previewProb?: number
+  caption?: 'chance' | 'expected'
+}) {
+  const { contract, previewProb, caption } = props
   const { outcomeType } = contract
+  // If there's a preview prob, display that instead of the current prob
+  const override =
+    previewProb === undefined ? undefined : formatPercent(previewProb)
+  const textColor = `text-${getColor(contract, previewProb)}`
+
+  let display: string | undefined
+  switch (outcomeType) {
+    case 'BINARY':
+      display = getBinaryProbPercent(contract)
+      break
+    case 'NUMERIC':
+      display = formatLargeNumber(getExpectedValue(contract as NumericContract))
+      break
+    case 'FREE_RESPONSE':
+      const topAnswer = getTopAnswer(contract as FreeResponseContract)
+      display =
+        topAnswer &&
+        formatPercent(getOutcomeProbability(contract, topAnswer.id))
+      break
+  }
+
   return (
-    <>
-      {outcomeType === 'BINARY' && (
-        <BinaryResolutionOrChance
-          className="items-center"
-          contract={contract}
-          hideText
-        />
-      )}
-
-      {outcomeType === 'NUMERIC' && (
-        <NumericResolutionOrExpectation
-          className="items-center"
-          contract={contract as NumericContract}
-          hideText
-        />
-      )}
-
-      {outcomeType === 'FREE_RESPONSE' && (
-        <FreeResponseResolutionOrChance
-          className="self-end text-gray-600"
-          contract={contract as FullContract<DPM, FreeResponse>}
-          truncate="long"
-          hideText
-        />
-      )}
-    </>
+    <Col className={clsx('items-center text-3xl', textColor)}>
+      {override ?? display}
+      {caption && <div className="text-base">{caption}</div>}
+      <ProbBar contract={contract} previewProb={previewProb} />
+    </Col>
   )
 }
 
@@ -215,15 +262,14 @@ function getNumericScale(contract: NumericContract) {
   return (ev - min) / (max - min)
 }
 
-export function getColor(contract: Contract) {
+export function getColor(contract: Contract, previewProb?: number) {
   // TODO: Not sure why eg green-400 doesn't work here; try upgrading Tailwind
   // TODO: Try injecting a gradient here
   // return 'primary'
   const { resolution } = contract
   if (resolution) {
     return (
-      // @ts-ignore; TODO: Have better typing for contract.resolution?
-      OUTCOME_TO_COLOR[resolution] ||
+      OUTCOME_TO_COLOR[resolution as 'YES' | 'NO' | 'CANCEL' | 'MKT'] ??
       // If resolved to a FR answer, use 'primary'
       'primary'
     )
@@ -233,9 +279,6 @@ export function getColor(contract: Contract) {
   }
 
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
-  return marketClosed
-    ? 'gray-400'
-    : getProb(contract) >= 0.5
-    ? 'primary'
-    : 'red-400'
+  const prob = previewProb ?? getProb(contract)
+  return marketClosed ? 'gray-400' : prob >= 0.5 ? 'primary' : 'red-400'
 }
