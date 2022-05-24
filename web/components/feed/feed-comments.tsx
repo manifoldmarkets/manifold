@@ -156,7 +156,7 @@ export function FeedComment(props: {
     <Row
       className={clsx(
         'flex space-x-1.5 transition-all duration-1000 sm:space-x-3',
-        highlighted ? `-m-2 rounded bg-indigo-500/[0.2] p-2` : ''
+        highlighted ? `-m-1 rounded bg-indigo-500/[0.2] p-2` : ''
       )}
     >
       <Avatar
