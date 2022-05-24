@@ -143,7 +143,7 @@ export function AnswerLabel(props: {
   } else if (truncate === 'long' && text.length > 75) {
     truncated = text.slice(0, 75) + '...'
   } else if (truncate === 'xs' && text.length > 3) {
-    truncated = text.slice(0, 3) + '..'
+    truncated = text.slice(0, 3) + '...'
   }
 
   return (
