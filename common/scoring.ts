@@ -4,7 +4,7 @@ import { Bet } from './bet'
 import { Binary, Contract, FullContract } from './contract'
 import { getPayouts } from './payouts'
 
-export function scoreCreators(contracts: Contract[], bets: Bet[][]) {
+export function scoreCreators(contracts: Contract[]) {
   const creatorScore = mapValues(
     groupBy(contracts, ({ creatorId }) => creatorId),
     (contracts) => sumBy(contracts, ({ pool }) => pool.YES + pool.NO)
