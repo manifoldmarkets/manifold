@@ -21,10 +21,13 @@ type Credentials = JwtCredentials | KeyCredentials
 export class APIError {
   code: number
   msg: string
-  constructor(code: number, msg: string) {
+  details: unknown
+  constructor(code: number, msg: string, details?: unknown) {
     this.code = code
     this.msg = msg
+    this.details = details
   }
+  toJson() {}
 }
 
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
@@ -114,8 +117,13 @@ export const applyCors = (
 export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
   const result = schema.safeParse(val)
   if (!result.success) {
-    const msg = result.error.format()._errors
-    throw new APIError(400, msg.join('; '))
+    const issues = result.error.issues.map((i) => {
+      return {
+        field: i.path.join('.') || null,
+        error: i.message,
+      }
+    })
+    throw new APIError(400, 'Error validating request.', issues)
   } else {
     return result.data as z.infer<T>
   }
@@ -136,8 +144,11 @@ export const newEndpoint = (methods: [string], fn: Handler) =>
       res.status(200).json(await fn(req, authedUser))
     } catch (e) {
       if (e instanceof APIError) {
-        // Emit a 200 anyway here for now, for backwards compatibility
-        res.status(e.code).json({ message: e.msg })
+        const output: { [k: string]: unknown } = { message: e.msg }
+        if (e.details != null) {
+          output.details = e.details
+        }
+        res.status(e.code).json(output)
       } else {
         functions.logger.error(e)
         res.status(500).json({ message: 'An unknown error occurred.' })
