@@ -39,6 +39,7 @@ export function ContractCard(props: {
   const { showHotVolume, showCloseTime, className } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
+  const { resolution } = contract
 
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
   const showQuickBet = !(
@@ -75,12 +76,19 @@ export function ContractCard(props: {
               {question}
             </p>
 
-            {outcomeType === 'FREE_RESPONSE' && (
-              <FreeResponseTopAnswer
-                contract={contract as FullContract<DPM, FreeResponse>}
-                truncate="long"
-              />
-            )}
+            {outcomeType === 'FREE_RESPONSE' &&
+              (resolution ? (
+                <FreeResponseOutcomeLabel
+                  contract={contract as FreeResponseContract}
+                  resolution={resolution}
+                  truncate={'long'}
+                />
+              ) : (
+                <FreeResponseTopAnswer
+                  contract={contract as FullContract<DPM, FreeResponse>}
+                  truncate="long"
+                />
+              ))}
 
             <MiscDetails
               contract={contract}
@@ -160,7 +168,7 @@ function FreeResponseTopAnswer(props: {
 
 export function FreeResponseResolutionOrChance(props: {
   contract: FreeResponseContract
-  truncate: 'short' | 'long' | 'none'
+  truncate: 'xs' | 'short' | 'long' | 'none'
   className?: string
   hideText?: boolean
 }) {
@@ -179,7 +187,7 @@ export function FreeResponseResolutionOrChance(props: {
             contract={contract}
             resolution={resolution}
             truncate={truncate}
-            answerClassName="text-xl"
+            answerClassName="text-3xl uppercase text-blue-500"
           />
         </>
       ) : (

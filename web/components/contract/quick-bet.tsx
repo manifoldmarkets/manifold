@@ -186,7 +186,7 @@ export function QuickOutcomeView(props: { contract: Contract }) {
         <FreeResponseResolutionOrChance
           className="self-end text-gray-600"
           contract={contract as FullContract<DPM, FreeResponse>}
-          truncate="long"
+          truncate="xs"
           hideText
         />
       )}

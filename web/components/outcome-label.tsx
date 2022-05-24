@@ -71,7 +71,7 @@ export function BinaryContractOutcomeLabel(props: {
 export function FreeResponseOutcomeLabel(props: {
   contract: FreeResponseContract
   resolution: string | 'CANCEL' | 'MKT'
-  truncate: 'short' | 'long' | 'none'
+  truncate: 'xs' | 'short' | 'long' | 'none'
   answerClassName?: string
 }) {
   const { contract, resolution, truncate, answerClassName } = props
@@ -131,7 +131,7 @@ export function AnswerNumberLabel(props: { number: string }) {
 
 export function AnswerLabel(props: {
   answer: Answer
-  truncate: 'short' | 'long' | 'none'
+  truncate: 'xs' | 'short' | 'long' | 'none'
   className?: string
 }) {
   const { answer, truncate, className } = props
@@ -142,6 +142,8 @@ export function AnswerLabel(props: {
     truncated = text.slice(0, 10) + '...' + text.slice(-10)
   } else if (truncate === 'long' && text.length > 75) {
     truncated = text.slice(0, 75) + '...'
+  } else if (truncate === 'xs' && text.length > 3) {
+    truncated = text.slice(0, 3) + '..'
   }
 
   return (
