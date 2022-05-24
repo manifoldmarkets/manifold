@@ -14,6 +14,7 @@ import { UserLink } from '../user-page'
 import {
   Contract,
   contractMetrics,
+  contractPool,
   updateContract,
 } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
@@ -43,10 +44,6 @@ export function MiscDetails(props: {
 
   return (
     <Row className="items-center gap-3 text-sm text-gray-400">
-      {categories.length > 0 && (
-        <TagsList className="text-gray-400" tags={categories} noLabel />
-      )}
-
       {showHotVolume ? (
         <Row className="gap-0.5">
           <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
@@ -58,9 +55,13 @@ export function MiscDetails(props: {
           {fromNow(closeTime || 0)}
         </Row>
       ) : volume > 0 ? (
-        <Row>{volumeLabel}</Row>
+        <Row>{contractPool(contract)} pool</Row>
       ) : (
         <NewContractBadge />
+      )}
+
+      {categories.length > 0 && (
+        <TagsList className="text-gray-400" tags={categories} noLabel />
       )}
     </Row>
   )
