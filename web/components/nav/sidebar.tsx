@@ -223,7 +223,7 @@ export default function Sidebar(props: { className?: string }) {
       mustWaitForFreeMarketStatus ? (
         <Row className="mt-2 justify-center">
           <Row className="gap-1 text-sm text-gray-400">
-            Next free market in {countdown}
+            Next free question in {countdown}
           </Row>
         </Row>
       ) : (
@@ -232,7 +232,7 @@ export default function Sidebar(props: { className?: string }) {
         !mustWaitForFreeMarketStatus && (
           <Row className="mt-2 justify-center">
             <Row className="gap-1 text-sm text-indigo-400">
-              Daily free market
+              Daily free question
               <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
             </Row>
           </Row>
