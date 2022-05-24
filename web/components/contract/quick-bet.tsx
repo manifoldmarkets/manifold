@@ -131,11 +131,16 @@ export function QuickBet(props: { contract: Contract }) {
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              `text-${color} text-opacity-70 peer-hover:text-gray-400`
+              upHover ? `text-${color}` : 'text-gray-400'
             )}
           />
         ) : (
-          <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+          <TriangleFillIcon
+            className={clsx(
+              'mx-auto h-5 w-5',
+              upHover ? `text-${color}` : 'text-gray-200'
+            )}
+          />
         )}
       </div>
 
@@ -148,16 +153,21 @@ export function QuickBet(props: { contract: Contract }) {
           onMouseEnter={() => setDownHover(true)}
           onMouseLeave={() => setDownHover(false)}
           onClick={() => placeQuickBet('DOWN')}
-        />
+        ></div>
         {hasDownShares > 0 ? (
           <TriangleDownFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              `text-${color} text-opacity-70 peer-hover:text-gray-400`
+              downHover ? `text-${color}` : 'text-gray-400'
             )}
           />
         ) : (
-          <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
+          <TriangleDownFillIcon
+            className={clsx(
+              'mx-auto h-5 w-5',
+              downHover ? `text-${color}` : 'text-gray-200'
+            )}
+          />
         )}
         <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400">
           {formatMoney(10)}
