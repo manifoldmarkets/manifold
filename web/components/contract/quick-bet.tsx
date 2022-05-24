@@ -13,14 +13,19 @@ import {
   Binary,
   NumericContract,
   FreeResponse,
+  FreeResponseContract,
 } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatPercent,
+} from 'common/util/format'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { placeBet } from 'web/lib/firebase/api-call'
-import { getBinaryProb } from 'web/lib/firebase/contracts'
+import { getBinaryProb, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { Col } from '../layout/col'
@@ -71,7 +76,7 @@ export function QuickBet(props: { contract: Contract }) {
     // Catch any errors from hovering on an invalid option
   }
 
-  const color = getColor(contract)
+  const color = getColor(contract, previewProb)
 
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
     const betPromise = async () => {
@@ -170,8 +175,7 @@ export function QuickBet(props: { contract: Contract }) {
 
 export function ProbBar(props: { contract: Contract; previewProb?: number }) {
   const { contract, previewProb } = props
-  // TODO: Switch preview color as it changes from green to red
-  const color = getColor(contract)
+  const color = getColor(contract, previewProb)
   const prob = previewProb ?? getProb(contract)
   return (
     <>
@@ -195,47 +199,40 @@ export function ProbBar(props: { contract: Contract; previewProb?: number }) {
   )
 }
 
-// TODO: just directly code in the outcomes for quick bet, rather than relying on
-// code resuse. Too many differences anyways
-export function QuickOutcomeView(props: {
+function QuickOutcomeView(props: {
   contract: Contract
   previewProb?: number
+  caption?: 'chance' | 'expected'
 }) {
-  const { contract, previewProb } = props
+  const { contract, previewProb, caption } = props
   const { outcomeType } = contract
+  // If there's a preview probability,
   const override =
     previewProb === undefined ? undefined : formatPercent(previewProb)
+  const textColor = `text-${getColor(contract, previewProb)}`
+
+  let display: string | undefined
+  switch (outcomeType) {
+    case 'BINARY':
+      display = getBinaryProbPercent(contract)
+      break
+    case 'NUMERIC':
+      display = formatLargeNumber(getExpectedValue(contract as NumericContract))
+      break
+    case 'FREE_RESPONSE':
+      const topAnswer = getTopAnswer(contract as FreeResponseContract)
+      display =
+        topAnswer &&
+        formatPercent(getOutcomeProbability(contract, topAnswer.id))
+      break
+  }
+
   return (
-    <>
-      {outcomeType === 'BINARY' && (
-        <BinaryResolutionOrChance
-          className="items-center"
-          contract={contract}
-          hideText
-          override={override}
-        />
-      )}
-
-      {outcomeType === 'NUMERIC' && (
-        <NumericResolutionOrExpectation
-          className="items-center"
-          contract={contract as NumericContract}
-          hideText
-          override={override}
-        />
-      )}
-
-      {outcomeType === 'FREE_RESPONSE' && (
-        <FreeResponseResolutionOrChance
-          className="self-end text-gray-600"
-          contract={contract as FullContract<DPM, FreeResponse>}
-          truncate="long"
-          hideText
-          override={override}
-        />
-      )}
+    <Col className={clsx('items-center text-3xl', textColor)}>
+      {override ?? display}
+      {caption && <div className="text-base">{caption}</div>}
       <ProbBar contract={contract} previewProb={previewProb} />
-    </>
+    </Col>
   )
 }
 
@@ -260,7 +257,7 @@ function getNumericScale(contract: NumericContract) {
   return (ev - min) / (max - min)
 }
 
-export function getColor(contract: Contract) {
+export function getColor(contract: Contract, previewProb?: number) {
   // TODO: Not sure why eg green-400 doesn't work here; try upgrading Tailwind
   // TODO: Try injecting a gradient here
   // return 'primary'
@@ -278,9 +275,6 @@ export function getColor(contract: Contract) {
   }
 
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
-  return marketClosed
-    ? 'gray-400'
-    : getProb(contract) >= 0.5
-    ? 'primary'
-    : 'red-400'
+  const prob = previewProb ?? getProb(contract)
+  return marketClosed ? 'gray-400' : prob >= 0.5 ? 'primary' : 'red-400'
 }
