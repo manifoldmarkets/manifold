@@ -46,7 +46,6 @@ export function QuickBet(props: { contract: Contract }) {
   const hasDownShares =
     contract.outcomeType === 'BINARY' ? noFloorShares : yesFloorShares
 
-  // TODO: Consider making up/down two different components, for code reuse?
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
 
@@ -200,7 +199,7 @@ function QuickOutcomeView(props: {
 }) {
   const { contract, previewProb, caption } = props
   const { outcomeType } = contract
-  // If there's a preview probability,
+  // If there's a preview prob, display that instead of the current prob
   const override =
     previewProb === undefined ? undefined : formatPercent(previewProb)
   const textColor = `text-${getColor(contract, previewProb)}`
