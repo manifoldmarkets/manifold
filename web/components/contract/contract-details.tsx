@@ -5,7 +5,9 @@ import {
   PencilIcon,
   CurrencyDollarIcon,
   TrendingUpIcon,
+  StarIcon,
 } from '@heroicons/react/outline'
+import { StarIcon as SolidStarIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
@@ -26,20 +28,13 @@ import NewContractBadge from '../new-contract-badge'
 import { CATEGORY_LIST } from 'common/categories'
 import { TagsList } from '../tags-list'
 
-export function AbbrContractDetails(props: {
+export function MiscDetails(props: {
   contract: Contract
   showHotVolume?: boolean
   showCloseTime?: boolean
 }) {
   const { contract, showHotVolume, showCloseTime } = props
-  const {
-    volume,
-    volume24Hours,
-    creatorName,
-    creatorUsername,
-    closeTime,
-    tags,
-  } = contract
+  const { volume, volume24Hours, closeTime, tags } = contract
   const { volumeLabel } = contractMetrics(contract)
   // Show at most one category that this contract is tagged by
   const categories = CATEGORY_LIST.filter((category) =>
@@ -47,41 +42,62 @@ export function AbbrContractDetails(props: {
   ).slice(0, 1)
 
   return (
-    <Col className={clsx('gap-2 text-sm text-gray-500')}>
-      <Row className="items-center justify-between">
-        <Row className="items-center gap-2">
-          <Avatar
-            username={creatorUsername}
-            avatarUrl={contract.creatorAvatarUrl}
-            size={6}
-          />
-          <UserLink name={creatorName} username={creatorUsername} />
-        </Row>
+    <Row className="items-center gap-3 text-sm text-gray-400">
+      {categories.length > 0 && (
+        <TagsList className="text-gray-400" tags={categories} noLabel />
+      )}
 
-        <Row className="gap-3 text-gray-400">
-          {categories.length > 0 && (
-            <TagsList className="text-gray-400" tags={categories} noLabel />
-          )}
-
-          {showHotVolume ? (
-            <Row className="gap-0.5">
-              <TrendingUpIcon className="h-5 w-5" />{' '}
-              {formatMoney(volume24Hours)}
-            </Row>
-          ) : showCloseTime ? (
-            <Row className="gap-0.5">
-              <ClockIcon className="h-5 w-5" />
-              {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
-              {fromNow(closeTime || 0)}
-            </Row>
-          ) : volume > 0 ? (
-            <Row>{volumeLabel}</Row>
-          ) : (
-            <NewContractBadge />
-          )}
+      {showHotVolume ? (
+        <Row className="gap-0.5">
+          <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
         </Row>
-      </Row>
-    </Col>
+      ) : showCloseTime ? (
+        <Row className="gap-0.5">
+          <ClockIcon className="h-5 w-5" />
+          {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
+          {fromNow(closeTime || 0)}
+        </Row>
+      ) : volume > 0 ? (
+        <Row>{volumeLabel}</Row>
+      ) : (
+        <NewContractBadge />
+      )}
+    </Row>
+  )
+}
+
+export function AvatarDetails(props: { contract: Contract }) {
+  const { contract } = props
+  const { creatorName, creatorUsername } = contract
+
+  return (
+    <Row className="items-center gap-2 text-sm text-gray-500">
+      <Avatar
+        username={creatorUsername}
+        avatarUrl={contract.creatorAvatarUrl}
+        size={6}
+      />
+      <UserLink name={creatorName} username={creatorUsername} />
+    </Row>
+  )
+}
+
+export function AbbrContractDetails(props: {
+  contract: Contract
+  showHotVolume?: boolean
+  showCloseTime?: boolean
+}) {
+  const { contract, showHotVolume, showCloseTime } = props
+  return (
+    <Row className="items-center justify-between">
+      <AvatarDetails contract={contract} />
+
+      <MiscDetails
+        contract={contract}
+        showHotVolume={showHotVolume}
+        showCloseTime={showCloseTime}
+      />
+    </Row>
   )
 }
 
@@ -93,7 +109,7 @@ export function ContractDetails(props: {
 }) {
   const { contract, bets, isCreator, disabled } = props
   const { closeTime, creatorName, creatorUsername } = contract
-  const { volumeLabel, createdDate, resolvedDate } = contractMetrics(contract)
+  const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
