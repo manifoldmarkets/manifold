@@ -258,7 +258,7 @@ export function getColor(contract: Contract, previewProb?: number) {
   const { resolution } = contract
   if (resolution) {
     return (
-      Object.keys(OUTCOME_TO_COLOR).includes(resolution) ||
+      OUTCOME_TO_COLOR[resolution as 'YES' | 'NO' | 'CANCEL' | 'MKT'] ??
       // If resolved to a FR answer, use 'primary'
       'primary'
     )
