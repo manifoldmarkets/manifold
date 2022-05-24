@@ -145,9 +145,7 @@ export function BinaryResolutionOrChance(props: {
         </>
       ) : (
         <>
-          <div className={clsx(textColor, 'transition-all')}>
-            {getBinaryProbPercent(contract)}
-          </div>
+          <div className={textColor}>{getBinaryProbPercent(contract)}</div>
           <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
             chance
           </div>

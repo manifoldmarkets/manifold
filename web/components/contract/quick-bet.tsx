@@ -12,7 +12,6 @@ import {
   DPM,
   Binary,
   NumericContract,
-  FreeResponse,
   FreeResponseContract,
 } from 'common/contract'
 import {
@@ -31,18 +30,13 @@ import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { Col } from '../layout/col'
 import { OUTCOME_TO_COLOR } from '../outcome-label'
 import { useSaveShares } from '../use-save-shares'
-import {
-  BinaryResolutionOrChance,
-  NumericResolutionOrExpectation,
-  FreeResponseResolutionOrChance,
-} from './contract-card'
 
 export function QuickBet(props: { contract: Contract }) {
   const { contract } = props
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
-  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
+  const { yesFloorShares, noFloorShares } = useSaveShares(
     contract as FullContract<CPMM | DPM, Binary>,
     userBets
   )
