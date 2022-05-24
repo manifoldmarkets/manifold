@@ -129,8 +129,12 @@ export default function Sidebar(props: { className?: string }) {
   useEffect(() => {
     const utcMidnightToLocalDate = new Date(getUtcFreeMarketResetTime(false))
     const interval = setInterval(() => {
-      const timeUntil = utcMidnightToLocalDate.getTime() - new Date().getTime()
-      const hoursUntil = 24 + timeUntil / 1000 / 60 / 60
+      const now = new Date().getTime()
+      let timeUntil = Math.abs(utcMidnightToLocalDate.getTime() - now)
+      if (now > utcMidnightToLocalDate.getTime()) {
+        timeUntil = 24 * 60 * 60 * 1000 - timeUntil
+      }
+      const hoursUntil = timeUntil / 1000 / 60 / 60
       const minutesUntil = Math.floor((hoursUntil * 60) % 60)
       const secondsUntil = Math.floor((hoursUntil * 60 * 60) % 60)
       const hoursUntilFloor = Math.floor(hoursUntil)
