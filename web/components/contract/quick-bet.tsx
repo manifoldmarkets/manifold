@@ -95,7 +95,7 @@ export function QuickBet(props: { contract: Contract }) {
     if (contract.outcomeType === 'FREE_RESPONSE') {
       // TODO: Implement shorting of free response answers
       if (direction === 'DOWN') {
-        throw new Error("Can't short free response answers")
+        throw new Error("Can't bet against free response answers")
       }
       return getTopAnswer(contract)?.id
     }
@@ -257,8 +257,7 @@ export function getColor(contract: Contract, previewProb?: number) {
   const { resolution } = contract
   if (resolution) {
     return (
-      // @ts-ignore; TODO: Have better typing for contract.resolution?
-      OUTCOME_TO_COLOR[resolution] ||
+      Object.keys(OUTCOME_TO_COLOR).includes(resolution) ||
       // If resolved to a FR answer, use 'primary'
       'primary'
     )
