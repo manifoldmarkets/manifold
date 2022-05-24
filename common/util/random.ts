@@ -5,7 +5,7 @@ export const randomString = (length = 12) =>
 
 export function genHash(str: string) {
   // xmur3
-  for (var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
+  for (let i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
     h = Math.imul(h ^ str.charCodeAt(i), 3432918353)
     h = (h << 13) | (h >>> 19)
   }
@@ -28,7 +28,7 @@ export function createRNG(seed: string) {
     b >>>= 0
     c >>>= 0
     d >>>= 0
-    var t = (a + b) | 0
+    let t = (a + b) | 0
     a = b ^ (b >>> 9)
     b = (c + (c << 3)) | 0
     c = (c << 21) | (c >>> 11)

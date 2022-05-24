@@ -1,9 +1,9 @@
 import { union } from 'lodash'
 
 export const removeUndefinedProps = <T>(obj: T): T => {
-  let newObj: any = {}
+  const newObj: any = {}
 
-  for (let key of Object.keys(obj)) {
+  for (const key of Object.keys(obj)) {
     if ((obj as any)[key] !== undefined) newObj[key] = (obj as any)[key]
   }
 
@@ -17,7 +17,7 @@ export const addObjects = <T extends { [key: string]: number }>(
   const keys = union(Object.keys(obj1), Object.keys(obj2))
   const newObj = {} as any
 
-  for (let key of keys) {
+  for (const key of keys) {
     newObj[key] = (obj1[key] ?? 0) + (obj2[key] ?? 0)
   }
 
