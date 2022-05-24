@@ -50,7 +50,7 @@ export default function Leaderboards(props: {
           users={topCreators}
           columns={[
             {
-              header: 'Market liquidity',
+              header: 'Market volume',
               renderCell: (user) => formatMoney(user.creatorVolumeCached),
             },
           ]}
