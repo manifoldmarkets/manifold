@@ -1,4 +1,3 @@
-import { ArrowCircleUpIcon, ArrowCircleDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
@@ -17,6 +16,8 @@ import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { placeBet } from 'web/lib/firebase/api-call'
 import { getBinaryProb } from 'web/lib/firebase/contracts'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { Col } from '../layout/col'
 import { OUTCOME_TO_COLOR } from '../outcome-label'
 import { useSaveShares } from '../use-save-shares'
@@ -97,14 +98,14 @@ export function QuickBet(props: { contract: Contract }) {
         </div>
 
         {hasUpShares > 0 ? (
-          <ArrowCircleUpIcon
+          <TriangleFillIcon
             className={clsx(
-              'mx-auto h-7 w-7',
+              'mx-auto h-5 w-5',
               `text-${color} text-opacity-70 peer-hover:text-gray-400`
             )}
           />
         ) : (
-          <ArrowCircleUpIcon className="mx-auto h-7 w-7 text-gray-200 peer-hover:text-gray-400" />
+          <TriangleFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
         )}
       </div>
 
@@ -117,14 +118,14 @@ export function QuickBet(props: { contract: Contract }) {
           onClick={() => placeQuickBet('DOWN')}
         ></div>
         {hasDownShares > 0 ? (
-          <ArrowCircleDownIcon
+          <TriangleDownFillIcon
             className={clsx(
-              'mx-auto h-7 w-7',
+              'mx-auto h-5 w-5',
               `text-${color} text-opacity-70 peer-hover:text-gray-400`
             )}
           />
         ) : (
-          <ArrowCircleDownIcon className="mx-auto h-7 w-7 text-gray-200 peer-hover:text-gray-400" />
+          <TriangleDownFillIcon className="mx-auto h-5 w-5 text-gray-200 peer-hover:text-gray-400" />
         )}
         <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400">
           {formatMoney(10)}
