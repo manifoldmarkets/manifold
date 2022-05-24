@@ -28,6 +28,7 @@ import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { useEffect, useState } from 'react'
 import { QuickBet, QuickOutcomeView, ProbBar, getColor } from './quick-bet'
+import { useContractWithPreload } from 'web/hooks/use-contract'
 
 export function ContractCard(props: {
   contract: Contract
@@ -36,16 +37,8 @@ export function ContractCard(props: {
   className?: string
 }) {
   const { showHotVolume, showCloseTime, className } = props
-  const [liveUpdate, setLiveUpdate] = useState(false)
-  const [contract, setContract] = useState<Contract>(props.contract)
+  const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
-
-  // When liveUpdate is true, start keeping this contract in sync
-  useEffect(() => {
-    if (liveUpdate) {
-      listenForContract(contract.id, (c) => setContract(c || contract))
-    }
-  }, [liveUpdate])
 
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
   const showQuickBet = !(
@@ -96,7 +89,7 @@ export function ContractCard(props: {
             />
           </Col>
           {showQuickBet ? (
-            <QuickBet contract={contract} setLiveUpdate={setLiveUpdate} />
+            <QuickBet contract={contract} />
           ) : (
             <Col className="m-auto pl-2">
               <QuickOutcomeView contract={contract} />

@@ -27,11 +27,8 @@ import {
   FreeResponseResolutionOrChance,
 } from './contract-card'
 
-export function QuickBet(props: {
-  contract: Contract
-  setLiveUpdate: (liveUpdate: boolean) => void
-}) {
-  const { contract, setLiveUpdate } = props
+export function QuickBet(props: { contract: Contract }) {
+  const { contract } = props
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
@@ -39,7 +36,7 @@ export function QuickBet(props: {
     contract as FullContract<CPMM | DPM, Binary>,
     userBets
   )
-  // For some reason, Floor Shares are inverted for non-BINARY markets
+  // TODO: For some reason, Floor Shares are inverted for non-BINARY markets
   const hasUpShares =
     contract.outcomeType === 'BINARY' ? yesFloorShares : noFloorShares
   const hasDownShares =
@@ -48,7 +45,6 @@ export function QuickBet(props: {
   const color = getColor(contract)
 
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
-    setLiveUpdate(true)
     const betPromise = async () => {
       const outcome = quickOutcome(contract, direction)
       return await placeBet({

@@ -43,12 +43,6 @@ export function MiscDetails(props: {
 
   return (
     <Row className="items-center gap-3 text-sm text-gray-400">
-      {/* {contract.createdTime % 3 == 1 ? (
-        <SolidStarIcon className="h-6 w-6 text-indigo-600" />
-      ) : (
-        <StarIcon className="h-6 w-6 text-gray-400" />
-      )} */}
-
       {categories.length > 0 && (
         <TagsList className="text-gray-400" tags={categories} noLabel />
       )}
@@ -95,17 +89,15 @@ export function AbbrContractDetails(props: {
 }) {
   const { contract, showHotVolume, showCloseTime } = props
   return (
-    <Col className="gap-2">
-      <Row className="items-center justify-between">
-        <AvatarDetails contract={contract} />
+    <Row className="items-center justify-between">
+      <AvatarDetails contract={contract} />
 
-        <MiscDetails
-          contract={contract}
-          showHotVolume={showHotVolume}
-          showCloseTime={showCloseTime}
-        />
-      </Row>
-    </Col>
+      <MiscDetails
+        contract={contract}
+        showHotVolume={showHotVolume}
+        showCloseTime={showCloseTime}
+      />
+    </Row>
   )
 }
 
