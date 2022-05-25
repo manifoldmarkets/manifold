@@ -232,7 +232,9 @@ export function NewContract(props: { question: string; tag?: string }) {
               </div>
             )}
             {showErrorText && (
-              <div className="mt-2 text-sm text-red-500">{showErrorText}</div>
+              <div className="mt-2 ml-1 text-sm text-red-500">
+                {showErrorText}
+              </div>
             )}
           </div>
         </div>
