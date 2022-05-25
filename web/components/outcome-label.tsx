@@ -117,7 +117,7 @@ export function ProbLabel() {
 }
 
 export function MultiLabel() {
-  return <span className="text-blue-400">MULTI</span>
+  return <span className="text-blue-400">MANY</span>
 }
 
 export function ProbPercentLabel(props: { prob: number }) {

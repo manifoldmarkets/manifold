@@ -129,8 +129,12 @@ export default function Sidebar(props: { className?: string }) {
   useEffect(() => {
     const utcMidnightToLocalDate = new Date(getUtcFreeMarketResetTime(false))
     const interval = setInterval(() => {
-      const timeUntil = utcMidnightToLocalDate.getTime() - new Date().getTime()
-      const hoursUntil = 24 + timeUntil / 1000 / 60 / 60
+      const now = new Date().getTime()
+      let timeUntil = Math.abs(utcMidnightToLocalDate.getTime() - now)
+      if (now > utcMidnightToLocalDate.getTime()) {
+        timeUntil = 24 * 60 * 60 * 1000 - timeUntil
+      }
+      const hoursUntil = timeUntil / 1000 / 60 / 60
       const minutesUntil = Math.floor((hoursUntil * 60) % 60)
       const secondsUntil = Math.floor((hoursUntil * 60 * 60) % 60)
       const hoursUntilFloor = Math.floor(hoursUntil)
@@ -219,7 +223,7 @@ export default function Sidebar(props: { className?: string }) {
       mustWaitForFreeMarketStatus ? (
         <Row className="mt-2 justify-center">
           <Row className="gap-1 text-sm text-gray-400">
-            Next free market in {countdown}
+            Next free question in {countdown}
           </Row>
         </Row>
       ) : (
@@ -228,7 +232,7 @@ export default function Sidebar(props: { className?: string }) {
         !mustWaitForFreeMarketStatus && (
           <Row className="mt-2 justify-center">
             <Row className="gap-1 text-sm text-indigo-400">
-              Daily free market
+              Daily free question
               <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
             </Row>
           </Row>
