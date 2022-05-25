@@ -94,5 +94,5 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     isResolved,
     resolution,
     resolutionTime,
-  })
+  }) as LiteMarket
 }

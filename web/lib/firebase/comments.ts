@@ -30,7 +30,7 @@ export async function createComment(
   const ref = betId
     ? doc(getCommentsCollection(contractId), betId)
     : doc(getCommentsCollection(contractId))
-  const comment: Comment = removeUndefinedProps({
+  const comment = removeUndefinedProps({
     id: ref.id,
     contractId,
     userId: commenter.id,
@@ -42,7 +42,7 @@ export async function createComment(
     betId: betId,
     answerOutcome: answerOutcome,
     replyToCommentId: replyToCommentId,
-  })
+  }) as Comment
   return await setDoc(ref, comment)
 }
 

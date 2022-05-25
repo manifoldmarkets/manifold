@@ -46,7 +46,7 @@ export function AnswerResolvePanel(props: {
       resolutions:
         resolveOption === 'CHOOSE_MULTIPLE' ? normalizedProbs : undefined,
       contractId: contract.id,
-    })
+    }) as {outcome: string, contractId: string, resolutions: {[x: string]: number} | undefined}
 
     const result = await resolveMarket(resolutionProps).then((r) => r.data)
 
