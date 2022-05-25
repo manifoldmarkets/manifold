@@ -11,13 +11,14 @@ import {
   FreeResponseContract,
   FullContract,
   NumericContract,
+  resolution,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
 
 export function OutcomeLabel(props: {
   contract: Contract
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string
+  outcome: resolution | string
   truncate: 'short' | 'long' | 'none'
   value?: number
 }) {
@@ -44,7 +45,7 @@ export function OutcomeLabel(props: {
 }
 
 export function BinaryOutcomeLabel(props: {
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
+  outcome: resolution
 }) {
   const { outcome } = props
 
@@ -56,7 +57,7 @@ export function BinaryOutcomeLabel(props: {
 
 export function BinaryContractOutcomeLabel(props: {
   contract: FullContract<DPM | CPMM, Binary>
-  resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT'
+  resolution: resolution
 }) {
   const { contract, resolution } = props
 

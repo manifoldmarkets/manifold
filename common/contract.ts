@@ -26,9 +26,10 @@ export type FullContract<
   closeTime?: number // When no more trading is allowed
 
   isResolved: boolean
-  resolutionTime?: number // When the contract creator resolved the market
-  resolution?: string
+  resolutionTime?: number // When the market is resolved
+  resolution?: resolution
   resolutionType: 'manual' | 'combined'
+  automaticResolutionTime?: number 
 
   closeEmailsSent?: number
 
@@ -72,7 +73,7 @@ export type Binary = {
   outcomeType: 'BINARY'
   initialProbability: number
   resolutionProbability?: number // Used for BINARY markets resolved to MKT
-  resolution?: 'YES' | 'NO' | 'MKT' | 'CANCEL'
+  resolution?: resolution
 }
 
 export type Multi = {
@@ -99,6 +100,7 @@ export type Numeric = {
 
 export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE' | 'NUMERIC'
 export type resolutionType = 'MANUAL' | 'COMBINED'
+export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const OUTCOME_TYPES = ['BINARY', 'MULTI', 'FREE_RESPONSE', 'NUMERIC']
 export const RESOLUTION_TYPES = ['MANUAL', 'COMBINED']
 
