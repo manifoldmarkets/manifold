@@ -53,7 +53,6 @@ export const placeBet = newEndpoint(['POST'], async (req, [bettor, _]) => {
     if (closeTime && Date.now() > closeTime)
       throw new APIError(400, 'Trading is closed.')
 
-    const newBetDoc = contractDoc.collection('bets').doc()
     const {
       newBet,
       newPool,
@@ -64,47 +63,19 @@ export const placeBet = newEndpoint(['POST'], async (req, [bettor, _]) => {
     } = await (async (): Promise<BetInfo> => {
       if (outcomeType == 'BINARY' && mechanism == 'dpm-2') {
         const { outcome } = validate(binarySchema, req.body)
-        return getNewBinaryDpmBetInfo(
-          user,
-          outcome,
-          amount,
-          contract,
-          loanAmount,
-          newBetDoc.id
-        )
+        return getNewBinaryDpmBetInfo(outcome, amount, contract, loanAmount)
       } else if (outcomeType == 'BINARY' && mechanism == 'cpmm-1') {
         const { outcome } = validate(binarySchema, req.body)
-        return getNewBinaryCpmmBetInfo(
-          user,
-          outcome,
-          amount,
-          contract,
-          loanAmount,
-          newBetDoc.id
-        )
+        return getNewBinaryCpmmBetInfo(outcome, amount, contract, loanAmount)
       } else if (outcomeType == 'FREE_RESPONSE' && mechanism == 'dpm-2') {
         const { outcome } = validate(freeResponseSchema, req.body)
         const answerDoc = contractDoc.collection('answers').doc(outcome)
         const answerSnap = await trans.get(answerDoc)
         if (!answerSnap.exists) throw new APIError(400, 'Invalid answer')
-        return getNewMultiBetInfo(
-          user,
-          outcome,
-          amount,
-          contract,
-          loanAmount,
-          newBetDoc.id
-        )
+        return getNewMultiBetInfo(outcome, amount, contract, loanAmount)
       } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
         const { outcome, value } = validate(numericSchema, req.body)
-        return getNumericBetsInfo(
-          user,
-          value,
-          outcome,
-          amount,
-          contract,
-          newBetDoc.id
-        )
+        return getNumericBetsInfo(value, outcome, amount, contract)
       } else {
         throw new APIError(500, 'Contract has invalid type/mechanism.')
       }
@@ -115,7 +86,8 @@ export const placeBet = newEndpoint(['POST'], async (req, [bettor, _]) => {
     }
 
     const newBalance = user.balance - amount - loanAmount
-    trans.create(newBetDoc, newBet)
+    const betDoc = contractDoc.collection('bets').doc()
+    trans.create(betDoc, { id: betDoc.id, userId: user.id, ...newBet })
     trans.update(userDoc, { balance: newBalance })
     trans.update(
       contractDoc,
@@ -130,7 +102,7 @@ export const placeBet = newEndpoint(['POST'], async (req, [bettor, _]) => {
       })
     )
 
-    return { betId: newBetDoc.id }
+    return { betId: betDoc.id }
   })
 
   await redeemShares(bettor.id, contractId)
