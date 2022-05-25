@@ -12,12 +12,13 @@ import { formatPercent, formatMoney } from 'common/util/format'
 
 import { useUser } from '../hooks/use-user'
 import { APIError, placeBet } from '../lib/firebase/api-call'
-import { firebaseLogin, User } from '../lib/firebase/users'
+import { User } from '../lib/firebase/users'
 import { BuyAmountInput } from './amount-input'
 import { BucketInput } from './bucket-input'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
+import { SignUpPrompt } from './sign-up-prompt'
 
 export function NumericBetPanel(props: {
   contract: NumericContract
@@ -32,14 +33,7 @@ export function NumericBetPanel(props: {
 
       <NumericBuyPanel contract={contract} user={user} />
 
-      {user === null && (
-        <button
-          className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-          onClick={firebaseLogin}
-        >
-          Sign up to trade!
-        </button>
-      )}
+      <SignUpPrompt />
     </Col>
   )
 }
