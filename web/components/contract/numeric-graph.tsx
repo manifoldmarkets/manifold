@@ -56,10 +56,10 @@ export const NumericGraph = memo(function NumericGraph(props: {
           min: min,
           max: max,
         }}
-        xFormat={(d) => `${Math.round(+d * 100) / 100}`}
+        xFormat={(d) => `${formatLargeNumber(+d, 3)}`}
         axisBottom={{
           tickValues: numXTickValues,
-          format: (d) => `${Math.round(+d * 100) / 100}`,
+          format: (d) => `${formatLargeNumber(+d, 3)}`,
         }}
         colors={{ datum: 'color' }}
         pointSize={0}

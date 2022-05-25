@@ -94,7 +94,7 @@ function NavBarItem(props: { item: Item; currentPage: string }) {
       <a
         className={clsx(
           'block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700',
-          currentPage === item.href && 'bg-indigo-200 text-indigo-700'
+          currentPage === item.href && 'bg-gray-200 text-indigo-700'
         )}
       >
         <item.icon className="my-1 mx-auto h-6 w-6" />

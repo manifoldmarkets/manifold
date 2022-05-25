@@ -30,10 +30,12 @@
     "gridjs-react": "5.0.2",
     "lodash": "4.17.21",
     "next": "12.1.2",
+    "node-fetch": "3.2.4",
     "react": "17.0.2",
     "react-confetti": "6.0.1",
     "react-dom": "17.0.2",
     "react-expanding-textarea": "2.3.5",
+    "react-hot-toast": "^2.2.0",
     "react-instantsearch-hooks-web": "6.24.1"
   },
   "devDependencies": {

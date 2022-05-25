@@ -23,6 +23,7 @@ import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
 import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
+import { PaperAirplaneIcon } from '@heroicons/react/outline'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -53,13 +54,20 @@ export function FeedCommentThread(props: {
     if (showReply && inputRef) inputRef.focus()
   }, [inputRef, showReply])
   return (
-    <div className={'w-full flex-col flex-col pr-6'}>
+    <div className={'flex-col pr-1'}>
       {commentsList.map((comment, commentIdx) => (
         <div
           key={comment.id}
           id={comment.id}
-          className={commentIdx === 0 ? '' : 'mt-4 ml-8'}
+          className={clsx('relative', commentIdx === 0 ? '' : 'mt-3 ml-6')}
         >
+          {/*draw a gray line from the comment to the left:*/}
+          {commentIdx != 0 && (
+            <span
+              className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+              aria-hidden="true"
+            />
+          )}
           <FeedComment
             contract={contract}
             comment={comment}
@@ -80,7 +88,11 @@ export function FeedCommentThread(props: {
         </div>
       ))}
       {showReply && (
-        <div className={'ml-8 w-full pt-6'}>
+        <div className={'-pb-2 ml-6 flex flex-col pt-5'}>
+          <span
+            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            aria-hidden="true"
+          />
           <CommentInput
             contract={contract}
             betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
@@ -111,7 +123,6 @@ export function FeedComment(props: {
     betsBySameUser,
     probAtCreatedTime,
     truncate,
-    smallAvatar,
     onReplyClick,
   } = props
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
@@ -144,18 +155,18 @@ export function FeedComment(props: {
   return (
     <Row
       className={clsx(
-        'flex space-x-3 transition-all duration-1000',
+        'flex space-x-1.5 transition-all duration-1000 sm:space-x-3',
         highlighted ? `-m-2 rounded bg-indigo-500/[0.2] p-2` : ''
       )}
     >
       <Avatar
-        className={clsx(smallAvatar && 'ml-1')}
-        size={smallAvatar ? 'sm' : undefined}
+        className={'ml-1'}
+        size={'sm'}
         username={userUsername}
         avatarUrl={userAvatarUrl}
       />
       <div className="min-w-0 flex-1">
-        <p className="mt-0.5 text-sm text-gray-500">
+        <p className="mt-0.5 pl-0.5 text-sm text-gray-500">
           <UserLink
             className="text-gray-500"
             username={userUsername}
@@ -321,12 +332,17 @@ export function CommentInput(props: {
 
   return (
     <>
-      <Row className={'mb-2 flex w-full gap-2'}>
-        <div className={'mt-1'}>
-          <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
+      <Row className={'mb-2 gap-1 sm:gap-2'}>
+        <div className={''}>
+          <Avatar
+            avatarUrl={user?.avatarUrl}
+            username={user?.username}
+            size={'sm'}
+            className={'ml-1'}
+          />
         </div>
         <div className={'min-w-0 flex-1'}>
-          <div className="text-sm text-gray-500">
+          <div className="pl-0.5 text-sm text-gray-500">
             <div className={'mb-1'}>
               {mostRecentCommentableBet && (
                 <BetStatusText
@@ -358,7 +374,12 @@ export function CommentInput(props: {
             </div>
 
             <Row className="grid grid-cols-8 gap-1.5 text-gray-700">
-              <Col className={'col-span-8 sm:col-span-6'}>
+              <Col
+                className={clsx(
+                  'col-span-8 sm:col-span-6',
+                  !user && 'col-span-8'
+                )}
+              >
                 <Textarea
                   ref={setRef}
                   value={comment}
@@ -386,13 +407,13 @@ export function CommentInput(props: {
                   }}
                 />
               </Col>
-              <Col
-                className={clsx(
-                  'col-span-8 sm:col-span-2',
-                  focused ? 'justify-end' : 'justify-center'
-                )}
-              >
-                {!user && (
+              {!user && (
+                <Col
+                  className={clsx(
+                    'col-span-8 sm:col-span-2',
+                    focused ? 'justify-end' : 'justify-center'
+                  )}
+                >
                   <button
                     className={
                       'btn btn-outline btn-sm text-transform: capitalize'
@@ -401,14 +422,25 @@ export function CommentInput(props: {
                   >
                     Sign in to Comment
                   </button>
+                </Col>
+              )}
+
+              <Col
+                className={clsx(
+                  'col-span-1 sm:col-span-2',
+                  focused ? 'justify-end' : 'justify-center'
                 )}
+              >
                 {user && !isSubmitting && (
                   <button
                     className={clsx(
-                      'btn text-transform: col-span-8 block capitalize sm:col-span-2',
+                      'btn btn-ghost btn-sm block flex flex-row capitalize',
+                      'absolute bottom-4 right-1 col-span-1',
+                      parentComment ? ' bottom-6 right-2.5' : '',
+                      'sm:relative sm:bottom-0 sm:right-0 sm:col-span-2',
                       focused && comment
-                        ? 'btn-outline btn-sm '
-                        : 'btn-ghost btn-sm pointer-events-none text-gray-500'
+                        ? 'sm:btn-outline'
+                        : 'pointer-events-none text-gray-500'
                     )}
                     onClick={() => {
                       if (!focused) return
@@ -417,7 +449,15 @@ export function CommentInput(props: {
                       }
                     }}
                   >
-                    {parentComment || answerOutcome ? 'Reply' : 'Comment'}
+                    <span className={'hidden sm:block'}>
+                      {parentComment || answerOutcome ? 'Reply' : 'Comment'}
+                    </span>
+                    {focused && (
+                      <PaperAirplaneIcon
+                        className={'m-0 min-w-[22px] rotate-90 p-0 sm:hidden'}
+                        height={25}
+                      />
+                    )}
                   </button>
                 )}
                 {isSubmitting && (

@@ -28,7 +28,7 @@ export function ContractsGrid(props: {
     return (
       <p className="mx-2 text-gray-500">
         No markets found. Why not{' '}
-        <SiteLink href="/home" className="font-bold text-gray-700">
+        <SiteLink href="/create" className="font-bold text-gray-700">
           create one?
         </SiteLink>
       </p>

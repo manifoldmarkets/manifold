@@ -6,7 +6,6 @@ import {
   Contract,
   contractPath,
   getBinaryProbPercent,
-  getBinaryProb,
 } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
@@ -22,54 +21,12 @@ import {
   AnswerLabel,
   BinaryContractOutcomeLabel,
   FreeResponseOutcomeLabel,
-  OUTCOME_TO_COLOR,
 } from '../outcome-label'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
-import { AbbrContractDetails } from './contract-details'
+import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-
-// Return a number from 0 to 1 for this contract
-// Resolved contracts are set to 1, for coloring purposes (even if NO)
-function getProb(contract: Contract) {
-  const { outcomeType, resolution } = contract
-  return resolution
-    ? 1
-    : outcomeType === 'BINARY'
-    ? getBinaryProb(contract)
-    : outcomeType === 'FREE_RESPONSE'
-    ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
-    : outcomeType === 'NUMERIC'
-    ? getNumericScale(contract as NumericContract)
-    : 1 // Should not happen
-}
-
-function getNumericScale(contract: NumericContract) {
-  const { min, max } = contract
-  const ev = getExpectedValue(contract)
-  return (ev - min) / (max - min)
-}
-
-function getColor(contract: Contract) {
-  const { resolution } = contract
-  if (resolution) {
-    return (
-      // @ts-ignore; TODO: Have better typing for contract.resolution?
-      OUTCOME_TO_COLOR[resolution] ||
-      // If resolved to a FR answer, use 'primary'
-      'primary'
-    )
-  }
-  if (contract.outcomeType === 'NUMERIC') {
-    return 'blue-400'
-  }
-
-  const marketClosed = (contract.closeTime || Infinity) < Date.now()
-  return marketClosed
-    ? 'gray-400'
-    : getProb(contract) >= 0.5
-    ? 'primary'
-    : 'red-400'
-}
+import { QuickBet, ProbBar, getColor } from './quick-bet'
+import { useContractWithPreload } from 'web/hooks/use-contract'
 
 export function ContractCard(props: {
   contract: Contract
@@ -77,80 +34,95 @@ export function ContractCard(props: {
   showCloseTime?: boolean
   className?: string
 }) {
-  const { contract, showHotVolume, showCloseTime, className } = props
+  const { showHotVolume, showCloseTime, className } = props
+  const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
+  const { resolution } = contract
 
-  const prob = getProb(contract)
-  const color = getColor(contract)
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
-  const showTopBar = prob >= 0.5 || marketClosed
+  const showQuickBet = !(
+    marketClosed ||
+    (outcomeType === 'FREE_RESPONSE' && getTopAnswer(contract) === undefined)
+  )
 
   return (
     <div>
       <Col
         className={clsx(
-          'relative gap-3 rounded-lg bg-white p-6 pr-7 shadow-md hover:bg-gray-100',
+          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:cursor-pointer hover:bg-gray-100',
           className
         )}
       >
-        <Link href={contractPath(contract)}>
-          <a className="absolute left-0 right-0 top-0 bottom-0" />
-        </Link>
-
-        <AbbrContractDetails
-          contract={contract}
-          showHotVolume={showHotVolume}
-          showCloseTime={showCloseTime}
-        />
-
-        <Row className={clsx('justify-between gap-4')}>
-          <Col className="gap-3">
+        <Row>
+          <Col className="relative flex-1 gap-3 pr-1">
+            <div
+              className={clsx(
+                'peer absolute -left-6 -top-4 -bottom-4 z-10',
+                // Hack: Extend the clickable area for closed markets
+                showQuickBet ? 'right-0' : 'right-[-6.5rem]'
+              )}
+            >
+              <Link href={contractPath(contract)}>
+                <a className="absolute top-0 left-0 right-0 bottom-0" />
+              </Link>
+            </div>
+            <AvatarDetails contract={contract} />
             <p
-              className="break-words font-medium text-indigo-700"
+              className="break-words font-semibold text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
               style={{ /* For iOS safari */ wordBreak: 'break-word' }}
             >
               {question}
             </p>
-          </Col>
-          {outcomeType === 'BINARY' && (
-            <BinaryResolutionOrChance
-              className="items-center"
-              contract={contract}
-            />
-          )}
 
-          {outcomeType === 'NUMERIC' && (
-            <NumericResolutionOrExpectation
-              className="items-center"
-              contract={contract as NumericContract}
+            {outcomeType === 'FREE_RESPONSE' &&
+              (resolution ? (
+                <FreeResponseOutcomeLabel
+                  contract={contract as FreeResponseContract}
+                  resolution={resolution}
+                  truncate={'long'}
+                />
+              ) : (
+                <FreeResponseTopAnswer
+                  contract={contract as FullContract<DPM, FreeResponse>}
+                  truncate="long"
+                />
+              ))}
+
+            <MiscDetails
+              contract={contract}
+              showHotVolume={showHotVolume}
+              showCloseTime={showCloseTime}
             />
+          </Col>
+          {showQuickBet ? (
+            <QuickBet contract={contract} />
+          ) : (
+            <Col className="m-auto pl-2">
+              {outcomeType === 'BINARY' && (
+                <BinaryResolutionOrChance
+                  className="items-center"
+                  contract={contract}
+                />
+              )}
+
+              {outcomeType === 'NUMERIC' && (
+                <NumericResolutionOrExpectation
+                  className="items-center"
+                  contract={contract as NumericContract}
+                />
+              )}
+
+              {outcomeType === 'FREE_RESPONSE' && (
+                <FreeResponseResolutionOrChance
+                  className="self-end text-gray-600"
+                  contract={contract as FullContract<DPM, FreeResponse>}
+                  truncate="long"
+                />
+              )}
+              <ProbBar contract={contract} />
+            </Col>
           )}
         </Row>
-
-        {outcomeType === 'FREE_RESPONSE' && (
-          <FreeResponseResolutionOrChance
-            className="self-end text-gray-600"
-            contract={contract as FullContract<DPM, FreeResponse>}
-            truncate="long"
-          />
-        )}
-
-        <div
-          className={clsx(
-            'absolute right-0 top-0 w-2 rounded-tr-md',
-            'bg-gray-200'
-          )}
-          style={{ height: `${100 * (1 - prob)}%` }}
-        ></div>
-        <div
-          className={clsx(
-            'absolute right-0 bottom-0 w-2 rounded-br-md',
-            `bg-${color}`,
-            // If we're showing the full bar, also round the top
-            prob === 1 ? 'rounded-tr-md' : ''
-          )}
-          style={{ height: `${100 * prob}%` }}
-        ></div>
       </Col>
     </div>
   )
@@ -191,6 +163,24 @@ export function BinaryResolutionOrChance(props: {
   )
 }
 
+function FreeResponseTopAnswer(props: {
+  contract: FreeResponseContract
+  truncate: 'short' | 'long' | 'none'
+  className?: string
+}) {
+  const { contract, truncate } = props
+
+  const topAnswer = getTopAnswer(contract)
+
+  return topAnswer ? (
+    <AnswerLabel
+      className="!text-gray-600"
+      answer={topAnswer}
+      truncate={truncate}
+    />
+  ) : null
+}
+
 export function FreeResponseResolutionOrChance(props: {
   contract: FreeResponseContract
   truncate: 'short' | 'long' | 'none'
@@ -206,22 +196,21 @@ export function FreeResponseResolutionOrChance(props: {
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
       {resolution ? (
         <>
-          <div className={clsx('text-base text-gray-500')}>Resolved</div>
-          <FreeResponseOutcomeLabel
-            contract={contract}
-            resolution={resolution}
-            truncate={truncate}
-            answerClassName="text-xl"
-          />
+          <div className={clsx('text-base text-gray-500 sm:hidden')}>
+            Resolved
+          </div>
+          {(resolution === 'CANCEL' || resolution === 'MKT') && (
+            <FreeResponseOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+              truncate={truncate}
+              answerClassName="text-3xl uppercase text-blue-500"
+            />
+          )}
         </>
       ) : (
         topAnswer && (
           <Row className="items-center gap-6">
-            <AnswerLabel
-              className="!text-gray-600"
-              answer={topAnswer}
-              truncate={truncate}
-            />
             <Col className={clsx('text-3xl', textColor)}>
               <div>
                 {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
@@ -241,6 +230,7 @@ export function NumericResolutionOrExpectation(props: {
 }) {
   const { contract, className } = props
   const { resolution } = contract
+  const textColor = `text-${getColor(contract)}`
 
   const resolutionValue =
     contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
@@ -254,10 +244,10 @@ export function NumericResolutionOrExpectation(props: {
         </>
       ) : (
         <>
-          <div className="text-3xl text-blue-400">
+          <div className={clsx('text-3xl', textColor)}>
             {formatLargeNumber(getExpectedValue(contract))}
           </div>
-          <div className="text-base text-blue-400">expected</div>
+          <div className={clsx('text-base', textColor)}>expected</div>
         </>
       )}
     </Col>
