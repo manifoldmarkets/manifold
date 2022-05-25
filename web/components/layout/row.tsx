@@ -1,7 +1,8 @@
 import clsx from 'clsx'
+import {ReactNode} from 'react'
 
 export function Row(props: {
-  children?: any
+  children?: ReactNode
   className?: string
   id?: string
 }) {

@@ -1,9 +1,10 @@
 import clsx from 'clsx'
+import {ReactNode} from 'react'
 import Link from 'next/link'
 
 export const SiteLink = (props: {
   href: string
-  children?: any
+  children?: ReactNode
   onClick?: () => void
   className?: string
 }) => {

@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import {ReactNode} from 'react'
 
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
@@ -13,7 +14,7 @@ export function NumberInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  children?: any
+  children?: ReactNode
 }) {
   const {
     numberString,

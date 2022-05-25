@@ -1,3 +1,4 @@
+import {ReactNode} from 'react'
 import clsx from 'clsx'
 import { BottomNavBar } from './nav/nav-bar'
 import Sidebar from './nav/sidebar'
@@ -7,7 +8,7 @@ export function Page(props: {
   assertUser?: 'signed-in' | 'signed-out'
   rightSidebar?: React.ReactNode
   suspend?: boolean
-  children?: any
+  children?: ReactNode
 }) {
   const { margin, assertUser, children, rightSidebar, suspend } = props
 
