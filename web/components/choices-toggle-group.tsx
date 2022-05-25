@@ -2,9 +2,9 @@ import { Row } from './layout/row'
 import clsx from 'clsx'
 
 export function ChoicesToggleGroup(props: {
-  currentChoice: number
-  setChoice: (p: number) => void
-  choices: number[]
+  currentChoice: number | string
+  setChoice: (p: any) => void //number | string does not work here because of SetStateAction in .tsx
+  choices: number[] | string[]
   titles: string[]
   isSubmitting?: boolean
 }) {
@@ -18,7 +18,7 @@ export function ChoicesToggleGroup(props: {
         {choices.map((choice, i) => {
           return (
             <button
-              key={choice + i + ''}
+              key={choice.toString()}
               disabled={isSubmitting}
               className={clsx(
                 baseButtonClassName,
