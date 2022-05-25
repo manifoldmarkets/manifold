@@ -1,5 +1,7 @@
+import { ReactChild } from 'react'
+
 export const JoinSpans = (props: {
-  children: any[]
+  children: ReactChild[]
   separator?: JSX.Element | string
 }) => {
   const { separator } = props
