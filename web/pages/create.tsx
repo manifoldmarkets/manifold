@@ -17,7 +17,6 @@ import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-t
 import { removeUndefinedProps } from 'common/util/object'
 import { CATEGORIES } from 'common/categories'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { CalculatorIcon } from '@heroicons/react/outline'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -90,7 +89,7 @@ export function NewContract(props: { question: string; tag?: string }) {
   // By default, close the market a week from today
   const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DDT23:59')
   const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
-
+  const [showErrorText, setShowErrorText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const closeTime = closeDate ? dayjs(closeDate).valueOf() : undefined
@@ -103,8 +102,8 @@ export function NewContract(props: { question: string; tag?: string }) {
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
   const isValid =
-    initialProb > 0 &&
-    initialProb < 100 &&
+    initialProb >= 5 &&
+    initialProb <= 95 &&
     question.length > 0 &&
     ante !== undefined &&
     ante !== null &&
@@ -184,45 +183,56 @@ export function NewContract(props: { question: string; tag?: string }) {
         <div className="form-control">
           <Row className="label justify-start">
             <span className="mb-1">How likely is it to happen?</span>
-            <CalculatorIcon
-              className={clsx(
-                'ml-2 cursor-pointer rounded-md',
-                'hover:bg-gray-200',
-                showNumInput && 'stroke-indigo-700'
-              )}
-              height={20}
-              onClick={() => setShowNumInput(!showNumInput)}
-            />
           </Row>
           <div>
             <ChoicesToggleGroup
-              currentChoice={initialProb}
-              setChoice={(option) => setInitialProb(option as number)}
+              currentChoice={showNumInput ? 'custom' : initialProb}
+              setChoice={(option) => {
+                if (option === 'custom') setShowNumInput(true)
+                else {
+                  setShowErrorText('')
+                  setInitialProb(option as number)
+                  setShowNumInput(false)
+                }
+              }}
               choicesMap={{
                 'Unsure (50%)': 50,
                 'Not likely (25%)': 25,
                 'Likely (75%)': 75,
+                Custom: 'custom',
               }}
               isSubmitting={isSubmitting}
-              className={'col-span-4'}
+              className={'col-span-3'}
             />
             {showNumInput && (
-              <>
+              <div className={'mt-2 ml-1'}>
                 <input
                   type="number"
                   value={initialProb}
-                  className={
-                    'input-bordered input-md mt-2 rounded-md p-1 text-lg sm:p-4'
-                  }
+                  className={'input-bordered input-md mt-2 rounded-md text-lg'}
+                  min={5}
+                  max={95}
                   disabled={isSubmitting}
-                  min={10}
-                  max={90}
-                  onChange={(e) =>
-                    setInitialProb(parseInt(e.target.value.substring(0, 2)))
-                  }
+                  onChange={(e) => {
+                    // show error if prob is less than 5 or greater than 95:
+                    const prob = parseInt(e.target.value)
+                    setInitialProb(prob)
+                    if (prob < 5)
+                      setShowErrorText(
+                        'Probability must be between 5% and 95% for betting to work properly'
+                      )
+                    else if (prob > 95)
+                      setShowErrorText(
+                        'Probability must be between 5% and 95% for betting to work properly'
+                      )
+                    else setShowErrorText('')
+                  }}
                 />
                 <span className={'mt-2 ml-0.5'}>%</span>
-              </>
+              </div>
+            )}
+            {showErrorText && (
+              <div className="mt-2 text-sm text-red-500">{showErrorText}</div>
             )}
           </div>
         </div>
@@ -267,7 +277,7 @@ export function NewContract(props: { question: string; tag?: string }) {
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
           <span className="mb-1">Description</span>
-          <InfoTooltip text="Optional. Describe how you will resolve this market." />
+          <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
         <Textarea
           className="textarea textarea-bordered w-full resize-none"
@@ -359,7 +369,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           {mustWaitForDailyFreeMarketStatus != 'loading' &&
             mustWaitForDailyFreeMarketStatus && (
               <InfoTooltip
-                text={`Cost to create your market. This amount is used to subsidize trading.`}
+                text={`Cost to create your question. This amount is used to subsidize betting.`}
               />
             )}
         </label>
@@ -418,7 +428,7 @@ export function NewContract(props: { question: string; tag?: string }) {
             submit()
           }}
         >
-          {isSubmitting ? 'Creating...' : 'Create market'}
+          {isSubmitting ? 'Creating...' : 'Create question'}
         </button>
       </div>
     </div>
