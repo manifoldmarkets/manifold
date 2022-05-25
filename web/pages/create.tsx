@@ -396,17 +396,6 @@ export function NewContract(props: { question: string; tag?: string }) {
           />
           <span className="label-text">Combined (experimental)</span>
         </label>
-        <label className="label cursor-pointer gap-2">
-          <input
-            className="radio"
-            type="radio"
-            name="res"
-            checked={resolutionType === 'AUTOMATIC'}
-            value="AUTOMATIC"
-            onChange={() => setResolutionType('AUTOMATIC')}
-          />
-          <span className="label-text">Automatic (experimental)</span>
-        </label>
       </Row>
       <Spacer h={4} />
 

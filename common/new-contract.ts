@@ -64,6 +64,7 @@ export function getNewContract(
     isResolved: false,
     createdTime: Date.now(),
     closeTime,
+    resolutionType: 'manual',
 
     volume: 0,
     volume24Hours: 0,

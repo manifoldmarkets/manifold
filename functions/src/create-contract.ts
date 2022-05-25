@@ -142,11 +142,11 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     ante,
     closeTime,
     tags ?? [],
+    resolutionType,
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0,
     manaLimitPerUser ?? 0,
-    resolutionType,
   )
 
   if (!isFree && ante) await chargeUser(creator.id, ante, true)
