@@ -204,7 +204,7 @@ function EditableCloseDate(props: {
 
   const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
   const [closeDate, setCloseDate] = useState(
-    closeTime && dayjs(closeTime).format('YYYY-MM-DDT23:59')
+    closeTime && dayjs(closeTime).format('YYYY-MM-DDTHH:mm')
   )
 
   const isSameYear = dayjs(closeTime).isSame(dayjs(), 'year')
