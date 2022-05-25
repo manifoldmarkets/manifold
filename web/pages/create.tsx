@@ -313,13 +313,9 @@ export function NewContract(props: { question: string; tag?: string }) {
           <ChoicesToggleGroup
             currentChoice={
               closeDate
-                ? [
-                    1,
-                    7,
-                    30,
-                    daysLeftInTheYear,
-                    0,
-                  ].includes(dayjs(closeDate).diff(dayjs(), 'day'))
+                ? [1, 7, 30, daysLeftInTheYear, 0].includes(
+                    dayjs(closeDate).diff(dayjs(), 'day')
+                  )
                   ? dayjs(closeDate).diff(dayjs(), 'day')
                   : 0
                 : -1
