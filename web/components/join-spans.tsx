@@ -1,14 +1,14 @@
-import { ReactChild } from 'react'
+import { ReactNode } from 'react'
 
 export const JoinSpans = (props: {
-  children: ReactChild[]
+  children: ReactNode[]
   separator?: JSX.Element | string
-}) => {
+}): JSX.Element => {
   const { separator } = props
   const children = props.children.filter((x) => !!x)
 
   if (children.length === 0) return <></>
-  if (children.length === 1) return children[0]
+  if (children.length === 1) return <>{children[0]}</>
   if (children.length === 2)
     return (
       <>
