@@ -27,7 +27,7 @@ export type FullContract<
 
   isResolved: boolean
   resolutionTime?: number // When the market is resolved
-  resolution?: resolution
+  resolution?: string
   resolutionType: 'manual' | 'combined'
   automaticResolutionTime?: number 
 
