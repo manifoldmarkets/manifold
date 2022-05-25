@@ -37,6 +37,7 @@ export function ContractCard(props: {
   const { showHotVolume, showCloseTime, className } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
+  const { resolution } = contract
 
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
   const showQuickBet = !(
@@ -73,12 +74,19 @@ export function ContractCard(props: {
               {question}
             </p>
 
-            {outcomeType === 'FREE_RESPONSE' && (
-              <FreeResponseTopAnswer
-                contract={contract as FullContract<DPM, FreeResponse>}
-                truncate="long"
-              />
-            )}
+            {outcomeType === 'FREE_RESPONSE' &&
+              (resolution ? (
+                <FreeResponseOutcomeLabel
+                  contract={contract as FreeResponseContract}
+                  resolution={resolution}
+                  truncate={'long'}
+                />
+              ) : (
+                <FreeResponseTopAnswer
+                  contract={contract as FullContract<DPM, FreeResponse>}
+                  truncate="long"
+                />
+              ))}
 
             <MiscDetails
               contract={contract}
@@ -188,13 +196,17 @@ export function FreeResponseResolutionOrChance(props: {
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
       {resolution ? (
         <>
-          <div className={clsx('text-base text-gray-500')}>Resolved</div>
-          <FreeResponseOutcomeLabel
-            contract={contract}
-            resolution={resolution}
-            truncate={truncate}
-            answerClassName="text-xl"
-          />
+          <div className={clsx('text-base text-gray-500 sm:hidden')}>
+            Resolved
+          </div>
+          {(resolution === 'CANCEL' || resolution === 'MKT') && (
+            <FreeResponseOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+              truncate={truncate}
+              answerClassName="text-3xl uppercase text-blue-500"
+            />
+          )}
         </>
       ) : (
         topAnswer && (
