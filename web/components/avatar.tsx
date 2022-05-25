@@ -15,7 +15,7 @@ export function Avatar(props: {
   const onClick =
     noLink && username
       ? undefined
-      : (e: Event) => {
+      : (e: React.MouseEvent) => {
           e.stopPropagation()
           Router.push(`/${username}`)
         }
