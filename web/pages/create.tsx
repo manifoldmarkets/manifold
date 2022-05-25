@@ -215,11 +215,7 @@ export function NewContract(props: { question: string; tag?: string }) {
               isSubmitting={isSubmitting}
               className={'col-span-4 sm:col-span-3'}
             >
-              <Row
-                className={
-                  'col-span-6 items-center justify-center sm:col-span-3'
-                }
-              >
+              <Row className={'col-span-3 items-center justify-start'}>
                 <input
                   type="number"
                   value={initialProb}
