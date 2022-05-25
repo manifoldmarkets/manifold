@@ -25,9 +25,9 @@ import { NUMERIC_FIXED_VAR } from './numeric-constants'
 
 export type BetInfo = {
   newBet: Bet
-  newPool?: object
-  newTotalShares?: object
-  newTotalBets?: object
+  newPool?: { [outcome: string]: number }
+  newTotalShares?: { [outcome: string]: number }
+  newTotalBets?: { [outcome: string]: number }
   newTotalLiquidity?: number
   newP?: number
 }
