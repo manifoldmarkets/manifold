@@ -215,12 +215,16 @@ export function NewContract(props: { question: string; tag?: string }) {
               isSubmitting={isSubmitting}
               className={'col-span-4 sm:col-span-3'}
             >
-              <div className={'col-span-6 sm:col-span-3'}>
+              <Row
+                className={
+                  'col-span-6 items-center justify-center sm:col-span-3'
+                }
+              >
                 <input
                   type="number"
                   value={initialProb}
                   className={
-                    'input-bordered input-md rounded-md border-gray-300 pr-2 text-lg'
+                    'input-bordered input-md max-w-[100px] rounded-md border-gray-300 pr-2 text-lg'
                   }
                   min={5}
                   max={95}
@@ -234,8 +238,8 @@ export function NewContract(props: { question: string; tag?: string }) {
                     else setProbErrorText('')
                   }}
                 />
-                <span className={'mt-2 ml-0.5'}>%</span>
-              </div>
+                <span className={'ml-1'}>%</span>
+              </Row>
             </ChoicesToggleGroup>
           </Row>
           {probErrorText && (
