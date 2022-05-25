@@ -112,7 +112,7 @@ function TableRowEnd(props: { entry: Entry | null; isNew?: boolean }) {
 
 function NewBidTable(props: {
   steps: number
-  bids: any[]
+  bids: Array<{yesBid: number, noBid: number}>
   setSteps: (steps: number) => void
   setBids: (bids: any[]) => void
 }) {
