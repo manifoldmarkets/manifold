@@ -99,6 +99,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
+  // get days from today until the end of this year:
+  const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
   const isValid =
     initialProb > 0 &&
@@ -163,46 +165,57 @@ export function NewContract(props: { question: string; tag?: string }) {
   return (
     <div>
       <label className="label mt-1">
-        <span className="my-1">Answer type</span>
+        <span className="mt-1">Answer type</span>
       </label>
-      <Row className="form-control gap-2">
-        <label className="label cursor-pointer gap-2">
-          <input
-            className="radio"
-            type="radio"
-            name="opt"
-            checked={outcomeType === 'BINARY'}
-            value="BINARY"
-            onChange={() => setOutcomeType('BINARY')}
-            disabled={isSubmitting}
-          />
-          <span className="label-text">Yes / No</span>
-        </label>
+      <ChoicesToggleGroup
+        currentChoice={outcomeType}
+        setChoice={(choice) => setOutcomeType(choice as outcomeType)}
+        choicesMap={{
+          'Yes / No': 'BINARY',
+          'Free response': 'FREE_RESPONSE',
+          'Numeric (experimental)': 'NUMERIC',
+        }}
+        isSubmitting={isSubmitting}
+        className={'col-span-6 sm:col-span-4'}
+      />
+      {/*<Row className="form-control gap-2">*/}
+      {/*  <label className="label cursor-pointer gap-2">*/}
+      {/*    <input*/}
+      {/*      className="radio"*/}
+      {/*      type="radio"*/}
+      {/*      name="opt"*/}
+      {/*      checked={outcomeType === 'BINARY'}*/}
+      {/*      value="BINARY"*/}
+      {/*      onChange={() => setOutcomeType('BINARY')}*/}
+      {/*      disabled={isSubmitting}*/}
+      {/*    />*/}
+      {/*    <span className="label-text">Yes / No</span>*/}
+      {/*  </label>*/}
 
-        <label className="label cursor-pointer gap-2">
-          <input
-            className="radio"
-            type="radio"
-            name="opt"
-            checked={outcomeType === 'FREE_RESPONSE'}
-            value="FREE_RESPONSE"
-            onChange={() => setOutcomeType('FREE_RESPONSE')}
-            disabled={isSubmitting}
-          />
-          <span className="label-text">Free response</span>
-        </label>
-        <label className="label cursor-pointer gap-2">
-          <input
-            className="radio"
-            type="radio"
-            name="opt"
-            checked={outcomeType === 'NUMERIC'}
-            value="NUMERIC"
-            onChange={() => setOutcomeType('NUMERIC')}
-          />
-          <span className="label-text">Numeric (experimental)</span>
-        </label>
-      </Row>
+      {/*  <label className="label cursor-pointer gap-2">*/}
+      {/*    <input*/}
+      {/*      className="radio"*/}
+      {/*      type="radio"*/}
+      {/*      name="opt"*/}
+      {/*      checked={outcomeType === 'FREE_RESPONSE'}*/}
+      {/*      value="FREE_RESPONSE"*/}
+      {/*      onChange={() => setOutcomeType('FREE_RESPONSE')}*/}
+      {/*      disabled={isSubmitting}*/}
+      {/*    />*/}
+      {/*    <span className="label-text">Free response</span>*/}
+      {/*  </label>*/}
+      {/*  <label className="label cursor-pointer gap-2">*/}
+      {/*    <input*/}
+      {/*      className="radio"*/}
+      {/*      type="radio"*/}
+      {/*      name="opt"*/}
+      {/*      checked={outcomeType === 'NUMERIC'}*/}
+      {/*      value="NUMERIC"*/}
+      {/*      onChange={() => setOutcomeType('NUMERIC')}*/}
+      {/*    />*/}
+      {/*    <span className="label-text">Numeric (experimental)</span>*/}
+      {/*  </label>*/}
+      {/*</Row>*/}
       <Spacer h={4} />
 
       {outcomeType === 'BINARY' && (
@@ -219,13 +232,17 @@ export function NewContract(props: { question: string; tag?: string }) {
               onClick={() => setShowNumInput(!showNumInput)}
             />
           </Row>
-          <Row className={'w-full items-center sm:gap-2'}>
+          <div>
             <ChoicesToggleGroup
               currentChoice={initialProb}
-              setChoice={setInitialProb}
-              choices={[25, 50, 75]}
-              titles={['Unlikely', 'Unsure', 'Likely']}
+              setChoice={(option) => setInitialProb(option as number)}
+              choicesMap={{
+                'Unsure (50%)': 50,
+                'Not likely (25%)': 25,
+                'Likely (75%)': 75,
+              }}
               isSubmitting={isSubmitting}
+              className={'col-span-4'}
             />
             {showNumInput && (
               <>
@@ -233,7 +250,6 @@ export function NewContract(props: { question: string; tag?: string }) {
                   type="number"
                   value={initialProb}
                   className={
-                    'max-w-[16%] sm:max-w-[15%] ' +
                     'input-bordered input-md mt-2 rounded-md p-1 text-lg sm:p-4'
                   }
                   disabled={isSubmitting}
@@ -243,10 +259,10 @@ export function NewContract(props: { question: string; tag?: string }) {
                     setInitialProb(parseInt(e.target.value.substring(0, 2)))
                   }
                 />
-                <span className={'mt-2'}>%</span>
+                <span className={'mt-2 ml-0.5'}>%</span>
               </>
             )}
-          </Row>
+          </div>
         </div>
       )}
 
@@ -328,24 +344,36 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
-          <span>Question expires in a:</span>
+          <span>Question closes by the end of:</span>
           <InfoTooltip text="Betting will be halted after this date (local timezone)." />
         </label>
         <Row className={'w-full items-center gap-2'}>
           <ChoicesToggleGroup
             currentChoice={
               closeDate
-                ? [1, 7, 30, 365, 0].includes(
-                    dayjs(closeDate).diff(dayjs(), 'day')
-                  )
+                ? [
+                    1,
+                    7,
+                    30,
+                    daysLeftInTheYear,
+                    0,
+                  ].includes(dayjs(closeDate).diff(dayjs(), 'day'))
                   ? dayjs(closeDate).diff(dayjs(), 'day')
                   : 0
                 : -1
             }
-            setChoice={setCloseDateInDays}
-            choices={[1, 7, 30, 0]}
-            titles={['Day', 'Week', 'Month', 'Custom']}
+            setChoice={(choice) => {
+              setCloseDateInDays(choice as number)
+            }}
+            choicesMap={{
+              Tomorrow: 1,
+              'A week': 7,
+              'A month': 30,
+              'This year': daysLeftInTheYear,
+              Custom: 0,
+            }}
             isSubmitting={isSubmitting}
+            className={'col-span-4 sm:col-span-2'}
           />
         </Row>
         {showCalendar && (
