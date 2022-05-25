@@ -1,10 +1,9 @@
 import { union } from 'lodash'
 
-export const removeUndefinedProps = <T extends object>(obj: T): Partial<T> => {
-  const newObj: Partial<T> = {}
+export const removeUndefinedProps = <T>(obj: T): T => {
+  const newObj: any = {}
 
-  const keys = Object.keys(obj) as Array<keyof T>
-  for (const key of keys) {
+  for (const key of Object.keys(obj)) {
     if ((obj as any)[key] !== undefined) newObj[key] = (obj as any)[key]
   }
 
