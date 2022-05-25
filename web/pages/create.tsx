@@ -178,44 +178,6 @@ export function NewContract(props: { question: string; tag?: string }) {
         isSubmitting={isSubmitting}
         className={'col-span-6 sm:col-span-4'}
       />
-      {/*<Row className="form-control gap-2">*/}
-      {/*  <label className="label cursor-pointer gap-2">*/}
-      {/*    <input*/}
-      {/*      className="radio"*/}
-      {/*      type="radio"*/}
-      {/*      name="opt"*/}
-      {/*      checked={outcomeType === 'BINARY'}*/}
-      {/*      value="BINARY"*/}
-      {/*      onChange={() => setOutcomeType('BINARY')}*/}
-      {/*      disabled={isSubmitting}*/}
-      {/*    />*/}
-      {/*    <span className="label-text">Yes / No</span>*/}
-      {/*  </label>*/}
-
-      {/*  <label className="label cursor-pointer gap-2">*/}
-      {/*    <input*/}
-      {/*      className="radio"*/}
-      {/*      type="radio"*/}
-      {/*      name="opt"*/}
-      {/*      checked={outcomeType === 'FREE_RESPONSE'}*/}
-      {/*      value="FREE_RESPONSE"*/}
-      {/*      onChange={() => setOutcomeType('FREE_RESPONSE')}*/}
-      {/*      disabled={isSubmitting}*/}
-      {/*    />*/}
-      {/*    <span className="label-text">Free response</span>*/}
-      {/*  </label>*/}
-      {/*  <label className="label cursor-pointer gap-2">*/}
-      {/*    <input*/}
-      {/*      className="radio"*/}
-      {/*      type="radio"*/}
-      {/*      name="opt"*/}
-      {/*      checked={outcomeType === 'NUMERIC'}*/}
-      {/*      value="NUMERIC"*/}
-      {/*      onChange={() => setOutcomeType('NUMERIC')}*/}
-      {/*    />*/}
-      {/*    <span className="label-text">Numeric (experimental)</span>*/}
-      {/*  </label>*/}
-      {/*</Row>*/}
       <Spacer h={4} />
 
       {outcomeType === 'BINARY' && (
