@@ -67,8 +67,6 @@ export function NewContract(props: { question: string; tag?: string }) {
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
   const [description, setDescription] = useState('')
-  const [showCalendar, setShowCalendar] = useState(false)
-  const [showNumInput, setShowNumInput] = useState(false)
 
   const [category, setCategory] = useState<string>('')
   // const [tagText, setTagText] = useState<string>(tag ?? '')
@@ -87,12 +85,16 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   // const [anteError, setAnteError] = useState<string | undefined>()
   // By default, close the market a week from today
-  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DDT23:59')
+  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
   const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
-  const [showErrorText, setShowErrorText] = useState('')
+  const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
+  const [probErrorText, setProbErrorText] = useState('')
+  const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const closeTime = closeDate ? dayjs(closeDate).valueOf() : undefined
+  const closeTime = closeDate
+    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
+    : undefined
 
   const balance = creator?.balance || 0
 
@@ -102,8 +104,7 @@ export function NewContract(props: { question: string; tag?: string }) {
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
   const isValid =
-    initialProb >= 5 &&
-    initialProb <= 95 &&
+    (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&
     question.length > 0 &&
     ante !== undefined &&
     ante !== null &&
@@ -123,8 +124,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         max - min > 0.01))
 
   function setCloseDateInDays(days: number) {
-    setShowCalendar(days === 0)
-    const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DDT23:59')
+    const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
     setCloseDate(newCloseDate)
   }
 
@@ -168,15 +168,31 @@ export function NewContract(props: { question: string; tag?: string }) {
       </label>
       <ChoicesToggleGroup
         currentChoice={outcomeType}
-        setChoice={(choice) => setOutcomeType(choice as outcomeType)}
+        setChoice={(choice) => {
+          if (choice === 'NUMERIC')
+            setMarketInfoText(
+              'Numeric markets are still experimental and subject to major revisions.'
+            )
+          else if (choice === 'FREE_RESPONSE')
+            setMarketInfoText(
+              'Users can submit their own answers to this market.'
+            )
+          else setMarketInfoText('')
+          setOutcomeType(choice as outcomeType)
+        }}
         choicesMap={{
           'Yes / No': 'BINARY',
           'Free response': 'FREE_RESPONSE',
-          'Numeric (experimental)': 'NUMERIC',
+          Numeric: 'NUMERIC',
         }}
         isSubmitting={isSubmitting}
-        className={'col-span-6 sm:col-span-4'}
+        className={'col-span-4'}
       />
+      {marketInfoText && (
+        <div className="mt-2 ml-1 text-sm text-indigo-700">
+          {marketInfoText}
+        </div>
+      )}
       <Spacer h={4} />
 
       {outcomeType === 'BINARY' && (
@@ -184,32 +200,28 @@ export function NewContract(props: { question: string; tag?: string }) {
           <Row className="label justify-start">
             <span className="mb-1">How likely is it to happen?</span>
           </Row>
-          <div>
+          <Row className={'justify-start'}>
             <ChoicesToggleGroup
-              currentChoice={showNumInput ? 'custom' : initialProb}
+              currentChoice={initialProb}
               setChoice={(option) => {
-                if (option === 'custom') setShowNumInput(true)
-                else {
-                  setShowErrorText('')
-                  setInitialProb(option as number)
-                  setShowNumInput(false)
-                }
+                setProbErrorText('')
+                setInitialProb(option as number)
               }}
               choicesMap={{
-                'Unsure (50%)': 50,
-                'Not likely (25%)': 25,
-                'Likely (75%)': 75,
-                Custom: 'custom',
+                Unlikely: 25,
+                'Not Sure': 50,
+                Likely: 75,
               }}
               isSubmitting={isSubmitting}
-              className={'col-span-3'}
-            />
-            {showNumInput && (
-              <div className={'mt-2 ml-1'}>
+              className={'col-span-4 sm:col-span-3'}
+            >
+              <div className={'col-span-6 sm:col-span-3'}>
                 <input
                   type="number"
                   value={initialProb}
-                  className={'input-bordered input-md mt-2 rounded-md text-lg'}
+                  className={
+                    'input-bordered input-md rounded-md border-gray-300 pr-2 text-lg'
+                  }
                   min={5}
                   max={95}
                   disabled={isSubmitting}
@@ -217,26 +229,18 @@ export function NewContract(props: { question: string; tag?: string }) {
                     // show error if prob is less than 5 or greater than 95:
                     const prob = parseInt(e.target.value)
                     setInitialProb(prob)
-                    if (prob < 5)
-                      setShowErrorText(
-                        'Probability must be between 5% and 95% for betting to work properly'
-                      )
-                    else if (prob > 95)
-                      setShowErrorText(
-                        'Probability must be between 5% and 95% for betting to work properly'
-                      )
-                    else setShowErrorText('')
+                    if (prob < 5 || prob > 95)
+                      setProbErrorText('Probability must be between 5% and 95%')
+                    else setProbErrorText('')
                   }}
                 />
                 <span className={'mt-2 ml-0.5'}>%</span>
               </div>
-            )}
-            {showErrorText && (
-              <div className="mt-2 ml-1 text-sm text-red-500">
-                {showErrorText}
-              </div>
-            )}
-          </div>
+            </ChoicesToggleGroup>
+          </Row>
+          {probErrorText && (
+            <div className="text-error mt-2 ml-1 text-sm">{probErrorText}</div>
+          )}
         </div>
       )}
 
@@ -318,49 +322,47 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
-          <span>Question closes by the end of:</span>
-          <InfoTooltip text="Betting will be halted after this date (local timezone)." />
+          <span>Question closes in:</span>
+          <InfoTooltip text="Betting will be halted after this time (local timezone)." />
         </label>
         <Row className={'w-full items-center gap-2'}>
           <ChoicesToggleGroup
-            currentChoice={
-              closeDate
-                ? [1, 7, 30, daysLeftInTheYear, 0].includes(
-                    dayjs(closeDate).diff(dayjs(), 'day')
-                  )
-                  ? dayjs(closeDate).diff(dayjs(), 'day')
-                  : 0
-                : -1
-            }
+            currentChoice={dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')}
             setChoice={(choice) => {
               setCloseDateInDays(choice as number)
             }}
             choicesMap={{
-              Tomorrow: 1,
+              'A day': 1,
               'A week': 7,
-              'A month': 30,
+              '30 days': 30,
               'This year': daysLeftInTheYear,
-              Custom: 0,
             }}
             isSubmitting={isSubmitting}
             className={'col-span-4 sm:col-span-2'}
           />
         </Row>
-        {showCalendar && (
+        <Row>
           <input
             type={'date'}
             className="input input-bordered mt-4"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) =>
-              setCloseDate(
-                dayjs(e.target.value).format('YYYY-MM-DDT23:59') || ''
-              )
+              setCloseDate(dayjs(e.target.value).format('YYYY-MM-DD') || '')
             }
             min={Date.now()}
             disabled={isSubmitting}
             value={dayjs(closeDate).format('YYYY-MM-DD')}
           />
-        )}
+          <input
+            type={'time'}
+            className="input input-bordered mt-4 ml-2"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setCloseHoursMinutes(e.target.value)}
+            min={'00:00'}
+            disabled={isSubmitting}
+            value={closeHoursMinutes}
+          />
+        </Row>
       </div>
 
       <Spacer h={4} />
