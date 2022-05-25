@@ -42,7 +42,7 @@ export function getNewContract(
       ? getNumericProps(ante, bucketCount, min, max)
       : getFreeAnswerProps(ante)
 
-  return removeUndefinedProps({
+  const contract: Contract = removeUndefinedProps({
     id,
     slug,
     ...propsByOutcomeType,
@@ -71,7 +71,9 @@ export function getNewContract(
       platformFee: 0,
     },
     manaLimitPerUser,
-  }) as Contract
+  })
+
+  return contract as Contract
 }
 
 /*
