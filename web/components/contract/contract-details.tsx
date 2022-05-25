@@ -109,7 +109,7 @@ export function ContractDetails(props: {
 }) {
   const { contract, bets, isCreator, disabled } = props
   const { closeTime, creatorName, creatorUsername } = contract
-  const { volumeLabel, resolvedDate } = contractMetrics(contract)
+  const { volumeLabel, automaticResolutionDate, resolvedDate } = contractMetrics(contract)
 
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
@@ -162,6 +162,15 @@ export function ContractDetails(props: {
             </>
           )}
         </Row>
+      )}
+
+      {!resolvedDate && contract.automaticResolutionTime && (
+        <DateTimeTooltip
+        text="Market automatically resolving:"
+        time={contract.automaticResolutionTime}
+      >
+        {automaticResolutionDate + ": " + contract.automaticResolution}
+      </DateTimeTooltip>
       )}
 
       <Row className="items-center gap-1">
