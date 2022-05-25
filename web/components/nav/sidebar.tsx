@@ -127,13 +127,10 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
   const [countdown, setCountdown] = useState('...')
   useEffect(() => {
-    const utcMidnightToLocalDate = new Date(getUtcFreeMarketResetTime(false))
+    const nextUtcResetTime = getUtcFreeMarketResetTime(false)
     const interval = setInterval(() => {
       const now = new Date().getTime()
-      let timeUntil = Math.abs(utcMidnightToLocalDate.getTime() - now)
-      if (now > utcMidnightToLocalDate.getTime()) {
-        timeUntil = 24 * 60 * 60 * 1000 - timeUntil
-      }
+      let timeUntil = nextUtcResetTime - now
       const hoursUntil = timeUntil / 1000 / 60 / 60
       const minutesUntil = Math.floor((hoursUntil * 60) % 60)
       const secondsUntil = Math.floor((hoursUntil * 60 * 60) % 60)
