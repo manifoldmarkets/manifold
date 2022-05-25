@@ -114,6 +114,12 @@ export const applyCors = (
   })
 }
 
+export const zTimestamp = () => {
+  return z.preprocess((arg) => {
+    return typeof arg == 'number' ? new Date(arg) : undefined
+  }, z.date())
+}
+
 export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
   const result = schema.safeParse(val)
   if (!result.success) {

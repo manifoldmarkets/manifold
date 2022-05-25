@@ -18,7 +18,7 @@ import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
 import { chargeUser } from './utils'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate, zTimestamp } from './api'
 
 import {
   FIXED_ANTE,
@@ -36,7 +36,10 @@ const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
   description: z.string().max(MAX_DESCRIPTION_LENGTH),
   tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
-  closeTime: z.number(),
+  closeTime: zTimestamp().refine(
+    (date) => date.getTime() > new Date().getTime(),
+    'Close time must be in the future.'
+  ),
   outcomeType: z.enum(OUTCOME_TYPES),
 })
 
@@ -101,7 +104,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
     description,
     initialProb ?? 0,
     ante,
-    closeTime,
+    closeTime.getTime(),
     tags ?? [],
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
