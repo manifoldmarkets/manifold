@@ -105,8 +105,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
     tags ?? [],
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
-    max ?? 0,
-    0
+    max ?? 0
   )
 
   if (!isFree && ante) await chargeUser(user.id, ante, true)

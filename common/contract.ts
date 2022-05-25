@@ -31,8 +31,6 @@ export type FullContract<
 
   closeEmailsSent?: number
 
-  manaLimitPerUser?: number
-
   volume: number
   volume24Hours: number
   volume7Days: number
