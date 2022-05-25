@@ -49,7 +49,7 @@ const Dropdown = ({ options, value, onchange, small }: DropdownProps) => {
     { className: wrapper },
     H(
       "select",
-      { onchange: (e: any) => onchange(e.target.value) },
+      { onchange: ({target}: Event) => onchange((target as HTMLInputElement).value) },
       options.map((o) =>
         H("option", { value: o.value, selected: value === o.value }, o.text)
       )
