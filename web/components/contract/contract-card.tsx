@@ -168,7 +168,7 @@ function FreeResponseTopAnswer(props: {
 
 export function FreeResponseResolutionOrChance(props: {
   contract: FreeResponseContract
-  truncate: 'xs' | 'short' | 'long' | 'none'
+  truncate: 'short' | 'long' | 'none'
   className?: string
   hideText?: boolean
 }) {
@@ -182,7 +182,9 @@ export function FreeResponseResolutionOrChance(props: {
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
       {resolution ? (
         <>
-          <div className={clsx('text-base text-gray-500')}>Resolved</div>
+          <div className={clsx('text-base text-gray-500 sm:hidden')}>
+            Resolved
+          </div>
           {(resolution === 'CANCEL' || resolution === 'MKT') && (
             <FreeResponseOutcomeLabel
               contract={contract}
