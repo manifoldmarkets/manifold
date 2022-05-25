@@ -42,9 +42,10 @@ export function contractUrl(contract: Contract) {
 }
 
 export function contractMetrics(contract: Contract) {
-  const { createdTime, resolutionTime, isResolved } = contract
+  const { createdTime, resolutionTime, isResolved, automaticResolutionTime } = contract
 
   const createdDate = dayjs(createdTime).format('MMM D')
+  const automaticResolutionDate = dayjs(automaticResolutionTime).format('MMM D')
 
   const resolvedDate = isResolved
     ? dayjs(resolutionTime).format('MMM D')
@@ -52,7 +53,7 @@ export function contractMetrics(contract: Contract) {
 
   const volumeLabel = `${formatMoney(contract.volume)} bet`
 
-  return { volumeLabel, createdDate, resolvedDate }
+  return { volumeLabel, createdDate, automaticResolutionDate, resolvedDate }
 }
 
 export function getBinaryProb(contract: FullContract<any, Binary>) {

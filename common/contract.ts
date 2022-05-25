@@ -30,6 +30,7 @@ export type FullContract<
   resolution?: string
   resolutionType: 'manual' | 'combined'
   automaticResolutionTime?: number 
+  automaticResolution?: resolution
 
   closeEmailsSent?: number
 
