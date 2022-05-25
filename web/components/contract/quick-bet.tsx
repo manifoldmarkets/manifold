@@ -38,16 +38,20 @@ export function QuickBet(props: { contract: Contract }) {
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
+  const topAnswer =
+    contract.outcomeType === 'FREE_RESPONSE'
+      ? getTopAnswer(contract as FreeResponseContract)
+      : undefined
+
+  // TODO: yes/no from useSaveShares doesn't work on numeric contracts
   const { yesFloorShares, noFloorShares } = useSaveShares(
-    contract as FullContract<CPMM | DPM, Binary>,
-    userBets
+    contract as FullContract<DPM | CPMM, Binary | FreeResponseContract>,
+    userBets,
+    topAnswer?.number.toString() || undefined
   )
-  // TODO: This relies on a hack in useSaveShares, where noFloorShares includes
-  // all non-YES shares. Ideally, useSaveShares should group by all outcomes
-  const hasUpShares =
-    contract.outcomeType === 'BINARY' ? yesFloorShares : noFloorShares
+  const hasUpShares = yesFloorShares || contract.outcomeType === 'NUMERIC'
   const hasDownShares =
-    contract.outcomeType === 'BINARY' ? noFloorShares : yesFloorShares
+    noFloorShares && yesFloorShares <= 0 && contract.outcomeType !== 'NUMERIC'
 
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
