@@ -97,6 +97,7 @@ export function NewContract(props: { question: string; tag?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const closeTime = closeDate ? dayjs(closeDate).valueOf() : undefined
+  const resolutionTime = resolutionDate ? dayjs(resolutionDate).valueOf() : undefined
 
   const balance = creator?.balance || 0
 
@@ -152,6 +153,8 @@ export function NewContract(props: { question: string; tag?: string }) {
           tags: category ? [category] : undefined,
           min,
           max,
+          automaticResolution,
+          resolutionTime
         })
       )
       await router.push(contractPath(result as Contract))
@@ -372,72 +375,76 @@ export function NewContract(props: { question: string; tag?: string }) {
         )}
       </div>
 
-      <Spacer h={4} />
-      <div className="form-control mb-1 items-start">
-        <label className="label mt-1 gap-2">
-          <span>Resolution type</span>
-          <InfoTooltip text="Combined markets can be resolved manually but will be resolved automatically under given conditions." />
-        </label>
-        <Row className="form-control gap-2">
-          <label className="label cursor-pointer gap-2">
-            <input
-              className="radio"
-              type="radio"
-              name="res"
-              checked={resolutionType === 'MANUAL'}
-              value="MANUAL"
-              onChange={() => setResolutionType('MANUAL')}
-              disabled={isSubmitting}
-            />
-            <span className="label-text">Manual</span>
-          </label>
-
-          <label className="label cursor-pointer gap-2">
-            <input
-              className="radio"
-              type="radio"
-              name="res"
-              checked={resolutionType === 'COMBINED'}
-              value="COMBINED"
-              onChange={() => setResolutionType('COMBINED')}
-              disabled={isSubmitting}
-            />
-            <span className="label-text">Combined (experimental)</span>
-          </label>
-        </Row>
-
-        {resolutionType === 'COMBINED' && (
+      {outcomeType === 'BINARY' && (
+        <div>
+          <Spacer h={4} />
           <div className="form-control mb-1 items-start">
-            <label className="label mb-1 gap-2">
-              <span>Question resolves automatically as:</span>
-              <InfoTooltip text="The market will be resolved as ... on this date (local timezone)." />
+            <label className="label mt-1 gap-2">
+              <span>Resolution type</span>
+              <InfoTooltip text="Combined markets can be resolved manually but will be resolved automatically under given conditions." />
             </label>
-            <Row className={'w-full items-center gap-2'}>
-              <ChoicesToggleGroup
-                currentChoice={automaticResolution}
-                setChoice={setAutomaticResolution}
-                choices={['YES', 'NO', 'MKT', 'CANCEL']}
-                titles={['YES', 'NO', 'PROB', 'N/A']}
-                isSubmitting={isSubmitting}
-              />
-            </Row>
-            <input
-              type={'date'}
-              className="input input-bordered mt-4"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) =>
-                setResolutionDate(
-                  dayjs(e.target.value).format('YYYY-MM-DDT23:59') || ''
-                )
-              }
-              min={Date.parse(closeDate??"")} // TODO: Fix: Market can be created with dates in the past
-              disabled={isSubmitting}
-              value={dayjs(resolutionDate).format('YYYY-MM-DD')}
-            />
-        </div>
-        )}
+            <Row className="form-control gap-2">
+              <label className="label cursor-pointer gap-2">
+                <input
+                  className="radio"
+                  type="radio"
+                  name="res"
+                  checked={resolutionType === 'MANUAL'}
+                  value="MANUAL"
+                  onChange={() => setResolutionType('MANUAL')}
+                  disabled={isSubmitting}
+                />
+                <span className="label-text">Manual</span>
+              </label>
 
-      </div>
+              <label className="label cursor-pointer gap-2">
+                <input
+                  className="radio"
+                  type="radio"
+                  name="res"
+                  checked={resolutionType === 'COMBINED'}
+                  value="COMBINED"
+                  onChange={() => setResolutionType('COMBINED')}
+                  disabled={isSubmitting}
+                />
+                <span className="label-text">Combined (experimental)</span>
+              </label>
+            </Row>
+          </div>
+
+          {resolutionType === 'COMBINED' && (
+            <div className="form-control mb-1 items-start">
+              <label className="label mb-1 gap-2">
+                <span>Question resolves automatically as:</span>
+                <InfoTooltip text="The market will be resolved automatically on this date (local timezone)." />
+              </label>
+              <Row className={'w-full items-center gap-2'}>
+                <ChoicesToggleGroup
+                  currentChoice={automaticResolution}
+                  setChoice={setAutomaticResolution}
+                  choices={['YES', 'NO', 'MKT', 'CANCEL']}
+                  titles={['YES', 'NO', 'PROB', 'N/A']}
+                  isSubmitting={isSubmitting}
+                />
+              </Row>
+              <input
+                type={'date'}
+                className="input input-bordered mt-4"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) =>
+                  setResolutionDate(
+                    dayjs(e.target.value).format('YYYY-MM-DDT23:59') || ''
+                  )
+                }
+                min={Date.parse(closeDate??"")} // TODO: Fix: Market can be created with dates in the past
+                disabled={isSubmitting}
+                value={dayjs(resolutionDate).format('YYYY-MM-DD')}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       <Spacer h={4} />
 
       <div className="form-control mb-1 items-start">
@@ -508,6 +515,6 @@ export function NewContract(props: { question: string; tag?: string }) {
           {isSubmitting ? 'Creating...' : 'Create market'}
         </button>
       </div>
-    </div>
+    </div> 
   )
 }
