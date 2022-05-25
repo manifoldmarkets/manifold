@@ -11,13 +11,14 @@ import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
 import { Row } from 'web/components/layout/row'
-import { MAX_DESCRIPTION_LENGTH, outcomeType, resolutionType } from 'common/contract'
+import { MAX_DESCRIPTION_LENGTH, outcomeType, resolution, resolutionType } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from 'common/util/object'
 import { CATEGORIES } from 'common/categories'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { CalculatorIcon } from '@heroicons/react/outline'
+import { write } from 'fs'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -65,6 +66,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [resolutionType, setResolutionType] = useState<resolutionType>('MANUAL')
+  const [automaticResolution, setAutomaticResolution] = useState<resolution>('YES')
   const [initialProb, setInitialProb] = useState(50)
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
@@ -89,8 +91,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   // const [anteError, setAnteError] = useState<string | undefined>()
   // By default, close the market a week from today
-  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DDT23:59')
-  const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
+  const [closeDate, setCloseDate] = useState<undefined | string>(weekFrom(dayjs()))
+  const [resolutionDate, setResolutionDate] = useState<undefined | string>(weekFrom(closeDate))
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -121,6 +123,10 @@ export function NewContract(props: { question: string; tag?: string }) {
         isFinite(max) &&
         min < max &&
         max - min > 0.01))
+
+  function weekFrom(date: string | dayjs.Dayjs | undefined) {
+    return dayjs(date).add(7, 'day').format('YYYY-MM-DDT23:59')
+  }
 
   function setCloseDateInDays(days: number) {
     setShowCalendar(days === 0)
@@ -367,36 +373,71 @@ export function NewContract(props: { question: string; tag?: string }) {
       </div>
 
       <Spacer h={4} />
-      <label className="label mt-1">
-        <span className="my-1">Resolution type</span>
-      </label>
-      <Row className="form-control gap-2">
-        <label className="label cursor-pointer gap-2">
-          <input
-            className="radio"
-            type="radio"
-            name="res"
-            checked={resolutionType === 'MANUAL'}
-            value="MANUAL"
-            onChange={() => setResolutionType('MANUAL')}
-            disabled={isSubmitting}
-          />
-          <span className="label-text">Manual</span>
+      <div className="form-control mb-1 items-start">
+        <label className="label mt-1 gap-2">
+          <span>Resolution type</span>
+          <InfoTooltip text="Combined markets can be resolved manually but will be resolved automatically under given conditions." />
         </label>
+        <Row className="form-control gap-2">
+          <label className="label cursor-pointer gap-2">
+            <input
+              className="radio"
+              type="radio"
+              name="res"
+              checked={resolutionType === 'MANUAL'}
+              value="MANUAL"
+              onChange={() => setResolutionType('MANUAL')}
+              disabled={isSubmitting}
+            />
+            <span className="label-text">Manual</span>
+          </label>
 
-        <label className="label cursor-pointer gap-2">
-          <input
-            className="radio"
-            type="radio"
-            name="res"
-            checked={resolutionType === 'COMBINED'}
-            value="COMBINED"
-            onChange={() => setResolutionType('COMBINED')}
-            disabled={isSubmitting}
-          />
-          <span className="label-text">Combined (experimental)</span>
-        </label>
-      </Row>
+          <label className="label cursor-pointer gap-2">
+            <input
+              className="radio"
+              type="radio"
+              name="res"
+              checked={resolutionType === 'COMBINED'}
+              value="COMBINED"
+              onChange={() => setResolutionType('COMBINED')}
+              disabled={isSubmitting}
+            />
+            <span className="label-text">Combined (experimental)</span>
+          </label>
+        </Row>
+
+        {resolutionType === 'COMBINED' && (
+          <div className="form-control mb-1 items-start">
+            <label className="label mb-1 gap-2">
+              <span>Question resolves automatically as:</span>
+              <InfoTooltip text="The market will be resolved as ... on this date (local timezone)." />
+            </label>
+            <Row className={'w-full items-center gap-2'}>
+              <ChoicesToggleGroup
+                currentChoice={automaticResolution}
+                setChoice={setAutomaticResolution}
+                choices={['YES', 'NO', 'MKT', 'CANCEL']}
+                titles={['YES', 'NO', 'PROB', 'N/A']}
+                isSubmitting={isSubmitting}
+              />
+            </Row>
+            <input
+              type={'date'}
+              className="input input-bordered mt-4"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) =>
+                setResolutionDate(
+                  dayjs(e.target.value).format('YYYY-MM-DDT23:59') || ''
+                )
+              }
+              min={Date.parse(closeDate??"")} // TODO: Fix: Market can be created with dates in the past
+              disabled={isSubmitting}
+              value={dayjs(resolutionDate).format('YYYY-MM-DD')}
+            />
+        </div>
+        )}
+
+      </div>
       <Spacer h={4} />
 
       <div className="form-control mb-1 items-start">
