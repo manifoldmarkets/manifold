@@ -102,12 +102,10 @@ function NumericBuyPanel(props: {
   const betDisabled = isSubmitting || !betAmount || !bucketChoice || error
 
   const { newBet, newPool, newTotalShares, newTotalBets } = getNumericBetsInfo(
-    { id: 'dummy', balance: 0 } as User, // a little hackish
     value ?? 0,
     bucketChoice ?? 'NaN',
     betAmount ?? 0,
-    contract,
-    'dummy id'
+    contract
   )
 
   const { probAfter: outcomeProb, shares } = newBet
