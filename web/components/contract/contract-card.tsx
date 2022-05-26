@@ -6,7 +6,6 @@ import {
   Contract,
   contractPath,
   getBinaryProbPercent,
-  listenForContract,
 } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
@@ -26,8 +25,7 @@ import {
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
 import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-import { useEffect, useState } from 'react'
-import { QuickBet, QuickOutcomeView, ProbBar, getColor } from './quick-bet'
+import { QuickBet, ProbBar, getColor } from './quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 
 export function ContractCard(props: {
@@ -39,6 +37,7 @@ export function ContractCard(props: {
   const { showHotVolume, showCloseTime, className } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
+  const { resolution } = contract
 
   const marketClosed = (contract.closeTime || Infinity) < Date.now()
   const showQuickBet = !(
@@ -54,7 +53,7 @@ export function ContractCard(props: {
           className
         )}
       >
-        <Row className={clsx(showQuickBet ? 'divide-x' : '')}>
+        <Row>
           <Col className="relative flex-1 gap-3 pr-1">
             <div
               className={clsx(
@@ -69,18 +68,25 @@ export function ContractCard(props: {
             </div>
             <AvatarDetails contract={contract} />
             <p
-              className="break-words font-medium text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
+              className="break-words font-semibold text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
               style={{ /* For iOS safari */ wordBreak: 'break-word' }}
             >
               {question}
             </p>
 
-            {outcomeType === 'FREE_RESPONSE' && (
-              <FreeResponseTopAnswer
-                contract={contract as FullContract<DPM, FreeResponse>}
-                truncate="long"
-              />
-            )}
+            {outcomeType === 'FREE_RESPONSE' &&
+              (resolution ? (
+                <FreeResponseOutcomeLabel
+                  contract={contract as FreeResponseContract}
+                  resolution={resolution}
+                  truncate={'long'}
+                />
+              ) : (
+                <FreeResponseTopAnswer
+                  contract={contract as FullContract<DPM, FreeResponse>}
+                  truncate="long"
+                />
+              ))}
 
             <MiscDetails
               contract={contract}
@@ -92,11 +98,31 @@ export function ContractCard(props: {
             <QuickBet contract={contract} />
           ) : (
             <Col className="m-auto pl-2">
-              <QuickOutcomeView contract={contract} />
+              {outcomeType === 'BINARY' && (
+                <BinaryResolutionOrChance
+                  className="items-center"
+                  contract={contract}
+                />
+              )}
+
+              {outcomeType === 'NUMERIC' && (
+                <NumericResolutionOrExpectation
+                  className="items-center"
+                  contract={contract as NumericContract}
+                />
+              )}
+
+              {outcomeType === 'FREE_RESPONSE' && (
+                <FreeResponseResolutionOrChance
+                  className="self-end text-gray-600"
+                  contract={contract as FullContract<DPM, FreeResponse>}
+                  truncate="long"
+                />
+              )}
+              <ProbBar contract={contract} />
             </Col>
           )}
         </Row>
-        <ProbBar contract={contract} />
       </Col>
     </div>
   )
@@ -106,9 +132,8 @@ export function BinaryResolutionOrChance(props: {
   contract: FullContract<DPM | CPMM, Binary>
   large?: boolean
   className?: string
-  hideText?: boolean
 }) {
-  const { contract, large, className, hideText } = props
+  const { contract, large, className } = props
   const { resolution } = contract
   const textColor = `text-${getColor(contract)}`
 
@@ -129,11 +154,9 @@ export function BinaryResolutionOrChance(props: {
       ) : (
         <>
           <div className={textColor}>{getBinaryProbPercent(contract)}</div>
-          {!hideText && (
-            <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
-              chance
-            </div>
-          )}
+          <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
+            chance
+          </div>
         </>
       )}
     </Col>
@@ -162,9 +185,8 @@ export function FreeResponseResolutionOrChance(props: {
   contract: FreeResponseContract
   truncate: 'short' | 'long' | 'none'
   className?: string
-  hideText?: boolean
 }) {
-  const { contract, truncate, className, hideText } = props
+  const { contract, truncate, className } = props
   const { resolution } = contract
 
   const topAnswer = getTopAnswer(contract)
@@ -174,13 +196,17 @@ export function FreeResponseResolutionOrChance(props: {
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
       {resolution ? (
         <>
-          <div className={clsx('text-base text-gray-500')}>Resolved</div>
-          <FreeResponseOutcomeLabel
-            contract={contract}
-            resolution={resolution}
-            truncate={truncate}
-            answerClassName="text-xl"
-          />
+          <div className={clsx('text-base text-gray-500 sm:hidden')}>
+            Resolved
+          </div>
+          {(resolution === 'CANCEL' || resolution === 'MKT') && (
+            <FreeResponseOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+              truncate={truncate}
+              answerClassName="text-3xl uppercase text-blue-500"
+            />
+          )}
         </>
       ) : (
         topAnswer && (
@@ -189,7 +215,7 @@ export function FreeResponseResolutionOrChance(props: {
               <div>
                 {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
               </div>
-              {!hideText && <div className="text-base">chance</div>}
+              <div className="text-base">chance</div>
             </Col>
           </Row>
         )
@@ -201,9 +227,8 @@ export function FreeResponseResolutionOrChance(props: {
 export function NumericResolutionOrExpectation(props: {
   contract: NumericContract
   className?: string
-  hideText?: boolean
 }) {
-  const { contract, className, hideText } = props
+  const { contract, className } = props
   const { resolution } = contract
   const textColor = `text-${getColor(contract)}`
 
@@ -222,9 +247,7 @@ export function NumericResolutionOrExpectation(props: {
           <div className={clsx('text-3xl', textColor)}>
             {formatLargeNumber(getExpectedValue(contract))}
           </div>
-          {!hideText && (
-            <div className={clsx('text-base', textColor)}>expected</div>
-          )}
+          <div className={clsx('text-base', textColor)}>expected</div>
         </>
       )}
     </Col>
