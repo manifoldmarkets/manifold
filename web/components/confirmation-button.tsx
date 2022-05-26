@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
@@ -20,7 +20,7 @@ export function ConfirmationButton(props: {
     className?: string
   }
   onSubmit: () => void
-  children: any
+  children: ReactNode
 }) {
   const { id, openModalBtn, cancelBtn, submitBtn, onSubmit, children } = props
 

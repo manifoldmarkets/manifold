@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export const SiteLink = (props: {
   href: string
-  children?: any
+  children?: ReactNode
   onClick?: () => void
   className?: string
 }) => {
