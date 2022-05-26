@@ -21,7 +21,7 @@ export function CopyLinkDateTimeComponent(props: {
     event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
   ) {
     event.preventDefault()
-    let elementLocation = `https://${ENV_CONFIG.domain}${contractPath(
+    const elementLocation = `https://${ENV_CONFIG.domain}${contractPath(
       contract
     )}#${elementId}`
 

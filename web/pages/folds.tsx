@@ -63,7 +63,7 @@ export default function Folds(props: {
   const [query, setQuery] = useState('')
   // Copied from contracts-list.tsx; extract if we copy this again
   const queryWords = query.toLowerCase().split(' ')
-  function check(corpus: String) {
+  function check(corpus: string) {
     return queryWords.every((word) => corpus.toLowerCase().includes(word))
   }
 
