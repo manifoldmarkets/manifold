@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { RefreshIcon } from '@heroicons/react/outline'
 import Router from 'next/router'
 
@@ -21,7 +21,7 @@ import Textarea from 'react-expanding-textarea'
 
 function EditUserField(props: {
   user: User
-  field: 'bio' | 'bannerUrl' | 'twitterHandle' | 'discordHandle'
+  field: 'bio' | 'website' | 'bannerUrl' | 'twitterHandle' | 'discordHandle'
   label: string
 }) {
   const { user, field, label } = props
@@ -220,18 +220,15 @@ export default function ProfilePage() {
                 }}
               />
 
-              {[
-                ['bio', 'Bio'],
-                ['website', 'Website URL'],
-                ['twitterHandle', 'Twitter'],
-                ['discordHandle', 'Discord'],
-              ].map(([field, label]) => (
-                <EditUserField
-                  user={user}
-                  // @ts-ignore
-                  field={field}
-                  label={label}
-                />
+              {(
+                [
+                  ['bio', 'Bio'],
+                  ['website', 'Website URL'],
+                  ['twitterHandle', 'Twitter'],
+                  ['discordHandle', 'Discord'],
+                ] as const
+              ).map(([field, label]) => (
+                <EditUserField user={user} field={field} label={label} />
               ))}
             </>
           )}

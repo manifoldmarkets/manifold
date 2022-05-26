@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { ReactNode } from 'react'
 import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
@@ -156,7 +157,7 @@ export function AnswerLabel(props: {
 
 function FreeResponseAnswerToolTip(props: {
   text: string
-  children?: React.ReactNode
+  children?: ReactNode
 }) {
   const { text } = props
   return (

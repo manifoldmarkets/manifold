@@ -343,7 +343,7 @@ function groupBetsAndComments(
 
   // iterate through the bets and comment activity items and add them to the items in order of comment creation time:
   const unorderedBetsAndComments = [...commentsWithoutBets, ...groupedBets]
-  let sortedBetsAndComments = sortBy(unorderedBetsAndComments, (item) => {
+  const sortedBetsAndComments = sortBy(unorderedBetsAndComments, (item) => {
     if (item.type === 'comment') {
       return item.comment.createdTime
     } else if (item.type === 'bet') {
@@ -540,7 +540,7 @@ export function getSpecificContractActivityItems(
   }
 ) {
   const { mode } = options
-  let items = [] as ActivityItem[]
+  const items = [] as ActivityItem[]
 
   switch (mode) {
     case 'bets':
@@ -559,7 +559,7 @@ export function getSpecificContractActivityItems(
       )
       break
 
-    case 'comments':
+    case 'comments': {
       const nonFreeResponseComments = comments.filter((comment) =>
         commentIsGeneralComment(comment, contract)
       )
@@ -585,6 +585,7 @@ export function getSpecificContractActivityItems(
         ),
       })
       break
+    }
     case 'free-response-comment-answer-groups':
       items.push(
         ...getAnswerAndCommentInputGroups(
