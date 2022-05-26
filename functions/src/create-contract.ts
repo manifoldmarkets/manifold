@@ -88,9 +88,11 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     throw new APIError(400, 'Invalid initial probability')
 
   // Uses utc time on server:
-  const yesterday = new Date()
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1)
-  const freeMarketResetTime = yesterday.setUTCHours(16, 0, 0, 0)
+  const today = new Date()
+  let freeMarketResetTime = today.setUTCHours(16, 0, 0, 0)
+  if (today.getTime() < freeMarketResetTime) {
+    freeMarketResetTime = freeMarketResetTime - 24 * 60 * 60 * 1000
+  }
 
   const userContractsCreatedTodaySnapshot = await firestore
     .collection(`contracts`)
