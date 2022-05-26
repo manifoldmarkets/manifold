@@ -20,6 +20,7 @@ import {
 import {
   AnswerLabel,
   BinaryContractOutcomeLabel,
+  CancelLabel,
   FreeResponseOutcomeLabel,
 } from '../outcome-label'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
@@ -240,7 +241,12 @@ export function NumericResolutionOrExpectation(props: {
       {resolution ? (
         <>
           <div className={clsx('text-base text-gray-500')}>Resolved</div>
-          <div className="text-blue-400">{resolutionValue}</div>
+
+          {resolution === 'CANCEL' ? (
+            <CancelLabel />
+          ) : (
+            <div className="text-blue-400">{resolutionValue}</div>
+          )}
         </>
       ) : (
         <>

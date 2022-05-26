@@ -18,18 +18,25 @@ import {
   Multi,
   NumericContract,
 } from './contract'
-import { User } from './user'
 import { noFees } from './fees'
 import { addObjects } from './util/object'
 import { NUMERIC_FIXED_VAR } from './numeric-constants'
 
+export type CandidateBet<T extends Bet> = Omit<T, 'id' | 'userId'>
+export type BetInfo = {
+  newBet: CandidateBet<Bet>
+  newPool?: { [outcome: string]: number }
+  newTotalShares?: { [outcome: string]: number }
+  newTotalBets?: { [outcome: string]: number }
+  newTotalLiquidity?: number
+  newP?: number
+}
+
 export const getNewBinaryCpmmBetInfo = (
-  user: User,
   outcome: 'YES' | 'NO',
   amount: number,
   contract: FullContract<CPMM, Binary>,
-  loanAmount: number,
-  newBetId: string
+  loanAmount: number
 ) => {
   const { shares, newPool, newP, fees } = calculateCpmmPurchase(
     contract,
@@ -37,15 +44,11 @@ export const getNewBinaryCpmmBetInfo = (
     outcome
   )
 
-  const newBalance = user.balance - (amount - loanAmount)
-
   const { pool, p, totalLiquidity } = contract
   const probBefore = getCpmmProbability(pool, p)
   const probAfter = getCpmmProbability(newPool, newP)
 
-  const newBet: Bet = {
-    id: newBetId,
-    userId: user.id,
+  const newBet: CandidateBet<Bet> = {
     contractId: contract.id,
     amount,
     shares,
@@ -60,16 +63,14 @@ export const getNewBinaryCpmmBetInfo = (
   const { liquidityFee } = fees
   const newTotalLiquidity = (totalLiquidity ?? 0) + liquidityFee
 
-  return { newBet, newPool, newP, newBalance, newTotalLiquidity, fees }
+  return { newBet, newPool, newP, newTotalLiquidity }
 }
 
 export const getNewBinaryDpmBetInfo = (
-  user: User,
   outcome: 'YES' | 'NO',
   amount: number,
   contract: FullContract<DPM, Binary>,
-  loanAmount: number,
-  newBetId: string
+  loanAmount: number
 ) => {
   const { YES: yesPool, NO: noPool } = contract.pool
 
@@ -97,9 +98,7 @@ export const getNewBinaryDpmBetInfo = (
   const probBefore = getDpmProbability(contract.totalShares)
   const probAfter = getDpmProbability(newTotalShares)
 
-  const newBet: Bet = {
-    id: newBetId,
-    userId: user.id,
+  const newBet: CandidateBet<Bet> = {
     contractId: contract.id,
     amount,
     loanAmount,
@@ -111,18 +110,14 @@ export const getNewBinaryDpmBetInfo = (
     fees: noFees,
   }
 
-  const newBalance = user.balance - (amount - loanAmount)
-
-  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+  return { newBet, newPool, newTotalShares, newTotalBets }
 }
 
 export const getNewMultiBetInfo = (
-  user: User,
   outcome: string,
   amount: number,
   contract: FullContract<DPM, Multi | FreeResponse>,
-  loanAmount: number,
-  newBetId: string
+  loanAmount: number
 ) => {
   const { pool, totalShares, totalBets } = contract
 
@@ -140,9 +135,7 @@ export const getNewMultiBetInfo = (
   const probBefore = getDpmOutcomeProbability(totalShares, outcome)
   const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
 
-  const newBet: Bet = {
-    id: newBetId,
-    userId: user.id,
+  const newBet: CandidateBet<Bet> = {
     contractId: contract.id,
     amount,
     loanAmount,
@@ -154,18 +147,14 @@ export const getNewMultiBetInfo = (
     fees: noFees,
   }
 
-  const newBalance = user.balance - (amount - loanAmount)
-
-  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+  return { newBet, newPool, newTotalShares, newTotalBets }
 }
 
 export const getNumericBetsInfo = (
-  user: User,
   value: number,
   outcome: string,
   amount: number,
-  contract: NumericContract,
-  newBetId: string
+  contract: NumericContract
 ) => {
   const { pool, totalShares, totalBets } = contract
 
@@ -187,9 +176,7 @@ export const getNumericBetsInfo = (
   const probBefore = getDpmOutcomeProbability(totalShares, outcome)
   const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
 
-  const newBet: NumericBet = {
-    id: newBetId,
-    userId: user.id,
+  const newBet: CandidateBet<NumericBet> = {
     contractId: contract.id,
     value,
     amount,
@@ -203,9 +190,7 @@ export const getNumericBetsInfo = (
     fees: noFees,
   }
 
-  const newBalance = user.balance - amount
-
-  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+  return { newBet, newPool, newTotalShares, newTotalBets }
 }
 
 export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {

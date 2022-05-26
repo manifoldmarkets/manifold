@@ -2,8 +2,8 @@ import { ReactNode } from 'react'
 
 export const JoinSpans = (props: {
   children: ReactNode[]
-  separator?: JSX.Element | string
-}): JSX.Element => {
+  separator?: ReactNode
+}) => {
   const { separator } = props
   const children = props.children.filter((x) => !!x)
 

@@ -1,5 +1,5 @@
-import { ReactNode } from 'react'
 import clsx from 'clsx'
+import { ReactNode } from 'react'
 import { BottomNavBar } from './nav/nav-bar'
 import Sidebar from './nav/sidebar'
 import { Toaster } from 'react-hot-toast'
@@ -7,7 +7,7 @@ import { Toaster } from 'react-hot-toast'
 export function Page(props: {
   margin?: boolean
   assertUser?: 'signed-in' | 'signed-out'
-  rightSidebar?: React.ReactNode
+  rightSidebar?: ReactNode
   suspend?: boolean
   children?: ReactNode
 }) {

@@ -49,7 +49,8 @@ export function QuickBet(props: { contract: Contract }) {
     userBets,
     topAnswer?.number.toString() || undefined
   )
-  const hasUpShares = yesFloorShares || contract.outcomeType === 'NUMERIC'
+  const hasUpShares =
+    yesFloorShares || (noFloorShares && contract.outcomeType === 'NUMERIC')
   const hasDownShares =
     noFloorShares && yesFloorShares <= 0 && contract.outcomeType !== 'NUMERIC'
 
@@ -228,12 +229,13 @@ function QuickOutcomeView(props: {
     case 'NUMERIC':
       display = formatLargeNumber(getExpectedValue(contract as NumericContract))
       break
-    case 'FREE_RESPONSE':
+    case 'FREE_RESPONSE': {
       const topAnswer = getTopAnswer(contract as FreeResponseContract)
       display =
         topAnswer &&
         formatPercent(getOutcomeProbability(contract, topAnswer.id))
       break
+    }
   }
 
   return (

@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin'
 import * as functions from 'firebase-functions'
 import * as Cors from 'cors'
+import { z } from 'zod'
 
 import { User, PrivateUser } from '../../common/user'
 import {
@@ -8,10 +9,11 @@ import {
   CORS_ORIGIN_LOCALHOST,
 } from '../../common/envs/constants'
 
+type Output = Record<string, unknown>
 type Request = functions.https.Request
 type Response = functions.Response
-type Handler = (req: Request, res: Response) => Promise<any>
 type AuthedUser = [User, PrivateUser]
+type Handler = (req: Request, user: AuthedUser) => Promise<Output>
 type JwtCredentials = { kind: 'jwt'; data: admin.auth.DecodedIdToken }
 type KeyCredentials = { kind: 'key'; data: string }
 type Credentials = JwtCredentials | KeyCredentials
@@ -19,10 +21,13 @@ type Credentials = JwtCredentials | KeyCredentials
 export class APIError {
   code: number
   msg: string
-  constructor(code: number, msg: string) {
+  details: unknown
+  constructor(code: number, msg: string, details?: unknown) {
     this.code = code
     this.msg = msg
+    this.details = details
   }
+  toJson() {}
 }
 
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
@@ -40,14 +45,11 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
     case 'Bearer':
       try {
         const jwt = await admin.auth().verifyIdToken(payload)
-        if (!jwt.user_id) {
-          throw new APIError(403, 'JWT must contain Manifold user ID.')
-        }
         return { kind: 'jwt', data: jwt }
       } catch (err) {
         // This is somewhat suspicious, so get it into the firebase console
         functions.logger.error('Error verifying Firebase JWT: ', err)
-        throw new APIError(403, `Error validating token: ${err}.`)
+        throw new APIError(403, 'Error validating token.')
       }
     case 'Key':
       return { kind: 'key', data: payload }
@@ -63,6 +65,9 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
   switch (creds.kind) {
     case 'jwt': {
       const { user_id } = creds.data
+      if (typeof user_id !== 'string') {
+        throw new APIError(403, 'JWT must contain Manifold user ID.')
+      }
       const [userSnap, privateUserSnap] = await Promise.all([
         users.doc(user_id).get(),
         privateUsers.doc(user_id).get(),
@@ -109,6 +114,27 @@ export const applyCors = (
   })
 }
 
+export const zTimestamp = () => {
+  return z.preprocess((arg) => {
+    return typeof arg == 'number' ? new Date(arg) : undefined
+  }, z.date())
+}
+
+export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
+  const result = schema.safeParse(val)
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => {
+      return {
+        field: i.path.join('.') || null,
+        error: i.message,
+      }
+    })
+    throw new APIError(400, 'Error validating request.', issues)
+  } else {
+    return result.data as z.infer<T>
+  }
+}
+
 export const newEndpoint = (methods: [string], fn: Handler) =>
   functions.runWith({ minInstances: 1 }).https.onRequest(async (req, res) => {
     await applyCors(req, res, {
@@ -120,12 +146,17 @@ export const newEndpoint = (methods: [string], fn: Handler) =>
         const allowed = methods.join(', ')
         throw new APIError(405, `This endpoint supports only ${allowed}.`)
       }
-      res.status(200).json(await fn(req, res))
+      const authedUser = await lookupUser(await parseCredentials(req))
+      res.status(200).json(await fn(req, authedUser))
     } catch (e) {
       if (e instanceof APIError) {
-        // Emit a 200 anyway here for now, for backwards compatibility
-        res.status(e.code).json({ message: e.msg })
+        const output: { [k: string]: unknown } = { message: e.msg }
+        if (e.details != null) {
+          output.details = e.details
+        }
+        res.status(e.code).json(output)
       } else {
+        functions.logger.error(e)
         res.status(500).json({ message: 'An unknown error occurred.' })
       }
     }
