@@ -33,8 +33,12 @@ import { useSaveShares } from '../use-save-shares'
 
 const BET_SIZE = 10
 
-export function QuickBet(props: { contract: Contract }) {
-  const { contract } = props
+export function QuickBet(props: {
+  contract: Contract
+  className?: string
+  showBar?: boolean
+}) {
+  const { contract, className, showBar } = props
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
@@ -116,9 +120,10 @@ export function QuickBet(props: { contract: Contract }) {
   return (
     <Col
       className={clsx(
-        'relative -my-4 -mr-5 min-w-[5.5rem] justify-center gap-2 pr-5 pl-1 align-middle'
+        'relative -mr-5 min-w-[5.5rem] justify-center gap-2 pr-5 pl-1 align-middle',
         // Use this for colored QuickBet panes
         // `bg-opacity-10 bg-${color}`
+        className
       )}
     >
       {/* Up bet triangle */}
@@ -150,7 +155,11 @@ export function QuickBet(props: { contract: Contract }) {
         )}
       </div>
 
-      <QuickOutcomeView contract={contract} previewProb={previewProb} />
+      <QuickOutcomeView
+        contract={contract}
+        previewProb={previewProb}
+        showBar={showBar}
+      />
 
       {/* Down bet triangle */}
       <div>
@@ -213,8 +222,9 @@ function QuickOutcomeView(props: {
   contract: Contract
   previewProb?: number
   caption?: 'chance' | 'expected'
+  showBar?: boolean
 }) {
-  const { contract, previewProb, caption } = props
+  const { contract, previewProb, caption, showBar } = props
   const { outcomeType } = contract
   // If there's a preview prob, display that instead of the current prob
   const override =
@@ -242,7 +252,7 @@ function QuickOutcomeView(props: {
     <Col className={clsx('items-center text-3xl', textColor)}>
       {override ?? display}
       {caption && <div className="text-base">{caption}</div>}
-      <ProbBar contract={contract} previewProb={previewProb} />
+      {showBar && <ProbBar contract={contract} previewProb={previewProb} />}
     </Col>
   )
 }

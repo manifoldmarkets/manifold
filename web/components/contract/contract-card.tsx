@@ -96,7 +96,7 @@ export function ContractCard(props: {
             />
           </Col>
           {showQuickBet ? (
-            <QuickBet contract={contract} />
+            <QuickBet contract={contract} className="-my-4" showBar />
           ) : (
             <Col className="m-auto pl-2">
               {outcomeType === 'BINARY' && (

@@ -8,16 +8,13 @@ import {
   NumericContract,
 } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
+import { useEffect } from 'react'
 import { AnswersGraph } from 'web/components/answers/answers-graph'
 import BetRow from 'web/components/bet-row'
-import {
-  BinaryResolutionOrChance,
-  FreeResponseResolutionOrChance,
-  NumericResolutionOrExpectation,
-} from 'web/components/contract/contract-card'
 import { ContractDetails } from 'web/components/contract/contract-details'
 import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
 import { NumericGraph } from 'web/components/contract/numeric-graph'
+import { QuickBet } from 'web/components/contract/quick-bet'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
@@ -114,31 +111,16 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
             isCreator={false}
             disabled
           />
-
-          {isBinary && (
-            <Row className="items-center gap-4">
+          <Row className="items-center gap-4">
+            {isBinary && (
               <BetRow
                 contract={contract as BinaryContract}
                 betPanelClassName="scale-75"
               />
-              <BinaryResolutionOrChance contract={contract} />
-            </Row>
-          )}
-
-          {outcomeType === 'FREE_RESPONSE' && (
-            <FreeResponseResolutionOrChance
-              contract={contract}
-              truncate="long"
-            />
-          )}
-
-          {outcomeType === 'NUMERIC' && (
-            <NumericResolutionOrExpectation
-              contract={contract as NumericContract}
-            />
-          )}
+            )}
+            <QuickBet contract={contract} />
+          </Row>
         </Row>
-
         <Spacer h={2} />
       </div>
 
