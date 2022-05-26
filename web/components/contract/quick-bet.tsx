@@ -49,7 +49,8 @@ export function QuickBet(props: { contract: Contract }) {
     userBets,
     topAnswer?.number.toString() || undefined
   )
-  const hasUpShares = yesFloorShares || contract.outcomeType === 'NUMERIC'
+  const hasUpShares =
+    yesFloorShares || (noFloorShares && contract.outcomeType === 'NUMERIC')
   const hasDownShares =
     noFloorShares && yesFloorShares <= 0 && contract.outcomeType !== 'NUMERIC'
 
