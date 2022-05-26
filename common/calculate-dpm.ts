@@ -170,7 +170,7 @@ export function calculateNumericDpmShares(
     ([amount]) => amount
   ).map(([, i]) => i)
 
-  for (let i of order) {
+  for (const i of order) {
     const [bucket, bet] = bets[i]
     shares[i] = calculateDpmShares(totalShares, bet, bucket)
     totalShares = addObjects(totalShares, { [bucket]: shares[i] })

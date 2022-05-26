@@ -54,7 +54,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   )
   activeContracts = [...unresolved, ...resolved]
 
-  const creatorScores = scoreCreators(contracts, bets)
+  const creatorScores = scoreCreators(contracts)
   const traderScores = scoreTraders(contracts, bets)
   const [topCreators, topTraders] = await Promise.all([
     toTopUsers(creatorScores),

@@ -5,13 +5,13 @@ import { THEOREMONE_CONFIG } from './theoremone'
 
 export const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 
-const CONFIGS = {
+const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
   THEOREMONE: THEOREMONE_CONFIG,
 }
-// @ts-ignore
-export const ENV_CONFIG: EnvConfig = CONFIGS[ENV]
+
+export const ENV_CONFIG = CONFIGS[ENV]
 
 export function isWhitelisted(email?: string) {
   if (!ENV_CONFIG.whitelistEmail) {
