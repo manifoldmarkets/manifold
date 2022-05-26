@@ -1,4 +1,4 @@
-import {ReactNode} from 'react'
+import { ReactNode } from 'react'
 import clsx from 'clsx'
 import { BottomNavBar } from './nav/nav-bar'
 import Sidebar from './nav/sidebar'

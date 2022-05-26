@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import {ReactNode} from 'react'
+import { ReactNode } from 'react'
 
 export function Row(props: {
   children?: ReactNode

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, {ReactNode} from 'react'
+import React, { ReactNode } from 'react'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import {ReactNode} from 'react'
+import { ReactNode } from 'react'
 
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
