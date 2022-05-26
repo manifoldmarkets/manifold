@@ -27,6 +27,7 @@ import { getValue, getValues, listenForValue, listenForValues } from './utils'
 import { DAY_MS } from 'common/util/time'
 import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
+import { safeLocalStorage } from '../util/local'
 
 export type { User }
 
@@ -86,8 +87,9 @@ let createUserPromise: Promise<User | null> | undefined = undefined
 const warmUpCreateUser = throttle(createUser, 5000 /* ms */)
 
 export function listenForLogin(onUser: (user: User | null) => void) {
-  const cachedUser = localStorage.getItem(CACHED_USER_KEY)
-  onUser(cachedUser ? JSON.parse(cachedUser) : null)
+  const local = safeLocalStorage()
+  const cachedUser = local?.getItem(CACHED_USER_KEY)
+  onUser(cachedUser && JSON.parse(cachedUser))
 
   if (!cachedUser) warmUpCreateUser()
 
@@ -106,11 +108,11 @@ export function listenForLogin(onUser: (user: User | null) => void) {
 
       // Persist to local storage, to reduce login blink next time.
       // Note: Cap on localStorage size is ~5mb
-      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(user))
+      local?.setItem(CACHED_USER_KEY, JSON.stringify(user))
     } else {
       // User logged out; reset to null
       onUser(null)
-      localStorage.removeItem(CACHED_USER_KEY)
+      local?.removeItem(CACHED_USER_KEY)
       createUserPromise = undefined
     }
   })
