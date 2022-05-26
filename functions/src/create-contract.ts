@@ -12,6 +12,7 @@ import {
   MAX_TAG_LENGTH,
   Numeric,
   OUTCOME_TYPES,
+  RESOLUTIONS,
   RESOLUTION_TYPES
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
@@ -46,6 +47,8 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     max,
     manaLimitPerUser,
     resolutionType,
+    automaticResolution,
+    automaticResolutionTime
   } = req.body || {}
 
   if (!question || typeof question != 'string')
@@ -93,6 +96,17 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
 
   if (!RESOLUTION_TYPES.includes(resolutionType))
   throw new APIError(400, 'Invalid resolutionType')
+
+  automaticResolution = automaticResolution ?? 'MANUAL'
+
+  if (!RESOLUTIONS.includes(automaticResolution))
+  throw new APIError(400, 'Invalid automaticResolution')
+
+  if (automaticResolution === 'MANUAL' && automaticResolutionTime)
+  throw new APIError(400, 'automaticResolutionTime specified even tho automaticResolution is \'MANUAL\'')
+
+  if (automaticResolutionTime && automaticResolutionTime < closeTime)
+  throw new APIError(400, 'resolutionTime < closeTime')
 
   // Uses utc time on server:
   const yesterday = new Date()
@@ -143,6 +157,8 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     closeTime,
     tags ?? [],
     resolutionType,
+    automaticResolution,
+    automaticResolutionTime,
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0,

@@ -8,6 +8,7 @@ import {
   FreeResponse,
   Numeric,
   outcomeType,
+  resolution,
   resolutionType,
 } from './contract'
 import { User } from './user'
@@ -27,6 +28,8 @@ export function getNewContract(
   closeTime: number,
   extraTags: string[],
   resolutionType: resolutionType,
+  automaticResolution: resolution,
+  automaticResolutionTime: number,
 
   // used for numeric markets
   bucketCount: number,
@@ -64,8 +67,9 @@ export function getNewContract(
     isResolved: false,
     createdTime: Date.now(),
     closeTime,
-    resolutionType: 'manual',
-    resolution: undefined,
+    resolutionType,
+    automaticResolution,
+    automaticResolutionTime,
 
     volume: 0,
     volume24Hours: 0,

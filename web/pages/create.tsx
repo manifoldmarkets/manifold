@@ -11,7 +11,7 @@ import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
 import { Row } from 'web/components/layout/row'
-import { MAX_DESCRIPTION_LENGTH, outcomeType, resolution, resolutionType } from 'common/contract'
+import { MAX_DESCRIPTION_LENGTH, outcomeType, RESOLUTIONS, resolution, resolutionType } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from 'common/util/object'
@@ -66,7 +66,7 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [resolutionType, setResolutionType] = useState<resolutionType>('MANUAL')
-  const [automaticResolution, setAutomaticResolution] = useState<resolution>('YES')
+  const [automaticResolution, setAutomaticResolution] = useState<resolution>('CANCEL')
   const [initialProb, setInitialProb] = useState(50)
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
@@ -97,7 +97,7 @@ export function NewContract(props: { question: string; tag?: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const closeTime = closeDate ? dayjs(closeDate).valueOf() : undefined
-  const resolutionTime = resolutionDate ? dayjs(resolutionDate).valueOf() : undefined
+  const automaticResolutionTime = resolutionDate ? dayjs(resolutionDate).valueOf() : undefined
 
   const balance = creator?.balance || 0
 
@@ -154,7 +154,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           min,
           max,
           automaticResolution,
-          resolutionTime
+          automaticResolutionTime
         })
       )
       await router.push(contractPath(result as Contract))
@@ -422,7 +422,7 @@ export function NewContract(props: { question: string; tag?: string }) {
                 <ChoicesToggleGroup
                   currentChoice={automaticResolution}
                   setChoice={setAutomaticResolution}
-                  choices={['YES', 'NO', 'MKT', 'CANCEL']}
+                  choices={RESOLUTIONS}
                   titles={['YES', 'NO', 'PROB', 'N/A']}
                   isSubmitting={isSubmitting}
                 />

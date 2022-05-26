@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
 
-import { Contract } from '../../common/contract'
+import { Contract, RESOLUTIONS } from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, isProd, payUser } from './utils'
@@ -42,7 +42,7 @@ export const resolveMarket = functions
       const { creatorId, outcomeType, closeTime } = contract
 
       if (outcomeType === 'BINARY') {
-        if (!['YES', 'NO', 'MKT', 'CANCEL'].includes(outcome))
+        if (!RESOLUTIONS.includes(outcome))
           return { status: 'error', message: 'Invalid outcome' }
       } else if (outcomeType === 'FREE_RESPONSE') {
         if (
