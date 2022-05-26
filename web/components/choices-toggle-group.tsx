@@ -4,7 +4,7 @@ import clsx from 'clsx'
 export function ChoicesToggleGroup(props: {
   currentChoice: number | string
   setChoice: (p: any) => void //number | string does not work here because of SetStateAction in .tsx
-  choices: number[] | string[]
+  choices: (number | string)[]
   titles: string[]
   isSubmitting?: boolean
 }) {
