@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { RefreshIcon } from '@heroicons/react/outline'
 import Router from 'next/router'
 

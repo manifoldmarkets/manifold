@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 
+import React from 'react'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 

@@ -25,7 +25,7 @@ import {
   useHasCreatedContractToday,
 } from 'web/hooks/use-has-created-contract-today'
 import { Row } from '../layout/row'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
