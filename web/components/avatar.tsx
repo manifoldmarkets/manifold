@@ -1,5 +1,6 @@
 import Router from 'next/router'
 import clsx from 'clsx'
+import { MouseEvent } from 'react'
 import { UserCircleIcon } from '@heroicons/react/solid'
 
 export function Avatar(props: {
@@ -15,7 +16,7 @@ export function Avatar(props: {
   const onClick =
     noLink && username
       ? undefined
-      : (e: React.MouseEvent) => {
+      : (e: MouseEvent) => {
           e.stopPropagation()
           Router.push(`/${username}`)
         }
