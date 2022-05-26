@@ -2,6 +2,7 @@ import {ReactNode} from 'react'
 import clsx from 'clsx'
 import { BottomNavBar } from './nav/nav-bar'
 import Sidebar from './nav/sidebar'
+import { Toaster } from 'react-hot-toast'
 
 export function Page(props: {
   margin?: boolean
@@ -21,6 +22,7 @@ export function Page(props: {
         )}
         style={suspend ? visuallyHiddenStyle : undefined}
       >
+        <Toaster />
         <Sidebar className="sticky top-4 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:block" />
         <main
           className={clsx(

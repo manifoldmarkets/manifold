@@ -262,7 +262,7 @@ export const sendNewCommentEmail = async (
     return
 
   const { question, creatorUsername, slug } = contract
-  const marketUrl = `https://${DOMAIN}/${creatorUsername}/${slug}`
+  const marketUrl = `https://${DOMAIN}/${creatorUsername}/${slug}#${comment.id}`
 
   const unsubscribeUrl = `https://us-central1-${PROJECT_ID}.cloudfunctions.net/unsubscribe?id=${userId}&type=market-comment`
 

@@ -13,7 +13,7 @@ import {
   updateDoc,
   limit,
 } from 'firebase/firestore'
-import { range, sortBy } from 'lodash'
+import { range, sortBy, sum } from 'lodash'
 
 import { app } from './init'
 import { getValues, listenForValue, listenForValues } from './utils'
@@ -53,6 +53,14 @@ export function contractMetrics(contract: Contract) {
   const volumeLabel = `${formatMoney(contract.volume)} bet`
 
   return { volumeLabel, createdDate, resolvedDate }
+}
+
+export function contractPool(contract: Contract) {
+  return contract.mechanism === 'cpmm-1'
+    ? formatMoney(contract.totalLiquidity)
+    : contract.mechanism === 'dpm-2'
+    ? formatMoney(sum(Object.values(contract.pool)))
+    : 'Empty pool'
 }
 
 export function getBinaryProb(contract: FullContract<any, Binary>) {

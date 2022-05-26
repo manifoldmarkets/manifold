@@ -2974,6 +2974,11 @@ globby@^11.1.0:
     merge2 "^1.4.1"
     slash "^3.0.0"
 
+goober@^2.1.1:
+  version "2.1.9"
+  resolved "https://registry.yarnpkg.com/goober/-/goober-2.1.9.tgz#0faee08fab1a5d55b23e9ec043bb5a1b46fa025a"
+  integrity sha512-PAtnJbrWtHbfpJUIveG5PJIB6Mc9Kd0gimu9wZwPyA+wQUSeOeA4x4Ug16lyaaUUKZ/G6QEH1xunKOuXP1F4Vw==
+
 google-auth-library@^7.14.0, google-auth-library@^7.14.1:
   version "7.14.1"
   resolved "https://registry.yarnpkg.com/google-auth-library/-/google-auth-library-7.14.1.tgz#e3483034162f24cc71b95c8a55a210008826213c"
@@ -4500,6 +4505,13 @@ react-expanding-textarea@2.3.5:
     fast-shallow-equal "^1.0.0"
     react-with-forwarded-ref "^0.3.3"
     tslib "^2.0.3"
+
+react-hot-toast@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/react-hot-toast/-/react-hot-toast-2.2.0.tgz#ab6f4caed4214b9534f94bb8cfaaf21b051e62b9"
+  integrity sha512-248rXw13uhf/6TNDVzagX+y7R8J183rp7MwUMNkcrBRyHj/jWOggfXTGlM8zAOuh701WyVW+eUaWG2LeSufX9g==
+  dependencies:
+    goober "^2.1.1"
 
 react-instantsearch-hooks-web@6.24.1:
   version "6.24.1"

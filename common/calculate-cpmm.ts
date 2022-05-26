@@ -63,10 +63,8 @@ export function getCpmmLiquidityFee(
   bet: number,
   outcome: string
 ) {
-  const probBefore = getCpmmProbability(contract.pool, contract.p)
-  const probAfter = getCpmmProbabilityAfterBetBeforeFees(contract, outcome, bet)
-  const probMid = Math.sqrt(probBefore * probAfter)
-  const betP = outcome === 'YES' ? 1 - probMid : probMid
+  const prob = getCpmmProbabilityAfterBetBeforeFees(contract, outcome, bet)
+  const betP = outcome === 'YES' ? 1 - prob : prob
 
   const liquidityFee = LIQUIDITY_FEE * betP * bet
   const platformFee = PLATFORM_FEE * betP * bet

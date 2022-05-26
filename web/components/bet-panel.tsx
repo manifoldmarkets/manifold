@@ -14,7 +14,7 @@ import {
   formatWithCommas,
 } from 'common/util/format'
 import { Title } from './title'
-import { firebaseLogin, User } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api-call'
 import { sellShares } from 'web/lib/firebase/fn-call'
@@ -36,6 +36,7 @@ import {
 } from 'common/calculate-cpmm'
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
+import { SignUpPrompt } from './sign-up-prompt'
 
 export function BetPanel(props: {
   contract: FullContract<DPM | CPMM, Binary>
@@ -70,14 +71,7 @@ export function BetPanel(props: {
 
         <BuyPanel contract={contract} user={user} />
 
-        {user === null && (
-          <button
-            className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-            onClick={firebaseLogin}
-          >
-            Sign up to bet!
-          </button>
-        )}
+        <SignUpPrompt />
       </Col>
     </Col>
   )
@@ -183,14 +177,7 @@ export function BetPanelSwitcher(props: {
           />
         )}
 
-        {user === null && (
-          <button
-            className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-            onClick={firebaseLogin}
-          >
-            Sign up to bet!
-          </button>
-        )}
+        <SignUpPrompt />
       </Col>
     </Col>
   )

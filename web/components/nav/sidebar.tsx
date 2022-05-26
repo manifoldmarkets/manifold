@@ -127,10 +127,11 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
   const [countdown, setCountdown] = useState('...')
   useEffect(() => {
-    const utcMidnightToLocalDate = new Date(getUtcFreeMarketResetTime(false))
+    const nextUtcResetTime = getUtcFreeMarketResetTime(false)
     const interval = setInterval(() => {
-      const timeUntil = utcMidnightToLocalDate.getTime() - new Date().getTime()
-      const hoursUntil = 24 + timeUntil / 1000 / 60 / 60
+      const now = new Date().getTime()
+      let timeUntil = nextUtcResetTime - now
+      const hoursUntil = timeUntil / 1000 / 60 / 60
       const minutesUntil = Math.floor((hoursUntil * 60) % 60)
       const secondsUntil = Math.floor((hoursUntil * 60 * 60) % 60)
       const hoursUntilFloor = Math.floor(hoursUntil)
@@ -155,6 +156,12 @@ export default function Sidebar(props: { className?: string }) {
       : getNavigation(user?.username || 'error')
   const mobileNavigationOptions =
     user === null ? signedOutMobileNavigation : mobileNavigation
+
+  const gradient =
+    'from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700'
+
+  const buttonStyle =
+    'border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r py-2.5 text-base font-semibold text-white shadow-sm lg:-ml-0'
 
   return (
     <nav aria-label="Sidebar" className={className}>
@@ -194,14 +201,14 @@ export default function Sidebar(props: { className?: string }) {
       <div className={'aligncenter flex justify-center'}>
         {user ? (
           <Link href={'/create'} passHref>
-            <button className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700 lg:-ml-0">
+            <button className={clsx(gradient, buttonStyle)}>
               Ask a question
             </button>
           </Link>
         ) : (
           <button
             onClick={firebaseLogin}
-            className="border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 py-2.5 text-base font-semibold text-white shadow-sm hover:from-purple-700 hover:via-violet-700 hover:to-indigo-700 lg:-ml-0"
+            className={clsx(gradient, buttonStyle)}
           >
             Sign in
           </button>
@@ -213,7 +220,7 @@ export default function Sidebar(props: { className?: string }) {
       mustWaitForFreeMarketStatus ? (
         <Row className="mt-2 justify-center">
           <Row className="gap-1 text-sm text-gray-400">
-            Next free market in {countdown}
+            Next free question in {countdown}
           </Row>
         </Row>
       ) : (
@@ -222,7 +229,7 @@ export default function Sidebar(props: { className?: string }) {
         !mustWaitForFreeMarketStatus && (
           <Row className="mt-2 justify-center">
             <Row className="gap-1 text-sm text-indigo-400">
-              Daily free market
+              Daily free question
               <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
             </Row>
           </Row>
