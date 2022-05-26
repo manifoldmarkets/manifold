@@ -8,6 +8,7 @@ import {
 import { Bet } from 'common/bet'
 import { useEffect, useState } from 'react'
 import { partition, sumBy } from 'lodash'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useSaveShares = (
   contract: FullContract<CPMM | DPM, Binary | FreeResponseContract>,
@@ -39,18 +40,16 @@ export const useSaveShares = (
   const noFloorShares = Math.round(noShares) === 0 ? 0 : Math.floor(noShares)
 
   useEffect(() => {
+    const local = safeLocalStorage()
     // Save yes and no shares to local storage.
-    const savedShares = localStorage.getItem(`${contract.id}-shares`)
+    const savedShares = local?.getItem(`${contract.id}-shares`)
     if (!userBets && savedShares) {
       setSavedShares(JSON.parse(savedShares))
     }
 
     if (userBets) {
       const updatedShares = { yesShares, noShares }
-      localStorage.setItem(
-        `${contract.id}-shares`,
-        JSON.stringify(updatedShares)
-      )
+      local?.setItem(`${contract.id}-shares`, JSON.stringify(updatedShares))
     }
   }, [contract.id, userBets, noShares, yesShares])
 
