@@ -9,7 +9,7 @@ export function Page(props: {
   assertUser?: 'signed-in' | 'signed-out'
   rightSidebar?: ReactNode
   suspend?: boolean
-  children?: any
+  children?: ReactNode
 }) {
   const { margin, assertUser, children, rightSidebar, suspend } = props
 

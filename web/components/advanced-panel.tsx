@@ -1,7 +1,7 @@
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useState, ReactNode } from 'react'
 
-export function AdvancedPanel(props: { children: any }) {
+export function AdvancedPanel(props: { children: ReactNode }) {
   const { children } = props
   const [collapsed, setCollapsed] = useState(true)
 
