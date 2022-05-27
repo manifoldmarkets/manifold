@@ -5,6 +5,7 @@ import { User } from 'common/user'
 import { randomString } from 'common/util/random'
 import './init'
 import { functions } from './init'
+import { safeLocalStorage } from '../util/local'
 
 export const cloudFunction = <RequestData, ResponseData>(name: string) =>
   httpsCallable<RequestData, ResponseData>(functions, name)
@@ -48,10 +49,11 @@ export const resolveMarket = cloudFunction<
 >('resolveMarket')
 
 export const createUser: () => Promise<User | null> = () => {
-  let deviceToken = window.localStorage.getItem('device-token')
+  const local = safeLocalStorage()
+  let deviceToken = local?.getItem('device-token')
   if (!deviceToken) {
     deviceToken = randomString()
-    window.localStorage.setItem('device-token', deviceToken)
+    local?.setItem('device-token', deviceToken)
   }
 
   return cloudFunction('createUser')({ deviceToken })

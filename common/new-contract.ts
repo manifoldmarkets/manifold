@@ -1,5 +1,4 @@
 import { range } from 'lodash'
-import { PHANTOM_ANTE } from './antes'
 import {
   Binary,
   Contract,
@@ -14,7 +13,6 @@ import {
 import { User } from './user'
 import { parseTags } from './util/parse'
 import { removeUndefinedProps } from './util/object'
-import { calcDpmInitialPool } from './calculate-dpm'
 
 export function getNewContract(
   id: string,
@@ -86,6 +84,9 @@ export function getNewContract(
   return contract as Contract
 }
 
+/*
+import { PHANTOM_ANTE } from './antes'
+import { calcDpmInitialPool } from './calculate-dpm'
 const getBinaryDpmProps = (initialProb: number, ante: number) => {
   const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
     calcDpmInitialPool(initialProb, ante, PHANTOM_ANTE)
@@ -102,6 +103,7 @@ const getBinaryDpmProps = (initialProb: number, ante: number) => {
 
   return system
 }
+*/
 
 const getBinaryCpmmProps = (initialProb: number, ante: number) => {
   const pool = { YES: ante, NO: ante }
@@ -161,12 +163,4 @@ const getNumericProps = (
   }
 
   return system
-}
-
-const getMultiProps = (
-  outcomes: string[],
-  initialProbs: number[],
-  ante: number
-) => {
-  // Not implemented.
 }
