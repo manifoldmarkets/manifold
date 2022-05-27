@@ -9,17 +9,15 @@ const firestore = admin.firestore()
 
 if (require.main === module) {
   const contractsRef = firestore.collection('contracts')
-  contractsRef.get().then((contractsSnaps) => {
-    let n = 0
+  contractsRef.get().then(async (contractsSnaps) => {
     console.log(`Loaded ${contractsSnaps.size} contracts.`)
-    contractsSnaps.forEach((ct) => {
-      const data = ct.data()
-      if (!('collectedFees' in data)) {
-        n += 1
-        console.log(`Filling in missing fees on contract ${data.id}...`)
-        ct.ref.update({ collectedFees: noFees })
-      }
+    const needsFilling = contractsSnaps.docs.filter((ct) => {
+      return !('collectedFees' in ct.data())
     })
-    console.log(`Updated ${n} contracts.`)
+    console.log(`Found ${needsFilling.length} contracts to update.`)
+    await Promise.all(
+      needsFilling.map((ct) => ct.ref.update({ collectedFees: noFees }))
+    )
+    console.log(`Updated all contracts.`)
   })
 }
