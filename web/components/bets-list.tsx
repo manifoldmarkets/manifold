@@ -122,8 +122,7 @@ export function BetsList(props: { user: User }) {
     .reverse()
     .filter(FILTERS[filter])
     .filter((c) => {
-      if (sort === 'profit') return true
-
+      // TODO: Expose a user setting to toggle whether to show contracts you sold out of.
       // Filter out contracts where you don't have shares anymore.
       const metrics = contractsMetrics[c.id]
       return metrics.payout > 0
