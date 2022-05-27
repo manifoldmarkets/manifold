@@ -16,7 +16,7 @@ import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
 
-export default function SendPage() {
+export default function LinkPage() {
   const user = useUser()
   const [amount, setAmount] = useState(100)
   const links = useUserManalinks(user?.id ?? '')
