@@ -17,7 +17,7 @@ import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import NotificationsIcon from 'web/components/notifications-icon'
 
-function getNavigation(username: String) {
+function getNavigation(username: string) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
     {

@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import React from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'

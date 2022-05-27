@@ -136,7 +136,7 @@ export default function Sidebar(props: { className?: string }) {
     const nextUtcResetTime = getUtcFreeMarketResetTime(false)
     const interval = setInterval(() => {
       const now = new Date().getTime()
-      let timeUntil = nextUtcResetTime - now
+      const timeUntil = nextUtcResetTime - now
       const hoursUntil = timeUntil / 1000 / 60 / 60
       const minutesUntil = Math.floor((hoursUntil * 60) % 60)
       const secondsUntil = Math.floor((hoursUntil * 60 * 60) % 60)

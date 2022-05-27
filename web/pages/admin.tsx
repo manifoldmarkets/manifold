@@ -19,28 +19,22 @@ function avatarHtml(avatarUrl: string) {
 }
 
 function UsersTable() {
-  let users = useUsers()
-  let privateUsers = usePrivateUsers()
+  const users = useUsers()
+  const privateUsers = usePrivateUsers()
 
   // Map private users by user id
   const privateUsersById = mapKeys(privateUsers, 'id')
   console.log('private users by id', privateUsersById)
 
   // For each user, set their email from the PrivateUser
-  users = users.map((user) => {
-    // @ts-ignore
-    user.email = privateUsersById[user.id]?.email
-    return user
-  })
-
-  // Sort users by createdTime descending, by default
-  users = users.sort((a, b) => b.createdTime - a.createdTime)
+  const fullUsers = users
+    .map((user) => {
+      return { email: privateUsersById[user.id]?.email, ...user }
+    })
+    .sort((a, b) => b.createdTime - a.createdTime)
 
   function exportCsv() {
-    const csv = users
-      // @ts-ignore
-      .map((u) => [u.email, u.name].join(', '))
-      .join('\n')
+    const csv = fullUsers.map((u) => [u.email, u.name].join(', ')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -108,27 +102,29 @@ function UsersTable() {
 }
 
 function ContractsTable() {
-  let contracts = useContracts() ?? []
+  const contracts = useContracts() ?? []
+
   // Sort users by createdTime descending, by default
-  contracts.sort((a, b) => b.createdTime - a.createdTime)
-  // Render a clickable question. See https://gridjs.io/docs/examples/react-cells for docs
-  contracts.map((contract) => {
-    // @ts-ignore
-    contract.questionLink = r(
-      <div className="w-60">
-        <a
-          className="hover:underline hover:decoration-indigo-400 hover:decoration-2"
-          href={contractPath(contract)}
-        >
-          {contract.question}
-        </a>
-      </div>
-    )
-  })
+  const displayContracts = contracts
+    .sort((a, b) => b.createdTime - a.createdTime)
+    .map((contract) => {
+      // Render a clickable question. See https://gridjs.io/docs/examples/react-cells for docs
+      const questionLink = r(
+        <div className="w-60">
+          <a
+            className="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+            href={contractPath(contract)}
+          >
+            {contract.question}
+          </a>
+        </div>
+      )
+      return { questionLink, ...contract }
+    })
 
   return (
     <Grid
-      data={contracts}
+      data={displayContracts}
       columns={[
         {
           id: 'creatorUsername',

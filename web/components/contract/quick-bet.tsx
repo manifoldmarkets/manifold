@@ -229,12 +229,13 @@ function QuickOutcomeView(props: {
     case 'NUMERIC':
       display = formatLargeNumber(getExpectedValue(contract as NumericContract))
       break
-    case 'FREE_RESPONSE':
+    case 'FREE_RESPONSE': {
       const topAnswer = getTopAnswer(contract as FreeResponseContract)
       display =
         topAnswer &&
         formatPercent(getOutcomeProbability(contract, topAnswer.id))
       break
+    }
   }
 
   return (

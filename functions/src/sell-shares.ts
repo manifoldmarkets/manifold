@@ -101,7 +101,7 @@ export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
         removeUndefinedProps({
           pool: newPool,
           p: newP,
-          collectedFees: addObjects(fees ?? {}, collectedFees ?? {}),
+          collectedFees: addObjects(fees, collectedFees),
           volume: volume + Math.abs(newBet.amount),
         })
       )

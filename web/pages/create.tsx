@@ -11,7 +11,11 @@ import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
 import { Row } from 'web/components/layout/row'
-import { MAX_DESCRIPTION_LENGTH, outcomeType } from 'common/contract'
+import {
+  MAX_DESCRIPTION_LENGTH,
+  MAX_QUESTION_LENGTH,
+  outcomeType,
+} from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from 'common/util/object'
@@ -37,6 +41,7 @@ export default function Create() {
                 placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
                 className="input input-bordered resize-none"
                 autoFocus
+                maxLength={MAX_QUESTION_LENGTH}
                 value={question}
                 onChange={(e) => setQuestion(e.target.value || '')}
               />
