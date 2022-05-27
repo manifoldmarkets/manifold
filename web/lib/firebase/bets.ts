@@ -5,7 +5,7 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore'
-import _ from 'lodash'
+import { range } from 'lodash'
 
 import { db } from './init'
 import { Bet } from 'common/bet'
@@ -60,23 +60,39 @@ export function listenForBets(
   })
 }
 
-export async function getUserBets(userId: string) {
+export async function getUserBets(
+  userId: string,
+  options: { includeRedemptions: boolean }
+) {
+  const { includeRedemptions } = options
   return getValues<Bet>(
     query(collectionGroup(db, 'bets'), where('userId', '==', userId))
   )
+    .then((bets) =>
+      bets.filter(
+        (bet) => (includeRedemptions || !bet.isRedemption) && !bet.isAnte
+      )
+    )
+    .catch((reason) => reason)
 }
 
 export function listenForUserBets(
   userId: string,
-  setBets: (bets: Bet[]) => void
+  setBets: (bets: Bet[]) => void,
+  options: { includeRedemptions: boolean }
 ) {
+  const { includeRedemptions } = options
   const userQuery = query(
     collectionGroup(db, 'bets'),
-    where('userId', '==', userId)
+    where('userId', '==', userId),
+    orderBy('createdTime', 'desc')
   )
   return listenForValues<Bet>(userQuery, (bets) => {
-    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-    setBets(bets)
+    setBets(
+      bets.filter(
+        (bet) => (includeRedemptions || !bet.isRedemption) && !bet.isAnte
+      )
+    )
   })
 }
 
@@ -122,7 +138,7 @@ export async function getDailyBets(startTime: number, numberOfDays: number) {
   const query = getBetsQuery(startTime, startTime + DAY_IN_MS * numberOfDays)
   const bets = await getValues<Bet>(query)
 
-  const betsByDay = _.range(0, numberOfDays).map(() => [] as Bet[])
+  const betsByDay = range(0, numberOfDays).map(() => [] as Bet[])
   for (const bet of bets) {
     const dayIndex = Math.floor((bet.createdTime - startTime) / DAY_IN_MS)
     betsByDay[dayIndex].push(bet)

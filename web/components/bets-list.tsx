@@ -1,5 +1,13 @@
 import Link from 'next/link'
-import _ from 'lodash'
+import {
+  uniq,
+  groupBy,
+  mapValues,
+  sortBy,
+  partition,
+  sumBy,
+  throttle,
+} from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
@@ -22,7 +30,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
-import { sellBet } from 'web/lib/firebase/api-call'
+import { sellBet } from 'web/lib/firebase/fn-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from 'common/util/array'
@@ -39,14 +47,14 @@ import {
 } from 'common/calculate'
 import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
 import { trackLatency } from 'web/lib/firebase/tracking'
+import { NumericContract } from 'common/contract'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
-  const bets = useUserBets(user.id)
-
+  const bets = useUserBets(user.id, { includeRedemptions: true })
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   const [sort, setSort] = useState<BetSort>('newest')
@@ -54,7 +62,7 @@ export function BetsList(props: { user: User }) {
 
   useEffect(() => {
     if (bets) {
-      const contractIds = _.uniq(bets.map((bet) => bet.contractId))
+      const contractIds = uniq(bets.map((bet) => bet.contractId))
 
       let disposed = false
       Promise.all(contractIds.map((id) => getContractFromId(id))).then(
@@ -84,10 +92,10 @@ export function BetsList(props: { user: User }) {
   if (bets.length === 0) return <NoBets />
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
-  const contractBets = _.groupBy(bets, 'contractId')
-  const contractsById = _.fromPairs(contracts.map((c) => [c.id, c]))
+  const contractBets = groupBy(bets, 'contractId')
+  const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
 
-  const contractsMetrics = _.mapValues(contractBets, (bets, contractId) => {
+  const contractsMetrics = mapValues(contractBets, (bets, contractId) => {
     const contract = contractsById[contractId]
     if (!contract) return getContractBetNullMetrics()
     return getContractBetMetrics(contract, bets)
@@ -110,7 +118,7 @@ export function BetsList(props: { user: User }) {
       (filter === 'open' ? -1 : 1) *
       (c.resolutionTime ?? c.closeTime ?? Infinity),
   }
-  const displayedContracts = _.sortBy(contracts, SORTS[sort])
+  const displayedContracts = sortBy(contracts, SORTS[sort])
     .reverse()
     .filter(FILTERS[filter])
     .filter((c) => {
@@ -121,20 +129,20 @@ export function BetsList(props: { user: User }) {
       return metrics.payout > 0
     })
 
-  const [settled, unsettled] = _.partition(
+  const [settled, unsettled] = partition(
     contracts,
     (c) => c.isResolved || contractsMetrics[c.id].invested === 0
   )
 
-  const currentInvested = _.sumBy(
+  const currentInvested = sumBy(
     unsettled,
     (c) => contractsMetrics[c.id].invested
   )
-  const currentBetsValue = _.sumBy(
+  const currentBetsValue = sumBy(
     unsettled,
     (c) => contractsMetrics[c.id].payout
   )
-  const currentNetInvestment = _.sumBy(
+  const currentNetInvestment = sumBy(
     unsettled,
     (c) => contractsMetrics[c.id].netPayout
   )
@@ -228,6 +236,8 @@ function MyContractBets(props: {
   const { bets, contract, metric } = props
   const { resolution, outcomeType } = contract
 
+  const resolutionValue = (contract as NumericContract).resolutionValue
+
   const [collapsed, setCollapsed] = useState(true)
 
   const isBinary = outcomeType === 'BINARY'
@@ -273,6 +283,7 @@ function MyContractBets(props: {
                     Resolved{' '}
                     <OutcomeLabel
                       outcome={resolution}
+                      value={resolutionValue}
                       contract={contract}
                       truncate="short"
                     />
@@ -327,16 +338,20 @@ export function MyBetsSummary(props: {
   bets: Bet[]
   className?: string
 }) {
-  const { bets, contract, className } = props
+  const { contract, className } = props
   const { resolution, outcomeType, mechanism } = contract
   const isBinary = outcomeType === 'BINARY'
   const isCpmm = mechanism === 'cpmm-1'
 
-  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-  const yesWinnings = _.sumBy(excludeSales, (bet) =>
+  const bets = props.bets.filter((b) => !b.isAnte)
+
+  const excludeSalesAndAntes = bets.filter(
+    (b) => !b.isAnte && !b.isSold && !b.sale
+  )
+  const yesWinnings = sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'YES')
   )
-  const noWinnings = _.sumBy(excludeSales, (bet) =>
+  const noWinnings = sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
   const { invested, profitPercent, payout, profit } = getContractBetMetrics(
@@ -410,29 +425,30 @@ export function ContractBetsTable(props: {
   bets: Bet[]
   className?: string
 }) {
-  const { contract, bets, className } = props
+  const { contract, className } = props
 
-  const [sales, buys] = _.partition(bets, (bet) => bet.sale)
+  const bets = props.bets.filter((b) => !b.isAnte)
 
-  const salesDict = _.fromPairs(
+  const [sales, buys] = partition(bets, (bet) => bet.sale)
+
+  const salesDict = Object.fromEntries(
     sales.map((sale) => [sale.sale?.betId ?? '', sale])
   )
 
-  const [redemptions, normalBets] = _.partition(
+  const [redemptions, normalBets] = partition(
     contract.mechanism === 'cpmm-1' ? bets : buys,
     (b) => b.isRedemption
   )
-  const amountRedeemed = Math.floor(
-    -0.5 * _.sumBy(redemptions, (b) => b.shares)
-  )
+  const amountRedeemed = Math.floor(-0.5 * sumBy(redemptions, (b) => b.shares))
 
-  const amountLoaned = _.sumBy(
+  const amountLoaned = sumBy(
     bets.filter((bet) => !bet.isSold && !bet.sale),
     (bet) => bet.loanAmount ?? 0
   )
 
-  const { isResolved, mechanism } = contract
+  const { isResolved, mechanism, outcomeType } = contract
   const isCPMM = mechanism === 'cpmm-1'
+  const isNumeric = outcomeType === 'NUMERIC'
 
   return (
     <div className={clsx('overflow-x-auto', className)}>
@@ -462,7 +478,9 @@ export function ContractBetsTable(props: {
             {isCPMM && <th>Type</th>}
             <th>Outcome</th>
             <th>Amount</th>
-            {!isCPMM && <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>}
+            {!isCPMM && !isNumeric && (
+              <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
+            )}
             {!isCPMM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
             <th>Probability</th>
@@ -497,11 +515,12 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     isAnte,
   } = bet
 
-  const { isResolved, closeTime, mechanism } = contract
+  const { isResolved, closeTime, mechanism, outcomeType } = contract
 
   const isClosed = closeTime && Date.now() > closeTime
 
   const isCPMM = mechanism === 'cpmm-1'
+  const isNumeric = outcomeType === 'NUMERIC'
 
   const saleAmount = saleBet?.sale?.amount
 
@@ -518,31 +537,35 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   )
 
   const payoutIfChosenDisplay =
-    bet.outcome === '0' && bet.isAnte
+    bet.isAnte && outcomeType === 'FREE_RESPONSE' && bet.outcome === '0'
       ? 'N/A'
       : formatMoney(calculatePayout(contract, bet, bet.outcome))
 
   return (
     <tr>
       <td className="text-neutral">
-        {!isCPMM && !isResolved && !isClosed && !isSold && !isAnte && (
-          <SellButton contract={contract} bet={bet} />
-        )}
+        {!isCPMM &&
+          !isResolved &&
+          !isClosed &&
+          !isSold &&
+          !isAnte &&
+          !isNumeric && <SellButton contract={contract} bet={bet} />}
       </td>
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
-        {outcome === '0' ? (
+        {bet.isAnte ? (
           'ANTE'
         ) : (
           <OutcomeLabel
             outcome={outcome}
+            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />
         )}
       </td>
       <td>{formatMoney(Math.abs(amount))}</td>
-      {!isCPMM && <td>{saleDisplay}</td>}
+      {!isCPMM && !isNumeric && <td>{saleDisplay}</td>}
       {!isCPMM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>{formatWithCommas(Math.abs(shares))}</td>
       <td>
@@ -553,10 +576,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   )
 }
 
-const warmUpSellBet = _.throttle(
-  () => sellBet({}).catch(() => {}),
-  5000 /* ms */
-)
+const warmUpSellBet = throttle(() => sellBet({}).catch(() => {}), 5000 /* ms */)
 
 function SellButton(props: { contract: Contract; bet: Bet }) {
   useEffect(() => {

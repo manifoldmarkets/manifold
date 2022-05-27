@@ -1,6 +1,5 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
 import React, { useState } from 'react'
-import * as _ from 'lodash'
 import {
   BanIcon,
   CheckIcon,
@@ -37,6 +36,7 @@ import {
   TruncatedComment,
 } from 'web/components/feed/feed-comments'
 import { FeedBet, FeedBetGroup } from 'web/components/feed/feed-bets'
+import { NumericContract } from 'common/contract'
 
 export function FeedItems(props: {
   contract: Contract
@@ -54,7 +54,7 @@ export function FeedItems(props: {
     <div className={clsx('flow-root', className)} ref={setElem}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
-          <div key={item.id} className={'relative pb-6'}>
+          <div key={item.id} className={'relative pb-4'}>
             {activityItemIdx !== items.length - 1 ||
             item.type === 'answergroup' ? (
               <span
@@ -62,7 +62,7 @@ export function FeedItems(props: {
                 aria-hidden="true"
               />
             ) : null}
-            <div className="relative flex items-start space-x-3">
+            <div className="relative flex-col items-start space-x-3">
               <FeedItem item={item} />
             </div>
           </div>
@@ -121,7 +121,7 @@ export function FeedQuestion(props: {
   const isNew = createdTime > Date.now() - DAY_MS
 
   return (
-    <>
+    <div className={'flex gap-2'}>
       <Avatar
         username={contract.creatorUsername}
         avatarUrl={contract.creatorAvatarUrl}
@@ -170,7 +170,7 @@ export function FeedQuestion(props: {
           />
         )}
       </div>
-    </>
+    </div>
   )
 }
 
@@ -215,7 +215,10 @@ function OutcomeIcon(props: { outcome?: string }) {
 function FeedResolve(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername } = contract
+
   const resolution = contract.resolution || 'CANCEL'
+
+  const resolutionValue = (contract as NumericContract).resolutionValue
 
   return (
     <>
@@ -236,6 +239,7 @@ function FeedResolve(props: { contract: Contract }) {
           resolved this market to{' '}
           <OutcomeLabel
             outcome={resolution}
+            value={resolutionValue}
             contract={contract}
             truncate="long"
           />{' '}

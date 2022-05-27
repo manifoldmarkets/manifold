@@ -24,8 +24,9 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 
 0. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev
 1. [Install](https://cloud.google.com/sdk/docs/install) gcloud CLI
-2. `$ brew install java` to install java if you don't already have it
-   1. `$ echo 'export PATH="/usr/local/opt/openjdk/bin:$PATH"' >> ~/.zshrc` to add java to your path
+2. If you don't have java (or see the error `Error: Process java -version has exited with code 1. Please make sure Java is installed and on your system PATH.`):
+   1. `$ brew install java`
+   2. `$ sudo ln -sfn /opt/homebrew/opt/openjdk/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk` 
 3. `$ gcloud auth login` to authenticate the CLI tools to Google Cloud
 4. `$ gcloud config set project <project-id>` to choose the project (`$ gcloud projects list` to see options)
 5. `$ mkdir firestore_export` to create a folder to store the exported database

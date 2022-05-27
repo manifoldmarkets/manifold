@@ -1,6 +1,5 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
 import { getUser } from './utils'
 import { PrivateUser } from '../../common/user'
 

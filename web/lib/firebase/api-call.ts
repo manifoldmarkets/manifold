@@ -1,84 +1,41 @@
-import { httpsCallable } from 'firebase/functions'
-import { Fold } from 'common/fold'
-import { Txn } from 'common/txn'
-import { User } from 'common/user'
-import { randomString } from 'common/util/random'
-import './init'
-import { functions } from './init'
+import { auth } from './users'
 
-export const cloudFunction = <RequestData, ResponseData>(name: string) =>
-  httpsCallable<RequestData, ResponseData>(functions, name)
-
-export const createContract = cloudFunction('createContract')
-
-export const createFold = cloudFunction<
-  { name: string; about: string; tags: string[] },
-  { status: 'error' | 'success'; message?: string; fold?: Fold }
->('createFold')
-
-export const transact = cloudFunction<
-  Omit<Txn, 'id' | 'createdTime'>,
-  { status: 'error' | 'success'; message?: string; txn?: Txn }
->('transact')
-
-export const claimManalink = cloudFunction<
-  string,
-  { status: 'error' | 'success'; message?: string }
->('claimManalink')
-
-export const placeBet = cloudFunction('placeBet')
-
-export const sellBet = cloudFunction('sellBet')
-
-export const sellShares = cloudFunction<
-  { contractId: string; shares: number; outcome: 'YES' | 'NO' },
-  { status: 'error' | 'success'; message?: string }
->('sellShares')
-
-export const createAnswer = cloudFunction<
-  { contractId: string; text: string; amount: number },
-  {
-    status: 'error' | 'success'
-    message?: string
-    answerId?: string
-    betId?: string
+export class APIError extends Error {
+  code: number
+  constructor(code: number, message: string) {
+    super(message)
+    this.code = code
+    this.name = 'APIError'
   }
->('createAnswer')
-
-export const resolveMarket = cloudFunction<
-  {
-    outcome: string
-    contractId: string
-    probabilityInt?: number
-    resolutions?: { [outcome: string]: number }
-  },
-  { status: 'error' | 'success'; message?: string }
->('resolveMarket')
-
-export const createUser: () => Promise<User | null> = () => {
-  let deviceToken = window.localStorage.getItem('device-token')
-  if (!deviceToken) {
-    deviceToken = randomString()
-    window.localStorage.setItem('device-token', deviceToken)
-  }
-
-  return cloudFunction('createUser')({ deviceToken })
-    .then((r) => (r.data as any)?.user || null)
-    .catch(() => null)
 }
 
-export const changeUserInfo = (data: {
-  username?: string
-  name?: string
-  avatarUrl?: string
-}) => {
-  return cloudFunction('changeUserInfo')(data)
-    .then((r) => r.data as { status: string; message?: string })
-    .catch((e) => ({ status: 'error', message: e.message }))
+export async function call(url: string, method: string, params: any) {
+  const user = auth.currentUser
+  if (user == null) {
+    throw new Error('Must be signed in to make API calls.')
+  }
+  const token = await user.getIdToken()
+  const req = new Request(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    method: method,
+    body: JSON.stringify(params),
+  })
+  return await fetch(req).then(async (resp) => {
+    const json = (await resp.json()) as { [k: string]: any }
+    if (!resp.ok) {
+      throw new APIError(resp.status, json?.message)
+    }
+    return json
+  })
 }
 
-export const addLiquidity = (data: { amount: number; contractId: string }) => {
-  return cloudFunction('addLiquidity')(data)
-    .then((r) => r.data as { status: string })
-    .catch((e) => ({ status: 'error', message: e.message }))
+export function createContract(params: any) {
+  return call('/api/v0/market', 'POST', params)
+}
+
+export function placeBet(params: any) {
+  return call('/api/v0/bets', 'POST', params)
 }

@@ -18,6 +18,7 @@ type FirebaseConfig = {
   apiKey: string
   authDomain: string
   projectId: string
+  region: string
   storageBucket: string
   messagingSenderId: string
   appId: string
@@ -30,6 +31,7 @@ export const PROD_CONFIG: EnvConfig = {
     apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
     authDomain: 'mantic-markets.firebaseapp.com',
     projectId: 'mantic-markets',
+    region: 'us-central1',
     storageBucket: 'mantic-markets.appspot.com',
     messagingSenderId: '128925704902',
     appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
@@ -44,7 +46,7 @@ export const PROD_CONFIG: EnvConfig = {
   ],
   visibility: 'PUBLIC',
 
-  moneyMoniker: 'ϻ',
+  moneyMoniker: 'M$',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',
   newQuestionPlaceholders: [

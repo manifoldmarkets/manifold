@@ -1,6 +1,6 @@
-import * as _ from 'lodash'
+import { sumBy, groupBy, mapValues } from 'lodash'
 
-import { Bet } from './bet'
+import { Bet, NumericBet } from './bet'
 import {
   Binary,
   Contract,
@@ -16,6 +16,7 @@ import {
   getDpmCancelPayouts,
   getDpmMktPayouts,
   getDpmStandardPayouts,
+  getNumericDpmPayouts,
   getPayoutsMultiOutcome,
 } from './payouts-dpm'
 import {
@@ -31,16 +32,19 @@ export type Payout = {
 
 export const getLoanPayouts = (bets: Bet[]): Payout[] => {
   const betsWithLoans = bets.filter((bet) => bet.loanAmount)
-  const betsByUser = _.groupBy(betsWithLoans, (bet) => bet.userId)
-  const loansByUser = _.mapValues(betsByUser, (bets) =>
-    _.sumBy(bets, (bet) => -(bet.loanAmount ?? 0))
+  const betsByUser = groupBy(betsWithLoans, (bet) => bet.userId)
+  const loansByUser = mapValues(betsByUser, (bets) =>
+    sumBy(bets, (bet) => -(bet.loanAmount ?? 0))
   )
-  return _.toPairs(loansByUser).map(([userId, payout]) => ({ userId, payout }))
+  return Object.entries(loansByUser).map(([userId, payout]) => ({
+    userId,
+    payout,
+  }))
 }
 
 export const groupPayoutsByUser = (payouts: Payout[]) => {
-  const groups = _.groupBy(payouts, (payout) => payout.userId)
-  return _.mapValues(groups, (group) => _.sumBy(group, (g) => g.payout))
+  const groups = groupBy(payouts, (payout) => payout.userId)
+  return mapValues(groups, (group) => sumBy(group, (g) => g.payout))
 }
 
 export type PayoutInfo = {
@@ -131,6 +135,9 @@ export const getDpmPayouts = (
       return getDpmCancelPayouts(contract, openBets)
 
     default:
+      if (contract.outcomeType === 'NUMERIC')
+        return getNumericDpmPayouts(outcome, contract, openBets as NumericBet[])
+
       // Outcome is a free response answer id.
       return getDpmStandardPayouts(outcome, contract, openBets)
   }

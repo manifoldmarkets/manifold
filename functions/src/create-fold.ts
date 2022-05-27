@@ -1,6 +1,5 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
 
 import { getUser } from './utils'
 import { Contract } from '../../common/contract'
@@ -34,7 +33,7 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
       return { status: 'error', message: 'About must be a string' }
     about = about.trim().slice(0, 140)
 
-    if (!_.isArray(tags))
+    if (!Array.isArray(tags))
       return { status: 'error', message: 'Tags must be an array of strings' }
 
     console.log(

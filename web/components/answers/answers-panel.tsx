@@ -1,5 +1,5 @@
-import _ from 'lodash'
-import React, { useLayoutEffect, useState } from 'react'
+import { sortBy, partition, sum, uniq } from 'lodash'
+import { useLayoutEffect, useState } from 'react'
 
 import { DPM, FreeResponse, FullContract } from 'common/contract'
 import { Col } from '../layout/col'
@@ -32,7 +32,7 @@ export function AnswersPanel(props: {
   const { creatorId, resolution, resolutions, totalBets } = contract
 
   const answers = useAnswers(contract.id) ?? contract.answers
-  const [winningAnswers, losingAnswers] = _.partition(
+  const [winningAnswers, losingAnswers] = partition(
     answers.filter(
       (answer) => answer.id !== '0' && totalBets[answer.id] > 0.000000001
     ),
@@ -40,10 +40,10 @@ export function AnswersPanel(props: {
       answer.id === resolution || (resolutions && resolutions[answer.id])
   )
   const sortedAnswers = [
-    ..._.sortBy(winningAnswers, (answer) =>
+    ...sortBy(winningAnswers, (answer) =>
       resolutions ? -1 * resolutions[answer.id] : 0
     ),
-    ..._.sortBy(
+    ...sortBy(
       resolution ? [] : losingAnswers,
       (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
     ),
@@ -58,7 +58,7 @@ export function AnswersPanel(props: {
     [answerId: string]: number
   }>({})
 
-  const chosenTotal = _.sum(Object.values(chosenAnswers))
+  const chosenTotal = sum(Object.values(chosenAnswers))
 
   const answerItems = getAnswerItems(
     contract,
@@ -158,10 +158,10 @@ function getAnswerItems(
   answers: Answer[],
   user: User | undefined | null
 ) {
-  let outcomes = _.uniq(
-    answers.map((answer) => answer.number.toString())
-  ).filter((outcome) => getOutcomeProbability(contract, outcome) > 0.0001)
-  outcomes = _.sortBy(outcomes, (outcome) =>
+  let outcomes = uniq(answers.map((answer) => answer.number.toString())).filter(
+    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
+  )
+  outcomes = sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   ).reverse()
 

@@ -1,6 +1,8 @@
 import clsx from 'clsx'
+import { ReactNode } from 'react'
 import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
+import { getValueFromBucket } from 'common/calculate-dpm'
 import {
   Binary,
   Contract,
@@ -9,6 +11,7 @@ import {
   FreeResponse,
   FreeResponseContract,
   FullContract,
+  NumericContract,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
@@ -17,11 +20,19 @@ export function OutcomeLabel(props: {
   contract: Contract
   outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string
   truncate: 'short' | 'long' | 'none'
+  value?: number
 }) {
-  const { outcome, contract, truncate } = props
+  const { outcome, contract, truncate, value } = props
 
   if (contract.outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
+
+  if (contract.outcomeType === 'NUMERIC')
+    return (
+      <span className="text-blue-500">
+        {value ?? getValueFromBucket(outcome, contract as NumericContract)}
+      </span>
+    )
 
   return (
     <FreeResponseOutcomeLabel
@@ -107,7 +118,7 @@ export function ProbLabel() {
 }
 
 export function MultiLabel() {
-  return <span className="text-blue-400">MULTI</span>
+  return <span className="text-blue-400">MANY</span>
 }
 
 export function ProbPercentLabel(props: { prob: number }) {
@@ -146,7 +157,7 @@ export function AnswerLabel(props: {
 
 function FreeResponseAnswerToolTip(props: {
   text: string
-  children?: React.ReactNode
+  children?: ReactNode
 }) {
   const { text } = props
   return (

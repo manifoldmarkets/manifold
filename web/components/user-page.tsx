@@ -19,10 +19,10 @@ import { Comment, getUsersComments } from 'web/lib/firebase/comments'
 import { Contract } from 'common/contract'
 import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
 import { LoadingIndicator } from './loading-indicator'
-import _ from 'lodash'
 import { BetsList } from './bets-list'
 import { Bet } from 'common/bet'
 import { getUserBets } from 'web/lib/firebase/bets'
+import { uniq } from 'lodash'
 
 export function UserLink(props: {
   name: string
@@ -66,11 +66,11 @@ export function UserPage(props: {
     if (!user) return
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
-    getUserBets(user.id).then(setUsersBets)
+    getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
   }, [user])
 
   useEffect(() => {
-    const uniqueContractIds = _.uniq(
+    const uniqueContractIds = uniq(
       usersComments.map((comment) => comment.contractId)
     )
     Promise.all(

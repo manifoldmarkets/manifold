@@ -3,6 +3,7 @@ import { Comment } from 'common/comment'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
+import { minBy, maxBy, groupBy, partition, sumBy } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -16,13 +17,13 @@ import { contractPath } from 'web/lib/firebase/contracts'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { createComment, MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
 import Textarea from 'react-expanding-textarea'
-import * as _ from 'lodash'
 import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
 import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
 import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
+import { PaperAirplaneIcon } from '@heroicons/react/outline'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -36,7 +37,7 @@ export function FeedCommentThread(props: {
     props
   const [showReply, setShowReply] = useState(false)
   const [replyToUsername, setReplyToUsername] = useState('')
-  const betsByUserId = _.groupBy(bets, (bet) => bet.userId)
+  const betsByUserId = groupBy(bets, (bet) => bet.userId)
   const user = useUser()
   const commentsList = comments.filter(
     (comment) =>
@@ -53,13 +54,20 @@ export function FeedCommentThread(props: {
     if (showReply && inputRef) inputRef.focus()
   }, [inputRef, showReply])
   return (
-    <div className={'w-full flex-col flex-col pr-6'}>
+    <div className={'flex-col pr-1'}>
       {commentsList.map((comment, commentIdx) => (
         <div
           key={comment.id}
           id={comment.id}
-          className={commentIdx === 0 ? '' : 'mt-4 ml-8'}
+          className={clsx('relative', commentIdx === 0 ? '' : 'mt-3 ml-6')}
         >
+          {/*draw a gray line from the comment to the left:*/}
+          {commentIdx != 0 && (
+            <span
+              className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+              aria-hidden="true"
+            />
+          )}
           <FeedComment
             contract={contract}
             comment={comment}
@@ -67,7 +75,7 @@ export function FeedCommentThread(props: {
             onReplyClick={scrollAndOpenReplyInput}
             probAtCreatedTime={
               contract.outcomeType === 'BINARY'
-                ? _.minBy(bets, (bet) => {
+                ? minBy(bets, (bet) => {
                     return bet.createdTime < comment.createdTime
                       ? comment.createdTime - bet.createdTime
                       : comment.createdTime
@@ -80,7 +88,11 @@ export function FeedCommentThread(props: {
         </div>
       ))}
       {showReply && (
-        <div className={'ml-8 w-full pt-6'}>
+        <div className={'-pb-2 ml-6 flex flex-col pt-5'}>
+          <span
+            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            aria-hidden="true"
+          />
           <CommentInput
             contract={contract}
             betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
@@ -111,7 +123,6 @@ export function FeedComment(props: {
     betsBySameUser,
     probAtCreatedTime,
     truncate,
-    smallAvatar,
     onReplyClick,
   } = props
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
@@ -132,7 +143,7 @@ export function FeedComment(props: {
     if (router.asPath.endsWith(`#${comment.id}`)) {
       setHighlighted(true)
     }
-  }, [router.asPath])
+  }, [comment.id, router.asPath])
 
   // Only calculated if they don't have a matching bet
   const { userPosition, outcome } = getBettorsLargestPositionBeforeTime(
@@ -144,33 +155,35 @@ export function FeedComment(props: {
   return (
     <Row
       className={clsx(
-        'flex space-x-3 transition-all duration-1000',
-        highlighted ? `-m-2 rounded bg-indigo-500/[0.2] p-2` : ''
+        'flex space-x-1.5 transition-all duration-1000 sm:space-x-3',
+        highlighted ? `-m-1 rounded bg-indigo-500/[0.2] p-2` : ''
       )}
     >
       <Avatar
-        className={clsx(smallAvatar && 'ml-1')}
-        size={smallAvatar ? 'sm' : undefined}
+        className={'ml-1'}
+        size={'sm'}
         username={userUsername}
         avatarUrl={userAvatarUrl}
       />
       <div className="min-w-0 flex-1">
-        <p className="mt-0.5 text-sm text-gray-500">
+        <p className="mt-0.5 pl-0.5 text-sm text-gray-500">
           <UserLink
             className="text-gray-500"
             username={userUsername}
             name={userName}
           />{' '}
-          {!matchedBet && userPosition > 0 && (
-            <>
-              {'is '}
-              <CommentStatus
-                prob={probAtCreatedTime}
-                outcome={outcome}
-                contract={contract}
-              />
-            </>
-          )}
+          {!matchedBet &&
+            userPosition > 0 &&
+            contract.outcomeType !== 'NUMERIC' && (
+              <>
+                {'is '}
+                <CommentStatus
+                  prob={probAtCreatedTime}
+                  outcome={outcome}
+                  contract={contract}
+                />
+              </>
+            )}
           <>
             {bought} {money}
             {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
@@ -179,6 +192,7 @@ export function FeedComment(props: {
                 of{' '}
                 <OutcomeLabel
                   outcome={betOutcome ? betOutcome : ''}
+                  value={(matchedBet as any).value}
                   contract={contract}
                   truncate="short"
                 />
@@ -284,7 +298,7 @@ export function CommentInput(props: {
   useEffect(() => {
     if (!replyToUsername || !user || replyToUsername === user.username) return
     const replacement = `@${replyToUsername} `
-    setComment(replacement + comment.replace(replacement, ''))
+    setComment((comment) => replacement + comment.replace(replacement, ''))
   }, [user, replyToUsername])
 
   async function submitComment(betId: string | undefined) {
@@ -314,41 +328,58 @@ export function CommentInput(props: {
 
   const shouldCollapseAfterClickOutside = false
 
+  const isNumeric = contract.outcomeType === 'NUMERIC'
+
   return (
     <>
-      <Row className={'mb-2 flex w-full gap-2'}>
-        <div className={'mt-1'}>
-          <Avatar avatarUrl={user?.avatarUrl} username={user?.username} />
+      <Row className={'mb-2 gap-1 sm:gap-2'}>
+        <div className={''}>
+          <Avatar
+            avatarUrl={user?.avatarUrl}
+            username={user?.username}
+            size={'sm'}
+            className={'ml-1'}
+          />
         </div>
         <div className={'min-w-0 flex-1'}>
-          <div className="text-sm text-gray-500">
+          <div className="pl-0.5 text-sm text-gray-500">
             <div className={'mb-1'}>
               {mostRecentCommentableBet && (
                 <BetStatusText
                   contract={contract}
                   bet={mostRecentCommentableBet}
                   isSelf={true}
-                  hideOutcome={contract.outcomeType === 'FREE_RESPONSE'}
+                  hideOutcome={
+                    isNumeric || contract.outcomeType === 'FREE_RESPONSE'
+                  }
                 />
               )}
-              {!mostRecentCommentableBet && user && userPosition > 0 && (
-                <>
-                  {"You're"}
-                  <CommentStatus
-                    outcome={outcome}
-                    contract={contract}
-                    prob={
-                      contract.outcomeType === 'BINARY'
-                        ? getProbability(contract)
-                        : undefined
-                    }
-                  />
-                </>
-              )}
+              {!mostRecentCommentableBet &&
+                user &&
+                userPosition > 0 &&
+                !isNumeric && (
+                  <>
+                    {"You're"}
+                    <CommentStatus
+                      outcome={outcome}
+                      contract={contract}
+                      prob={
+                        contract.outcomeType === 'BINARY'
+                          ? getProbability(contract)
+                          : undefined
+                      }
+                    />
+                  </>
+                )}
             </div>
 
             <Row className="grid grid-cols-8 gap-1.5 text-gray-700">
-              <Col className={'col-span-8 sm:col-span-6'}>
+              <Col
+                className={clsx(
+                  'col-span-8 sm:col-span-6',
+                  !user && 'col-span-8'
+                )}
+              >
                 <Textarea
                   ref={setRef}
                   value={comment}
@@ -376,13 +407,13 @@ export function CommentInput(props: {
                   }}
                 />
               </Col>
-              <Col
-                className={clsx(
-                  'col-span-8 sm:col-span-2',
-                  focused ? 'justify-end' : 'justify-center'
-                )}
-              >
-                {!user && (
+              {!user && (
+                <Col
+                  className={clsx(
+                    'col-span-8 sm:col-span-2',
+                    focused ? 'justify-end' : 'justify-center'
+                  )}
+                >
                   <button
                     className={
                       'btn btn-outline btn-sm text-transform: capitalize'
@@ -391,14 +422,25 @@ export function CommentInput(props: {
                   >
                     Sign in to Comment
                   </button>
+                </Col>
+              )}
+
+              <Col
+                className={clsx(
+                  'col-span-1 sm:col-span-2',
+                  focused ? 'justify-end' : 'justify-center'
                 )}
+              >
                 {user && !isSubmitting && (
                   <button
                     className={clsx(
-                      'btn text-transform: col-span-8 block capitalize sm:col-span-2',
+                      'btn btn-ghost btn-sm block flex flex-row capitalize',
+                      'absolute bottom-4 right-1 col-span-1',
+                      parentComment ? ' bottom-6 right-2.5' : '',
+                      'sm:relative sm:bottom-0 sm:right-0 sm:col-span-2',
                       focused && comment
-                        ? 'btn-outline btn-sm '
-                        : 'btn-ghost btn-sm pointer-events-none text-gray-500'
+                        ? 'sm:btn-outline'
+                        : 'pointer-events-none text-gray-500'
                     )}
                     onClick={() => {
                       if (!focused) return
@@ -407,7 +449,15 @@ export function CommentInput(props: {
                       }
                     }}
                   >
-                    {parentComment || answerOutcome ? 'Reply' : 'Comment'}
+                    <span className={'hidden sm:block'}>
+                      {parentComment || answerOutcome ? 'Reply' : 'Comment'}
+                    </span>
+                    {focused && (
+                      <PaperAirplaneIcon
+                        className={'m-0 min-w-[22px] rotate-90 p-0 sm:hidden'}
+                        height={25}
+                      />
+                    )}
                   </button>
                 )}
                 {isSubmitting && (
@@ -484,8 +534,7 @@ function getBettorsLargestPositionBeforeTime(
       }
     }
     const majorityAnswer =
-      _.maxBy(Object.keys(answerCounts), (outcome) => answerCounts[outcome]) ??
-      ''
+      maxBy(Object.keys(answerCounts), (outcome) => answerCounts[outcome]) ?? ''
     return {
       userPosition: answerCounts[majorityAnswer] || 0,
       outcome: majorityAnswer,
@@ -495,12 +544,12 @@ function getBettorsLargestPositionBeforeTime(
     return emptyReturn
   }
 
-  const [yesBets, noBets] = _.partition(
+  const [yesBets, noBets] = partition(
     previousBets ?? [],
     (bet) => bet.outcome === 'YES'
   )
-  yesShares = _.sumBy(yesBets, (bet) => bet.shares)
-  noShares = _.sumBy(noBets, (bet) => bet.shares)
+  yesShares = sumBy(yesBets, (bet) => bet.shares)
+  noShares = sumBy(noBets, (bet) => bet.shares)
   yesFloorShares = Math.floor(yesShares)
   noFloorShares = Math.floor(noShares)
 

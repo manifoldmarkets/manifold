@@ -21,14 +21,11 @@ export function CopyLinkDateTimeComponent(props: {
     event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
   ) {
     event.preventDefault()
+    const elementLocation = `https://${ENV_CONFIG.domain}${contractPath(
+      contract
+    )}#${elementId}`
 
-    let currentLocation = window.location.href.includes('/home')
-      ? `https://${ENV_CONFIG.domain}${contractPath(contract)}#${elementId}`
-      : window.location.href
-    if (currentLocation.includes('#')) {
-      currentLocation = currentLocation.split('#')[0]
-    }
-    copyToClipboard(`${currentLocation}#${elementId}`)
+    copyToClipboard(elementLocation)
     setShowToast(true)
     setTimeout(() => setShowToast(false), 2000)
   }

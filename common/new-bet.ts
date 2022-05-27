@@ -1,10 +1,12 @@
-import * as _ from 'lodash'
+import { sumBy } from 'lodash'
 
-import { Bet, MAX_LOAN_PER_CONTRACT } from './bet'
+import { Bet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
 import {
   calculateDpmShares,
   getDpmProbability,
   getDpmOutcomeProbability,
+  getNumericBets,
+  calculateNumericDpmShares,
 } from './calculate-dpm'
 import { calculateCpmmPurchase, getCpmmProbability } from './calculate-cpmm'
 import {
@@ -14,17 +16,27 @@ import {
   FreeResponse,
   FullContract,
   Multi,
+  NumericContract,
 } from './contract'
-import { User } from './user'
 import { noFees } from './fees'
+import { addObjects } from './util/object'
+import { NUMERIC_FIXED_VAR } from './numeric-constants'
+
+export type CandidateBet<T extends Bet> = Omit<T, 'id' | 'userId'>
+export type BetInfo = {
+  newBet: CandidateBet<Bet>
+  newPool?: { [outcome: string]: number }
+  newTotalShares?: { [outcome: string]: number }
+  newTotalBets?: { [outcome: string]: number }
+  newTotalLiquidity?: number
+  newP?: number
+}
 
 export const getNewBinaryCpmmBetInfo = (
-  user: User,
   outcome: 'YES' | 'NO',
   amount: number,
   contract: FullContract<CPMM, Binary>,
-  loanAmount: number,
-  newBetId: string
+  loanAmount: number
 ) => {
   const { shares, newPool, newP, fees } = calculateCpmmPurchase(
     contract,
@@ -32,15 +44,11 @@ export const getNewBinaryCpmmBetInfo = (
     outcome
   )
 
-  const newBalance = user.balance - (amount - loanAmount)
-
   const { pool, p, totalLiquidity } = contract
   const probBefore = getCpmmProbability(pool, p)
   const probAfter = getCpmmProbability(newPool, newP)
 
-  const newBet: Bet = {
-    id: newBetId,
-    userId: user.id,
+  const newBet: CandidateBet<Bet> = {
     contractId: contract.id,
     amount,
     shares,
@@ -55,16 +63,14 @@ export const getNewBinaryCpmmBetInfo = (
   const { liquidityFee } = fees
   const newTotalLiquidity = (totalLiquidity ?? 0) + liquidityFee
 
-  return { newBet, newPool, newP, newBalance, newTotalLiquidity, fees }
+  return { newBet, newPool, newP, newTotalLiquidity }
 }
 
 export const getNewBinaryDpmBetInfo = (
-  user: User,
   outcome: 'YES' | 'NO',
   amount: number,
   contract: FullContract<DPM, Binary>,
-  loanAmount: number,
-  newBetId: string
+  loanAmount: number
 ) => {
   const { YES: yesPool, NO: noPool } = contract.pool
 
@@ -92,9 +98,7 @@ export const getNewBinaryDpmBetInfo = (
   const probBefore = getDpmProbability(contract.totalShares)
   const probAfter = getDpmProbability(newTotalShares)
 
-  const newBet: Bet = {
-    id: newBetId,
-    userId: user.id,
+  const newBet: CandidateBet<Bet> = {
     contractId: contract.id,
     amount,
     loanAmount,
@@ -106,18 +110,14 @@ export const getNewBinaryDpmBetInfo = (
     fees: noFees,
   }
 
-  const newBalance = user.balance - (amount - loanAmount)
-
-  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+  return { newBet, newPool, newTotalShares, newTotalBets }
 }
 
 export const getNewMultiBetInfo = (
-  user: User,
   outcome: string,
   amount: number,
   contract: FullContract<DPM, Multi | FreeResponse>,
-  loanAmount: number,
-  newBetId: string
+  loanAmount: number
 ) => {
   const { pool, totalShares, totalBets } = contract
 
@@ -135,9 +135,7 @@ export const getNewMultiBetInfo = (
   const probBefore = getDpmOutcomeProbability(totalShares, outcome)
   const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
 
-  const newBet: Bet = {
-    id: newBetId,
-    userId: user.id,
+  const newBet: CandidateBet<Bet> = {
     contractId: contract.id,
     amount,
     loanAmount,
@@ -149,14 +147,55 @@ export const getNewMultiBetInfo = (
     fees: noFees,
   }
 
-  const newBalance = user.balance - (amount - loanAmount)
+  return { newBet, newPool, newTotalShares, newTotalBets }
+}
 
-  return { newBet, newPool, newTotalShares, newTotalBets, newBalance }
+export const getNumericBetsInfo = (
+  value: number,
+  outcome: string,
+  amount: number,
+  contract: NumericContract
+) => {
+  const { pool, totalShares, totalBets } = contract
+
+  const bets = getNumericBets(contract, outcome, amount, NUMERIC_FIXED_VAR)
+
+  const allBetAmounts = Object.fromEntries(bets)
+  const newTotalBets = addObjects(totalBets, allBetAmounts)
+  const newPool = addObjects(pool, allBetAmounts)
+
+  const { shares, totalShares: newTotalShares } = calculateNumericDpmShares(
+    contract.totalShares,
+    bets
+  )
+
+  const allOutcomeShares = Object.fromEntries(
+    bets.map(([outcome], i) => [outcome, shares[i]])
+  )
+
+  const probBefore = getDpmOutcomeProbability(totalShares, outcome)
+  const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
+
+  const newBet: CandidateBet<NumericBet> = {
+    contractId: contract.id,
+    value,
+    amount,
+    allBetAmounts,
+    shares: shares.find((s, i) => bets[i][0] === outcome) ?? 0,
+    allOutcomeShares,
+    outcome,
+    probBefore,
+    probAfter,
+    createdTime: Date.now(),
+    fees: noFees,
+  }
+
+  return { newBet, newPool, newTotalShares, newTotalBets }
 }
 
 export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {
   const openBets = yourBets.filter((bet) => !bet.isSold && !bet.sale)
-  const prevLoanAmount = _.sumBy(openBets, (bet) => bet.loanAmount ?? 0)
+  const prevLoanAmount = sumBy(openBets, (bet) => bet.loanAmount ?? 0)
   const loanAmount = Math.min(
     newBetAmount,
     MAX_LOAN_PER_CONTRACT - prevLoanAmount

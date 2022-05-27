@@ -7,7 +7,7 @@ import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
-import { claimManalink } from 'web/lib/firebase/api-call'
+import { claimManalink } from 'web/lib/firebase/fn-call'
 import { useManalink } from 'web/lib/firebase/manalinks'
 import { fromNow } from 'web/lib/util/time'
 
