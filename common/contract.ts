@@ -1,10 +1,10 @@
 import { Answer } from './answer'
 import { Fees } from './fees'
 
-export type FullContract<
-  M extends DPM | CPMM,
-  T extends Binary | Multi | FreeResponse | Numeric
-> = {
+export type AnyMechanism = DPM | CPMM
+export type AnyOutcomeType = Binary | Multi | FreeResponse | Numeric
+
+export type FullContract<M extends AnyMechanism, T extends AnyOutcomeType> = {
   id: string
   slug: string // auto-generated; must be unique
 
@@ -39,12 +39,9 @@ export type FullContract<
 } & M &
   T
 
-export type Contract = FullContract<
-  DPM | CPMM,
-  Binary | Multi | FreeResponse | Numeric
->
-export type BinaryContract = FullContract<DPM | CPMM, Binary>
-export type FreeResponseContract = FullContract<DPM | CPMM, FreeResponse>
+export type Contract = FullContract<AnyMechanism, AnyOutcomeType>
+export type BinaryContract = FullContract<AnyMechanism, Binary>
+export type FreeResponseContract = FullContract<AnyMechanism, FreeResponse>
 export type NumericContract = FullContract<DPM, Numeric>
 
 export type DPM = {
@@ -94,7 +91,7 @@ export type Numeric = {
   resolutionValue?: number
 }
 
-export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE' | 'NUMERIC'
+export type outcomeType = AnyOutcomeType['outcomeType']
 export const OUTCOME_TYPES = [
   'BINARY',
   'MULTI',
