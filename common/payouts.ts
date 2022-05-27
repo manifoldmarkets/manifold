@@ -9,6 +9,7 @@ import {
   FreeResponse,
   FullContract,
   Multi,
+  AnyOutcome,
 } from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
@@ -72,15 +73,17 @@ export const getPayouts = (
       liquidities,
       resolutionProbability
     )
+  } else if (contract.mechanism === 'dpm-2') {
+    return getDpmPayouts(
+      outcome,
+      resolutions,
+      contract,
+      bets,
+      resolutionProbability
+    )
+  } else {
+    throw new Error('Unknown contract mechanism.')
   }
-
-  return getDpmPayouts(
-    outcome,
-    resolutions,
-    contract,
-    bets,
-    resolutionProbability
-  )
 }
 
 export const getFixedPayouts = (
@@ -112,7 +115,7 @@ export const getDpmPayouts = (
   resolutions: {
     [outcome: string]: number
   },
-  contract: Contract,
+  contract: FullContract<DPM, AnyOutcome>,
   bets: Bet[],
   resolutionProbability?: number
 ): PayoutInfo => {

@@ -2,12 +2,12 @@ import { sum, groupBy, sumBy, mapValues } from 'lodash'
 
 import { Bet, NumericBet } from './bet'
 import { deductDpmFees, getDpmProbability } from './calculate-dpm'
-import { DPM, FreeResponse, FullContract, Multi } from './contract'
+import { DPM, FreeResponse, FullContract, Multi, AnyOutcome } from './contract'
 import { DPM_CREATOR_FEE, DPM_FEES, DPM_PLATFORM_FEE } from './fees'
 import { addObjects } from './util/object'
 
 export const getDpmCancelPayouts = (
-  contract: FullContract<DPM, any>,
+  contract: FullContract<DPM, AnyOutcome>,
   bets: Bet[]
 ) => {
   const { pool } = contract
@@ -31,7 +31,7 @@ export const getDpmCancelPayouts = (
 
 export const getDpmStandardPayouts = (
   outcome: string,
-  contract: FullContract<DPM, any>,
+  contract: FullContract<DPM, AnyOutcome>,
   bets: Bet[]
 ) => {
   const winningBets = bets.filter((bet) => bet.outcome === outcome)
@@ -78,7 +78,7 @@ export const getDpmStandardPayouts = (
 
 export const getNumericDpmPayouts = (
   outcome: string,
-  contract: FullContract<DPM, any>,
+  contract: FullContract<DPM, AnyOutcome>,
   bets: NumericBet[]
 ) => {
   const totalShares = sumBy(bets, (bet) => bet.allOutcomeShares[outcome] ?? 0)
@@ -129,7 +129,7 @@ export const getNumericDpmPayouts = (
 }
 
 export const getDpmMktPayouts = (
-  contract: FullContract<DPM, any>,
+  contract: FullContract<DPM, AnyOutcome>,
   bets: Bet[],
   resolutionProbability?: number
 ) => {
