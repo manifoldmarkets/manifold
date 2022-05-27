@@ -6,15 +6,18 @@ export type Manalink = {
   // Note: we assume both fromId and toId are of SourceType 'USER'
   fromId: string
 
+  // Displayed to people claiming the link
+  message: string
+
   // How much to send with the link
   amount: number
   token: 'M$' // TODO: could send eg YES shares too??
 
   createdTime: number
-  // If set to Infinity, the link is valid forever
-  expiresTime: number
-  // If set to Infinity, the link can be used infinitely
-  maxUses: number
+  // If null, the link is valid forever
+  expiresTime: number | null
+  // If null, the link can be used infinitely
+  maxUses: number | null
 
   // Used for simpler caching
   claimedUserIds: string[]

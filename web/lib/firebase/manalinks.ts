@@ -17,10 +17,11 @@ import { useEffect, useState } from 'react'
 export async function createManalink(data: {
   fromId: string
   amount: number
-  expiresTime: number
-  maxUses: number
+  expiresTime: number | null
+  maxUses: number | null
+  message: string
 }) {
-  const { fromId, amount, expiresTime, maxUses } = data
+  const { fromId, amount, expiresTime, maxUses, message } = data
 
   // At 100 IDs per hour, using this alphabet and 8 chars, there's a 1% chance of collision in 2 years
   // See https://zelark.github.io/nano-id-cc/
@@ -43,6 +44,7 @@ export async function createManalink(data: {
     maxUses,
     claimedUserIds: [],
     claims: [],
+    message,
   }
 
   const ref = doc(db, 'manalinks', slug)

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Manalink } from 'common/manalink'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
-import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
@@ -15,6 +14,12 @@ import { Txn } from 'common/txn'
 import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
+import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
+import Textarea from 'react-expanding-textarea'
+
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
+dayjs.extend(customParseFormat)
 
 function getLinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
@@ -22,9 +27,19 @@ function getLinkUrl(slug: string) {
 
 export default function LinkPage() {
   const user = useUser()
-  const [amount, setAmount] = useState(100)
+  const [newManalink, setNewManalink] = useState<ManalinkInfo>({
+    expiresTime: null,
+    amount: 100,
+    maxUses: 5,
+    uses: 0,
+    message: '',
+  })
   const links = useUserManalinks(user?.id ?? '')
   const manalinkTxns = useManalinkTxns(user?.id ?? '')
+
+  if (user == null) {
+    return null
+  }
 
   return (
     <Page>
@@ -35,40 +50,105 @@ export default function LinkPage() {
       />
 
       <Title text="Create a manalink" />
-
-      {/* Add a input form to set the amount */}
-      <Col className="justify-center gap-4 rounded-xl bg-indigo-50 p-4">
-        <p>Send your M$ to anyone!</p>
-
-        <label>
-          M$
-          <input
-            className="input"
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(parseInt(e.target.value))}
-          />
-        </label>
-
-        {user && (
-          <button
-            className="btn max-w-xs"
-            onClick={async () => {
-              await createManalink({
-                fromId: user.id,
-                amount: amount,
-                expiresTime: Date.now() + 1000 * 60 * 60 * 24 * 7,
-                maxUses: 1,
+      <p>
+        You can use manalinks to send mana to other people, even if they
+        don&apos;t yet have a Manifold account.
+      </p>
+      <form
+        className="my-5"
+        onSubmit={async () => {
+          await createManalink({
+            fromId: user.id,
+            amount: newManalink.amount,
+            expiresTime: newManalink.expiresTime,
+            maxUses: newManalink.maxUses,
+            message: newManalink.message,
+          })
+        }}
+      >
+        <div className="flex flex-row flex-wrap gap-x-5 gap-y-2">
+          <div className="form-control flex-auto">
+            <label className="label">Amount</label>
+            <input
+              className="input"
+              type="number"
+              value={newManalink.amount}
+              onChange={(e) =>
+                setNewManalink((m) => {
+                  return { ...m, amount: parseInt(e.target.value) }
+                })
+              }
+            ></input>
+          </div>
+          <div className="form-control flex-auto">
+            <label className="label">Uses</label>
+            <input
+              className="input"
+              type="number"
+              value={newManalink.maxUses ?? ''}
+              onChange={(e) =>
+                setNewManalink((m) => {
+                  return { ...m, maxUses: parseInt(e.target.value) }
+                })
+              }
+            ></input>
+          </div>
+          <div className="form-control flex-auto">
+            <label className="label">Expires at</label>
+            <input
+              value={
+                newManalink.expiresTime != null
+                  ? dayjs(newManalink.expiresTime).format('YYYY-MM-DDTHH:mm')
+                  : ''
+              }
+              className="input"
+              type="datetime-local"
+              onChange={(e) => {
+                setNewManalink((m) => {
+                  console.log(e.target.value)
+                  console.log(
+                    dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
+                  )
+                  return {
+                    ...m,
+                    expiresTime: e.target.value
+                      ? dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
+                      : null,
+                  }
+                })
+              }}
+            ></input>
+          </div>
+        </div>
+        <div className="form-control w-full">
+          <label className="label">Message</label>
+          <Textarea
+            placeholder={`From ${user.name}`}
+            className="input input-bordered resize-none"
+            autoFocus
+            value={newManalink.message}
+            onChange={(e) =>
+              setNewManalink((m) => {
+                return { ...m, message: e.target.value }
               })
-            }}
-          >
-            Create
-          </button>
-        )}
-      </Col>
+            }
+          />
+        </div>
+        <input
+          type="submit"
+          className="btn mt-5 max-w-xs"
+          value="Create"
+        ></input>
+      </form>
 
-      <Spacer h={20} />
-
+      <Title text="Preview" />
+      <p>This is what the person you send the link to will see:</p>
+      <ManalinkCard
+        className="my-5"
+        defaultMessage={`From ${user.name}`}
+        info={newManalink}
+        isClaiming={false}
+      />
       {links.length > 0 && <LinksTable links={links} />}
 
       {manalinkTxns.length > 0 && (

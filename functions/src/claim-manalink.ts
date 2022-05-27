@@ -35,7 +35,7 @@ export const claimManalink = functions
       }
 
       // Disallow expired or maxed out links
-      if (manalink.expiresTime < Date.now()) {
+      if (manalink.expiresTime != null && manalink.expiresTime < Date.now()) {
         return {
           status: 'error',
           message: `Manalink ${slug} expired on ${new Date(
@@ -43,7 +43,10 @@ export const claimManalink = functions
           ).toLocaleString()}`,
         }
       }
-      if (manalink.maxUses <= manalink.claims.length) {
+      if (
+        manalink.maxUses != null &&
+        manalink.maxUses <= manalink.claims.length
+      ) {
         return {
           status: 'error',
           message: `Manalink ${slug} has reached its max uses of ${manalink.maxUses}`,
