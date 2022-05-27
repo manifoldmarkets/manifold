@@ -12,7 +12,6 @@ import { getNewMultiBetInfo } from '../../common/new-bet'
 import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
 import { getContract, getValues } from './utils'
 import { sendNewAnswerEmail } from './emails'
-import { Bet } from '../../common/bet'
 
 export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -61,11 +60,6 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       if (closeTime && Date.now() > closeTime)
         return { status: 'error', message: 'Trading is closed' }
 
-      const yourBetsSnap = await transaction.get(
-        contractDoc.collection('bets').where('userId', '==', userId)
-      )
-      const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
-
       const [lastAnswer] = await getValues<Answer>(
         firestore
           .collection(`contracts/${contractId}/answers`)
@@ -99,23 +93,20 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       }
       transaction.create(newAnswerDoc, answer)
 
-      const newBetDoc = firestore
-        .collection(`contracts/${contractId}/bets`)
-        .doc()
+      const loanAmount = 0
 
-      const loanAmount = 0 // getLoanAmount(yourBets, amount)
-
-      const { newBet, newPool, newTotalShares, newTotalBets, newBalance } =
+      const { newBet, newPool, newTotalShares, newTotalBets } =
         getNewMultiBetInfo(
-          user,
           answerId,
           amount,
           contract as FullContract<DPM, FreeResponse>,
-          loanAmount,
-          newBetDoc.id
+          loanAmount
         )
 
-      transaction.create(newBetDoc, newBet)
+      const newBalance = user.balance - amount
+      const betDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
+      transaction.create(betDoc, { id: betDoc.id, userId: user.id, ...newBet })
+      transaction.update(userDoc, { balance: newBalance })
       transaction.update(contractDoc, {
         pool: newPool,
         totalShares: newTotalShares,
@@ -124,13 +115,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
         volume: volume + amount,
       })
 
-      if (!isFinite(newBalance)) {
-        throw new Error('Invalid user balance for ' + user.username)
-      }
-
-      transaction.update(userDoc, { balance: newBalance })
-
-      return { status: 'success', answerId, betId: newBetDoc.id, answer }
+      return { status: 'success', answerId, betId: betDoc.id, answer }
     })
 
     const { answer } = result

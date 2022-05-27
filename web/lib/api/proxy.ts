@@ -6,10 +6,10 @@ import fetch, { Headers, Response } from 'node-fetch'
 
 function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
   const result = new Headers()
-  for (let name of whitelist) {
+  for (const name of whitelist) {
     const v = req.headers[name.toLowerCase()]
     if (Array.isArray(v)) {
-      for (let vv of v) {
+      for (const vv of v) {
         result.append(name, vv)
       }
     } else if (v != null) {
@@ -23,7 +23,7 @@ function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
 
 function getProxiedResponseHeaders(res: Response, whitelist: string[]) {
   const result: { [k: string]: string } = {}
-  for (let name of whitelist) {
+  for (const name of whitelist) {
     const v = res.headers.get(name)
     if (v != null) {
       result[name] = v

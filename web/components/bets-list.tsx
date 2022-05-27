@@ -50,7 +50,7 @@ import { trackLatency } from 'web/lib/firebase/tracking'
 import { NumericContract } from 'common/contract'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
-type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
+type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
 
 export function BetsList(props: { user: User }) {
   const { user } = props
@@ -107,6 +107,7 @@ export function BetsList(props: { user: User }) {
       !FILTERS.resolved(c) && (c.closeTime ?? Infinity) < Date.now(),
     open: (c) => !(FILTERS.closed(c) || FILTERS.resolved(c)),
     all: () => true,
+    sold: () => true,
   }
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => contractsMetrics[c.id].profit,
@@ -122,10 +123,14 @@ export function BetsList(props: { user: User }) {
     .reverse()
     .filter(FILTERS[filter])
     .filter((c) => {
-      if (sort === 'profit') return true
+      if (filter === 'all') return true
 
-      // Filter out contracts where you don't have shares anymore.
       const metrics = contractsMetrics[c.id]
+
+      // Filter for contracts you sold out of.
+      if (filter === 'sold') return metrics.payout === 0
+
+      // Filter for contracts where you currently have shares.
       return metrics.payout > 0
     })
 
@@ -181,6 +186,7 @@ export function BetsList(props: { user: User }) {
             onChange={(e) => setFilter(e.target.value as BetFilter)}
           >
             <option value="open">Open</option>
+            <option value="sold">Sold</option>
             <option value="closed">Closed</option>
             <option value="resolved">Resolved</option>
             <option value="all">All</option>

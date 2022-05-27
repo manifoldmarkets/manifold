@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin'
+import { z } from 'zod'
 
 import {
   Binary,
@@ -19,7 +20,7 @@ import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
 import { chargeUser } from './utils'
-import { APIError, newEndpoint, parseCredentials, lookupUser } from './api'
+import { APIError, newEndpoint, validate, zTimestamp } from './api'
 
 import {
   FIXED_ANTE,
@@ -28,94 +29,65 @@ import {
   getFreeAnswerAnte,
   getNumericAnte,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-  MINIMUM_ANTE,
 } from '../../common/antes'
 import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 
-export const createContract = newEndpoint(['POST'], async (req, _res) => {
-  const [creator, _privateUser] = await lookupUser(await parseCredentials(req))
-  let {
-    question,
-    outcomeType,
-    description,
-    initialProb,
-    closeTime,
-    tags,
-    min,
-    max,
-    manaLimitPerUser,
-    resolutionType,
-    automaticResolution,
-    automaticResolutionTime
-  } = req.body || {}
-
-  if (!question || typeof question != 'string')
-    throw new APIError(400, 'Missing or invalid question field')
-
-  question = question.slice(0, MAX_QUESTION_LENGTH)
-
-  if (typeof description !== 'string')
-    throw new APIError(400, 'Invalid description field')
-
-  description = description.slice(0, MAX_DESCRIPTION_LENGTH)
-
-  if (tags !== undefined && !Array.isArray(tags))
-    throw new APIError(400, 'Invalid tags field')
-
-  tags = (tags || []).map((tag: string) =>
-    tag.toString().slice(0, MAX_TAG_LENGTH)
+const bodySchema = z.object({
+  question: z.string().min(1).max(MAX_QUESTION_LENGTH),
+  description: z.string().max(MAX_DESCRIPTION_LENGTH),
+  tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
+  closeTime: zTimestamp().refine(
+    (date) => date.getTime() > new Date().getTime(),
+    'Close time must be in the future.'
+  ),
+  outcomeType: z.enum(OUTCOME_TYPES),
+  resolutionType: z.enum(RESOLUTION_TYPES),
+  automaticResolution: z.enum(RESOLUTIONS),
+  automaticResolutionTime: z.date()
+  }).refine(
+    (data) => data.automaticResolutionTime.getTime() > data.closeTime.getTime(),
+    'Resolution time must be after close time.'
+  ).refine(
+    (data) => data.resolutionType === 'MANUAL' && data.automaticResolutionTime,
+    'Time for automatic resolution specified even tho the resolution is \'MANUAL\''
   )
 
-  outcomeType = outcomeType ?? 'BINARY'
+const binarySchema = z.object({
+  initialProb: z.number().min(1).max(99),
+})
 
-  if (!OUTCOME_TYPES.includes(outcomeType))
-    throw new APIError(400, 'Invalid outcomeType')
+const numericSchema = z.object({
+  min: z.number(),
+  max: z.number(),
+})
 
-  if (
-    outcomeType === 'NUMERIC' &&
-    !(
-      min !== undefined &&
-      max !== undefined &&
-      isFinite(min) &&
-      isFinite(max) &&
-      min < max &&
-      max - min > 0.01
-    )
+export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
+  const { question, description, tags, closeTime, outcomeType, resolutionType, automaticResolution, automaticResolutionTime } = validate(
+    bodySchema,
+    req.body
   )
-    throw new APIError(400, 'Invalid range')
 
-  if (
-    outcomeType === 'BINARY' &&
-    (!initialProb || initialProb < 1 || initialProb > 99)
-  )
-    throw new APIError(400, 'Invalid initial probability')
-
-  resolutionType = resolutionType ?? 'MANUAL'
-
-  if (!RESOLUTION_TYPES.includes(resolutionType))
-  throw new APIError(400, 'Invalid resolutionType')
-
-  automaticResolution = automaticResolution ?? 'MANUAL'
-
-  if (!RESOLUTIONS.includes(automaticResolution))
-  throw new APIError(400, 'Invalid automaticResolution')
-
-  if (automaticResolution === 'MANUAL' && automaticResolutionTime)
-  throw new APIError(400, 'automaticResolutionTime specified even tho automaticResolution is \'MANUAL\'')
-
-  if (automaticResolutionTime && automaticResolutionTime < closeTime)
-  throw new APIError(400, 'resolutionTime < closeTime')
+  let min, max, initialProb
+  if (outcomeType === 'NUMERIC') {
+    ;({ min, max } = validate(numericSchema, req.body))
+    if (max - min <= 0.01) throw new APIError(400, 'Invalid range.')
+  }
+  if (outcomeType === 'BINARY') {
+    ;({ initialProb } = validate(binarySchema, req.body))
+  }
 
   // Uses utc time on server:
-  const yesterday = new Date()
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1)
-  const freeMarketResetTime = yesterday.setUTCHours(16, 0, 0, 0)
+  const today = new Date()
+  let freeMarketResetTime = today.setUTCHours(16, 0, 0, 0)
+  if (today.getTime() < freeMarketResetTime) {
+    freeMarketResetTime = freeMarketResetTime - 24 * 60 * 60 * 1000
+  }
 
   const userContractsCreatedTodaySnapshot = await firestore
     .collection(`contracts`)
-    .where('creatorId', '==', creator.id)
+    .where('creatorId', '==', user.id)
     .where('createdTime', '>=', freeMarketResetTime)
     .get()
   console.log('free market reset time: ', freeMarketResetTime)
@@ -123,18 +95,9 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
 
   const ante = FIXED_ANTE
 
-  if (
-    ante === undefined ||
-    ante < MINIMUM_ANTE ||
-    (ante > creator.balance && !isFree) ||
-    isNaN(ante) ||
-    !isFinite(ante)
-  )
-    throw new APIError(400, 'Invalid ante')
-
   console.log(
     'creating contract for',
-    creator.username,
+    user.username,
     'on',
     question,
     'ante:',
@@ -142,34 +105,31 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
   )
 
   const slug = await getSlug(question)
-
   const contractRef = firestore.collection('contracts').doc()
-
   const contract = getNewContract(
     contractRef.id,
     slug,
-    creator,
+    user,
     question,
     outcomeType,
     description,
-    initialProb,
+    initialProb ?? 0,
     ante,
-    closeTime,
+    closeTime.getTime(),
     tags ?? [],
     resolutionType,
     automaticResolution,
-    automaticResolutionTime,
+    automaticResolutionTime.getTime(),
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
-    max ?? 0,
-    manaLimitPerUser ?? 0,
+    max ?? 0
   )
 
-  if (!isFree && ante) await chargeUser(creator.id, ante, true)
+  if (!isFree && ante) await chargeUser(user.id, ante, true)
 
   await contractRef.create(contract)
 
-  const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : creator.id
+  const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : user.id
 
   if (outcomeType === 'BINARY' && contract.mechanism === 'dpm-2') {
     const yesBetDoc = firestore
@@ -179,7 +139,7 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
     const noBetDoc = firestore.collection(`contracts/${contract.id}/bets`).doc()
 
     const { yesBet, noBet } = getAnteBets(
-      creator,
+      user,
       contract as FullContract<DPM, Binary>,
       yesBetDoc.id,
       noBetDoc.id
@@ -205,7 +165,7 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
       .collection(`contracts/${contract.id}/answers`)
       .doc('0')
 
-    const noneAnswer = getNoneAnswer(contract.id, creator)
+    const noneAnswer = getNoneAnswer(contract.id, user)
     await noneAnswerDoc.set(noneAnswer)
 
     const anteBetDoc = firestore
@@ -224,7 +184,7 @@ export const createContract = newEndpoint(['POST'], async (req, _res) => {
       .doc()
 
     const anteBet = getNumericAnte(
-      creator,
+      user,
       contract as FullContract<DPM, Numeric>,
       ante,
       anteBetDoc.id

@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
 
-import { Contract, RESOLUTIONS } from '../../common/contract'
+import { Contract, resolution, RESOLUTIONS } from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, isProd, payUser } from './utils'
@@ -21,7 +21,7 @@ export const resolveMarket = functions
   .https.onCall(
     async (
       data: {
-        outcome: string
+        outcome: resolution
         value?: number
         contractId: string
         probabilityInt?: number
