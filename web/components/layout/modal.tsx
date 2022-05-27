@@ -1,9 +1,9 @@
-import { Fragment } from 'react'
+import { Fragment, ReactNode } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 
 // From https://tailwindui.com/components/application-ui/overlays/modals
 export function Modal(props: {
-  children: React.ReactNode
+  children: ReactNode
   open: boolean
   setOpen: (open: boolean) => void
 }) {

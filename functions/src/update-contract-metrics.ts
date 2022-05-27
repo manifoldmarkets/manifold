@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sumBy } from 'lodash'
 
 import { getValues } from './utils'
 import { Contract } from '../../common/contract'
@@ -39,5 +39,5 @@ const computeVolumeFrom = async (contract: Contract, timeAgoMs: number) => {
       .where('createdTime', '>', Date.now() - timeAgoMs)
   )
 
-  return _.sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
+  return sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
 }

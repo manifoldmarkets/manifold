@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { RefreshIcon } from '@heroicons/react/outline'
 import Router from 'next/router'
 
@@ -9,7 +9,7 @@ import { Title } from 'web/components/title'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { changeUserInfo } from 'web/lib/firebase/api-call'
+import { changeUserInfo } from 'web/lib/firebase/fn-call'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -21,7 +21,7 @@ import Textarea from 'react-expanding-textarea'
 
 function EditUserField(props: {
   user: User
-  field: 'bio' | 'bannerUrl' | 'twitterHandle' | 'discordHandle'
+  field: 'bio' | 'website' | 'bannerUrl' | 'twitterHandle' | 'discordHandle'
   label: string
 }) {
   const { user, field, label } = props
@@ -220,18 +220,15 @@ export default function ProfilePage() {
                 }}
               />
 
-              {[
-                ['bio', 'Bio'],
-                ['website', 'Website URL'],
-                ['twitterHandle', 'Twitter'],
-                ['discordHandle', 'Discord'],
-              ].map(([field, label]) => (
-                <EditUserField
-                  user={user}
-                  // @ts-ignore
-                  field={field}
-                  label={label}
-                />
+              {(
+                [
+                  ['bio', 'Bio'],
+                  ['website', 'Website URL'],
+                  ['twitterHandle', 'Twitter'],
+                  ['discordHandle', 'Discord'],
+                ] as const
+              ).map(([field, label]) => (
+                <EditUserField user={user} field={field} label={label} />
               ))}
             </>
           )}

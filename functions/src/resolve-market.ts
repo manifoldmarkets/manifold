@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
 
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
@@ -22,6 +22,7 @@ export const resolveMarket = functions
     async (
       data: {
         outcome: string
+        value?: number
         contractId: string
         probabilityInt?: number
         resolutions?: { [outcome: string]: number }
@@ -31,7 +32,7 @@ export const resolveMarket = functions
       const userId = context?.auth?.uid
       if (!userId) return { status: 'error', message: 'Not authorized' }
 
-      const { outcome, contractId, probabilityInt, resolutions } = data
+      const { outcome, contractId, probabilityInt, resolutions, value } = data
 
       const contractDoc = firestore.doc(`contracts/${contractId}`)
       const contractSnap = await contractDoc.get()
@@ -50,9 +51,15 @@ export const resolveMarket = functions
           outcome !== 'CANCEL'
         )
           return { status: 'error', message: 'Invalid outcome' }
+      } else if (outcomeType === 'NUMERIC') {
+        if (isNaN(+outcome) && outcome !== 'CANCEL')
+          return { status: 'error', message: 'Invalid outcome' }
       } else {
         return { status: 'error', message: 'Invalid contract outcomeType' }
       }
+
+      if (value !== undefined && !isFinite(value))
+        return { status: 'error', message: 'Invalid value' }
 
       if (
         outcomeType === 'BINARY' &&
@@ -108,6 +115,7 @@ export const resolveMarket = functions
         removeUndefinedProps({
           isResolved: true,
           resolution: outcome,
+          resolutionValue: value,
           resolutionTime,
           closeTime: newCloseTime,
           resolutionProbability,
@@ -179,13 +187,13 @@ const sendResolutionEmails = async (
   resolutionProbability?: number,
   resolutions?: { [outcome: string]: number }
 ) => {
-  const nonWinners = _.difference(
-    _.uniq(openBets.map(({ userId }) => userId)),
+  const nonWinners = difference(
+    uniq(openBets.map(({ userId }) => userId)),
     Object.keys(userPayouts)
   )
-  const investedByUser = _.mapValues(
-    _.groupBy(openBets, (bet) => bet.userId),
-    (bets) => _.sumBy(bets, (bet) => bet.amount)
+  const investedByUser = mapValues(
+    groupBy(openBets, (bet) => bet.userId),
+    (bets) => sumBy(bets, (bet) => bet.amount)
   )
   const emailPayouts = [
     ...Object.entries(userPayouts),

@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { mapValues, groupBy, sumBy, sum, sortBy, debounce } from 'lodash'
 import { useState, useMemo } from 'react'
 import { charities, Charity as CharityType } from 'common/charity'
 import { CharityCard } from 'web/components/charity/charity-card'
@@ -12,11 +12,11 @@ import { formatMoney } from 'common/util/format'
 
 export async function getStaticProps() {
   const txns = await getAllCharityTxns()
-  const totals = _.mapValues(_.groupBy(txns, 'toId'), (txns) =>
-    _.sumBy(txns, (txn) => txn.amount)
+  const totals = mapValues(groupBy(txns, 'toId'), (txns) =>
+    sumBy(txns, (txn) => txn.amount)
   )
-  const totalRaised = _.sum(Object.values(totals))
-  const sortedCharities = _.sortBy(charities, [
+  const totalRaised = sum(Object.values(totals))
+  const sortedCharities = sortBy(charities, [
     (charity) => (charity.tags?.includes('Featured') ? 0 : 1),
     (charity) => -totals[charity.id],
   ])
@@ -37,7 +37,7 @@ export default function Charity(props: {
   const { totalRaised, charities } = props
 
   const [query, setQuery] = useState('')
-  const debouncedQuery = _.debounce(setQuery, 50)
+  const debouncedQuery = debounce(setQuery, 50)
 
   const filterCharities = useMemo(
     () =>
@@ -57,7 +57,7 @@ export default function Charity(props: {
         <Col className="max-w-xl gap-2">
           <Title className="!mt-0" text="Manifold for Good" />
           <div className="mb-6 text-gray-500">
-            Donate your winnings to charity! Through the month of May, every
+            Donate your winnings to charity! Through the month of May, every{' '}
             {formatMoney(100)} you contribute turns into $1 USD sent to your
             chosen charity.
             <Spacer h={5} />

@@ -5,11 +5,13 @@ import Stripe from 'stripe'
 import { getPrivateUser, getUser, isProd, payUser } from './utils'
 import { sendThankYouEmail } from './emails'
 
+export type StripeSession = Stripe.Event.Data.Object & { id: any, metadata: any}
+
 export type StripeTransaction = {
   userId: string
   manticDollarQuantity: number
   sessionId: string
-  session: any
+  session: StripeSession
   timestamp: number
 }
 
@@ -96,14 +98,14 @@ export const stripeWebhook = functions
     }
 
     if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as any
+      const session = event.data.object as StripeSession
       await issueMoneys(session)
     }
 
     res.status(200).send('success')
   })
 
-const issueMoneys = async (session: any) => {
+const issueMoneys = async (session: StripeSession) => {
   const { id: sessionId } = session
 
   const query = await firestore

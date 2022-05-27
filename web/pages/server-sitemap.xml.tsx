@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { sortBy } from 'lodash'
 import { GetServerSideProps } from 'next'
 import { getServerSideSitemap, ISitemapField } from 'next-sitemap'
 
@@ -10,7 +10,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const response = await fetch(`https://${DOMAIN}/api/v0/markets`)
 
   const liteMarkets = (await response.json()) as LiteMarket[]
-  const sortedMarkets = _.sortBy(liteMarkets, (m) => -m.volume24Hours)
+  const sortedMarkets = sortBy(liteMarkets, (m) => -m.volume24Hours)
 
   const fields = sortedMarkets.map((market) => ({
     // See https://www.sitemaps.org/protocol.html

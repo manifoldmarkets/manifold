@@ -1,13 +1,18 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import _ from 'lodash'
+import { uniqBy, sum } from 'lodash'
 import { useState } from 'react'
 import { Bet } from 'common/bet'
 
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
-import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import {
+  contractMetrics,
+  contractPath,
+  contractPool,
+  getBinaryProbPercent,
+} from 'web/lib/firebase/contracts'
 import { AddLiquidityPanel } from '../add-liquidity-panel'
 import { CopyLinkButton } from '../copy-link-button'
 import { Col } from '../layout/col'
@@ -26,7 +31,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
 
   const { createdTime, closeTime, resolutionTime } = contract
-  const tradersCount = _.uniqBy(bets, 'userId').length
+  const tradersCount = uniqBy(bets, 'userId').length
 
   return (
     <>
@@ -98,19 +103,10 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
                 <td>{tradersCount}</td>
               </tr>
 
-              {contract.mechanism === 'cpmm-1' && (
-                <tr>
-                  <td>Liquidity</td>
-                  <td>{formatMoney(contract.totalLiquidity)}</td>
-                </tr>
-              )}
-
-              {contract.mechanism === 'dpm-2' && (
-                <tr>
-                  <td>Pool</td>
-                  <td>{formatMoney(_.sum(Object.values(contract.pool)))}</td>
-                </tr>
-              )}
+              <tr>
+                <td>Pool</td>
+                <td>{contractPool(contract)}</td>
+              </tr>
             </tbody>
           </table>
 

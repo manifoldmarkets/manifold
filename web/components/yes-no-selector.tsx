@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React from 'react'
+import React, { ReactNode } from 'react'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
@@ -195,11 +195,42 @@ export function BuyButton(props: { className?: string; onClick?: () => void }) {
   )
 }
 
+export function NumberCancelSelector(props: {
+  selected: 'NUMBER' | 'CANCEL' | undefined
+  onSelect: (selected: 'NUMBER' | 'CANCEL') => void
+  className?: string
+  btnClassName?: string
+}) {
+  const { selected, onSelect, className } = props
+
+  const btnClassName = clsx('px-6 flex-1', props.btnClassName)
+
+  return (
+    <Col className={clsx('gap-2', className)}>
+      <Button
+        color={selected === 'NUMBER' ? 'green' : 'gray'}
+        onClick={() => onSelect('NUMBER')}
+        className={clsx('whitespace-nowrap', btnClassName)}
+      >
+        Choose value
+      </Button>
+
+      <Button
+        color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+        onClick={() => onSelect('CANCEL')}
+        className={clsx(btnClassName, '')}
+      >
+        N/A
+      </Button>
+    </Col>
+  )
+}
+
 function Button(props: {
   className?: string
   onClick?: () => void
   color: 'green' | 'red' | 'blue' | 'yellow' | 'gray'
-  children?: any
+  children?: ReactNode
 }) {
   const { className, onClick, children, color } = props
 

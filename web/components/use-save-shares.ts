@@ -1,11 +1,19 @@
-import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import {
+  Binary,
+  CPMM,
+  DPM,
+  FreeResponseContract,
+  FullContract,
+} from 'common/contract'
 import { Bet } from 'common/bet'
 import { useEffect, useState } from 'react'
-import _ from 'lodash'
+import { partition, sumBy } from 'lodash'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useSaveShares = (
-  contract: FullContract<CPMM | DPM, Binary>,
-  userBets: Bet[] | undefined
+  contract: FullContract<CPMM | DPM, Binary | FreeResponseContract>,
+  userBets: Bet[] | undefined,
+  freeResponseAnswerOutcome?: string
 ) => {
   const [savedShares, setSavedShares] = useState<
     | {
@@ -17,31 +25,31 @@ export const useSaveShares = (
     | undefined
   >()
 
-  const [yesBets, noBets] = _.partition(
-    userBets ?? [],
-    (bet) => bet.outcome === 'YES'
+  // TODO: How do we handle numeric yes / no bets? - maybe bet amounts above vs below the highest peak
+  const [yesBets, noBets] = partition(userBets ?? [], (bet) =>
+    freeResponseAnswerOutcome
+      ? bet.outcome === freeResponseAnswerOutcome
+      : bet.outcome === 'YES'
   )
   const [yesShares, noShares] = [
-    _.sumBy(yesBets, (bet) => bet.shares),
-    _.sumBy(noBets, (bet) => bet.shares),
+    sumBy(yesBets, (bet) => bet.shares),
+    sumBy(noBets, (bet) => bet.shares),
   ]
 
   const yesFloorShares = Math.round(yesShares) === 0 ? 0 : Math.floor(yesShares)
   const noFloorShares = Math.round(noShares) === 0 ? 0 : Math.floor(noShares)
 
   useEffect(() => {
+    const local = safeLocalStorage()
     // Save yes and no shares to local storage.
-    const savedShares = localStorage.getItem(`${contract.id}-shares`)
+    const savedShares = local?.getItem(`${contract.id}-shares`)
     if (!userBets && savedShares) {
       setSavedShares(JSON.parse(savedShares))
     }
 
     if (userBets) {
       const updatedShares = { yesShares, noShares }
-      localStorage.setItem(
-        `${contract.id}-shares`,
-        JSON.stringify(updatedShares)
-      )
+      local?.setItem(`${contract.id}-shares`, JSON.stringify(updatedShares))
     }
   }, [contract.id, userBets, noShares, yesShares])
 

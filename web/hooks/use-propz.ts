@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { isEmpty } from 'lodash'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
@@ -16,7 +16,7 @@ export function usePropz(
   getStaticPropz: (props: PropzProps) => Promise<any>
 ) {
   // If props were successfully server-side generated, just use those
-  if (!_.isEmpty(initialProps)) {
+  if (!isEmpty(initialProps)) {
     return initialProps
   }
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
+import { keyBy, sortBy, groupBy, sumBy, mapValues } from 'lodash'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -24,17 +25,27 @@ import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Leaderboard } from 'web/components/leaderboard'
-import _ from 'lodash'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
-import { FeedBet, FeedComment } from 'web/components/feed/feed-items'
 import { useUserById } from 'web/hooks/use-users'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { FirstArgument } from 'common/util/types'
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import {
+  BinaryContract,
+  DPM,
+  FreeResponse,
+  FullContract,
+  NumericContract,
+} from 'common/contract'
 import { contractTextDetails } from 'web/components/contract/contract-details'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
+import { NumericBetPanel } from '../../components/numeric-bet-panel'
+import { NumericResolutionPanel } from '../../components/numeric-resolution-panel'
+import { FeedComment } from 'web/components/feed/feed-comments'
+import { FeedBet } from 'web/components/feed/feed-bets'
+import { useIsIframe } from 'web/hooks/use-is-iframe'
+import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -104,6 +115,11 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
     setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
 
+  const inIframe = useIsIframe()
+  if (inIframe) {
+    return <ContractEmbedPage {...props} />
+  }
+
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
   bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
@@ -112,22 +128,40 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
     return <Custom404 />
   }
 
-  const { creatorId, isResolved, question, outcomeType, resolution } = contract
+  const { creatorId, isResolved, question, outcomeType } = contract
 
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
+  const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
-  const hasSidePanel = isBinary && (allowTrade || allowResolve)
+  const hasSidePanel = (isBinary || isNumeric) && (allowTrade || allowResolve)
 
   const ogCardProps = getOpenGraphProps(contract)
 
   const rightSidebar = hasSidePanel ? (
     <Col className="gap-4">
-      {allowTrade && (
-        <BetPanel className="hidden xl:flex" contract={contract} />
-      )}
-      {allowResolve && <ResolutionPanel creator={user} contract={contract} />}
+      {allowTrade &&
+        (isNumeric ? (
+          <NumericBetPanel
+            className="hidden xl:flex"
+            contract={contract as NumericContract}
+          />
+        ) : (
+          <BetPanel className="hidden xl:flex" contract={contract} />
+        ))}
+      {allowResolve &&
+        (isNumeric ? (
+          <NumericResolutionPanel
+            creator={user}
+            contract={contract as NumericContract}
+          />
+        ) : (
+          <ResolutionPanel
+            creator={user}
+            contract={contract as BinaryContract}
+          />
+        ))}
     </Col>
   ) : null
 
@@ -151,7 +185,7 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
         />
       )}
 
-      <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white px-2 py-6 md:px-6 md:py-8">
+      <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         {backToHome && (
           <button
             className="btn btn-sm mb-4 items-center gap-2 self-start border-0 border-gray-700 bg-white normal-case text-gray-700 hover:bg-white hover:text-gray-700 lg:hidden"
@@ -176,6 +210,13 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
             />
             <Spacer h={4} />
           </>
+        )}
+
+        {isNumeric && (
+          <NumericBetPanel
+            className="xl:hidden"
+            contract={contract as NumericContract}
+          />
         )}
 
         {isResolved && (
@@ -209,13 +250,13 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
 
   const { userProfits, top5Ids } = useMemo(() => {
     // Create a map of userIds to total profits (including sales)
-    const betsByUser = _.groupBy(bets, 'userId')
-    const userProfits = _.mapValues(betsByUser, (bets) =>
-      _.sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
+    const betsByUser = groupBy(bets, 'userId')
+    const userProfits = mapValues(betsByUser, (bets) =>
+      sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
     )
     // Find the 5 users with the most profits
-    const top5Ids = _.entries(userProfits)
-      .sort(([i1, p1], [i2, p2]) => p2 - p1)
+    const top5Ids = Object.entries(userProfits)
+      .sort(([_i1, p1], [_i2, p2]) => p2 - p1)
       .filter(([, p]) => p > 0)
       .slice(0, 5)
       .map(([id]) => id)
@@ -226,7 +267,7 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
     console.log('foo')
     if (top5Ids.length > 0) {
       listUsers(top5Ids).then((users) => {
-        const sortedUsers = _.sortBy(users, (user) => -userProfits[user.id])
+        const sortedUsers = sortBy(users, (user) => -userProfits[user.id])
         setUsers(sortedUsers)
       })
     }
@@ -253,8 +294,8 @@ function ContractTopTrades(props: {
   comments: Comment[]
 }) {
   const { contract, bets, comments } = props
-  const commentsById = _.keyBy(comments, 'id')
-  const betsById = _.keyBy(bets, 'id')
+  const commentsById = keyBy(comments, 'id')
+  const betsById = keyBy(bets, 'id')
 
   // If 'id2' is the sale of 'id1', both are logged with (id2 - id1) of profit
   // Otherwise, we record the profit at resolution time
@@ -271,11 +312,11 @@ function ContractTopTrades(props: {
   }
 
   // Now find the betId with the highest profit
-  const topBetId = _.sortBy(bets, (b) => -profitById[b.id])[0]?.id
+  const topBetId = sortBy(bets, (b) => -profitById[b.id])[0]?.id
   const topBettor = useUserById(betsById[topBetId]?.userId)
 
   // And also the commentId of the comment with the highest profit
-  const topCommentId = _.sortBy(
+  const topCommentId = sortBy(
     comments,
     (c) => c.betId && -profitById[c.betId]
   )[0]?.id

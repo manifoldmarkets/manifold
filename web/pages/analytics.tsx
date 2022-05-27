@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import _ from 'lodash'
+import { zip, uniq, sumBy } from 'lodash'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   DailyCountChart,
@@ -18,8 +18,11 @@ import { getDailyNewUsers } from 'web/lib/firebase/users'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
-  const numberOfDays = 45
+  const numberOfDays = 90
   const today = dayjs(dayjs().format('YYYY-MM-DD'))
+    // Convert from UTC midnight to PT midnight.
+    .add(7, 'hours')
+
   const startDate = today.subtract(numberOfDays, 'day')
 
   const [dailyBets, dailyContracts, dailyComments, dailyNewUsers] =
@@ -36,12 +39,12 @@ export async function getStaticPropz() {
   )
   const dailyCommentCounts = dailyComments.map((comments) => comments.length)
 
-  const dailyUserIds = _.zip(dailyContracts, dailyBets, dailyComments).map(
+  const dailyUserIds = zip(dailyContracts, dailyBets, dailyComments).map(
     ([contracts, bets, comments]) => {
       const creatorIds = (contracts ?? []).map((c) => c.creatorId)
       const betUserIds = (bets ?? []).map((bet) => bet.userId)
       const commentUserIds = (comments ?? []).map((comment) => comment.userId)
-      return _.uniq([...creatorIds, ...betUserIds, ...commentUserIds])
+      return uniq([...creatorIds, ...betUserIds, ...commentUserIds])
     }
   )
 
@@ -83,7 +86,7 @@ export async function getStaticPropz() {
     for (let j = lastWeek.start; j <= lastWeek.end; j++) {
       dailyUserIds[j].forEach((userId) => activeLastWeek.add(userId))
     }
-    const retainedCount = _.sumBy(Array.from(activeTwoWeeksAgo), (userId) =>
+    const retainedCount = sumBy(Array.from(activeTwoWeeksAgo), (userId) =>
       activeLastWeek.has(userId) ? 1 : 0
     )
     const retainedFrac = retainedCount / activeTwoWeeksAgo.size
@@ -108,7 +111,7 @@ export async function getStaticPropz() {
     for (let j = lastMonth.start; j <= lastMonth.end; j++) {
       dailyUserIds[j].forEach((userId) => activeLastMonth.add(userId))
     }
-    const retainedCount = _.sumBy(Array.from(activeTwoMonthsAgo), (userId) =>
+    const retainedCount = sumBy(Array.from(activeTwoMonthsAgo), (userId) =>
       activeLastMonth.has(userId) ? 1 : 0
     )
     const retainedFrac = retainedCount / activeTwoMonthsAgo.size
@@ -141,6 +144,7 @@ export async function getStaticPropz() {
     const frac = activatedCount / (newUsers || 1)
     return Math.round(frac * 100 * 100) / 100
   })
+  const dailySignups = dailyNewUsers.map((users) => users.length)
 
   return {
     props: {
@@ -151,11 +155,12 @@ export async function getStaticPropz() {
       dailyBetCounts,
       dailyContractCounts,
       dailyCommentCounts,
+      dailySignups,
       weekOnWeekRetention,
       weeklyActivationRate,
       monthlyRetention,
     },
-    revalidate: 12 * 60 * 60, // regenerate after half a day
+    revalidate: 60 * 60, // Regenerate after an hour
   }
 }
 
@@ -167,6 +172,7 @@ export default function Analytics(props: {
   dailyBetCounts: number[]
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
+  dailySignups: number[]
   weekOnWeekRetention: number[]
   monthlyRetention: number[]
   weeklyActivationRate: number[]
@@ -179,6 +185,7 @@ export default function Analytics(props: {
     dailyBetCounts: [],
     dailyContractCounts: [],
     dailyCommentCounts: [],
+    dailySignups: [],
     weekOnWeekRetention: [],
     monthlyRetention: [],
     weeklyActivationRate: [],
@@ -200,22 +207,25 @@ export function CustomAnalytics(props: {
   dailyBetCounts: number[]
   dailyContractCounts: number[]
   dailyCommentCounts: number[]
+  dailySignups: number[]
   weekOnWeekRetention: number[]
   monthlyRetention: number[]
   weeklyActivationRate: number[]
 }) {
   const {
-    startDate,
     dailyActiveUsers,
     dailyBetCounts,
     dailyContractCounts,
     dailyCommentCounts,
+    dailySignups,
     weeklyActiveUsers,
     monthlyActiveUsers,
     weekOnWeekRetention,
     monthlyRetention,
     weeklyActivationRate,
   } = props
+
+  const startDate = dayjs(props.startDate).add(12, 'hours').valueOf()
 
   const dailyDividedByWeekly = dailyActiveUsers
     .map((dailyActive, i) =>
@@ -312,6 +322,16 @@ export function CustomAnalytics(props: {
             content: (
               <DailyCountChart
                 dailyCounts={dailyCommentCounts}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Signups',
+            content: (
+              <DailyCountChart
+                dailyCounts={dailySignups}
                 startDate={startDate}
                 small
               />

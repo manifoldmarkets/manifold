@@ -1,6 +1,5 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
 
 import { getValue, getValues } from './utils'
 import { Contract } from '../../common/contract'

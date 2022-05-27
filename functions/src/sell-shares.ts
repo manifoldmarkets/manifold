@@ -1,4 +1,4 @@
-import * as _ from 'lodash'
+import { partition, sumBy } from 'lodash'
 import * as admin from 'firebase-admin'
 import * as functions from 'firebase-functions'
 
@@ -51,15 +51,15 @@ export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
         contractDoc.collection('bets').where('userId', '==', userId)
       )
 
-      const prevLoanAmount = _.sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+      const prevLoanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
 
-      const [yesBets, noBets] = _.partition(
+      const [yesBets, noBets] = partition(
         userBets ?? [],
         (bet) => bet.outcome === 'YES'
       )
       const [yesShares, noShares] = [
-        _.sumBy(yesBets, (bet) => bet.shares),
-        _.sumBy(noBets, (bet) => bet.shares),
+        sumBy(yesBets, (bet) => bet.shares),
+        sumBy(noBets, (bet) => bet.shares),
       ]
 
       const maxShares = outcome === 'YES' ? yesShares : noShares

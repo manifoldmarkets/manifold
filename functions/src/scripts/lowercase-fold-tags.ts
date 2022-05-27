@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { uniq } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
@@ -19,7 +19,7 @@ async function lowercaseFoldTags() {
     const foldRef = firestore.doc(`folds/${fold.id}`)
 
     const { tags } = fold
-    const lowercaseTags = _.uniq(tags.map((tag) => tag.toLowerCase()))
+    const lowercaseTags = uniq(tags.map((tag) => tag.toLowerCase()))
 
     console.log('Adding lowercase tags', fold.slug, lowercaseTags)
 

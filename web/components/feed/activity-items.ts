@@ -1,4 +1,4 @@
-import _, { Dictionary } from 'lodash'
+import { last, findLastIndex, uniq, sortBy } from 'lodash'
 
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
@@ -28,7 +28,7 @@ type BaseActivityItem = {
 export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
   betsByCurrentUser: Bet[]
-  comments: Comment[]
+  commentsByCurrentUser: Comment[]
   answerOutcome?: string
 }
 
@@ -54,6 +54,7 @@ export type CommentItem = BaseActivityItem & {
   type: 'comment'
   comment: Comment
   betsBySameUser: Bet[]
+  probAtCreatedTime?: number
   truncate?: boolean
   smallAvatar?: boolean
 }
@@ -62,7 +63,7 @@ export type CommentThreadItem = BaseActivityItem & {
   type: 'commentThread'
   parentComment: Comment
   comments: Comment[]
-  betsByUserId: Dictionary<[Bet, ...Bet[]]>
+  bets: Bet[]
 }
 
 export type BetGroupItem = BaseActivityItem & {
@@ -76,7 +77,7 @@ export type AnswerGroupItem = BaseActivityItem & {
   answer: Answer
   items: ActivityItem[]
   betsByCurrentUser?: Bet[]
-  comments?: Comment[]
+  commentsByCurrentUser?: Comment[]
 }
 
 export type CloseItem = BaseActivityItem & {
@@ -87,7 +88,6 @@ export type ResolveItem = BaseActivityItem & {
   type: 'resolve'
 }
 
-export const GENERAL_COMMENTS_OUTCOME_ID = 'General Comments'
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 const ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW = 3
 
@@ -200,17 +200,17 @@ function getAnswerGroups(
 ) {
   const { sortByProb, abbreviated, reversed } = options
 
-  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
+  let outcomes = uniq(bets.map((bet) => bet.outcome)).filter(
     (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
   )
   if (abbreviated) {
-    const lastComment = _.last(comments)
+    const lastComment = last(comments)
     const lastCommentOutcome = bets.find(
       (bet) => bet.id === lastComment?.betId
     )?.outcome
-    const lastBetOutcome = _.last(bets)?.outcome
+    const lastBetOutcome = last(bets)?.outcome
     if (lastCommentOutcome && lastBetOutcome) {
-      outcomes = _.uniq([
+      outcomes = uniq([
         ...outcomes.filter(
           (outcome) =>
             outcome !== lastCommentOutcome && outcome !== lastBetOutcome
@@ -222,13 +222,13 @@ function getAnswerGroups(
     outcomes = outcomes.slice(-2)
   }
   if (sortByProb) {
-    outcomes = _.sortBy(outcomes, (outcome) =>
+    outcomes = sortBy(outcomes, (outcome) =>
       getOutcomeProbability(contract, outcome)
     )
   } else {
     // Sort by recent bet.
-    outcomes = _.sortBy(outcomes, (outcome) =>
-      _.findLastIndex(bets, (bet) => bet.outcome === outcome)
+    outcomes = sortBy(outcomes, (outcome) =>
+      findLastIndex(bets, (bet) => bet.outcome === outcome)
     )
   }
 
@@ -274,12 +274,13 @@ function getAnswerAndCommentInputGroups(
   comments: Comment[],
   user: User | undefined | null
 ) {
-  let outcomes = _.uniq(bets.map((bet) => bet.outcome)).filter(
+  let outcomes = uniq(bets.map((bet) => bet.outcome)).filter(
     (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
   )
-  outcomes = _.sortBy(outcomes, (outcome) =>
+  outcomes = sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   )
+  const betsByCurrentUser = bets.filter((bet) => bet.userId === user?.id)
 
   const answerGroups = outcomes
     .map((outcome) => {
@@ -293,9 +294,7 @@ function getAnswerAndCommentInputGroups(
           comment.answerOutcome === outcome ||
           answerBets.some((bet) => bet.id === comment.betId)
       )
-      const items = getCommentThreads(answerBets, answerComments, contract)
-
-      if (outcome === GENERAL_COMMENTS_OUTCOME_ID) items.reverse()
+      const items = getCommentThreads(bets, answerComments, contract)
 
       return {
         id: outcome,
@@ -304,8 +303,10 @@ function getAnswerAndCommentInputGroups(
         answer,
         items,
         user,
-        betsByCurrentUser: answerBets.filter((bet) => bet.userId === user?.id),
-        comments: answerComments,
+        betsByCurrentUser,
+        commentsByCurrentUser: answerComments.filter(
+          (comment) => comment.userId === user?.id
+        ),
       }
     })
     .filter((group) => group.answer) as ActivityItem[]
@@ -325,6 +326,7 @@ function groupBetsAndComments(
   }
 ) {
   const { smallAvatar, abbreviated, reversed } = options
+  // Comments in feed don't show user's position?
   const commentsWithoutBets = comments
     .filter((comment) => !comment.betId)
     .map((comment) => ({
@@ -341,7 +343,7 @@ function groupBetsAndComments(
 
   // iterate through the bets and comment activity items and add them to the items in order of comment creation time:
   const unorderedBetsAndComments = [...commentsWithoutBets, ...groupedBets]
-  let sortedBetsAndComments = _.sortBy(unorderedBetsAndComments, (item) => {
+  const sortedBetsAndComments = sortBy(unorderedBetsAndComments, (item) => {
     if (item.type === 'comment') {
       return item.comment.createdTime
     } else if (item.type === 'bet') {
@@ -364,7 +366,6 @@ function getCommentThreads(
   comments: Comment[],
   contract: Contract
 ) {
-  const betsByUserId = _.groupBy(bets, (bet) => bet.userId)
   const parentComments = comments.filter((comment) => !comment.replyToCommentId)
 
   const items = parentComments.map((comment) => ({
@@ -373,7 +374,7 @@ function getCommentThreads(
     contract: contract,
     comments: comments,
     parentComment: comment,
-    betsByUserId: betsByUserId,
+    bets: bets,
   }))
 
   return items
@@ -433,7 +434,7 @@ export function getAllContractActivityItems(
       id: 'commentInput',
       contract,
       betsByCurrentUser: [],
-      comments: [],
+      commentsByCurrentUser: [],
     })
   } else {
     items.push(
@@ -459,7 +460,7 @@ export function getAllContractActivityItems(
       id: 'commentInput',
       contract,
       betsByCurrentUser: [],
-      comments: [],
+      commentsByCurrentUser: [],
     })
   }
 
@@ -520,6 +521,15 @@ export function getRecentContractActivityItems(
   return [questionItem, ...items]
 }
 
+function commentIsGeneralComment(comment: Comment, contract: Contract) {
+  return (
+    comment.answerOutcome === undefined &&
+    (contract.outcomeType === 'FREE_RESPONSE'
+      ? comment.betId === undefined
+      : true)
+  )
+}
+
 export function getSpecificContractActivityItems(
   contract: Contract,
   bets: Bet[],
@@ -530,7 +540,7 @@ export function getSpecificContractActivityItems(
   }
 ) {
   const { mode } = options
-  let items = [] as ActivityItem[]
+  const items = [] as ActivityItem[]
 
   switch (mode) {
     case 'bets':
@@ -549,9 +559,9 @@ export function getSpecificContractActivityItems(
       )
       break
 
-    case 'comments':
-      const nonFreeResponseComments = comments.filter(
-        (comment) => comment.answerOutcome === undefined
+    case 'comments': {
+      const nonFreeResponseComments = comments.filter((comment) =>
+        commentIsGeneralComment(comment, contract)
       )
       const nonFreeResponseBets =
         contract.outcomeType === 'FREE_RESPONSE' ? [] : bets
@@ -567,12 +577,15 @@ export function getSpecificContractActivityItems(
         type: 'commentInput',
         id: 'commentInput',
         contract,
-        betsByCurrentUser: user
-          ? nonFreeResponseBets.filter((bet) => bet.userId === user.id)
-          : [],
-        comments: nonFreeResponseComments,
+        betsByCurrentUser: nonFreeResponseBets.filter(
+          (bet) => bet.userId === user?.id
+        ),
+        commentsByCurrentUser: nonFreeResponseComments.filter(
+          (comment) => comment.userId === user?.id
+        ),
       })
       break
+    }
     case 'free-response-comment-answer-groups':
       items.push(
         ...getAnswerAndCommentInputGroups(

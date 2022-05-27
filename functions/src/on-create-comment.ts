@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { uniq } from 'lodash'
 
 import { getContract, getUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
@@ -34,7 +34,14 @@ export const onCreateComment = functions.firestore
 
     let bet: Bet | undefined
     let answer: Answer | undefined
-    if (comment.betId) {
+    if (comment.answerOutcome) {
+      answer =
+        contract.outcomeType === 'FREE_RESPONSE' && contract.answers
+          ? contract.answers?.find(
+              (answer) => answer.id === comment.answerOutcome
+            )
+          : undefined
+    } else if (comment.betId) {
       const betSnapshot = await firestore
         .collection('contracts')
         .doc(contractId)
@@ -53,7 +60,7 @@ export const onCreateComment = functions.firestore
       firestore.collection('contracts').doc(contractId).collection('comments')
     )
 
-    const recipientUserIds = _.uniq([
+    const recipientUserIds = uniq([
       contract.creatorId,
       ...comments.map((comment) => comment.userId),
     ]).filter((id) => id !== comment.userId)
@@ -66,7 +73,8 @@ export const onCreateComment = functions.firestore
           contract,
           comment,
           bet,
-          answer
+          answer?.text,
+          answer?.id
         )
       )
     )

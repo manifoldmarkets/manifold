@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Router from 'next/router'
+
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
@@ -15,10 +16,10 @@ const Home = () => {
 
   return (
     <Page assertUser="signed-in">
-      <Col className="mx-auto w-full">
+      <Col className="mx-auto w-full p-2">
         <ContractSearch
           querySortOptions={{
-            shouldLoadFromStorage: false,
+            shouldLoadFromStorage: true,
             defaultSort: '24-hour-vol',
           }}
           showCategorySelector

@@ -1,6 +1,6 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 import React, { useEffect, useState } from 'react'
+import { partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
 import { Binary, CPMM, DPM, FullContract } from 'common/contract'
@@ -14,9 +14,10 @@ import {
   formatWithCommas,
 } from 'common/util/format'
 import { Title } from './title'
-import { firebaseLogin, User } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
-import { placeBet, sellShares } from 'web/lib/firebase/api-call'
+import { APIError, placeBet } from 'web/lib/firebase/api-call'
+import { sellShares } from 'web/lib/firebase/fn-call'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel } from './outcome-label'
@@ -35,6 +36,7 @@ import {
 } from 'common/calculate-cpmm'
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
+import { SignUpPrompt } from './sign-up-prompt'
 
 export function BetPanel(props: {
   contract: FullContract<DPM | CPMM, Binary>
@@ -69,14 +71,7 @@ export function BetPanel(props: {
 
         <BuyPanel contract={contract} user={user} />
 
-        {user === null && (
-          <button
-            className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-            onClick={firebaseLogin}
-          >
-            Sign up to bet!
-          </button>
-        )}
+        <SignUpPrompt />
       </Col>
     </Col>
   )
@@ -182,14 +177,7 @@ export function BetPanelSwitcher(props: {
           />
         )}
 
-        {user === null && (
-          <button
-            className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-            onClick={firebaseLogin}
-          >
-            Sign up to bet!
-          </button>
-        )}
+        <SignUpPrompt />
       </Col>
     </Col>
   )
@@ -240,23 +228,27 @@ function BuyPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    const result = await placeBet({
+    placeBet({
       amount: betAmount,
       outcome: betChoice,
       contractId: contract.id,
-    }).then((r) => r.data as any)
-
-    console.log('placed bet. Result:', result)
-
-    if (result?.status === 'success') {
-      setIsSubmitting(false)
-      setWasSubmitted(true)
-      setBetAmount(undefined)
-      if (onBuySuccess) onBuySuccess()
-    } else {
-      setError(result?.message || 'Error placing bet')
-      setIsSubmitting(false)
-    }
+    })
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        setWasSubmitted(true)
+        setBetAmount(undefined)
+        if (onBuySuccess) onBuySuccess()
+      })
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.toString())
+        } else {
+          console.error(e)
+          setError('Error placing bet')
+        }
+        setIsSubmitting(false)
+      })
   }
 
   const betDisabled = isSubmitting || !betAmount || error
@@ -436,13 +428,13 @@ export function SellPanel(props: {
   const resultProb = getCpmmProbability(newPool, contract.p)
 
   const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
-  const [yesBets, noBets] = _.partition(
+  const [yesBets, noBets] = partition(
     openUserBets,
     (bet) => bet.outcome === 'YES'
   )
   const [yesShares, noShares] = [
-    _.sumBy(yesBets, (bet) => bet.shares),
-    _.sumBy(noBets, (bet) => bet.shares),
+    sumBy(yesBets, (bet) => bet.shares),
+    sumBy(noBets, (bet) => bet.shares),
   ]
 
   const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined

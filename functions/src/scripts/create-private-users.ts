@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()

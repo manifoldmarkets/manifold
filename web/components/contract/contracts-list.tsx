@@ -19,7 +19,6 @@ export function ContractsGrid(props: {
   const isBottomVisible = useIsVisible(elem)
 
   useEffect(() => {
-    console.log({ isBottomVisible, hasMore })
     if (isBottomVisible) {
       loadMore()
     }
@@ -29,7 +28,7 @@ export function ContractsGrid(props: {
     return (
       <p className="mx-2 text-gray-500">
         No markets found. Why not{' '}
-        <SiteLink href="/home" className="font-bold text-gray-700">
+        <SiteLink href="/create" className="font-bold text-gray-700">
           create one?
         </SiteLink>
       </p>
@@ -38,7 +37,7 @@ export function ContractsGrid(props: {
 
   return (
     <Col className="gap-8">
-      <ul className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
+      <ul className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
         {contracts.map((contract) => (
           <ContractCard
             contract={contract}

@@ -1,8 +1,8 @@
 import clsx from 'clsx'
-import { CSSProperties, Ref } from 'react'
+import { CSSProperties, Ref, ReactNode } from 'react'
 
 export function Col(props: {
-  children?: any
+  children?: ReactNode
   className?: string
   style?: CSSProperties
   ref?: Ref<HTMLDivElement>

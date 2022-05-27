@@ -9,13 +9,15 @@ export const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
 export const db = getFirestore()
 export const functions = getFunctions()
 
-const EMULATORS_STARTED = 'EMULATORS_STARTED'
+declare global {
+  /* eslint-disable-next-line no-var */
+  var EMULATORS_STARTED: boolean
+}
+
 function startEmulators() {
   // I don't like this but this is the only way to reconnect to the emulators without error, see: https://stackoverflow.com/questions/65066963/firebase-firestore-emulator-error-host-has-been-set-in-both-settings-and-usee
-  // @ts-ignore
-  if (!global[EMULATORS_STARTED]) {
-    // @ts-ignore
-    global[EMULATORS_STARTED] = true
+  if (!global.EMULATORS_STARTED) {
+    global.EMULATORS_STARTED = true
     connectFirestoreEmulator(db, 'localhost', 8080)
     connectFunctionsEmulator(functions, 'localhost', 5001)
   }

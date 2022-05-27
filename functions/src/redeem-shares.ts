@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { partition, sumBy } from 'lodash'
 
 import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
@@ -25,14 +25,14 @@ export const redeemShares = async (userId: string, contractId: string) => {
         .where('userId', '==', userId)
     )
     const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
-    const [yesBets, noBets] = _.partition(bets, (b) => b.outcome === 'YES')
-    const yesShares = _.sumBy(yesBets, (b) => b.shares)
-    const noShares = _.sumBy(noBets, (b) => b.shares)
+    const [yesBets, noBets] = partition(bets, (b) => b.outcome === 'YES')
+    const yesShares = sumBy(yesBets, (b) => b.shares)
+    const noShares = sumBy(noBets, (b) => b.shares)
 
     const amount = Math.min(yesShares, noShares)
     if (amount <= 0) return
 
-    const prevLoanAmount = _.sumBy(bets, (bet) => bet.loanAmount ?? 0)
+    const prevLoanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
     const loanPaid = Math.min(prevLoanAmount, amount)
     const netAmount = amount - loanPaid
 

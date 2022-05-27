@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import algoliasearch from 'algoliasearch/lite'
 import {
   InstantSearch,
@@ -8,7 +9,6 @@ import {
   useRange,
   useRefinementList,
   useSortBy,
-  useToggleRefinement,
 } from 'react-instantsearch-hooks-web'
 import { Contract } from '../../common/contract'
 import {
@@ -37,6 +37,7 @@ const sortIndexes = [
   { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
   { label: 'Most traded', value: indexPrefix + 'contracts-most-traded' },
   { label: '24h volume', value: indexPrefix + 'contracts-24-hour-vol' },
+  { label: 'Last updated', value: indexPrefix + 'contracts-last-updated' },
   { label: 'Close date', value: indexPrefix + 'contracts-close-date' },
   { label: 'Resolve date', value: indexPrefix + 'contracts-resolve-date' },
 ]
@@ -82,54 +83,49 @@ export function ContractSearch(props: {
         additionalFilter?.tag ?? additionalFilter?.creatorId ?? ''
       }`}
     >
-      <Row className="flex-wrap gap-2">
+      <Row className="gap-1 sm:gap-2">
         <SearchBox
           className="flex-1"
           classNames={{
             form: 'before:top-6',
-            input: '!pl-10 !input !input-bordered shadow-none',
-            resetIcon: 'mt-2',
+            input: '!pl-10 !input !input-bordered shadow-none w-[100px]',
+            resetIcon: 'mt-2 hidden sm:flex',
           }}
-          placeholder="Search markets"
         />
-        <Row className="mt-2 gap-2 sm:mt-0">
-          <select
-            className="!select !select-bordered"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as filter)}
-          >
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
-            <option value="resolved">Resolved</option>
-            <option value="all">All</option>
-          </select>
-          <SortBy
-            items={sortIndexes}
-            classNames={{
-              select: '!select !select-bordered',
-            }}
-          />
-        </Row>
+        <select
+          className="!select !select-bordered"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as filter)}
+        >
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+          <option value="resolved">Resolved</option>
+          <option value="all">All</option>
+        </select>
+        <SortBy
+          items={sortIndexes}
+          classNames={{
+            select: '!select !select-bordered',
+          }}
+        />
       </Row>
-      <div>
-        {showCategorySelector && (
-          <>
-            <Spacer h={4} />
-            <CategorySelector
-              user={user}
-              category={category}
-              setCategory={setCategory}
-            />
-          </>
-        )}
-        <Spacer h={4} />
 
-        <ContractSearchInner
-          querySortOptions={querySortOptions}
-          filter={filter}
-          additionalFilter={{ category, ...additionalFilter }}
+      <Spacer h={3} />
+
+      {showCategorySelector && (
+        <CategorySelector
+          className="mb-2"
+          user={user}
+          category={category}
+          setCategory={setCategory}
         />
-      </div>
+      )}
+
+      <ContractSearchInner
+        querySortOptions={querySortOptions}
+        filter={filter}
+        additionalFilter={{ category, ...additionalFilter }}
+      />
     </InstantSearch>
   )
 }
@@ -195,20 +191,23 @@ export function ContractSearchInner(props: {
     filter === 'resolved' ? true : filter === 'all' ? undefined : false
   )
 
-  const { showMore, hits, isLastPage, results } = useInfiniteHits()
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  useEffect(() => {
+    const id = setTimeout(() => setIsInitialLoad(false), 1000)
+    return () => clearTimeout(id)
+  }, [])
+
+  const { showMore, hits, isLastPage } = useInfiniteHits()
   const contracts = hits as any as Contract[]
 
-  const router = useRouter()
-  const hasLoaded = contracts.length > 0 || router.isReady
-
-  if (!hasLoaded || !results) return <></>
+  if (isInitialLoad && contracts.length === 0) return <></>
 
   return (
     <ContractsGrid
       contracts={contracts}
       loadMore={showMore}
       hasMore={!isLastPage}
-      showCloseTime={index === 'contracts-closing-soon'}
+      showCloseTime={index.endsWith('close-date')}
     />
   )
 }
@@ -242,13 +241,16 @@ const useFilterClosed = (value: boolean | undefined) => {
 }
 
 const useFilterResolved = (value: boolean | undefined) => {
-  // Note (James): I don't know why this works.
-  const { refine: refineResolved } = useToggleRefinement({
-    attribute: value === undefined ? 'non-existant-field' : 'isResolved',
-    on: true,
-    off: value === undefined ? undefined : false,
+  const { items, refine: deleteRefinement } = useCurrentRefinements({
+    includedAttributes: ['isResolved'],
   })
+
+  const { refine } = useRefinementList({ attribute: 'isResolved' })
+
   useEffect(() => {
-    refineResolved({ isRefined: !value })
+    const refinements = items[0]?.refinements ?? []
+
+    if (value !== undefined) refine(`${value}`)
+    refinements.forEach((refinement) => deleteRefinement(refinement))
   }, [value])
 }

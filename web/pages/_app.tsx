@@ -13,12 +13,12 @@ function firstLine(msg: string) {
 function printBuildInfo() {
   // These are undefined if e.g. dev server
   if (process.env.NEXT_PUBLIC_VERCEL_ENV) {
-    let env = process.env.NEXT_PUBLIC_VERCEL_ENV
-    let msg = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_MESSAGE
-    let owner = process.env.NEXT_PUBLIC_VERCEL_GIT_REPO_OWNER
-    let repo = process.env.NEXT_PUBLIC_VERCEL_GIT_REPO_SLUG
-    let sha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA
-    let url = `https://github.com/${owner}/${repo}/commit/${sha}`
+    const env = process.env.NEXT_PUBLIC_VERCEL_ENV
+    const msg = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_MESSAGE
+    const owner = process.env.NEXT_PUBLIC_VERCEL_GIT_REPO_OWNER
+    const repo = process.env.NEXT_PUBLIC_VERCEL_GIT_REPO_SLUG
+    const sha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA
+    const url = `https://github.com/${owner}/${repo}/commit/${sha}`
     console.info(`Build: ${env} / ${firstLine(msg || '???')} / ${url}`)
   }
 }

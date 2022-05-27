@@ -1,3 +1,4 @@
+import { ReactNode } from 'react'
 import Head from 'next/head'
 
 export type OgCardProps = {
@@ -35,7 +36,7 @@ export function SEO(props: {
   title: string
   description: string
   url?: string
-  children?: any[]
+  children?: ReactNode
   ogCardProps?: OgCardProps
 }) {
   const { title, description, url, children, ogCardProps } = props
