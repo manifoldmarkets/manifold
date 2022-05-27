@@ -31,24 +31,23 @@ export function getAllCharityTxns() {
 
 // Find all manalink Txns that are from or to this user
 export function useManalinkTxns(userId: string) {
-  // TODO: Need to instantiate these indexes too
-  const fromQuery = query(
-    txnCollection,
-    where('fromId', '==', userId),
-    where('category', '==', 'MANALINK'),
-    orderBy('createdTime', 'desc')
-  )
-  const toQuery = query(
-    txnCollection,
-    where('toId', '==', userId),
-    where('category', '==', 'MANALINK'),
-    orderBy('createdTime', 'desc')
-  )
-
   const [fromTxns, setFromTxns] = useState<Txn[]>([])
   const [toTxns, setToTxns] = useState<Txn[]>([])
 
   useEffect(() => {
+    // TODO: Need to instantiate these indexes too
+    const fromQuery = query(
+      txnCollection,
+      where('fromId', '==', userId),
+      where('category', '==', 'MANALINK'),
+      orderBy('createdTime', 'desc')
+    )
+    const toQuery = query(
+      txnCollection,
+      where('toId', '==', userId),
+      where('category', '==', 'MANALINK'),
+      orderBy('createdTime', 'desc')
+    )
     listenForValues(fromQuery, setFromTxns)
     listenForValues(toQuery, setToTxns)
   }, [userId])
