@@ -270,10 +270,10 @@ function LinksTable(props: { links: Manalink[] }) {
                         {manalink.claimedUserIds.length}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {manalink.maxUses === Infinity ? '∞' : manalink.maxUses}
+                        {manalink.maxUses == null ? '∞' : manalink.maxUses}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {manalink.expiresTime === Infinity
+                        {manalink.expiresTime == null
                           ? 'Never'
                           : fromNow(manalink.expiresTime)}
                       </td>
