@@ -16,6 +16,10 @@ import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
 
+function getLinkUrl(slug: string) {
+  return `${location.protocol}//${location.host}/link/${slug}`
+}
+
 export default function LinkPage() {
   const user = useUser()
   const [amount, setAmount] = useState(100)
@@ -25,60 +29,58 @@ export default function LinkPage() {
   return (
     <Page>
       <SEO
-        title="Send Mana"
+        title="Create a manalink"
         description="Send mana to anyone via link!"
         url="/send"
       />
 
-      <Col className="gap-4 px-4 sm:px-6 lg:px-8">
-        <Title text="Send mana" />
+      <Title text="Create a manalink" />
 
-        {/* Add a input form to set the amount */}
-        <Col className="justify-center gap-4 rounded-xl bg-indigo-50 p-4">
-          <p>Send your M$ to anyone!</p>
+      {/* Add a input form to set the amount */}
+      <Col className="justify-center gap-4 rounded-xl bg-indigo-50 p-4">
+        <p>Send your M$ to anyone!</p>
 
-          <label>
-            M$
-            <input
-              className="input"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(parseInt(e.target.value))}
-            />
-          </label>
+        <label>
+          M$
+          <input
+            className="input"
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(parseInt(e.target.value))}
+          />
+        </label>
 
-          {user && (
-            <button
-              className="btn max-w-xs"
-              onClick={async () => {
-                await createManalink({
-                  fromId: user.id,
-                  amount: amount,
-                  expiresTime: Date.now() + 1000 * 60 * 60 * 24 * 7,
-                  maxUses: 1,
-                })
-              }}
-            >
-              Create
-            </button>
-          )}
-        </Col>
-
-        <Spacer h={20} />
-
-        {links.length > 0 && <LinksTable links={links} />}
-
-        {manalinkTxns.length > 0 && (
-          <Col className="mt-12">
-            <h1 className="mb-4 text-xl font-semibold text-gray-900">
-              Claimed links
-            </h1>
-            {manalinkTxns.map((txn) => (
-              <Claim txn={txn} key={txn.id} />
-            ))}
-          </Col>
+        {user && (
+          <button
+            className="btn max-w-xs"
+            onClick={async () => {
+              await createManalink({
+                fromId: user.id,
+                amount: amount,
+                expiresTime: Date.now() + 1000 * 60 * 60 * 24 * 7,
+                maxUses: 1,
+              })
+            }}
+          >
+            Create
+          </button>
         )}
       </Col>
+
+      <Spacer h={20} />
+
+      {links.length > 0 && <LinksTable links={links} />}
+
+      {manalinkTxns.length > 0 && (
+        <Col className="mt-12">
+          <h1 className="mb-4 text-xl font-semibold text-gray-900">
+            Claimed links
+          </h1>
+          {manalinkTxns.map((txn) => (
+            <Claim txn={txn} key={txn.id} />
+          ))}
+        </Col>
+      )}
     </Page>
   )
 }
@@ -126,16 +128,8 @@ function LinksTable(props: { links: Manalink[] }) {
         <div className="sm:flex-auto">
           <h1 className="text-xl font-semibold text-gray-900">Your links</h1>
           <p className="mt-2 text-sm text-gray-700">
-            All mana links you've created so far~
+            All mana links you&apos;ve created so far~
           </p>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
-          >
-            Create link
-          </button>
         </div>
       </div>
       <div className="mt-8 flex flex-col">
@@ -190,7 +184,7 @@ function LinksTable(props: { links: Manalink[] }) {
                         {formatMoney(manalink.amount)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {`http://manifold.markets/send/${manalink.slug}`}
+                        {getLinkUrl(manalink.slug)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         {manalink.claimedUserIds.length}
