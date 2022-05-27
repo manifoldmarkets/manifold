@@ -61,6 +61,7 @@ export const useHasCreatedContractToday = (user: User | null | undefined) => {
     const interval = setInterval(() => {
       if (nextUtcResetTime < Date.now()) {
         listUserContractsForToday()
+        return
       }
     }, 1000)
     listUserContractsForToday()
