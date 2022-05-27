@@ -24,6 +24,7 @@ export const onCreateAnswer = functions.firestore
       answer.id,
       NotificationSourceTypes.ANSWER,
       contract,
-      answerCreator
+      answerCreator,
+      context.eventId
     )
   })

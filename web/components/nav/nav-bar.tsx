@@ -5,7 +5,6 @@ import {
   MenuAlt3Icon,
   PresentationChartLineIcon,
   SearchIcon,
-  ChatAltIcon,
   XIcon,
 } from '@heroicons/react/outline'
 import { Transition, Dialog } from '@headlessui/react'
@@ -16,15 +15,20 @@ import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
+import NotificationsIcon from 'web/components/notifications-icon'
 
 function getNavigation(username: String) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Activity', href: '/activity', icon: ChatAltIcon },
     {
       name: 'Portfolio',
       href: `/${username}/bets`,
       icon: PresentationChartLineIcon,
+    },
+    {
+      name: 'Notifications',
+      href: `/${username}/notifications`,
+      icon: NotificationsIcon,
     },
   ]
 }

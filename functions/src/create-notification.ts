@@ -16,7 +16,8 @@ export const createNotification = async (
   sourceId: string,
   sourceType: typeof NotificationSourceTypes[keyof typeof NotificationSourceTypes],
   sourceContract: Contract,
-  sourceUser: User
+  sourceUser: User,
+  idempotencyKey: string
 ) => {
   const userAndMessagesMap: { [userId: string]: string } = {}
 
@@ -27,14 +28,16 @@ export const createNotification = async (
     )
   }
 
-  const sendAllUsersNotifications = async (userAndMessagesMap: {
+  const createUsersNotifications = async (userAndMessagesMap: {
     [userId: string]: string
   }) => {
     await Promise.all(
       Object.keys(userAndMessagesMap).map(async (userId) => {
-        const notificationRef = firestore.collection('notifications').doc()
+        const notificationRef = firestore
+          .collection(`/users/${userId}/notifications`)
+          .doc(idempotencyKey)
         const notification: Notification = {
-          id: notificationRef.id,
+          id: idempotencyKey,
           userId,
           reasonText: userAndMessagesMap[userId],
           createdTime: Date.now(),
@@ -46,11 +49,13 @@ export const createNotification = async (
           sourceUserUserName: sourceUser.username,
           sourceUserAvatarUrl: sourceUser.avatarUrl,
         }
-        await notificationRef.create(notification)
+        await notificationRef.set(notification)
       })
     )
   }
 
+  // TODO: update for liquidity
+  // TODO: find tagged users
   if (
     sourceType === NotificationSourceTypes.COMMENT ||
     sourceType === NotificationSourceTypes.ANSWER ||
@@ -67,7 +72,7 @@ export const createNotification = async (
       if (sourceContract.creatorId !== sourceUser.id)
         userAndMessagesMap[
           sourceContract.creatorId
-        ] = `${sourceUser.name} ${reasonTextPretext} your question`
+        ] = `${reasonTextPretext} your question`
     }
 
     const notifyOtherAnswerersOnContract = async () => {
@@ -85,7 +90,7 @@ export const createNotification = async (
         if (shouldGetNotification(userId))
           userAndMessagesMap[
             userId
-          ] = `${sourceUser.name} ${reasonTextPretext} a question you submitted an answer to`
+          ] = `${reasonTextPretext} a question you submitted an answer to`
       })
     }
 
@@ -104,7 +109,7 @@ export const createNotification = async (
         if (shouldGetNotification(userId))
           userAndMessagesMap[
             userId
-          ] = `${sourceUser.name} ${reasonTextPretext} a question you commented on`
+          ] = `${reasonTextPretext} a question you commented on`
       })
     }
 
@@ -120,7 +125,7 @@ export const createNotification = async (
         if (shouldGetNotification(userId))
           userAndMessagesMap[
             userId
-          ] = `${sourceUser.name} ${reasonTextPretext} a question you bet on`
+          ] = `${reasonTextPretext} a question you bet on`
       })
     }
 
@@ -129,6 +134,6 @@ export const createNotification = async (
     await notifyOtherAnswerersOnContract()
     await notifyOtherCommentersOnContract()
     await notifyOtherBettorsOnContract()
-    await sendAllUsersNotifications(userAndMessagesMap)
+    await createUsersNotifications(userAndMessagesMap)
   }
 }

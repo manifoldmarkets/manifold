@@ -1,12 +1,16 @@
 import { collection, query, where } from 'firebase/firestore'
 import { Notification } from 'common/notification'
 import { db } from 'web/lib/firebase/init'
-import { listenForValues } from 'web/lib/firebase/utils'
+import { getValues, listenForValues } from 'web/lib/firebase/utils'
 
-const notificationsCollection = collection(db, 'notifications')
+function getNotificationsCollection(userId: string, unseenOnly?: boolean) {
+  const notifsCollection = collection(db, `/users/${userId}/notifications`)
+  if (unseenOnly) return query(notifsCollection, where('isSeen', '==', false))
+  return query(notifsCollection)
+}
 
-function getNotificationsCollection(userId: string) {
-  return query(notificationsCollection, where('userId', '==', userId))
+export function getUnseenNotifications(userId: string) {
+  return getValues<Notification>(getNotificationsCollection(userId, true))
 }
 
 export function listenForNotifications(
@@ -16,7 +20,7 @@ export function listenForNotifications(
   return listenForValues<Notification>(
     getNotificationsCollection(userId),
     (notifs) => {
-      notifs.sort((n1, n2) => n1.createdTime - n2.createdTime)
+      notifs.sort((n1, n2) => n2.createdTime - n1.createdTime)
       setNotifications(notifs)
     }
   )

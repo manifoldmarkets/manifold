@@ -33,7 +33,8 @@ export const onCreateComment = functions.firestore
       comment.id,
       NotificationSourceTypes.COMMENT,
       contract,
-      commentCreator
+      commentCreator,
+      context.eventId
     )
 
     await firestore

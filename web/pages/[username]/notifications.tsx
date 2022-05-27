@@ -1,16 +1,22 @@
-import { CreatorContractsList } from 'web/components/contract/contracts-list'
 import { Tabs } from 'web/components/layout/tabs'
 import { useUser } from 'web/hooks/use-user'
-import { useEffect, useState } from 'react'
-import { listenForBets } from 'web/lib/firebase/bets'
+import React, { useEffect, useState } from 'react'
 import { Notification } from 'common/notification'
 import { listenForNotifications } from 'web/lib/firebase/notifications'
-import { useRouter } from 'next/router'
-import { getContractFromId } from 'web/lib/firebase/contracts'
+import { Contract, getContractFromId } from 'web/lib/firebase/contracts'
 import { Avatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from 'web/lib/firebase/init'
+import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
+import { Answer } from 'web/lib/firebase/answers'
+import { Comment } from 'web/lib/firebase/comments'
+import { getValue } from 'web/lib/firebase/utils'
+import Custom404 from 'web/pages/404'
+import { UserLink } from 'web/components/user-page'
+import { Linkify } from 'web/components/linkify'
 
 export default function Notifications() {
   const user = useUser()
@@ -24,7 +30,7 @@ export default function Notifications() {
 
   if (!user) {
     // TODO: return sign in page
-    return <></>
+    return <Custom404 />
   }
   return (
     <Page>
@@ -37,16 +43,11 @@ export default function Notifications() {
             {
               title: 'All Notifications',
               content: (
-                <div>
+                <div className={''}>
                   {notifications &&
                     notifications.map((notification) => (
                       <Notification notification={notification} />
                     ))}
-                </div>
-              ),
-              tabIcon: (
-                <div className="px-0.5 font-bold">
-                  {notifications?.length || 0}
                 </div>
               ),
             },
@@ -59,48 +60,119 @@ export default function Notifications() {
 
 function Notification(props: { notification: Notification }) {
   const { notification } = props
+  const {
+    sourceType,
+    sourceContractId,
+    sourceId,
+    userId,
+    id,
+    sourceUserName,
+    sourceUserAvatarUrl,
+    reasonText,
+    sourceUserUserName,
+    createdTime,
+  } = notification
   const [sourceUrl, setSourceUrl] = useState<string>()
-  useEffect(() => {
-    if (!notification.sourceContractId) return
+  const [subText, setSubText] = useState<string>('')
+  const [contract, setContract] = useState<Contract | null>()
 
-    getContractFromId(notification.sourceContractId).then((contract) => {
-      switch (notification.sourceType) {
-        case 'bet':
-          // todo: no bet notifications yet
-          break
+  useEffect(() => {
+    if (!sourceType || !sourceContractId || !sourceId) return
+
+    getContractFromId(sourceContractId).then((contract) => {
+      switch (sourceType) {
         case 'answer':
           setSourceUrl(
-            `/${contract?.creatorUsername}/${contract?.slug}/#answer-${notification.sourceId}`
+            `/${contract?.creatorUsername}/${contract?.slug}#answer-${sourceId}`
           )
           break
         case 'comment':
           setSourceUrl(
-            `/${contract?.creatorUsername}/${contract?.slug}/#${notification.sourceId}`
+            `/${contract?.creatorUsername}/${contract?.slug}#${sourceId}`
           )
           break
         case 'contract':
           setSourceUrl(`/${contract?.creatorId}/${contract?.slug}`)
           break
       }
+      setContract(contract)
+    })
+
+    updateDoc(doc(db, `users/${userId}/notifications/`, id), {
+      ...notification,
+      isSeen: true,
     })
   }, [notification])
 
+  useEffect(() => {
+    if (!sourceType || !sourceContractId || !sourceId) return
+    switch (sourceType) {
+      case 'comment':
+        getValue<Comment>(
+          doc(db, `contracts/${sourceContractId}/comments/`, sourceId)
+        ).then((comment) => {
+          setSubText(comment?.text || '')
+        })
+        break
+      case 'contract':
+        getValue<Contract>(doc(db, `contracts/`, sourceId)).then((contract) => {
+          setSubText(contract?.question || '')
+          setContract(contract)
+        })
+        break
+      case 'answer':
+        getValue<Answer>(
+          doc(db, `contracts/${sourceContractId}/answers/`, sourceId)
+        ).then((answer) => {
+          setSubText(answer?.text || '')
+        })
+        break
+    }
+  }, [notification])
+
   return (
-    <div className={'cursor-pointer'}>
-      <a href={sourceUrl}>
-        <Row className={'items-center justify-start p-2'}>
+    <div className={' bg-white px-4 pt-6'}>
+      <Row className={'items-center text-gray-500 sm:justify-start'}>
+        <Row className={'items-center'}>
           <Avatar
-            avatarUrl={notification.sourceUserAvatarUrl}
+            avatarUrl={sourceUserAvatarUrl}
             size={'sm'}
             className={'mr-2'}
-            username={notification.sourceUserName}
-            noLink={true}
+            username={sourceUserName}
           />
-          {notification.reasonText}
+          <UserLink
+            name={sourceUserName || ''}
+            username={sourceUserUserName || ''}
+            className={'mr-1'}
+          />
         </Row>
+        <a href={sourceUrl} className={'pl-4 sm:pl-0'}>
+          {reasonText?.replace(sourceUserName || '', '')}
+          {contract && sourceId && (
+            <div className={'inline'}>
+              <CopyLinkDateTimeComponent
+                contract={contract}
+                createdTime={createdTime}
+                elementId={sourceId}
+              />
+            </div>
+          )}
+        </a>
+      </Row>
+      <a href={sourceUrl}>
+        <div className={'ml-4 mt-1'}>
+          {' '}
+          {contract && subText === contract.question ? (
+            <div className={'text-md text-indigo-700 hover:underline'}>
+              {subText}
+            </div>
+          ) : (
+            <Linkify text={subText} />
+          )}
+        </div>
+
+        <div className={'mt-6 border-b border-gray-300'} />
       </a>
-      <br />
-      <br />
     </div>
   )
 }

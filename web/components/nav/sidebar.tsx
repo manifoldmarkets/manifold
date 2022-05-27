@@ -26,6 +26,7 @@ import {
 } from 'web/hooks/use-has-created-contract-today'
 import { Row } from '../layout/row'
 import { useEffect, useState } from 'react'
+import NotificationsIcon from 'web/components/notifications-icon'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
@@ -37,12 +38,17 @@ function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
 function getNavigation(username: string) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Activity', href: '/activity', icon: ChatAltIcon },
     {
       name: 'Portfolio',
       href: `/${username}/bets`,
       icon: PresentationChartLineIcon,
     },
+    {
+      name: 'Notifications',
+      href: `/${username}/notifications`,
+      icon: NotificationsIcon,
+    },
+
     { name: 'Charity', href: '/charity', icon: HeartIcon },
   ]
 }
