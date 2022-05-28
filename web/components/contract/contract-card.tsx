@@ -28,6 +28,7 @@ import { AvatarDetails, MiscDetails } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { QuickBet, ProbBar, getColor } from './quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
+import { useUser } from 'web/hooks/use-user'
 
 export function ContractCard(props: {
   contract: Contract
@@ -40,10 +41,16 @@ export function ContractCard(props: {
   const { question, outcomeType } = contract
   const { resolution } = contract
 
-  const marketClosed = (contract.closeTime || Infinity) < Date.now() || !!resolution
+  const user = useUser()
+
+  const marketClosed =
+    (contract.closeTime || Infinity) < Date.now() || !!resolution
+
   const showQuickBet = !(
+    !user ||
     marketClosed ||
-    (outcomeType === 'FREE_RESPONSE' && getTopAnswer(contract) === undefined)
+    (outcomeType === 'FREE_RESPONSE' && getTopAnswer(contract) === undefined) ||
+    outcomeType === 'NUMERIC'
   )
 
   return (
@@ -96,7 +103,7 @@ export function ContractCard(props: {
             />
           </Col>
           {showQuickBet ? (
-            <QuickBet contract={contract} />
+            <QuickBet contract={contract} user={user} />
           ) : (
             <Col className="m-auto pl-2">
               {outcomeType === 'BINARY' && (
