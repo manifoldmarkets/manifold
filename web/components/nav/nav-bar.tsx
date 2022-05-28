@@ -16,6 +16,7 @@ import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
+import { useIsIframe } from 'web/hooks/use-is-iframe'
 
 function getNavigation(username: string) {
   return [
@@ -42,6 +43,11 @@ export function BottomNavBar() {
   const currentPage = router.pathname
 
   const user = useUser()
+
+  const isIframe = useIsIframe()
+  if (isIframe) {
+    return null
+  }
 
   const navigationOptions =
     user === null
