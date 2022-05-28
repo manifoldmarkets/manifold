@@ -40,7 +40,7 @@ export function ContractCard(props: {
   const { question, outcomeType } = contract
   const { resolution } = contract
 
-  const marketClosed = (contract.closeTime || Infinity) < Date.now()
+  const marketClosed = (contract.closeTime || Infinity) < Date.now() || !!resolution
   const showQuickBet = !(
     marketClosed ||
     (outcomeType === 'FREE_RESPONSE' && getTopAnswer(contract) === undefined)
