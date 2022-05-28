@@ -5,6 +5,12 @@ import Head from 'next/head'
 import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
 import { QueryClient, QueryClientProvider } from 'react-query'
+import {
+  createIframe,
+  defaultRenderers,
+  iframeRenderer,
+  initPreviews,
+} from 'link-summoner'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -21,6 +27,48 @@ function printBuildInfo() {
     const url = `https://github.com/${owner}/${repo}/commit/${sha}`
     console.info(`Build: ${env} / ${firstLine(msg || '???')} / ${url}`)
   }
+}
+
+const domain = 'localhost:3000'
+
+/**
+ * Example:
+ * https://manifold.markets/SG/will-elon-musk-buy-twitter-this-yea
+ * -> https://manifold.markets/embed/SG/will-elon-musk-buy-twitter-this-yea
+ */
+function rewriteToEmbed(link: string) {
+  const alreadyEmbed = link.includes(`localhost:3000/embed/`)
+  if (alreadyEmbed) return link
+
+  const match = link.match(regex)!
+
+  console.log(
+    'Hello world',
+    `http://localhost:3000/embed/${match[1]}/${match[2]}`
+  )
+
+  return `http://localhost:3000/embed/${match[1]}/${match[2]}`
+}
+// Only rewrite market links in regex
+const regex = /^https?:\/\/localhost\:3000\/(?!charity\/)([^\/]+)\/([^\/]+)/
+
+if (typeof document !== 'undefined') {
+  // Seems to be undefined; because of https://i.imgur.com/4bMQ8rA.png ?
+  console.log('initPreviews', initPreviews)
+  initPreviews({
+    renderers: [
+      // Just for localhost markets
+      {
+        canRender: async (url: URL) => regex.test(url.href),
+
+        render: async (url: URL) =>
+          createIframe(rewriteToEmbed(url.href), 'manifold-preview'),
+      },
+      // All localhost URLs
+      iframeRenderer(/localhost\:3000/),
+      ...defaultRenderers,
+    ],
+  })
 }
 
 function MyApp({ Component, pageProps }: AppProps) {

@@ -15,11 +15,6 @@ export function Page(props: {
 }) {
   const { margin, assertUser, children, rightSidebar, suspend } = props
 
-  if (typeof document !== 'undefined') {
-    // Seems to be undefined; because of https://i.imgur.com/4bMQ8rA.png ?
-    console.log(initPreviews)
-  }
-
   return (
     <>
       <div
