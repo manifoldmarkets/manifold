@@ -14,6 +14,7 @@ import {
   NumericContract,
   FreeResponseContract,
 } from 'common/contract'
+import { User } from 'common/user'
 import {
   formatLargeNumber,
   formatMoney,
@@ -21,7 +22,6 @@ import {
 } from 'common/util/format'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { placeBet } from 'web/lib/firebase/api-call'
 import { getBinaryProb, getBinaryProbPercent } from 'web/lib/firebase/contracts'
@@ -33,11 +33,10 @@ import { useSaveShares } from '../use-save-shares'
 
 const BET_SIZE = 10
 
-export function QuickBet(props: { contract: Contract }) {
-  const { contract } = props
+export function QuickBet(props: { contract: Contract; user: User }) {
+  const { contract, user } = props
 
-  const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBets = useUserContractBets(user.id, contract.id)
   const topAnswer =
     contract.outcomeType === 'FREE_RESPONSE'
       ? getTopAnswer(contract as FreeResponseContract)
