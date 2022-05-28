@@ -1,7 +1,9 @@
 import clsx from 'clsx'
-import { ReactNode } from 'react'
+import { useEffect } from 'react'
 import { BottomNavBar } from './nav/nav-bar'
 import Sidebar from './nav/sidebar'
+import { initPreviews } from 'link-summoner'
+import { ReactNode } from 'react'
 import { Toaster } from 'react-hot-toast'
 
 export function Page(props: {
