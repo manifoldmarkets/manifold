@@ -109,8 +109,8 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const { closeTime, creatorName, creatorUsername } = contract
-  const { volumeLabel, automaticResolutionDate, resolvedDate } = contractMetrics(contract)
+  const { closeTime, automaticResolutionTime, creatorName, creatorUsername } = contract
+  const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
@@ -157,6 +157,7 @@ export function ContractDetails(props: {
               {/* {' - '}{' '} */}
               <EditableCloseDate
                 closeTime={closeTime}
+                resolveTime={automaticResolutionTime}
                 contract={contract}
                 isCreator={isCreator ?? false}
               />
@@ -164,16 +165,6 @@ export function ContractDetails(props: {
           )}
         </Row>
       )}
-
-      {!resolvedDate && contract.automaticResolutionTime && (
-        <DateTimeTooltip
-        text="Market automatically resolving:"
-        time={contract.automaticResolutionTime}
-      >
-        {automaticResolutionDate + ": " + contract.automaticResolution}
-      </DateTimeTooltip>
-      )}
-
       <Row className="items-center gap-1">
         <DatabaseIcon className="h-5 w-5" />
 
@@ -206,10 +197,11 @@ export function contractTextDetails(contract: Contract) {
 
 function EditableCloseDate(props: {
   closeTime: number
+  resolveTime: number | undefined
   contract: Contract
   isCreator: boolean
 }) {
-  const { closeTime, contract, isCreator } = props
+  const { closeTime, resolveTime, contract, isCreator } = props
 
   const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
   const [closeDate, setCloseDate] = useState(
@@ -250,15 +242,30 @@ function EditableCloseDate(props: {
           />
         </div>
       ) : (
-        <DateTimeTooltip
-          text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
-          time={closeTime}
-        >
-          {isSameYear
-            ? dayjs(closeTime).format('MMM D')
-            : dayjs(closeTime).format('MMM D, YYYY')}
-          {isSameDay && <> ({fromNow(closeTime)})</>}
-        </DateTimeTooltip>
+        <>
+          <DateTimeTooltip
+            text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
+            time={closeTime}
+          >
+            {isSameYear
+              ? dayjs(closeTime).format('MMM D')
+              : dayjs(closeTime).format('MMM D, YYYY')}
+            {isSameDay && <> ({fromNow(closeTime)})</>}
+          </DateTimeTooltip>
+          {resolveTime && (
+            <DateTimeTooltip
+              text={resolveTime > Date.now() ? 'Market resolves as \'MKT\':' : ''}
+              time={resolveTime}
+            >
+              {"/ "}
+              {isSameYear
+                ? dayjs(resolveTime).format('MMM D')
+                : dayjs(resolveTime).format('MMM D, YYYY')}
+              {isSameDay && <> ({fromNow(resolveTime)})</>}
+              {": 'MKT'"}
+            </DateTimeTooltip>
+            )}
+      </>
       )}
 
       {isCreator &&
