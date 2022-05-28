@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "1.22.19",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "concurrently -n NEXT,TS -c magenta,cyan \"next dev -p 3000\" \"yarn ts --watch\"",
