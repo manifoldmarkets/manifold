@@ -3,8 +3,13 @@ import { Fees } from './fees'
 
 export type AnyMechanism = DPM | CPMM
 export type AnyOutcomeType = Binary | Multi | FreeResponse | Numeric
+export type AnyContractType =
+  | (CPMM & Binary)
+  | (DPM & Binary)
+  | (DPM & (Multi | FreeResponse))
+  | (DPM & Numeric)
 
-export type FullContract<M extends AnyMechanism, T extends AnyOutcomeType> = {
+export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
 
@@ -36,13 +41,10 @@ export type FullContract<M extends AnyMechanism, T extends AnyOutcomeType> = {
   volume7Days: number
 
   collectedFees: Fees
-} & M &
-  T
+} & T
 
-export type Contract = FullContract<AnyMechanism, AnyOutcomeType>
-export type BinaryContract = FullContract<AnyMechanism, Binary>
-export type FreeResponseContract = FullContract<AnyMechanism, FreeResponse>
-export type NumericContract = FullContract<DPM, Numeric>
+export type NumericContract = Contract & Numeric
+export type FreeResponseContract = Contract & FreeResponse
 
 export type DPM = {
   mechanism: 'dpm-2'

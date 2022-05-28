@@ -1,15 +1,7 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet, NumericBet } from './bet'
-import {
-  Binary,
-  Contract,
-  DPM,
-  FixedPayouts,
-  FreeResponse,
-  FullContract,
-  Multi,
-} from './contract'
+import { Binary, Contract, DPM, FixedPayouts } from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
@@ -55,7 +47,7 @@ export type PayoutInfo = {
 }
 
 export const getPayouts = (
-  outcome: string,
+  outcome: string | undefined,
   resolutions: {
     [outcome: string]: number
   },
@@ -73,7 +65,6 @@ export const getPayouts = (
       resolutionProbability
     )
   }
-
   return getDpmPayouts(
     outcome,
     resolutions,
@@ -84,8 +75,8 @@ export const getPayouts = (
 }
 
 export const getFixedPayouts = (
-  outcome: string,
-  contract: FullContract<FixedPayouts, Binary>,
+  outcome: string | undefined,
+  contract: Contract<FixedPayouts & Binary>,
   bets: Bet[],
   liquidities: LiquidityProvision[],
   resolutionProbability?: number
@@ -108,11 +99,11 @@ export const getFixedPayouts = (
 }
 
 export const getDpmPayouts = (
-  outcome: string,
+  outcome: string | undefined,
   resolutions: {
     [outcome: string]: number
   },
-  contract: Contract,
+  contract: Contract & DPM,
   bets: Bet[],
   resolutionProbability?: number
 ): PayoutInfo => {
@@ -125,13 +116,10 @@ export const getDpmPayouts = (
 
     case 'MKT':
       return contract.outcomeType === 'FREE_RESPONSE'
-        ? getPayoutsMultiOutcome(
-            resolutions,
-            contract as FullContract<DPM, Multi | FreeResponse>,
-            openBets
-          )
+        ? getPayoutsMultiOutcome(resolutions, contract, openBets)
         : getDpmMktPayouts(contract, openBets, resolutionProbability)
     case 'CANCEL':
+    case undefined:
       return getDpmCancelPayouts(contract, openBets)
 
     default:

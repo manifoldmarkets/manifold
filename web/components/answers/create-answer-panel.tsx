@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { Contract, FreeResponse } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { createAnswer } from 'web/lib/firebase/fn-call'
@@ -24,7 +24,7 @@ import { Bet } from 'common/bet'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 
 export function CreateAnswerPanel(props: {
-  contract: FullContract<DPM, FreeResponse>
+  contract: Contract & FreeResponse
 }) {
   const { contract } = props
   const user = useUser()

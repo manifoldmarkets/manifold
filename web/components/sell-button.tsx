@@ -1,4 +1,4 @@
-import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import { Binary, Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useState } from 'react'
@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import { SellSharesModal } from './sell-modal'
 
 export function SellButton(props: {
-  contract: FullContract<DPM | CPMM, Binary>
+  contract: Contract & Binary
   user: User | null | undefined
   sharesOutcome: 'YES' | 'NO' | undefined
   shares: number
@@ -40,7 +40,7 @@ export function SellButton(props: {
         {showSellModal && (
           <SellSharesModal
             className={panelClassName}
-            contract={contract as FullContract<CPMM, Binary>}
+            contract={contract}
             user={user}
             userBets={userBets ?? []}
             shares={shares}

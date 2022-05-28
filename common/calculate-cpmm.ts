@@ -1,6 +1,6 @@
 import { sum, groupBy, mapValues, sumBy } from 'lodash'
 
-import { Binary, CPMM, FullContract } from './contract'
+import { Binary, Contract, CPMM } from './contract'
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, noFees, PLATFORM_FEE } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { addObjects } from './util/object'
@@ -14,7 +14,7 @@ export function getCpmmProbability(
 }
 
 export function getCpmmProbabilityAfterBetBeforeFees(
-  contract: FullContract<CPMM, Binary>,
+  contract: Contract<CPMM & Binary>,
   outcome: string,
   bet: number
 ) {
@@ -31,7 +31,7 @@ export function getCpmmProbabilityAfterBetBeforeFees(
 }
 
 export function getCpmmOutcomeProbabilityAfterBet(
-  contract: FullContract<CPMM, Binary>,
+  contract: Contract<CPMM & Binary>,
   outcome: string,
   bet: number
 ) {
@@ -59,7 +59,7 @@ function calculateCpmmShares(
 }
 
 export function getCpmmLiquidityFee(
-  contract: FullContract<CPMM, Binary>,
+  contract: Contract<CPMM & Binary>,
   bet: number,
   outcome: string
 ) {
@@ -78,7 +78,7 @@ export function getCpmmLiquidityFee(
 }
 
 export function calculateCpmmSharesAfterFee(
-  contract: FullContract<CPMM, Binary>,
+  contract: Contract<CPMM & Binary>,
   bet: number,
   outcome: string
 ) {
@@ -89,7 +89,7 @@ export function calculateCpmmSharesAfterFee(
 }
 
 export function calculateCpmmPurchase(
-  contract: FullContract<CPMM, Binary>,
+  contract: Contract<CPMM & Binary>,
   bet: number,
   outcome: string
 ) {
@@ -133,7 +133,7 @@ function sellSharesK(
 }
 
 function calculateCpmmShareValue(
-  contract: FullContract<CPMM, Binary>,
+  contract: Contract<CPMM & Binary>,
   shares: number,
   outcome: 'YES' | 'NO'
 ) {
@@ -168,7 +168,7 @@ function calculateCpmmShareValue(
 }
 
 export function calculateCpmmSale(
-  contract: FullContract<CPMM, Binary>,
+  contract: Contract<CPMM & Binary>,
   shares: number,
   outcome: string
 ) {
@@ -222,7 +222,7 @@ export function calculateCpmmSale(
 }
 
 export function getCpmmProbabilityAfterSale(
-  contract: FullContract<CPMM, Binary>,
+  contract: Contract<CPMM & Binary>,
   shares: number,
   outcome: 'YES' | 'NO'
 ) {
@@ -261,7 +261,7 @@ export function addCpmmLiquidity(
 }
 
 export function getCpmmLiquidityPoolWeights(
-  contract: FullContract<CPMM, Binary>,
+  contract: Contract<CPMM & Binary>,
   liquidities: LiquidityProvision[]
 ) {
   const { p } = contract
@@ -291,7 +291,7 @@ export function getCpmmLiquidityPoolWeights(
 }
 
 // export function removeCpmmLiquidity(
-//   contract: FullContract<CPMM, Binary>,
+//   contract: Contract<CPMM & Binary>,
 //   liquidity: number
 // ) {
 //   const { YES, NO } = contract.pool

@@ -1,13 +1,6 @@
 import { cloneDeep, range, sum, sumBy, sortBy, mapValues } from 'lodash'
 import { Bet, NumericBet } from './bet'
-import {
-  Binary,
-  DPM,
-  FreeResponse,
-  FullContract,
-  Numeric,
-  NumericContract,
-} from './contract'
+import { Binary, Contract, DPM, NumericContract } from './contract'
 import { DPM_FEES } from './fees'
 import { normpdf } from '../common/util/math'
 import { addObjects } from './util/object'
@@ -202,7 +195,7 @@ export function calculateDpmRawShareValue(
 }
 
 export function calculateDpmMoneyRatio(
-  contract: FullContract<DPM, any>,
+  contract: Contract & DPM,
   bet: Bet,
   shareValue: number
 ) {
@@ -228,10 +221,7 @@ export function calculateDpmMoneyRatio(
   return actual / expected
 }
 
-export function calculateDpmShareValue(
-  contract: FullContract<DPM, any>,
-  bet: Bet
-) {
+export function calculateDpmShareValue(contract: Contract & DPM, bet: Bet) {
   const { pool, totalShares } = contract
   const { shares, outcome } = bet
 
@@ -243,17 +233,14 @@ export function calculateDpmShareValue(
   return adjShareValue
 }
 
-export function calculateDpmSaleAmount(
-  contract: FullContract<DPM, any>,
-  bet: Bet
-) {
+export function calculateDpmSaleAmount(contract: Contract & DPM, bet: Bet) {
   const { amount } = bet
   const winnings = calculateDpmShareValue(contract, bet)
   return deductDpmFees(amount, winnings)
 }
 
 export function calculateDpmPayout(
-  contract: FullContract<DPM, any>,
+  contract: Contract & DPM,
   bet: Bet,
   outcome: string
 ) {
@@ -263,10 +250,7 @@ export function calculateDpmPayout(
   return calculateStandardDpmPayout(contract, bet, outcome)
 }
 
-export function calculateDpmCancelPayout(
-  contract: FullContract<DPM, any>,
-  bet: Bet
-) {
+export function calculateDpmCancelPayout(contract: Contract & DPM, bet: Bet) {
   const { totalBets, pool } = contract
   const betTotal = sum(Object.values(totalBets))
   const poolTotal = sum(Object.values(pool))
@@ -275,7 +259,7 @@ export function calculateDpmCancelPayout(
 }
 
 export function calculateStandardDpmPayout(
-  contract: FullContract<DPM, any>,
+  contract: Contract & DPM,
   bet: Bet,
   outcome: string
 ) {
@@ -308,7 +292,7 @@ export function calculateStandardDpmPayout(
 }
 
 export function calculateDpmPayoutAfterCorrectBet(
-  contract: FullContract<DPM, any>,
+  contract: Contract & DPM,
   bet: Bet
 ) {
   const { totalShares, pool, totalBets, outcomeType } = contract
@@ -338,13 +322,10 @@ export function calculateDpmPayoutAfterCorrectBet(
         : outcomeType,
   }
 
-  return calculateStandardDpmPayout(newContract, bet, outcome)
+  return calculateStandardDpmPayout(newContract as any, bet, outcome)
 }
 
-function calculateMktDpmPayout(
-  contract: FullContract<DPM, Binary | FreeResponse | Numeric>,
-  bet: Bet
-) {
+function calculateMktDpmPayout(contract: Contract & DPM, bet: Bet) {
   if (contract.outcomeType === 'BINARY')
     return calculateBinaryMktDpmPayout(contract, bet)
 
@@ -390,7 +371,7 @@ function calculateMktDpmPayout(
 }
 
 function calculateBinaryMktDpmPayout(
-  contract: FullContract<DPM, Binary>,
+  contract: Contract<DPM & Binary>,
   bet: Bet
 ) {
   const { resolutionProbability, totalShares, phantomShares } = contract
@@ -413,7 +394,7 @@ function calculateBinaryMktDpmPayout(
   return deductDpmFees(amount, winnings)
 }
 
-export function resolvedDpmPayout(contract: FullContract<DPM, any>, bet: Bet) {
+export function resolvedDpmPayout(contract: Contract & DPM, bet: Bet) {
   if (contract.resolution)
     return calculateDpmPayout(contract, bet, contract.resolution)
   throw new Error('Contract was not resolved')

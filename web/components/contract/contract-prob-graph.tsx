@@ -4,12 +4,12 @@ import dayjs from 'dayjs'
 import { memo } from 'react'
 import { Bet } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
-import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import { Binary, Contract } from 'common/contract'
 import { useBetsWithoutAntes } from 'web/hooks/use-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
 export const ContractProbGraph = memo(function ContractProbGraph(props: {
-  contract: FullContract<DPM | CPMM, Binary>
+  contract: Contract & Binary
   bets: Bet[]
   height?: number
 }) {

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
-import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import { Binary, CPMM, Contract } from 'common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
@@ -39,7 +39,7 @@ import { useSaveShares } from './use-save-shares'
 import { SignUpPrompt } from './sign-up-prompt'
 
 export function BetPanel(props: {
-  contract: FullContract<DPM | CPMM, Binary>
+  contract: Contract & Binary
   className?: string
 }) {
   const { contract, className } = props
@@ -78,7 +78,7 @@ export function BetPanel(props: {
 }
 
 export function BetPanelSwitcher(props: {
-  contract: FullContract<DPM | CPMM, Binary>
+  contract: Contract & Binary
   className?: string
   title?: string // Set if BetPanel is on a feed modal
   selected?: 'YES' | 'NO'
@@ -157,16 +157,19 @@ export function BetPanelSwitcher(props: {
           text={tradeType === 'BUY' ? title ?? 'Place a trade' : 'Sell shares'}
         />
 
-        {tradeType === 'SELL' && user && sharesOutcome && (
-          <SellPanel
-            contract={contract as FullContract<CPMM, Binary>}
-            shares={yesShares || noShares}
-            sharesOutcome={sharesOutcome}
-            user={user}
-            userBets={userBets ?? []}
-            onSellSuccess={onBetSuccess}
-          />
-        )}
+        {tradeType === 'SELL' &&
+          mechanism == 'cpmm-1' &&
+          user &&
+          sharesOutcome && (
+            <SellPanel
+              contract={contract}
+              shares={yesShares || noShares}
+              sharesOutcome={sharesOutcome}
+              user={user}
+              userBets={userBets ?? []}
+              onSellSuccess={onBetSuccess}
+            />
+          )}
 
         {tradeType === 'BUY' && (
           <BuyPanel
@@ -184,7 +187,7 @@ export function BetPanelSwitcher(props: {
 }
 
 function BuyPanel(props: {
-  contract: FullContract<DPM | CPMM, Binary>
+  contract: Contract & Binary
   user: User | null | undefined
   selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
@@ -374,7 +377,7 @@ function BuyPanel(props: {
 }
 
 export function SellPanel(props: {
-  contract: FullContract<CPMM, Binary>
+  contract: Contract & CPMM & Binary
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'

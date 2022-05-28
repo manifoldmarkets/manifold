@@ -4,7 +4,7 @@ import { partition, sumBy } from 'lodash'
 import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
 
-import { Binary, CPMM, FullContract } from '../../common/contract'
+import { Contract } from '../../common/contract'
 import { noFees } from '../../common/fees'
 import { User } from '../../common/user'
 
@@ -15,7 +15,7 @@ export const redeemShares = async (userId: string, contractId: string) => {
     if (!contractSnap.exists)
       return { status: 'error', message: 'Invalid contract' }
 
-    const contract = contractSnap.data() as FullContract<CPMM, Binary>
+    const contract = contractSnap.data() as Contract
     if (contract.outcomeType !== 'BINARY' || contract.mechanism !== 'cpmm-1')
       return { status: 'success' }
 

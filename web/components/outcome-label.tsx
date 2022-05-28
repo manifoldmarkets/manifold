@@ -6,11 +6,8 @@ import { getValueFromBucket } from 'common/calculate-dpm'
 import {
   Binary,
   Contract,
-  CPMM,
-  DPM,
   FreeResponse,
-  FreeResponseContract,
-  FullContract,
+  Multi,
   NumericContract,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
@@ -36,7 +33,7 @@ export function OutcomeLabel(props: {
 
   return (
     <FreeResponseOutcomeLabel
-      contract={contract as FullContract<DPM, FreeResponse>}
+      contract={contract}
       resolution={outcome}
       truncate={truncate}
       answerClassName={'font-bold text-base-400'}
@@ -56,7 +53,7 @@ export function BinaryOutcomeLabel(props: {
 }
 
 export function BinaryContractOutcomeLabel(props: {
-  contract: FullContract<DPM | CPMM, Binary>
+  contract: Contract & Binary
   resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT'
 }) {
   const { contract, resolution } = props
@@ -70,7 +67,7 @@ export function BinaryContractOutcomeLabel(props: {
 }
 
 export function FreeResponseOutcomeLabel(props: {
-  contract: FreeResponseContract
+  contract: Contract & (FreeResponse | Multi)
   resolution: string | 'CANCEL' | 'MKT'
   truncate: 'short' | 'long' | 'none'
   answerClassName?: string
@@ -80,8 +77,9 @@ export function FreeResponseOutcomeLabel(props: {
   if (resolution === 'CANCEL') return <CancelLabel />
   if (resolution === 'MKT') return <MultiLabel />
 
-  const { answers } = contract
-  const chosen = answers?.find((answer) => answer.id === resolution)
+  const answers =
+    contract.outcomeType === 'FREE_RESPONSE' ? contract.answers : []
+  const chosen = answers.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
     <FreeResponseAnswerToolTip text={chosen.text}>

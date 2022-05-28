@@ -5,9 +5,7 @@ import {
   Binary,
   Contract,
   CPMM,
-  DPM,
   FreeResponse,
-  FullContract,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
@@ -126,7 +124,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
     const { yesBet, noBet } = getAnteBets(
       user,
-      contract as FullContract<DPM, Binary>,
+      contract as any,
       yesBetDoc.id,
       noBetDoc.id
     )
@@ -140,7 +138,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
     const lp = getCpmmInitialLiquidity(
       providerId,
-      contract as FullContract<CPMM, Binary>,
+      contract as Contract<CPMM & Binary>,
       liquidityDoc.id,
       ante
     )
@@ -160,7 +158,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
     const anteBet = getFreeAnswerAnte(
       providerId,
-      contract as FullContract<DPM, FreeResponse>,
+      contract as Contract & FreeResponse,
       anteBetDoc.id
     )
     await anteBetDoc.set(anteBet)
@@ -171,7 +169,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
     const anteBet = getNumericAnte(
       providerId,
-      contract as FullContract<DPM, Numeric>,
+      contract as Contract & Numeric,
       ante,
       anteBetDoc.id
     )

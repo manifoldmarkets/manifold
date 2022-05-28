@@ -4,7 +4,7 @@ import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getOutcomeProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
-import { Contract, DPM, FreeResponse, FullContract } from 'common/contract'
+import { Contract, FreeResponse } from 'common/contract'
 import { User } from 'common/user'
 import { mapCommentsByBetId } from 'web/lib/firebase/comments'
 
@@ -188,7 +188,7 @@ function groupBets(
 }
 
 function getAnswerGroups(
-  contract: FullContract<DPM, FreeResponse>,
+  contract: Contract & FreeResponse,
   bets: Bet[],
   comments: Comment[],
   user: User | undefined | null,
@@ -269,7 +269,7 @@ function getAnswerGroups(
 }
 
 function getAnswerAndCommentInputGroups(
-  contract: FullContract<DPM, FreeResponse>,
+  contract: Contract & FreeResponse,
   bets: Bet[],
   comments: Comment[],
   user: User | undefined | null
@@ -493,17 +493,11 @@ export function getRecentContractActivityItems(
   const items = []
   if (contract.outcomeType === 'FREE_RESPONSE') {
     items.push(
-      ...getAnswerGroups(
-        contract as FullContract<DPM, FreeResponse>,
-        bets,
-        comments,
-        user,
-        {
-          sortByProb: false,
-          abbreviated: true,
-          reversed: true,
-        }
-      )
+      ...getAnswerGroups(contract, bets, comments, user, {
+        sortByProb: false,
+        abbreviated: true,
+        reversed: true,
+      })
     )
   } else {
     items.push(
@@ -587,7 +581,7 @@ export function getSpecificContractActivityItems(
     case 'free-response-comment-answer-groups':
       items.push(
         ...getAnswerAndCommentInputGroups(
-          contract as FullContract<DPM, FreeResponse>,
+          contract as Contract & FreeResponse,
           bets,
           comments,
           user

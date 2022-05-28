@@ -1,7 +1,7 @@
 import { sortBy, partition, sum, uniq } from 'lodash'
 import { useLayoutEffect, useState } from 'react'
 
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { Contract, FreeResponse } from 'common/contract'
 import { Col } from '../layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
@@ -25,9 +25,7 @@ import { UserLink } from 'web/components/user-page'
 import { Linkify } from 'web/components/linkify'
 import { BuyButton } from 'web/components/yes-no-selector'
 
-export function AnswersPanel(props: {
-  contract: FullContract<DPM, FreeResponse>
-}) {
+export function AnswersPanel(props: { contract: Contract & FreeResponse }) {
   const { contract } = props
   const { creatorId, resolution, resolutions, totalBets } = contract
 
@@ -154,7 +152,7 @@ export function AnswersPanel(props: {
 }
 
 function getAnswerItems(
-  contract: FullContract<DPM, FreeResponse>,
+  contract: Contract & FreeResponse,
   answers: Answer[],
   user: User | undefined | null
 ) {
@@ -182,7 +180,7 @@ function getAnswerItems(
 }
 
 function OpenAnswer(props: {
-  contract: FullContract<any, FreeResponse>
+  contract: Contract & FreeResponse
   answer: Answer
   items: ActivityItem[]
   type: string

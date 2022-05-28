@@ -4,13 +4,7 @@ import { sortBy } from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import {
-  Binary,
-  Contract,
-  CPMM,
-  DPM,
-  FullContract,
-} from '../../../common/contract'
+import { Binary, Contract, CPMM, DPM } from '../../../common/contract'
 import { Bet } from '../../../common/bet'
 import {
   calculateDpmPayout,
@@ -28,7 +22,7 @@ const firestore = admin.firestore()
 async function recalculateContract(contractRef: DocRef, isCommit = false) {
   await firestore.runTransaction(async (transaction) => {
     const contractDoc = await transaction.get(contractRef)
-    const contract = contractDoc.data() as FullContract<DPM, Binary>
+    const contract = contractDoc.data() as Contract<DPM & Binary>
 
     if (!contract?.slug) {
       console.log('missing slug; id=', contractRef.id)
@@ -110,7 +104,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
       {
         ...contract,
         ...contractUpdate,
-      } as FullContract<CPMM, Binary>,
+      } as Contract<CPMM & Binary>,
       liquidityDocRef.id,
       ante
     )

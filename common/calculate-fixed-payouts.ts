@@ -1,9 +1,9 @@
 import { Bet } from './bet'
 import { getProbability } from './calculate'
-import { Binary, FixedPayouts, FullContract } from './contract'
+import { Binary, Contract, FixedPayouts } from './contract'
 
 export function calculateFixedPayout(
-  contract: FullContract<FixedPayouts, Binary>,
+  contract: Contract<FixedPayouts & Binary>,
   bet: Bet,
   outcome: string
 ) {
@@ -24,7 +24,7 @@ export function calculateStandardFixedPayout(bet: Bet, outcome: string) {
 }
 
 function calculateFixedMktPayout(
-  contract: FullContract<FixedPayouts, Binary>,
+  contract: Contract<FixedPayouts & Binary>,
   bet: Bet
 ) {
   const { resolutionProbability } = contract

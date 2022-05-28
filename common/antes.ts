@@ -1,14 +1,7 @@
 import { range } from 'lodash'
 import { Bet, NumericBet } from './bet'
 import { getDpmProbability, getValueFromBucket } from './calculate-dpm'
-import {
-  Binary,
-  CPMM,
-  DPM,
-  FreeResponse,
-  FullContract,
-  Numeric,
-} from './contract'
+import { Binary, Contract, CPMM, DPM, FreeResponse, Numeric } from './contract'
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
@@ -23,7 +16,7 @@ export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @Ma
 
 export function getCpmmInitialLiquidity(
   providerId: string,
-  contract: FullContract<CPMM, Binary>,
+  contract: Contract<CPMM & Binary>,
   anteId: string,
   amount: number
 ) {
@@ -47,7 +40,7 @@ export function getCpmmInitialLiquidity(
 
 export function getAnteBets(
   creator: User,
-  contract: FullContract<DPM, Binary>,
+  contract: Contract<DPM & Binary>,
   yesAnteId: string,
   noAnteId: string
 ) {
@@ -89,7 +82,7 @@ export function getAnteBets(
 
 export function getFreeAnswerAnte(
   anteBettorId: string,
-  contract: FullContract<DPM, FreeResponse>,
+  contract: Contract & FreeResponse,
   anteBetId: string
 ) {
   const { totalBets, totalShares } = contract
@@ -117,7 +110,7 @@ export function getFreeAnswerAnte(
 
 export function getNumericAnte(
   anteBettorId: string,
-  contract: FullContract<DPM, Numeric>,
+  contract: Contract & Numeric,
   ante: number,
   newBetId: string
 ) {
