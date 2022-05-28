@@ -20,7 +20,6 @@ import { APIError, newEndpoint, validate, zTimestamp } from './api'
 
 import {
   FIXED_ANTE,
-  getAnteBets,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getNumericAnte,
@@ -115,23 +114,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
   const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : user.id
 
-  if (outcomeType === 'BINARY' && contract.mechanism === 'dpm-2') {
-    const yesBetDoc = firestore
-      .collection(`contracts/${contract.id}/bets`)
-      .doc()
-
-    const noBetDoc = firestore.collection(`contracts/${contract.id}/bets`).doc()
-
-    const { yesBet, noBet } = getAnteBets(
-      user,
-      contract as any,
-      yesBetDoc.id,
-      noBetDoc.id
-    )
-
-    await yesBetDoc.set(yesBet)
-    await noBetDoc.set(noBet)
-  } else if (outcomeType === 'BINARY') {
+  if (outcomeType === 'BINARY') {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)
       .doc()
