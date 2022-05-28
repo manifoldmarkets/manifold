@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Manalink } from 'common/manalink'
+import { Claim, Manalink } from 'common/manalink'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/page'
@@ -15,6 +15,7 @@ import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
 import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
+
 import Textarea from 'react-expanding-textarea'
 
 import dayjs from 'dayjs'
@@ -162,7 +163,7 @@ export default function LinkPage() {
             Claimed links
           </h1>
           {manalinkTxns.map((txn) => (
-            <Claim txn={txn} key={txn.id} />
+            <ClaimDescription txn={txn} key={txn.id} />
           ))}
         </Col>
       )}
@@ -170,7 +171,7 @@ export default function LinkPage() {
   )
 }
 
-export function Claim(props: { txn: Txn }) {
+export function ClaimDescription(props: { txn: Txn }) {
   const { txn } = props
   const from = useUserById(txn.fromId)
   const to = useUserById(txn.toId)
@@ -204,10 +205,63 @@ export function Claim(props: { txn: Txn }) {
   )
 }
 
-function LinkSummaryRow(props: { link: Manalink }) {
+function ClaimTableRow(props: { claim: Claim }) {
+  const { claim } = props
+  const who = useUserById(claim.toId)
+  return (
+    <tr className="text-sm text-gray-500">
+      <td className="px-5 py-2">{who?.name || 'Loading...'}</td>
+      <td className="px-5 py-2">{`${new Date(
+        claim.claimedTime
+      ).toLocaleString()}, ${fromNow(claim.claimedTime)}`}</td>
+    </tr>
+  )
+}
+
+function LinkDetailsTable(props: { link: Manalink }) {
   const { link } = props
   return (
-    <tr className="whitespace-nowrap text-sm text-gray-500" key={link.slug}>
+    <table className="w-full divide-y divide-gray-300 border border-gray-400">
+      <thead className="bg-gray-50 text-left text-sm font-semibold text-gray-900">
+        <tr>
+          <th className="px-5 py-2">Claimant</th>
+          <th className="px-5 py-2">Time</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-200 bg-white">
+        {link.claims.map((claim) => (
+          <ClaimTableRow claim={claim} />
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+function LinkTableRow(props: { link: Manalink }) {
+  const { link } = props
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <>
+      <LinkSummaryRow link={link} onClick={() => setExpanded((exp) => !exp)} />
+      {expanded && (
+        <tr>
+          <td className="bg-gray-100 p-3" colSpan={5}>
+            <LinkDetailsTable link={link} />
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
+function LinkSummaryRow(props: { link: Manalink; onClick: () => void }) {
+  const { link, onClick } = props
+  return (
+    <tr
+      onClick={onClick}
+      className="whitespace-nowrap text-sm text-gray-500 hover:cursor-pointer hover:bg-sky-50"
+      key={link.slug}
+    >
       <td className="px-5 py-4 font-medium text-gray-900">
         {formatMoney(link.amount)}
       </td>
@@ -236,7 +290,7 @@ function LinksTable(props: { links: Manalink[] }) {
       </thead>
       <tbody className="divide-y divide-gray-200 bg-white">
         {links.map((link) => (
-          <LinkSummaryRow link={link} />
+          <LinkTableRow link={link} />
         ))}
       </tbody>
     </table>

@@ -25,7 +25,7 @@ export type Manalink = {
   claims: Claim[]
 }
 
-type Claim = {
+export type Claim = {
   toId: string
 
   // The ID of the successful txn that tracks the money moved
