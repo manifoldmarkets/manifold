@@ -202,7 +202,7 @@ export default function Sidebar(props: { className?: string }) {
         {user ? (
           <Link href={'/create'} passHref>
             <button className={clsx(gradient, buttonStyle)}>
-              Ask a question
+              Create a question
             </button>
           </Link>
         ) : (
