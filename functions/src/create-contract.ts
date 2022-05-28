@@ -184,7 +184,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
       .doc()
 
     const anteBet = getNumericAnte(
-      user,
+      providerId,
       contract as FullContract<DPM, Numeric>,
       ante,
       anteBetDoc.id
