@@ -24,8 +24,8 @@ export function getNewContract(
   ante: number,
   closeTime: number,
   extraTags: string[],
-  automaticResolution: resolution,
-  automaticResolutionTime: number,
+  autoResolution: resolution,
+  autoResolutionTime: number,
 
   // used for numeric markets
   bucketCount: number,
@@ -62,8 +62,8 @@ export function getNewContract(
     isResolved: false,
     createdTime: Date.now(),
     closeTime,
-    automaticResolution,
-    automaticResolutionTime,
+    autoResolution,
+    autoResolutionTime,
 
     volume: 0,
     volume24Hours: 0,

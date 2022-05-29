@@ -109,7 +109,7 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const { closeTime, automaticResolutionTime, creatorName, creatorUsername } = contract
+  const { closeTime, autoResolutionTime, creatorName, creatorUsername } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
   return (
@@ -157,7 +157,6 @@ export function ContractDetails(props: {
               {/* {' - '}{' '} */}
               <EditableCloseDate
                 closeTime={closeTime}
-                resolveTime={automaticResolutionTime}
                 contract={contract}
                 isCreator={isCreator ?? false}
               />
@@ -197,11 +196,10 @@ export function contractTextDetails(contract: Contract) {
 
 function EditableCloseDate(props: {
   closeTime: number
-  resolveTime: number | undefined
   contract: Contract
   isCreator: boolean
 }) {
-  const { closeTime, resolveTime, contract, isCreator } = props
+  const { closeTime, contract, isCreator } = props
 
   const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
   const [closeDate, setCloseDate] = useState(
@@ -242,30 +240,15 @@ function EditableCloseDate(props: {
           />
         </div>
       ) : (
-        <>
-          <DateTimeTooltip
-            text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
-            time={closeTime}
-          >
-            {isSameYear
-              ? dayjs(closeTime).format('MMM D')
-              : dayjs(closeTime).format('MMM D, YYYY')}
-            {isSameDay && <> ({fromNow(closeTime)})</>}
-          </DateTimeTooltip>
-          {resolveTime && (
-            <DateTimeTooltip
-              text={resolveTime > Date.now() ? 'Market resolves as \'MKT\':' : ''}
-              time={resolveTime}
-            >
-              {"/ "}
-              {isSameYear
-                ? dayjs(resolveTime).format('MMM D')
-                : dayjs(resolveTime).format('MMM D, YYYY')}
-              {isSameDay && <> ({fromNow(resolveTime)})</>}
-              {": 'MKT'"}
-            </DateTimeTooltip>
-            )}
-      </>
+        <DateTimeTooltip
+          text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
+          time={closeTime}
+        >
+          {isSameYear
+            ? dayjs(closeTime).format('MMM D')
+            : dayjs(closeTime).format('MMM D, YYYY')}
+          {isSameDay && <> ({fromNow(closeTime)})</>}
+        </DateTimeTooltip>
       )}
 
       {isCreator &&

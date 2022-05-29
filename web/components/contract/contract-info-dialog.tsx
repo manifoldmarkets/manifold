@@ -30,7 +30,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
 
-  const { createdTime, closeTime, resolutionTime } = contract
+  const { createdTime, closeTime, resolutionTime, autoResolutionTime, autoResolution } = contract
   const tradersCount = uniqBy(bets, 'userId').length
 
   return (
@@ -79,6 +79,19 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
                   <td>Market close{closeTime > Date.now() ? 's' : 'd'}</td>
                   <td>{formatTime(closeTime)}</td>
                 </tr>
+              )}
+
+              {autoResolutionTime && autoResolution && (
+                <>
+                  <tr>
+                    <td>Automatic resolution</td>
+                    <td>{formatTime(autoResolutionTime)}</td>
+                  </tr>
+                  <tr>
+                  <td>Default resolution</td>
+                  <td>{autoResolution}</td>
+                </tr>
+                </>
               )}
 
               {resolutionTime && (

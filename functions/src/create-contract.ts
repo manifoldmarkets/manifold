@@ -67,8 +67,8 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
     ;({ initialProb } = validate(binarySchema, req.body))  // leading ; intentional: see above
   }
 
-  const automaticResolution = outcomeType == 'BINARY' ? 'MKT' : 'CANCEL'
-  const automaticResolutionTime = closeTime.setDate(closeTime.getDate() + 7)
+  const autoResolution = outcomeType == 'BINARY' ? 'MKT' : 'CANCEL'
+  const autoResolutionTime = closeTime.setDate(closeTime.getDate() + 7)
 
   // Uses utc time on server:
   const today = new Date()
@@ -109,8 +109,8 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
     ante,
     closeTime.getTime(),
     tags ?? [],
-    automaticResolution,
-    automaticResolutionTime,
+    autoResolution,
+    autoResolutionTime,
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0

@@ -28,9 +28,8 @@ export type FullContract<
   isResolved: boolean
   resolutionTime?: number // When the market is resolved
   resolution?: string
-  automaticResolution: resolution
-  automaticResolutionTime?: number
-
+  autoResolution: resolution
+  autoResolutionTime: number // When the market will be resolved automatically
   closeEmailsSent?: number
 
   volume: number
