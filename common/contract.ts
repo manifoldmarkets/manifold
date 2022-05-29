@@ -28,8 +28,7 @@ export type FullContract<
   isResolved: boolean
   resolutionTime?: number // When the market is resolved
   resolution?: string
-  resolutionType: resolutionType
-  automaticResolution?: resolution
+  automaticResolution: resolution
   automaticResolutionTime?: number
 
   closeEmailsSent?: number
@@ -98,7 +97,6 @@ export type Numeric = {
 }
 
 export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE' | 'NUMERIC'
-export type resolutionType = 'MANUAL' | 'COMBINED'
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 
 export const RESOLUTIONS = [ 'YES', 'NO', 'MKT', 'CANCEL'] as const
