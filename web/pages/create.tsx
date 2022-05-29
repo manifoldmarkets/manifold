@@ -11,7 +11,11 @@ import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
 import { Row } from 'web/components/layout/row'
-import { MAX_DESCRIPTION_LENGTH, MAX_QUESTION_LENGTH, outcomeType, resolution, resolutionType } from 'common/contract'
+import {
+  MAX_DESCRIPTION_LENGTH,
+  MAX_QUESTION_LENGTH,
+  outcomeType,
+} from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from 'common/util/object'
@@ -64,8 +68,6 @@ export function NewContract(props: { question: string; tag?: string }) {
   }, [])
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
-  const [resolutionType, setResolutionType] = useState<resolutionType>('MANUAL')
-  const [automaticResolution, setAutomaticResolution] = useState<resolution>('CANCEL')
   const [initialProb, setInitialProb] = useState(50)
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
@@ -88,17 +90,16 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   // const [anteError, setAnteError] = useState<string | undefined>()
   // By default, close the market a week from today
-  const [closeDate, setCloseDate] = useState<undefined | string>(weekFrom(dayjs()))
+  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
+  const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
   const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
-  const [resolutionDate, setResolutionDate] = useState<undefined | string>(weekFrom(closeDate))
-  const [resolutionHoursMinutes, setResolutionHoursMinutes] = useState<string>('23:59')
   const [probErrorText, setProbErrorText] = useState('')
   const [marketInfoText, setMarketInfoText] = useState('')
-  const [resolutionInfoText, setResolutionInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const closeTime = closeDate ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf() : undefined
-  const automaticResolutionTime = resolutionDate ? dayjs(`${resolutionDate}TT${resolutionHoursMinutes}`).valueOf() : undefined
+  const closeTime = closeDate
+    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
+    : undefined
 
   const balance = creator?.balance || 0
 
@@ -127,10 +128,6 @@ export function NewContract(props: { question: string; tag?: string }) {
         min < max &&
         max - min > 0.01))
 
-  function weekFrom(date: string | dayjs.Dayjs | undefined) {
-    return dayjs(date).add(7, 'day').format('YYYY-MM-DDT23:59')
-  }
-
   function setCloseDateInDays(days: number) {
     const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
     setCloseDate(newCloseDate)
@@ -154,8 +151,6 @@ export function NewContract(props: { question: string; tag?: string }) {
           tags: category ? [category] : undefined,
           min,
           max,
-          automaticResolution,
-          automaticResolutionTime
         })
       )
       await router.push(contractPath(result as Contract))
@@ -375,77 +370,6 @@ export function NewContract(props: { question: string; tag?: string }) {
         </Row>
       </div>
 
-      {outcomeType === 'BINARY' && (
-        <div className="form-control mb-1 items-start">
-          <Spacer h={4} />
-          <label className="label mb-1 gap-2">
-            <span>Resolution type</span>
-            <InfoTooltip text="Combined markets can be resolved manually but will be resolved automatically under given conditions." />
-          </label>
-          <ChoicesToggleGroup
-            currentChoice={resolutionType}
-            setChoice={(choice) => {
-              setResolutionInfoText((choice === 'COMBINED' ? 'Automatic resolution is still experimental.' : ''))
-              setResolutionType(choice as resolutionType)
-            }}
-            choicesMap={{
-              'Manual': 'MANUAL',
-              'Combined': 'COMBINED',
-            }}
-            isSubmitting={isSubmitting}
-            className={'col-span-4 sm:col-span-3'}
-          />
-          {resolutionInfoText && (
-            <div className="mt-2 ml-1 text-sm text-indigo-700">
-              {resolutionInfoText}
-            </div>
-          )}
-
-          {resolutionType === 'COMBINED' && (
-            <div className="form-control mb-1 items-start">
-              <Spacer h={4} />
-              <label className="label mb-1 gap-2">
-                <span>Question resolves automatically as:</span>
-                <InfoTooltip text="The market will be resolved automatically on this date (local timezone)." />
-              </label>
-              <ChoicesToggleGroup
-                currentChoice={automaticResolution}
-                setChoice={(choice) => setAutomaticResolution(choice as resolution)}
-                choicesMap={{
-                  'YES': 'YES',
-                  'NO': 'NO',
-                  'MKT': 'PROB',
-                  'CANCEL': 'N/A',
-                }}
-                isSubmitting={isSubmitting}
-                className={'col-span-4 sm:col-span-3'}
-              />
-            <Row>
-              <input
-                type={'date'}
-                className="input input-bordered mt-4"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) =>
-                  setResolutionDate(dayjs(e.target.value).format('YYYY-MM-DDT23:59') || '')
-                }
-                min={Date.parse(closeDate??"")} // TODO: Fix: Market can be created with dates in the past
-                disabled={isSubmitting}
-                value={dayjs(resolutionDate).format('YYYY-MM-DD')}
-              />
-              <input
-                type={'time'}
-                className="input input-bordered mt-4 ml-2"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setResolutionHoursMinutes(e.target.value)}
-                min={'00:00'}
-                disabled={isSubmitting}
-                value={closeHoursMinutes}
-              />
-            </Row>
-            </div>
-          )}
-        </div>
-      )}
       <Spacer h={4} />
 
       <div className="form-control mb-1 items-start">
@@ -516,6 +440,6 @@ export function NewContract(props: { question: string; tag?: string }) {
           {isSubmitting ? 'Creating...' : 'Create question'}
         </button>
       </div>
-    </div> 
+    </div>
   )
 }
