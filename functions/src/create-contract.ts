@@ -13,8 +13,6 @@ import {
   MAX_TAG_LENGTH,
   Numeric,
   OUTCOME_TYPES,
-  RESOLUTIONS,
-  RESOLUTION_TYPES
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
@@ -43,16 +41,7 @@ const bodySchema = z.object({
     'Close time must be in the future.'
   ),
   outcomeType: z.enum(OUTCOME_TYPES),
-  resolutionType: z.enum(RESOLUTION_TYPES),
-  automaticResolution: z.enum(RESOLUTIONS),
-  automaticResolutionTime: z.date()
-  }).refine(
-    (data) => data.automaticResolutionTime.getTime() > data.closeTime.getTime(),
-    'Resolution time must be after close time.'
-  ).refine(
-    (data) => data.resolutionType === 'MANUAL' && data.automaticResolutionTime,
-    'Time for automatic resolution specified even tho the resolution is \'MANUAL\''
-  )
+  })
 
 const binarySchema = z.object({
   initialProb: z.number().min(1).max(99),
@@ -64,7 +53,7 @@ const numericSchema = z.object({
 })
 
 export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
-  const { question, description, tags, closeTime, outcomeType, resolutionType, automaticResolution, automaticResolutionTime } = validate(
+  const { question, description, tags, closeTime, outcomeType } = validate(
     bodySchema,
     req.body
   )
@@ -75,8 +64,11 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
     if (max - min <= 0.01) throw new APIError(400, 'Invalid range.')
   }
   if (outcomeType === 'BINARY') {
-    ;({ initialProb } = validate(binarySchema, req.body))  // leading ; intentional: see abive
+    ;({ initialProb } = validate(binarySchema, req.body))  // leading ; intentional: see above
   }
+
+  const automaticResolution = outcomeType == 'BINARY' ? 'MKT' : 'CANCEL'
+  const automaticResolutionTime = closeTime.setDate(closeTime.getDate() + 7)
 
   // Uses utc time on server:
   const today = new Date()
@@ -117,9 +109,8 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
     ante,
     closeTime.getTime(),
     tags ?? [],
-    resolutionType,
     automaticResolution,
-    automaticResolutionTime.getTime(),
+    automaticResolutionTime,
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0

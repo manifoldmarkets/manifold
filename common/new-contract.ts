@@ -8,7 +8,6 @@ import {
   Numeric,
   outcomeType,
   resolution,
-  resolutionType,
 } from './contract'
 import { User } from './user'
 import { parseTags } from './util/parse'
@@ -25,7 +24,6 @@ export function getNewContract(
   ante: number,
   closeTime: number,
   extraTags: string[],
-  resolutionType: resolutionType,
   automaticResolution: resolution,
   automaticResolutionTime: number,
 
@@ -64,7 +62,6 @@ export function getNewContract(
     isResolved: false,
     createdTime: Date.now(),
     closeTime,
-    resolutionType,
     automaticResolution,
     automaticResolutionTime,
 
