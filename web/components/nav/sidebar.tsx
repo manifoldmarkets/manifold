@@ -9,6 +9,7 @@ import {
   PresentationChartLineIcon,
   ChatAltIcon,
   SparklesIcon,
+  NewspaperIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { sortBy } from 'lodash'
@@ -16,16 +17,17 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFollowedFolds } from 'web/hooks/use-fold'
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
+import { firebaseLogin, firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
-import { getNavigationOptions, ProfileSummary } from './profile-menu'
+import { ProfileSummary } from './profile-menu'
 import {
   getUtcFreeMarketResetTime,
   useHasCreatedContractToday,
 } from 'web/hooks/use-has-created-contract-today'
 import { Row } from '../layout/row'
 import React, { useEffect, useState } from 'react'
+import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
@@ -47,6 +49,30 @@ function getNavigation(username: string) {
   ]
 }
 
+function getMoreNavigation(user?: User | null) {
+  if (IS_PRIVATE_MANIFOLD) {
+    return [{ name: 'Leaderboards', href: '/leaderboards' }]
+  }
+
+  if (!user) {
+    return [
+      { name: 'Leaderboards', href: '/leaderboards' },
+      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+      { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
+    ]
+  }
+
+  return [
+    { name: 'Add funds', href: '/add-funds' },
+    { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Blog', href: 'https://news.manifold.markets' },
+    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
+    { name: 'About', href: 'https://docs.manifold.markets' },
+    { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
+  ]
+}
+
 const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
@@ -57,6 +83,7 @@ const signedOutNavigation = [
 const signedOutMobileNavigation = [
   { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
+  { name: 'Blog', href: 'https://news.manifold.markets', icon: NewspaperIcon },
   {
     name: 'Discord',
     href: 'https://discord.gg/eHQBNBqXuh',
@@ -193,7 +220,7 @@ export default function Sidebar(props: { className?: string }) {
         ))}
 
         <MenuButton
-          menuItems={getNavigationOptions(user)}
+          menuItems={getMoreNavigation(user)}
           buttonContent={<MoreButton />}
         />
       </div>
