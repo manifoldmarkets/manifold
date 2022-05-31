@@ -18,6 +18,7 @@ export const onCreateComment = functions.firestore
     const { contractId } = context.params as {
       contractId: string
     }
+    const { eventId } = context
 
     const contract = await getContract(contractId)
     if (!contract)
@@ -34,7 +35,7 @@ export const onCreateComment = functions.firestore
       NotificationSourceTypes.COMMENT,
       contract,
       commentCreator,
-      context.eventId
+      eventId
     )
 
     await firestore

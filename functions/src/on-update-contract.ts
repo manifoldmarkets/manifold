@@ -8,6 +8,7 @@ export const onUpdateContract = functions.firestore
   .document('contracts/{contractId}')
   .onUpdate(async (change, context) => {
     const contract = change.after.data() as Contract
+    const { eventId } = context
 
     const contractUpdater = await getUser(contract.creatorId)
     if (!contractUpdater) throw new Error('Could not find contract updater')
@@ -23,7 +24,7 @@ export const onUpdateContract = functions.firestore
         NotificationSourceTypes.CONTRACT,
         contract,
         contractUpdater,
-        context.eventId
+        eventId
       )
     }
   })

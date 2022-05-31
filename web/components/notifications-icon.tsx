@@ -3,10 +3,7 @@ import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
 import { Notification } from 'common/notification'
-import {
-  getUnseenNotifications,
-  listenForNotifications,
-} from 'web/lib/firebase/notifications'
+import { listenForNotifications } from 'web/lib/firebase/notifications'
 import { useUser } from 'web/hooks/use-user'
 import { useRouter } from 'next/router'
 
