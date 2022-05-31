@@ -69,7 +69,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
   // Uses utc time on server:
   const today = new Date()
-  let freeMarketResetTime = today.setUTCHours(16, 0, 0, 0)
+  let freeMarketResetTime = new Date().setUTCHours(16, 0, 0, 0)
   if (today.getTime() < freeMarketResetTime) {
     freeMarketResetTime = freeMarketResetTime - 24 * 60 * 60 * 1000
   }
