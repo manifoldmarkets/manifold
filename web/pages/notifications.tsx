@@ -165,7 +165,7 @@ function Notification(props: { notification: Notification }) {
             className={'mr-0 flex-shrink-0'}
           />
           <a href={sourceUrl} className={'flex-1 pl-1'}>
-            {reasonText?.replace(sourceUserName || '', '')}
+            {reasonText}
             {contract && sourceId && (
               <div className={'inline'}>
                 <CopyLinkDateTimeComponent
