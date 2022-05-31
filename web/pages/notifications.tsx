@@ -130,7 +130,7 @@ function Notification(props: {
         })
         break
     }
-  }, [notification])
+  }, [notification, sourceContractId, sourceId, sourceType])
 
   useEffect(() => {
     if (!contract || !notification || notification.isSeen) return
