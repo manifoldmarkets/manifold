@@ -101,6 +101,7 @@ function Notification(props: { notification: Notification }) {
     updateDoc(doc(db, `users/${userId}/notifications/`, id), {
       ...notification,
       isSeen: true,
+      viewTime: new Date(),
     })
   }, [notification])
 

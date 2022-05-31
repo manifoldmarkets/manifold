@@ -3,7 +3,10 @@ import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
 import { Notification } from 'common/notification'
-import { getUnseenNotifications } from 'web/lib/firebase/notifications'
+import {
+  getUnseenNotifications,
+  listenForNotifications,
+} from 'web/lib/firebase/notifications'
 import { useUser } from 'web/hooks/use-user'
 import { useRouter } from 'next/router'
 
@@ -13,15 +16,13 @@ export default function NotificationsIcon(props: { className?: string }) {
     Notification[] | undefined
   >()
   const router = useRouter()
+  useEffect(() => {
+    if (router.pathname.endsWith('notifications')) return setNotifications([])
+  }, [router.pathname])
 
   useEffect(() => {
-    if (!user) return
-    const interval = setInterval(() => {
-      if (router.pathname.endsWith('notifications')) setNotifications([])
-      else getUnseenNotifications(user.id).then(setNotifications)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [user, router.pathname])
+    if (user) return listenForNotifications(user.id, setNotifications, true)
+  }, [user])
 
   return (
     <Row className={clsx('justify-center')}>
