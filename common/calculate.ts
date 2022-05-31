@@ -131,9 +131,13 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   let loan = 0
   let saleValue = 0
   let redeemed = 0
+  const totalShares: { [outcome: string]: number } = {}
 
   for (const bet of yourBets) {
-    const { isSold, sale, amount, loanAmount, isRedemption } = bet
+    const { isSold, sale, amount, loanAmount, isRedemption, shares, outcome } =
+      bet
+    totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
+
     if (isSold) {
       totalInvested += amount
     } else if (sale) {
@@ -165,6 +169,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     netPayout,
     profit,
     profitPercent,
+    totalShares,
   }
 }
 
@@ -175,6 +180,7 @@ export function getContractBetNullMetrics() {
     netPayout: 0,
     profit: 0,
     profitPercent: 0,
+    totalShares: {} as { [outcome: string]: number },
   }
 }
 

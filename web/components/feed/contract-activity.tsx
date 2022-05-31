@@ -39,7 +39,7 @@ export function ContractActivity(props: {
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const updatedBets = mode === 'only-recent' ? undefined : useBets(contract.id)
-  const bets = updatedBets ?? props.bets
+  const bets = (updatedBets ?? props.bets).filter((bet) => !bet.isRedemption)
 
   const items =
     mode === 'only-recent'

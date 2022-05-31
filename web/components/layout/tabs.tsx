@@ -1,12 +1,12 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { Row } from './row'
 
 type Tab = {
   title: string
-  tabIcon?: JSX.Element
-  content: JSX.Element
+  tabIcon?: ReactNode
+  content: ReactNode
   // If set, change the url to this href when the tab is selected
   href?: string
 }

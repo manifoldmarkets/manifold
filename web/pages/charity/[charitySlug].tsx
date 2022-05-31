@@ -1,6 +1,6 @@
 import { sortBy, sumBy, uniqBy } from 'lodash'
 import clsx from 'clsx'
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
