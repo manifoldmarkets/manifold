@@ -20,7 +20,7 @@ type user_to_reason_texts = {
 export const createNotification = async (
   sourceId: string,
   sourceType: notification_source_types,
-  notificationReason: notification_reason_types,
+  reason: notification_reason_types,
   sourceContract: Contract,
   sourceUser: User,
   idempotencyKey: string
@@ -71,10 +71,7 @@ export const createNotification = async (
     sourceType === 'answer' ||
     sourceType === 'contract'
   ) {
-    let reasonTextPretext = getReasonTextFromReason(
-      sourceType,
-      notificationReason
-    )
+    let reasonTextPretext = getReasonTextFromReason(sourceType, reason)
 
     const notifyContractCreator = async (
       userToReasonTexts: user_to_reason_texts
@@ -82,7 +79,7 @@ export const createNotification = async (
       if (shouldGetNotification(sourceContract.creatorId, userToReasonTexts))
         userToReasonTexts[sourceContract.creatorId] = {
           text: `${reasonTextPretext} your question`,
-          reason: notificationReason,
+          reason,
         }
     }
 
@@ -100,7 +97,7 @@ export const createNotification = async (
         if (shouldGetNotification(userId, userToReasonTexts))
           userToReasonTexts[userId] = {
             text: `${reasonTextPretext} a question you submitted an answer to`,
-            reason: notificationReason,
+            reason,
           }
       })
     }
@@ -119,7 +116,7 @@ export const createNotification = async (
         if (shouldGetNotification(userId, userToReasonTexts))
           userToReasonTexts[userId] = {
             text: `${reasonTextPretext} a question you commented on`,
-            reason: notificationReason,
+            reason,
           }
       })
     }
@@ -136,7 +133,7 @@ export const createNotification = async (
         if (shouldGetNotification(userId, userToReasonTexts))
           userToReasonTexts[userId] = {
             text: `${reasonTextPretext} a question you bet on`,
-            reason: notificationReason,
+            reason,
           }
       })
     }
