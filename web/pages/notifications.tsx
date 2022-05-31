@@ -134,7 +134,6 @@ function Notification(props: {
 
   useEffect(() => {
     if (!contract || !notification || notification.isSeen) return
-    if (userId != currentUser.id) return
     updateDoc(doc(db, `users/${currentUser.id}/notifications/`, id), {
       ...notification,
       isSeen: true,
