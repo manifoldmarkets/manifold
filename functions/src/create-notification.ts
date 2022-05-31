@@ -71,7 +71,7 @@ export const createNotification = async (
         : 'updated' // === NotificationSourceTypes.CONTRACT
 
     const notifyContractCreator = async () => {
-      if (sourceContract.creatorId !== sourceUser.id)
+      if (shouldGetNotification(sourceContract.creatorId))
         userAndMessagesMap[
           sourceContract.creatorId
         ] = `${reasonTextPretext} your question`
@@ -84,10 +84,7 @@ export const createNotification = async (
           .doc(sourceContract.id)
           .collection('answers')
       )
-      const recipientUserIds = uniq([
-        sourceContract.creatorId,
-        ...answers.map((answer) => answer.userId),
-      ]).filter((id) => id !== sourceUser.id)
+      const recipientUserIds = uniq(answers.map((answer) => answer.userId))
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId))
           userAndMessagesMap[
@@ -103,10 +100,7 @@ export const createNotification = async (
           .doc(sourceContract.id)
           .collection('comments')
       )
-      const recipientUserIds = uniq([
-        sourceContract.creatorId,
-        ...comments.map((comment) => comment.userId),
-      ]).filter((id) => id !== sourceUser.id)
+      const recipientUserIds = uniq(comments.map((comment) => comment.userId))
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId))
           userAndMessagesMap[
