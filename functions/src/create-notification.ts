@@ -54,10 +54,10 @@ export const createNotification = async (
     )
   }
 
-  // TODO: update for liquidity
-  // TODO: find tagged users
-  // TODO: find replies to comments
-  // TODO: use reason instead of reasonText
+  // TODO: Update for liquidity.
+  // TODO: Find tagged users.
+  // TODO: Find replies to comments.
+  // TODO: Use reason instead of reasonText to allow frontend to process msg.
   if (
     sourceType === NotificationSourceTypes.COMMENT ||
     sourceType === NotificationSourceTypes.ANSWER ||
@@ -109,7 +109,7 @@ export const createNotification = async (
       })
     }
 
-    // Only notifies those who have open bets in the question, we could also notify those who have sold their bets
+    // Only notifies those who have open bets in the question, we could also notify those who have sold their bets.
     const notifyOtherBettorsOnContract = async () => {
       const betsSnap = await firestore
         .collection(`contracts/${sourceContract.id}/bets`)
@@ -125,7 +125,7 @@ export const createNotification = async (
       })
     }
 
-    // The order of these functions determines what notification text is shown to the user
+    // The order of these functions determines what notification text is shown to the user.
     await notifyContractCreator()
     await notifyOtherAnswerersOnContract()
     await notifyOtherCommentersOnContract()
