@@ -10,7 +10,6 @@ Nope! Each account starts with a free M$ 1000. If you invest it wisely, you can 
 
 Manifold Dollars, or mana for short.
 
-
 ### Can M$ be sold for real money?
 
 No. Gambling laws put many restrictions on real-money prediction markets, so Manifold uses play money instead.
@@ -29,7 +28,6 @@ In general, prediction markets are very accurate. They do have some known issues
 - Manifold's betting system isn't perfect and has some sources of error, discussed in detail [here](https://kevin.zielnicki.com/2022/02/17/manifold/).
 
 As a general heuristic, check the total pool for the market in question. The more M$ there is in the market, the more likely it is to be accurate.
-
 
 ### Can I participate without having a Google account?
 
@@ -65,7 +63,7 @@ A market being "closed" means that people can no longer place or sell bets, "loc
 
 ### What does "PROB" mean?
 
-Resolving a market as "PROB" means that it's resolved at a certain probability, chosen by the market creator. PROB 100% is the same as "yes", and PROB 0% is the same as "no". For example, if a market is resolved at PROB 75%, anyone who bought "yes" at less than 75% will (usually) make a profit, and anyone who bought "yes" at greater than 75% will (usually) take a loss. Vice versa for "no". 
+Resolving a market as "PROB" means that it's resolved at a certain probability, chosen by the market creator. PROB 100% is the same as "yes", and PROB 0% is the same as "no". For example, if a market is resolved at PROB 75%, anyone who bought "yes" at less than 75% will (usually) make a profit, and anyone who bought "yes" at greater than 75% will (usually) take a loss. Vice versa for "no".
 
 ### What happens if a market creator resolves a market incorrectly, or doesn't resolve it at all?
 

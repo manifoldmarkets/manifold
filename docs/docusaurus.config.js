@@ -51,8 +51,8 @@ const config = {
   scripts: [
     {
       src: 'https://cdn.jsdelivr.net/npm/link-summoner@1.0.2/dist/browser.min.js',
-      async: 'true'
-    }
+      async: 'true',
+    },
   ],
 
   themeConfig:
