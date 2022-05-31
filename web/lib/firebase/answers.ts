@@ -4,8 +4,6 @@ import { getValues, listenForValues } from './utils'
 import { db } from './init'
 import { Answer } from 'common/answer'
 
-export type { Answer }
-
 function getAnswersCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'answers')
 }

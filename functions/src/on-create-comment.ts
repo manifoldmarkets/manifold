@@ -8,7 +8,6 @@ import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { createNotification } from './create-notification'
-import { NotificationSourceTypes } from '../../common/notification'
 
 const firestore = admin.firestore()
 
@@ -32,7 +31,8 @@ export const onCreateComment = functions.firestore
 
     await createNotification(
       comment.id,
-      NotificationSourceTypes.COMMENT,
+      'comment',
+      'created',
       contract,
       commentCreator,
       eventId

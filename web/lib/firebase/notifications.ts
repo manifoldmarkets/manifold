@@ -9,10 +9,6 @@ function getNotificationsQuery(userId: string, unseenOnly?: boolean) {
   return query(notifsCollection)
 }
 
-export function getUnseenNotifications(userId: string) {
-  return getValues<Notification>(getNotificationsQuery(userId, true))
-}
-
 export function listenForNotifications(
   userId: string,
   setNotifications: (notifs: Notification[]) => void,

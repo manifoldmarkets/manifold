@@ -1,7 +1,8 @@
 import * as admin from 'firebase-admin'
 import {
   Notification,
-  NotificationSourceTypes,
+  notification_reason_types,
+  notification_source_types,
 } from '../../common/notification'
 import { User } from '../../common/user'
 import { Contract } from '../../common/contract'
@@ -12,41 +13,48 @@ import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 const firestore = admin.firestore()
 
+type user_to_reason_texts = {
+  [userId: string]: { text: string; reason: notification_reason_types }
+}
+
 export const createNotification = async (
   sourceId: string,
-  sourceType: typeof NotificationSourceTypes[keyof typeof NotificationSourceTypes],
+  sourceType: notification_source_types,
+  notificationReason: notification_reason_types,
   sourceContract: Contract,
   sourceUser: User,
   idempotencyKey: string
 ) => {
-  const userToReasonTextsMap: { [userId: string]: string } = {}
-
-  const shouldGetNotification = (userId: string) => {
+  const shouldGetNotification = (
+    userId: string,
+    userToReasonTexts: user_to_reason_texts
+  ) => {
     return (
       sourceUser.id != userId &&
-      !Object.keys(userToReasonTextsMap).includes(userId)
+      !Object.keys(userToReasonTexts).includes(userId)
     )
   }
 
-  const createUsersNotifications = async (userAndMessagesMap: {
-    [userId: string]: string
-  }) => {
+  const createUsersNotifications = async (
+    userToReasonTexts: user_to_reason_texts
+  ) => {
     await Promise.all(
-      Object.keys(userAndMessagesMap).map(async (userId) => {
+      Object.keys(userToReasonTexts).map(async (userId) => {
         const notificationRef = firestore
           .collection(`/users/${userId}/notifications`)
           .doc(idempotencyKey)
         const notification: Notification = {
           id: idempotencyKey,
           userId,
-          reasonText: userAndMessagesMap[userId],
+          reasonText: userToReasonTexts[userId].text,
+          reason: userToReasonTexts[userId].reason,
           createdTime: Date.now(),
           isSeen: false,
           sourceId,
           sourceType,
           sourceContractId: sourceContract.id,
           sourceUserName: sourceUser.name,
-          sourceUserUserName: sourceUser.username,
+          sourceUserUsername: sourceUser.username,
           sourceUserAvatarUrl: sourceUser.avatarUrl,
         }
         await notificationRef.set(notification)
@@ -57,27 +65,30 @@ export const createNotification = async (
   // TODO: Update for liquidity.
   // TODO: Find tagged users.
   // TODO: Find replies to comments.
-  // TODO: Use reason instead of reasonText to allow frontend to process msg.
+  // TODO: Filter bets for only open bets
   if (
-    sourceType === NotificationSourceTypes.COMMENT ||
-    sourceType === NotificationSourceTypes.ANSWER ||
-    sourceType === NotificationSourceTypes.CONTRACT
+    sourceType === 'comment' ||
+    sourceType === 'answer' ||
+    sourceType === 'contract'
   ) {
-    const reasonTextPretext =
-      sourceType === NotificationSourceTypes.COMMENT
-        ? 'commented on'
-        : sourceType === NotificationSourceTypes.ANSWER
-        ? 'answered'
-        : 'updated' // === NotificationSourceTypes.CONTRACT
+    let reasonTextPretext = getReasonTextFromReason(
+      sourceType,
+      notificationReason
+    )
 
-    const notifyContractCreator = async () => {
-      if (shouldGetNotification(sourceContract.creatorId))
-        userToReasonTextsMap[
-          sourceContract.creatorId
-        ] = `${reasonTextPretext} your question`
+    const notifyContractCreator = async (
+      userToReasonTexts: user_to_reason_texts
+    ) => {
+      if (shouldGetNotification(sourceContract.creatorId, userToReasonTexts))
+        userToReasonTexts[sourceContract.creatorId] = {
+          text: `${reasonTextPretext} your question`,
+          reason: notificationReason,
+        }
     }
 
-    const notifyOtherAnswerersOnContract = async () => {
+    const notifyOtherAnswerersOnContract = async (
+      userToReasonTexts: user_to_reason_texts
+    ) => {
       const answers = await getValues<Answer>(
         firestore
           .collection('contracts')
@@ -86,14 +97,17 @@ export const createNotification = async (
       )
       const recipientUserIds = uniq(answers.map((answer) => answer.userId))
       recipientUserIds.forEach((userId) => {
-        if (shouldGetNotification(userId))
-          userToReasonTextsMap[
-            userId
-          ] = `${reasonTextPretext} a question you submitted an answer to`
+        if (shouldGetNotification(userId, userToReasonTexts))
+          userToReasonTexts[userId] = {
+            text: `${reasonTextPretext} a question you submitted an answer to`,
+            reason: notificationReason,
+          }
       })
     }
 
-    const notifyOtherCommentersOnContract = async () => {
+    const notifyOtherCommentersOnContract = async (
+      userToReasonTexts: user_to_reason_texts
+    ) => {
       const comments = await getValues<Comment>(
         firestore
           .collection('contracts')
@@ -102,34 +116,60 @@ export const createNotification = async (
       )
       const recipientUserIds = uniq(comments.map((comment) => comment.userId))
       recipientUserIds.forEach((userId) => {
-        if (shouldGetNotification(userId))
-          userToReasonTextsMap[
-            userId
-          ] = `${reasonTextPretext} a question you commented on`
+        if (shouldGetNotification(userId, userToReasonTexts))
+          userToReasonTexts[userId] = {
+            text: `${reasonTextPretext} a question you commented on`,
+            reason: notificationReason,
+          }
       })
     }
 
-    // Only notifies those who have open bets in the question, we could also notify those who have sold their bets.
-    const notifyOtherBettorsOnContract = async () => {
+    const notifyOtherBettorsOnContract = async (
+      userToReasonTexts: user_to_reason_texts
+    ) => {
       const betsSnap = await firestore
         .collection(`contracts/${sourceContract.id}/bets`)
         .get()
       const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
-      const openBets = bets.filter((b) => !b.isSold && !b.sale)
-      const recipientUserIds = uniq(openBets.map((bet) => bet.userId))
+      const recipientUserIds = uniq(bets.map((bet) => bet.userId))
       recipientUserIds.forEach((userId) => {
-        if (shouldGetNotification(userId))
-          userToReasonTextsMap[
-            userId
-          ] = `${reasonTextPretext} a question you bet on`
+        if (shouldGetNotification(userId, userToReasonTexts))
+          userToReasonTexts[userId] = {
+            text: `${reasonTextPretext} a question you bet on`,
+            reason: notificationReason,
+          }
       })
     }
 
-    // The order of these functions determines what notification text is shown to the user.
-    await notifyContractCreator()
-    await notifyOtherAnswerersOnContract()
-    await notifyOtherCommentersOnContract()
-    await notifyOtherBettorsOnContract()
-    await createUsersNotifications(userToReasonTextsMap)
+    const getUsersToNotify = async () => {
+      const userToReasonTexts: user_to_reason_texts = {}
+      // The following functions modify the userToReasonTexts object in place.
+      await notifyContractCreator(userToReasonTexts)
+      await notifyOtherAnswerersOnContract(userToReasonTexts)
+      await notifyOtherCommentersOnContract(userToReasonTexts)
+      await notifyOtherBettorsOnContract(userToReasonTexts)
+      return userToReasonTexts
+    }
+
+    const userToReasonTexts = await getUsersToNotify()
+    await createUsersNotifications(userToReasonTexts)
+  }
+}
+
+function getReasonTextFromReason(
+  source: notification_source_types,
+  reason: notification_reason_types
+) {
+  // TODO: Find tagged users.
+  // TODO: Find replies to comments.
+  switch (source) {
+    case 'comment':
+      return 'commented on'
+    case 'contract':
+      return reason
+    case 'answer':
+      return 'answered'
+    default:
+      throw new Error('Invalid notification reason')
   }
 }

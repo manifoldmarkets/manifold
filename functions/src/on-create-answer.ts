@@ -1,7 +1,6 @@
 import * as functions from 'firebase-functions'
 import { getContract, getUser } from './utils'
 import { createNotification } from './create-notification'
-import { NotificationSourceTypes } from '../../common/notification'
 import { Answer } from '../../common/answer'
 
 export const onCreateAnswer = functions.firestore
@@ -24,7 +23,8 @@ export const onCreateAnswer = functions.firestore
 
     await createNotification(
       answer.id,
-      NotificationSourceTypes.ANSWER,
+      'answer',
+      'created',
       contract,
       answerCreator,
       eventId

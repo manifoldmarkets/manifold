@@ -2,23 +2,28 @@ export type Notification = {
   id: string
   userId: string
   reasonText?: string
-  reason?: string
+  reason?: notification_reason_types
   createdTime: number
   viewTime?: number
   isSeen: boolean
 
   sourceId?: string
-  sourceType?: 'contract' | 'comment' | 'bet' | 'answer' | 'liquidity'
+  sourceType?: notification_source_types
   sourceContractId?: string
   sourceUserName?: string
-  sourceUserUserName?: string
+  sourceUserUsername?: string
   sourceUserAvatarUrl?: string
 }
+export type notification_source_types =
+  | 'contract'
+  | 'comment'
+  | 'bet'
+  | 'answer'
+  | 'liquidity'
 
-export const NotificationSourceTypes = {
-  CONTRACT: 'contract',
-  COMMENT: 'comment',
-  BET: 'bet',
-  ANSWER: 'answer',
-  liquidity: 'liquidity',
-} as const
+export type notification_reason_types =
+  | 'created'
+  | 'updated'
+  | 'resolved'
+  | 'tagged'
+  | 'replied'

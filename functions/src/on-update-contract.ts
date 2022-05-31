@@ -1,7 +1,6 @@
 import * as functions from 'firebase-functions'
 import { getUser } from './utils'
 import { createNotification } from './create-notification'
-import { NotificationSourceTypes } from '../../common/notification'
 import { Contract } from '../../common/contract'
 
 export const onUpdateContract = functions.firestore
@@ -14,14 +13,23 @@ export const onUpdateContract = functions.firestore
     if (!contractUpdater) throw new Error('Could not find contract updater')
 
     const previousValue = change.before.data() as Contract
-    if (
+    if (previousValue.isResolved !== contract.isResolved) {
+      await createNotification(
+        contract.id,
+        'contract',
+        'resolved',
+        contract,
+        contractUpdater,
+        eventId
+      )
+    } else if (
       previousValue.closeTime !== contract.closeTime ||
-      previousValue.description !== contract.description ||
-      previousValue.isResolved !== contract.isResolved
+      previousValue.description !== contract.description
     ) {
       await createNotification(
         contract.id,
-        NotificationSourceTypes.CONTRACT,
+        'contract',
+        'updated',
         contract,
         contractUpdater,
         eventId
