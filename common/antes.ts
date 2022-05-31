@@ -116,7 +116,7 @@ export function getFreeAnswerAnte(
 }
 
 export function getNumericAnte(
-  creator: User,
+  anteBettorId: string,
   contract: FullContract<DPM, Numeric>,
   ante: number,
   newBetId: string
@@ -136,7 +136,7 @@ export function getNumericAnte(
 
   const anteBet: NumericBet = {
     id: newBetId,
-    userId: creator.id,
+    userId: anteBettorId,
     contractId: contract.id,
     amount: ante,
     allBetAmounts,

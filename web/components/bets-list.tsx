@@ -125,13 +125,13 @@ export function BetsList(props: { user: User }) {
     .filter((c) => {
       if (filter === 'all') return true
 
-      const metrics = contractsMetrics[c.id]
+      const { totalShares } = contractsMetrics[c.id]
+      const hasSoldAll = Object.values(totalShares).every(
+        (shares) => shares === 0
+      )
 
-      // Filter for contracts you sold out of.
-      if (filter === 'sold') return metrics.payout === 0
-
-      // Filter for contracts where you currently have shares.
-      return metrics.payout > 0
+      if (filter === 'sold') return hasSoldAll
+      return !hasSoldAll
     })
 
   const [settled, unsettled] = partition(
