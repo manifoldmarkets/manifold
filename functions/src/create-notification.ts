@@ -19,12 +19,12 @@ export const createNotification = async (
   sourceUser: User,
   idempotencyKey: string
 ) => {
-  const userAndMessagesMap: { [userId: string]: string } = {}
+  const userToReasonTextsMap: { [userId: string]: string } = {}
 
   const shouldGetNotification = (userId: string) => {
     return (
       sourceUser.id != userId &&
-      !Object.keys(userAndMessagesMap).includes(userId)
+      !Object.keys(userToReasonTextsMap).includes(userId)
     )
   }
 
@@ -72,7 +72,7 @@ export const createNotification = async (
 
     const notifyContractCreator = async () => {
       if (shouldGetNotification(sourceContract.creatorId))
-        userAndMessagesMap[
+        userToReasonTextsMap[
           sourceContract.creatorId
         ] = `${reasonTextPretext} your question`
     }
@@ -87,7 +87,7 @@ export const createNotification = async (
       const recipientUserIds = uniq(answers.map((answer) => answer.userId))
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId))
-          userAndMessagesMap[
+          userToReasonTextsMap[
             userId
           ] = `${reasonTextPretext} a question you submitted an answer to`
       })
@@ -103,7 +103,7 @@ export const createNotification = async (
       const recipientUserIds = uniq(comments.map((comment) => comment.userId))
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId))
-          userAndMessagesMap[
+          userToReasonTextsMap[
             userId
           ] = `${reasonTextPretext} a question you commented on`
       })
@@ -119,7 +119,7 @@ export const createNotification = async (
       const recipientUserIds = uniq(openBets.map((bet) => bet.userId))
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId))
-          userAndMessagesMap[
+          userToReasonTextsMap[
             userId
           ] = `${reasonTextPretext} a question you bet on`
       })
@@ -130,6 +130,6 @@ export const createNotification = async (
     await notifyOtherAnswerersOnContract()
     await notifyOtherCommentersOnContract()
     await notifyOtherBettorsOnContract()
-    await createUsersNotifications(userAndMessagesMap)
+    await createUsersNotifications(userToReasonTextsMap)
   }
 }
