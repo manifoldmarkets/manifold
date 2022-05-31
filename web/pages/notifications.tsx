@@ -134,31 +134,31 @@ function Notification(props: { notification: Notification }) {
   return (
     <div className={' bg-white px-4 pt-6'}>
       <Row className={'items-center text-gray-500 sm:justify-start'}>
-        <Row className={'items-center'}>
-          <Avatar
-            avatarUrl={sourceUserAvatarUrl}
-            size={'sm'}
-            className={'mr-2'}
-            username={sourceUserName}
-          />
+        <Avatar
+          avatarUrl={sourceUserAvatarUrl}
+          size={'sm'}
+          className={'mr-2'}
+          username={sourceUserName}
+        />
+        <div className={'flex-1'}>
           <UserLink
             name={sourceUserName || ''}
             username={sourceUserUserName || ''}
-            className={'mr-1'}
+            className={'mr-0 flex-shrink-0'}
           />
-        </Row>
-        <a href={sourceUrl} className={'pl-4 sm:pl-0'}>
-          {reasonText?.replace(sourceUserName || '', '')}
-          {contract && sourceId && (
-            <div className={'inline'}>
-              <CopyLinkDateTimeComponent
-                contract={contract}
-                createdTime={createdTime}
-                elementId={sourceId}
-              />
-            </div>
-          )}
-        </a>
+          <a href={sourceUrl} className={'flex-1 pl-1'}>
+            {reasonText?.replace(sourceUserName || '', '')}
+            {contract && sourceId && (
+              <div className={'inline'}>
+                <CopyLinkDateTimeComponent
+                  contract={contract}
+                  createdTime={createdTime}
+                  elementId={sourceId}
+                />
+              </div>
+            )}
+          </a>
+        </div>
       </Row>
       <a href={sourceUrl}>
         <div className={'ml-4 mt-1'}>
