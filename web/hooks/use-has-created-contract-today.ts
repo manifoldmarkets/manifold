@@ -6,20 +6,15 @@ import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 
 let sessionCreatedContractToday = true
-export const nextResetTime = new Date('2022-05-27T13:53:00.000Z')
+
 export function getUtcFreeMarketResetTime(previous: boolean) {
   const localTimeNow = new Date()
-  const utc4pmToday = previous
-    ? localTimeNow.getTime() > nextResetTime.getTime()
-      ? new Date('2022-05-27T13:53:00.000Z')
-      : new Date('2022-05-27T13:30:00.000Z')
-    : nextResetTime
-  // dayjs()
-  // .utc()
-  // .set('hour', 16)
-  // .set('minute', 0)
-  // .set('second', 0)
-  // .set('millisecond', 0)
+  const utc4pmToday = dayjs()
+    .utc()
+    .set('hour', 16)
+    .set('minute', 0)
+    .set('second', 0)
+    .set('millisecond', 0)
 
   // if it's after 4pm UTC today
   if (localTimeNow.getTime() > utc4pmToday.valueOf()) {
@@ -44,7 +39,7 @@ export const useHasCreatedContractToday = (user: User | null | undefined) => {
   >('loading')
 
   useEffect(() => {
-    const nextUtcResetTime = getUtcFreeMarketResetTime(false)
+    let nextUtcResetTime = getUtcFreeMarketResetTime(false)
     setHasCreatedContractToday('loading')
     async function listUserContractsForToday() {
       const previousResetTime = getUtcFreeMarketResetTime(true)
@@ -58,12 +53,13 @@ export const useHasCreatedContractToday = (user: User | null | undefined) => {
       sessionCreatedContractToday = todayContracts.length > 0
       setHasCreatedContractToday(sessionCreatedContractToday)
     }
+
     const interval = setInterval(() => {
-      if (nextUtcResetTime < Date.now()) {
-        listUserContractsForToday()
-        return
-      }
+      if (Date.now() < nextUtcResetTime) return
+      listUserContractsForToday()
+      nextUtcResetTime = getUtcFreeMarketResetTime(false)
     }, 1000)
+
     listUserContractsForToday()
     return () => clearInterval(interval)
   }, [user])
