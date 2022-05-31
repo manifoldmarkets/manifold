@@ -56,6 +56,8 @@ export const createNotification = async (
 
   // TODO: update for liquidity
   // TODO: find tagged users
+  // TODO: find replies to comments
+  // TODO: use reason instead of reasonText
   if (
     sourceType === NotificationSourceTypes.COMMENT ||
     sourceType === NotificationSourceTypes.ANSWER ||
@@ -65,8 +67,8 @@ export const createNotification = async (
       sourceType === NotificationSourceTypes.COMMENT
         ? 'commented on'
         : sourceType === NotificationSourceTypes.ANSWER
-        ? 'submitted a new answer to'
-        : 'updated' // NotificationSourceTypes.CONTRACT
+        ? 'answered'
+        : 'updated' // === NotificationSourceTypes.CONTRACT
 
     const notifyContractCreator = async () => {
       if (sourceContract.creatorId !== sourceUser.id)
