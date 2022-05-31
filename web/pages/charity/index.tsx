@@ -57,9 +57,8 @@ export default function Charity(props: {
         <Col className="max-w-xl gap-2">
           <Title className="!mt-0" text="Manifold for Good" />
           <div className="mb-6 text-gray-500">
-            Donate your winnings to charity! Through the month of May, every{' '}
-            {formatMoney(100)} you contribute turns into $1 USD sent to your
-            chosen charity.
+            Donate your winnings to charity! Every {formatMoney(100)} you give
+            turns into $1 USD we send to your chosen charity.
             <Spacer h={5} />
             Together we've donated over ${Math.floor(totalRaised / 100)} USD so
             far!
