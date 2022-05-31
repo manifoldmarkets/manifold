@@ -52,12 +52,9 @@ import { NumericContract } from 'common/contract'
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
 
-export function BetsList(props: { user: User; hideBetsBefore?: number }) {
-  const { user, hideBetsBefore } = props
-  let bets = useUserBets(user.id, { includeRedemptions: true })
-  // Hide bets before 06-01-2022 if this isn't your own profile
-  // NOTE: This means profits shown are only starting 06-01-2022 as well.
-  bets = (bets ?? []).filter((bet) => bet.createdTime >= (hideBetsBefore ?? 0))
+export function BetsList(props: { user: User }) {
+  const { user } = props
+  const bets = useUserBets(user.id, { includeRedemptions: true })
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   const [sort, setSort] = useState<BetSort>('newest')
