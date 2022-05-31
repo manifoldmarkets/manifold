@@ -45,7 +45,7 @@ function getNavigation(username: string) {
     },
     {
       name: 'Notifications',
-      href: `/${username}/notifications`,
+      href: `/notifications`,
       icon: NotificationsIcon,
     },
 

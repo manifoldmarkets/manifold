@@ -32,6 +32,8 @@ export default function Notifications() {
     // TODO: return sign in page
     return <Custom404 />
   }
+
+  // TODO: use infinite scroll
   return (
     <Page>
       <div className={'p-4'}>
@@ -46,7 +48,10 @@ export default function Notifications() {
                 <div className={''}>
                   {notifications &&
                     notifications.map((notification) => (
-                      <Notification notification={notification} />
+                      <Notification
+                        notification={notification}
+                        key={notification.id}
+                      />
                     ))}
                 </div>
               ),
@@ -92,7 +97,7 @@ function Notification(props: { notification: Notification }) {
           )
           break
         case 'contract':
-          setSourceUrl(`/${contract?.creatorId}/${contract?.slug}`)
+          setSourceUrl(`/${contract?.creatorUsername}/${contract?.slug}`)
           break
       }
       setContract(contract)
@@ -131,6 +136,19 @@ function Notification(props: { notification: Notification }) {
     }
   }, [notification])
 
+  function getSourceIdForLinkComponent(sourceId: string) {
+    switch (sourceType) {
+      case 'answer':
+        return `answer-${sourceId}`
+      case 'comment':
+        return sourceId
+      case 'contract':
+        return ''
+      default:
+        return sourceId
+    }
+  }
+
   return (
     <div className={' bg-white px-4 pt-6'}>
       <Row className={'items-center text-gray-500 sm:justify-start'}>
@@ -153,7 +171,7 @@ function Notification(props: { notification: Notification }) {
                 <CopyLinkDateTimeComponent
                   contract={contract}
                   createdTime={createdTime}
-                  elementId={sourceId}
+                  elementId={getSourceIdForLinkComponent(sourceId)}
                 />
               </div>
             )}
