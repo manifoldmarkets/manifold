@@ -17,6 +17,7 @@ import { getValue } from 'web/lib/firebase/utils'
 import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/user-page'
 import { Linkify } from 'web/components/linkify'
+import { User } from 'common/user'
 
 export default function Notifications() {
   const user = useUser()
@@ -49,6 +50,7 @@ export default function Notifications() {
                   {notifications &&
                     notifications.map((notification) => (
                       <Notification
+                        currentUser={user}
                         notification={notification}
                         key={notification.id}
                       />
@@ -63,8 +65,11 @@ export default function Notifications() {
   )
 }
 
-function Notification(props: { notification: Notification }) {
-  const { notification } = props
+function Notification(props: {
+  currentUser: User
+  notification: Notification
+}) {
+  const { notification, currentUser } = props
   const {
     sourceType,
     sourceContractId,
@@ -84,34 +89,28 @@ function Notification(props: { notification: Notification }) {
   useEffect(() => {
     if (!sourceType || !sourceContractId || !sourceId) return
 
+    // Should we just store the contract url parts in the notification?
     getContractFromId(sourceContractId).then((contract) => {
+      if (!contract) return
       switch (sourceType) {
         case 'answer':
           setSourceUrl(
-            `/${contract?.creatorUsername}/${contract?.slug}#answer-${sourceId}`
+            `/${contract.creatorUsername}/${contract.slug}#answer-${sourceId}`
           )
           break
         case 'comment':
           setSourceUrl(
-            `/${contract?.creatorUsername}/${contract?.slug}#${sourceId}`
+            `/${contract.creatorUsername}/${contract.slug}#${sourceId}`
           )
           break
         case 'contract':
-          setSourceUrl(`/${contract?.creatorUsername}/${contract?.slug}`)
+          setSourceUrl(`/${contract.creatorUsername}/${contract.slug}`)
+          setSubText(contract.question)
           break
       }
       setContract(contract)
     })
 
-    updateDoc(doc(db, `users/${userId}/notifications/`, id), {
-      ...notification,
-      isSeen: true,
-      viewTime: new Date(),
-    })
-  }, [notification])
-
-  useEffect(() => {
-    if (!sourceType || !sourceContractId || !sourceId) return
     switch (sourceType) {
       case 'comment':
         getValue<Comment>(
@@ -121,10 +120,7 @@ function Notification(props: { notification: Notification }) {
         })
         break
       case 'contract':
-        getValue<Contract>(doc(db, `contracts/`, sourceId)).then((contract) => {
-          setSubText(contract?.question || '')
-          setContract(contract)
-        })
+        // We got the contract already.
         break
       case 'answer':
         getValue<Answer>(
@@ -135,6 +131,16 @@ function Notification(props: { notification: Notification }) {
         break
     }
   }, [notification])
+
+  useEffect(() => {
+    if (!contract || !notification || notification.isSeen) return
+    if (userId != currentUser.id) return
+    updateDoc(doc(db, `users/${currentUser.id}/notifications/`, id), {
+      ...notification,
+      isSeen: true,
+      viewTime: new Date(),
+    })
+  }, [notification, contract, currentUser, id, userId])
 
   function getSourceIdForLinkComponent(sourceId: string) {
     switch (sourceType) {
