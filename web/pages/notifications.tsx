@@ -146,7 +146,7 @@ function Notification(props: {
   }
 
   return (
-    <div className={' bg-white px-4 pt-6'}>
+    <div className={'bg-white px-0 pt-6 sm:px-4'}>
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <Avatar
           avatarUrl={sourceUserAvatarUrl}
