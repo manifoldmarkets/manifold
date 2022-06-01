@@ -45,7 +45,8 @@ service cloud.firestore {
     match /contracts/{contractId} {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['description', 'closeTime', 'tags', 'lowercaseTags']);
+        .hasOnly(['description', 'closeTime', 'tags', 'lowercaseTags'])
+        && resource.data.id == request.auth.uid;
       allow update: if isAdmin();
     }
 
