@@ -1,7 +1,6 @@
 import { range } from 'lodash'
 import {
   Binary,
-  Contract,
   CPMM,
   DPM,
   FreeResponse,
