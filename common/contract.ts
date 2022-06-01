@@ -2,11 +2,11 @@ import { Answer } from './answer'
 import { Fees } from './fees'
 
 export type AnyMechanism = DPM | CPMM
-export type AnyOutcomeType = Binary | Multi | FreeResponse | Numeric
+export type AnyOutcomeType = Binary | FreeResponse | Numeric
 export type AnyContractType =
   | (CPMM & Binary)
   | (DPM & Binary)
-  | (DPM & (Multi | FreeResponse))
+  | (DPM & FreeResponse)
   | (DPM & Numeric)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
@@ -74,12 +74,6 @@ export type Binary = {
   resolution?: 'YES' | 'NO' | 'MKT' | 'CANCEL'
 }
 
-export type Multi = {
-  outcomeType: 'MULTI'
-  multiOutcomes: string[] // Used for outcomeType 'MULTI'.
-  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
-}
-
 export type FreeResponse = {
   outcomeType: 'FREE_RESPONSE'
   answers: Answer[] // Used for outcomeType 'FREE_RESPONSE'.
@@ -97,12 +91,7 @@ export type Numeric = {
 }
 
 export type outcomeType = AnyOutcomeType['outcomeType']
-export const OUTCOME_TYPES = [
-  'BINARY',
-  'MULTI',
-  'FREE_RESPONSE',
-  'NUMERIC',
-] as const
+export const OUTCOME_TYPES = ['BINARY', 'FREE_RESPONSE', 'NUMERIC'] as const
 export const MAX_QUESTION_LENGTH = 480
 export const MAX_DESCRIPTION_LENGTH = 10000
 export const MAX_TAG_LENGTH = 60
