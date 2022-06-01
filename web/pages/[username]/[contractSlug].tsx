@@ -30,13 +30,6 @@ import { formatMoney } from 'common/util/format'
 import { useUserById } from 'web/hooks/use-users'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { FirstArgument } from 'common/util/types'
-import {
-  BinaryContract,
-  DPM,
-  FreeResponse,
-  FullContract,
-  NumericContract,
-} from 'common/contract'
 import { contractTextDetails } from 'web/components/contract/contract-details'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
@@ -143,24 +136,15 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
     <Col className="gap-4">
       {allowTrade &&
         (isNumeric ? (
-          <NumericBetPanel
-            className="hidden xl:flex"
-            contract={contract as NumericContract}
-          />
+          <NumericBetPanel className="hidden xl:flex" contract={contract} />
         ) : (
           <BetPanel className="hidden xl:flex" contract={contract} />
         ))}
       {allowResolve &&
         (isNumeric ? (
-          <NumericResolutionPanel
-            creator={user}
-            contract={contract as NumericContract}
-          />
+          <NumericResolutionPanel creator={user} contract={contract} />
         ) : (
-          <ResolutionPanel
-            creator={user}
-            contract={contract as BinaryContract}
-          />
+          <ResolutionPanel creator={user} contract={contract} />
         ))}
     </Col>
   ) : null
@@ -205,18 +189,13 @@ export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
         {outcomeType === 'FREE_RESPONSE' && (
           <>
             <Spacer h={4} />
-            <AnswersPanel
-              contract={contract as FullContract<DPM, FreeResponse>}
-            />
+            <AnswersPanel contract={contract} />
             <Spacer h={4} />
           </>
         )}
 
         {isNumeric && (
-          <NumericBetPanel
-            className="xl:hidden"
-            contract={contract as NumericContract}
-          />
+          <NumericBetPanel className="xl:hidden" contract={contract} />
         )}
 
         {isResolved && (

@@ -110,9 +110,7 @@ const toDisplayResolution = (
       getValueFromBucket(resolution, contract).toString()
     )
 
-  const answer = (contract as FreeResponseContract).answers?.find(
-    (a) => a.id === resolution
-  )
+  const answer = contract.answers.find((a) => a.id === resolution)
   if (answer) return answer.text
   return `#${resolution}`
 }

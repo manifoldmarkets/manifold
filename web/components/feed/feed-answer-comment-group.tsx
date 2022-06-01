@@ -1,4 +1,3 @@
-import { FreeResponse, FullContract } from 'common/contract'
 import { Answer } from 'common/answer'
 import { ActivityItem } from 'web/components/feed/activity-items'
 import { Bet } from 'common/bet'
@@ -26,7 +25,7 @@ import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-ti
 import { useRouter } from 'next/router'
 
 export function FeedAnswerCommentGroup(props: {
-  contract: FullContract<any, FreeResponse>
+  contract: any
   answer: Answer
   items: ActivityItem[]
   type: string

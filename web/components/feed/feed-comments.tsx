@@ -166,7 +166,7 @@ export function FeedComment(props: {
         avatarUrl={userAvatarUrl}
       />
       <div className="min-w-0 flex-1">
-        <p className="mt-0.5 pl-0.5 text-sm text-gray-500">
+        <div className="mt-0.5 pl-0.5 text-sm text-gray-500">
           <UserLink
             className="text-gray-500"
             username={userUsername}
@@ -204,7 +204,7 @@ export function FeedComment(props: {
             createdTime={createdTime}
             elementId={comment.id}
           />
-        </p>
+        </div>
         <TruncatedComment
           comment={text}
           moreHref={contractPath(contract)}

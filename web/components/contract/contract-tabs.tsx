@@ -4,7 +4,7 @@ import { Comment } from 'web/lib/firebase/comments'
 import { User } from 'common/user'
 import { useBets } from 'web/hooks/use-bets'
 import { ContractActivity } from '../feed/contract-activity'
-import { ContractBetsTable, MyBetsSummary } from '../bets-list'
+import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
@@ -67,13 +67,14 @@ export function ContractTabs(props: {
 
   const yourTrades = (
     <div>
-      <MyBetsSummary
+      <BetsSummary
         className="px-2"
         contract={contract}
         bets={userBets ?? []}
+        isYourBets
       />
       <Spacer h={6} />
-      <ContractBetsTable contract={contract} bets={userBets ?? []} />
+      <ContractBetsTable contract={contract} bets={userBets ?? []} isYourBets />
       <Spacer h={12} />
     </div>
   )

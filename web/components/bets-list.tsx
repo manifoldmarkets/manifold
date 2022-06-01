@@ -56,10 +56,14 @@ type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
 
 export function BetsList(props: { user: User; hideBetsBefore?: number }) {
   const { user, hideBetsBefore } = props
+
+  const signedInUser = useUser()
+  const isYourBets = user.id === signedInUser?.id
+
   const allBets = useUserBets(user.id, { includeRedemptions: true })
   // Hide bets before 06-01-2022 if this isn't your own profile
   // NOTE: This means public profits also begin on 06-01-2022 as well.
-  const bets = (allBets ?? []).filter(
+  const bets = allBets?.filter(
     (bet) => bet.createdTime >= (hideBetsBefore ?? 0)
   )
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -82,7 +86,8 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
         disposed = true
       }
     }
-  }, [allBets])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allBets, hideBetsBefore])
 
   const getTime = useTimeSinceFirstRender()
   useEffect(() => {
@@ -217,11 +222,12 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
           <NoBets />
         ) : (
           displayedContracts.map((contract) => (
-            <MyContractBets
+            <ContractBets
               key={contract.id}
               contract={contract}
               bets={contractBets[contract.id] ?? []}
               metric={sort === 'profit' ? 'profit' : 'value'}
+              isYourBets={isYourBets}
             />
           ))
         )}
@@ -241,12 +247,13 @@ const NoBets = () => {
   )
 }
 
-function MyContractBets(props: {
+function ContractBets(props: {
   contract: Contract
   bets: Bet[]
   metric: 'profit' | 'value'
+  isYourBets: boolean
 }) {
-  const { bets, contract, metric } = props
+  const { bets, contract, metric, isYourBets } = props
   const { resolution, outcomeType } = contract
 
   const resolutionValue = (contract as NumericContract).resolutionValue
@@ -254,7 +261,6 @@ function MyContractBets(props: {
   const [collapsed, setCollapsed] = useState(true)
 
   const isBinary = outcomeType === 'BINARY'
-  const probPercent = getBinaryProbPercent(contract)
 
   const { payout, profit, profitPercent, invested } = getContractBetMetrics(
     contract,
@@ -291,24 +297,27 @@ function MyContractBets(props: {
           </Row>
 
           <Row className="flex-1 items-center gap-2 text-sm text-gray-500">
-            {(isBinary || resolution) && (
+            {resolution ? (
               <>
-                {resolution ? (
-                  <div>
-                    Resolved{' '}
-                    <OutcomeLabel
-                      outcome={resolution}
-                      value={resolutionValue}
-                      contract={contract}
-                      truncate="short"
-                    />
-                  </div>
-                ) : (
-                  <div className="text-primary text-lg">{probPercent}</div>
-                )}
+                <div>
+                  Resolved{' '}
+                  <OutcomeLabel
+                    outcome={resolution}
+                    value={resolutionValue}
+                    contract={contract}
+                    truncate="short"
+                  />
+                </div>
                 <div>•</div>
               </>
-            )}
+            ) : isBinary ? (
+              <>
+                <div className="text-primary text-lg">
+                  {getBinaryProbPercent(contract)}
+                </div>
+                <div>•</div>
+              </>
+            ) : null}
             <UserLink
               name={contract.creatorName}
               username={contract.creatorUsername}
@@ -334,26 +343,32 @@ function MyContractBets(props: {
       >
         <Spacer h={8} />
 
-        <MyBetsSummary
+        <BetsSummary
           className="mr-5 flex-1 sm:mr-8"
           contract={contract}
           bets={bets}
+          isYourBets={isYourBets}
         />
 
         <Spacer h={8} />
 
-        <ContractBetsTable contract={contract} bets={bets} />
+        <ContractBetsTable
+          contract={contract}
+          bets={bets}
+          isYourBets={isYourBets}
+        />
       </div>
     </div>
   )
 }
 
-export function MyBetsSummary(props: {
+export function BetsSummary(props: {
   contract: Contract
   bets: Bet[]
+  isYourBets: boolean
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, isYourBets, className } = props
   const { resolution, outcomeType, mechanism } = contract
   const isBinary = outcomeType === 'BINARY'
   const isCpmm = mechanism === 'cpmm-1'
@@ -429,26 +444,31 @@ export function MyBetsSummary(props: {
           <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
           <div className="whitespace-nowrap">
             {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
-            {isCpmm && isBinary && !resolution && invested > 0 && user && (
-              <>
-                <button
-                  className="btn btn-sm ml-2"
-                  onClick={() => setShowSellModal(true)}
-                >
-                  Sell
-                </button>
-                {showSellModal && (
-                  <SellSharesModal
-                    contract={contract}
-                    user={user}
-                    userBets={bets}
-                    shares={totalShares.YES || totalShares.NO}
-                    sharesOutcome={totalShares.YES ? 'YES' : 'NO'}
-                    setOpen={setShowSellModal}
-                  />
-                )}
-              </>
-            )}
+            {isYourBets &&
+              isCpmm &&
+              isBinary &&
+              !resolution &&
+              invested > 0 &&
+              user && (
+                <>
+                  <button
+                    className="btn btn-sm ml-2"
+                    onClick={() => setShowSellModal(true)}
+                  >
+                    Sell
+                  </button>
+                  {showSellModal && (
+                    <SellSharesModal
+                      contract={contract}
+                      user={user}
+                      userBets={bets}
+                      shares={totalShares.YES || totalShares.NO}
+                      sharesOutcome={totalShares.YES ? 'YES' : 'NO'}
+                      setOpen={setShowSellModal}
+                    />
+                  )}
+                </>
+              )}
           </div>
         </Col>
       </Row>
@@ -459,9 +479,10 @@ export function MyBetsSummary(props: {
 export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
+  isYourBets: boolean
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, className, isYourBets } = props
 
   const bets = props.bets.filter((b) => !b.isAnte)
 
@@ -530,6 +551,7 @@ export function ContractBetsTable(props: {
               bet={bet}
               saleBet={salesDict[bet.id]}
               contract={contract}
+              isYourBet={isYourBets}
             />
           ))}
         </tbody>
@@ -538,8 +560,13 @@ export function ContractBetsTable(props: {
   )
 }
 
-function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
-  const { bet, saleBet, contract } = props
+function BetRow(props: {
+  bet: Bet
+  contract: Contract
+  saleBet?: Bet
+  isYourBet: boolean
+}) {
+  const { bet, saleBet, contract, isYourBet } = props
   const {
     amount,
     outcome,
@@ -580,7 +607,8 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   return (
     <tr>
       <td className="text-neutral">
-        {!isCPMM &&
+        {isYourBet &&
+          !isCPMM &&
           !isResolved &&
           !isClosed &&
           !isSold &&

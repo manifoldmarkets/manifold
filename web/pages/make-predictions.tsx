@@ -5,7 +5,7 @@ import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
 import { getProbability } from 'common/calculate'
-import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import { BinaryContract } from 'common/contract'
 import { parseWordsAsTags } from 'common/util/parse'
 import { BuyAmountInput } from 'web/components/amount-input'
 import { InfoTooltip } from 'web/components/info-tooltip'
@@ -26,7 +26,7 @@ type Prediction = {
   createdUrl?: string
 }
 
-function toPrediction(contract: FullContract<DPM | CPMM, Binary>): Prediction {
+function toPrediction(contract: BinaryContract): Prediction {
   const startProb = getProbability(contract)
   return {
     question: contract.question,
@@ -102,9 +102,7 @@ export default function MakePredictions() {
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [createdContracts, setCreatedContracts] = useState<
-    FullContract<DPM | CPMM, Binary>[]
-  >([])
+  const [createdContracts, setCreatedContracts] = useState<BinaryContract[]>([])
 
   const [ante, setAnte] = useState<number | undefined>(100)
   const [anteError, setAnteError] = useState<string | undefined>()
@@ -155,7 +153,7 @@ ${TEST_VALUE}
         ante,
         closeTime,
         tags: parseWordsAsTags(tags),
-      })) as FullContract<DPM | CPMM, Binary>
+      })) as BinaryContract
 
       setCreatedContracts((prev) => [...prev, contract])
     }

@@ -10,12 +10,9 @@ import {
 } from './calculate-dpm'
 import { calculateCpmmPurchase, getCpmmProbability } from './calculate-cpmm'
 import {
-  Binary,
-  CPMM,
-  DPM,
-  FreeResponse,
-  FullContract,
-  Multi,
+  CPMMBinaryContract,
+  DPMBinaryContract,
+  FreeResponseContract,
   NumericContract,
 } from './contract'
 import { noFees } from './fees'
@@ -35,7 +32,7 @@ export type BetInfo = {
 export const getNewBinaryCpmmBetInfo = (
   outcome: 'YES' | 'NO',
   amount: number,
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMBinaryContract,
   loanAmount: number
 ) => {
   const { shares, newPool, newP, fees } = calculateCpmmPurchase(
@@ -69,7 +66,7 @@ export const getNewBinaryCpmmBetInfo = (
 export const getNewBinaryDpmBetInfo = (
   outcome: 'YES' | 'NO',
   amount: number,
-  contract: FullContract<DPM, Binary>,
+  contract: DPMBinaryContract,
   loanAmount: number
 ) => {
   const { YES: yesPool, NO: noPool } = contract.pool
@@ -116,7 +113,7 @@ export const getNewBinaryDpmBetInfo = (
 export const getNewMultiBetInfo = (
   outcome: string,
   amount: number,
-  contract: FullContract<DPM, Multi | FreeResponse>,
+  contract: FreeResponseContract,
   loanAmount: number
 ) => {
   const { pool, totalShares, totalBets } = contract
