@@ -65,9 +65,7 @@ export function ContractCard(props: {
           <Col className="relative flex-1 gap-3 pr-1">
             <div
               className={clsx(
-                'peer absolute -left-6 -top-4 -bottom-4 z-10',
-                // Hack: Extend the clickable area for closed markets
-                showQuickBet ? 'right-0' : 'right-[-6.5rem]'
+                'peer absolute -left-6 -top-4 -bottom-4 right-0 z-10'
               )}
             >
               <Link href={contractPath(contract)}>
