@@ -13,7 +13,8 @@
     "start": "next start",
     "lint": "next lint",
     "format": "npx prettier --write .",
-    "postbuild": "next-sitemap"
+    "postbuild": "next-sitemap",
+    "verify": "(cd .. && yarn verify)"
   },
   "dependencies": {
     "@headlessui/react": "1.6.1",

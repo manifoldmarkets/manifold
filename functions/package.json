@@ -15,7 +15,8 @@
     "db:update-local-from-remote": "yarn db:backup-remote && gsutil rsync -r gs://$npm_package_config_firestore/firestore_export ./firestore_export",
     "db:backup-local": "firebase emulators:export --force ./firestore_export",
     "db:rename-remote-backup-folder": "gsutil mv gs://$npm_package_config_firestore/firestore_export gs://$npm_package_config_firestore/firestore_export_$(date +%d-%m-%Y-%H-%M)",
-    "db:backup-remote": "yarn db:rename-remote-backup-folder && gcloud firestore export gs://$npm_package_config_firestore/firestore_export/"
+    "db:backup-remote": "yarn db:rename-remote-backup-folder && gcloud firestore export gs://$npm_package_config_firestore/firestore_export/",
+    "verify": "(cd .. && yarn verify)"
   },
   "main": "lib/functions/src/index.js",
   "dependencies": {
