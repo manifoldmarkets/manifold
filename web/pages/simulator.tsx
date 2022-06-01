@@ -110,7 +110,7 @@ function TableRowEnd(props: { entry: Entry | null; isNew?: boolean }) {
   }
 }
 
-type Bid = { yesBid: number; noBid: number };
+type Bid = { yesBid: number; noBid: number }
 
 function NewBidTable(props: {
   steps: number
