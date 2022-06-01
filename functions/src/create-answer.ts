@@ -1,12 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import {
-  Contract,
-  DPM,
-  FreeResponse,
-  FullContract,
-} from '../../common/contract'
+import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { getNewMultiBetInfo } from '../../common/new-bet'
 import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
@@ -96,12 +91,7 @@ export const createAnswer = functions.runWith({ minInstances: 1 }).https.onCall(
       const loanAmount = 0
 
       const { newBet, newPool, newTotalShares, newTotalBets } =
-        getNewMultiBetInfo(
-          answerId,
-          amount,
-          contract as FullContract<DPM, FreeResponse>,
-          loanAmount
-        )
+        getNewMultiBetInfo(answerId, amount, contract, loanAmount)
 
       const newBalance = user.balance - amount
       const betDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
