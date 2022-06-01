@@ -83,7 +83,7 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allBets])
+  }, [allBets, hideBetsBefore])
 
   const getTime = useTimeSinceFirstRender()
   useEffect(() => {
