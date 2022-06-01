@@ -1,15 +1,10 @@
 import clsx from 'clsx'
-import { ReactNode } from 'react'
 
-export function Row(props: {
-  children?: ReactNode
-  className?: string
-  id?: string
-}) {
-  const { children, className, id } = props
+export function Row(props: JSX.IntrinsicElements['div']) {
+  const { children, className, ...rest } = props
 
   return (
-    <div className={clsx(className, 'flex flex-row')} id={id}>
+    <div className={clsx(className, 'flex flex-row')} {...rest}>
       {children}
     </div>
   )
