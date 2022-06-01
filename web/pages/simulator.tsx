@@ -110,11 +110,13 @@ function TableRowEnd(props: { entry: Entry | null; isNew?: boolean }) {
   }
 }
 
+type Bid = { yesBid: number; noBid: number };
+
 function NewBidTable(props: {
   steps: number
-  bids: Array<{ yesBid: number; noBid: number }>
+  bids: Array<Bid>
   setSteps: (steps: number) => void
-  setBids: (bids: any[]) => void
+  setBids: (bids: Array<Bid>) => void
 }) {
   const { steps, bids, setSteps, setBids } = props
   // Prepare for new bids
