@@ -65,7 +65,8 @@ export const createNotification = async (
   // TODO: Update for liquidity.
   // TODO: Find tagged users.
   // TODO: Find replies to comments.
-  // TODO: Filter bets for only open bets
+  // TODO: Filter bets for only open bets.
+  // TODO: Notify users of their own closed but not resolved contracts.
   if (
     sourceType === 'comment' ||
     sourceType === 'answer' ||
