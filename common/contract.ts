@@ -43,8 +43,13 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   collectedFees: Fees
 } & T
 
+export type BinaryContract = Contract & Binary
 export type NumericContract = Contract & Numeric
 export type FreeResponseContract = Contract & FreeResponse
+export type DPMContract = Contract & DPM
+export type CPMMContract = Contract & CPMM
+export type DPMBinaryContract = BinaryContract & DPM
+export type CPMMBinaryContract = BinaryContract & CPMM
 
 export type DPM = {
   mechanism: 'dpm-2'
@@ -61,8 +66,6 @@ export type CPMM = {
   p: number // probability constant in y^p * n^(1-p) = k
   totalLiquidity: number // in M$
 }
-
-export type FixedPayouts = CPMM
 
 export type Binary = {
   outcomeType: 'BINARY'

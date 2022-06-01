@@ -1,7 +1,7 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet, NumericBet } from './bet'
-import { Binary, Contract, DPM, FixedPayouts } from './contract'
+import { Contract, CPMMBinaryContract, DPMContract } from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
@@ -76,7 +76,7 @@ export const getPayouts = (
 
 export const getFixedPayouts = (
   outcome: string | undefined,
-  contract: Contract<FixedPayouts & Binary>,
+  contract: CPMMBinaryContract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
   resolutionProbability?: number
@@ -103,7 +103,7 @@ export const getDpmPayouts = (
   resolutions: {
     [outcome: string]: number
   },
-  contract: Contract & DPM,
+  contract: DPMContract,
   bets: Bet[],
   resolutionProbability?: number
 ): PayoutInfo => {

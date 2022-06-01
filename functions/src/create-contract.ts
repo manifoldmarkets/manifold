@@ -2,14 +2,13 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import {
-  Binary,
+  CPMMBinaryContract,
   Contract,
-  CPMM,
-  FreeResponse,
+  FreeResponseContract,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
-  Numeric,
+  NumericContract,
   OUTCOME_TYPES,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
@@ -121,7 +120,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
     const lp = getCpmmInitialLiquidity(
       providerId,
-      contract as Contract<CPMM & Binary>,
+      contract as CPMMBinaryContract,
       liquidityDoc.id,
       ante
     )
@@ -141,7 +140,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
     const anteBet = getFreeAnswerAnte(
       providerId,
-      contract as Contract & FreeResponse,
+      contract as FreeResponseContract,
       anteBetDoc.id
     )
     await anteBetDoc.set(anteBet)
@@ -152,7 +151,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
     const anteBet = getNumericAnte(
       providerId,
-      contract as Contract & Numeric,
+      contract as NumericContract,
       ante,
       anteBetDoc.id
     )

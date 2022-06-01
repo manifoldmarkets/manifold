@@ -18,15 +18,15 @@ import {
   getDpmProbabilityAfterSale,
 } from './calculate-dpm'
 import { calculateFixedPayout } from './calculate-fixed-payouts'
-import { Binary, Contract, FreeResponseContract } from './contract'
+import { Contract, BinaryContract, FreeResponseContract } from './contract'
 
-export function getProbability(contract: Contract & Binary) {
+export function getProbability(contract: BinaryContract) {
   return contract.mechanism === 'cpmm-1'
     ? getCpmmProbability(contract.pool, contract.p)
     : getDpmProbability(contract.totalShares)
 }
 
-export function getInitialProbability(contract: Contract & Binary) {
+export function getInitialProbability(contract: BinaryContract) {
   if (contract.initialProbability) return contract.initialProbability
 
   if (contract.mechanism === 'dpm-2' || (contract as any).totalShares)

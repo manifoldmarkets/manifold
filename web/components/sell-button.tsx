@@ -1,4 +1,4 @@
-import { Binary, Contract } from 'common/contract'
+import { BinaryContract } from 'common/contract'
 import { User } from 'common/user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useState } from 'react'
@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import { SellSharesModal } from './sell-modal'
 
 export function SellButton(props: {
-  contract: Contract & Binary
+  contract: BinaryContract
   user: User | null | undefined
   sharesOutcome: 'YES' | 'NO' | undefined
   shares: number

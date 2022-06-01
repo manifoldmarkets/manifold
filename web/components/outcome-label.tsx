@@ -3,13 +3,7 @@ import { ReactNode } from 'react'
 import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
-import {
-  Binary,
-  Contract,
-  FreeResponse,
-  Multi,
-  NumericContract,
-} from 'common/contract'
+import { BinaryContract, Contract, NumericContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
 
@@ -53,7 +47,7 @@ export function BinaryOutcomeLabel(props: {
 }
 
 export function BinaryContractOutcomeLabel(props: {
-  contract: Contract & Binary
+  contract: BinaryContract
   resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT'
 }) {
   const { contract, resolution } = props
@@ -67,7 +61,7 @@ export function BinaryContractOutcomeLabel(props: {
 }
 
 export function FreeResponseOutcomeLabel(props: {
-  contract: Contract & (FreeResponse | Multi)
+  contract: Contract
   resolution: string | 'CANCEL' | 'MKT'
   truncate: 'short' | 'long' | 'none'
   answerClassName?: string

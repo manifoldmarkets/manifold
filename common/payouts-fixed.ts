@@ -3,7 +3,7 @@ import { sum } from 'lodash'
 import { Bet } from './bet'
 import { getProbability } from './calculate'
 import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
-import { Binary, Contract, CPMM, FixedPayouts } from './contract'
+import { CPMMContract } from './contract'
 import { noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
@@ -30,7 +30,7 @@ export const getFixedCancelPayouts = (
 
 export const getStandardFixedPayouts = (
   outcome: string,
-  contract: Contract<FixedPayouts & Binary>,
+  contract: CPMMContract,
   bets: Bet[],
   liquidities: LiquidityProvision[]
 ) => {
@@ -65,7 +65,7 @@ export const getStandardFixedPayouts = (
 }
 
 export const getLiquidityPoolPayouts = (
-  contract: Contract<CPMM & Binary>,
+  contract: CPMMContract,
   outcome: string,
   liquidities: LiquidityProvision[]
 ) => {
@@ -81,7 +81,7 @@ export const getLiquidityPoolPayouts = (
 }
 
 export const getMktFixedPayouts = (
-  contract: Contract<FixedPayouts & Binary>,
+  contract: CPMMContract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
   resolutionProbability?: number
@@ -116,7 +116,7 @@ export const getMktFixedPayouts = (
 }
 
 export const getLiquidityPoolProbPayouts = (
-  contract: Contract<CPMM & Binary>,
+  contract: CPMMContract,
   p: number,
   liquidities: LiquidityProvision[]
 ) => {

@@ -1,12 +1,12 @@
 import { addCpmmLiquidity, getCpmmLiquidity } from './calculate-cpmm'
-import { Binary, Contract, CPMM } from './contract'
+import { CPMMContract } from './contract'
 import { LiquidityProvision } from './liquidity-provision'
 import { User } from './user'
 
 export const getNewLiquidityProvision = (
   user: User,
   amount: number,
-  contract: Contract<CPMM & Binary>,
+  contract: CPMMContract,
   newLiquidityProvisionId: string
 ) => {
   const { pool, p, totalLiquidity } = contract

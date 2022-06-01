@@ -5,8 +5,8 @@ import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
-  Binary,
   Contract,
+  BinaryContract,
   FreeResponseContract,
   NumericContract,
 } from 'common/contract'
@@ -125,7 +125,7 @@ export function ContractCard(props: {
 }
 
 export function BinaryResolutionOrChance(props: {
-  contract: Contract & Binary
+  contract: BinaryContract
   large?: boolean
   className?: string
 }) {

@@ -1,4 +1,4 @@
-import { Binary, Contract } from 'common/contract'
+import { BinaryContract } from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { Col } from './layout/col'
@@ -10,7 +10,7 @@ import { useSaveShares } from './use-save-shares'
 import { SellSharesModal } from './sell-modal'
 
 export function SellRow(props: {
-  contract: Contract & Binary
+  contract: BinaryContract
   user: User | null | undefined
   className?: string
 }) {

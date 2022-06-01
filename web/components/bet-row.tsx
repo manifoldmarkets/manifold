@@ -3,7 +3,7 @@ import clsx from 'clsx'
 
 import { BetPanelSwitcher } from './bet-panel'
 import { YesNoSelector } from './yes-no-selector'
-import { Binary, Contract } from 'common/contract'
+import { BinaryContract } from 'common/contract'
 import { Modal } from './layout/modal'
 import { SellButton } from './sell-button'
 import { useUser } from 'web/hooks/use-user'
@@ -12,7 +12,7 @@ import { useSaveShares } from './use-save-shares'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
 export default function BetRow(props: {
-  contract: Contract & Binary
+  contract: BinaryContract
   className?: string
   btnClassName?: string
   betPanelClassName?: string

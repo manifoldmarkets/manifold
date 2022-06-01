@@ -4,7 +4,7 @@ import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getOutcomeProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
-import { Contract, FreeResponse } from 'common/contract'
+import { Contract, FreeResponseContract } from 'common/contract'
 import { User } from 'common/user'
 import { mapCommentsByBetId } from 'web/lib/firebase/comments'
 
@@ -188,7 +188,7 @@ function groupBets(
 }
 
 function getAnswerGroups(
-  contract: Contract & FreeResponse,
+  contract: FreeResponseContract,
   bets: Bet[],
   comments: Comment[],
   user: User | undefined | null,
@@ -269,7 +269,7 @@ function getAnswerGroups(
 }
 
 function getAnswerAndCommentInputGroups(
-  contract: Contract & FreeResponse,
+  contract: FreeResponseContract,
   bets: Bet[],
   comments: Comment[],
   user: User | undefined | null
@@ -581,7 +581,7 @@ export function getSpecificContractActivityItems(
     case 'free-response-comment-answer-groups':
       items.push(
         ...getAnswerAndCommentInputGroups(
-          contract as Contract & FreeResponse,
+          contract as FreeResponseContract,
           bets,
           comments,
           user
