@@ -155,7 +155,11 @@ function Notification(props: {
           username={sourceUserName}
         />
         <div className={'flex-1 overflow-hidden sm:flex'}>
-          <div className={'flex max-w-sm shrink overflow-hidden text-ellipsis'}>
+          <div
+            className={
+              'flex max-w-sm shrink overflow-hidden text-ellipsis sm:max-w-md'
+            }
+          >
             <UserLink
               name={sourceUserName || ''}
               username={sourceUserUsername || ''}
@@ -164,7 +168,7 @@ function Notification(props: {
             <a
               href={getSourceUrl(sourceId)}
               className={
-                'inline-flex overflow-hidden text-ellipsis pl-1 text-sm sm:max-w-sm '
+                'inline-flex overflow-hidden text-ellipsis pl-1 text-sm '
               }
             >
               {sourceType && reason ? (
