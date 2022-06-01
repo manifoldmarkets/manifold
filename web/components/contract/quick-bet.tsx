@@ -5,16 +5,8 @@ import {
   getTopAnswer,
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
-import {
-  Contract,
-  FullContract,
-  CPMM,
-  DPM,
-  Binary,
-  NumericContract,
-  FreeResponseContract,
-} from 'common/contract'
 import { User } from 'common/user'
+import { Contract, NumericContract } from 'common/contract'
 import {
   formatLargeNumber,
   formatMoney,
@@ -39,12 +31,12 @@ export function QuickBet(props: { contract: Contract; user: User }) {
   const userBets = useUserContractBets(user.id, contract.id)
   const topAnswer =
     contract.outcomeType === 'FREE_RESPONSE'
-      ? getTopAnswer(contract as FreeResponseContract)
+      ? getTopAnswer(contract)
       : undefined
 
   // TODO: yes/no from useSaveShares doesn't work on numeric contracts
   const { yesFloorShares, noFloorShares } = useSaveShares(
-    contract as FullContract<DPM | CPMM, Binary | FreeResponseContract>,
+    contract,
     userBets,
     topAnswer?.number.toString() || undefined
   )
@@ -226,10 +218,10 @@ function QuickOutcomeView(props: {
       display = getBinaryProbPercent(contract)
       break
     case 'NUMERIC':
-      display = formatLargeNumber(getExpectedValue(contract as NumericContract))
+      display = formatLargeNumber(getExpectedValue(contract))
       break
     case 'FREE_RESPONSE': {
-      const topAnswer = getTopAnswer(contract as FreeResponseContract)
+      const topAnswer = getTopAnswer(contract)
       display =
         topAnswer &&
         formatPercent(getOutcomeProbability(contract, topAnswer.id))
@@ -257,7 +249,7 @@ function getProb(contract: Contract) {
     : outcomeType === 'FREE_RESPONSE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
     : outcomeType === 'NUMERIC'
-    ? getNumericScale(contract as NumericContract)
+    ? getNumericScale(contract)
     : 1 // Should not happen
 }
 

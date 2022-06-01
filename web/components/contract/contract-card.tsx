@@ -2,19 +2,12 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../layout/row'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
-import {
-  Contract,
-  contractPath,
-  getBinaryProbPercent,
-} from 'web/lib/firebase/contracts'
+import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
-  Binary,
-  CPMM,
-  DPM,
-  FreeResponse,
+  Contract,
+  BinaryContract,
   FreeResponseContract,
-  FullContract,
   NumericContract,
 } from 'common/contract'
 import {
@@ -65,9 +58,7 @@ export function ContractCard(props: {
           <Col className="relative flex-1 gap-3 pr-1">
             <div
               className={clsx(
-                'peer absolute -left-6 -top-4 -bottom-4 z-10',
-                // Hack: Extend the clickable area for closed markets
-                showQuickBet ? 'right-0' : 'right-[-6.5rem]'
+                'peer absolute -left-6 -top-4 -bottom-4 right-0 z-10'
               )}
             >
               <Link href={contractPath(contract)}>
@@ -85,15 +76,12 @@ export function ContractCard(props: {
             {outcomeType === 'FREE_RESPONSE' &&
               (resolution ? (
                 <FreeResponseOutcomeLabel
-                  contract={contract as FreeResponseContract}
+                  contract={contract}
                   resolution={resolution}
                   truncate={'long'}
                 />
               ) : (
-                <FreeResponseTopAnswer
-                  contract={contract as FullContract<DPM, FreeResponse>}
-                  truncate="long"
-                />
+                <FreeResponseTopAnswer contract={contract} truncate="long" />
               ))}
 
             <MiscDetails
@@ -116,14 +104,14 @@ export function ContractCard(props: {
               {outcomeType === 'NUMERIC' && (
                 <NumericResolutionOrExpectation
                   className="items-center"
-                  contract={contract as NumericContract}
+                  contract={contract}
                 />
               )}
 
               {outcomeType === 'FREE_RESPONSE' && (
                 <FreeResponseResolutionOrChance
                   className="self-end text-gray-600"
-                  contract={contract as FullContract<DPM, FreeResponse>}
+                  contract={contract}
                   truncate="long"
                 />
               )}
@@ -137,7 +125,7 @@ export function ContractCard(props: {
 }
 
 export function BinaryResolutionOrChance(props: {
-  contract: FullContract<DPM | CPMM, Binary>
+  contract: BinaryContract
   large?: boolean
   className?: string
 }) {

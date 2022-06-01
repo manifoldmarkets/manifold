@@ -5,18 +5,15 @@ import { initAdmin } from './script-init'
 initAdmin()
 
 import {
-  Binary,
   Contract,
-  CPMM,
-  DPM,
-  FullContract,
+  DPMBinaryContract,
+  CPMMBinaryContract,
 } from '../../../common/contract'
 import { Bet } from '../../../common/bet'
 import {
   calculateDpmPayout,
   getDpmProbability,
 } from '../../../common/calculate-dpm'
-import { User } from '../../../common/user'
 import { getCpmmInitialLiquidity } from '../../../common/antes'
 import { noFees } from '../../../common/fees'
 import { addObjects } from '../../../common/util/object'
@@ -28,7 +25,7 @@ const firestore = admin.firestore()
 async function recalculateContract(contractRef: DocRef, isCommit = false) {
   await firestore.runTransaction(async (transaction) => {
     const contractDoc = await transaction.get(contractRef)
-    const contract = contractDoc.data() as FullContract<DPM, Binary>
+    const contract = contractDoc.data() as DPMBinaryContract
 
     if (!contract?.slug) {
       console.log('missing slug; id=', contractRef.id)
@@ -110,7 +107,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
       {
         ...contract,
         ...contractUpdate,
-      } as FullContract<CPMM, Binary>,
+      } as CPMMBinaryContract,
       liquidityDocRef.id,
       ante
     )
