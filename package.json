@@ -8,7 +8,7 @@
     "web"
   ],
   "scripts": {
-    "check": "(cd web && npx prettier --check .; yarn lint --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit); (cd common && npx eslint . --max-warnings 0); (cd functions && npx eslint . --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit)"
+    "verify": "(cd web && npx prettier --check .; yarn lint --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit); (cd common && npx eslint . --max-warnings 0); (cd functions && npx eslint . --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit)"
   },
   "dependencies": {},
   "devDependencies": {
