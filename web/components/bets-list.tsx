@@ -82,7 +82,7 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
         disposed = true
       }
     }
-  }, [bets])
+  }, [allBets])
 
   const getTime = useTimeSinceFirstRender()
   useEffect(() => {
