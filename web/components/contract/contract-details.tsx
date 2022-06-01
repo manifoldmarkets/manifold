@@ -3,11 +3,8 @@ import {
   ClockIcon,
   DatabaseIcon,
   PencilIcon,
-  CurrencyDollarIcon,
   TrendingUpIcon,
-  StarIcon,
 } from '@heroicons/react/outline'
-import { StarIcon as SolidStarIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
@@ -17,7 +14,6 @@ import {
   contractPool,
   updateContract,
 } from 'web/lib/firebase/contracts'
-import { Col } from '../layout/col'
 import dayjs from 'dayjs'
 import { DateTimeTooltip } from '../datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
@@ -170,7 +166,7 @@ export function ContractDetails(props: {
         <div className="whitespace-nowrap">{volumeLabel}</div>
       </Row>
 
-      {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
+      {!disabled && <ContractInfoDialog contract={contract} bets={bets} isCreator={isCreator ?? false}/>}
     </Row>
   )
 }
@@ -194,7 +190,7 @@ export function contractTextDetails(contract: Contract) {
   )
 }
 
-function EditableCloseDate(props: {
+export function EditableCloseDate(props: {
   closeTime: number
   contract: Contract
   isCreator: boolean

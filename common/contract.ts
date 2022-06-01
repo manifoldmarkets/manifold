@@ -95,6 +95,7 @@ export type Numeric = {
   resolutionValue?: number
 }
 
+export type contractField = keyof Contract
 export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE' | 'NUMERIC'
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 
