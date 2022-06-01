@@ -1,4 +1,4 @@
-import { DotsHorizontalIcon, PencilIcon } from '@heroicons/react/outline'
+import { DotsHorizontalIcon, PencilIcon, CheckIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { uniqBy } from 'lodash'
@@ -83,23 +83,16 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[]; isC
 
               {autoResolutionTime && autoResolution && (
                 <>
+                  <EditableTime
+                    title ='Market autoresolves'
+                    time={autoResolutionTime}
+                    contract={contract}
+                    isCreator={isCreator}
+                    dateType='autoResolutionTime'
+                  />
                   <tr>
-                    <td>Automatic resolution</td>
-                    <EditableTime
-                      time={autoResolutionTime}
-                      contract={contract}
-                      isCreator={isCreator}
-                      dateType='autoResolutionTime'
-                    />
-                  </tr>
-                  <tr>
-                  <td>Default resolution</td>
-                  <EditableString
-                      value={autoResolution}
-                      contract={contract}
-                      isCreator={isCreator}
-                      dateType='autoResolution'
-                    />
+                  <td>Auto resolution</td>
+                  <td>{contract.autoResolution}</td>
                 </tr>
                 </>
               )}
@@ -173,12 +166,13 @@ const getTweetText = (contract: Contract, isCreator: boolean) => {
 }
 
 export function EditableTime(props: {
+  title: string
   time: number
   contract: Contract
   isCreator: boolean
   dateType: contractField
 }) {
-  const { time, contract, isCreator, dateType } = props
+  const { title, time, contract, isCreator, dateType } = props
 
   const [isEditing, setIsEditing] = useState(false)
   const [timeString, setTimeString] = useState(time && formatTime(time))
@@ -194,83 +188,37 @@ export function EditableTime(props: {
   }
 
   return (
-    <td>
-      {isEditing ? (
-        <div className="form-control mr-1 items-start">
-          <input
-            type="datetime-local"
-            className="input input-xs"
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setTimeString(e.target.value || '')}
-            min={contract.closeTime}
-            value={timeString}
-          />
-        </div>
-      ) : (
-        <div className="form-control mr-1 items-start">{timeString}</div>
-      )}
-      {isCreator &&
-        (isEditing ? (
-          <button className="btn btn-xs btn-ghost" onClick={onSave}>
-            Done
-          </button>
-        ) : (
-          <button className="btn btn-xs btn-ghost"
-            onClick={() => setIsEditing(true)}
-          >
-            <PencilIcon className="mr-2 inline h-4 w-4" /> Edit
-          </button>
+    <tr>
+      <td>
+        {title}
+        {isCreator && (
+          isEditing ? (
+            <button className="btn btn-xs btn-ghost" onClick={onSave}>
+              <CheckIcon className="inline h-4 w-4" />
+            </button>
+          ):(
+            <button className="btn btn-xs btn-ghost"
+            onClick={() => setIsEditing(true)}          >
+              <PencilIcon className="inline h-4 w-4" />
+            </button>
         ))}
-    </td>
-  )
-}
-
-export function EditableString(props: {
-  value: string
-  contract: Contract
-  isCreator: boolean
-  dateType: contractField
-}) {
-  const { value, contract, isCreator, dateType } = props
-
-  const [isEditing, setIsEditing] = useState(false)
-  const [newValue, setTimeString] = useState(value)
-  const onSave = () => {
-    if (newValue === value) setIsEditing(false)
-    else {
-      updateContract(contract.id, {
-        [dateType]: newValue
-      })
-      setIsEditing(false)
-    }
-  }
-
-  return (
-    <td>
-      {isEditing ? (
-          <input
-            style={{ maxWidth: 50 }}
-            className="input input-xs resize-none"
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setTimeString(e.target.value || '')}
-            min={contract.closeTime}
-            value={newValue}
-          />
-      ) : (
-        <>{newValue}</>
-      )}
-      {isCreator &&
-        (isEditing ? (
-          <button className="btn btn-xs btn-ghost" onClick={onSave}>
-            Done
-          </button>
+      </td>
+      <td>
+        {isEditing ? (
+          <div className="form-control mr-1 items-start">
+            <input
+              type="datetime-local"
+              className="input input-xs"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setTimeString(e.target.value || '')}
+              min={contract.closeTime}
+              value={timeString}
+            />
+          </div>
         ) : (
-          <button className="btn btn-xs btn-ghost"
-            onClick={() => setIsEditing(true)}
-          >
-            <PencilIcon className="mr-2 inline h-4 w-4" /> Edit
-          </button>
-        ))}
-    </td>
+          <div className="form-control mr-1 items-start">{timeString}</div>
+        )}
+      </td>
+    </tr>
   )
 }
