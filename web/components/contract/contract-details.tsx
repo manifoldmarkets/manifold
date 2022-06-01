@@ -24,6 +24,7 @@ import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
 import { CATEGORY_LIST } from 'common/categories'
 import { TagsList } from '../tags-list'
+import { DAY_MS } from 'common/util/time'
 
 export function MiscDetails(props: {
   contract: Contract
@@ -209,15 +210,24 @@ export function EditableCloseDate(props: {
     const newCloseTime = dayjs(closeDate).valueOf()
     if (newCloseTime === closeTime) setIsEditingCloseTime(false)
     else if (newCloseTime > Date.now()) {
-      const { description } = contract
+      const { description, autoResolutionTime } = contract
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
-      const newDescription = `${description}\n\nClose date updated to ${formattedCloseDate}`
+      const newAutoResolutionTime = newCloseTime + 7 * DAY_MS
+      let newDescription = `${description}\n\nClose date updated to ${formattedCloseDate}`
 
-      updateContract(contract.id, {
-        closeTime: newCloseTime,
-        description: newDescription,
-      })
+      const update : Partial<Contract> = {
+        closeTime: newCloseTime
+      }
 
+      if (newAutoResolutionTime >= autoResolutionTime) {
+        update.autoResolutionTime = newAutoResolutionTime
+        const formattedNewAutoResolutionTime = dayjs(newAutoResolutionTime).format('YYYY-MM-DD h:mm a')
+        newDescription = newDescription.concat(`\nAuto resolution date updated to ${formattedNewAutoResolutionTime}`)
+      }
+
+      update.description = newDescription
+
+      updateContract(contract.id, update)
       setIsEditingCloseTime(false)
     }
   }

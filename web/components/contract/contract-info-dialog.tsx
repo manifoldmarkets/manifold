@@ -81,14 +81,12 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[]; isC
                 </tr>
               )}
 
-              {autoResolutionTime && autoResolution && (
+              {autoResolutionTime && !resolutionTime && (
                 <>
-                  <EditableTime
-                    title ='Market autoresolves'
+                  <EditableResolutionTime
                     time={autoResolutionTime}
                     contract={contract}
                     isCreator={isCreator}
-                    dateType='autoResolutionTime'
                   />
                   <tr>
                   <td>Auto resolution</td>
@@ -165,24 +163,28 @@ const getTweetText = (contract: Contract, isCreator: boolean) => {
   return `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
 }
 
-export function EditableTime(props: {
-  title: string
+export function EditableResolutionTime(props: {
   time: number
   contract: Contract
   isCreator: boolean
-  dateType: contractField
 }) {
-  const { title, time, contract, isCreator, dateType } = props
+  const { time, contract, isCreator } = props
 
   const [isEditing, setIsEditing] = useState(false)
   const [timeString, setTimeString] = useState(time && formatTime(time))
+
   const onSave = () => {
     const newTime = dayjs(timeString).valueOf()
     if (newTime === time) setIsEditing(false)
-    else if (newTime > (contract.closeTime ?? Date.now)) {
+    else if ( contract.closeTime && newTime > (contract.closeTime ?? Date.now)) {
+      const formattedTime = dayjs(time).format('YYYY-MM-DD h:mm a')
+      const newDescription = `${contract.description}\n\nAuto resolution date updated to ${formattedTime}`
+      
       updateContract(contract.id, {
-        [dateType]: newTime
+        autoResolutionTime: newTime,
+        description: newDescription,
       })
+
       setIsEditing(false)
     }
   }
@@ -190,7 +192,7 @@ export function EditableTime(props: {
   return (
     <tr>
       <td>
-        {title}
+        Market autoresolves
         {isCreator && (
           isEditing ? (
             <button className="btn btn-xs btn-ghost" onClick={onSave}>
@@ -216,7 +218,7 @@ export function EditableTime(props: {
             />
           </div>
         ) : (
-          <div className="form-control mr-1 items-start">{timeString}</div>
+          <div className="form-control mr-1 items-start">{formatTime(time)}</div>
         )}
       </td>
     </tr>
