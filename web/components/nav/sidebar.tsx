@@ -154,7 +154,7 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
   const [countdown, setCountdown] = useState('...')
   useEffect(() => {
-    const nextUtcResetTime = getUtcFreeMarketResetTime(false)
+    const nextUtcResetTime = getUtcFreeMarketResetTime({ previousTime: false })
     const interval = setInterval(() => {
       const now = new Date().getTime()
       const timeUntil = nextUtcResetTime - now
