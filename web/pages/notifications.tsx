@@ -145,7 +145,7 @@ function Notification(props: {
   }
 
   return (
-    <div className={'bg-white px-1 pt-6 sm:px-4'}>
+    <div className={'bg-white px-1 pt-6 text-sm sm:px-4'}>
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <Avatar
           avatarUrl={sourceUserAvatarUrl}
@@ -162,13 +162,11 @@ function Notification(props: {
             <UserLink
               name={sourceUserName || ''}
               username={sourceUserUsername || ''}
-              className={'mr-0 flex-shrink-0 text-sm'}
+              className={'mr-0 flex-shrink-0'}
             />
             <a
               href={getSourceUrl(sourceId)}
-              className={
-                'inline-flex overflow-hidden text-ellipsis pl-1 text-sm '
-              }
+              className={'inline-flex overflow-hidden text-ellipsis pl-1'}
             >
               {sourceType && reason ? (
                 <div className={'inline truncate'}>
@@ -184,13 +182,13 @@ function Notification(props: {
               contract={contract}
               createdTime={createdTime}
               elementId={getSourceIdForLinkComponent(sourceId)}
-              className={'-mx-1 inline-flex text-sm sm:inline-block'}
+              className={'-mx-1 inline-flex sm:inline-block'}
             />
           )}
         </div>
       </Row>
       <a href={getSourceUrl(sourceId)}>
-        <div className={'mt-1 text-sm sm:text-base'}>
+        <div className={'mt-1 md:text-base'}>
           {' '}
           {contract && subText === contract.question ? (
             <div className={'text-indigo-700 hover:underline'}>{subText}</div>
