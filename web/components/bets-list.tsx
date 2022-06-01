@@ -259,12 +259,14 @@ function MyContractBets(props: {
     <div
       tabIndex={0}
       className={clsx(
-        'collapse collapse-arrow relative cursor-pointer bg-white p-4 pr-6',
+        'collapse collapse-arrow relative bg-white p-4 pr-6',
         collapsed ? 'collapse-close' : 'collapse-open pb-2'
       )}
-      onClick={() => setCollapsed((collapsed) => !collapsed)}
     >
-      <Row className="flex-wrap gap-2">
+      <Row
+        className="cursor-pointer flex-wrap gap-2"
+        onClick={() => setCollapsed((collapsed) => !collapsed)}
+      >
         <Col className="flex-[2] gap-1">
           <Row className="mr-2 max-w-lg">
             <Link href={contractPath(contract)}>
