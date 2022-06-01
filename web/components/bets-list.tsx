@@ -48,6 +48,8 @@ import {
 import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
 import { trackLatency } from 'web/lib/firebase/tracking'
 import { NumericContract } from 'common/contract'
+import { useUser } from 'web/hooks/use-user'
+import { SellSharesModal } from './sell-modal'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -257,12 +259,14 @@ function MyContractBets(props: {
     <div
       tabIndex={0}
       className={clsx(
-        'collapse collapse-arrow relative cursor-pointer bg-white p-4 pr-6',
+        'collapse collapse-arrow relative bg-white p-4 pr-6',
         collapsed ? 'collapse-close' : 'collapse-open pb-2'
       )}
-      onClick={() => setCollapsed((collapsed) => !collapsed)}
     >
-      <Row className="flex-wrap gap-2">
+      <Row
+        className="cursor-pointer flex-wrap gap-2"
+        onClick={() => setCollapsed((collapsed) => !collapsed)}
+      >
         <Col className="flex-[2] gap-1">
           <Row className="mr-2 max-w-lg">
             <Link href={contractPath(contract)}>
@@ -360,10 +364,11 @@ export function MyBetsSummary(props: {
   const noWinnings = sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
-  const { invested, profitPercent, payout, profit } = getContractBetMetrics(
-    contract,
-    bets
-  )
+  const { invested, profitPercent, payout, profit, totalShares } =
+    getContractBetMetrics(contract, bets)
+
+  const [showSellModal, setShowSellModal] = useState(false)
+  const user = useUser()
 
   return (
     <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>
@@ -419,6 +424,26 @@ export function MyBetsSummary(props: {
           <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
           <div className="whitespace-nowrap">
             {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
+            {isCpmm && isBinary && !resolution && invested > 0 && user && (
+              <>
+                <button
+                  className="btn btn-sm ml-2"
+                  onClick={() => setShowSellModal(true)}
+                >
+                  Sell
+                </button>
+                {showSellModal && (
+                  <SellSharesModal
+                    contract={contract}
+                    user={user}
+                    userBets={bets}
+                    shares={totalShares.YES || totalShares.NO}
+                    sharesOutcome={totalShares.YES ? 'YES' : 'NO'}
+                    setOpen={setShowSellModal}
+                  />
+                )}
+              </>
+            )}
           </div>
         </Col>
       </Row>
