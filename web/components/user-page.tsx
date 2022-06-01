@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { User } from 'web/lib/firebase/users'
+import { follow, unfollow, User } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
 import { Page } from './page'
@@ -89,11 +89,27 @@ export function UserPage(props: {
     })
   }, [usersComments])
 
+  const theirFollows = useFollows(user.id)
+  const yourFollows = useFollows(currentUser?.id)
+  const isFollowing = yourFollows?.includes(user.id)
+
+  useEffect(() => {
+    console.log('their follows', theirFollows)
+  }, [theirFollows])
+
+  useEffect(() => {
+    console.log('your follows', yourFollows)
+  }, [yourFollows])
+
   const onFollow = () => {
+    if (!currentUser) return
     console.log('follow')
+    follow(currentUser.id, user.id)
   }
   const onUnfollow = () => {
+    if (!currentUser) return
     console.log('unfollow')
+    unfollow(currentUser.id, user.id)
   }
 
   return (
@@ -125,7 +141,7 @@ export function UserPage(props: {
         <div className="absolute right-0 top-0 mt-4 mr-4">
           {!isCurrentUser && (
             <FollowButton
-              isFollowing={false}
+              isFollowing={isFollowing}
               onFollow={onFollow}
               onUnfollow={onUnfollow}
             />
@@ -296,6 +312,7 @@ export function defaultBannerUrl(userId: string) {
 
 import { ExclamationIcon } from '@heroicons/react/solid'
 import { FollowButton } from './follow-button'
+import { useFollows } from 'web/hooks/use-follows'
 
 function AlertBox(props: { title: string; text: string }) {
   const { title, text } = props

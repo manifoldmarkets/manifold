@@ -19,6 +19,11 @@ service cloud.firestore {
             .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories']);
     }
 
+    match /users/{userId}/follows/{followUserId} {
+      allow read;
+      allow write: if request.auth.uid == userId;
+    }
+
     match /private-users/{userId} {
       allow read: if resource.data.id == request.auth.uid || isAdmin();
       allow update: if (resource.data.id == request.auth.uid || isAdmin())
