@@ -21,14 +21,19 @@ export default function NotificationsIcon(props: { className?: string }) {
     if (user) return listenForNotifications(user.id, setNotifications, true)
   }, [user])
 
+  // mqp - kill this until you can control what notifications you get, or
+  // until the defaults aren't so spammy
+  const notificationCountBubble = null
+  // const notificationCountBubble = (
+  //   <div className="-mt-0.75 absolute ml-3.5 min-w-[15px] rounded-full bg-indigo-500 p-[2px] text-center text-[10px] leading-3 text-white lg:-mt-1 lg:ml-2">
+  //     {notifications && notifications.length}
+  //   </div>
+  // )
+
   return (
     <Row className={clsx('justify-center')}>
       <div className={'relative'}>
-        {notifications && notifications.length > 0 && (
-          <div className="-mt-0.75 absolute ml-3.5 min-w-[15px] rounded-full bg-indigo-500 p-[2px] text-center text-[10px] leading-3 text-white lg:-mt-1 lg:ml-2">
-            {notifications.length}
-          </div>
-        )}
+        {notifications && notifications.length && notificationCountBubble}
         <BellIcon className={clsx(props.className)} />
       </div>
     </Row>
