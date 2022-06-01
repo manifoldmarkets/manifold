@@ -1,7 +1,11 @@
 import { Tabs } from 'web/components/layout/tabs'
 import { useUser } from 'web/hooks/use-user'
 import React, { useEffect, useState } from 'react'
-import { Notification } from 'common/notification'
+import {
+  Notification,
+  notification_reason_types,
+  notification_source_types,
+} from 'common/notification'
 import { listenForNotifications } from 'web/lib/firebase/notifications'
 import { Avatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -18,6 +22,7 @@ import { UserLink } from 'web/components/user-page'
 import { Linkify } from 'web/components/linkify'
 import { User } from 'common/user'
 import { useContract } from 'web/hooks/use-contract'
+import { Contract } from 'common/contract'
 
 export default function Notifications() {
   const user = useUser()
@@ -79,6 +84,7 @@ function Notification(props: {
     sourceUserName,
     sourceUserAvatarUrl,
     reasonText,
+    reason,
     sourceUserUsername,
     createdTime,
   } = notification
@@ -148,28 +154,40 @@ function Notification(props: {
           className={'mr-2'}
           username={sourceUserName}
         />
-        <div className={'flex-1'}>
-          <UserLink
-            name={sourceUserName || ''}
-            username={sourceUserUsername || ''}
-            className={'mr-0 flex-shrink-0'}
-          />
-          <a href={getSourceUrl(sourceId)} className={'flex-1 pl-1'}>
-            {reasonText}
-            {contract && sourceId && (
-              <div className={'inline'}>
-                <CopyLinkDateTimeComponent
-                  contract={contract}
-                  createdTime={createdTime}
-                  elementId={getSourceIdForLinkComponent(sourceId)}
-                />
-              </div>
-            )}
-          </a>
+        <div className={'flex-1 overflow-hidden sm:flex'}>
+          <div className={'flex max-w-sm shrink overflow-hidden text-ellipsis'}>
+            <UserLink
+              name={sourceUserName || ''}
+              username={sourceUserUsername || ''}
+              className={'mr-0 flex-shrink-0 text-sm'}
+            />
+            <a
+              href={getSourceUrl(sourceId)}
+              className={
+                'inline-flex overflow-hidden text-ellipsis pl-1 text-sm sm:max-w-sm '
+              }
+            >
+              {sourceType && reason ? (
+                <div className={'inline truncate'}>
+                  {getReasonTextFromReason(sourceType, reason, contract)}
+                </div>
+              ) : (
+                reasonText
+              )}
+            </a>
+          </div>
+          {contract && sourceId && (
+            <CopyLinkDateTimeComponent
+              contract={contract}
+              createdTime={createdTime}
+              elementId={getSourceIdForLinkComponent(sourceId)}
+              className={'-mx-1 inline-flex text-sm sm:inline-block'}
+            />
+          )}
         </div>
       </Row>
       <a href={getSourceUrl(sourceId)}>
-        <div className={'ml-4 mt-1'}>
+        <div className={'mt-1'}>
           {' '}
           {contract && subText === contract.question ? (
             <div className={'text-md text-indigo-700 hover:underline'}>
@@ -184,4 +202,29 @@ function Notification(props: {
       </a>
     </div>
   )
+}
+
+function getReasonTextFromReason(
+  source: notification_source_types,
+  reason: notification_reason_types,
+  contract: Contract | undefined
+) {
+  let title = ''
+  if (contract) {
+    title = contract.question
+    // shorten and add ellipsis if the question is too long
+    // if (title.length > 30) {
+    //   title = title.substring(0, 30) + '...'
+    // }
+  }
+  switch (source) {
+    case 'comment':
+      return `commented on ${title}`
+    case 'contract':
+      return `${reason} ${title}`
+    case 'answer':
+      return `answered ${title}`
+    default:
+      return ''
+  }
 }
