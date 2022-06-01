@@ -59,7 +59,7 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
   const allBets = useUserBets(user.id, { includeRedemptions: true })
   // Hide bets before 06-01-2022 if this isn't your own profile
   // NOTE: This means public profits also begin on 06-01-2022 as well.
-  const bets = (allBets ?? []).filter(
+  const bets = allBets?.filter(
     (bet) => bet.createdTime >= (hideBetsBefore ?? 0)
   )
   const [contracts, setContracts] = useState<Contract[] | undefined>()
