@@ -42,8 +42,8 @@ export default function Notifications() {
   // TODO: use infinite scroll
   return (
     <Page>
-      <div className={'p-4'}>
-        <Title text={'Notifications'} />
+      <div className={'p-2 sm:p-4'}>
+        <Title text={'Notifications'} className={'hidden sm:block'} />
         <Tabs
           className={'pb-2 pt-1 '}
           defaultIndex={0}
@@ -146,7 +146,7 @@ function Notification(props: {
   }
 
   return (
-    <div className={'bg-white px-0 pt-6 sm:px-4'}>
+    <div className={'bg-white px-1 pt-6 sm:px-4'}>
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <Avatar
           avatarUrl={sourceUserAvatarUrl}
