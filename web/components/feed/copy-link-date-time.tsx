@@ -8,15 +8,13 @@ import Link from 'next/link'
 import { fromNow } from 'web/lib/util/time'
 import { ToastClipboard } from 'web/components/toast-clipboard'
 import { LinkIcon } from '@heroicons/react/outline'
-import clsx from 'clsx'
 
 export function CopyLinkDateTimeComponent(props: {
   contract: Contract
   createdTime: number
   elementId: string
-  className?: string
 }) {
-  const { contract, elementId, createdTime, className } = props
+  const { contract, elementId, createdTime } = props
   const [showToast, setShowToast] = useState(false)
 
   function copyLinkToComment(
@@ -32,7 +30,7 @@ export function CopyLinkDateTimeComponent(props: {
     setTimeout(() => setShowToast(false), 2000)
   }
   return (
-    <div className={clsx('inline', className)}>
+    <>
       <DateTimeTooltip time={createdTime}>
         <Link
           href={`/${contract.creatorUsername}/${contract.slug}#${elementId}`}
@@ -55,6 +53,6 @@ export function CopyLinkDateTimeComponent(props: {
           </a>
         </Link>
       </DateTimeTooltip>
-    </div>
+    </>
   )
 }
