@@ -5,14 +5,14 @@ import {
   deductDpmFees,
 } from './calculate-dpm'
 import { calculateCpmmSale, getCpmmProbability } from './calculate-cpmm'
-import { Binary, DPM, CPMM, FullContract } from './contract'
+import { CPMMContract, DPMContract } from './contract'
 import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees } from './fees'
 import { User } from './user'
 
 export const getSellBetInfo = (
   user: User,
   bet: Bet,
-  contract: FullContract<DPM, any>,
+  contract: DPMContract,
   newBetId: string
 ) => {
   const { pool, totalShares, totalBets } = contract
@@ -87,7 +87,7 @@ export const getCpmmSellBetInfo = (
   user: User,
   shares: number,
   outcome: 'YES' | 'NO',
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   prevLoanAmount: number,
   newBetId: string
 ) => {

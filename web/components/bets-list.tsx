@@ -255,7 +255,6 @@ function MyContractBets(props: {
   const [collapsed, setCollapsed] = useState(true)
 
   const isBinary = outcomeType === 'BINARY'
-  const probPercent = getBinaryProbPercent(contract)
 
   const { payout, profit, profitPercent, invested } = getContractBetMetrics(
     contract,
@@ -292,24 +291,27 @@ function MyContractBets(props: {
           </Row>
 
           <Row className="flex-1 items-center gap-2 text-sm text-gray-500">
-            {(isBinary || resolution) && (
+            {resolution ? (
               <>
-                {resolution ? (
-                  <div>
-                    Resolved{' '}
-                    <OutcomeLabel
-                      outcome={resolution}
-                      value={resolutionValue}
-                      contract={contract}
-                      truncate="short"
-                    />
-                  </div>
-                ) : (
-                  <div className="text-primary text-lg">{probPercent}</div>
-                )}
+                <div>
+                  Resolved{' '}
+                  <OutcomeLabel
+                    outcome={resolution}
+                    value={resolutionValue}
+                    contract={contract}
+                    truncate="short"
+                  />
+                </div>
                 <div>•</div>
               </>
-            )}
+            ) : isBinary ? (
+              <>
+                <div className="text-primary text-lg">
+                  {getBinaryProbPercent(contract)}
+                </div>
+                <div>•</div>
+              </>
+            ) : null}
             <UserLink
               name={contract.creatorName}
               username={contract.creatorUsername}
