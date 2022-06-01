@@ -47,14 +47,63 @@ export const charities: Charity[] = [
     website: 'https://funds.effectivealtruism.org/funds/far-future',
     photo: 'https://i.imgur.com/C2qka9g.png',
     preview:
-      'Positively influence the long-term trajectory of civilization by making grants that address global catastrophic risks.',
-    description: `The Fund has a broad remit to make grants that promote, implement and advocate for longtermist ideas. Many of our grants aim to address potential risks from advanced artificial intelligence and to build infrastructure and advocate for longtermist projects. However, we welcome applications related to long-term institutional reform or other global catastrophic risks (e.g., pandemics or nuclear conflict).
+      'The Long-Term Future Fund aims to improve the long-term trajectory of civilization by making grants that address global catastrophic risks.',
+    description: `The Long-Term Future Fund aims to positively influence the long-term trajectory of civilization by making grants that address global catastrophic risks, especially potential risks from advanced artificial intelligence and pandemics. In addition, we seek to promote, implement, and advocate for longtermist ideas, and to otherwise increase the likelihood that future generations will flourish.
+    
+    The Fund has a broad remit to make grants that promote, implement and advocate for longtermist ideas. Many of our grants aim to address potential risks from advanced artificial intelligence and to build infrastructure and advocate for longtermist projects. However, we welcome applications related to long-term institutional reform or other global catastrophic risks (e.g., pandemics or nuclear conflict).
     
     We intend to support:
     - Projects that directly contribute to reducing existential risks through technical research, policy analysis, advocacy, and/or demonstration projects
     - Training for researchers or practitioners who work to mitigate existential risks, or help with relevant recruitment efforts, or infrastructure for people working on longtermist projects
     - Promoting long-term thinking`,
     tags: ['Featured'] as CharityTag[],
+  },
+  {
+    name: 'Global Health and Development Fund',
+    website: 'https://funds.effectivealtruism.org/funds/global-development',
+    photo: 'https://i.imgur.com/C2qka9g.png',
+    preview:
+      "The Global Health and Development Fund aims to improve people's lives, typically in the poorest regions of the world where the need for healthcare and economic empowerment is greatest.",
+    description: `The Global Health and Development Fund recommends grants with the aim of improving people's lives, typically in the poorest regions of the world where the need for healthcare and economic empowerment is greatest. This will be achieved primarily by supporting projects that:
+    
+    - Directly provide healthcare, or preventive measures that will improve health, well-being, or life expectancy
+    - Directly provide services that raise incomes or otherwise improve economic conditions
+    - Provide assistance to governments in the design and implementation of effective policies
+    
+    In addition, the Global Health and Development Fund has a broad remit, and may fund other activities whose ultimate purpose is to serve people living in the poorest regions of the world, for example by raising additional funds (e.g. One for the World) or by exploring novel financing arrangements (e.g. Instiglio).
+    
+    The Fund manager recommends grants to GiveWell top charities as a baseline, but will recommend higher-risk grants they believe to be more effective (in expectation) than GiveWell top charities. As such, the fund makes grants with a variety of different risk profiles.`,
+  },
+  {
+    name: 'Animal Welfare Fund',
+    website: 'https://funds.effectivealtruism.org/funds/animal-welfare',
+    photo: 'https://i.imgur.com/C2qka9g.png',
+    preview:
+      'The Animal Welfare Fund aims to effectively improve the well-being of nonhuman animals.',
+    description: `The Animal Welfare Fund aims to effectively improve the well-being of nonhuman animals, by making grants that focus on one or more of the following:
+
+    - Relatively neglected geographic regions or groups of animals
+    - Promising research into animal advocacy or animal well-being
+    - Activities that could make it easier to help animals in the future
+    - Otherwise best-in-class opportunities
+    
+    The Fund focuses on projects that primarily address farmed animals, as well as projects that could affect other large populations of nonhuman animals. Some examples of projects that the Fund could support:
+    
+    - Supporting farmed animal advocacy in Asia
+    - Researching ways to improve the welfare of farmed fish
+    - Promoting alternative proteins in order to reduce demand for animal products
+    - Advocating against the use of some cruel practice within the industrial agriculture system
+    - Growing the field of welfare biology in order to improve our understanding of different ways to address wild animal suffering`,
+  },
+  {
+    name: 'Effective Altruism Infrastructure Fund',
+    website: 'https://funds.effectivealtruism.org/funds/ea-community',
+    photo: 'https://i.imgur.com/C2qka9g.png',
+    preview:
+      'The Effective Altruism Infrastructure Fund aims to increase the impact of projects that use the principles of effective altruism.',
+    description: `The Effective Altruism Infrastructure Fund (EA Infrastructure Fund) recommends grants that aim to improve the work of projects using principles of effective altruism, by increasing their access to talent, capital, and knowledge.
+    
+    The EA Infrastructure Fund has historically attempted to make strategic grants to incubate and grow projects that attempt to use reason and evidence to do as much good as possible. These include meta-charities that fundraise for highly effective charities doing direct work on important problems, research organizations that improve our understanding of how to do good more effectively, and projects that promote principles of effective altruism in contexts like academia.`,
   },
   {
     name: 'Nonlinear',
@@ -103,6 +152,32 @@ export const charities: Charity[] = [
     - Which funding gaps we expect to be filled and unfilled
     - Each charity’s plans for additional funding
     - The cost-effectiveness of each funding gap`,
+  },
+  {
+    name: "Founder's Pledge Climate Change Fund",
+    website: 'https://founderspledge.com/funds/climate-change-fund',
+    photo: 'https://i.imgur.com/ZAhzHu4.png',
+    preview:
+      'The Climate Change Fund aims to sustainably reach net-zero emissions globally, while still allowing growth to free millions from energy poverty.',
+    description: `The Climate Change Fund aims to sustainably reach net-zero emissions globally.
+    
+    Current levels of emissions are contributing to millions of deaths annually from air pollution and causing irrevocable damage to our planet. In addition, millions worldwide do not have access to modern energy technology, severely hampering development goals.
+    
+    This Fund is committed to finding and funding sustainable solutions to the emissions crisis that still allow growth, freeing millions from the prison of energy poverty.
+    
+    The Fund is a philanthropic co-funding vehicle that does not provide investment returns.`,
+  },
+  {
+    name: "Founder's Pledge Patient Philanthropy Fund",
+    website: 'https://founderspledge.com/funds/patient-philanthropy-fund',
+    photo: 'https://i.imgur.com/ZAhzHu4.png',
+    preview:
+      'The Patient Philanthropy Project aims to safeguard and benefit the long-term future of humanity',
+    description: `The Patient Philanthropy Project focuses on how we can collectively grow our resources to support the long-term flourishing of humanity. It addresses a crucial gap: as a society, we spend much too little on safeguarding and benefiting future generations. In fact, we spend more money on ice cream each year than we do on preventing our own extinction. However, people in the future - who do not have a voice in their future survival or environment - matter. Lots of them may yet come into existence and we have the ability to positively affect their lives now, if only by making sure we avoid major catastrophes that could destroy our common future.
+    
+    Housed within the Project is the Patient Philanthropy Fund, a philanthropic co-funding vehicle which invests to give and ensures capital is at the ready when extraordinary opportunities to safeguard and improve the long-term future arise.
+    
+    The Fund’s patient approach means that we aim to identify the point in time when the highest-impact opportunities are available, which may be years, decades, or even centuries ahead.`,
   },
   {
     name: 'ARC',
