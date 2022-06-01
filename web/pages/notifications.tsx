@@ -19,7 +19,6 @@ import { Comment } from 'web/lib/firebase/comments'
 import { getValue } from 'web/lib/firebase/utils'
 import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/user-page'
-import { Linkify } from 'web/components/linkify'
 import { User } from 'common/user'
 import { useContract } from 'web/hooks/use-contract'
 import { Contract } from 'common/contract'
@@ -191,14 +190,12 @@ function Notification(props: {
         </div>
       </Row>
       <a href={getSourceUrl(sourceId)}>
-        <div className={'mt-1'}>
+        <div className={'mt-1 text-sm sm:text-base'}>
           {' '}
           {contract && subText === contract.question ? (
-            <div className={'text-md text-indigo-700 hover:underline'}>
-              {subText}
-            </div>
+            <div className={'text-indigo-700 hover:underline'}>{subText}</div>
           ) : (
-            <Linkify text={subText} />
+            <div className={'line-clamp-4 whitespace-pre-line'}>{subText}</div>
           )}
         </div>
 
@@ -213,21 +210,13 @@ function getReasonTextFromReason(
   reason: notification_reason_types,
   contract: Contract | undefined
 ) {
-  let title = ''
-  if (contract) {
-    title = contract.question
-    // shorten and add ellipsis if the question is too long
-    // if (title.length > 30) {
-    //   title = title.substring(0, 30) + '...'
-    // }
-  }
   switch (source) {
     case 'comment':
-      return `commented on ${title}`
+      return `commented on ${contract?.question}`
     case 'contract':
-      return `${reason} ${title}`
+      return `${reason} ${contract?.question}`
     case 'answer':
-      return `answered ${title}`
+      return `answered ${contract?.question}`
     default:
       return ''
   }
