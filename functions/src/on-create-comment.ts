@@ -7,6 +7,7 @@ import { Comment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
+import { createNotification } from './create-notification'
 
 const firestore = admin.firestore()
 
@@ -16,6 +17,7 @@ export const onCreateComment = functions.firestore
     const { contractId } = context.params as {
       contractId: string
     }
+    const { eventId } = context
 
     const contract = await getContract(contractId)
     if (!contract)
@@ -25,7 +27,16 @@ export const onCreateComment = functions.firestore
     const lastCommentTime = comment.createdTime
 
     const commentCreator = await getUser(comment.userId)
-    if (!commentCreator) throw new Error('Could not find contract creator')
+    if (!commentCreator) throw new Error('Could not find comment creator')
+
+    await createNotification(
+      comment.id,
+      'comment',
+      'created',
+      contract,
+      commentCreator,
+      eventId
+    )
 
     await firestore
       .collection('contracts')

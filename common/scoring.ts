@@ -1,7 +1,7 @@
 import { groupBy, sumBy, mapValues, partition } from 'lodash'
 
 import { Bet } from './bet'
-import { Binary, Contract, FullContract } from './contract'
+import { Contract } from './contract'
 import { getPayouts } from './payouts'
 
 export function scoreCreators(contracts: Contract[]) {
@@ -24,23 +24,24 @@ export function scoreTraders(contracts: Contract[], bets: Bet[][]) {
   return userScores
 }
 
-export function scoreUsersByContract(
-  contract: FullContract<any, Binary>,
-  bets: Bet[]
-) {
-  const { resolution, resolutionProbability } = contract
+export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
+  const { resolution } = contract
+  const resolutionProb =
+    contract.outcomeType == 'BINARY'
+      ? contract.resolutionProbability
+      : undefined
 
   const [closedBets, openBets] = partition(
     bets,
     (bet) => bet.isSold || bet.sale
   )
   const { payouts: resolvePayouts } = getPayouts(
-    resolution,
+    resolution as string,
     {},
     contract,
     openBets,
     [],
-    resolutionProbability
+    resolutionProb
   )
 
   const salePayouts = closedBets.map((bet) => {

@@ -115,7 +115,6 @@ export function ContractSearch(props: {
       {showCategorySelector && (
         <CategorySelector
           className="mb-2"
-          user={user}
           category={category}
           setCategory={setCategory}
         />

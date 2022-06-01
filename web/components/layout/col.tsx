@@ -1,16 +1,10 @@
 import clsx from 'clsx'
-import { CSSProperties, Ref, ReactNode } from 'react'
 
-export function Col(props: {
-  children?: ReactNode
-  className?: string
-  style?: CSSProperties
-  ref?: Ref<HTMLDivElement>
-}) {
-  const { children, className, style, ref } = props
+export function Col(props: JSX.IntrinsicElements['div']) {
+  const { children, className, ...rest } = props
 
   return (
-    <div className={clsx(className, 'flex flex-col')} style={style} ref={ref}>
+    <div className={clsx(className, 'flex flex-col')} {...rest}>
       {children}
     </div>
   )
