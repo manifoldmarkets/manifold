@@ -143,7 +143,12 @@ export function ContractSearch(props: {
         />
       )}
 
-      <FollowSwitch showFollows={showFollows} setShowFollows={setShowFollows} />
+      {!additionalFilter?.creatorId && (
+        <FollowSwitch
+          showFollows={showFollows}
+          setShowFollows={setShowFollows}
+        />
+      )}
 
       <Spacer h={4} />
 
