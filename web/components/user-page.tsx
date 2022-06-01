@@ -89,6 +89,13 @@ export function UserPage(props: {
     })
   }, [usersComments])
 
+  const onFollow = () => {
+    console.log('follow')
+  }
+  const onUnfollow = () => {
+    console.log('unfollow')
+  }
+
   return (
     <Page>
       <SEO
@@ -116,6 +123,13 @@ export function UserPage(props: {
 
         {/* Top right buttons (e.g. edit, follow) */}
         <div className="absolute right-0 top-0 mt-4 mr-4">
+          {!isCurrentUser && (
+            <FollowButton
+              isFollowing={false}
+              onFollow={onFollow}
+              onUnfollow={onUnfollow}
+            />
+          )}
           {isCurrentUser && (
             <SiteLink className="btn" href="/profile">
               <PencilIcon className="h-5 w-5" />{' '}
@@ -281,6 +295,7 @@ export function defaultBannerUrl(userId: string) {
 }
 
 import { ExclamationIcon } from '@heroicons/react/solid'
+import { FollowButton } from './follow-button'
 
 function AlertBox(props: { title: string; text: string }) {
   const { title, text } = props
