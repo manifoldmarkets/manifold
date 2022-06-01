@@ -39,11 +39,7 @@ export default function Activity() {
     <>
       <Page assertUser="signed-in" suspend={!!contract}>
         <Col className="mx-auto w-full max-w-[700px]">
-          <CategorySelector
-            user={user}
-            category={category}
-            setCategory={setCategory}
-          />
+          <CategorySelector category={category} setCategory={setCategory} />
           <Spacer h={1} />
           {feed ? (
             <ActivityFeed
