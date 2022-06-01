@@ -5,7 +5,12 @@ import Stripe from 'stripe'
 import { getPrivateUser, getUser, isProd, payUser } from './utils'
 import { sendThankYouEmail } from './emails'
 
-export type StripeSession = Stripe.Event.Data.Object & { id: any, metadata: any}
+export type StripeSession = Stripe.Event.Data.Object & {
+  id: string, metadata: {
+    userId: string,
+    manticDollarQuantity: string
+  }
+}
 
 export type StripeTransaction = {
   userId: string
