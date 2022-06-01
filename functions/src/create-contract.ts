@@ -2,16 +2,13 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import {
-  Binary,
+  CPMMBinaryContract,
   Contract,
-  CPMM,
-  DPM,
-  FreeResponse,
-  FullContract,
+  FreeResponseContract,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
-  Numeric,
+  NumericContract,
   OUTCOME_TYPES,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
@@ -22,7 +19,6 @@ import { APIError, newEndpoint, validate, zTimestamp } from './api'
 
 import {
   FIXED_ANTE,
-  getAnteBets,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getNumericAnte,
@@ -72,7 +68,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
   // Uses utc time on server:
   const today = new Date()
-  let freeMarketResetTime = today.setUTCHours(16, 0, 0, 0)
+  let freeMarketResetTime = new Date().setUTCHours(16, 0, 0, 0)
   if (today.getTime() < freeMarketResetTime) {
     freeMarketResetTime = freeMarketResetTime - 24 * 60 * 60 * 1000
   }
@@ -122,30 +118,14 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
   const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : user.id
 
-  if (outcomeType === 'BINARY' && contract.mechanism === 'dpm-2') {
-    const yesBetDoc = firestore
-      .collection(`contracts/${contract.id}/bets`)
-      .doc()
-
-    const noBetDoc = firestore.collection(`contracts/${contract.id}/bets`).doc()
-
-    const { yesBet, noBet } = getAnteBets(
-      user,
-      contract as FullContract<DPM, Binary>,
-      yesBetDoc.id,
-      noBetDoc.id
-    )
-
-    await yesBetDoc.set(yesBet)
-    await noBetDoc.set(noBet)
-  } else if (outcomeType === 'BINARY') {
+  if (outcomeType === 'BINARY') {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)
       .doc()
 
     const lp = getCpmmInitialLiquidity(
       providerId,
-      contract as FullContract<CPMM, Binary>,
+      contract as CPMMBinaryContract,
       liquidityDoc.id,
       ante
     )
@@ -165,7 +145,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
     const anteBet = getFreeAnswerAnte(
       providerId,
-      contract as FullContract<DPM, FreeResponse>,
+      contract as FreeResponseContract,
       anteBetDoc.id
     )
     await anteBetDoc.set(anteBet)
@@ -176,7 +156,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
     const anteBet = getNumericAnte(
       providerId,
-      contract as FullContract<DPM, Numeric>,
+      contract as NumericContract,
       ante,
       anteBetDoc.id
     )

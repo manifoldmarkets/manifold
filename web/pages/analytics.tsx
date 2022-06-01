@@ -15,6 +15,8 @@ import { getDailyBets } from 'web/lib/firebase/bets'
 import { getDailyComments } from 'web/lib/firebase/comments'
 import { getDailyContracts } from 'web/lib/firebase/contracts'
 import { getDailyNewUsers } from 'web/lib/firebase/users'
+import { SiteLink } from 'web/components/site-link'
+import { Linkify } from 'web/components/linkify'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -192,9 +194,22 @@ export default function Analytics(props: {
   }
   return (
     <Page>
-      <CustomAnalytics {...props} />
-      <Spacer h={8} />
-      {!IS_PRIVATE_MANIFOLD && <FirebaseAnalytics />}
+      <Tabs
+        tabs={[
+          {
+            title: 'Activity',
+            content: <CustomAnalytics {...props} />,
+          },
+          {
+            title: 'Market Stats',
+            content: <WasabiCharts />,
+          },
+          {
+            title: 'Google Analytics',
+            content: <FirebaseAnalytics />,
+          },
+        ]}
+      />
     </Page>
   )
 }
@@ -431,7 +446,6 @@ export function FirebaseAnalytics() {
 
   return (
     <>
-      <Title text="Google Analytics" />
       <p className="text-gray-500">
         Less accurate; includes all viewers (not just signed-in users).
       </p>
@@ -440,6 +454,31 @@ export function FirebaseAnalytics() {
         className="w-full"
         height={2200}
         src="https://datastudio.google.com/embed/reporting/faeaf3a4-c8da-4275-b157-98dad017d305/page/Gg3"
+        frameBorder="0"
+        style={{ border: 0 }}
+        allowFullScreen
+      />
+    </>
+  )
+}
+
+export function WasabiCharts() {
+  return (
+    <>
+      <p className="text-gray-500">
+        Courtesy of <Linkify text="@wasabipesto" />; originally found{' '}
+        <SiteLink
+          className="font-bold"
+          href="https://wasabipesto.com/jupyter/manifold/"
+        >
+          here.
+        </SiteLink>
+      </p>
+      <Spacer h={4} />
+      <iframe
+        className="w-full"
+        height={12000}
+        src="https://wasabipesto.com/jupyter/manifold/"
         frameBorder="0"
         style={{ border: 0 }}
         allowFullScreen

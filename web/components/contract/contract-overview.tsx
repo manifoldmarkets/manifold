@@ -1,4 +1,4 @@
-import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
+import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
@@ -16,12 +16,7 @@ import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import BetRow from '../bet-row'
 import { AnswersGraph } from '../answers/answers-graph'
-import {
-  DPM,
-  FreeResponse,
-  FullContract,
-  NumericContract,
-} from 'common/contract'
+import { Contract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { ShareMarket } from '../share-market'
@@ -58,7 +53,7 @@ export const ContractOverview = (props: {
 
           {outcomeType === 'NUMERIC' && (
             <NumericResolutionOrExpectation
-              contract={contract as NumericContract}
+              contract={contract}
               className="hidden items-end xl:flex"
             />
           )}
@@ -82,9 +77,7 @@ export const ContractOverview = (props: {
 
         {outcomeType === 'NUMERIC' && (
           <Row className="items-center justify-between gap-4 xl:hidden">
-            <NumericResolutionOrExpectation
-              contract={contract as NumericContract}
-            />
+            <NumericResolutionOrExpectation contract={contract} />
           </Row>
         )}
 
@@ -97,14 +90,9 @@ export const ContractOverview = (props: {
       <Spacer h={4} />
       {isBinary && <ContractProbGraph contract={contract} bets={bets} />}{' '}
       {outcomeType === 'FREE_RESPONSE' && (
-        <AnswersGraph
-          contract={contract as FullContract<DPM, FreeResponse>}
-          bets={bets}
-        />
+        <AnswersGraph contract={contract} bets={bets} />
       )}
-      {outcomeType === 'NUMERIC' && (
-        <NumericGraph contract={contract as NumericContract} />
-      )}
+      {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
       {(contract.description || isCreator) && <Spacer h={6} />}
       {isCreator && <ShareMarket className="px-2" contract={contract} />}
       <ContractDescription

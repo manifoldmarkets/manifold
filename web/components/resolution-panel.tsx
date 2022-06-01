@@ -10,12 +10,12 @@ import { resolveMarket } from 'web/lib/firebase/fn-call'
 import { ProbabilitySelector } from './probability-selector'
 import { DPM_CREATOR_FEE } from 'common/fees'
 import { getProbability } from 'common/calculate'
-import { Binary, CPMM, DPM, FullContract, resolution } from 'common/contract'
+import { BinaryContract, resolution } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 
 export function ResolutionPanel(props: {
   creator: User
-  contract: FullContract<DPM | CPMM, Binary>
+  contract: BinaryContract
   className?: string
 }) {
   useEffect(() => {

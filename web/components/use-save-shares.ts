@@ -1,17 +1,11 @@
-import {
-  Binary,
-  CPMM,
-  DPM,
-  FreeResponseContract,
-  FullContract,
-} from 'common/contract'
+import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { useEffect, useState } from 'react'
 import { partition, sumBy } from 'lodash'
 import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useSaveShares = (
-  contract: FullContract<CPMM | DPM, Binary | FreeResponseContract>,
+  contract: Contract,
   userBets: Bet[] | undefined,
   freeResponseAnswerOutcome?: string
 ) => {

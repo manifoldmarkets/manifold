@@ -1,10 +1,15 @@
 import { Answer } from './answer'
 import { Fees } from './fees'
 
-export type FullContract<
-  M extends DPM | CPMM,
-  T extends Binary | Multi | FreeResponse | Numeric
-> = {
+export type AnyMechanism = DPM | CPMM
+export type AnyOutcomeType = Binary | FreeResponse | Numeric
+export type AnyContractType =
+  | (CPMM & Binary)
+  | (DPM & Binary)
+  | (DPM & FreeResponse)
+  | (DPM & Numeric)
+
+export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
 
@@ -37,16 +42,15 @@ export type FullContract<
   volume7Days: number
 
   collectedFees: Fees
-} & M &
-  T
+} & T
 
-export type Contract = FullContract<
-  DPM | CPMM,
-  Binary | Multi | FreeResponse | Numeric
->
-export type BinaryContract = FullContract<DPM | CPMM, Binary>
-export type FreeResponseContract = FullContract<DPM | CPMM, FreeResponse>
-export type NumericContract = FullContract<DPM, Numeric>
+export type BinaryContract = Contract & Binary
+export type NumericContract = Contract & Numeric
+export type FreeResponseContract = Contract & FreeResponse
+export type DPMContract = Contract & DPM
+export type CPMMContract = Contract & CPMM
+export type DPMBinaryContract = BinaryContract & DPM
+export type CPMMBinaryContract = BinaryContract & CPMM
 
 export type DPM = {
   mechanism: 'dpm-2'
@@ -64,19 +68,11 @@ export type CPMM = {
   totalLiquidity: number // in M$
 }
 
-export type FixedPayouts = CPMM
-
 export type Binary = {
   outcomeType: 'BINARY'
   initialProbability: number
   resolutionProbability?: number // Used for BINARY markets resolved to MKT
   resolution?: resolution
-}
-
-export type Multi = {
-  outcomeType: 'MULTI'
-  multiOutcomes: string[] // Used for outcomeType 'MULTI'.
-  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
 export type FreeResponse = {
@@ -96,13 +92,12 @@ export type Numeric = {
 }
 
 export type contractField = keyof Contract
-export type outcomeType = 'BINARY' | 'MULTI' | 'FREE_RESPONSE' | 'NUMERIC'
+export type outcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 
 export const RESOLUTIONS = [ 'YES', 'NO', 'MKT', 'CANCEL'] as const
-export const OUTCOME_TYPES = [ 'BINARY', 'MULTI', 'FREE_RESPONSE', 'NUMERIC'] as const
 export const RESOLUTION_TYPES = ['MANUAL', 'COMBINED'] as const
-
+export const OUTCOME_TYPES = ['BINARY', 'FREE_RESPONSE', 'NUMERIC'] as const
 export const MAX_QUESTION_LENGTH = 480
 export const MAX_DESCRIPTION_LENGTH = 10000
 export const MAX_TAG_LENGTH = 60
