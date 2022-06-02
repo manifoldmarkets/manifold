@@ -40,9 +40,7 @@ export function OutcomeLabel(props: {
   )
 }
 
-export function BinaryOutcomeLabel(props: {
-  outcome: resolution
-}) {
+export function BinaryOutcomeLabel(props: { outcome: resolution }) {
   const { outcome } = props
 
   if (outcome === 'YES') return <YesLabel />
