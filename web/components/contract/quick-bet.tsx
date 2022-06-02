@@ -239,7 +239,7 @@ function QuickOutcomeView(props: {
   }
 
   return (
-    <Col className={clsx('items-center text-2xl', textColor)}>
+    <Col className={clsx('items-center text-3xl', textColor)}>
       {override ?? display}
       {caption && <div className="text-base">{caption}</div>}
       <ProbBar contract={contract} previewProb={previewProb} />
