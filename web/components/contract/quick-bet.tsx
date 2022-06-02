@@ -142,32 +142,41 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       <QuickOutcomeView contract={contract} previewProb={previewProb} />
 
       {/* Down bet triangle */}
-      <div>
-        <div
-          className="peer absolute bottom-0 left-0 right-0 h-[50%]"
-          onMouseEnter={() => setDownHover(true)}
-          onMouseLeave={() => setDownHover(false)}
-          onClick={() => placeQuickBet('DOWN')}
-        ></div>
-        {hasDownShares > 0 ? (
+      {contract.outcomeType !== 'BINARY' ? (
+        <div>
+          <div className="peer absolute bottom-0 left-0 right-0 h-[50%] cursor-default"></div>
           <TriangleDownFillIcon
-            className={clsx(
-              'mx-auto h-5 w-5',
-              downHover ? 'text-red-500' : 'text-gray-400'
-            )}
+            className={clsx('mx-auto h-5 w-5 text-gray-200')}
           />
-        ) : (
-          <TriangleDownFillIcon
-            className={clsx(
-              'mx-auto h-5 w-5',
-              downHover ? 'text-red-500' : 'text-gray-200'
-            )}
-          />
-        )}
-        <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400">
-          {formatMoney(10)}
         </div>
-      </div>
+      ) : (
+        <div>
+          <div
+            className="peer absolute bottom-0 left-0 right-0 h-[50%]"
+            onMouseEnter={() => setDownHover(true)}
+            onMouseLeave={() => setDownHover(false)}
+            onClick={() => placeQuickBet('DOWN')}
+          ></div>
+          {hasDownShares > 0 ? (
+            <TriangleDownFillIcon
+              className={clsx(
+                'mx-auto h-5 w-5',
+                downHover ? 'text-red-500' : 'text-gray-400'
+              )}
+            />
+          ) : (
+            <TriangleDownFillIcon
+              className={clsx(
+                'mx-auto h-5 w-5',
+                downHover ? 'text-red-500' : 'text-gray-200'
+              )}
+            />
+          )}
+          <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400">
+            {formatMoney(10)}
+          </div>
+        </div>
+      )}
     </Col>
   )
 }
