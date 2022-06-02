@@ -191,7 +191,7 @@ export function contractTextDetails(contract: Contract) {
   )
 }
 
-export function EditableCloseDate(props: {
+function EditableCloseDate(props: {
   closeTime: number
   contract: Contract
   isCreator: boolean
