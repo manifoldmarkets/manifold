@@ -6,11 +6,12 @@ import {
 } from '../../common/notification'
 import { User } from '../../common/user'
 import { Contract } from '../../common/contract'
-import { getValues } from './utils'
+import { getUserByUsername, getValues } from './utils'
 import { Comment } from '../../common/comment'
 import { uniq } from 'lodash'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
+import { getContractBetMetrics } from '../../common/calculate'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
@@ -23,7 +24,10 @@ export const createNotification = async (
   reason: notification_reason_types,
   sourceContract: Contract,
   sourceUser: User,
-  idempotencyKey: string
+  idempotencyKey: string,
+  relatedSourceType?: notification_source_types,
+  relatedUserId?: string,
+  sourceText?: string
 ) => {
   const shouldGetNotification = (
     userId: string,
@@ -63,24 +67,65 @@ export const createNotification = async (
   }
 
   // TODO: Update for liquidity.
-  // TODO: Find tagged users.
-  // TODO: Find replies to comments.
-  // TODO: Filter bets for only open bets.
   // TODO: Notify users of their own closed but not resolved contracts.
   if (
     sourceType === 'comment' ||
     sourceType === 'answer' ||
     sourceType === 'contract'
   ) {
-    let reasonTextPretext = getReasonTextFromReason(sourceType, reason)
+    const notifyRepliedUsers = async (
+      userToReasonTexts: user_to_reason_texts
+    ) => {
+      if (
+        !relatedSourceType ||
+        !relatedUserId ||
+        !shouldGetNotification(relatedUserId, userToReasonTexts)
+      )
+        return
+      if (relatedSourceType === 'comment') {
+        userToReasonTexts[relatedUserId] = {
+          text: '',
+          reason: 'reply_to_users_comment',
+        }
+      } else if (relatedSourceType === 'answer') {
+        userToReasonTexts[relatedUserId] = {
+          text: '',
+          reason: 'reply_to_users_answer',
+        }
+      }
+    }
+
+    const notifyTaggedUsers = async (
+      userToReasonTexts: user_to_reason_texts
+    ) => {
+      if (!sourceText) return
+      const taggedUsers = sourceText.match(/@\w+/g)
+      if (!taggedUsers) return
+      // await all get tagged users:
+      const users = await Promise.all(
+        taggedUsers.map(async (username) => {
+          return await getUserByUsername(username.slice(1))
+        })
+      )
+      users.forEach((taggedUser) => {
+        if (
+          taggedUser &&
+          shouldGetNotification(taggedUser.id, userToReasonTexts)
+        )
+          userToReasonTexts[taggedUser.id] = {
+            text: '',
+            reason: 'tagged_user',
+          }
+      })
+    }
 
     const notifyContractCreator = async (
       userToReasonTexts: user_to_reason_texts
     ) => {
       if (shouldGetNotification(sourceContract.creatorId, userToReasonTexts))
         userToReasonTexts[sourceContract.creatorId] = {
-          text: `${reasonTextPretext} your question`,
-          reason,
+          text: '',
+          reason: 'on_users_contract',
         }
     }
 
@@ -97,8 +142,8 @@ export const createNotification = async (
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId, userToReasonTexts))
           userToReasonTexts[userId] = {
-            text: `${reasonTextPretext} a question you submitted an answer to`,
-            reason,
+            text: '',
+            reason: 'on_contract_with_users_answer',
           }
       })
     }
@@ -116,8 +161,8 @@ export const createNotification = async (
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId, userToReasonTexts))
           userToReasonTexts[userId] = {
-            text: `${reasonTextPretext} a question you commented on`,
-            reason,
+            text: '',
+            reason: 'on_contract_with_users_comment',
           }
       })
     }
@@ -129,12 +174,22 @@ export const createNotification = async (
         .collection(`contracts/${sourceContract.id}/bets`)
         .get()
       const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
-      const recipientUserIds = uniq(bets.map((bet) => bet.userId))
+      // filter bets for only users that have an amount invested still
+      const recipientUserIds = uniq(bets.map((bet) => bet.userId)).filter(
+        (userId) => {
+          return (
+            getContractBetMetrics(
+              sourceContract,
+              bets.filter((bet) => bet.userId === userId)
+            ).invested > 0
+          )
+        }
+      )
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId, userToReasonTexts))
           userToReasonTexts[userId] = {
-            text: `${reasonTextPretext} a question you bet on`,
-            reason,
+            text: '',
+            reason: 'on_contract_with_users_shares_in',
           }
       })
     }
@@ -142,32 +197,16 @@ export const createNotification = async (
     const getUsersToNotify = async () => {
       const userToReasonTexts: user_to_reason_texts = {}
       // The following functions modify the userToReasonTexts object in place.
+      await notifyRepliedUsers(userToReasonTexts)
+      await notifyTaggedUsers(userToReasonTexts)
       await notifyContractCreator(userToReasonTexts)
       await notifyOtherAnswerersOnContract(userToReasonTexts)
-      await notifyOtherCommentersOnContract(userToReasonTexts)
       await notifyOtherBettorsOnContract(userToReasonTexts)
+      await notifyOtherCommentersOnContract(userToReasonTexts)
       return userToReasonTexts
     }
 
     const userToReasonTexts = await getUsersToNotify()
     await createUsersNotifications(userToReasonTexts)
-  }
-}
-
-function getReasonTextFromReason(
-  source: notification_source_types,
-  reason: notification_reason_types
-) {
-  // TODO: Find tagged users.
-  // TODO: Find replies to comments.
-  switch (source) {
-    case 'comment':
-      return 'commented on'
-    case 'contract':
-      return reason
-    case 'answer':
-      return 'answered'
-    default:
-      throw new Error('Invalid notification reason')
   }
 }
