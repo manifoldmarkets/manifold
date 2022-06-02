@@ -102,6 +102,8 @@ export function QuickBet(props: { contract: Contract; user: User }) {
     }
   }
 
+  const textColor = `text-${getColor(contract, previewProb)}`
+
   return (
     <Col
       className={clsx(
@@ -126,14 +128,14 @@ export function QuickBet(props: { contract: Contract; user: User }) {
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? 'text-green-500' : 'text-gray-400'
+              upHover ? textColor : 'text-gray-400'
             )}
           />
         ) : (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? 'text-green-500' : 'text-gray-200'
+              upHover ? textColor : 'text-gray-200'
             )}
           />
         )}
@@ -189,14 +191,14 @@ export function ProbBar(props: { contract: Contract; previewProb?: number }) {
     <>
       <div
         className={clsx(
-          'absolute right-0 top-0 w-2 rounded-tr-md transition-all',
-          'bg-gray-200'
+          'absolute right-0 top-0 w-1 rounded-tr-md transition-all',
+          'bg-gray-100'
         )}
         style={{ height: `${100 * (1 - prob)}%` }}
       />
       <div
         className={clsx(
-          'absolute right-0 bottom-0 w-2 rounded-br-md transition-all',
+          'absolute right-0 bottom-0 w-1 rounded-br-md transition-all',
           `bg-${color}`,
           // If we're showing the full bar, also round the top
           prob === 1 ? 'rounded-tr-md' : ''
@@ -237,7 +239,7 @@ function QuickOutcomeView(props: {
   }
 
   return (
-    <Col className={clsx('items-center text-3xl', textColor)}>
+    <Col className={clsx('items-center text-2xl', textColor)}>
       {override ?? display}
       {caption && <div className="text-base">{caption}</div>}
       <ProbBar contract={contract} previewProb={previewProb} />
@@ -267,7 +269,6 @@ function getNumericScale(contract: NumericContract) {
 }
 
 export function getColor(contract: Contract, previewProb?: number) {
-  // TODO: Not sure why eg green-400 doesn't work here; try upgrading Tailwind
   // TODO: Try injecting a gradient here
   // return 'primary'
   const { resolution } = contract
@@ -287,7 +288,10 @@ export function getColor(contract: Contract, previewProb?: number) {
     return 'blue-400'
   }
 
-  const marketClosed = (contract.closeTime || Infinity) < Date.now()
-  const prob = previewProb ?? getProb(contract)
-  return marketClosed ? 'gray-400' : prob >= 0.5 ? 'primary' : 'red-400'
+  if ((contract.closeTime ?? Infinity) < Date.now()) {
+    return 'gray-400'
+  }
+
+  // TODO: Not sure why eg green-400 doesn't work here; try upgrading Tailwind
+  return 'primary'
 }
