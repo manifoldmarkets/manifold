@@ -57,7 +57,8 @@ export default function LinkPage() {
       </p>
       <form
         className="my-5"
-        onSubmit={async () => {
+        onSubmit={async (e) => {
+          e.preventDefault()
           await createManalink({
             fromId: user.id,
             amount: newManalink.amount,

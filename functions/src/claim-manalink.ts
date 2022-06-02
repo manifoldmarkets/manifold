@@ -26,11 +26,18 @@ export const claimManalink = functions
       if (amount <= 0 || isNaN(amount) || !isFinite(amount))
         return { status: 'error', message: 'Invalid amount' }
 
+      const fromDoc = firestore.doc(`users/${fromId}`)
+      const fromSnap = await transaction.get(fromDoc)
+      if (!fromSnap.exists) {
+        return { status: 'error', message: `User ${fromId} not found` }
+      }
+      const fromUser = fromSnap.data() as User
+
       // Only permit one redemption per user per link
       if (claimedUserIds.includes(userId)) {
         return {
           status: 'error',
-          message: `${userId} already redeemed manalink ${slug}`,
+          message: `${fromUser.name} already redeemed manalink ${slug}`,
         }
       }
 
@@ -53,17 +60,10 @@ export const claimManalink = functions
         }
       }
 
-      const fromDoc = firestore.doc(`users/${fromId}`)
-      const fromSnap = await transaction.get(fromDoc)
-      if (!fromSnap.exists) {
-        return { status: 'error', message: `User ${fromId} not found` }
-      }
-      const fromUser = fromSnap.data() as User
-
       if (fromUser.balance < amount) {
         return {
           status: 'error',
-          message: `Insufficient balance: ${fromUser.username} needed ${amount} for this manalink but only had ${fromUser.balance} `,
+          message: `Insufficient balance: ${fromUser.name} needed ${amount} for this manalink but only had ${fromUser.balance} `,
         }
       }
 
