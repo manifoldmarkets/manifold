@@ -174,21 +174,16 @@ export function NewContract(props: { question: string; tag?: string }) {
       <ChoicesToggleGroup
         currentChoice={outcomeType}
         setChoice={(choice) => {
-          if (choice === 'NUMERIC')
-            setMarketInfoText(
-              'Numeric markets are still experimental and subject to major revisions.'
-            )
-          else if (choice === 'FREE_RESPONSE')
+          if (choice === 'FREE_RESPONSE')
             setMarketInfoText(
               'Users can submit their own answers to this market.'
             )
           else setMarketInfoText('')
-          setOutcomeType(choice as outcomeType)
+          setOutcomeType(choice as 'BINARY' | 'FREE_RESPONSE')
         }}
         choicesMap={{
           'Yes / No': 'BINARY',
           'Free response': 'FREE_RESPONSE',
-          Numeric: 'NUMERIC',
         }}
         isSubmitting={isSubmitting}
         className={'col-span-4'}
