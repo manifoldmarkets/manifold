@@ -160,7 +160,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
           <TriangleDownFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              downHover ? 'text-red-500'  : 'text-gray-200'
+              downHover ? 'text-red-500' : 'text-gray-200'
             )}
           />
         )}
@@ -269,7 +269,12 @@ export function getColor(contract: Contract, previewProb?: number) {
       'primary'
     )
   }
+
   if (contract.outcomeType === 'NUMERIC') {
+    return 'blue-400'
+  }
+
+  if (contract.outcomeType === 'FREE_RESPONSE') {
     return 'blue-400'
   }
 
