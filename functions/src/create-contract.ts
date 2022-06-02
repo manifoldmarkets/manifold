@@ -60,7 +60,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
     if (max - min <= 0.01) throw new APIError(400, 'Invalid range.')
   }
   if (outcomeType === 'BINARY') {
-    ;({ initialProb } = validate(binarySchema, req.body))  // leading ; intentional: see abive
+    ;({ initialProb } = validate(binarySchema, req.body))  // leading ; intentional: see above
   }
 
   // Uses utc time on server:
