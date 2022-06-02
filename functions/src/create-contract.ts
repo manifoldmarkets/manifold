@@ -56,11 +56,11 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
 
   let min, max, initialProb
   if (outcomeType === 'NUMERIC') {
-    ;({ min, max } = validate(numericSchema, req.body))  // leading ; intentional: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#assignment_separate_from_declaration_2
+    ;({ min, max } = validate(numericSchema, req.body))
     if (max - min <= 0.01) throw new APIError(400, 'Invalid range.')
   }
   if (outcomeType === 'BINARY') {
-    ;({ initialProb } = validate(binarySchema, req.body))  // leading ; intentional: see above
+    ;({ initialProb } = validate(binarySchema, req.body))
   }
 
   // Uses utc time on server:
