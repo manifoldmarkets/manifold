@@ -7,23 +7,28 @@ service cloud.firestore {
 
     function isAdmin() {
       return request.auth.uid == 'igi2zGXsfxYPgB0DJTXVJVmwCOr2' // Austin
-        || request.auth.uid == '5LZ4LgYuySdL1huCWe7bti02ghx2' // James
-        || request.auth.uid == 'tlmGNz9kjXc2EteizMORes4qvWl2' // Stephen
-        || request.auth.uid == 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // Manifold
+             || request.auth.uid == '5LZ4LgYuySdL1huCWe7bti02ghx2' // James
+             || request.auth.uid == 'tlmGNz9kjXc2EteizMORes4qvWl2' // Stephen
+             || request.auth.uid == 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // Manifold
     }
 
     match /users/{userId} {
       allow read;
       allow update: if resource.data.id == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories']);
+                       && request.resource.data.diff(resource.data).affectedKeys()
+                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories']);
+    }
+
+    match /users/{userId}/follows/{followUserId} {
+      allow read;
+      allow write: if request.auth.uid == userId;
     }
 
     match /private-users/{userId} {
       allow read: if resource.data.id == request.auth.uid || isAdmin();
       allow update: if (resource.data.id == request.auth.uid || isAdmin())
-        && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['apiKey']);
+                       && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['apiKey', 'unsubscribedFromResolutionEmails', 'unsubscribedFromCommentEmails', 'unsubscribedFromAnswerEmails', 'notificationPreferences' ]);
     }
 
     match /private-users/{userId}/views/{viewId} {
@@ -45,7 +50,8 @@ service cloud.firestore {
     match /contracts/{contractId} {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['description', 'closeTime', 'tags', 'lowercaseTags']);
+                       .hasOnly(['description', 'closeTime', 'tags', 'lowercaseTags'])
+                       && resource.data.creatorId == request.auth.uid;
       allow update: if isAdmin();
     }
 
@@ -87,6 +93,13 @@ service cloud.firestore {
 
     match /txns/{txnId} {
       allow read;
+    }
+
+    match /users/{userId}/notifications/{notificationId} {
+      allow read;
+      allow update: if resource.data.userId == request.auth.uid
+                       && request.resource.data.diff(resource.data).affectedKeys()
+                                                                    .hasOnly(['isSeen', 'viewTime']);
     }
   }
 }
