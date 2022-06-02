@@ -22,11 +22,14 @@ import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { Col } from '../layout/col'
 import { OUTCOME_TO_COLOR } from '../outcome-label'
 import { useSaveShares } from '../use-save-shares'
+import { sellShares } from 'web/lib/firebase/fn-call'
+import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 
 const BET_SIZE = 10
 
 export function QuickBet(props: { contract: Contract; user: User }) {
   const { contract, user } = props
+  const isCpmm = contract.mechanism === 'cpmm-1'
 
   const userBets = useUserContractBets(user.id, contract.id)
   const topAnswer =
@@ -35,7 +38,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       : undefined
 
   // TODO: yes/no from useSaveShares doesn't work on numeric contracts
-  const { yesFloorShares, noFloorShares } = useSaveShares(
+  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
     contract,
     userBets,
     topAnswer?.number.toString() || undefined
@@ -68,8 +71,38 @@ export function QuickBet(props: { contract: Contract; user: User }) {
     // Catch any errors from hovering on an invalid option
   }
 
+  let sharesSold: number | undefined
+  let sellOutcome: 'YES' | 'NO' | undefined
+  let saleAmount: number | undefined
+  if (isCpmm && (upHover || downHover)) {
+    const oppositeShares = upHover ? noShares : yesShares
+    if (oppositeShares) {
+      sellOutcome = upHover ? 'NO' : 'YES'
+
+      const prob = getProb(contract)
+      const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
+      sharesSold = Math.min(oppositeShares, maxSharesSold)
+
+      const { newPool, saleValue } = calculateCpmmSale(
+        contract,
+        sharesSold,
+        sellOutcome
+      )
+      saleAmount = saleValue
+      previewProb = getCpmmProbability(newPool, contract.p)
+    }
+  }
+
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
     const betPromise = async () => {
+      if (sharesSold && sellOutcome) {
+        return await sellShares({
+          shares: sharesSold,
+          outcome: sellOutcome,
+          contractId: contract.id,
+        })
+      }
+
       const outcome = quickOutcome(contract, direction)
       return await placeBet({
         amount: BET_SIZE,
@@ -78,9 +111,14 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       })
     }
     const shortQ = contract.question.slice(0, 20)
+    const message =
+      sellOutcome && saleAmount
+        ? `${formatMoney(saleAmount)} sold of "${shortQ}"...`
+        : `${formatMoney(BET_SIZE)} on "${shortQ}"...`
+
     toast.promise(betPromise(), {
-      loading: `${formatMoney(BET_SIZE)} on "${shortQ}"...`,
-      success: `${formatMoney(BET_SIZE)} on "${shortQ}"...`,
+      loading: message,
+      success: message,
       error: (err) => `${err.message}`,
     })
   }
