@@ -50,6 +50,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
       if (!betSnap.exists) return { status: 'error', message: 'Invalid bet' }
       const bet = betSnap.data() as Bet
 
+      if (userId !== bet.userId) return { status: 'error', message: 'Not authorized' }
       if (bet.isSold) return { status: 'error', message: 'Bet already sold' }
 
       const newBetDoc = firestore
@@ -78,7 +79,7 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
           pool: newPool,
           totalShares: newTotalShares,
           totalBets: newTotalBets,
-          collectedFees: addObjects<Fees>(fees ?? {}, collectedFees ?? {}),
+          collectedFees: addObjects(fees, collectedFees),
           volume: volume + Math.abs(newBet.amount),
         })
       )

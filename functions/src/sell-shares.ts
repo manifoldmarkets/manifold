@@ -2,7 +2,7 @@ import { partition, sumBy } from 'lodash'
 import * as admin from 'firebase-admin'
 import * as functions from 'firebase-functions'
 
-import { Binary, CPMM, FullContract } from '../../common/contract'
+import { BinaryContract } from '../../common/contract'
 import { User } from '../../common/user'
 import { getCpmmSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
@@ -35,7 +35,7 @@ export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
       const contractSnap = await transaction.get(contractDoc)
       if (!contractSnap.exists)
         return { status: 'error', message: 'Invalid contract' }
-      const contract = contractSnap.data() as FullContract<CPMM, Binary>
+      const contract = contractSnap.data() as BinaryContract
       const { closeTime, mechanism, collectedFees, volume } = contract
 
       if (mechanism !== 'cpmm-1')
@@ -101,7 +101,7 @@ export const sellShares = functions.runWith({ minInstances: 1 }).https.onCall(
         removeUndefinedProps({
           pool: newPool,
           p: newP,
-          collectedFees: addObjects(fees ?? {}, collectedFees ?? {}),
+          collectedFees: addObjects(fees, collectedFees),
           volume: volume + Math.abs(newBet.amount),
         })
       )

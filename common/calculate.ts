@@ -18,24 +18,15 @@ import {
   getDpmProbabilityAfterSale,
 } from './calculate-dpm'
 import { calculateFixedPayout } from './calculate-fixed-payouts'
-import {
-  Binary,
-  Contract,
-  CPMM,
-  DPM,
-  FreeResponseContract,
-  FullContract,
-} from './contract'
+import { Contract, BinaryContract, FreeResponseContract } from './contract'
 
-export function getProbability(contract: FullContract<DPM | CPMM, Binary>) {
+export function getProbability(contract: BinaryContract) {
   return contract.mechanism === 'cpmm-1'
     ? getCpmmProbability(contract.pool, contract.p)
     : getDpmProbability(contract.totalShares)
 }
 
-export function getInitialProbability(
-  contract: FullContract<DPM | CPMM, Binary>
-) {
+export function getInitialProbability(contract: BinaryContract) {
   if (contract.initialProbability) return contract.initialProbability
 
   if (contract.mechanism === 'dpm-2' || (contract as any).totalShares)
@@ -59,11 +50,7 @@ export function getOutcomeProbabilityAfterBet(
   bet: number
 ) {
   return contract.mechanism === 'cpmm-1'
-    ? getCpmmOutcomeProbabilityAfterBet(
-        contract as FullContract<CPMM, Binary>,
-        outcome,
-        bet
-      )
+    ? getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
     : getDpmOutcomeProbabilityAfterBet(contract.totalShares, outcome, bet)
 }
 
@@ -73,11 +60,7 @@ export function calculateShares(
   betChoice: string
 ) {
   return contract.mechanism === 'cpmm-1'
-    ? calculateCpmmSharesAfterFee(
-        contract as FullContract<CPMM, Binary>,
-        bet,
-        betChoice
-      )
+    ? calculateCpmmSharesAfterFee(contract, bet, betChoice)
     : calculateDpmShares(contract.totalShares, bet, betChoice)
 }
 
@@ -99,11 +82,7 @@ export function getProbabilityAfterSale(
   shares: number
 ) {
   return contract.mechanism === 'cpmm-1'
-    ? getCpmmProbabilityAfterSale(
-        contract as FullContract<CPMM, Binary>,
-        shares,
-        outcome as 'YES' | 'NO'
-      )
+    ? getCpmmProbabilityAfterSale(contract, shares, outcome as 'YES' | 'NO')
     : getDpmProbabilityAfterSale(contract.totalShares, outcome, shares)
 }
 
@@ -131,9 +110,13 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   let loan = 0
   let saleValue = 0
   let redeemed = 0
+  const totalShares: { [outcome: string]: number } = {}
 
   for (const bet of yourBets) {
-    const { isSold, sale, amount, loanAmount, isRedemption } = bet
+    const { isSold, sale, amount, loanAmount, isRedemption, shares, outcome } =
+      bet
+    totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
+
     if (isSold) {
       totalInvested += amount
     } else if (sale) {
@@ -165,6 +148,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     netPayout,
     profit,
     profitPercent,
+    totalShares,
   }
 }
 
@@ -175,6 +159,7 @@ export function getContractBetNullMetrics() {
     netPayout: 0,
     profit: 0,
     profitPercent: 0,
+    totalShares: {} as { [outcome: string]: number },
   }
 }
 

@@ -5,15 +5,8 @@ import {
   getTopAnswer,
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
-import {
-  Contract,
-  FullContract,
-  CPMM,
-  DPM,
-  Binary,
-  NumericContract,
-  FreeResponseContract,
-} from 'common/contract'
+import { User } from 'common/user'
+import { Contract, NumericContract } from 'common/contract'
 import {
   formatLargeNumber,
   formatMoney,
@@ -21,7 +14,6 @@ import {
 } from 'common/util/format'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { placeBet } from 'web/lib/firebase/api-call'
 import { getBinaryProb, getBinaryProbPercent } from 'web/lib/firebase/contracts'
@@ -33,19 +25,18 @@ import { useSaveShares } from '../use-save-shares'
 
 const BET_SIZE = 10
 
-export function QuickBet(props: { contract: Contract }) {
-  const { contract } = props
+export function QuickBet(props: { contract: Contract; user: User }) {
+  const { contract, user } = props
 
-  const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBets = useUserContractBets(user.id, contract.id)
   const topAnswer =
     contract.outcomeType === 'FREE_RESPONSE'
-      ? getTopAnswer(contract as FreeResponseContract)
+      ? getTopAnswer(contract)
       : undefined
 
   // TODO: yes/no from useSaveShares doesn't work on numeric contracts
   const { yesFloorShares, noFloorShares } = useSaveShares(
-    contract as FullContract<DPM | CPMM, Binary | FreeResponseContract>,
+    contract,
     userBets,
     topAnswer?.number.toString() || undefined
   )
@@ -76,8 +67,6 @@ export function QuickBet(props: { contract: Contract }) {
   } catch (e) {
     // Catch any errors from hovering on an invalid option
   }
-
-  const color = getColor(contract, previewProb)
 
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
     const betPromise = async () => {
@@ -137,14 +126,14 @@ export function QuickBet(props: { contract: Contract }) {
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? `text-${color}` : 'text-gray-400'
+              upHover ? 'text-green-500' : 'text-gray-400'
             )}
           />
         ) : (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? `text-${color}` : 'text-gray-200'
+              upHover ? 'text-green-500' : 'text-gray-200'
             )}
           />
         )}
@@ -164,14 +153,14 @@ export function QuickBet(props: { contract: Contract }) {
           <TriangleDownFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              downHover ? `text-${color}` : 'text-gray-400'
+              downHover ? 'text-red-500' : 'text-gray-400'
             )}
           />
         ) : (
           <TriangleDownFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              downHover ? `text-${color}` : 'text-gray-200'
+              downHover ? 'text-red-500' : 'text-gray-200'
             )}
           />
         )}
@@ -227,10 +216,10 @@ function QuickOutcomeView(props: {
       display = getBinaryProbPercent(contract)
       break
     case 'NUMERIC':
-      display = formatLargeNumber(getExpectedValue(contract as NumericContract))
+      display = formatLargeNumber(getExpectedValue(contract))
       break
     case 'FREE_RESPONSE': {
-      const topAnswer = getTopAnswer(contract as FreeResponseContract)
+      const topAnswer = getTopAnswer(contract)
       display =
         topAnswer &&
         formatPercent(getOutcomeProbability(contract, topAnswer.id))
@@ -258,7 +247,7 @@ function getProb(contract: Contract) {
     : outcomeType === 'FREE_RESPONSE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
     : outcomeType === 'NUMERIC'
-    ? getNumericScale(contract as NumericContract)
+    ? getNumericScale(contract)
     : 1 // Should not happen
 }
 
@@ -280,7 +269,12 @@ export function getColor(contract: Contract, previewProb?: number) {
       'primary'
     )
   }
+
   if (contract.outcomeType === 'NUMERIC') {
+    return 'blue-400'
+  }
+
+  if (contract.outcomeType === 'FREE_RESPONSE') {
     return 'blue-400'
   }
 
