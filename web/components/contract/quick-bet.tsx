@@ -68,8 +68,6 @@ export function QuickBet(props: { contract: Contract; user: User }) {
     // Catch any errors from hovering on an invalid option
   }
 
-  const color = getColor(contract, previewProb)
-
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
     const betPromise = async () => {
       const outcome = quickOutcome(contract, direction)
@@ -128,14 +126,14 @@ export function QuickBet(props: { contract: Contract; user: User }) {
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? `text-${color}` : 'text-gray-400'
+              upHover ? 'text-green-500' : 'text-gray-400'
             )}
           />
         ) : (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? `text-${color}` : 'text-gray-200'
+              upHover ? 'text-green-500' : 'text-gray-200'
             )}
           />
         )}
@@ -155,14 +153,14 @@ export function QuickBet(props: { contract: Contract; user: User }) {
           <TriangleDownFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              downHover ? `text-${color}` : 'text-gray-400'
+              downHover ? 'text-red-500' : 'text-gray-400'
             )}
           />
         ) : (
           <TriangleDownFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              downHover ? `text-${color}` : 'text-gray-200'
+              downHover ? 'text-red-500'  : 'text-gray-200'
             )}
           />
         )}
