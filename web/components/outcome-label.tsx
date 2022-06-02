@@ -3,7 +3,12 @@ import { ReactNode } from 'react'
 import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
-import { BinaryContract, Contract, FreeResponseContract, resolution } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  FreeResponseContract,
+  resolution,
+} from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
 

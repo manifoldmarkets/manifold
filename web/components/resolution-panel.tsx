@@ -30,9 +30,7 @@ export function ResolutionPanel(props: {
       ? `${DPM_CREATOR_FEE * 100}% of trader profits`
       : `${formatMoney(contract.collectedFees.creatorFee)} in fees`
 
-  const [outcome, setOutcome] = useState<
-    resolution | undefined
-  >()
+  const [outcome, setOutcome] = useState<resolution | undefined>()
 
   const [prob, setProb] = useState(getProbability(contract) * 100)
 
