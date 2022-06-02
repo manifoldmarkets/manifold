@@ -1,4 +1,8 @@
-import { DotsHorizontalIcon, PencilIcon, CheckIcon } from '@heroicons/react/outline'
+import {
+  DotsHorizontalIcon,
+  PencilIcon,
+  CheckIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { uniqBy } from 'lodash'
@@ -25,12 +29,22 @@ import { TweetButton } from '../tweet-button'
 
 const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
 
-export function ContractInfoDialog(props: { contract: Contract; bets: Bet[]; isCreator: boolean }) {
+export function ContractInfoDialog(props: {
+  contract: Contract
+  bets: Bet[]
+  isCreator: boolean
+}) {
   const { contract, bets, isCreator } = props
 
   const [open, setOpen] = useState(false)
 
-  const { createdTime, closeTime, resolutionTime, autoResolutionTime, autoResolution } = contract
+  const {
+    createdTime,
+    closeTime,
+    resolutionTime,
+    autoResolutionTime,
+    autoResolution,
+  } = contract
   const tradersCount = uniqBy(bets, 'userId').length
 
   return (
@@ -89,9 +103,9 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[]; isC
                     isCreator={isCreator}
                   />
                   <tr>
-                  <td>Auto resolution</td>
-                  <td>{contract.autoResolution}</td>
-                </tr>
+                    <td>Auto resolution</td>
+                    <td>{contract.autoResolution}</td>
+                  </tr>
                 </>
               )}
 
@@ -176,10 +190,10 @@ export function EditableResolutionTime(props: {
   const onSave = () => {
     const newTime = dayjs(timeString).valueOf()
     if (newTime === time) setIsEditing(false)
-    else if ( contract.closeTime && newTime > (contract.closeTime ?? Date.now)) {
+    else if (contract.closeTime && newTime > (contract.closeTime ?? Date.now)) {
       const formattedTime = dayjs(time).format('YYYY-MM-DD h:mm a')
       const newDescription = `${contract.description}\n\nAuto resolution date updated to ${formattedTime}`
-      
+
       updateContract(contract.id, {
         autoResolutionTime: newTime,
         description: newDescription,
@@ -193,17 +207,19 @@ export function EditableResolutionTime(props: {
     <tr>
       <td>
         Market autoresolves
-        {isCreator && (
-          isEditing ? (
+        {isCreator &&
+          (isEditing ? (
             <button className="btn btn-xs btn-ghost" onClick={onSave}>
               <CheckIcon className="inline h-4 w-4" />
             </button>
-          ):(
-            <button className="btn btn-xs btn-ghost"
-            onClick={() => setIsEditing(true)}          >
+          ) : (
+            <button
+              className="btn btn-xs btn-ghost"
+              onClick={() => setIsEditing(true)}
+            >
               <PencilIcon className="inline h-4 w-4" />
             </button>
-        ))}
+          ))}
       </td>
       <td>
         {isEditing ? (
@@ -218,7 +234,9 @@ export function EditableResolutionTime(props: {
             />
           </div>
         ) : (
-          <div className="form-control mr-1 items-start">{formatTime(time)}</div>
+          <div className="form-control mr-1 items-start">
+            {formatTime(time)}
+          </div>
         )}
       </td>
     </tr>

@@ -106,7 +106,8 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const { closeTime, autoResolutionTime, creatorName, creatorUsername } = contract
+  const { closeTime, autoResolutionTime, creatorName, creatorUsername } =
+    contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
   return (
@@ -167,7 +168,13 @@ export function ContractDetails(props: {
         <div className="whitespace-nowrap">{volumeLabel}</div>
       </Row>
 
-      {!disabled && <ContractInfoDialog contract={contract} bets={bets} isCreator={isCreator ?? false}/>}
+      {!disabled && (
+        <ContractInfoDialog
+          contract={contract}
+          bets={bets}
+          isCreator={isCreator ?? false}
+        />
+      )}
     </Row>
   )
 }
@@ -215,14 +222,18 @@ function EditableCloseDate(props: {
       const newAutoResolutionTime = newCloseTime + 7 * DAY_MS
       let newDescription = `${description}\n\nClose date updated to ${formattedCloseDate}`
 
-      const update : Partial<Contract> = {
-        closeTime: newCloseTime
+      const update: Partial<Contract> = {
+        closeTime: newCloseTime,
       }
 
       if (newAutoResolutionTime >= autoResolutionTime) {
         update.autoResolutionTime = newAutoResolutionTime
-        const formattedNewAutoResolutionTime = dayjs(newAutoResolutionTime).format('YYYY-MM-DD h:mm a')
-        newDescription = newDescription.concat(`\nAuto resolution date updated to ${formattedNewAutoResolutionTime}`)
+        const formattedNewAutoResolutionTime = dayjs(
+          newAutoResolutionTime
+        ).format('YYYY-MM-DD h:mm a')
+        newDescription = newDescription.concat(
+          `\nAuto resolution date updated to ${formattedNewAutoResolutionTime}`
+        )
       }
 
       update.description = newDescription

@@ -3,7 +3,12 @@ import { ReactNode } from 'react'
 import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
-import { BinaryContract, Contract, FreeResponseContract, resolution } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  FreeResponseContract,
+  resolution,
+} from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
 
@@ -35,9 +40,7 @@ export function OutcomeLabel(props: {
   )
 }
 
-export function BinaryOutcomeLabel(props: {
-  outcome: resolution
-}) {
+export function BinaryOutcomeLabel(props: { outcome: resolution }) {
   const { outcome } = props
 
   if (outcome === 'YES') return <YesLabel />

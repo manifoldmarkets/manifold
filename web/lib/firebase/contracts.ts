@@ -42,7 +42,8 @@ export function contractUrl(contract: Contract) {
 }
 
 export function contractMetrics(contract: Contract) {
-  const { createdTime, resolutionTime, isResolved, autoResolutionTime } = contract
+  const { createdTime, resolutionTime, isResolved, autoResolutionTime } =
+    contract
 
   const createdDate = dayjs(createdTime).format('MMM D')
   const autoResolutionDate = dayjs(autoResolutionTime).format('MMM D')
