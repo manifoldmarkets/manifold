@@ -1,7 +1,11 @@
 import { Tabs } from 'web/components/layout/tabs'
 import { useUser } from 'web/hooks/use-user'
 import React, { useEffect, useState } from 'react'
-import { Notification } from 'common/notification'
+import {
+  Notification,
+  notification_reason_types,
+  notification_source_types,
+} from 'common/notification'
 import { listenForNotifications } from 'web/lib/firebase/notifications'
 import { Avatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -15,9 +19,9 @@ import { Comment } from 'web/lib/firebase/comments'
 import { getValue } from 'web/lib/firebase/utils'
 import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/user-page'
-import { Linkify } from 'web/components/linkify'
 import { User } from 'common/user'
 import { useContract } from 'web/hooks/use-contract'
+import { Contract } from 'common/contract'
 
 export default function Notifications() {
   const user = useUser()
@@ -37,8 +41,8 @@ export default function Notifications() {
   // TODO: use infinite scroll
   return (
     <Page>
-      <div className={'p-4'}>
-        <Title text={'Notifications'} />
+      <div className={'p-2 sm:p-4'}>
+        <Title text={'Notifications'} className={'hidden md:block'} />
         <Tabs
           className={'pb-2 pt-1 '}
           defaultIndex={0}
@@ -79,6 +83,7 @@ function Notification(props: {
     sourceUserName,
     sourceUserAvatarUrl,
     reasonText,
+    reason,
     sourceUserUsername,
     createdTime,
   } = notification
@@ -140,7 +145,7 @@ function Notification(props: {
   }
 
   return (
-    <div className={' bg-white px-4 pt-6'}>
+    <div className={'bg-white px-1 pt-6 text-sm sm:px-4'}>
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <Avatar
           avatarUrl={sourceUserAvatarUrl}
@@ -148,35 +153,47 @@ function Notification(props: {
           className={'mr-2'}
           username={sourceUserName}
         />
-        <div className={'flex-1'}>
-          <UserLink
-            name={sourceUserName || ''}
-            username={sourceUserUsername || ''}
-            className={'mr-0 flex-shrink-0'}
-          />
-          <a href={getSourceUrl(sourceId)} className={'flex-1 pl-1'}>
-            {reasonText}
-            {contract && sourceId && (
-              <div className={'inline'}>
-                <CopyLinkDateTimeComponent
-                  contract={contract}
-                  createdTime={createdTime}
-                  elementId={getSourceIdForLinkComponent(sourceId)}
-                />
-              </div>
-            )}
-          </a>
+        <div className={'flex-1 overflow-hidden sm:flex'}>
+          <div
+            className={
+              'flex max-w-sm shrink overflow-hidden text-ellipsis sm:max-w-md'
+            }
+          >
+            <UserLink
+              name={sourceUserName || ''}
+              username={sourceUserUsername || ''}
+              className={'mr-0 flex-shrink-0'}
+            />
+            <a
+              href={getSourceUrl(sourceId)}
+              className={'inline-flex overflow-hidden text-ellipsis pl-1'}
+            >
+              {sourceType && reason ? (
+                <div className={'inline truncate'}>
+                  {getReasonTextFromReason(sourceType, reason, contract)}
+                </div>
+              ) : (
+                reasonText
+              )}
+            </a>
+          </div>
+          {contract && sourceId && (
+            <CopyLinkDateTimeComponent
+              contract={contract}
+              createdTime={createdTime}
+              elementId={getSourceIdForLinkComponent(sourceId)}
+              className={'-mx-1 inline-flex sm:inline-block'}
+            />
+          )}
         </div>
       </Row>
       <a href={getSourceUrl(sourceId)}>
-        <div className={'ml-4 mt-1'}>
+        <div className={'mt-1 md:text-base'}>
           {' '}
           {contract && subText === contract.question ? (
-            <div className={'text-md text-indigo-700 hover:underline'}>
-              {subText}
-            </div>
+            <div className={'text-indigo-700 hover:underline'}>{subText}</div>
           ) : (
-            <Linkify text={subText} />
+            <div className={'line-clamp-4 whitespace-pre-line'}>{subText}</div>
           )}
         </div>
 
@@ -184,4 +201,21 @@ function Notification(props: {
       </a>
     </div>
   )
+}
+
+function getReasonTextFromReason(
+  source: notification_source_types,
+  reason: notification_reason_types,
+  contract: Contract | undefined
+) {
+  switch (source) {
+    case 'comment':
+      return `commented on ${contract?.question}`
+    case 'contract':
+      return `${reason} ${contract?.question}`
+    case 'answer':
+      return `answered ${contract?.question}`
+    default:
+      return ''
+  }
 }
