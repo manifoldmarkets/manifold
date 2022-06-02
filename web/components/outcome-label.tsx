@@ -3,13 +3,13 @@ import { ReactNode } from 'react'
 import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
-import { BinaryContract, Contract, FreeResponseContract } from 'common/contract'
+import { BinaryContract, Contract, FreeResponseContract, resolution } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
 
 export function OutcomeLabel(props: {
   contract: Contract
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string
+  outcome: resolution | string
   truncate: 'short' | 'long' | 'none'
   value?: number
 }) {

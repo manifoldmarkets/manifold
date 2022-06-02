@@ -10,7 +10,7 @@ import { resolveMarket } from 'web/lib/firebase/fn-call'
 import { ProbabilitySelector } from './probability-selector'
 import { DPM_CREATOR_FEE } from 'common/fees'
 import { getProbability } from 'common/calculate'
-import { BinaryContract } from 'common/contract'
+import { BinaryContract, resolution } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 
 export function ResolutionPanel(props: {
@@ -31,7 +31,7 @@ export function ResolutionPanel(props: {
       : `${formatMoney(contract.collectedFees.creatorFee)} in fees`
 
   const [outcome, setOutcome] = useState<
-    'YES' | 'NO' | 'MKT' | 'CANCEL' | undefined
+    resolution | undefined
   >()
 
   const [prob, setProb] = useState(getProbability(contract) * 100)
