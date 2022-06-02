@@ -392,7 +392,7 @@ export function BetsSummary(props: {
 
   return (
     <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>
-      <Row className="gap-4 sm:gap-6">
+      <Row className="flex-wrap gap-4 sm:gap-6">
         {!isCpmm && (
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">

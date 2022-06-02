@@ -110,8 +110,8 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
           {isBinary && (
             <Row className="items-center gap-4">
-              // this fails typechecking, but it doesn't explode because we will
-              never
+              {/* this fails typechecking, but it doesn't explode because we will
+              never */}
               <BetRow contract={contract as any} betPanelClassName="scale-75" />
               <BinaryResolutionOrChance contract={contract} />
             </Row>
