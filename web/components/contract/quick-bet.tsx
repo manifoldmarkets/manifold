@@ -6,7 +6,7 @@ import {
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
-import { Contract, NumericContract } from 'common/contract'
+import { Contract, NumericContract, resolution } from 'common/contract'
 import {
   formatLargeNumber,
   formatMoney,
@@ -264,7 +264,7 @@ export function getColor(contract: Contract, previewProb?: number) {
   const { resolution } = contract
   if (resolution) {
     return (
-      OUTCOME_TO_COLOR[resolution as 'YES' | 'NO' | 'CANCEL' | 'MKT'] ??
+      OUTCOME_TO_COLOR[resolution as resolution] ??
       // If resolved to a FR answer, use 'primary'
       'primary'
     )

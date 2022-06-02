@@ -41,7 +41,7 @@ export function OutcomeLabel(props: {
 }
 
 export function BinaryOutcomeLabel(props: {
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
+  outcome: resolution
 }) {
   const { outcome } = props
 
@@ -53,7 +53,7 @@ export function BinaryOutcomeLabel(props: {
 
 export function BinaryContractOutcomeLabel(props: {
   contract: BinaryContract
-  resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT'
+  resolution: resolution
 }) {
   const { contract, resolution } = props
 
