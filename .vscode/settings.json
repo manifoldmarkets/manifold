@@ -2,8 +2,6 @@
   "javascript.preferences.importModuleSpecifier": "shortest",
   "typescript.preferences.importModuleSpecifier": "shortest",
   "files.eol": "\r\n",
-<<<<<<< HEAD
-=======
   "search.exclude": {
     "**/node_modules": true,
     "**/package-lock.json": true,
@@ -12,5 +10,4 @@
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode"
->>>>>>> vscode_files
 }
