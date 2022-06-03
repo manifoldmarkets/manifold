@@ -8,7 +8,7 @@ export function ConfirmationButton(props: {
   id: string
   openModalBtn: {
     label: string
-    icon?: any
+    icon?: JSX.Element
     className?: string
   }
   cancelBtn?: {
