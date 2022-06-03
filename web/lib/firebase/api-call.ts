@@ -1,4 +1,5 @@
 import { auth } from './users'
+import { FIREBASE_CONFIG } from 'common/envs/constants'
 
 export class APIError extends Error {
   code: number
@@ -32,10 +33,20 @@ export async function call(url: string, method: string, params: any) {
   })
 }
 
+// Our users access the API through the Vercel proxy routes at /api/v0/blah,
+// but right now at least until we get performance under control let's have the
+// app just hit the cloud functions directly -- there's no difference and it's
+// one less hop
+
+function getFunctionUrl(name: string) {
+  const { projectId, region } = FIREBASE_CONFIG
+  return `https://${region}-${projectId}.cloudfunctions.net/${name}`
+}
+
 export function createContract(params: any) {
-  return call('/api/v0/market', 'POST', params)
+  return call(getFunctionUrl('createContract'), 'POST', params)
 }
 
 export function placeBet(params: any) {
-  return call('/api/v0/bets', 'POST', params)
+  return call(getFunctionUrl('placeBet'), 'POST', params)
 }

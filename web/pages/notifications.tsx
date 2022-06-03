@@ -38,6 +38,7 @@ type NotificationGroup = {
   timePeriod: string
 }
 
+
 export default function Notifications() {
   const user = useUser()
   const [notifications, setNotifications] = useState<Notification[]>([])
