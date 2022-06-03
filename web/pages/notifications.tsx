@@ -6,7 +6,6 @@ import {
   notification_reason_types,
   notification_source_types,
 } from 'common/notification'
-import { listenForNotifications } from 'web/lib/firebase/notifications'
 import { Avatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
@@ -19,18 +18,23 @@ import { Comment } from 'web/lib/firebase/comments'
 import { getValue } from 'web/lib/firebase/utils'
 import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/user-page'
-import { notification_subscribe_types, PrivateUser, User } from 'common/user'
+import { notification_subscribe_types, PrivateUser } from 'common/user'
 import { useContract } from 'web/hooks/use-contract'
 import { Contract } from 'common/contract'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { listenForPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import clsx from 'clsx'
-import { groupBy } from 'lodash'
+import { groupBy, map } from 'lodash'
 import { UsersIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
-import { OutcomeLabel } from 'web/components/outcome-label'
+import {
+  FreeResponseOutcomeLabel,
+  OutcomeLabel,
+} from 'web/components/outcome-label'
+import { useNotifications } from 'web/hooks/use-notifications'
+import { getContractFromId } from 'web/lib/firebase/contracts'
 
 type NotificationGroup = {
   notifications: Notification[]
@@ -41,25 +45,18 @@ type NotificationGroup = {
 
 export default function Notifications() {
   const user = useUser()
-  const [notifications, setNotifications] = useState<Notification[]>([])
   const [allNotificationGroups, setAllNotificationsGroups] = useState<
     NotificationGroup[]
   >([])
   const [unseenNotificationGroups, setUnseenNotificationGroups] = useState<
     NotificationGroup[]
   >([])
-  const [privateUser, setPrivateUser] = useState<PrivateUser | null>(null)
-  useEffect(() => {
-    if (user) listenForPrivateUser(user.id, setPrivateUser)
-  }, [user])
+  const notifications = useNotifications(user?.id, { unseenOnly: false })
 
   useEffect(() => {
-    if (!privateUser) return
-    const notificationIdsToShow = GetAppropriateNotifications(
-      notifications,
-      privateUser.notificationPreferences
-    ).map((notification) => notification.id)
-
+    const notificationIdsToShow = notifications.map(
+      (notification) => notification.id
+    )
     // Hide notifications the user doesn't want to see.
     const notificationIdsToHide = notifications
       .filter(
@@ -67,8 +64,13 @@ export default function Notifications() {
       )
       .map((notification) => notification.id)
 
+    // Because hidden notifications won't be rendered, set them to seen here
+    setNotificationsAsSeen(
+      notifications.filter((n) => notificationIdsToHide.includes(n.id))
+    )
+
     // Group notifications by contract and 24-hour time period.
-    const allGroupedNotifications = GroupNotifications(
+    const allGroupedNotifications = groupNotifications(
       notifications,
       notificationIdsToHide
     )
@@ -79,7 +81,7 @@ export default function Notifications() {
     )
       .map((n) => n.notifications.map((n) => n.id))
       .flat()
-    const unseenGroupedNotifications = GroupNotifications(
+    const unseenGroupedNotifications = groupNotifications(
       notifications.filter(
         (notification) =>
           !notification.isSeen ||
@@ -92,11 +94,7 @@ export default function Notifications() {
 
     // We don't want unseenNotificationsGroup to be in the dependencies as we update it here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notifications, privateUser])
-
-  useEffect(() => {
-    if (user) return listenForNotifications(user.id, setNotifications)
-  }, [user])
+  }, [notifications])
 
   if (!user) {
     // TODO: return sign in page
@@ -182,20 +180,16 @@ const setNotificationsAsSeen = (notifications: Notification[]) => {
   return notifications
 }
 
-function GroupNotifications(
+function groupNotifications(
   notifications: Notification[],
   hideNotificationIds: string[]
 ) {
-  // Because hidden notifications won't be rendered, set them to seen here
-  setNotificationsAsSeen(
-    notifications.filter((n) => hideNotificationIds.includes(n.id))
-  )
   // Then remove them from the list of notifications to show
   notifications = notifications.filter(
     (notification) => !hideNotificationIds.includes(notification.id)
   )
 
-  const notificationGroups: NotificationGroup[] = []
+  let notificationGroups: NotificationGroup[] = []
   const notificationGroupsByDay = groupBy(notifications, (notification) =>
     new Date(notification.createdTime).toDateString()
   )
@@ -207,21 +201,22 @@ function GroupNotifications(
         return notification.sourceContractId
       }
     )
-
-    // Create a notification group for each contract within each day
-    Object.keys(groupedNotificationsByContractId).forEach((contractId, i) => {
-      const notificationGroup: NotificationGroup = {
-        notifications: groupedNotificationsByContractId[contractId].sort(
-          (a, b) => {
-            return b.createdTime - a.createdTime
-          }
-        ),
-        sourceContractId: contractId,
-        isSeen: groupedNotificationsByContractId[contractId][0].isSeen,
-        timePeriod: day,
-      }
-      notificationGroups.push(notificationGroup)
-    })
+    notificationGroups = notificationGroups.concat(
+      map(groupedNotificationsByContractId, (notifications, contractId) => {
+        // Create a notification group for each contract within each day
+        const notificationGroup: NotificationGroup = {
+          notifications: groupedNotificationsByContractId[contractId].sort(
+            (a, b) => {
+              return b.createdTime - a.createdTime
+            }
+          ),
+          sourceContractId: contractId,
+          isSeen: groupedNotificationsByContractId[contractId][0].isSeen,
+          timePeriod: day,
+        }
+        return notificationGroup
+      })
+    )
   })
   return notificationGroups
 }
@@ -233,44 +228,12 @@ function NotificationGroupItem(props: {
   const { notificationGroup, className } = props
   const { sourceContractId, notifications } = notificationGroup
   const contract = useContract(sourceContractId ?? '')
-  const [activitySummaryLines, setActivitySummaryLines] = useState<string[]>([])
   const numSummaryLines = 2
-
-  const summarizeMostRecentActivity = async (notifications: Notification[]) => {
-    let questionUpdates = 0
-    const tempSummaryLines: string[] = []
-    for (let i = 0; i < notifications.length; i++) {
-      if (tempSummaryLines.length + questionUpdates >= numSummaryLines) break
-      const notification = notifications[i]
-      if (!notification) continue
-      const { sourceType, sourceContractId, sourceId } = notification
-      if (!sourceId || !sourceContractId) continue
-      if (sourceType === 'comment' || sourceType === 'answer') {
-        const summary = await GetNotificationSummaryText(
-          sourceId,
-          sourceContractId,
-          sourceType
-        )
-        tempSummaryLines.push(
-          sourceType === 'answer' ? `New answer: ${summary}` : summary
-        )
-      } else if (sourceType === 'contract') {
-        questionUpdates += 1
-      }
-    }
-    if (questionUpdates > 0)
-      tempSummaryLines.push(
-        `${questionUpdates} new question update${
-          questionUpdates > 1 ? 's' : ''
-        }`
-      )
-    setActivitySummaryLines(tempSummaryLines)
-  }
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     if (!contract) return
     setNotificationsAsSeen(notifications)
-    summarizeMostRecentActivity(notifications)
   }, [contract, notifications])
 
   return (
@@ -281,44 +244,55 @@ function NotificationGroupItem(props: {
         </div>
         <div className={'flex-1 overflow-hidden pl-2 sm:flex'}>
           <div
-            className={
-              'flex max-w-sm shrink overflow-hidden text-ellipsis sm:max-w-md'
-            }
+            onClick={() => setExpanded(!expanded)}
+            className={'line-clamp-1 cursor-pointer pl-1  sm:pl-0'}
           >
-            <a
-              href={contract && `${contract.creatorUsername}/${contract.slug}`}
-              className={
-                'inline-flex overflow-hidden text-ellipsis pl-1 sm:pl-0'
-              }
-            >
-              {'Activity on '}
-              {contract?.question ?? 'question'}
-            </a>
+            {'Activity on '}
+            <span className={'mx-1 font-bold'}>{contract?.question}</span>
           </div>
           <RelativeTimestamp time={notifications[0].createdTime} />
         </div>
       </Row>
-      <a href={contract && `${contract.creatorUsername}/${contract.slug}`}>
+      <div onClick={() => setExpanded(!expanded)} className={'cursor-pointer'}>
         <div className={'mt-1 md:text-base'}>
           {' '}
           <div className={'line-clamp-4 mt-1 gap-1 whitespace-pre-line'}>
-            {activitySummaryLines.map((line, i) => {
-              return (
-                <div key={line} className={'line-clamp-1'}>
-                  <Linkify text={line} />
+            {!expanded ? (
+              <>
+                {notifications
+                  .slice(0, numSummaryLines)
+                  .map((notification, i) => {
+                    return (
+                      <NotificationItem
+                        notification={notification}
+                        justSummary={true}
+                      />
+                    )
+                  })}
+                <div className={'text-sm text-gray-500 hover:underline '}>
+                  {notifications.length - numSummaryLines > 0
+                    ? 'And ' +
+                      (notifications.length - numSummaryLines) +
+                      ' more...'
+                    : ''}
                 </div>
-              )
-            })}
-            <div>
-              {notifications.length - numSummaryLines > 0
-                ? 'And ' + (notifications.length - numSummaryLines) + ' more...'
-                : ''}
-            </div>
+              </>
+            ) : (
+              <>
+                {notifications.map((notification, i) => (
+                  <NotificationItem
+                    notification={notification}
+                    key={notification.id}
+                    justSummary={false}
+                  />
+                ))}
+              </>
+            )}
           </div>
         </div>
 
         <div className={'mt-6 border-b border-gray-300'} />
-      </a>
+      </div>
     </div>
   )
 }
@@ -396,7 +370,7 @@ function NotificationSettings() {
   }, [privateUser])
 
   if (!privateUser) {
-    return <LoadingIndicator />
+    return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
   }
 
   return (
@@ -412,7 +386,6 @@ function NotificationSettings() {
         }
         className={'col-span-4 w-24'}
       />
-      <div className={' border-1 my-4 w-48 border-b border-gray-300'} />
       <div className={'mt-4'}>Email Notifications</div>
       <ChoicesToggleGroup
         currentChoice={emailNotificationSettings}
@@ -426,28 +399,30 @@ function NotificationSettings() {
   )
 }
 
-function GetNotificationSummaryText(
+async function GetNotificationSummaryText(
   sourceId: string,
   sourceContractId: string,
-  sourceType: 'answer' | 'comment'
+  sourceType: 'answer' | 'comment',
+  setText: (text: string) => void
 ) {
   if (sourceType === 'answer') {
-    return getValue<Answer>(
+    const answer = await getValue<Answer>(
       doc(db, `contracts/${sourceContractId}/answers/`, sourceId)
-    ).then((answer) => {
-      return answer?.text ?? ''
-    })
+    )
+    setText(answer?.text ?? '')
   } else {
-    return getValue<Comment>(
+    const comment = await getValue<Comment>(
       doc(db, `contracts/${sourceContractId}/comments/`, sourceId)
-    ).then((comment) => {
-      return comment?.text ?? ''
-    })
+    )
+    setText(comment?.text ?? '')
   }
 }
 
-function NotificationItem(props: { notification: Notification }) {
-  const { notification } = props
+function NotificationItem(props: {
+  notification: Notification
+  justSummary?: boolean
+}) {
+  const { notification, justSummary } = props
   const {
     sourceType,
     sourceContractId,
@@ -460,7 +435,13 @@ function NotificationItem(props: { notification: Notification }) {
     createdTime,
   } = notification
   const [notificationText, setNotificationText] = useState<string>('')
-  const contract = useContract(sourceContractId ?? '')
+  const [contract, setContract] = useState<Contract | null>(null)
+  useEffect(() => {
+    if (!sourceContractId) return
+    getContractFromId(sourceContractId).then((contract) => {
+      if (contract) setContract(contract)
+    })
+  }, [sourceContractId])
 
   useEffect(() => {
     if (!contract || !sourceContractId) return
@@ -473,10 +454,11 @@ function NotificationItem(props: { notification: Notification }) {
     if (!sourceId) return
 
     if (sourceType === 'answer' || sourceType === 'comment') {
-      GetNotificationSummaryText(sourceId, sourceContractId, sourceType).then(
-        (text) => {
-          setNotificationText(text)
-        }
+      GetNotificationSummaryText(
+        sourceId,
+        sourceContractId,
+        sourceType,
+        setNotificationText
       )
     } else if (reasonText) {
       // Handle arbitrary notifications with reason text here.
@@ -508,6 +490,51 @@ function NotificationItem(props: { notification: Notification }) {
     }
   }
 
+  if (justSummary) {
+    return (
+      <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
+        <div className={'flex-1 overflow-hidden sm:flex'}>
+          <div
+            className={
+              'flex max-w-sm shrink overflow-hidden text-ellipsis pl-1 sm:max-w-md sm:pl-0'
+            }
+          >
+            <UserLink
+              name={sourceUserName || ''}
+              username={sourceUserUsername || ''}
+              className={'mr-0 flex-shrink-0'}
+            />
+            <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
+              {sourceType &&
+                reason &&
+                getReasonTextFromReason(
+                  sourceType,
+                  reason,
+                  contract,
+                  true
+                ).replace(' on', '')}
+              <div className={'ml-1 text-black'}>
+                {contract ? (
+                  <NotificationOutcomeLabel
+                    contract={contract}
+                    notificationText={notificationText}
+                    className={'line-clamp-1'}
+                  />
+                ) : sourceType != 'follow' ? (
+                  <LoadingIndicator
+                    spinnerClassName={'border-gray-500 h-4 w-4'}
+                  />
+                ) : (
+                  <div />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Row>
+    )
+  }
+
   return (
     <div className={'bg-white px-2 pt-6 text-sm sm:px-4'}>
       <Row className={'items-center text-gray-500 sm:justify-start'}>
@@ -535,6 +562,7 @@ function NotificationItem(props: { notification: Notification }) {
               {sourceType && reason && (
                 <div className={'inline truncate'}>
                   {getReasonTextFromReason(sourceType, reason, contract)}
+                  <span className={'mx-1 font-bold'}>{contract?.question}</span>
                 </div>
               )}
             </a>
@@ -552,10 +580,16 @@ function NotificationItem(props: { notification: Notification }) {
       <a href={getSourceUrl(sourceId)}>
         <div className={'mt-1 md:text-base'}>
           {' '}
-          <NotificationOutcomeLabel
-            contract={contract}
-            notificationText={notificationText}
-          />
+          {contract ? (
+            <NotificationOutcomeLabel
+              contract={contract}
+              notificationText={notificationText}
+            />
+          ) : sourceType != 'follow' ? (
+            <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
+          ) : (
+            <div />
+          )}
         </div>
 
         <div className={'mt-6 border-b border-gray-300'} />
@@ -565,18 +599,28 @@ function NotificationItem(props: { notification: Notification }) {
 }
 
 function NotificationOutcomeLabel(props: {
-  contract?: Contract
+  contract: Contract
   notificationText: string
+  className?: string
 }) {
-  const { contract, notificationText } = props
-  if (!contract) return <LoadingIndicator />
+  const { contract, notificationText, className } = props
   if (notificationText === contract.question) {
     return (
-      <div className={'text-indigo-700 hover:underline'}>
+      <div className={clsx('text-indigo-700 hover:underline', className)}>
         {notificationText}
       </div>
     )
   } else if (notificationText === contract.resolution) {
+    if (contract.outcomeType === 'FREE_RESPONSE') {
+      return (
+        <FreeResponseOutcomeLabel
+          contract={contract}
+          resolution={contract.resolution}
+          truncate={'long'}
+          answerClassName={className}
+        />
+      )
+    }
     return (
       <OutcomeLabel
         contract={contract}
@@ -586,7 +630,9 @@ function NotificationOutcomeLabel(props: {
     )
   } else {
     return (
-      <div className={'line-clamp-4 whitespace-pre-line'}>
+      <div
+        className={className ? className : 'line-clamp-4 whitespace-pre-line'}
+      >
         <Linkify text={notificationText} />
       </div>
     )
@@ -596,19 +642,20 @@ function NotificationOutcomeLabel(props: {
 function getReasonTextFromReason(
   source: notification_source_types,
   reason: notification_reason_types,
-  contract: Contract | undefined
+  contract: Contract | undefined | null,
+  simple?: boolean
 ) {
   let reasonText = ''
   switch (source) {
     case 'comment':
       if (reason === 'reply_to_users_answer')
-        reasonText = 'replied to your answer on'
+        reasonText = !simple ? 'replied to your answer on' : 'replied'
       else if (reason === 'tagged_user')
-        reasonText = 'tagged you in a comment on'
+        reasonText = !simple ? 'tagged you in a comment on' : 'tagged you'
       else if (reason === 'reply_to_users_comment')
-        reasonText = 'replied to your comment on'
+        reasonText = !simple ? 'replied to your comment on' : 'replied'
       else if (reason === 'on_users_contract')
-        reasonText = `commented on your question `
+        reasonText = !simple ? `commented on your question` : 'commented'
       else if (reason === 'on_contract_with_users_comment')
         reasonText = `commented on`
       else if (reason === 'on_contract_with_users_answer')
@@ -630,33 +677,11 @@ function getReasonTextFromReason(
         reasonText = `answered`
       else reasonText = `answered`
       break
+    case 'follow':
+      reasonText = 'followed you'
+      break
     default:
       reasonText = ''
   }
-  return `${reasonText} ${contract?.question}`
-}
-const less_priority_reasons = [
-  'on_contract_with_users_comment',
-  'on_contract_with_users_answer',
-  'on_contract_with_users_shares_out',
-  // Not sure if users will want to see these w/ less:
-  // 'on_contract_with_users_shares_in',
-]
-
-export function GetAppropriateNotifications(
-  notifications: Notification[],
-  notificationPreferences?: notification_subscribe_types
-) {
-  if (notificationPreferences === 'all') return notifications
-  if (notificationPreferences === 'less')
-    return notifications.filter(
-      (n) =>
-        n.reason &&
-        // Show all contract notifications
-        (n.sourceType === 'contract' ||
-          !less_priority_reasons.includes(n.reason))
-    )
-  if (notificationPreferences === 'none') return []
-
-  return notifications
+  return reasonText
 }

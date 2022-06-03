@@ -61,22 +61,25 @@ export const onCreateComment = functions.firestore
     const comments = await getValues<Comment>(
       firestore.collection('contracts').doc(contractId).collection('comments')
     )
+    const relatedSourceType = comment.replyToCommentId
+      ? 'comment'
+      : comment.answerOutcome
+      ? 'answer'
+      : undefined
+
+    const relatedUser = comment.replyToCommentId
+      ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
+      : answer?.userId
 
     await createNotification(
       comment.id,
       'comment',
       'created',
-      contract,
       commentCreator,
       eventId,
-      comment.replyToCommentId
-        ? 'comment'
-        : comment.answerOutcome
-        ? 'answer'
-        : undefined,
-      comment.replyToCommentId
-        ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
-        : answer?.userId,
+      contract,
+      relatedSourceType,
+      relatedUser,
       comment.text
     )
 

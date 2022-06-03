@@ -21,6 +21,9 @@ export type notification_source_types =
   | 'bet'
   | 'answer'
   | 'liquidity'
+  | 'follow'
+  | 'tip'
+  | 'admin_message'
 
 export type notification_source_update_types =
   | 'created'
@@ -38,3 +41,4 @@ export type notification_reason_types =
   | 'on_contract_with_users_comment'
   | 'reply_to_users_answer'
   | 'reply_to_users_comment'
+  | 'on_new_follow'
