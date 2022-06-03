@@ -15,7 +15,7 @@ import { getContractBetMetrics } from '../../common/calculate'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
-  [userId: string]: { text: string; reason: notification_reason_types }
+  [userId: string]: { text?: string; reason: notification_reason_types }
 }
 
 export const createNotification = async (
@@ -84,12 +84,10 @@ export const createNotification = async (
         return
       if (relatedSourceType === 'comment') {
         userToReasonTexts[relatedUserId] = {
-          text: '',
           reason: 'reply_to_users_comment',
         }
       } else if (relatedSourceType === 'answer') {
         userToReasonTexts[relatedUserId] = {
-          text: '',
           reason: 'reply_to_users_answer',
         }
       }
@@ -113,7 +111,6 @@ export const createNotification = async (
           shouldGetNotification(taggedUser.id, userToReasonTexts)
         )
           userToReasonTexts[taggedUser.id] = {
-            text: '',
             reason: 'tagged_user',
           }
       })
@@ -124,7 +121,6 @@ export const createNotification = async (
     ) => {
       if (shouldGetNotification(sourceContract.creatorId, userToReasonTexts))
         userToReasonTexts[sourceContract.creatorId] = {
-          text: '',
           reason: 'on_users_contract',
         }
     }
@@ -142,7 +138,6 @@ export const createNotification = async (
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId, userToReasonTexts))
           userToReasonTexts[userId] = {
-            text: '',
             reason: 'on_contract_with_users_answer',
           }
       })
@@ -161,7 +156,6 @@ export const createNotification = async (
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId, userToReasonTexts))
           userToReasonTexts[userId] = {
-            text: '',
             reason: 'on_contract_with_users_comment',
           }
       })
@@ -188,7 +182,6 @@ export const createNotification = async (
       recipientUserIds.forEach((userId) => {
         if (shouldGetNotification(userId, userToReasonTexts))
           userToReasonTexts[userId] = {
-            text: '',
             reason: 'on_contract_with_users_shares_in',
           }
       })
