@@ -65,10 +65,6 @@ export function ContractSearch(props: {
   const user = useUser()
   const follows = useFollows(user?.id)
 
-  const [showFollows, setShowFollows] = useState(false)
-  const followsKey =
-    showFollows && follows?.length ? `${follows.join(',')}` : ''
-
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
   const sort = sortIndexes
@@ -82,6 +78,9 @@ export function ContractSearch(props: {
   )
 
   const [category, setCategory] = useState<string>('all')
+  const showFollows = category === 'following'
+  const followsKey =
+    showFollows && follows?.length ? `${follows.join(',')}` : ''
 
   if (!sort) return <></>
 
@@ -143,20 +142,20 @@ export function ContractSearch(props: {
         />
       )}
 
-      {!additionalFilter?.creatorId && (
-        <FollowSwitch
-          showFollows={showFollows}
-          setShowFollows={setShowFollows}
-        />
-      )}
-
       <Spacer h={4} />
 
-      <ContractSearchInner
-        querySortOptions={querySortOptions}
-        filter={filter}
-        additionalFilter={{ category, ...additionalFilter }}
-      />
+      {showFollows && (follows ?? []).length === 0 ? (
+        <>You're not following anyone yet.</>
+      ) : (
+        <ContractSearchInner
+          querySortOptions={querySortOptions}
+          filter={filter}
+          additionalFilter={{
+            category: category === 'following' ? 'all' : category,
+            ...additionalFilter,
+          }}
+        />
+      )}
     </InstantSearch>
   )
 }
@@ -284,37 +283,4 @@ const useFilterResolved = (value: boolean | undefined) => {
     if (value !== undefined) refine(`${value}`)
     refinements.forEach((refinement) => deleteRefinement(refinement))
   }, [value])
-}
-
-function FollowSwitch(props: {
-  showFollows: boolean
-  setShowFollows: (enabled: boolean) => void
-}) {
-  const { showFollows, setShowFollows } = props
-
-  return (
-    <Switch.Group as="div" className="flex items-center">
-      <Switch
-        checked={showFollows}
-        onChange={(enabled) => setShowFollows(enabled)}
-        className={clsx(
-          showFollows ? 'bg-indigo-600' : 'bg-gray-200',
-          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
-        )}
-      >
-        <span
-          aria-hidden="true"
-          className={clsx(
-            showFollows ? 'translate-x-5' : 'translate-x-0',
-            'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
-          )}
-        />
-      </Switch>
-      <Switch.Label as="span" className="ml-3">
-        <span className="text-sm font-medium text-gray-900">
-          Followed market creators
-        </span>
-      </Switch.Label>
-    </Switch.Group>
-  )
 }
