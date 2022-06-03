@@ -89,26 +89,15 @@ export function UserPage(props: {
     })
   }, [usersComments])
 
-  const theirFollows = useFollows(user.id)
   const yourFollows = useFollows(currentUser?.id)
   const isFollowing = yourFollows?.includes(user.id)
 
-  useEffect(() => {
-    console.log('their follows', theirFollows)
-  }, [theirFollows])
-
-  useEffect(() => {
-    console.log('your follows', yourFollows)
-  }, [yourFollows])
-
   const onFollow = () => {
     if (!currentUser) return
-    console.log('follow')
     follow(currentUser.id, user.id)
   }
   const onUnfollow = () => {
     if (!currentUser) return
-    console.log('unfollow')
     unfollow(currentUser.id, user.id)
   }
 
