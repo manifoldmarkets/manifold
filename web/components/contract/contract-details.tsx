@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import {
   ClockIcon,
   DatabaseIcon,
@@ -33,7 +32,6 @@ export function MiscDetails(props: {
 }) {
   const { contract, showHotVolume, showCloseTime } = props
   const { volume, volume24Hours, closeTime, tags } = contract
-  const { volumeLabel } = contractMetrics(contract)
   // Show at most one category that this contract is tagged by
   const categories = CATEGORY_LIST.filter((category) =>
     tags.map((t) => t.toLowerCase()).includes(category)
