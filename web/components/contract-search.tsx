@@ -10,8 +10,6 @@ import {
   useRefinementList,
   useSortBy,
 } from 'react-instantsearch-hooks-web'
-import { Switch } from '@headlessui/react'
-import clsx from 'clsx'
 import { Contract } from '../../common/contract'
 import {
   Sort,
@@ -22,7 +20,6 @@ import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
 import { useEffect, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
-import { useRouter } from 'next/router'
 import { ENV } from 'common/envs/constants'
 import { CategorySelector } from './feed/category-selector'
 import { useUser } from 'web/hooks/use-user'
