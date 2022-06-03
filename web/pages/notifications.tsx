@@ -30,6 +30,7 @@ import { groupBy } from 'lodash'
 import { UsersIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
+import { OutcomeLabel } from 'web/components/outcome-label'
 
 type NotificationGroup = {
   notifications: Notification[]
@@ -37,7 +38,6 @@ type NotificationGroup = {
   isSeen: boolean
   timePeriod: string
 }
-
 
 export default function Notifications() {
   const user = useUser()
@@ -302,7 +302,7 @@ function NotificationGroupItem(props: {
       <a href={contract && `${contract.creatorUsername}/${contract.slug}`}>
         <div className={'mt-1 md:text-base'}>
           {' '}
-          <div className={'line-clamp-4 whitespace-pre-line'}>
+          <div className={'line-clamp-4 mt-1 gap-1 whitespace-pre-line'}>
             {activitySummaryLines.map((line, i) => {
               return (
                 <div key={line} className={'line-clamp-1'}>
@@ -472,7 +472,9 @@ function NotificationItem(props: {
   useEffect(() => {
     if (!contract || !sourceContractId) return
     if (sourceType === 'contract') {
-      setSubText(contract.question)
+      if (contract.resolution) {
+        setSubText(contract.resolution)
+      } else setSubText(contract.question)
     } else if (
       sourceId &&
       (sourceType === 'answer' || sourceType === 'comment')
@@ -556,19 +558,38 @@ function NotificationItem(props: {
       <a href={getSourceUrl(sourceId)}>
         <div className={'mt-1 md:text-base'}>
           {' '}
-          {contract && subText === contract.question ? (
-            <div className={'text-indigo-700 hover:underline'}>{subText}</div>
-          ) : (
-            <div className={'line-clamp-4 whitespace-pre-line'}>
-              <Linkify text={subText} />
-            </div>
-          )}
+          <NotificationOutcomeLabel contract={contract} subText={subText} />
         </div>
 
         <div className={'mt-6 border-b border-gray-300'} />
       </a>
     </div>
   )
+}
+
+function NotificationOutcomeLabel(props: {
+  contract?: Contract
+  subText: string
+}) {
+  const { contract, subText } = props
+  if (!contract) return <LoadingIndicator />
+  if (subText === contract.question) {
+    return <div className={'text-indigo-700 hover:underline'}>{subText}</div>
+  } else if (subText === contract.resolution) {
+    return (
+      <OutcomeLabel
+        contract={contract}
+        outcome={contract.resolution}
+        truncate={'long'}
+      />
+    )
+  } else {
+    return (
+      <div className={'line-clamp-4 whitespace-pre-line'}>
+        <Linkify text={subText} />
+      </div>
+    )
+  }
 }
 
 function getReasonTextFromReason(
@@ -596,7 +617,8 @@ function getReasonTextFromReason(
       else reasonText = `commented on`
       break
     case 'contract':
-      reasonText = `${reason}`
+      if (contract?.resolution) reasonText = `resolved`
+      else reasonText = `updated`
       break
     case 'answer':
       if (reason === 'on_users_contract') reasonText = `answered your question `
@@ -612,7 +634,7 @@ function getReasonTextFromReason(
   }
   return `${reasonText} ${contract?.question}`
 }
-const less_reasons = [
+const less_priority_reasons = [
   'on_contract_with_users_comment',
   'on_contract_with_users_answer',
   'on_contract_with_users_shares_out',
@@ -627,7 +649,11 @@ export function GetAppropriateNotifications(
   if (notificationPreferences === 'all') return notifications
   if (notificationPreferences === 'less')
     return notifications.filter(
-      (n) => n.reason && !less_reasons.includes(n.reason)
+      (n) =>
+        n.reason &&
+        // Show all contract notifications
+        (n.sourceType === 'contract' ||
+          !less_priority_reasons.includes(n.reason))
     )
   if (notificationPreferences === 'none') return []
 

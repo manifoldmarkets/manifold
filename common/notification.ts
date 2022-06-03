@@ -9,6 +9,7 @@ export type Notification = {
 
   sourceId?: string
   sourceType?: notification_source_types
+  sourceUpdateType?: notification_source_update_types
   sourceContractId?: string
   sourceUserName?: string
   sourceUserUsername?: string
@@ -21,10 +22,14 @@ export type notification_source_types =
   | 'answer'
   | 'liquidity'
 
-export type notification_reason_types =
+export type notification_source_update_types =
   | 'created'
   | 'updated'
   | 'resolved'
+  | 'deleted'
+  | 'closed'
+
+export type notification_reason_types =
   | 'tagged_user'
   | 'on_users_contract'
   | 'on_contract_with_users_shares_in'

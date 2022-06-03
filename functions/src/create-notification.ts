@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin'
 import {
   Notification,
   notification_reason_types,
+  notification_source_update_types,
   notification_source_types,
 } from '../../common/notification'
 import { User } from '../../common/user'
@@ -12,16 +13,17 @@ import { uniq } from 'lodash'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { getContractBetMetrics } from '../../common/calculate'
+import { removeUndefinedProps } from '../../common/util/object'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
-  [userId: string]: { text?: string; reason: notification_reason_types }
+  [userId: string]: { reason: notification_reason_types }
 }
 
 export const createNotification = async (
   sourceId: string,
   sourceType: notification_source_types,
-  reason: notification_reason_types,
+  sourceUpdateType: notification_source_update_types,
   sourceContract: Contract,
   sourceUser: User,
   idempotencyKey: string,
@@ -50,18 +52,18 @@ export const createNotification = async (
         const notification: Notification = {
           id: idempotencyKey,
           userId,
-          reasonText: userToReasonTexts[userId].text,
           reason: userToReasonTexts[userId].reason,
           createdTime: Date.now(),
           isSeen: false,
           sourceId,
           sourceType,
+          sourceUpdateType,
           sourceContractId: sourceContract.id,
           sourceUserName: sourceUser.name,
           sourceUserUsername: sourceUser.username,
           sourceUserAvatarUrl: sourceUser.avatarUrl,
         }
-        await notificationRef.set(notification)
+        await notificationRef.set(removeUndefinedProps(notification))
       })
     )
   }
@@ -190,8 +192,10 @@ export const createNotification = async (
     const getUsersToNotify = async () => {
       const userToReasonTexts: user_to_reason_texts = {}
       // The following functions modify the userToReasonTexts object in place.
-      await notifyRepliedUsers(userToReasonTexts)
-      await notifyTaggedUsers(userToReasonTexts)
+      if (sourceType === 'comment') {
+        await notifyRepliedUsers(userToReasonTexts)
+        await notifyTaggedUsers(userToReasonTexts)
+      }
       await notifyContractCreator(userToReasonTexts)
       await notifyOtherAnswerersOnContract(userToReasonTexts)
       await notifyOtherBettorsOnContract(userToReasonTexts)
