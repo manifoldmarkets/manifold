@@ -467,26 +467,30 @@ function NotificationItem(props: {
     sourceUserUsername,
     createdTime,
   } = notification
-  const [subText, setSubText] = useState<string>('')
+  const [notificationText, setNotificationText] = useState<string>('')
   const contract = useContract(sourceContractId ?? '')
 
   useEffect(() => {
     if (!contract || !sourceContractId) return
     if (sourceType === 'contract') {
-      if (contract.resolution) {
-        setSubText(contract.resolution)
-      } else setSubText(contract.question)
-    } else if (
-      sourceId &&
-      (sourceType === 'answer' || sourceType === 'comment')
-    ) {
+      // We don't handle anything other than contract updates & resolution yet.
+      if (contract.resolution) setNotificationText(contract.resolution)
+      else setNotificationText(contract.question)
+      return
+    }
+    if (!sourceId) return
+
+    if (sourceType === 'answer' || sourceType === 'comment') {
       GetNotificationSummaryText(sourceId, sourceContractId, sourceType).then(
         (text) => {
-          setSubText(text)
+          setNotificationText(text)
         }
       )
+    } else if (reasonText) {
+      // Handle arbitrary notifications with reason text here.
+      setNotificationText(reasonText)
     }
-  }, [contract, sourceContractId, sourceId, sourceType])
+  }, [contract, reasonText, sourceContractId, sourceId, sourceType])
 
   useEffect(() => {
     if (!contract || notification.isSeen) return
@@ -537,12 +541,10 @@ function NotificationItem(props: {
               href={getSourceUrl(sourceId)}
               className={'inline-flex overflow-hidden text-ellipsis pl-1'}
             >
-              {sourceType && reason ? (
+              {sourceType && reason && (
                 <div className={'inline truncate'}>
                   {getReasonTextFromReason(sourceType, reason, contract)}
                 </div>
-              ) : (
-                reasonText
               )}
             </a>
           </div>
@@ -559,7 +561,10 @@ function NotificationItem(props: {
       <a href={getSourceUrl(sourceId)}>
         <div className={'mt-1 md:text-base'}>
           {' '}
-          <NotificationOutcomeLabel contract={contract} subText={subText} />
+          <NotificationOutcomeLabel
+            contract={contract}
+            notificationText={notificationText}
+          />
         </div>
 
         <div className={'mt-6 border-b border-gray-300'} />
@@ -570,13 +575,17 @@ function NotificationItem(props: {
 
 function NotificationOutcomeLabel(props: {
   contract?: Contract
-  subText: string
+  notificationText: string
 }) {
-  const { contract, subText } = props
+  const { contract, notificationText } = props
   if (!contract) return <LoadingIndicator />
-  if (subText === contract.question) {
-    return <div className={'text-indigo-700 hover:underline'}>{subText}</div>
-  } else if (subText === contract.resolution) {
+  if (notificationText === contract.question) {
+    return (
+      <div className={'text-indigo-700 hover:underline'}>
+        {notificationText}
+      </div>
+    )
+  } else if (notificationText === contract.resolution) {
     return (
       <OutcomeLabel
         contract={contract}
@@ -587,7 +596,7 @@ function NotificationOutcomeLabel(props: {
   } else {
     return (
       <div className={'line-clamp-4 whitespace-pre-line'}>
-        <Linkify text={subText} />
+        <Linkify text={notificationText} />
       </div>
     )
   }
