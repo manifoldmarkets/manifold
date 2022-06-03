@@ -101,7 +101,7 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
     return <LoadingIndicator />
   }
 
-  if (bets.length === 0) return <NoBets />
+  if (bets.length === 0) return <NoBets user={user} />
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
   const contractBets = groupBy(bets, 'contractId')
@@ -219,7 +219,7 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
 
       <Col className="mt-6 divide-y">
         {displayedContracts.length === 0 ? (
-          <NoBets />
+          <NoBets user={user} />
         ) : (
           displayedContracts.map((contract) => (
             <ContractBets
@@ -236,13 +236,20 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
   )
 }
 
-const NoBets = () => {
+const NoBets = ({ user }: { user: User }) => {
+  const me = useUser()
   return (
     <div className="mx-4 text-gray-500">
-      You have not made any bets yet.{' '}
-      <SiteLink href="/home" className="underline">
-        Find a prediction market!
-      </SiteLink>
+      {user.id === me?.id ? (
+        <>
+          You have not made any bets yet.{' '}
+          <SiteLink href="/home" className="underline">
+            Find a prediction market!
+          </SiteLink>
+        </>
+      ) : (
+        <>{user.name} has not made any public bets yet.</>
+      )}
     </div>
   )
 }
