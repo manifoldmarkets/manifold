@@ -31,6 +31,13 @@ import { UsersIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
 
+type NotificationGroup = {
+  notifications: Notification[]
+  sourceContractId: string
+  isSeen: boolean
+  timePeriod: string
+}
+
 export default function Notifications() {
   const user = useUser()
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -47,24 +54,26 @@ export default function Notifications() {
 
   useEffect(() => {
     if (!privateUser) return
-    const notificationsToShow = GetAppropriateNotifications(
+    const notificationIdsToShow = GetAppropriateNotifications(
       notifications,
       privateUser.notificationPreferences
     ).map((notification) => notification.id)
 
     // Hide notifications the user doesn't want to see.
-    const notificationsToHide = notifications
-      .filter((notification) => !notificationsToShow.includes(notification.id))
+    const notificationIdsToHide = notifications
+      .filter(
+        (notification) => !notificationIdsToShow.includes(notification.id)
+      )
       .map((notification) => notification.id)
 
     // Group notifications by contract and 24-hour time period.
     const allGroupedNotifications = GroupNotifications(
       notifications,
-      notificationsToHide
+      notificationIdsToHide
     )
 
     // Don't add notifications that are already visible or have been seen.
-    const unseenNotificationIdsCurrentlyVisible = Object.values(
+    const currentlyVisibleUnseenNotificationIds = Object.values(
       unseenNotificationGroups
     )
       .map((n) => n.notifications.map((n) => n.id))
@@ -73,9 +82,9 @@ export default function Notifications() {
       notifications.filter(
         (notification) =>
           !notification.isSeen ||
-          unseenNotificationIdsCurrentlyVisible.includes(notification.id)
+          currentlyVisibleUnseenNotificationIds.includes(notification.id)
       ),
-      notificationsToHide
+      notificationIdsToHide
     )
     setAllNotificationsGroups(allGroupedNotifications)
     setUnseenNotificationGroups(unseenGroupedNotifications)
@@ -157,15 +166,8 @@ export default function Notifications() {
     </Page>
   )
 }
-type NotificationGroup = {
-  notifications: Notification[]
-  sourceTypes: string[]
-  sourceContractId: string
-  isSeen: boolean
-  timePeriod: string
-}
 
-const setSeenNotifications = (notifications: Notification[]) => {
+const setNotificationsAsSeen = (notifications: Notification[]) => {
   notifications.forEach((notification) => {
     if (!notification.isSeen)
       updateDoc(
@@ -184,8 +186,8 @@ function GroupNotifications(
   notifications: Notification[],
   hideNotificationIds: string[]
 ) {
-  // Because they won't be rendered, set them to seen here
-  setSeenNotifications(
+  // Because hidden notifications won't be rendered, set them to seen here
+  setNotificationsAsSeen(
     notifications.filter((n) => hideNotificationIds.includes(n.id))
   )
   // Then remove them from the list of notifications to show
@@ -198,7 +200,7 @@ function GroupNotifications(
     new Date(notification.createdTime).toDateString()
   )
   Object.keys(notificationGroupsByDay).forEach((day) => {
-    // group notifications by sourceContractId:
+    // Group notifications by contract:
     const groupedNotificationsByContractId = groupBy(
       notificationGroupsByDay[day],
       (notification) => {
@@ -206,22 +208,14 @@ function GroupNotifications(
       }
     )
 
-    // create a notification group for each contract id
+    // Create a notification group for each contract within each day
     Object.keys(groupedNotificationsByContractId).forEach((contractId, i) => {
-      const groupedNotificationsBySourceType = groupBy(
-        groupedNotificationsByContractId[contractId],
-        (notification) => {
-          return notification.sourceType
-        }
-      )
-
       const notificationGroup: NotificationGroup = {
         notifications: groupedNotificationsByContractId[contractId].sort(
           (a, b) => {
             return b.createdTime - a.createdTime
           }
         ),
-        sourceTypes: Object.keys(groupedNotificationsBySourceType).sort(),
         sourceContractId: contractId,
         isSeen: groupedNotificationsByContractId[contractId][0].isSeen,
         timePeriod: day,
@@ -275,7 +269,7 @@ function NotificationGroupItem(props: {
 
   useEffect(() => {
     if (!contract) return
-    setSeenNotifications(notifications)
+    setNotificationsAsSeen(notifications)
     summarizeMostRecentActivity(notifications)
   }, [contract, notifications])
 
@@ -493,7 +487,7 @@ function NotificationItem(props: {
 
   useEffect(() => {
     if (!contract || notification.isSeen) return
-    setSeenNotifications([notification])
+    setNotificationsAsSeen([notification])
   }, [notification, contract, currentUser, id, userId])
 
   function getSourceUrl(sourceId?: string) {
