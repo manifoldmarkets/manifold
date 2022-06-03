@@ -119,7 +119,6 @@ export default function Notifications() {
                   {unseenNotificationGroups.map((notification) =>
                     notification.notifications.length === 1 ? (
                       <NotificationItem
-                        currentUser={user}
                         notification={notification.notifications[0]}
                         key={notification.notifications[0].id}
                       />
@@ -140,7 +139,6 @@ export default function Notifications() {
                   {allNotificationGroups.map((notification) =>
                     notification.notifications.length === 1 ? (
                       <NotificationItem
-                        currentUser={user}
                         notification={notification.notifications[0]}
                         key={notification.notifications[0].id}
                       />
@@ -448,18 +446,12 @@ function GetNotificationSummaryText(
   }
 }
 
-function NotificationItem(props: {
-  currentUser: User
-  notification: Notification
-  className?: string
-}) {
-  const { notification, currentUser, className } = props
+function NotificationItem(props: { notification: Notification }) {
+  const { notification } = props
   const {
     sourceType,
     sourceContractId,
     sourceId,
-    userId,
-    id,
     sourceUserName,
     sourceUserAvatarUrl,
     reasonText,
@@ -517,7 +509,7 @@ function NotificationItem(props: {
   }
 
   return (
-    <div className={clsx('bg-white px-2 pt-6 text-sm sm:px-4', className)}>
+    <div className={'bg-white px-2 pt-6 text-sm sm:px-4'}>
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <Avatar
           avatarUrl={sourceUserAvatarUrl}
