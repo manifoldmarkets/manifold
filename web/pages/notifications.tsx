@@ -382,12 +382,11 @@ function NotificationSettings() {
   function changeInAppNotificationSettings(
     newValue: notification_subscribe_types
   ) {
+    if (!privateUser) return
     setNotificationSettings(newValue)
-    if (privateUser) {
-      updatePrivateUser(privateUser.id, {
-        notificationPreferences: newValue,
-      })
-    }
+    updatePrivateUser(privateUser.id, {
+      notificationPreferences: newValue,
+    })
   }
 
   useEffect(() => {
@@ -396,7 +395,7 @@ function NotificationSettings() {
     else setNotificationSettings('all')
   }, [privateUser])
 
-  if (!user && !privateUser) {
+  if (!privateUser) {
     return <LoadingIndicator />
   }
 
