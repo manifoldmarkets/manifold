@@ -493,9 +493,8 @@ function NotificationItem(props: {
   }, [contract, reasonText, sourceContractId, sourceId, sourceType])
 
   useEffect(() => {
-    if (!contract || notification.isSeen) return
     setNotificationsAsSeen([notification])
-  }, [notification, contract, currentUser, id, userId])
+  }, [notification])
 
   function getSourceUrl(sourceId?: string) {
     if (!contract) return ''
