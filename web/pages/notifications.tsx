@@ -91,6 +91,7 @@ export default function Notifications() {
     setUnseenNotificationGroups(unseenGroupedNotifications)
 
     // We don't want unseenNotificationsGroup to be in the dependencies as we update it here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notifications, privateUser])
 
   useEffect(() => {
