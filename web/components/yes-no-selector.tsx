@@ -3,6 +3,7 @@ import React, { ReactNode } from 'react'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
+import { resolution } from 'common/contract'
 
 export function YesNoSelector(props: {
   selected?: 'YES' | 'NO'
@@ -65,8 +66,8 @@ export function YesNoSelector(props: {
 }
 
 export function YesNoCancelSelector(props: {
-  selected: 'YES' | 'NO' | 'MKT' | 'CANCEL' | undefined
-  onSelect: (selected: 'YES' | 'NO' | 'MKT' | 'CANCEL') => void
+  selected: resolution | undefined
+  onSelect: (selected: resolution) => void
   className?: string
   btnClassName?: string
 }) {
