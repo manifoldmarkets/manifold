@@ -27,6 +27,15 @@ export function CategorySelector(props: {
         }}
       />
 
+      <CategoryButton
+        key="following"
+        category="Following"
+        isFollowed={category === 'following'}
+        toggle={() => {
+          setCategory('following')
+        }}
+      />
+
       {CATEGORY_LIST.map((cat) => (
         <CategoryButton
           key={cat}
