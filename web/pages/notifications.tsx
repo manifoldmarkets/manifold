@@ -29,11 +29,12 @@ import clsx from 'clsx'
 import { groupBy } from 'lodash'
 import { UsersIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { Linkify } from 'web/components/linkify'
 
 export default function Notifications() {
   const user = useUser()
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [notificationGroups, setNotificationsGroups] = useState<
+  const [allNotificationGroups, setAllNotificationsGroups] = useState<
     NotificationGroup[]
   >([])
   const [unseenNotificationGroups, setUnseenNotificationGroups] = useState<
@@ -50,34 +51,40 @@ export default function Notifications() {
       notifications,
       privateUser.notificationPreferences
     ).map((notification) => notification.id)
-    // get notifications to hide using the ones we want to show
+
+    // Hide notifications the user doesn't want to see.
     const notificationsToHide = notifications
       .filter((notification) => !notificationsToShow.includes(notification.id))
       .map((notification) => notification.id)
-    const groupedNotifs = GroupNotifications(notifications, notificationsToHide)
-    const notificationIdsCurrentlyOnDisplay = Object.values(
+
+    // Group notifications by contract and 24-hour time period.
+    const allGroupedNotifications = GroupNotifications(
+      notifications,
+      notificationsToHide
+    )
+
+    // Don't add notifications that are already visible or have been seen.
+    const unseenNotificationIdsCurrentlyVisible = Object.values(
       unseenNotificationGroups
     )
       .map((n) => n.notifications.map((n) => n.id))
       .flat()
-    const groupedUnseenNotifs = GroupNotifications(
+    const unseenGroupedNotifications = GroupNotifications(
       notifications.filter(
         (notification) =>
           !notification.isSeen ||
-          notificationIdsCurrentlyOnDisplay.includes(notification.id)
+          unseenNotificationIdsCurrentlyVisible.includes(notification.id)
       ),
       notificationsToHide
     )
-    setNotificationsGroups(groupedNotifs)
-    setUnseenNotificationGroups(groupedUnseenNotifs)
+    setAllNotificationsGroups(allGroupedNotifications)
+    setUnseenNotificationGroups(unseenGroupedNotifications)
+
+    // We don't want unseenNotificationsGroup to be in the dependencies as we update it here.
   }, [notifications, privateUser])
 
-  function setListenedNotifications(notifications: Notification[]) {
-    setNotifications(notifications)
-  }
-
   useEffect(() => {
-    if (user) return listenForNotifications(user.id, setListenedNotifications)
+    if (user) return listenForNotifications(user.id, setNotifications)
   }, [user])
 
   if (!user) {
@@ -107,7 +114,6 @@ export default function Notifications() {
                       />
                     ) : (
                       <NotificationGroupItem
-                        currentUser={user}
                         notificationGroup={notification}
                         key={notification.sourceContractId}
                       />
@@ -120,7 +126,7 @@ export default function Notifications() {
               title: 'All Notifications',
               content: (
                 <div className={''}>
-                  {notificationGroups.map((notification) =>
+                  {allNotificationGroups.map((notification) =>
                     notification.notifications.length === 1 ? (
                       <NotificationItem
                         currentUser={user}
@@ -129,7 +135,6 @@ export default function Notifications() {
                       />
                     ) : (
                       <NotificationGroupItem
-                        currentUser={user}
                         notificationGroup={notification}
                         key={notification.sourceContractId}
                       />
@@ -211,7 +216,11 @@ function GroupNotifications(
       )
 
       const notificationGroup: NotificationGroup = {
-        notifications: groupedNotificationsByContractId[contractId],
+        notifications: groupedNotificationsByContractId[contractId].sort(
+          (a, b) => {
+            return b.createdTime - a.createdTime
+          }
+        ),
         sourceTypes: Object.keys(groupedNotificationsBySourceType).sort(),
         sourceContractId: contractId,
         isSeen: groupedNotificationsByContractId[contractId][0].isSeen,
@@ -224,22 +233,54 @@ function GroupNotifications(
 }
 
 function NotificationGroupItem(props: {
-  currentUser: User
   notificationGroup: NotificationGroup
   className?: string
 }) {
-  const { notificationGroup, currentUser, className } = props
-  const { sourceTypes, sourceContractId, notifications, timePeriod } =
-    notificationGroup
+  const { notificationGroup, className } = props
+  const { sourceContractId, notifications } = notificationGroup
   const contract = useContract(sourceContractId ?? '')
+  const [activitySummaryLines, setActivitySummaryLines] = useState<string[]>([])
+  const numSummaryLines = 2
+
+  const summarizeMostRecentActivity = async (notifications: Notification[]) => {
+    let questionUpdates = 0
+    const tempSummaryLines: string[] = []
+    for (let i = 0; i < notifications.length; i++) {
+      if (tempSummaryLines.length + questionUpdates >= numSummaryLines) break
+      const notification = notifications[i]
+      if (!notification) continue
+      const { sourceType, sourceContractId, sourceId } = notification
+      if (!sourceId || !sourceContractId) continue
+      if (sourceType === 'comment' || sourceType === 'answer') {
+        const summary = await GetNotificationSummaryText(
+          sourceId,
+          sourceContractId,
+          sourceType
+        )
+        tempSummaryLines.push(
+          sourceType === 'answer' ? `New answer: ${summary}` : summary
+        )
+      } else if (sourceType === 'contract') {
+        questionUpdates += 1
+      }
+    }
+    if (questionUpdates > 0)
+      tempSummaryLines.push(
+        `${questionUpdates} new question update${
+          questionUpdates > 1 ? 's' : ''
+        }`
+      )
+    setActivitySummaryLines(tempSummaryLines)
+  }
 
   useEffect(() => {
     if (!contract) return
     setSeenNotifications(notifications)
+    summarizeMostRecentActivity(notifications)
   }, [contract, notifications])
 
   return (
-    <div className={clsx('bg-white px-1 pt-6 text-sm sm:px-4', className)}>
+    <div className={clsx('bg-white px-2 pt-6 text-sm sm:px-4', className)}>
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
           <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
@@ -252,10 +293,12 @@ function NotificationGroupItem(props: {
           >
             <a
               href={contract && `${contract.creatorUsername}/${contract.slug}`}
-              className={'inline-flex overflow-hidden text-ellipsis'}
+              className={
+                'inline-flex overflow-hidden text-ellipsis pl-1 sm:pl-0'
+              }
             >
               {'Activity on '}
-              {contract?.question ?? 'contract'}
+              {contract?.question ?? 'question'}
             </a>
           </div>
           <RelativeTimestamp time={notifications[0].createdTime} />
@@ -265,18 +308,18 @@ function NotificationGroupItem(props: {
         <div className={'mt-1 md:text-base'}>
           {' '}
           <div className={'line-clamp-4 whitespace-pre-line'}>
-            {sourceTypes.map((sourceType, index) => (
-              <span>
-                {notificationGroupText(
-                  notifications.filter((n) => n.sourceType === sourceType)
-                ) +
-                  (index === sourceTypes.length - 1
-                    ? ''
-                    : index === sourceTypes.length - 2
-                    ? ', & '
-                    : ', ')}
-              </span>
-            ))}
+            {activitySummaryLines.map((line, i) => {
+              return (
+                <div key={line} className={'line-clamp-1'}>
+                  <Linkify text={line} />
+                </div>
+              )
+            })}
+            <div>
+              {notifications.length - numSummaryLines > 0
+                ? 'And ' + (notifications.length - numSummaryLines) + ' more...'
+                : ''}
+            </div>
           </div>
         </div>
 
@@ -284,21 +327,6 @@ function NotificationGroupItem(props: {
       </a>
     </div>
   )
-}
-function notificationGroupText(notifications: Notification[]) {
-  const numNotifications = notifications.length
-  const sourceType = notifications[0].sourceType
-  if (sourceType === 'contract') {
-    return `${numNotifications} ${sourceType} update${
-      numNotifications > 1 ? 's' : ''
-    }`
-  }
-  if (sourceType === 'answer') {
-    return `${numNotifications} new ${sourceType}${
-      numNotifications > 1 ? 's' : ''
-    }`
-  }
-  return `${numNotifications} ${sourceType}${numNotifications > 1 ? 's' : ''}`
 }
 
 function NotificationSettings() {
@@ -389,7 +417,7 @@ function NotificationSettings() {
             choice as notification_subscribe_types
           )
         }
-        className={'col-span-4'}
+        className={'col-span-4 w-24'}
       />
       <div className={' border-1 my-4 w-48 border-b border-gray-300'} />
       <div className={'mt-4'}>Email Notifications</div>
@@ -399,10 +427,30 @@ function NotificationSettings() {
         setChoice={(choice) =>
           changeEmailNotifications(choice as notification_subscribe_types)
         }
-        className={'col-span-4'}
+        className={'col-span-4 w-24'}
       />
     </div>
   )
+}
+
+function GetNotificationSummaryText(
+  sourceId: string,
+  sourceContractId: string,
+  sourceType: 'answer' | 'comment'
+) {
+  if (sourceType === 'answer') {
+    return getValue<Answer>(
+      doc(db, `contracts/${sourceContractId}/answers/`, sourceId)
+    ).then((answer) => {
+      return answer?.text ?? ''
+    })
+  } else {
+    return getValue<Comment>(
+      doc(db, `contracts/${sourceContractId}/comments/`, sourceId)
+    ).then((comment) => {
+      return comment?.text ?? ''
+    })
+  }
 }
 
 function NotificationItem(props: {
@@ -428,29 +476,20 @@ function NotificationItem(props: {
   const contract = useContract(sourceContractId ?? '')
 
   useEffect(() => {
-    if (!contract) return
+    if (!contract || !sourceContractId) return
     if (sourceType === 'contract') {
       setSubText(contract.question)
+    } else if (
+      sourceId &&
+      (sourceType === 'answer' || sourceType === 'comment')
+    ) {
+      GetNotificationSummaryText(sourceId, sourceContractId, sourceType).then(
+        (text) => {
+          setSubText(text)
+        }
+      )
     }
-  }, [contract, sourceType])
-
-  useEffect(() => {
-    if (!sourceContractId || !sourceId) return
-
-    if (sourceType === 'answer') {
-      getValue<Answer>(
-        doc(db, `contracts/${sourceContractId}/answers/`, sourceId)
-      ).then((answer) => {
-        setSubText(answer?.text || '')
-      })
-    } else if (sourceType === 'comment') {
-      getValue<Comment>(
-        doc(db, `contracts/${sourceContractId}/comments/`, sourceId)
-      ).then((comment) => {
-        setSubText(comment?.text || '')
-      })
-    }
-  }, [sourceContractId, sourceId, sourceType])
+  }, [contract, sourceContractId, sourceId, sourceType])
 
   useEffect(() => {
     if (!contract || notification.isSeen) return
@@ -478,7 +517,7 @@ function NotificationItem(props: {
   }
 
   return (
-    <div className={clsx('bg-white px-1 pt-6 text-sm sm:px-4', className)}>
+    <div className={clsx('bg-white px-2 pt-6 text-sm sm:px-4', className)}>
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <Avatar
           avatarUrl={sourceUserAvatarUrl}
@@ -489,7 +528,7 @@ function NotificationItem(props: {
         <div className={'flex-1 overflow-hidden sm:flex'}>
           <div
             className={
-              'flex max-w-sm shrink overflow-hidden text-ellipsis sm:max-w-md'
+              'flex max-w-sm shrink overflow-hidden text-ellipsis pl-1 sm:max-w-md sm:pl-0'
             }
           >
             <UserLink
@@ -526,7 +565,9 @@ function NotificationItem(props: {
           {contract && subText === contract.question ? (
             <div className={'text-indigo-700 hover:underline'}>{subText}</div>
           ) : (
-            <div className={'line-clamp-4 whitespace-pre-line'}>{subText}</div>
+            <div className={'line-clamp-4 whitespace-pre-line'}>
+              <Linkify text={subText} />
+            </div>
           )}
         </div>
 
@@ -580,9 +621,11 @@ function getReasonTextFromReason(
 const less_reasons = [
   'on_contract_with_users_comment',
   'on_contract_with_users_answer',
+  'on_contract_with_users_shares_out',
+  // Not sure if users will want to see these w/ less:
+  // 'on_contract_with_users_shares_in',
 ]
 
-// TODO: this should be able to pick up why the notification was created
 export function GetAppropriateNotifications(
   notifications: Notification[],
   notificationPreferences?: notification_subscribe_types
