@@ -1,14 +1,13 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { uniqBy, sum } from 'lodash'
+import { uniqBy } from 'lodash'
 import { useState } from 'react'
 import { Bet } from 'common/bet'
 
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import {
-  contractMetrics,
   contractPath,
   contractPool,
   getBinaryProbPercent,
