@@ -218,7 +218,9 @@ function EditableCloseDate(props: {
       const { description, autoResolutionTime } = contract
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
       const newAutoResolutionTime = newCloseTime + 7 * DAY_MS
-      let newDescription = `${description}\n\nClose date updated to ${formattedCloseDate}`
+      let newDescription = description.concat(
+        `\n\nClose date updated to ${formattedCloseDate}`
+      )
 
       const update: Partial<Contract> = {
         closeTime: newCloseTime,
