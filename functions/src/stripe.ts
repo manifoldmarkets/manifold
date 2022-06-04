@@ -21,11 +21,6 @@ export type StripeTransaction = {
   timestamp: number
 }
 
-const stripe = new Stripe(functions.config().stripe.apikey, {
-  apiVersion: '2020-08-27',
-  typescript: true,
-})
-
 // manage at https://dashboard.stripe.com/test/products?active=true
 const manticDollarStripePrice = isProd
   ? {
@@ -42,8 +37,13 @@ const manticDollarStripePrice = isProd
     }
 
 export const createCheckoutSession = functions
-  .runWith({ minInstances: 1 })
+  .runWith({ minInstances: 1, secrets: ['STRIPE_APIKEY'] })
   .https.onRequest(async (req, res) => {
+    const stripe = new Stripe(process.env.STRIPE_APIKEY as string, {
+      apiVersion: '2020-08-27',
+      typescript: true,
+    })
+
     const userId = req.query.userId?.toString()
 
     const manticDollarQuantity = req.query.manticDollarQuantity?.toString()
@@ -87,15 +87,22 @@ export const createCheckoutSession = functions
   })
 
 export const stripeWebhook = functions
-  .runWith({ minInstances: 1 })
+  .runWith({
+    minInstances: 1,
+    secrets: ['STRIPE_APIKEY', 'STRIPE_WEBHOOKSECRET'],
+  })
   .https.onRequest(async (req, res) => {
+    const stripe = new Stripe(process.env.STRIPE_APIKEY as string, {
+      apiVersion: '2020-08-27',
+      typescript: true,
+    })
     let event
 
     try {
       event = stripe.webhooks.constructEvent(
         req.rawBody,
         req.headers['stripe-signature'] as string,
-        functions.config().stripe.webhooksecret
+        process.env.STRIPE_WEBHOOKSECRET as string
       )
     } catch (e: any) {
       console.log(`Webhook Error: ${e.message}`)

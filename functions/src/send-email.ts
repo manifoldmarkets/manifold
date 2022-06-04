@@ -1,10 +1,12 @@
 import * as mailgun from 'mailgun-js'
-import * as functions from 'firebase-functions'
 
 const DOMAIN = 'mg.manifold.markets'
-const mg = mailgun({ apiKey: functions.config().mailgun.key, domain: DOMAIN })
 
 export const sendTextEmail = (to: string, subject: string, text: string) => {
+  const mg = mailgun({
+    apiKey: process.env.MAILGUN_KEY as string,
+    domain: DOMAIN,
+  })
   const data: mailgun.messages.SendData = {
     from: 'Manifold Markets <info@manifold.markets>',
     to,
@@ -27,6 +29,10 @@ export const sendTemplateEmail = (
   templateData: Record<string, string>,
   options?: { from: string }
 ) => {
+  const mg = mailgun({
+    apiKey: process.env.MAILGUN_KEY as string,
+    domain: DOMAIN,
+  })
   const data = {
     from: options?.from ?? 'Manifold Markets <info@manifold.markets>',
     to,
