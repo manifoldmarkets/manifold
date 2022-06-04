@@ -28,6 +28,7 @@ export type LiteMarket = {
   p?: number
   totalLiquidity?: number
 
+  volume: number
   volume7Days: number
   volume24Hours: number
 
@@ -60,6 +61,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     pool,
     outcomeType,
     mechanism,
+    volume,
     volume7Days,
     volume24Hours,
     isResolved,
@@ -92,6 +94,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     totalLiquidity,
     outcomeType,
     mechanism,
+    volume,
     volume7Days,
     volume24Hours,
     isResolved,
