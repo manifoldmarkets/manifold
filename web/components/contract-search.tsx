@@ -20,10 +20,10 @@ import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
 import { useEffect, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
-import { useRouter } from 'next/router'
 import { ENV } from 'common/envs/constants'
 import { CategorySelector } from './feed/category-selector'
 import { useUser } from 'web/hooks/use-user'
+import { useFollows } from 'web/hooks/use-follows'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -60,6 +60,8 @@ export function ContractSearch(props: {
   const { querySortOptions, additionalFilter, showCategorySelector } = props
 
   const user = useUser()
+  const follows = useFollows(user?.id)
+
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
   const sort = sortIndexes
@@ -73,15 +75,32 @@ export function ContractSearch(props: {
   )
 
   const [category, setCategory] = useState<string>('all')
+  const showFollows = category === 'following'
+  const followsKey =
+    showFollows && follows?.length ? `${follows.join(',')}` : ''
 
   if (!sort) return <></>
+
+  const indexName = `${indexPrefix}contracts-${sort}`
+
   return (
     <InstantSearch
       searchClient={searchClient}
-      indexName={`${indexPrefix}contracts-${sort}`}
+      indexName={indexName}
       key={`search-${
         additionalFilter?.tag ?? additionalFilter?.creatorId ?? ''
-      }`}
+      }${followsKey}`}
+      initialUiState={
+        showFollows
+          ? {
+              [indexName]: {
+                refinementList: {
+                  creatorId: ['', ...(follows ?? [])],
+                },
+              },
+            }
+          : undefined
+      }
     >
       <Row className="gap-1 sm:gap-2">
         <SearchBox
@@ -115,17 +134,25 @@ export function ContractSearch(props: {
       {showCategorySelector && (
         <CategorySelector
           className="mb-2"
-          user={user}
           category={category}
           setCategory={setCategory}
         />
       )}
 
-      <ContractSearchInner
-        querySortOptions={querySortOptions}
-        filter={filter}
-        additionalFilter={{ category, ...additionalFilter }}
-      />
+      <Spacer h={4} />
+
+      {showFollows && (follows ?? []).length === 0 ? (
+        <>You're not following anyone yet.</>
+      ) : (
+        <ContractSearchInner
+          querySortOptions={querySortOptions}
+          filter={filter}
+          additionalFilter={{
+            category: category === 'following' ? 'all' : category,
+            ...additionalFilter,
+          }}
+        />
+      )}
     </InstantSearch>
   )
 }

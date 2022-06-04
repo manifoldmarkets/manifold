@@ -10,6 +10,7 @@ import {
   getDocs,
   orderBy,
   updateDoc,
+  deleteDoc,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -238,4 +239,27 @@ export async function getCategoryFeeds(userId: string) {
   )
   const feeds = feedData.map((data) => data?.feed ?? [])
   return Object.fromEntries(zip(CATEGORY_LIST, feeds) as [string, feed][])
+}
+
+export async function follow(userId: string, followedUserId: string) {
+  const followDoc = doc(db, 'users', userId, 'follows', followedUserId)
+  await setDoc(followDoc, {
+    userId: followedUserId,
+    timestamp: Date.now(),
+  })
+}
+
+export async function unfollow(userId: string, unfollowedUserId: string) {
+  const followDoc = doc(db, 'users', userId, 'follows', unfollowedUserId)
+  await deleteDoc(followDoc)
+}
+
+export function listenForFollows(
+  userId: string,
+  setFollowIds: (followIds: string[]) => void
+) {
+  const follows = collection(db, 'users', userId, 'follows')
+  return listenForValues<{ userId: string }>(follows, (docs) =>
+    setFollowIds(docs.map(({ userId }) => userId))
+  )
 }

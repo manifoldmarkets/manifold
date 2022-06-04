@@ -4,21 +4,17 @@ import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import {
-  Binary,
+  BinaryContract,
   Contract,
-  CPMM,
-  DPM,
-  FreeResponse,
   FreeResponseContract,
-  FullContract,
-  NumericContract,
+  resolution,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
 
 export function OutcomeLabel(props: {
   contract: Contract
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string
+  outcome: resolution | string
   truncate: 'short' | 'long' | 'none'
   value?: number
 }) {
@@ -30,13 +26,13 @@ export function OutcomeLabel(props: {
   if (contract.outcomeType === 'NUMERIC')
     return (
       <span className="text-blue-500">
-        {value ?? getValueFromBucket(outcome, contract as NumericContract)}
+        {value ?? getValueFromBucket(outcome, contract)}
       </span>
     )
 
   return (
     <FreeResponseOutcomeLabel
-      contract={contract as FullContract<DPM, FreeResponse>}
+      contract={contract}
       resolution={outcome}
       truncate={truncate}
       answerClassName={'font-bold text-base-400'}
@@ -44,9 +40,7 @@ export function OutcomeLabel(props: {
   )
 }
 
-export function BinaryOutcomeLabel(props: {
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
-}) {
+export function BinaryOutcomeLabel(props: { outcome: resolution }) {
   const { outcome } = props
 
   if (outcome === 'YES') return <YesLabel />
@@ -56,8 +50,8 @@ export function BinaryOutcomeLabel(props: {
 }
 
 export function BinaryContractOutcomeLabel(props: {
-  contract: FullContract<DPM | CPMM, Binary>
-  resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT'
+  contract: BinaryContract
+  resolution: resolution
 }) {
   const { contract, resolution } = props
 
@@ -80,8 +74,7 @@ export function FreeResponseOutcomeLabel(props: {
   if (resolution === 'CANCEL') return <CancelLabel />
   if (resolution === 'MKT') return <MultiLabel />
 
-  const { answers } = contract
-  const chosen = answers?.find((answer) => answer.id === resolution)
+  const chosen = contract.answers.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
     <FreeResponseAnswerToolTip text={chosen.text}>

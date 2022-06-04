@@ -1,16 +1,14 @@
 import clsx from 'clsx'
 
-import { User } from '../../../common/user'
 import { Row } from '../layout/row'
 import { CATEGORIES, CATEGORY_LIST } from '../../../common/categories'
 
 export function CategorySelector(props: {
-  user: User | null | undefined
   category: string
   setCategory: (category: string) => void
   className?: string
 }) {
-  const { className, user, category, setCategory } = props
+  const { className, category, setCategory } = props
 
   return (
     <Row
@@ -24,9 +22,17 @@ export function CategorySelector(props: {
         key="all"
         category="All"
         isFollowed={category === 'all'}
-        toggle={async () => {
-          if (!user?.id) return
+        toggle={() => {
           setCategory('all')
+        }}
+      />
+
+      <CategoryButton
+        key="following"
+        category="Following"
+        isFollowed={category === 'following'}
+        toggle={() => {
+          setCategory('following')
         }}
       />
 
@@ -35,8 +41,7 @@ export function CategorySelector(props: {
           key={cat}
           category={CATEGORIES[cat].split(' ')[0]}
           isFollowed={cat === category}
-          toggle={async () => {
-            if (!user?.id) return
+          toggle={() => {
             setCategory(cat)
           }}
         />

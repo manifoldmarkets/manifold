@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 admin.initializeApp()
 
 // export * from './keep-awake'
+export * from './health'
 export * from './transact'
 export * from './place-bet'
 export * from './resolve-market'
@@ -27,3 +28,5 @@ export * from './backup-db'
 export * from './change-user-info'
 export * from './market-close-emails'
 export * from './add-liquidity'
+export * from './on-create-answer'
+export * from './on-update-contract'

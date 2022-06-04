@@ -5,16 +5,8 @@ import {
   getTopAnswer,
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
-import {
-  Contract,
-  FullContract,
-  CPMM,
-  DPM,
-  Binary,
-  NumericContract,
-  FreeResponseContract,
-} from 'common/contract'
 import { User } from 'common/user'
+import { Contract, NumericContract, resolution } from 'common/contract'
 import {
   formatLargeNumber,
   formatMoney,
@@ -30,21 +22,24 @@ import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { Col } from '../layout/col'
 import { OUTCOME_TO_COLOR } from '../outcome-label'
 import { useSaveShares } from '../use-save-shares'
+import { sellShares } from 'web/lib/firebase/fn-call'
+import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 
 const BET_SIZE = 10
 
 export function QuickBet(props: { contract: Contract; user: User }) {
   const { contract, user } = props
+  const isCpmm = contract.mechanism === 'cpmm-1'
 
   const userBets = useUserContractBets(user.id, contract.id)
   const topAnswer =
     contract.outcomeType === 'FREE_RESPONSE'
-      ? getTopAnswer(contract as FreeResponseContract)
+      ? getTopAnswer(contract)
       : undefined
 
   // TODO: yes/no from useSaveShares doesn't work on numeric contracts
-  const { yesFloorShares, noFloorShares } = useSaveShares(
-    contract as FullContract<DPM | CPMM, Binary | FreeResponseContract>,
+  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
+    contract,
     userBets,
     topAnswer?.number.toString() || undefined
   )
@@ -76,10 +71,38 @@ export function QuickBet(props: { contract: Contract; user: User }) {
     // Catch any errors from hovering on an invalid option
   }
 
-  const color = getColor(contract, previewProb)
+  let sharesSold: number | undefined
+  let sellOutcome: 'YES' | 'NO' | undefined
+  let saleAmount: number | undefined
+  if (isCpmm && (upHover || downHover)) {
+    const oppositeShares = upHover ? noShares : yesShares
+    if (oppositeShares) {
+      sellOutcome = upHover ? 'NO' : 'YES'
+
+      const prob = getProb(contract)
+      const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
+      sharesSold = Math.min(oppositeShares, maxSharesSold)
+
+      const { newPool, saleValue } = calculateCpmmSale(
+        contract,
+        sharesSold,
+        sellOutcome
+      )
+      saleAmount = saleValue
+      previewProb = getCpmmProbability(newPool, contract.p)
+    }
+  }
 
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
     const betPromise = async () => {
+      if (sharesSold && sellOutcome) {
+        return await sellShares({
+          shares: sharesSold,
+          outcome: sellOutcome,
+          contractId: contract.id,
+        })
+      }
+
       const outcome = quickOutcome(contract, direction)
       return await placeBet({
         amount: BET_SIZE,
@@ -88,9 +111,14 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       })
     }
     const shortQ = contract.question.slice(0, 20)
+    const message =
+      sellOutcome && saleAmount
+        ? `${formatMoney(saleAmount)} sold of "${shortQ}"...`
+        : `${formatMoney(BET_SIZE)} on "${shortQ}"...`
+
     toast.promise(betPromise(), {
-      loading: `${formatMoney(BET_SIZE)} on "${shortQ}"...`,
-      success: `${formatMoney(BET_SIZE)} on "${shortQ}"...`,
+      loading: message,
+      success: message,
       error: (err) => `${err.message}`,
     })
   }
@@ -136,14 +164,14 @@ export function QuickBet(props: { contract: Contract; user: User }) {
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? `text-${color}` : 'text-gray-400'
+              upHover ? 'text-green-500' : 'text-gray-400'
             )}
           />
         ) : (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? `text-${color}` : 'text-gray-200'
+              upHover ? 'text-green-500' : 'text-gray-200'
             )}
           />
         )}
@@ -152,32 +180,41 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       <QuickOutcomeView contract={contract} previewProb={previewProb} />
 
       {/* Down bet triangle */}
-      <div>
-        <div
-          className="peer absolute bottom-0 left-0 right-0 h-[50%]"
-          onMouseEnter={() => setDownHover(true)}
-          onMouseLeave={() => setDownHover(false)}
-          onClick={() => placeQuickBet('DOWN')}
-        ></div>
-        {hasDownShares > 0 ? (
+      {contract.outcomeType !== 'BINARY' ? (
+        <div>
+          <div className="peer absolute bottom-0 left-0 right-0 h-[50%] cursor-default"></div>
           <TriangleDownFillIcon
-            className={clsx(
-              'mx-auto h-5 w-5',
-              downHover ? `text-${color}` : 'text-gray-400'
-            )}
+            className={clsx('mx-auto h-5 w-5 text-gray-200')}
           />
-        ) : (
-          <TriangleDownFillIcon
-            className={clsx(
-              'mx-auto h-5 w-5',
-              downHover ? `text-${color}` : 'text-gray-200'
-            )}
-          />
-        )}
-        <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400">
-          {formatMoney(10)}
         </div>
-      </div>
+      ) : (
+        <div>
+          <div
+            className="peer absolute bottom-0 left-0 right-0 h-[50%]"
+            onMouseEnter={() => setDownHover(true)}
+            onMouseLeave={() => setDownHover(false)}
+            onClick={() => placeQuickBet('DOWN')}
+          ></div>
+          {hasDownShares > 0 ? (
+            <TriangleDownFillIcon
+              className={clsx(
+                'mx-auto h-5 w-5',
+                downHover ? 'text-red-500' : 'text-gray-400'
+              )}
+            />
+          ) : (
+            <TriangleDownFillIcon
+              className={clsx(
+                'mx-auto h-5 w-5',
+                downHover ? 'text-red-500' : 'text-gray-200'
+              )}
+            />
+          )}
+          <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400">
+            {formatMoney(10)}
+          </div>
+        </div>
+      )}
     </Col>
   )
 }
@@ -226,10 +263,10 @@ function QuickOutcomeView(props: {
       display = getBinaryProbPercent(contract)
       break
     case 'NUMERIC':
-      display = formatLargeNumber(getExpectedValue(contract as NumericContract))
+      display = formatLargeNumber(getExpectedValue(contract))
       break
     case 'FREE_RESPONSE': {
-      const topAnswer = getTopAnswer(contract as FreeResponseContract)
+      const topAnswer = getTopAnswer(contract)
       display =
         topAnswer &&
         formatPercent(getOutcomeProbability(contract, topAnswer.id))
@@ -257,7 +294,7 @@ function getProb(contract: Contract) {
     : outcomeType === 'FREE_RESPONSE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
     : outcomeType === 'NUMERIC'
-    ? getNumericScale(contract as NumericContract)
+    ? getNumericScale(contract)
     : 1 // Should not happen
 }
 
@@ -274,12 +311,17 @@ export function getColor(contract: Contract, previewProb?: number) {
   const { resolution } = contract
   if (resolution) {
     return (
-      OUTCOME_TO_COLOR[resolution as 'YES' | 'NO' | 'CANCEL' | 'MKT'] ??
+      OUTCOME_TO_COLOR[resolution as resolution] ??
       // If resolved to a FR answer, use 'primary'
       'primary'
     )
   }
+
   if (contract.outcomeType === 'NUMERIC') {
+    return 'blue-400'
+  }
+
+  if (contract.outcomeType === 'FREE_RESPONSE') {
     return 'blue-400'
   }
 

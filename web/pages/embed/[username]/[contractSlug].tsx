@@ -1,12 +1,5 @@
 import { Bet } from 'common/bet'
-import {
-  BinaryContract,
-  Contract,
-  DPM,
-  FreeResponse,
-  FullContract,
-  NumericContract,
-} from 'common/contract'
+import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { AnswersGraph } from 'web/components/answers/answers-graph'
 import BetRow from 'web/components/bet-row'
@@ -117,10 +110,9 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
           {isBinary && (
             <Row className="items-center gap-4">
-              <BetRow
-                contract={contract as BinaryContract}
-                betPanelClassName="scale-75"
-              />
+              {/* this fails typechecking, but it doesn't explode because we will
+              never */}
+              <BetRow contract={contract as any} betPanelClassName="scale-75" />
               <BinaryResolutionOrChance contract={contract} />
             </Row>
           )}
@@ -133,9 +125,7 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
           )}
 
           {outcomeType === 'NUMERIC' && (
-            <NumericResolutionOrExpectation
-              contract={contract as NumericContract}
-            />
+            <NumericResolutionOrExpectation contract={contract} />
           )}
         </Row>
 
@@ -152,18 +142,11 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         )}
 
         {outcomeType === 'FREE_RESPONSE' && (
-          <AnswersGraph
-            contract={contract as FullContract<DPM, FreeResponse>}
-            bets={bets}
-            height={graphHeight}
-          />
+          <AnswersGraph contract={contract} bets={bets} height={graphHeight} />
         )}
 
         {outcomeType === 'NUMERIC' && (
-          <NumericGraph
-            contract={contract as NumericContract}
-            height={graphHeight}
-          />
+          <NumericGraph contract={contract} height={graphHeight} />
         )}
       </div>
     </Col>

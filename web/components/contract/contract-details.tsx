@@ -1,13 +1,9 @@
-import clsx from 'clsx'
 import {
   ClockIcon,
   DatabaseIcon,
   PencilIcon,
-  CurrencyDollarIcon,
   TrendingUpIcon,
-  StarIcon,
 } from '@heroicons/react/outline'
-import { StarIcon as SolidStarIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
@@ -17,7 +13,6 @@ import {
   contractPool,
   updateContract,
 } from 'web/lib/firebase/contracts'
-import { Col } from '../layout/col'
 import dayjs from 'dayjs'
 import { DateTimeTooltip } from '../datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
@@ -36,7 +31,6 @@ export function MiscDetails(props: {
 }) {
   const { contract, showHotVolume, showCloseTime } = props
   const { volume, volume24Hours, closeTime, tags } = contract
-  const { volumeLabel } = contractMetrics(contract)
   // Show at most one category that this contract is tagged by
   const categories = CATEGORY_LIST.filter((category) =>
     tags.map((t) => t.toLowerCase()).includes(category)
