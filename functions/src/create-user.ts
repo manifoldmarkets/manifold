@@ -17,7 +17,7 @@ import { sendWelcomeEmail } from './emails'
 import { isWhitelisted } from '../../common/envs/constants'
 
 export const createUser = functions
-  .runWith({ minInstances: 1 })
+  .runWith({ minInstances: 1, secrets: ['MAILGUN_KEY'] })
   .https.onCall(async (data: { deviceToken?: string }, context) => {
     const userId = context?.auth?.uid
     if (!userId) return { status: 'error', message: 'Not authorized' }
