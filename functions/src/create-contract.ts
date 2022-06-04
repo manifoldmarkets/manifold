@@ -27,6 +27,7 @@ import {
 import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
+import { DAY_MS } from 'common/util/time'
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -64,7 +65,7 @@ export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
   }
 
   const autoResolution = 'MKT'
-  const autoResolutionTime = closeTime.setDate(closeTime.getDate() + 7)
+  const autoResolutionTime = closeTime.getTime() + 7 * DAY_MS
 
   // Uses utc time on server:
   const today = new Date()
