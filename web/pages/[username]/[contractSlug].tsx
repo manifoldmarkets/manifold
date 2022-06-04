@@ -29,7 +29,6 @@ import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
 import { useUserById } from 'web/hooks/use-users'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { FirstArgument } from 'common/util/types'
 import { contractTextDetails } from 'web/components/contract/contract-details'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
@@ -88,7 +87,7 @@ export default function ContractPage(props: {
   return <ContractPageContent {...props} />
 }
 
-export function ContractPageContent(props: FirstArgument<typeof ContractPage>) {
+export function ContractPageContent(props: Parameters<typeof ContractPage>[0]) {
   const { backToHome } = props
 
   const user = useUser()
