@@ -191,7 +191,7 @@ export function EditableResolutionTime(props: {
     const newTime = dayjs(timeString).valueOf()
     if (newTime === time) setIsEditing(false)
     else if (contract.closeTime && newTime > (contract.closeTime ?? Date.now)) {
-      const formattedTime = dayjs(time).format('YYYY-MM-DD h:mm a')
+      const formattedTime = dayjs(newTime).format('YYYY-MM-DD h:mm a')
       const newDescription = `${contract.description}\n\nAuto resolution date updated to ${formattedTime}`
 
       updateContract(contract.id, {
