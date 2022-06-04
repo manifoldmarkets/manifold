@@ -1,7 +1,7 @@
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { Contract, resolution } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
 
 export type LiteMarket = {
@@ -30,6 +30,9 @@ export type LiteMarket = {
 
   volume7Days: number
   volume24Hours: number
+
+  autoResolution: resolution
+  autoResolutionTime: number
 
   isResolved: boolean
   resolution?: string
@@ -62,6 +65,8 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     mechanism,
     volume7Days,
     volume24Hours,
+    autoResolution,
+    autoResolutionTime,
     isResolved,
     resolution,
     resolutionTime,
@@ -94,6 +99,8 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     mechanism,
     volume7Days,
     volume24Hours,
+    autoResolution,
+    autoResolutionTime,
     isResolved,
     resolution,
     resolutionTime,
