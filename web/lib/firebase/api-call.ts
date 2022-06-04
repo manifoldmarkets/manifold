@@ -38,9 +38,11 @@ export async function call(url: string, method: string, params: any) {
 // app just hit the cloud functions directly -- there's no difference and it's
 // one less hop
 
-function getFunctionUrl(name: string) {
+export function getFunctionUrl(name: string) {
   const { projectId, region } = FIREBASE_CONFIG
-  return `https://${region}-${projectId}.cloudfunctions.net/${name}`
+  return process.env.NEXT_PUBLIC_FIREBASE_EMULATE
+    ? `http://localhost:5001/${projectId}/${region}/${name}`
+    : `https://${region}-${projectId}.cloudfunctions.net/${name}`
 }
 
 export function createContract(params: any) {
