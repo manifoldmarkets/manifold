@@ -22,25 +22,20 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 
 ### For local development
 
-0. `$ firebase functions:config:get > .runtimeconfig.json` to cache secrets for local dev
-1. [Install](https://cloud.google.com/sdk/docs/install) gcloud CLI
-2. If you don't have java (or see the error `Error: Process java -version has exited with code 1. Please make sure Java is installed and on your system PATH.`):
-   1. `$ brew install java`
-   2. `$ sudo ln -sfn /opt/homebrew/opt/openjdk/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk` 
-3. `$ gcloud auth login` to authenticate the CLI tools to Google Cloud
-4. `$ gcloud config set project <project-id>` to choose the project (`$ gcloud projects list` to see options)
-5. `$ mkdir firestore_export` to create a folder to store the exported database
-6. `$ yarn db:update-local-from-remote` to pull the remote db from Firestore to local
-   1. TODO: this won't work when open source, we'll have to point to the public db
+0. [Install](https://cloud.google.com/sdk/docs/install) gcloud CLI
+1. If you don't have java (or see the error `Error: Process java -version has exited with code 1. Please make sure Java is installed and on your system PATH.`): 0. `$ brew install java`
+   1. `$ sudo ln -sfn /opt/homebrew/opt/openjdk/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk`
+2. `$ gcloud auth login` to authenticate the CLI tools to Google Cloud
+3. `$ gcloud config set project <project-id>` to choose the project (`$ gcloud projects list` to see options)
+4. `$ mkdir firestore_export` to create a folder to store the exported database
+5. `$ yarn db:update-local-from-remote` to pull the remote db from Firestore to local 0. TODO: this won't work when open source, we'll have to point to the public db
 
 ## Developing locally
 
 0. `$ firebase use dev` if you haven't already
-1. `$ yarn serve` to spin up the emulators
-   1. The Emulator UI is at http://localhost:4000; the functions are hosted on :5001.
-      Note: You have to kill and restart emulators when you change code; no hot reload =(
-2. `$ yarn dev:emulate` in `/web` to connect to emulators with the frontend
-   1. Note: emulated database is cleared after every shutdown
+1. `$ yarn serve` to spin up the emulators 0. The Emulator UI is at http://localhost:4000; the functions are hosted on :5001.
+   Note: You have to kill and restart emulators when you change code; no hot reload =(
+2. `$ yarn dev:emulate` in `/web` to connect to emulators with the frontend 0. Note: emulated database is cleared after every shutdown
 
 ## Firestore Commands
 
@@ -62,8 +57,7 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 
 ## Secrets management
 
-Secrets are strings that shouldn't be checked into Git (eg API keys, passwords). We store these using [environment config on Firebase Functions](https://firebase.google.com/docs/functions/config-env). Some useful workflows:
+Secrets are strings that shouldn't be checked into Git (eg API keys, passwords). We store these using [Google Secret Manager](https://console.cloud.google.com/security/secret-manager), which provides them as environment variables to functions that require them. Some useful workflows:
 
-- Set a secret: `$ firebase functions:config:set stripe.test_secret="THE-API-KEY"`
-- Preview all secrets: `$ firebase functions:config:get`
-- Cache for local dev:`$ firebase functions:config:get > .runtimeconfig.json`
+- Set a secret: `$ firebase functions:secrets:set stripe.test_secret="THE-API-KEY"`
+- Read a secret: `$ firebase functions:secrets:access STRIPE_APIKEY`
