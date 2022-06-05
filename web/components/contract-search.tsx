@@ -56,8 +56,14 @@ export function ContractSearch(props: {
     category?: string
   }
   showCategorySelector: boolean
+  onContractClick?: (contract: Contract) => void
 }) {
-  const { querySortOptions, additionalFilter, showCategorySelector } = props
+  const {
+    querySortOptions,
+    additionalFilter,
+    showCategorySelector,
+    onContractClick,
+  } = props
 
   const user = useUser()
   const follows = useFollows(user?.id)
@@ -151,6 +157,7 @@ export function ContractSearch(props: {
             category: category === 'following' ? 'all' : category,
             ...additionalFilter,
           }}
+          onContractClick={onContractClick}
         />
       )}
     </InstantSearch>
@@ -168,8 +175,9 @@ export function ContractSearchInner(props: {
     tag?: string
     category?: string
   }
+  onContractClick?: (contract: Contract) => void
 }) {
-  const { querySortOptions, filter, additionalFilter } = props
+  const { querySortOptions, filter, additionalFilter, onContractClick } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
   const { query, setQuery, setSort } = useUpdateQueryAndSort({
@@ -235,6 +243,7 @@ export function ContractSearchInner(props: {
       loadMore={showMore}
       hasMore={!isLastPage}
       showCloseTime={index.endsWith('close-date')}
+      onContractClick={onContractClick}
     />
   )
 }

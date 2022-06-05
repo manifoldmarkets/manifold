@@ -20,7 +20,7 @@ import { batchedWaitAll } from '../../common/util/promise'
 import { getProbability } from '../shared/calculate'
 
 export const resolveMarket = functions
-  .runWith({ minInstances: 1 })
+  .runWith({ minInstances: 1, secrets: ['MAILGUN_KEY'] })
   .https.onCall(
     async (
       data: {

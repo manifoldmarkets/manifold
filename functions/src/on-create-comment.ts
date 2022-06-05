@@ -11,8 +11,9 @@ import { createNotification } from './create-notification'
 
 const firestore = admin.firestore()
 
-export const onCreateComment = functions.firestore
-  .document('contracts/{contractId}/comments/{commentId}')
+export const onCreateComment = functions
+  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .firestore.document('contracts/{contractId}/comments/{commentId}')
   .onCreate(async (change, context) => {
     const { contractId } = context.params as {
       contractId: string
