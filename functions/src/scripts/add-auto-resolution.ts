@@ -5,7 +5,7 @@ initAdmin()
 
 import { getValues } from '../utils'
 import { Contract } from '../../../common/contract'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS } from '../../../common/util/time'
 
 const firestore = admin.firestore()
 

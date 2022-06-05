@@ -27,7 +27,7 @@ import {
 import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS } from '../../common/util/time'
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
