@@ -83,7 +83,7 @@ const autoResolve = async (contract: Contract) => {
     resolutions: undefined, // free response
   }
   const contractDoc = firestore.doc(`contracts/${contract.id}`)
-  return await resolveContract(contract, data, contractDoc)
+  return await resolveContract(contract, data, contractDoc, true)
 }
 
 const resolveContract = async (
@@ -94,7 +94,8 @@ const resolveContract = async (
     probabilityInt?: number
     resolutions?: { [outcome: string]: number }
   },
-  contractDoc: admin.firestore.DocumentReference<admin.firestore.DocumentData>
+  contractDoc: admin.firestore.DocumentReference<admin.firestore.DocumentData>,
+  autoResolution: boolean = false
 ) => {
   const { creatorId, id, outcomeType, closeTime } = contract
   const { outcome, probabilityInt, resolutions, value } = data
@@ -158,12 +159,17 @@ const resolveContract = async (
       resolutionProbability
     )
 
+  const description = autoResolution
+    ? contract.description.concat(`\n\n\nContract resolved automatically.`)
+    : undefined
+
   await contractDoc.update(
     removeUndefinedProps({
       isResolved: true,
       resolution: outcome,
       resolutionValue: value,
       resolutionTime,
+      description,
       closeTime: newCloseTime,
       resolutionProbability,
       resolutions,
