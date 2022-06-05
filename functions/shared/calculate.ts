@@ -1,12 +1,12 @@
 import { maxBy } from 'lodash'
-import { Bet } from './bet'
+import { Bet } from '../../common/bet'
 import {
   calculateCpmmSale,
   getCpmmProbability,
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbabilityAfterSale,
   calculateCpmmSharesAfterFee,
-} from './calculate-cpmm'
+} from '../../common/calculate-cpmm'
 import {
   calculateDpmPayout,
   calculateDpmPayoutAfterCorrectBet,
@@ -16,9 +16,13 @@ import {
   getDpmProbability,
   getDpmOutcomeProbabilityAfterBet,
   getDpmProbabilityAfterSale,
-} from './calculate-dpm'
-import { calculateFixedPayout } from './calculate-fixed-payouts'
-import { Contract, BinaryContract, FreeResponseContract } from './contract'
+} from '../../common/calculate-dpm'
+import { calculateFixedPayout } from '../../common/calculate-fixed-payouts'
+import {
+  Contract,
+  BinaryContract,
+  FreeResponseContract,
+} from '../../common/contract'
 
 export function getProbability(contract: BinaryContract) {
   return contract.mechanism === 'cpmm-1'

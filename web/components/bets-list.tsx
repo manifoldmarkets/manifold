@@ -44,7 +44,7 @@ import {
   getContractBetMetrics,
   resolvedPayout,
   getContractBetNullMetrics,
-} from 'common/calculate'
+} from 'functions/shared/calculate'
 import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
 import { trackLatency } from 'web/lib/firebase/tracking'
 import { NumericContract } from 'common/contract'
