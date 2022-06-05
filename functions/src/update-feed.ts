@@ -31,7 +31,7 @@ const MAX_BATCHES = 50
 
 const getUserBatches = async () => {
   const users = shuffle(await getValues<User>(firestore.collection('users')))
-  let userBatches: User[][] = []
+  const userBatches: User[][] = []
   for (let i = 0; i < users.length; i += BATCH_SIZE) {
     userBatches.push(users.slice(i, i + BATCH_SIZE))
   }
@@ -197,18 +197,18 @@ function getActivityScore(contract: Contract, viewTime: number | undefined) {
   return isNew ? newMappedScore : mappedScore
 }
 
-function getLastViewedScore(viewTime: number | undefined) {
-  if (viewTime === undefined) {
-    return 1
-  }
+// function getLastViewedScore(viewTime: number | undefined) {
+//   if (viewTime === undefined) {
+//     return 1
+//   }
 
-  const daysAgo = (Date.now() - viewTime) / DAY_MS
+//   const daysAgo = (Date.now() - viewTime) / DAY_MS
 
-  if (daysAgo < 0.5) {
-    const frac = logInterpolation(0, 0.5, daysAgo)
-    return 0.5 + 0.25 * frac
-  }
+//   if (daysAgo < 0.5) {
+//     const frac = logInterpolation(0, 0.5, daysAgo)
+//     return 0.5 + 0.25 * frac
+//   }
 
-  const frac = logInterpolation(0.5, 14, daysAgo)
-  return 0.75 + 0.25 * frac
-}
+//   const frac = logInterpolation(0.5, 14, daysAgo)
+//   return 0.75 + 0.25 * frac
+// }

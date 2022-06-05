@@ -6,7 +6,7 @@ import { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
 export type DocumentValue = {
   doc: DocumentSnapshot
   field: string
-  val: any
+  val: unknown
 }
 export type DocumentCorrespondence = [DocumentSnapshot, DocumentSnapshot[]]
 export type DocumentDiff = {
@@ -20,9 +20,9 @@ export function findDiffs(
   destPath: string
 ) {
   const diffs: DocumentDiff[] = []
-  for (let [srcDoc, destDocs] of docs) {
+  for (const [srcDoc, destDocs] of docs) {
     const srcVal = srcDoc.get(srcPath)
-    for (let destDoc of destDocs) {
+    for (const destDoc of destDocs) {
       const destVal = destDoc.get(destPath)
       if (destVal !== srcVal) {
         diffs.push({
