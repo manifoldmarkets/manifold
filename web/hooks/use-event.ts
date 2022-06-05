@@ -18,19 +18,3 @@ export function useEvent<T extends AnyFunction>(callback?: T) {
     []
   ) as T
 }
-
-/**
- * Usage
-function Component(props) {
-  const [visible, setVisible] = useState(false)
-
-  // props.onToggle may not be stable
-  const onToggle = useEvent(props.onToggle)
-
-  // But our onToggle is stable
-  useEffect(() => onToggle(visible), [onToggle, visible])
-
-  // ❌ Throws when used in the render phase
-  onToggle(visible)
-}
-*/
