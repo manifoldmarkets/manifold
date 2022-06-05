@@ -1,3 +1,5 @@
+// Existing contracts don't have auto resolutions (Time + resolution). Let's add them.
+
 import * as admin from 'firebase-admin'
 
 import { initAdmin } from './script-init'
