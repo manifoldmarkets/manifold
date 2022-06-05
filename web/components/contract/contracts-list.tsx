@@ -44,7 +44,9 @@ export function ContractsGrid(props: {
             contract={contract}
             key={contract.id}
             showCloseTime={showCloseTime}
-            onClick={() => onContractClick?.(contract)}
+            onClick={
+              onContractClick ? () => onContractClick(contract) : undefined
+            }
           />
         ))}
       </ul>
