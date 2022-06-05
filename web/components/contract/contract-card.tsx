@@ -65,7 +65,14 @@ export function ContractCard(props: {
               {onClick ? (
                 <a
                   className="absolute top-0 left-0 right-0 bottom-0"
-                  onClick={onClick}
+                  href={contractPath(contract)}
+                  onClick={(e) => {
+                    // Let the browser handle the link click (opens in new tab).
+                    if (e.ctrlKey || e.metaKey) return
+
+                    e.preventDefault()
+                    onClick()
+                  }}
                 />
               ) : (
                 <Link href={contractPath(contract)}>
