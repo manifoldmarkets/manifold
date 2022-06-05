@@ -86,16 +86,24 @@ export function ContractSearch(props: {
   const [mode, setMode] = useState<'categories' | 'following'>('categories')
 
   const filters = [
+    filter === 'open' ? 'isResolved:false' : '',
+    filter === 'closed' ? 'isResolved:false' : '',
+    filter === 'resolved' ? 'isResolved:true' : '',
     showCategorySelector
       ? mode === 'categories'
-        ? followedCategories?.map((cat) => `lowercaseTags:${cat}`) ?? []
-        : follows?.map((creatorId) => `creatorId:${creatorId}`) ?? []
+        ? followedCategories?.map((cat) => `lowercaseTags:${cat}`) ?? ''
+        : follows?.map((creatorId) => `creatorId:${creatorId}`) ?? ''
       : '',
     additionalFilter?.creatorId
       ? `creatorId:${additionalFilter.creatorId}`
       : '',
     additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
-  ]
+  ].filter((f) => f)
+
+  const numericFilters = [
+    filter === 'open' ? `closeTime > ${Date.now()}` : '',
+    filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+  ].filter((f) => f)
 
   if (!sort) return <></>
 
@@ -133,7 +141,12 @@ export function ContractSearch(props: {
             select: '!select !select-bordered',
           }}
         />
-        <Configure facetFilters={['', ...filters]} />
+        <Configure
+          facetFilters={['', ...filters]}
+          numericFilters={numericFilters}
+          // Page resets on filters change.
+          page={0}
+        />
       </Row>
 
       <Spacer h={3} />
@@ -210,17 +223,6 @@ export function ContractSearchInner(props: {
     }
   }, [index])
 
-  useFilterClosed(
-    filter === 'closed'
-      ? true
-      : filter === 'all' || filter === 'resolved'
-      ? undefined
-      : false
-  )
-  useFilterResolved(
-    filter === 'resolved' ? true : filter === 'all' ? undefined : false
-  )
-
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   useEffect(() => {
     const id = setTimeout(() => setIsInitialLoad(false), 1000)
@@ -241,28 +243,4 @@ export function ContractSearchInner(props: {
       onContractClick={onContractClick}
     />
   )
-}
-
-const useFilterClosed = (value: boolean | undefined) => {
-  const [now] = useState(Date.now())
-  useRange({
-    attribute: 'closeTime',
-    min: value === false ? now : undefined,
-    max: value ? now : undefined,
-  })
-}
-
-const useFilterResolved = (value: boolean | undefined) => {
-  const { items, refine: deleteRefinement } = useCurrentRefinements({
-    includedAttributes: ['isResolved'],
-  })
-
-  const { refine } = useRefinementList({ attribute: 'isResolved' })
-
-  useEffect(() => {
-    const refinements = items[0]?.refinements ?? []
-
-    if (value !== undefined) refine(`${value}`)
-    refinements.forEach((refinement) => deleteRefinement(refinement))
-  }, [value])
 }
