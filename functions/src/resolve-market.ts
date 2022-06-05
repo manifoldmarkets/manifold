@@ -17,7 +17,7 @@ import { removeUndefinedProps } from '../../common/util/object'
 import { LiquidityProvision } from '../../common/liquidity-provision'
 import { getValues } from './utils'
 import { batchedWaitAll } from '../../common/util/promise'
-import { getProbability } from '../shared/calculate'
+import { getProbability } from 'common/calculate'
 
 export const resolveMarket = functions
   .runWith({ minInstances: 1, secrets: ['MAILGUN_KEY'] })
