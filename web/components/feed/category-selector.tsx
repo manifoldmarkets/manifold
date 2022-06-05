@@ -8,6 +8,7 @@ import { Modal } from '../layout/modal'
 import { Col } from '../layout/col'
 import { useState } from 'react'
 import { updateUser, User } from 'web/lib/firebase/users'
+import { Checkbox } from '../checkbox'
 
 export function CategorySelector(props: {
   category: string
@@ -106,28 +107,51 @@ function CategorySelectorModal(props: {
   setIsOpen: (isOpen: boolean) => void
 }) {
   const { user, isOpen, setIsOpen } = props
-  const followedCategories = user.followedCategories ?? []
+  const followedCategories =
+    user?.followedCategories === undefined
+      ? CATEGORY_LIST
+      : user.followedCategories
+
+  const selectAll =
+    user.followedCategories === undefined ||
+    followedCategories.length < CATEGORY_LIST.length
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="items-center rounded bg-white p-6">
+      <Col className="rounded bg-white p-6">
         <Col className="grid w-full grid-cols-2 gap-4">
           {CATEGORY_LIST.map((cat) => (
-            <CategoryButton
+            <Checkbox
               className="col-span-1"
               key={cat}
-              category={CATEGORIES[cat].split(' ')[0]}
-              isFollowed={followedCategories.includes(cat)}
-              toggle={() => {
+              label={CATEGORIES[cat].split(' ')[0]}
+              checked={followedCategories.includes(cat)}
+              toggle={(checked) => {
                 updateUser(user.id, {
-                  followedCategories: !followedCategories.includes(cat)
-                    ? union([cat], followedCategories)
-                    : difference(followedCategories, [cat]),
+                  followedCategories: checked
+                    ? difference(followedCategories, [cat])
+                    : union([cat], followedCategories),
                 })
               }}
             />
           ))}
         </Col>
+        <button
+          className="btn btn-sm btn-ghost mt-2 self-end"
+          onClick={() => {
+            if (selectAll) {
+              updateUser(user.id, {
+                followedCategories: CATEGORY_LIST,
+              })
+            } else {
+              updateUser(user.id, {
+                followedCategories: [],
+              })
+            }
+          }}
+        >
+          Select {selectAll ? 'all' : 'none'}
+        </button>
       </Col>
     </Modal>
   )
