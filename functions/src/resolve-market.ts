@@ -59,7 +59,7 @@ export const autoResolveMarkets = functions.pubsub
 
     await batchedWaitAll(
       contractsToResolve.map((contract) => async () => {
-        const result = await resolve(contract)
+        const result = await autoResolve(contract)
 
         console.log(
           'resolved',
@@ -72,7 +72,7 @@ export const autoResolveMarkets = functions.pubsub
     )
   })
 
-const resolve = async (contract: Contract) => {
+const autoResolve = async (contract: Contract) => {
   const data = {
     outcome: contract.autoResolution,
     value: undefined, // numeric
