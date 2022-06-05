@@ -23,10 +23,7 @@ const Home = () => {
         if (!username || !contractSlug) setContract(undefined)
         else {
           // Show contract if route is to a contract: '/[username]/[contractSlug]'.
-          getContractFromSlug(contractSlug).then((c) => {
-            setContract(c)
-            window.scrollTo(0, 0)
-          })
+          getContractFromSlug(contractSlug).then(setContract)
         }
       }
     }
@@ -34,6 +31,10 @@ const Home = () => {
     window.addEventListener('popstate', onBack)
     return () => window.removeEventListener('popstate', onBack)
   }, [])
+
+  useEffect(() => {
+    if (contract) window.scrollTo(0, 0)
+  }, [contract])
 
   if (user === null) {
     Router.replace('/')
@@ -55,7 +56,6 @@ const Home = () => {
               setContract(c)
               // Update the url without switching pages in Nextjs.
               history.pushState(null, '', `/${c.creatorUsername}/${c.slug}`)
-              window.scrollTo(0, 0)
             }}
           />
         </Col>
