@@ -21,9 +21,9 @@ import { Row } from './layout/row'
 import { useEffect, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { ENV } from 'common/envs/constants'
-import { CategorySelector } from './feed/category-selector'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
+import { ChoicesToggleGroup } from './choices-toggle-group'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -66,6 +66,7 @@ export function ContractSearch(props: {
   } = props
 
   const user = useUser()
+  const followedCategories = user?.followedCategories
   const follows = useFollows(user?.id)
 
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
@@ -80,12 +81,24 @@ export function ContractSearch(props: {
     querySortOptions?.defaultFilter ?? 'open'
   )
 
-  const [category, setCategory] = useState<string>('all')
-  const showFollows = category === 'following'
-  const followsKey =
-    showFollows && follows?.length ? `${follows.join(',')}` : ''
+  const [mode, setMode] = useState<'categories' | 'following'>('categories')
 
   if (!sort) return <></>
+
+  const key =
+    mode === 'following'
+      ? follows?.length
+        ? `${follows.join(',')}`
+        : ''
+      : followedCategories?.length
+      ? `${followedCategories.join(',')}`
+      : ''
+
+  const categoriesLabel = `Categories ${
+    followedCategories ? followedCategories.length : 'all'
+  }`
+
+  const followingLabel = `Following ${follows?.length ?? 0}`
 
   const indexName = `${indexPrefix}contracts-${sort}`
 
@@ -95,13 +108,21 @@ export function ContractSearch(props: {
       indexName={indexName}
       key={`search-${
         additionalFilter?.tag ?? additionalFilter?.creatorId ?? ''
-      }${followsKey}`}
+      }${key}`}
       initialUiState={
-        showFollows
+        mode === 'following'
           ? {
               [indexName]: {
                 refinementList: {
                   creatorId: ['', ...(follows ?? [])],
+                },
+              },
+            }
+          : followedCategories
+          ? {
+              [indexName]: {
+                refinementList: {
+                  lowercaseTags: ['', ...followedCategories],
                 },
               },
             }
@@ -138,25 +159,25 @@ export function ContractSearch(props: {
       <Spacer h={3} />
 
       {showCategorySelector && (
-        <CategorySelector
-          className="mb-2"
-          category={category}
-          setCategory={setCategory}
+        <ChoicesToggleGroup
+          currentChoice={mode}
+          choicesMap={{
+            [categoriesLabel]: 'categories',
+            [followingLabel]: 'following',
+          }}
+          setChoice={(c) => setMode(c as 'categories' | 'following')}
         />
       )}
 
       <Spacer h={4} />
 
-      {showFollows && (follows ?? []).length === 0 ? (
+      {mode === 'following' && (follows ?? []).length === 0 ? (
         <>You're not following anyone yet.</>
       ) : (
         <ContractSearchInner
           querySortOptions={querySortOptions}
           filter={filter}
-          additionalFilter={{
-            category: category === 'following' ? 'all' : category,
-            ...additionalFilter,
-          }}
+          additionalFilter={additionalFilter ?? {}}
           onContractClick={onContractClick}
         />
       )}
@@ -173,7 +194,6 @@ export function ContractSearchInner(props: {
   additionalFilter: {
     creatorId?: string
     tag?: string
-    category?: string
   }
   onContractClick?: (contract: Contract) => void
 }) {
@@ -209,11 +229,11 @@ export function ContractSearchInner(props: {
     }
   }, [index])
 
-  const { creatorId, category, tag } = additionalFilter
+  const { creatorId, tag } = additionalFilter
 
   useFilterCreator(creatorId)
 
-  useFilterTag(tag ?? (category === 'all' ? undefined : category))
+  useFilterTag(tag)
 
   useFilterClosed(
     filter === 'closed'
