@@ -58,7 +58,12 @@ export function ContractSearch(props: {
   showCategorySelector: boolean
   onContractClick?: (contract: Contract) => void
 }) {
-  const { querySortOptions, additionalFilter, showCategorySelector, onContractClick } = props
+  const {
+    querySortOptions,
+    additionalFilter,
+    showCategorySelector,
+    onContractClick,
+  } = props
 
   const user = useUser()
   const follows = useFollows(user?.id)
