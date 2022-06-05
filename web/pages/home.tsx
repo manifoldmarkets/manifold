@@ -11,30 +11,7 @@ import { getContractFromSlug } from 'web/lib/firebase/contracts'
 
 const Home = () => {
   const user = useUser()
-
-  const [contract, setContract] = useState<Contract | undefined>()
-
-  useEffect(() => {
-    const onBack = () => {
-      const path = location.pathname.split('/').slice(1)
-      if (path[0] === 'home') setContract(undefined)
-      else {
-        const [username, contractSlug] = path
-        if (!username || !contractSlug) setContract(undefined)
-        else {
-          // Show contract if route is to a contract: '/[username]/[contractSlug]'.
-          getContractFromSlug(contractSlug).then(setContract)
-        }
-      }
-    }
-
-    window.addEventListener('popstate', onBack)
-    return () => window.removeEventListener('popstate', onBack)
-  }, [])
-
-  useEffect(() => {
-    if (contract) window.scrollTo(0, 0)
-  }, [contract])
+  const [contract, setContract] = useContractPage()
 
   if (user === null) {
     Router.replace('/')
@@ -75,6 +52,49 @@ const Home = () => {
       )}
     </>
   )
+}
+
+const useContractPage = () => {
+  const [contract, setContract] = useState<Contract | undefined>()
+
+  useEffect(() => {
+    const onBack = () => {
+      const path = location.pathname.split('/').slice(1)
+      if (path[0] === 'home') setContract(undefined)
+      else {
+        const [username, contractSlug] = path
+        if (!username || !contractSlug) setContract(undefined)
+        else {
+          // Show contract if route is to a contract: '/[username]/[contractSlug]'.
+          getContractFromSlug(contractSlug).then(setContract)
+        }
+      }
+    }
+    window.addEventListener('popstate', onBack)
+
+    // Hack. Listen to changes in href to clear contract on navigate home.
+    let href = document.location.href
+    const observer = new MutationObserver(function (_mutations) {
+      if (href != document.location.href) {
+        href = document.location.href
+
+        const path = location.pathname.split('/').slice(1)
+        if (path[0] === 'home') setContract(undefined)
+      }
+    })
+    observer.observe(document, { subtree: true, childList: true })
+
+    return () => {
+      window.removeEventListener('popstate', onBack)
+      observer.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (contract) window.scrollTo(0, 0)
+  }, [contract])
+
+  return [contract, setContract] as const
 }
 
 export default Home
