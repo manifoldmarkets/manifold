@@ -5,10 +5,7 @@ import {
   InstantSearch,
   SearchBox,
   SortBy,
-  useCurrentRefinements,
   useInfiniteHits,
-  useRange,
-  useRefinementList,
   useSortBy,
 } from 'react-instantsearch-hooks-web'
 
@@ -20,7 +17,7 @@ import {
 } from '../hooks/use-sort-and-query-params'
 import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { ENV } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
@@ -77,7 +74,7 @@ export function ContractSearch(props: {
     .map(({ value }) => value)
     .includes(`${indexPrefix}contracts-${initialSort ?? ''}`)
     ? initialSort
-    : querySortOptions?.defaultSort
+    : querySortOptions?.defaultSort ?? '24-hour-vol'
 
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
@@ -85,27 +82,38 @@ export function ContractSearch(props: {
 
   const [mode, setMode] = useState<'categories' | 'following'>('categories')
 
-  const filters = [
-    filter === 'open' ? 'isResolved:false' : '',
-    filter === 'closed' ? 'isResolved:false' : '',
-    filter === 'resolved' ? 'isResolved:true' : '',
-    showCategorySelector
-      ? mode === 'categories'
-        ? followedCategories?.map((cat) => `lowercaseTags:${cat}`) ?? ''
-        : follows?.map((creatorId) => `creatorId:${creatorId}`) ?? ''
-      : '',
-    additionalFilter?.creatorId
-      ? `creatorId:${additionalFilter.creatorId}`
-      : '',
-    additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
-  ].filter((f) => f)
+  const { filters, numericFilters } = useMemo(() => {
+    let filters = [
+      filter === 'open' ? 'isResolved:false' : '',
+      filter === 'closed' ? 'isResolved:false' : '',
+      filter === 'resolved' ? 'isResolved:true' : '',
+      showCategorySelector
+        ? mode === 'categories'
+          ? followedCategories?.map((cat) => `lowercaseTags:${cat}`) ?? ''
+          : follows?.map((creatorId) => `creatorId:${creatorId}`) ?? ''
+        : '',
+      additionalFilter?.creatorId
+        ? `creatorId:${additionalFilter.creatorId}`
+        : '',
+      additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
+    ].filter((f) => f)
+    // Hack to make Algolia work.
+    filters = ['', ...filters]
 
-  const numericFilters = [
-    filter === 'open' ? `closeTime > ${Date.now()}` : '',
-    filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
-  ].filter((f) => f)
+    const numericFilters = [
+      filter === 'open' ? `closeTime > ${Date.now()}` : '',
+      filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+    ].filter((f) => f)
 
-  if (!sort) return <></>
+    return { filters, numericFilters }
+  }, [
+    filter,
+    showCategorySelector,
+    mode,
+    Object.values(additionalFilter ?? {}).join(','),
+    followedCategories?.join(','),
+    follows?.join(','),
+  ])
 
   const categoriesLabel = `Categories ${
     followedCategories?.length ? followedCategories.length : '(All)'
@@ -142,7 +150,7 @@ export function ContractSearch(props: {
           }}
         />
         <Configure
-          facetFilters={['', ...filters]}
+          facetFilters={filters}
           numericFilters={numericFilters}
           // Page resets on filters change.
           page={0}
@@ -175,7 +183,6 @@ export function ContractSearch(props: {
       ) : (
         <ContractSearchInner
           querySortOptions={querySortOptions}
-          filter={filter}
           onContractClick={onContractClick}
         />
       )}
@@ -188,10 +195,9 @@ export function ContractSearchInner(props: {
     defaultSort: Sort
     shouldLoadFromStorage?: boolean
   }
-  filter: filter
   onContractClick?: (contract: Contract) => void
 }) {
-  const { querySortOptions, filter, onContractClick } = props
+  const { querySortOptions, onContractClick } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
   const { query, setQuery, setSort } = useUpdateQueryAndSort({
