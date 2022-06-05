@@ -113,12 +113,12 @@ const resolveContract = async (
         return { status: 'error', message: 'Invalid outcome' }
   }
 
-  if (value !== undefined && !isFinite(value))
+  if (value && !isFinite(value))
     return { status: 'error', message: 'Invalid value' }
 
   if (
     outcomeType === 'BINARY' &&
-    probabilityInt !== undefined &&
+    probabilityInt &&
     (probabilityInt < 0 || probabilityInt > 100 || !isFinite(probabilityInt))
   )
     return { status: 'error', message: 'Invalid probability' }
@@ -129,8 +129,9 @@ const resolveContract = async (
   const creator = await getUser(creatorId)
   if (!creator) return { status: 'error', message: 'Creator not found' }
 
-  const resolutionProbability =
-    probabilityInt !== undefined ? probabilityInt / 100 : undefined
+  const resolutionProbability = probabilityInt
+    ? probabilityInt / 100
+    : undefined
 
   const resolutionTime = Date.now()
   const newCloseTime = closeTime
