@@ -12,8 +12,9 @@ export function ContractsGrid(props: {
   loadMore: () => void
   hasMore: boolean
   showCloseTime?: boolean
+  onContractClick?: (contract: Contract) => void
 }) {
-  const { contracts, showCloseTime, hasMore, loadMore } = props
+  const { contracts, showCloseTime, hasMore, loadMore, onContractClick } = props
 
   const [elem, setElem] = useState<HTMLElement | null>(null)
   const isBottomVisible = useIsVisible(elem)
@@ -43,6 +44,7 @@ export function ContractsGrid(props: {
             contract={contract}
             key={contract.id}
             showCloseTime={showCloseTime}
+            onClick={() => onContractClick?.(contract)}
           />
         ))}
       </ul>
