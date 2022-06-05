@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import algoliasearch from 'algoliasearch/lite'
 import {
+  Configure,
   InstantSearch,
   SearchBox,
   SortBy,
@@ -10,6 +11,7 @@ import {
   useRefinementList,
   useSortBy,
 } from 'react-instantsearch-hooks-web'
+
 import { Contract } from '../../common/contract'
 import {
   Sort,
@@ -24,6 +26,7 @@ import { ENV } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { ChoicesToggleGroup } from './choices-toggle-group'
+import { EditCategoriesButton } from './feed/category-selector'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -53,7 +56,6 @@ export function ContractSearch(props: {
   additionalFilter?: {
     creatorId?: string
     tag?: string
-    category?: string
   }
   showCategorySelector: boolean
   onContractClick?: (contract: Contract) => void
@@ -83,52 +85,29 @@ export function ContractSearch(props: {
 
   const [mode, setMode] = useState<'categories' | 'following'>('categories')
 
+  const filters = [
+    showCategorySelector
+      ? mode === 'categories'
+        ? followedCategories?.map((cat) => `lowercaseTags:${cat}`) ?? []
+        : follows?.map((creatorId) => `creatorId:${creatorId}`) ?? []
+      : '',
+    additionalFilter?.creatorId
+      ? `creatorId:${additionalFilter.creatorId}`
+      : '',
+    additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
+  ]
+
   if (!sort) return <></>
 
-  const key =
-    mode === 'following'
-      ? follows?.length
-        ? `${follows.join(',')}`
-        : ''
-      : followedCategories?.length
-      ? `${followedCategories.join(',')}`
-      : ''
-
   const categoriesLabel = `Categories ${
-    followedCategories ? followedCategories.length : 'all'
+    followedCategories?.length ? followedCategories.length : '(All)'
   }`
-
   const followingLabel = `Following ${follows?.length ?? 0}`
 
   const indexName = `${indexPrefix}contracts-${sort}`
 
   return (
-    <InstantSearch
-      searchClient={searchClient}
-      indexName={indexName}
-      key={`search-${
-        additionalFilter?.tag ?? additionalFilter?.creatorId ?? ''
-      }${key}`}
-      initialUiState={
-        mode === 'following'
-          ? {
-              [indexName]: {
-                refinementList: {
-                  creatorId: ['', ...(follows ?? [])],
-                },
-              },
-            }
-          : followedCategories
-          ? {
-              [indexName]: {
-                refinementList: {
-                  lowercaseTags: ['', ...followedCategories],
-                },
-              },
-            }
-          : undefined
-      }
-    >
+    <InstantSearch searchClient={searchClient} indexName={indexName}>
       <Row className="gap-1 sm:gap-2">
         <SearchBox
           className="flex-1"
@@ -154,19 +133,26 @@ export function ContractSearch(props: {
             select: '!select !select-bordered',
           }}
         />
+        <Configure facetFilters={['', ...filters]} />
       </Row>
 
       <Spacer h={3} />
 
       {showCategorySelector && (
-        <ChoicesToggleGroup
-          currentChoice={mode}
-          choicesMap={{
-            [categoriesLabel]: 'categories',
-            [followingLabel]: 'following',
-          }}
-          setChoice={(c) => setMode(c as 'categories' | 'following')}
-        />
+        <Row className="items-center gap-2">
+          <ChoicesToggleGroup
+            currentChoice={mode}
+            choicesMap={{
+              [categoriesLabel]: 'categories',
+              [followingLabel]: 'following',
+            }}
+            setChoice={(c) => setMode(c as 'categories' | 'following')}
+          />
+
+          {mode === 'categories' && user && (
+            <EditCategoriesButton user={user} />
+          )}
+        </Row>
       )}
 
       <Spacer h={4} />
@@ -177,7 +163,6 @@ export function ContractSearch(props: {
         <ContractSearchInner
           querySortOptions={querySortOptions}
           filter={filter}
-          additionalFilter={additionalFilter ?? {}}
           onContractClick={onContractClick}
         />
       )}
@@ -191,13 +176,9 @@ export function ContractSearchInner(props: {
     shouldLoadFromStorage?: boolean
   }
   filter: filter
-  additionalFilter: {
-    creatorId?: string
-    tag?: string
-  }
   onContractClick?: (contract: Contract) => void
 }) {
-  const { querySortOptions, filter, additionalFilter, onContractClick } = props
+  const { querySortOptions, filter, onContractClick } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
   const { query, setQuery, setSort } = useUpdateQueryAndSort({
@@ -228,12 +209,6 @@ export function ContractSearchInner(props: {
       setSort(sort)
     }
   }, [index])
-
-  const { creatorId, tag } = additionalFilter
-
-  useFilterCreator(creatorId)
-
-  useFilterTag(tag)
 
   useFilterClosed(
     filter === 'closed'
@@ -266,25 +241,6 @@ export function ContractSearchInner(props: {
       onContractClick={onContractClick}
     />
   )
-}
-
-const useFilterCreator = (creatorId: string | undefined) => {
-  const { refine } = useRefinementList({ attribute: 'creatorId' })
-  useEffect(() => {
-    if (creatorId) refine(creatorId)
-  }, [creatorId, refine])
-}
-
-const useFilterTag = (tag: string | undefined) => {
-  const { items, refine: deleteRefinement } = useCurrentRefinements({
-    includedAttributes: ['lowercaseTags'],
-  })
-  const { refine } = useRefinementList({ attribute: 'lowercaseTags' })
-  useEffect(() => {
-    const refinements = items[0]?.refinements ?? []
-    if (tag) refine(tag.toLowerCase())
-    if (refinements[0]) deleteRefinement(refinements[0])
-  }, [tag])
 }
 
 const useFilterClosed = (value: boolean | undefined) => {
