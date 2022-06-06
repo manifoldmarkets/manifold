@@ -50,3 +50,7 @@ export function createMarket(params: any) {
 export function placeBet(params: any) {
   return call(getFunctionUrl('placebet'), 'POST', params)
 }
+
+export function sellShares(params: any) {
+  return call(getFunctionUrl('sellshares'), 'POST', params)
+}
