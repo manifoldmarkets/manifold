@@ -38,7 +38,7 @@ module.exports = {
         source: '/analytics',
         destination: '/stats',
         permanent: true,
-      }
+      },
     ]
   },
 }
