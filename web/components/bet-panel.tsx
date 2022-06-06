@@ -203,11 +203,6 @@ function BuyPanel(props: {
   const [inputRef, focusAmountInput] = useFocus()
 
   useEffect(() => {
-    // warm up cloud function
-    placeBet({}).catch(() => {})
-  }, [])
-
-  useEffect(() => {
     if (selected) focusAmountInput()
   }, [selected, focusAmountInput])
 

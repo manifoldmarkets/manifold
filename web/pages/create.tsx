@@ -64,10 +64,6 @@ export function NewContract(props: { question: string; tag?: string }) {
     if (creator === null) router.push('/')
   }, [creator])
 
-  useEffect(() => {
-    createContract({}).catch(() => {}) // warm up function
-  }, [])
-
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb, setInitialProb] = useState(50)
   const [minString, setMinString] = useState('')
