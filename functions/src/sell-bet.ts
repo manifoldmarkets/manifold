@@ -44,18 +44,17 @@ export const sellbet = newEndpoint(['POST'], async (req, [bettor, _]) => {
     if (bet.isSold)
       throw new APIError(400, 'The specified bet is already sold.')
 
+    const { newBet, newPool, newTotalShares, newTotalBets, fees } =
+      getSellBetInfo(bet, contract)
+
+    /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+    const saleAmount = newBet.sale!.amount
+    const newBalance = user.balance + saleAmount - (bet.loanAmount ?? 0)
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
-
-    const { newBet, newPool, newTotalShares, newTotalBets, newBalance, fees } =
-      getSellBetInfo(user, bet, contract, newBetDoc.id)
-
-    if (!isFinite(newBalance)) {
-      throw new APIError(500, 'Invalid user balance for ' + user.username)
-    }
 
     transaction.update(userDoc, { balance: newBalance })
     transaction.update(betDoc, { isSold: true })
-    transaction.create(newBetDoc, newBet)
+    transaction.create(newBetDoc, { id: betDoc.id, userId: user.id, ...newBet })
     transaction.update(
       contractDoc,
       removeUndefinedProps({
