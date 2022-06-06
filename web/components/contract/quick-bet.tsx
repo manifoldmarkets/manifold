@@ -191,14 +191,14 @@ export function ProbBar(props: { contract: Contract; previewProb?: number }) {
     <>
       <div
         className={clsx(
-          'absolute right-0 top-0 w-1 rounded-tr-md transition-all',
+          'absolute right-0 top-0 w-1.5 rounded-tr-md transition-all',
           'bg-gray-100'
         )}
         style={{ height: `${100 * (1 - prob)}%` }}
       />
       <div
         className={clsx(
-          'absolute right-0 bottom-0 w-1 rounded-br-md transition-all',
+          'absolute right-0 bottom-0 w-1.5 rounded-br-md transition-all',
           `bg-${color}`,
           // If we're showing the full bar, also round the top
           prob === 1 ? 'rounded-tr-md' : ''
