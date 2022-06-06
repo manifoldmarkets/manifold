@@ -647,13 +647,7 @@ function BetRow(props: {
   )
 }
 
-const warmUpSellBet = throttle(() => sellBet({}).catch(() => {}), 5000 /* ms */)
-
 function SellButton(props: { contract: Contract; bet: Bet }) {
-  useEffect(() => {
-    warmUpSellBet()
-  }, [])
-
   const { contract, bet } = props
   const { outcome, shares, loanAmount } = bet
 
