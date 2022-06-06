@@ -72,7 +72,7 @@ export const createNotification = async (
     sourceType === 'answer' ||
     sourceType === 'contract'
   ) {
-    let reasonTextPretext = getReasonTextFromReason(sourceType, reason)
+    const reasonTextPretext = getReasonTextFromReason(sourceType, reason)
 
     const notifyContractCreator = async (
       userToReasonTexts: user_to_reason_texts

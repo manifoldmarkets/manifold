@@ -100,7 +100,7 @@ async function recalculateContract(
 
     console.log('start', { pool, totalBets, totalShares })
 
-    for (let bet of bets) {
+    for (const bet of bets) {
       if (bet.sale) {
         const soldBet = bets.find((b) => b.id === bet.sale?.betId)
         if (!soldBet) throw new Error('invalid sold bet' + bet.sale.betId)

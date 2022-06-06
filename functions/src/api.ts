@@ -27,7 +27,6 @@ export class APIError {
     this.msg = msg
     this.details = details
   }
-  toJson() {}
 }
 
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
