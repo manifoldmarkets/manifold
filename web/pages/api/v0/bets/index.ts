@@ -14,7 +14,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
     methods: 'POST',
   })
   try {
-    const backendRes = await fetchBackend(req, 'placeBet')
+    const backendRes = await fetchBackend(req, 'placebet')
     await forwardResponse(res, backendRes)
   } catch (err) {
     console.error('Error talking to cloud function: ', err)
