@@ -35,6 +35,8 @@ import {
 } from 'web/components/outcome-label'
 import { useNotifications } from 'web/hooks/use-notifications'
 import { getContractFromId } from 'web/lib/firebase/contracts'
+import { CheckIcon, XIcon } from '@heroicons/react/outline'
+import toast from 'react-hot-toast'
 
 type NotificationGroup = {
   notifications: Notification[]
@@ -96,8 +98,10 @@ export default function Notifications() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notifications])
 
-  if (!user) {
-    // TODO: return sign in page
+  if (user === undefined) {
+    return <LoadingIndicator />
+  }
+  if (user === null) {
     return <Custom404 />
   }
 
@@ -321,6 +325,9 @@ function NotificationSettings() {
   const [emailNotificationSettings, setEmailNotificationSettings] =
     useState<notification_subscribe_types>('all')
   const [privateUser, setPrivateUser] = useState<PrivateUser | null>(null)
+  const [showSettings, setShowSettings] = useState<'in-app' | 'email' | 'none'>(
+    'none'
+  )
 
   useEffect(() => {
     if (user) listenForPrivateUser(user.id, setPrivateUser)
@@ -332,41 +339,66 @@ function NotificationSettings() {
       setNotificationSettings(privateUser.notificationPreferences)
     }
     if (
-      privateUser.unsubscribedFromCommentEmails ||
-      privateUser.unsubscribedFromAnswerEmails
-    ) {
-      setEmailNotificationSettings('less')
-    }
-    if (
       privateUser.unsubscribedFromResolutionEmails &&
       privateUser.unsubscribedFromCommentEmails &&
       privateUser.unsubscribedFromAnswerEmails
     ) {
       setEmailNotificationSettings('none')
+    } else if (
+      !privateUser.unsubscribedFromResolutionEmails &&
+      !privateUser.unsubscribedFromCommentEmails &&
+      !privateUser.unsubscribedFromAnswerEmails
+    ) {
+      setEmailNotificationSettings('all')
+    } else {
+      setEmailNotificationSettings('less')
     }
   }, [privateUser])
 
+  const loading = 'Changing Notifications Settings'
+  const success = 'Notification Settings Changed!'
   function changeEmailNotifications(newValue: notification_subscribe_types) {
     if (!privateUser) return
-    setEmailNotificationSettings(newValue)
+    setShowSettings('email')
     if (newValue === 'all') {
-      updatePrivateUser(privateUser.id, {
-        unsubscribedFromResolutionEmails: false,
-        unsubscribedFromCommentEmails: false,
-        unsubscribedFromAnswerEmails: false,
-      })
+      toast.promise(
+        updatePrivateUser(privateUser.id, {
+          unsubscribedFromResolutionEmails: false,
+          unsubscribedFromCommentEmails: false,
+          unsubscribedFromAnswerEmails: false,
+        }),
+        {
+          loading,
+          success,
+          error: (err) => `${err.message}`,
+        }
+      )
     } else if (newValue === 'less') {
-      updatePrivateUser(privateUser.id, {
-        unsubscribedFromResolutionEmails: false,
-        unsubscribedFromCommentEmails: true,
-        unsubscribedFromAnswerEmails: true,
-      })
+      toast.promise(
+        updatePrivateUser(privateUser.id, {
+          unsubscribedFromResolutionEmails: false,
+          unsubscribedFromCommentEmails: true,
+          unsubscribedFromAnswerEmails: true,
+        }),
+        {
+          loading,
+          success,
+          error: (err) => `${err.message}`,
+        }
+      )
     } else if (newValue === 'none') {
-      updatePrivateUser(privateUser.id, {
-        unsubscribedFromCommentEmails: true,
-        unsubscribedFromAnswerEmails: true,
-        unsubscribedFromResolutionEmails: true,
-      })
+      toast.promise(
+        updatePrivateUser(privateUser.id, {
+          unsubscribedFromResolutionEmails: true,
+          unsubscribedFromCommentEmails: true,
+          unsubscribedFromAnswerEmails: true,
+        }),
+        {
+          loading,
+          success,
+          error: (err) => `${err.message}`,
+        }
+      )
     }
   }
 
@@ -374,10 +406,17 @@ function NotificationSettings() {
     newValue: notification_subscribe_types
   ) {
     if (!privateUser) return
-    setNotificationSettings(newValue)
-    updatePrivateUser(privateUser.id, {
-      notificationPreferences: newValue,
-    })
+    toast.promise(
+      updatePrivateUser(privateUser.id, {
+        notificationPreferences: newValue,
+      }),
+      {
+        loading,
+        success,
+        error: (err) => `${err.message}`,
+      }
+    )
+    setShowSettings('in-app')
   }
 
   useEffect(() => {
@@ -388,6 +427,19 @@ function NotificationSettings() {
 
   if (!privateUser) {
     return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
+  }
+
+  function NotificationSettingLine(props: {
+    label: string
+    highlight: boolean
+  }) {
+    const { label, highlight } = props
+    return (
+      <Row className={clsx('my-1 text-gray-300', highlight && '!text-black')}>
+        {highlight ? <CheckIcon height={20} /> : <XIcon height={20} />}
+        {label}
+      </Row>
+    )
   }
 
   return (
@@ -401,7 +453,8 @@ function NotificationSettings() {
             choice as notification_subscribe_types
           )
         }
-        className={'col-span-4 w-24'}
+        className={'col-span-4 p-2'}
+        toggleClassName={'w-24'}
       />
       <div className={'mt-4'}>Email Notifications</div>
       <ChoicesToggleGroup
@@ -410,8 +463,48 @@ function NotificationSettings() {
         setChoice={(choice) =>
           changeEmailNotifications(choice as notification_subscribe_types)
         }
-        className={'col-span-4 w-24'}
+        className={'col-span-4 p-2'}
+        toggleClassName={'w-24'}
       />
+      <div className={'mt-4 text-base'}>
+        {showSettings === 'in-app' ? (
+          <div>
+            <div className={''}>
+              You will receive notifications for:
+              <NotificationSettingLine
+                highlight={notificationSettings !== 'none'}
+                label={'Activity on your own questions'}
+              />
+              <NotificationSettingLine
+                label={'Activity on your comments & answers'}
+                highlight={notificationSettings !== 'none'}
+              />
+              <NotificationSettingLine
+                label={'Market resolutions'}
+                highlight={notificationSettings !== 'none'}
+              />
+              <NotificationSettingLine
+                label={"Activity on markets you've interacted with"}
+                highlight={notificationSettings === 'all'}
+              />
+            </div>
+          </div>
+        ) : showSettings === 'email' ? (
+          <div>
+            You will receive emails for:
+            <NotificationSettingLine
+              label={'Market resolutions'}
+              highlight={emailNotificationSettings !== 'none'}
+            />
+            <NotificationSettingLine
+              label={'Activity on your comments & answers'}
+              highlight={emailNotificationSettings === 'all'}
+            />
+          </div>
+        ) : (
+          <div />
+        )}
+      </div>
     </div>
   )
 }
