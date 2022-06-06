@@ -6,7 +6,6 @@ import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
-import { Fees } from '../../common/fees'
 
 export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -50,7 +49,8 @@ export const sellBet = functions.runWith({ minInstances: 1 }).https.onCall(
       if (!betSnap.exists) return { status: 'error', message: 'Invalid bet' }
       const bet = betSnap.data() as Bet
 
-      if (userId !== bet.userId) return { status: 'error', message: 'Not authorized' }
+      if (userId !== bet.userId)
+        return { status: 'error', message: 'Not authorized' }
       if (bet.isSold) return { status: 'error', message: 'Bet already sold' }
 
       const newBetDoc = firestore
