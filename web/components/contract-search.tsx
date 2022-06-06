@@ -289,7 +289,7 @@ function CategoryFollowSelector(props: {
       )}
 
       {mode === 'following' && user && (
-        <Row className="items-center gap-2 text-gray-500 h-8">
+        <Row className="h-8 items-center gap-2 text-gray-500">
           <div>Showing markets created by users you are following.</div>
         </Row>
       )}
