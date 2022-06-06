@@ -7,7 +7,6 @@ admin.initializeApp()
 export * from './transact'
 export * from './resolve-market'
 export * from './stripe'
-export * from './sell-bet'
 export * from './sell-shares'
 export * from './create-user'
 export * from './create-fold'
@@ -33,4 +32,5 @@ export * from './on-follow-user'
 // v2
 export * from './health'
 export * from './place-bet'
+export * from './sell-bet'
 export * from './create-contract'
