@@ -56,27 +56,23 @@ export const sellshares = newEndpoint(['POST'], async (req, [bettor, _]) => {
     if (shares > maxShares + 0.000000000001)
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
-    const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
-
-    const { newBet, newPool, newP, newBalance, fees } = getCpmmSellBetInfo(
-      user,
+    const { newBet, newPool, newP, fees } = getCpmmSellBetInfo(
       shares,
       outcome,
       contract,
-      prevLoanAmount,
-      newBetDoc.id
+      prevLoanAmount
     )
 
     if (!isFinite(newP)) {
       throw new APIError(500, 'Trade rejected due to overflow error.')
     }
 
-    if (!isFinite(newBalance)) {
-      throw new APIError(500, 'Invalid user balance for ' + user.username)
-    }
+    const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
+    const newBalance = user.balance - newBet.amount + (newBet.loanAmount ?? 0)
+    const userId = user.id
 
     transaction.update(userDoc, { balance: newBalance })
-    transaction.create(newBetDoc, newBet)
+    transaction.create(newBetDoc, { id: newBetDoc.id, userId, ...newBet })
     transaction.update(
       contractDoc,
       removeUndefinedProps({
