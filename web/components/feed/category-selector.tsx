@@ -80,13 +80,17 @@ function CategoryButton(props: {
   )
 }
 
-export function EditCategoriesButton(props: { user: User }) {
-  const { user } = props
+export function EditCategoriesButton(props: {
+  user: User
+  className?: string
+}) {
+  const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
 
   return (
     <div
       className={clsx(
+        className,
         'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm text-gray-700'
       )}
       onClick={() => setIsOpen(true)}

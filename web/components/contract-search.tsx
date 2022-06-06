@@ -24,6 +24,8 @@ import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { ChoicesToggleGroup } from './choices-toggle-group'
 import { EditCategoriesButton } from './feed/category-selector'
+import { Col } from './layout/col'
+import { CATEGORIES } from 'common/categories'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -115,11 +117,6 @@ export function ContractSearch(props: {
     follows?.join(','),
   ])
 
-  const categoriesLabel = `Categories ${
-    followedCategories?.length ? followedCategories.length : '(All)'
-  }`
-  const followingLabel = `Following ${follows?.length ?? 0}`
-
   const indexName = `${indexPrefix}contracts-${sort}`
 
   return (
@@ -160,20 +157,12 @@ export function ContractSearch(props: {
       <Spacer h={3} />
 
       {showCategorySelector && (
-        <Row className="items-center gap-2">
-          <ChoicesToggleGroup
-            currentChoice={mode}
-            choicesMap={{
-              [categoriesLabel]: 'categories',
-              [followingLabel]: 'following',
-            }}
-            setChoice={(c) => setMode(c as 'categories' | 'following')}
-          />
-
-          {mode === 'categories' && user && (
-            <EditCategoriesButton user={user} />
-          )}
-        </Row>
+        <CategoryFollowSelector
+          mode={mode}
+          setMode={setMode}
+          followedCategories={followedCategories ?? []}
+          follows={follows ?? []}
+        />
       )}
 
       <Spacer h={4} />
@@ -248,5 +237,62 @@ export function ContractSearchInner(props: {
       showCloseTime={index.endsWith('close-date')}
       onContractClick={onContractClick}
     />
+  )
+}
+
+function CategoryFollowSelector(props: {
+  mode: 'categories' | 'following'
+  setMode: (mode: 'categories' | 'following') => void
+  followedCategories: string[]
+  follows: string[]
+}) {
+  const { mode, setMode, followedCategories, follows } = props
+
+  const user = useUser()
+
+  const categoriesLabel = `Categories ${
+    followedCategories.length ? followedCategories.length : '(All)'
+  }`
+
+  let categoriesDescription = `Showing all categories`
+
+  if (followedCategories.length) {
+    const categoriesLabel = followedCategories
+      .slice(0, 3)
+      .map((cat) => CATEGORIES[cat])
+      .join(', ')
+    const andMoreLabel =
+      followedCategories.length > 3
+        ? `, and ${followedCategories.length - 3} more`
+        : ''
+    categoriesDescription = `Showing ${categoriesLabel}${andMoreLabel}`
+  }
+
+  const followingLabel = `Following ${follows.length}`
+
+  return (
+    <Col className="gap-2">
+      <ChoicesToggleGroup
+        currentChoice={mode}
+        choicesMap={{
+          [categoriesLabel]: 'categories',
+          [followingLabel]: 'following',
+        }}
+        setChoice={(c) => setMode(c as 'categories' | 'following')}
+      />
+
+      {mode === 'categories' && user && (
+        <Row className="items-center gap-2 text-gray-500">
+          <div>{categoriesDescription}</div>
+          <EditCategoriesButton className="self-start" user={user} />
+        </Row>
+      )}
+
+      {mode === 'following' && user && (
+        <Row className="items-center gap-2 text-gray-500 h-8">
+          <div>Showing markets created by users you are following.</div>
+        </Row>
+      )}
+    </Col>
   )
 }
