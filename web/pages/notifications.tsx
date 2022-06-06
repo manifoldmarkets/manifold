@@ -472,19 +472,19 @@ function NotificationSettings() {
             <div className={''}>
               You will receive notifications for:
               <NotificationSettingLine
-                highlight={notificationSettings !== 'none'}
-                label={'Activity on your own questions'}
-              />
-              <NotificationSettingLine
-                label={'Activity on your comments & answers'}
+                label={"Resolutions on questions you've interacted with"}
                 highlight={notificationSettings !== 'none'}
               />
               <NotificationSettingLine
-                label={'Market resolutions'}
                 highlight={notificationSettings !== 'none'}
+                label={'Activity on your own questions, comments, & answers'}
               />
               <NotificationSettingLine
-                label={"Activity on markets you've interacted with"}
+                highlight={notificationSettings !== 'none'}
+                label={"Activity on questions you're betting on"}
+              />
+              <NotificationSettingLine
+                label={"Activity on questions you've ever bet or commented on"}
                 highlight={notificationSettings === 'all'}
               />
             </div>
@@ -493,11 +493,19 @@ function NotificationSettings() {
           <div>
             You will receive emails for:
             <NotificationSettingLine
-              label={'Market resolutions'}
+              label={"Resolutions on questions you're betting on"}
               highlight={emailNotificationSettings !== 'none'}
             />
             <NotificationSettingLine
-              label={'Activity on your comments & answers'}
+              label={'Closure of your questions'}
+              highlight={emailNotificationSettings !== 'none'}
+            />
+            <NotificationSettingLine
+              label={'Activity on your questions'}
+              highlight={emailNotificationSettings === 'all'}
+            />
+            <NotificationSettingLine
+              label={"Activity on questions you've answered or commented on"}
               highlight={emailNotificationSettings === 'all'}
             />
           </div>
