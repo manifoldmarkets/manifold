@@ -4,15 +4,40 @@
 
 Our API is still in alpha — things may change or break at any time!
 
-:::
-
-Manifold currently supports a basic, read-only API for getting information about our markets.
-
 If you have questions, come chat with us on [Discord](https://discord.com/invite/eHQBNBqXuh). We’d love to hear about what you build!
 
-## List out all markets
+:::
 
-### `/v0/markets`
+## General notes
+
+Some APIs are not associated with any particular user. Other APIs require authentication.
+
+APIs that require authentication accept an `Authorization` header in one of two formats:
+
+- `Authorization: Key {key}`. A Manifold API key associated with a user
+  account. Each account may have zero or one API keys. To generate an API key
+  for your account, visit your user profile, click "edit", and click the
+  "refresh" button next to the API key field at the bottom. You can click it
+  again any time to invalidate your existing key and generate a new one.
+
+- `Authorization: Bearer {jwt}`. A signed JWT from Firebase asserting your
+  identity. This is what our web client uses. It will probably be annoying for
+  you to generate and we will not document it further here.
+
+API requests that accept parameters should have a body with a JSON object with
+one property per parameter.
+
+API responses should always either have a body with a JSON result object (if
+the response was a 200) or with a JSON object representing an error (if the
+response was a 4xx or 5xx.)
+
+## Endpoints
+
+### `GET /v0/markets`
+
+Lists all markets.
+
+Requires no authorization.
 
 - Example request
   ```
@@ -72,9 +97,11 @@ If you have questions, come chat with us on [Discord](https://discord.com/invite
   }
   ```
 
-## Get information about one market
+### `GET /v0/market/[marketId]`
 
-### `/v0/market/[marketId]`
+Gets information about a single market by ID.
+
+Requires no authorization.
 
 - Example request
 
@@ -347,9 +374,11 @@ If you have questions, come chat with us on [Discord](https://discord.com/invite
   }
   ```
 
-### `/v0/slug/[marketSlug]`
+### `GET /v0/slug/[marketSlug]`
 
-This is a convenience endpoint for getting info about a market from it slug (everything after the last slash in a market’s URL).
+Gets information about a single market by slug (the portion of the URL path after the username).
+
+Requires no authorization.
 
 - Example request
   ```
@@ -357,13 +386,64 @@ This is a convenience endpoint for getting info about a market from it slug (eve
   ```
 - Response type: A `FullMarket` ; same as above.
 
-## Deprecated
+### `POST /v0/bet`
 
-- Our old Markets API was available at [https://us-central1-mantic-markets.cloudfunctions.net/markets](https://us-central1-mantic-markets.cloudfunctions.net/markets)
-- We don’t plan on continuing to change this, but we’ll support this endpoint until 2022-03-30
+Places a new bet on behalf of the authorized user.
+
+Parameters:
+
+- `amount`: Required. The amount to bet, in M$, before fees.
+- `contractId`: Required. The ID of the contract (market) to bet on.
+- `outcome`: Required. The outcome to bet on. For binary markets, this is `YES`
+  or `NO`. For free response markets, this is the ID of the free response
+  answer. For numeric markets, this is a string representing the target bucket,
+  and an additional `value` parameter is required which is a number representing
+  the target value. (Bet on numeric markets at your own peril.)
+
+- Example request
+  ```
+  $ curl https://manifold.markets/api/v0/bet -X POST -H 'Content-Type: application/json' \
+      -H 'Authorization: Key {...}' \
+      --data-raw '{"amount":1, \
+                   "outcome":"YES", \
+                   "contractId":"{...}"}'
+  ```
+
+### `POST /v0/market`
+
+Creates a new market on behalf of the authorized user.
+
+Parameters:
+
+- `outcomeType`: Required. One of `BINARY`, `FREE_RESPONSE`, or `NUMERIC`.
+- `question`: Required. The headline question for the market.
+- `description`: Required. A long description describing the rules for the market.
+- `closeTime`: Required. The time at which the market will close, represented as milliseconds since the epoch.
+- `tags`: Optional. An array of string tags for the market.
+
+For binary markets, you must also provide:
+
+- `initialProb`: An initial probability for the market, between 1 and 99.
+
+For numeric markets, you must also provide:
+
+- `min`: The minimum value that the market may resolve to.
+- `max`: The maximum value that the market may resolve to.
+
+- Example request
+  ```
+  $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: application/json' \
+      -H 'Authorization: Key {...}'
+      --data-raw '{"outcomeType":"BINARY", \
+                   "question":"Is there life on Mars?", \
+                   "description":"I'm not going to type some long ass example description.", \
+                   "closeTime":1700000000000, \
+                   initialProb:25}'
+  ```
 
 ## Changelog
 
+- 2022-06-05: Add new authorized write endpoints
 - 2022-02-28: Add `resolutionTime` to markets, change `closeTime` definition
 - 2022-02-19: Removed user IDs from bets
 - 2022-02-17: Released our v0 API, with `/markets`, `/market/[marketId]`, and `/slug/[slugId]`
