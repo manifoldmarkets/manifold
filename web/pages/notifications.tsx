@@ -472,7 +472,7 @@ function NotificationSettings() {
             <div className={''}>
               You will receive notifications for:
               <NotificationSettingLine
-                label={"Resolutions on questions you've interacted with"}
+                label={"Resolution of questions you've interacted with"}
                 highlight={notificationSettings !== 'none'}
               />
               <NotificationSettingLine
@@ -493,7 +493,7 @@ function NotificationSettings() {
           <div>
             You will receive emails for:
             <NotificationSettingLine
-              label={"Resolutions on questions you're betting on"}
+              label={"Resolution of questions you're betting on"}
               highlight={emailNotificationSettings !== 'none'}
             />
             <NotificationSettingLine
