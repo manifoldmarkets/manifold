@@ -11,6 +11,15 @@ module.exports = {
       {
         'major-mono': ['Major Mono Display', 'monospace'],
         'readex-pro': ['Readex Pro', 'sans-serif'],
+        'sf-compact': [
+          'SF Compact Display',
+          '-apple-system',
+          'system-ui',
+          'Segoe UI',
+          'Helvetica',
+          'Arial',
+          'sans-serif',
+        ],
       }
     ),
     extend: {
