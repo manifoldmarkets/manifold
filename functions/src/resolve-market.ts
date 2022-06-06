@@ -95,7 +95,7 @@ const resolveContract = async (
     resolutions?: { [outcome: string]: number }
   },
   contractDoc: admin.firestore.DocumentReference<admin.firestore.DocumentData>,
-  autoResolution: boolean = false
+  autoResolution = false
 ) => {
   const { creatorId, id, outcomeType, closeTime } = contract
   const { outcome, probabilityInt, resolutions, value } = data
