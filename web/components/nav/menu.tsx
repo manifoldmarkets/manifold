@@ -3,7 +3,7 @@ import { Menu, Transition } from '@headlessui/react'
 import clsx from 'clsx'
 
 export function MenuButton(props: {
-  buttonContent: any
+  buttonContent: JSX.Element
   menuItems: { name: string; href: string; onClick?: () => void }[]
   className?: string
 }) {

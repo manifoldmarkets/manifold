@@ -15,7 +15,7 @@ export default function TagPage() {
         querySortOptions={{
           defaultSort: 'newest',
           defaultFilter: 'all',
-          shouldLoadFromStorage: false,
+          shouldLoadFromStorage: true,
         }}
         additionalFilter={{ tag }}
         showCategorySelector={false}

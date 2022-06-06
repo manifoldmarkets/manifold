@@ -1,5 +1,3 @@
-import * as admin from 'firebase-admin'
-
 import { initAdmin } from './script-init'
 initAdmin()
 

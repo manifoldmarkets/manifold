@@ -6,7 +6,8 @@ import { PrivateUser } from '../../common/user'
 export const unsubscribe = functions
   .runWith({ minInstances: 1 })
   .https.onRequest(async (req, res) => {
-    let { id, type } = req.query as { id: string; type: string }
+    const id = req.query.id as string
+    let type = req.query.type as string
     if (!id || !type) {
       res.status(400).send('Empty id or type parameter.')
       return

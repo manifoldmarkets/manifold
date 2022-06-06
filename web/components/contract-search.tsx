@@ -1,15 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import algoliasearch from 'algoliasearch/lite'
 import {
+  Configure,
   InstantSearch,
   SearchBox,
   SortBy,
-  useCurrentRefinements,
   useInfiniteHits,
-  useRange,
-  useRefinementList,
   useSortBy,
 } from 'react-instantsearch-hooks-web'
+
 import { Contract } from '../../common/contract'
 import {
   Sort,
@@ -18,12 +17,13 @@ import {
 } from '../hooks/use-sort-and-query-params'
 import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
-import { useRouter } from 'next/router'
 import { ENV } from 'common/envs/constants'
-import { CategorySelector } from './feed/category-selector'
 import { useUser } from 'web/hooks/use-user'
+import { useFollows } from 'web/hooks/use-follows'
+import { ChoicesToggleGroup } from './choices-toggle-group'
+import { EditCategoriesButton } from './feed/category-selector'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -53,36 +53,77 @@ export function ContractSearch(props: {
   additionalFilter?: {
     creatorId?: string
     tag?: string
-    category?: string
   }
   showCategorySelector: boolean
+  onContractClick?: (contract: Contract) => void
 }) {
-  const { querySortOptions, additionalFilter, showCategorySelector } = props
+  const {
+    querySortOptions,
+    additionalFilter,
+    showCategorySelector,
+    onContractClick,
+  } = props
 
   const user = useUser()
+  const followedCategories = user?.followedCategories
+  const follows = useFollows(user?.id)
+
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
   const sort = sortIndexes
     .map(({ value }) => value)
     .includes(`${indexPrefix}contracts-${initialSort ?? ''}`)
     ? initialSort
-    : querySortOptions?.defaultSort
+    : querySortOptions?.defaultSort ?? '24-hour-vol'
 
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
   )
 
-  const [category, setCategory] = useState<string>('all')
+  const [mode, setMode] = useState<'categories' | 'following'>('categories')
 
-  if (!sort) return <></>
+  const { filters, numericFilters } = useMemo(() => {
+    let filters = [
+      filter === 'open' ? 'isResolved:false' : '',
+      filter === 'closed' ? 'isResolved:false' : '',
+      filter === 'resolved' ? 'isResolved:true' : '',
+      showCategorySelector
+        ? mode === 'categories'
+          ? followedCategories?.map((cat) => `lowercaseTags:${cat}`) ?? ''
+          : follows?.map((creatorId) => `creatorId:${creatorId}`) ?? ''
+        : '',
+      additionalFilter?.creatorId
+        ? `creatorId:${additionalFilter.creatorId}`
+        : '',
+      additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
+    ].filter((f) => f)
+    // Hack to make Algolia work.
+    filters = ['', ...filters]
+
+    const numericFilters = [
+      filter === 'open' ? `closeTime > ${Date.now()}` : '',
+      filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+    ].filter((f) => f)
+
+    return { filters, numericFilters }
+  }, [
+    filter,
+    showCategorySelector,
+    mode,
+    Object.values(additionalFilter ?? {}).join(','),
+    followedCategories?.join(','),
+    follows?.join(','),
+  ])
+
+  const categoriesLabel = `Categories ${
+    followedCategories?.length ? followedCategories.length : '(All)'
+  }`
+  const followingLabel = `Following ${follows?.length ?? 0}`
+
+  const indexName = `${indexPrefix}contracts-${sort}`
+
   return (
-    <InstantSearch
-      searchClient={searchClient}
-      indexName={`${indexPrefix}contracts-${sort}`}
-      key={`search-${
-        additionalFilter?.tag ?? additionalFilter?.creatorId ?? ''
-      }`}
-    >
+    <InstantSearch searchClient={searchClient} indexName={indexName}>
       <Row className="gap-1 sm:gap-2">
         <SearchBox
           className="flex-1"
@@ -108,23 +149,43 @@ export function ContractSearch(props: {
             select: '!select !select-bordered',
           }}
         />
+        <Configure
+          facetFilters={filters}
+          numericFilters={numericFilters}
+          // Page resets on filters change.
+          page={0}
+        />
       </Row>
 
       <Spacer h={3} />
 
       {showCategorySelector && (
-        <CategorySelector
-          className="mb-2"
-          category={category}
-          setCategory={setCategory}
-        />
+        <Row className="items-center gap-2">
+          <ChoicesToggleGroup
+            currentChoice={mode}
+            choicesMap={{
+              [categoriesLabel]: 'categories',
+              [followingLabel]: 'following',
+            }}
+            setChoice={(c) => setMode(c as 'categories' | 'following')}
+          />
+
+          {mode === 'categories' && user && (
+            <EditCategoriesButton user={user} />
+          )}
+        </Row>
       )}
 
-      <ContractSearchInner
-        querySortOptions={querySortOptions}
-        filter={filter}
-        additionalFilter={{ category, ...additionalFilter }}
-      />
+      <Spacer h={4} />
+
+      {mode === 'following' && (follows ?? []).length === 0 ? (
+        <>You're not following anyone yet.</>
+      ) : (
+        <ContractSearchInner
+          querySortOptions={querySortOptions}
+          onContractClick={onContractClick}
+        />
+      )}
     </InstantSearch>
   )
 }
@@ -134,14 +195,9 @@ export function ContractSearchInner(props: {
     defaultSort: Sort
     shouldLoadFromStorage?: boolean
   }
-  filter: filter
-  additionalFilter: {
-    creatorId?: string
-    tag?: string
-    category?: string
-  }
+  onContractClick?: (contract: Contract) => void
 }) {
-  const { querySortOptions, filter, additionalFilter } = props
+  const { querySortOptions, onContractClick } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
   const { query, setQuery, setSort } = useUpdateQueryAndSort({
@@ -173,23 +229,6 @@ export function ContractSearchInner(props: {
     }
   }, [index])
 
-  const { creatorId, category, tag } = additionalFilter
-
-  useFilterCreator(creatorId)
-
-  useFilterTag(tag ?? (category === 'all' ? undefined : category))
-
-  useFilterClosed(
-    filter === 'closed'
-      ? true
-      : filter === 'all' || filter === 'resolved'
-      ? undefined
-      : false
-  )
-  useFilterResolved(
-    filter === 'resolved' ? true : filter === 'all' ? undefined : false
-  )
-
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   useEffect(() => {
     const id = setTimeout(() => setIsInitialLoad(false), 1000)
@@ -207,49 +246,7 @@ export function ContractSearchInner(props: {
       loadMore={showMore}
       hasMore={!isLastPage}
       showCloseTime={index.endsWith('close-date')}
+      onContractClick={onContractClick}
     />
   )
-}
-
-const useFilterCreator = (creatorId: string | undefined) => {
-  const { refine } = useRefinementList({ attribute: 'creatorId' })
-  useEffect(() => {
-    if (creatorId) refine(creatorId)
-  }, [creatorId, refine])
-}
-
-const useFilterTag = (tag: string | undefined) => {
-  const { items, refine: deleteRefinement } = useCurrentRefinements({
-    includedAttributes: ['lowercaseTags'],
-  })
-  const { refine } = useRefinementList({ attribute: 'lowercaseTags' })
-  useEffect(() => {
-    const refinements = items[0]?.refinements ?? []
-    if (tag) refine(tag.toLowerCase())
-    if (refinements[0]) deleteRefinement(refinements[0])
-  }, [tag])
-}
-
-const useFilterClosed = (value: boolean | undefined) => {
-  const [now] = useState(Date.now())
-  useRange({
-    attribute: 'closeTime',
-    min: value === false ? now : undefined,
-    max: value ? now : undefined,
-  })
-}
-
-const useFilterResolved = (value: boolean | undefined) => {
-  const { items, refine: deleteRefinement } = useCurrentRefinements({
-    includedAttributes: ['isResolved'],
-  })
-
-  const { refine } = useRefinementList({ attribute: 'isResolved' })
-
-  useEffect(() => {
-    const refinements = items[0]?.refinements ?? []
-
-    if (value !== undefined) refine(`${value}`)
-    refinements.forEach((refinement) => deleteRefinement(refinement))
-  }, [value])
 }
