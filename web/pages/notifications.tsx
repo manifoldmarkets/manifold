@@ -114,6 +114,8 @@ export default function Notifications() {
               title: 'New Notifications',
               content: (
                 <div className={''}>
+                  {unseenNotificationGroups.length === 0 &&
+                    "You don't have any new notifications."}
                   {unseenNotificationGroups.map((notification) =>
                     notification.notifications.length === 1 ? (
                       <NotificationItem
@@ -134,6 +136,8 @@ export default function Notifications() {
               title: 'All Notifications',
               content: (
                 <div className={''}>
+                  {allNotificationGroups.length === 0 &&
+                    "You don't have any notifications."}
                   {allNotificationGroups.map((notification) =>
                     notification.notifications.length === 1 ? (
                       <NotificationItem
@@ -228,7 +232,7 @@ function NotificationGroupItem(props: {
   const { notificationGroup, className } = props
   const { sourceContractId, notifications } = notificationGroup
   const contract = useContract(sourceContractId ?? '')
-  const numSummaryLines = 2
+  const numSummaryLines = 3
   const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
@@ -237,7 +241,20 @@ function NotificationGroupItem(props: {
   }, [contract, notifications])
 
   return (
-    <div className={clsx('bg-white px-2 pt-6 text-sm sm:px-4', className)}>
+    <div
+      className={clsx(
+        'relative cursor-pointer bg-white px-2 pt-6 text-sm',
+        className,
+        !expanded ? 'hover:bg-gray-100' : ''
+      )}
+      onClick={() => setExpanded(!expanded)}
+    >
+      {expanded && (
+        <span
+          className="absolute top-14 left-6 -ml-px h-[calc(100%-5rem)] w-0.5 bg-gray-200"
+          aria-hidden="true"
+        />
+      )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
           <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
@@ -253,8 +270,8 @@ function NotificationGroupItem(props: {
           <RelativeTimestamp time={notifications[0].createdTime} />
         </div>
       </Row>
-      <div onClick={() => setExpanded(!expanded)} className={'cursor-pointer'}>
-        <div className={'mt-1 md:text-base'}>
+      <div>
+        <div className={clsx('mt-1 md:text-base', expanded ? 'pl-4' : '')}>
           {' '}
           <div className={'line-clamp-4 mt-1 gap-1 whitespace-pre-line'}>
             {!expanded ? (
@@ -399,7 +416,7 @@ function NotificationSettings() {
   )
 }
 
-async function GetNotificationSummaryText(
+async function getNotificationSummaryText(
   sourceId: string,
   sourceContractId: string,
   sourceType: 'answer' | 'comment',
@@ -454,7 +471,7 @@ function NotificationItem(props: {
     if (!sourceId) return
 
     if (sourceType === 'answer' || sourceType === 'comment') {
-      GetNotificationSummaryText(
+      getNotificationSummaryText(
         sourceId,
         sourceContractId,
         sourceType,
@@ -490,15 +507,15 @@ function NotificationItem(props: {
     }
   }
 
+  function isNotificationContractResolution() {
+    return sourceType === 'contract' && contract?.resolution
+  }
+
   if (justSummary) {
     return (
       <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
-        <div className={'flex-1 overflow-hidden sm:flex'}>
-          <div
-            className={
-              'flex max-w-sm shrink overflow-hidden text-ellipsis pl-1 sm:max-w-md sm:pl-0'
-            }
-          >
+        <div className={'line-clamp-1 flex-1 overflow-hidden sm:flex'}>
+          <div className={'flex pl-1 sm:pl-0'}>
             <UserLink
               name={sourceUserName || ''}
               username={sourceUserUsername || ''}
@@ -515,7 +532,7 @@ function NotificationItem(props: {
                 ).replace(' on', '')}
               <div className={'ml-1 text-black'}>
                 {contract ? (
-                  <NotificationOutcomeLabel
+                  <NotificationTextLabel
                     contract={contract}
                     notificationText={notificationText}
                     className={'line-clamp-1'}
@@ -547,7 +564,7 @@ function NotificationItem(props: {
         <div className={'flex-1 overflow-hidden sm:flex'}>
           <div
             className={
-              'flex max-w-sm shrink overflow-hidden text-ellipsis pl-1 sm:max-w-md sm:pl-0'
+              'flex max-w-xl shrink overflow-hidden text-ellipsis pl-1 sm:pl-0'
             }
           >
             <UserLink
@@ -579,9 +596,9 @@ function NotificationItem(props: {
       </Row>
       <a href={getSourceUrl(sourceId)}>
         <div className={'mt-1 md:text-base'}>
-          {' '}
+          {isNotificationContractResolution() && ' Resolved:'}{' '}
           {contract ? (
-            <NotificationOutcomeLabel
+            <NotificationTextLabel
               contract={contract}
               notificationText={notificationText}
             />
@@ -598,7 +615,7 @@ function NotificationItem(props: {
   )
 }
 
-function NotificationOutcomeLabel(props: {
+function NotificationTextLabel(props: {
   contract: Contract
   notificationText: string
   className?: string
