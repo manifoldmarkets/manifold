@@ -22,10 +22,9 @@ import { Spacer } from './layout/spacer'
 import { ENV } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
-import { ChoicesToggleGroup } from './choices-toggle-group'
 import { EditCategoriesButton } from './feed/category-selector'
-import { Col } from './layout/col'
 import { CATEGORIES } from 'common/categories'
+import { Tabs } from './layout/tabs'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -271,28 +270,33 @@ function CategoryFollowSelector(props: {
   const followingLabel = `Following ${follows.length}`
 
   return (
-    <Col className="gap-2">
-      <ChoicesToggleGroup
-        currentChoice={mode}
-        choicesMap={{
-          [categoriesLabel]: 'categories',
-          [followingLabel]: 'following',
-        }}
-        setChoice={(c) => setMode(c as 'categories' | 'following')}
-      />
+    <Tabs
+      defaultIndex={mode === 'categories' ? 0 : 1}
+      tabs={[
+        {
+          title: categoriesLabel,
+          content: user && (
+            <Row className="items-center gap-1 text-gray-500">
+              <div>{categoriesDescription}</div>
+              <EditCategoriesButton className="self-start" user={user} />
+            </Row>
+          ),
+        },
+        ...(user
+          ? [
+              {
+                title: followingLabel,
 
-      {mode === 'categories' && user && (
-        <Row className="items-center gap-2 text-gray-500">
-          <div>{categoriesDescription}</div>
-          <EditCategoriesButton className="self-start" user={user} />
-        </Row>
-      )}
-
-      {mode === 'following' && user && (
-        <Row className="h-8 items-center gap-2 text-gray-500">
-          <div>Showing markets created by users you are following.</div>
-        </Row>
-      )}
-    </Col>
+                content: (
+                  <Row className="h-8 items-center gap-2 text-gray-500">
+                    <div>Showing markets by users you are following.</div>
+                  </Row>
+                ),
+              },
+            ]
+          : []),
+      ]}
+      onClick={(_, index) => setMode(index === 0 ? 'categories' : 'following')}
+    />
   )
 }
