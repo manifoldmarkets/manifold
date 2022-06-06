@@ -27,7 +27,6 @@ export class APIError {
     this.msg = msg
     this.details = details
   }
-  toJson() {}
 }
 
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
@@ -137,11 +136,11 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
 
 export const newEndpoint = (methods: [string], fn: Handler) =>
   functions.runWith({ minInstances: 1 }).https.onRequest(async (req, res) => {
-    await applyCors(req, res, {
-      origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
-      methods: methods,
-    })
     try {
+      await applyCors(req, res, {
+        origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
+        methods: methods,
+      })
       if (!methods.includes(req.method)) {
         const allowed = methods.join(', ')
         throw new APIError(405, `This endpoint supports only ${allowed}.`)

@@ -28,7 +28,7 @@ export default function Create() {
   return (
     <Page>
       <div className="mx-auto w-full max-w-2xl">
-        <div className="rounded-lg  px-6 py-4">
+        <div className="rounded-lg px-6 py-4 sm:py-0">
           <form>
             <div className="form-control w-full">
               <label className="label">
@@ -47,6 +47,7 @@ export default function Create() {
               />
             </div>
           </form>
+          <Spacer h={6} />
           <NewContract question={question} />
         </div>
       </div>
@@ -168,8 +169,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   return (
     <div>
-      <label className="label mt-1">
-        <span className="mt-1">Answer type</span>
+      <label className="label">
+        <span className="mb-1">Answer type</span>
       </label>
       <ChoicesToggleGroup
         currentChoice={outcomeType}
@@ -189,11 +190,12 @@ export function NewContract(props: { question: string; tag?: string }) {
         className={'col-span-4'}
       />
       {marketInfoText && (
-        <div className="mt-2 ml-1 text-sm text-indigo-700">
+        <div className="mt-3 ml-1 text-sm text-indigo-700">
           {marketInfoText}
         </div>
       )}
-      <Spacer h={4} />
+
+      <Spacer h={6} />
 
       {outcomeType === 'BINARY' && (
         <div className="form-control">
@@ -241,6 +243,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           {probErrorText && (
             <div className="text-error mt-2 ml-1 text-sm">{probErrorText}</div>
           )}
+          <Spacer h={6} />
         </div>
       )}
 
@@ -278,27 +281,6 @@ export function NewContract(props: { question: string; tag?: string }) {
         </div>
       )}
 
-      <Spacer h={4} />
-
-      <div className="form-control mb-1 items-start">
-        <label className="label mb-1 gap-2">
-          <span className="mb-1">Description</span>
-          <InfoTooltip text="Optional. Describe how you will resolve this question." />
-        </label>
-        <Textarea
-          className="textarea textarea-bordered w-full resize-none"
-          rows={3}
-          maxLength={MAX_DESCRIPTION_LENGTH}
-          placeholder={descriptionPlaceholder}
-          value={description}
-          disabled={isSubmitting}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => setDescription(e.target.value || '')}
-        />
-      </div>
-
-      <Spacer h={4} />
-
       <div className="form-control max-w-sm items-start">
         <label className="label gap-2">
           <span className="mb-1">Category</span>
@@ -318,11 +300,11 @@ export function NewContract(props: { question: string; tag?: string }) {
         </select>
       </div>
 
-      <Spacer h={4} />
+      <Spacer h={6} />
 
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
-          <span>Question closes in:</span>
+          <span>Question closes in</span>
           <InfoTooltip text="Betting will be halted after this time (local timezone)." />
         </label>
         <Row className={'w-full items-center gap-2'}>
@@ -365,65 +347,72 @@ export function NewContract(props: { question: string; tag?: string }) {
         </Row>
       </div>
 
-      <Spacer h={4} />
+      <Spacer h={6} />
 
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
-          <span>Cost</span>
-          {mustWaitForDailyFreeMarketStatus != 'loading' &&
-            mustWaitForDailyFreeMarketStatus && (
-              <InfoTooltip
-                text={`Cost to create your question. This amount is used to subsidize betting.`}
-              />
-            )}
+          <span className="mb-1">Description</span>
+          <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
-        {mustWaitForDailyFreeMarketStatus != 'loading' &&
-        !mustWaitForDailyFreeMarketStatus ? (
-          <div className="label-text text-primary pl-1">
-            <span className={'label-text text-neutral line-through '}>
-              {formatMoney(ante)}
-            </span>{' '}
-            FREE
-          </div>
-        ) : (
-          mustWaitForDailyFreeMarketStatus != 'loading' && (
-            <div className="label-text text-neutral pl-1">
-              {formatMoney(ante)}
-            </div>
-          )
-        )}
-        {mustWaitForDailyFreeMarketStatus != 'loading' &&
-          mustWaitForDailyFreeMarketStatus &&
-          ante > balance && (
-            <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-              <span className="mr-2 text-red-500">Insufficient balance</span>
-              <button
-                className="btn btn-xs btn-primary"
-                onClick={() => (window.location.href = '/add-funds')}
-              >
-                Add funds
-              </button>
-            </div>
-          )}
-
-        {/* <BuyAmountInput
-          amount={ante ?? undefined}
-          minimumAmount={MINIMUM_ANTE}
-          onChange={setAnte}
-          error={anteError}
-          setError={setAnteError}
+        <Textarea
+          className="textarea textarea-bordered w-full resize-none"
+          rows={3}
+          maxLength={MAX_DESCRIPTION_LENGTH}
+          placeholder={descriptionPlaceholder}
+          value={description}
           disabled={isSubmitting}
-          contractIdForLoan={undefined}
-        /> */}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => setDescription(e.target.value || '')}
+        />
       </div>
 
-      <Spacer h={4} />
+      <Spacer h={6} />
 
-      <div className="my-4 flex justify-end">
+      <Row className="items-end justify-between">
+        <div className="form-control mb-1 items-start">
+          <label className="label mb-1 gap-2">
+            <span>Cost</span>
+            {mustWaitForDailyFreeMarketStatus != 'loading' &&
+              mustWaitForDailyFreeMarketStatus && (
+                <InfoTooltip
+                  text={`Cost to create your question. This amount is used to subsidize betting.`}
+                />
+              )}
+          </label>
+          {mustWaitForDailyFreeMarketStatus != 'loading' &&
+          !mustWaitForDailyFreeMarketStatus ? (
+            <div className="label-text text-primary pl-1">
+              <span className={'label-text text-neutral line-through '}>
+                {formatMoney(ante)}
+              </span>{' '}
+              FREE
+            </div>
+          ) : (
+            mustWaitForDailyFreeMarketStatus != 'loading' && (
+              <div className="label-text text-neutral pl-1">
+                {formatMoney(ante)}
+              </div>
+            )
+          )}
+          {mustWaitForDailyFreeMarketStatus != 'loading' &&
+            mustWaitForDailyFreeMarketStatus &&
+            ante > balance && (
+              <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+                <span className="mr-2 text-red-500">Insufficient balance</span>
+                <button
+                  className="btn btn-xs btn-primary"
+                  onClick={() => (window.location.href = '/add-funds')}
+                >
+                  Add funds
+                </button>
+              </div>
+            )}
+        </div>
+
         <button
           type="submit"
           className={clsx(
-            'btn btn-primary capitalize',
+            'btn btn-primary normal-case',
             isSubmitting && 'loading disabled'
           )}
           disabled={isSubmitting || !isValid}
@@ -434,7 +423,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         >
           {isSubmitting ? 'Creating...' : 'Create question'}
         </button>
-      </div>
+      </Row>
     </div>
   )
 }

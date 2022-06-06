@@ -17,7 +17,7 @@ import { removeUndefinedProps } from '../../common/util/object'
 import { LiquidityProvision } from '../../common/liquidity-provision'
 
 export const resolveMarket = functions
-  .runWith({ minInstances: 1 })
+  .runWith({ minInstances: 1, secrets: ['MAILGUN_KEY'] })
   .https.onCall(
     async (
       data: {

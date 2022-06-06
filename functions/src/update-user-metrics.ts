@@ -71,9 +71,9 @@ const computeTotalPool = async (
   return sum(pools)
 }
 
-const computeVolume = async (contract: Contract) => {
-  const bets = await getValues<Bet>(
-    firestore.collection(`contracts/${contract.id}/bets`)
-  )
-  return sumBy(bets, (bet) => Math.abs(bet.amount))
-}
+// const computeVolume = async (contract: Contract) => {
+//   const bets = await getValues<Bet>(
+//     firestore.collection(`contracts/${contract.id}/bets`)
+//   )
+//   return sumBy(bets, (bet) => Math.abs(bet.amount))
+// }

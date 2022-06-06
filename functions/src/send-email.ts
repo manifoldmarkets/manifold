@@ -1,8 +1,9 @@
 import * as mailgun from 'mailgun-js'
-import * as functions from 'firebase-functions'
 
-const DOMAIN = 'mg.manifold.markets'
-const mg = mailgun({ apiKey: functions.config().mailgun.key, domain: DOMAIN })
+const initMailgun = () => {
+  const apiKey = process.env.MAILGUN_KEY as string
+  return mailgun({ apiKey, domain: 'mg.manifold.markets' })
+}
 
 export const sendTextEmail = (to: string, subject: string, text: string) => {
   const data: mailgun.messages.SendData = {
@@ -13,7 +14,7 @@ export const sendTextEmail = (to: string, subject: string, text: string) => {
     // Don't rewrite urls in plaintext emails
     'o:tracking-clicks': 'htmlonly',
   }
-
+  const mg = initMailgun()
   return mg.messages().send(data, (error) => {
     if (error) console.log('Error sending email', error)
     else console.log('Sent text email', to, subject)
@@ -34,6 +35,7 @@ export const sendTemplateEmail = (
     template: templateId,
     'h:X-Mailgun-Variables': JSON.stringify(templateData),
   }
+  const mg = initMailgun()
   return mg.messages().send(data, (error) => {
     if (error) console.log('Error sending email', error)
     else console.log('Sent template email', templateId, to, subject)

@@ -40,7 +40,7 @@ async function sendMarketCloseEmails() {
       .filter((x) => !!x) as Contract[]
   })
 
-  for (let contract of contracts) {
+  for (const contract of contracts) {
     console.log(
       'sending close email for',
       contract.slug,
