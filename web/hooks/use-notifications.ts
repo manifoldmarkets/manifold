@@ -3,8 +3,68 @@ import { listenForPrivateUser } from 'web/lib/firebase/users'
 import { notification_subscribe_types, PrivateUser } from 'common/user'
 import { Notification } from 'common/notification'
 import { listenForNotifications } from 'web/lib/firebase/notifications'
+import { groupBy, map } from 'lodash'
 
-export function useNotifications(
+export type NotificationGroup = {
+  notifications: Notification[]
+  sourceContractId: string
+  isSeen: boolean
+  timePeriod: string
+}
+
+export function usePreferredGroupedNotifications(
+  userId: string | undefined,
+  options: { unseenOnly: boolean }
+) {
+  const [notificationGroups, setNotificationGroups] = useState<
+    NotificationGroup[]
+  >([])
+
+  const notifications = usePreferredNotifications(userId, options)
+  useEffect(() => {
+    if (!notifications) return
+
+    const groupedNotifications = groupNotifications(notifications)
+    setNotificationGroups(groupedNotifications)
+  }, [notifications])
+
+  return notificationGroups
+}
+
+export function groupNotifications(notifications: Notification[]) {
+  let notificationGroups: NotificationGroup[] = []
+  const notificationGroupsByDay = groupBy(notifications, (notification) =>
+    new Date(notification.createdTime).toDateString()
+  )
+  Object.keys(notificationGroupsByDay).forEach((day) => {
+    // Group notifications by contract:
+    const groupedNotificationsByContractId = groupBy(
+      notificationGroupsByDay[day],
+      (notification) => {
+        return notification.sourceContractId
+      }
+    )
+    notificationGroups = notificationGroups.concat(
+      map(groupedNotificationsByContractId, (notifications, contractId) => {
+        // Create a notification group for each contract within each day
+        const notificationGroup: NotificationGroup = {
+          notifications: groupedNotificationsByContractId[contractId].sort(
+            (a, b) => {
+              return b.createdTime - a.createdTime
+            }
+          ),
+          sourceContractId: contractId,
+          isSeen: groupedNotificationsByContractId[contractId][0].isSeen,
+          timePeriod: day,
+        }
+        return notificationGroup
+      })
+    )
+  })
+  return notificationGroups
+}
+
+function usePreferredNotifications(
   userId: string | undefined,
   options: { unseenOnly: boolean }
 ) {
@@ -25,7 +85,7 @@ export function useNotifications(
         setNotifications,
         unseenOnly
       )
-  }, [privateUser])
+  }, [privateUser, unseenOnly])
 
   useEffect(() => {
     if (!privateUser) return
