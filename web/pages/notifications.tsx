@@ -529,7 +529,8 @@ function NotificationItem(props: {
     setNotificationsAsSeen([notification])
   }, [notification])
 
-  function getSourceUrl(sourceId?: string) {
+  function getSourceUrl() {
+    if (sourceType === 'follow') return `/${sourceUserUsername}`
     if (!contract) return ''
     return `/${contract.creatorUsername}/${
       contract.slug
@@ -630,7 +631,7 @@ function NotificationItem(props: {
 
   return (
     <div className={'bg-white px-2 pt-6 text-sm sm:px-4'}>
-      <a href={getSourceUrl(sourceId)}>
+      <a href={getSourceUrl()}>
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <Avatar
             avatarUrl={sourceUserAvatarUrl}
