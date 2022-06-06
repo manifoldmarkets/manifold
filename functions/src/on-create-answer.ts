@@ -25,8 +25,8 @@ export const onCreateAnswer = functions.firestore
       answer.id,
       'answer',
       'created',
+      contract,
       answerCreator,
-      eventId,
-      contract
+      eventId
     )
   })
