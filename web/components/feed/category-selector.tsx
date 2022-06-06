@@ -119,6 +119,22 @@ function CategorySelectorModal(props: {
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="rounded bg-white p-6">
+        <button
+          className="btn btn-sm btn-ghost mb-3 self-start"
+          onClick={() => {
+            if (selectAll) {
+              updateUser(user.id, {
+                followedCategories: CATEGORY_LIST,
+              })
+            } else {
+              updateUser(user.id, {
+                followedCategories: [],
+              })
+            }
+          }}
+        >
+          Select {selectAll ? 'all' : 'none'}
+        </button>
         <Col className="grid w-full grid-cols-2 gap-4">
           {CATEGORY_LIST.map((cat) => (
             <Checkbox
@@ -136,22 +152,6 @@ function CategorySelectorModal(props: {
             />
           ))}
         </Col>
-        <button
-          className="btn btn-sm btn-ghost mt-2 self-end"
-          onClick={() => {
-            if (selectAll) {
-              updateUser(user.id, {
-                followedCategories: CATEGORY_LIST,
-              })
-            } else {
-              updateUser(user.id, {
-                followedCategories: [],
-              })
-            }
-          }}
-        >
-          Select {selectAll ? 'all' : 'none'}
-        </button>
       </Col>
     </Modal>
   )
