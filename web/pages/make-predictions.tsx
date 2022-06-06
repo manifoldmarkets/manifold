@@ -16,7 +16,7 @@ import { Linkify } from 'web/components/linkify'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { useUser } from 'web/hooks/use-user'
-import { createContract } from 'web/lib/firebase/api-call'
+import { createMarket } from 'web/lib/firebase/api-call'
 import { contractPath } from 'web/lib/firebase/contracts'
 
 type Prediction = {
@@ -138,7 +138,7 @@ ${TEST_VALUE}
     })
   }
 
-  async function createContracts() {
+  async function createMarkets() {
     if (!user) {
       // TODO: Convey error with snackbar/toast
       console.error('You need to be signed in!')
@@ -146,7 +146,7 @@ ${TEST_VALUE}
     }
     setIsSubmitting(true)
     for (const prediction of predictions) {
-      const contract = (await createContract({
+      const contract = (await createMarket({
         question: prediction.question,
         description: prediction.description,
         initialProb: prediction.initialProb,
@@ -270,7 +270,7 @@ ${TEST_VALUE}
             disabled={predictions.length === 0 || isSubmitting}
             onClick={(e) => {
               e.preventDefault()
-              createContracts()
+              createMarkets()
             }}
           >
             Create all

@@ -200,9 +200,7 @@ function getAnswerGroups(
 ) {
   const { sortByProb, abbreviated, reversed } = options
 
-  let outcomes = uniq(bets.map((bet) => bet.outcome)).filter(
-    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
-  )
+  let outcomes = uniq(bets.map((bet) => bet.outcome))
   if (abbreviated) {
     const lastComment = last(comments)
     const lastCommentOutcome = bets.find(
@@ -274,9 +272,7 @@ function getAnswerAndCommentInputGroups(
   comments: Comment[],
   user: User | undefined | null
 ) {
-  let outcomes = uniq(bets.map((bet) => bet.outcome)).filter(
-    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
-  )
+  let outcomes = uniq(bets.map((bet) => bet.outcome))
   outcomes = sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   )

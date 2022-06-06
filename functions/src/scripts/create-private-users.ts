@@ -11,7 +11,7 @@ async function main() {
   const snap = await firestore.collection('users').get()
   const users = snap.docs.map((d) => d.data() as User)
 
-  for (let user of users) {
+  for (const user of users) {
     const fbUser = await admin.auth().getUser(user.id)
     const email = fbUser.email
     const { username } = user

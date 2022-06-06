@@ -1,15 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import algoliasearch from 'algoliasearch/lite'
 import {
+  Configure,
   InstantSearch,
   SearchBox,
   SortBy,
-  useCurrentRefinements,
   useInfiniteHits,
-  useRange,
-  useRefinementList,
   useSortBy,
 } from 'react-instantsearch-hooks-web'
+
 import { Contract } from '../../common/contract'
 import {
   Sort,
@@ -18,12 +17,14 @@ import {
 } from '../hooks/use-sort-and-query-params'
 import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { ENV } from 'common/envs/constants'
-import { CategorySelector } from './feed/category-selector'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
+import { EditCategoriesButton } from './feed/category-selector'
+import { CATEGORIES } from 'common/categories'
+import { Tabs } from './layout/tabs'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -53,7 +54,6 @@ export function ContractSearch(props: {
   additionalFilter?: {
     creatorId?: string
     tag?: string
-    category?: string
   }
   showCategorySelector: boolean
   onContractClick?: (contract: Contract) => void
@@ -66,6 +66,7 @@ export function ContractSearch(props: {
   } = props
 
   const user = useUser()
+  const followedCategories = user?.followedCategories
   const follows = useFollows(user?.id)
 
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
@@ -74,40 +75,51 @@ export function ContractSearch(props: {
     .map(({ value }) => value)
     .includes(`${indexPrefix}contracts-${initialSort ?? ''}`)
     ? initialSort
-    : querySortOptions?.defaultSort
+    : querySortOptions?.defaultSort ?? '24-hour-vol'
 
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
   )
 
-  const [category, setCategory] = useState<string>('all')
-  const showFollows = category === 'following'
-  const followsKey =
-    showFollows && follows?.length ? `${follows.join(',')}` : ''
+  const [mode, setMode] = useState<'categories' | 'following'>('categories')
 
-  if (!sort) return <></>
+  const { filters, numericFilters } = useMemo(() => {
+    let filters = [
+      filter === 'open' ? 'isResolved:false' : '',
+      filter === 'closed' ? 'isResolved:false' : '',
+      filter === 'resolved' ? 'isResolved:true' : '',
+      showCategorySelector
+        ? mode === 'categories'
+          ? followedCategories?.map((cat) => `lowercaseTags:${cat}`) ?? ''
+          : follows?.map((creatorId) => `creatorId:${creatorId}`) ?? ''
+        : '',
+      additionalFilter?.creatorId
+        ? `creatorId:${additionalFilter.creatorId}`
+        : '',
+      additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
+    ].filter((f) => f)
+    // Hack to make Algolia work.
+    filters = ['', ...filters]
+
+    const numericFilters = [
+      filter === 'open' ? `closeTime > ${Date.now()}` : '',
+      filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+    ].filter((f) => f)
+
+    return { filters, numericFilters }
+  }, [
+    filter,
+    showCategorySelector,
+    mode,
+    Object.values(additionalFilter ?? {}).join(','),
+    followedCategories?.join(','),
+    follows?.join(','),
+  ])
 
   const indexName = `${indexPrefix}contracts-${sort}`
 
   return (
-    <InstantSearch
-      searchClient={searchClient}
-      indexName={indexName}
-      key={`search-${
-        additionalFilter?.tag ?? additionalFilter?.creatorId ?? ''
-      }${followsKey}`}
-      initialUiState={
-        showFollows
-          ? {
-              [indexName]: {
-                refinementList: {
-                  creatorId: ['', ...(follows ?? [])],
-                },
-              },
-            }
-          : undefined
-      }
-    >
+    <InstantSearch searchClient={searchClient} indexName={indexName}>
       <Row className="gap-1 sm:gap-2">
         <SearchBox
           className="flex-1"
@@ -133,30 +145,32 @@ export function ContractSearch(props: {
             select: '!select !select-bordered',
           }}
         />
+        <Configure
+          facetFilters={filters}
+          numericFilters={numericFilters}
+          // Page resets on filters change.
+          page={0}
+        />
       </Row>
 
       <Spacer h={3} />
 
       {showCategorySelector && (
-        <CategorySelector
-          className="mb-2"
-          category={category}
-          setCategory={setCategory}
+        <CategoryFollowSelector
+          mode={mode}
+          setMode={setMode}
+          followedCategories={followedCategories ?? []}
+          follows={follows ?? []}
         />
       )}
 
       <Spacer h={4} />
 
-      {showFollows && (follows ?? []).length === 0 ? (
+      {mode === 'following' && (follows ?? []).length === 0 ? (
         <>You're not following anyone yet.</>
       ) : (
         <ContractSearchInner
           querySortOptions={querySortOptions}
-          filter={filter}
-          additionalFilter={{
-            category: category === 'following' ? 'all' : category,
-            ...additionalFilter,
-          }}
           onContractClick={onContractClick}
         />
       )}
@@ -169,15 +183,9 @@ export function ContractSearchInner(props: {
     defaultSort: Sort
     shouldLoadFromStorage?: boolean
   }
-  filter: filter
-  additionalFilter: {
-    creatorId?: string
-    tag?: string
-    category?: string
-  }
   onContractClick?: (contract: Contract) => void
 }) {
-  const { querySortOptions, filter, additionalFilter, onContractClick } = props
+  const { querySortOptions, onContractClick } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
   const { query, setQuery, setSort } = useUpdateQueryAndSort({
@@ -209,23 +217,6 @@ export function ContractSearchInner(props: {
     }
   }, [index])
 
-  const { creatorId, category, tag } = additionalFilter
-
-  useFilterCreator(creatorId)
-
-  useFilterTag(tag ?? (category === 'all' ? undefined : category))
-
-  useFilterClosed(
-    filter === 'closed'
-      ? true
-      : filter === 'all' || filter === 'resolved'
-      ? undefined
-      : false
-  )
-  useFilterResolved(
-    filter === 'resolved' ? true : filter === 'all' ? undefined : false
-  )
-
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   useEffect(() => {
     const id = setTimeout(() => setIsInitialLoad(false), 1000)
@@ -248,45 +239,64 @@ export function ContractSearchInner(props: {
   )
 }
 
-const useFilterCreator = (creatorId: string | undefined) => {
-  const { refine } = useRefinementList({ attribute: 'creatorId' })
-  useEffect(() => {
-    if (creatorId) refine(creatorId)
-  }, [creatorId, refine])
-}
+function CategoryFollowSelector(props: {
+  mode: 'categories' | 'following'
+  setMode: (mode: 'categories' | 'following') => void
+  followedCategories: string[]
+  follows: string[]
+}) {
+  const { mode, setMode, followedCategories, follows } = props
 
-const useFilterTag = (tag: string | undefined) => {
-  const { items, refine: deleteRefinement } = useCurrentRefinements({
-    includedAttributes: ['lowercaseTags'],
-  })
-  const { refine } = useRefinementList({ attribute: 'lowercaseTags' })
-  useEffect(() => {
-    const refinements = items[0]?.refinements ?? []
-    if (tag) refine(tag.toLowerCase())
-    if (refinements[0]) deleteRefinement(refinements[0])
-  }, [tag])
-}
+  const user = useUser()
 
-const useFilterClosed = (value: boolean | undefined) => {
-  const [now] = useState(Date.now())
-  useRange({
-    attribute: 'closeTime',
-    min: value === false ? now : undefined,
-    max: value ? now : undefined,
-  })
-}
+  const categoriesLabel = `Categories ${
+    followedCategories.length ? followedCategories.length : '(All)'
+  }`
 
-const useFilterResolved = (value: boolean | undefined) => {
-  const { items, refine: deleteRefinement } = useCurrentRefinements({
-    includedAttributes: ['isResolved'],
-  })
+  let categoriesDescription = `Showing all categories`
 
-  const { refine } = useRefinementList({ attribute: 'isResolved' })
+  if (followedCategories.length) {
+    const categoriesLabel = followedCategories
+      .slice(0, 3)
+      .map((cat) => CATEGORIES[cat])
+      .join(', ')
+    const andMoreLabel =
+      followedCategories.length > 3
+        ? `, and ${followedCategories.length - 3} more`
+        : ''
+    categoriesDescription = `Showing ${categoriesLabel}${andMoreLabel}`
+  }
 
-  useEffect(() => {
-    const refinements = items[0]?.refinements ?? []
+  const followingLabel = `Following ${follows.length}`
 
-    if (value !== undefined) refine(`${value}`)
-    refinements.forEach((refinement) => deleteRefinement(refinement))
-  }, [value])
+  return (
+    <Tabs
+      defaultIndex={mode === 'categories' ? 0 : 1}
+      tabs={[
+        {
+          title: categoriesLabel,
+          content: user && (
+            <Row className="items-center gap-1 text-gray-500">
+              <div>{categoriesDescription}</div>
+              <EditCategoriesButton className="self-start" user={user} />
+            </Row>
+          ),
+        },
+        ...(user
+          ? [
+              {
+                title: followingLabel,
+
+                content: (
+                  <Row className="h-8 items-center gap-2 text-gray-500">
+                    <div>Showing markets by users you are following.</div>
+                  </Row>
+                ),
+              },
+            ]
+          : []),
+      ]}
+      onClick={(_, index) => setMode(index === 0 ? 'categories' : 'following')}
+    />
+  )
 }

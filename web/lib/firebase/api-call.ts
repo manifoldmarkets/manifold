@@ -1,5 +1,6 @@
 import { auth } from './users'
-import { FIREBASE_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { V2CloudFunction } from 'common/envs/prod'
 
 export class APIError extends Error {
   code: number
@@ -38,17 +39,14 @@ export async function call(url: string, method: string, params: any) {
 // app just hit the cloud functions directly -- there's no difference and it's
 // one less hop
 
-export function getFunctionUrl(name: string) {
-  const { projectId, region } = FIREBASE_CONFIG
-  return process.env.NEXT_PUBLIC_FIREBASE_EMULATE
-    ? `http://localhost:5001/${projectId}/${region}/${name}`
-    : `https://${region}-${projectId}.cloudfunctions.net/${name}`
+export function getFunctionUrl(name: V2CloudFunction) {
+  return ENV_CONFIG.functionEndpoints[name]
 }
 
-export function createContract(params: any) {
-  return call(getFunctionUrl('createContract'), 'POST', params)
+export function createMarket(params: any) {
+  return call(getFunctionUrl('createmarket'), 'POST', params)
 }
 
 export function placeBet(params: any) {
-  return call(getFunctionUrl('placeBet'), 'POST', params)
+  return call(getFunctionUrl('placebet'), 'POST', params)
 }

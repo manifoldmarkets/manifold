@@ -2,15 +2,13 @@ import * as admin from 'firebase-admin'
 
 admin.initializeApp()
 
+// v1
 // export * from './keep-awake'
-export * from './health'
 export * from './transact'
-export * from './place-bet'
 export * from './resolve-market'
 export * from './stripe'
 export * from './sell-bet'
 export * from './sell-shares'
-export * from './create-contract'
 export * from './create-user'
 export * from './create-fold'
 export * from './create-answer'
@@ -30,3 +28,9 @@ export * from './market-close-emails'
 export * from './add-liquidity'
 export * from './on-create-answer'
 export * from './on-update-contract'
+export * from './on-follow-user'
+
+// v2
+export * from './health'
+export * from './place-bet'
+export * from './create-contract'

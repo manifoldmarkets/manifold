@@ -49,7 +49,7 @@ const numericSchema = z.object({
   max: z.number(),
 })
 
-export const createContract = newEndpoint(['POST'], async (req, [user, _]) => {
+export const createmarket = newEndpoint(['POST'], async (req, [user, _]) => {
   const { question, description, tags, closeTime, outcomeType } = validate(
     bodySchema,
     req.body
