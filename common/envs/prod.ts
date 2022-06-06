@@ -1,6 +1,9 @@
+export type V2CloudFunction = 'placebet' | 'createmarket'
+
 export type EnvConfig = {
   domain: string
   firebaseConfig: FirebaseConfig
+  functionEndpoints: Record<V2CloudFunction, string>
 
   // Access controls
   adminEmails: string[]
@@ -36,6 +39,11 @@ export const PROD_CONFIG: EnvConfig = {
     messagingSenderId: '128925704902',
     appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
     measurementId: 'G-SSFK1Q138D',
+  },
+  // TODO: fill in real endpoints for prod
+  functionEndpoints: {
+    placebet: 'https://placebet-w3txbmd3ba-uc.a.run.app',
+    createmarket: 'https://createmarket-w3txbmd3ba-uc.a.run.app',
   },
   adminEmails: [
     'akrolsmir@gmail.com', // Austin

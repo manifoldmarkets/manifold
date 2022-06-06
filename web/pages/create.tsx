@@ -6,7 +6,7 @@ import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
 import { useUser } from 'web/hooks/use-user'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
-import { createContract } from 'web/lib/firebase/api-call'
+import { createMarket } from 'web/lib/firebase/api-call'
 import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
@@ -137,7 +137,7 @@ export function NewContract(props: { question: string; tag?: string }) {
     setIsSubmitting(true)
 
     try {
-      const result = await createContract(
+      const result = await createMarket(
         removeUndefinedProps({
           question,
           outcomeType,

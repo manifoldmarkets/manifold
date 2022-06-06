@@ -12,6 +12,11 @@ export const THEOREMONE_CONFIG: EnvConfig = {
     appId: '1:698012149198:web:b342af75662831aa84b79f',
     measurementId: 'G-Y3EZ1WNT6E',
   },
+  // TODO: fill in real endpoints for T1
+  functionEndpoints: {
+    placebet: 'https://placebet-w3txbmd3ba-uc.a.run.app',
+    createmarket: 'https://createmarket-w3txbmd3ba-uc.a.run.app',
+  },
   adminEmails: [...PROD_CONFIG.adminEmails, 'david.glidden@theoremone.co'],
   whitelistEmail: '@theoremone.co',
   moneyMoniker: 'T$',
