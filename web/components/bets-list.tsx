@@ -1,13 +1,5 @@
 import Link from 'next/link'
-import {
-  uniq,
-  groupBy,
-  mapValues,
-  sortBy,
-  partition,
-  sumBy,
-  throttle,
-} from 'lodash'
+import { uniq, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
@@ -30,7 +22,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
-import { sellBet } from 'web/lib/firebase/fn-call'
+import { sellBet } from 'web/lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from 'common/util/array'

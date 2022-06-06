@@ -54,3 +54,7 @@ export function placeBet(params: any) {
 export function sellShares(params: any) {
   return call(getFunctionUrl('sellshares'), 'POST', params)
 }
+
+export function sellBet(params: any) {
+  return call(getFunctionUrl('sellbet'), 'POST', params)
+}

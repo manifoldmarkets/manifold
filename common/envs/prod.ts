@@ -1,4 +1,8 @@
-export type V2CloudFunction = 'placebet' | 'sellshares' | 'createmarket'
+export type V2CloudFunction =
+  | 'placebet'
+  | 'sellbet'
+  | 'sellshares'
+  | 'createmarket'
 
 export type EnvConfig = {
   domain: string
@@ -43,6 +47,7 @@ export const PROD_CONFIG: EnvConfig = {
   functionEndpoints: {
     placebet: 'https://placebet-nggbo3neva-uc.a.run.app',
     sellshares: 'https://sellshares-nggbo3neva-uc.a.run.app',
+    sellbet: 'https://sellbet-nggbo3neva-uc.a.run.app',
     createmarket: 'https://createmarket-nggbo3neva-uc.a.run.app',
   },
   adminEmails: [
