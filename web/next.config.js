@@ -34,6 +34,11 @@ module.exports = {
         destination: API_DOCS_URL,
         permanent: false,
       },
+      {
+        source: '/analytics',
+        destination: '/stats',
+        permanent: true,
+      }
     ]
   },
 }
