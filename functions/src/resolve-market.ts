@@ -1,8 +1,8 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
+import { difference, uniq, mapValues, groupBy, sum, sumBy } from 'lodash'
 
-import { Contract, resolution } from '../../common/contract'
+import { Contract, FreeResponse, resolution } from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, isProd, payUser } from './utils'
@@ -15,6 +15,7 @@ import {
 } from '../../common/payouts'
 import { removeUndefinedProps } from '../../common/util/object'
 import { LiquidityProvision } from '../../common/liquidity-provision'
+import { getDpmOutcomeProbability } from '../../common/calculate-dpm'
 import { getValues } from './utils'
 import { batchedWaitAll } from '../../common/util/promise'
 import { getProbability } from '../../common/calculate'
@@ -47,7 +48,7 @@ export const resolveMarket = functions
   )
 
 export const autoResolveMarkets = functions.pubsub
-  .schedule('every 1 hours')
+  .schedule('every 1 minute')
   .onRun(async () => {
     const contracts = await getValues<Contract>(
       firestore.collection('contracts')
@@ -80,10 +81,30 @@ const autoResolve = async (contract: Contract) => {
       contract.outcomeType == 'BINARY'
         ? getProbability(contract) * 100
         : undefined,
-    resolutions: undefined, // free response
+    resolutions:
+      contract.outcomeType == 'FREE_RESPONSE'
+        ? getFreeResponseResolutions(contract)
+        : undefined,
   }
   const contractDoc = firestore.doc(`contracts/${contract.id}`)
   return await resolveContract(contract, data, contractDoc, true)
+}
+
+const getFreeResponseResolutions = (contract: Contract & FreeResponse) => {
+  const answersWithProbs = getAnswersWithProbs(contract)
+  const totalProb = sum(Object.values(answersWithProbs))
+  return mapValues(answersWithProbs, (prob) => (100 * prob) / totalProb)
+}
+
+const getAnswersWithProbs = (contract: Contract & FreeResponse) => {
+  const answers: { [id: string]: number } = {}
+  for (const answer of contract.answers) {
+    answers[answer.id] = getDpmOutcomeProbability(
+      contract.totalShares,
+      answer.id
+    )
+  }
+  return answers
 }
 
 const resolveContract = async (
