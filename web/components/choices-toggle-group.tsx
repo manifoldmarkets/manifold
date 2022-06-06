@@ -8,7 +8,6 @@ export function ChoicesToggleGroup(props: {
   isSubmitting?: boolean
   setChoice: (p: number | string) => void
   className?: string
-  toggleClassName?: string
   children?: React.ReactNode
 }) {
   const {
@@ -18,7 +17,6 @@ export function ChoicesToggleGroup(props: {
     choicesMap,
     className,
     children,
-    toggleClassName,
   } = props
   return (
     <RadioGroup
@@ -39,7 +37,7 @@ export function ChoicesToggleGroup(props: {
                 : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50',
               'flex cursor-pointer items-center justify-center rounded-md border py-3 px-3 text-sm font-medium normal-case',
               "hover:ring-offset-2' hover:ring-2 hover:ring-indigo-500",
-              toggleClassName
+              className
             )
           }
           disabled={isSubmitting}
