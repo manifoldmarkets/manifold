@@ -32,7 +32,7 @@ const numericSchema = z.object({
   value: z.number(),
 })
 
-export const placeBet = newEndpoint(['POST'], async (req, [bettor, _]) => {
+export const placebet = newEndpoint(['POST'], async (req, [bettor, _]) => {
   const { amount, contractId } = validate(bodySchema, req.body)
 
   const result = await firestore.runTransaction(async (trans) => {

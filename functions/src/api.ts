@@ -1,5 +1,8 @@
 import * as admin from 'firebase-admin'
-import * as functions from 'firebase-functions'
+import { Response } from 'express'
+import { logger } from 'firebase-functions/v2'
+import { onRequest, Request } from 'firebase-functions/v2/https'
+
 import * as Cors from 'cors'
 import { z } from 'zod'
 
@@ -10,8 +13,6 @@ import {
 } from '../../common/envs/constants'
 
 type Output = Record<string, unknown>
-type Request = functions.https.Request
-type Response = functions.Response
 type AuthedUser = [User, PrivateUser]
 type Handler = (req: Request, user: AuthedUser) => Promise<Output>
 type JwtCredentials = { kind: 'jwt'; data: admin.auth.DecodedIdToken }
@@ -47,7 +48,7 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
         return { kind: 'jwt', data: jwt }
       } catch (err) {
         // This is somewhat suspicious, so get it into the firebase console
-        functions.logger.error('Error verifying Firebase JWT: ', err)
+        logger.error('Error verifying Firebase JWT: ', err)
         throw new APIError(403, 'Error validating token.')
       }
     case 'Key':
@@ -135,7 +136,7 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
 }
 
 export const newEndpoint = (methods: [string], fn: Handler) =>
-  functions.runWith({ minInstances: 1 }).https.onRequest(async (req, res) => {
+  onRequest({ minInstances: 1 }, async (req, res) => {
     try {
       await applyCors(req, res, {
         origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
@@ -155,7 +156,7 @@ export const newEndpoint = (methods: [string], fn: Handler) =>
         }
         res.status(e.code).json(output)
       } else {
-        functions.logger.error(e)
+        logger.error(e)
         res.status(500).json({ message: 'An unknown error occurred.' })
       }
     }
