@@ -175,7 +175,7 @@ function NotificationGroupItem(props: {
   className?: string
 }) {
   const { notificationGroup, className } = props
-  const { sourceContractId, notifications } = notificationGroup
+  const { sourceContractId, notifications, timePeriod } = notificationGroup
   const contract = useContract(sourceContractId ?? '')
   const numSummaryLines = 3
   const [expanded, setExpanded] = useState(false)
@@ -209,8 +209,14 @@ function NotificationGroupItem(props: {
             onClick={() => setExpanded(!expanded)}
             className={'line-clamp-1 cursor-pointer pl-1  sm:pl-0'}
           >
-            {'Activity on '}
-            <span className={'mx-1 font-bold'}>{contract?.question}</span>
+            {contract ? (
+              <span>
+                {'Activity on '}
+                <span className={'mx-1 font-bold'}>{contract?.question}</span>
+              </span>
+            ) : (
+              'Other activity'
+            )}
           </div>
           <RelativeTimestamp time={notifications[0].createdTime} />
         </div>
