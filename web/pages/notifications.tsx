@@ -141,7 +141,7 @@ export default function Notifications() {
               content: (
                 <div className={''}>
                   {allNotificationGroups.length === 0 &&
-                    "You don't have any notifications."}
+                    "You don't have any notifications. Try changing your settings to see more."}
                   {allNotificationGroups.map((notification) =>
                     notification.notifications.length === 1 ? (
                       <NotificationItem
