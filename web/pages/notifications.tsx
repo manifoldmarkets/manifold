@@ -221,17 +221,15 @@ function NotificationGroupItem(props: {
           <div className={'line-clamp-4 mt-1 gap-1 whitespace-pre-line'}>
             {!expanded ? (
               <>
-                {notifications
-                  .slice(0, numSummaryLines)
-                  .map((notification, i) => {
-                    return (
-                      <NotificationItem
-                        notification={notification}
-                        justSummary={true}
-                        key={notification.id}
-                      />
-                    )
-                  })}
+                {notifications.slice(0, numSummaryLines).map((notification) => {
+                  return (
+                    <NotificationItem
+                      notification={notification}
+                      justSummary={true}
+                      key={notification.id}
+                    />
+                  )
+                })}
                 <div className={'text-sm text-gray-500 hover:underline '}>
                   {notifications.length - numSummaryLines > 0
                     ? 'And ' +
@@ -242,7 +240,7 @@ function NotificationGroupItem(props: {
               </>
             ) : (
               <>
-                {notifications.map((notification, i) => (
+                {notifications.map((notification) => (
                   <NotificationItem
                     notification={notification}
                     key={notification.id}
@@ -518,7 +516,14 @@ function NotificationItem(props: {
       // Handle arbitrary notifications with reason text here.
       setNotificationText(reasonText)
     }
-  }, [contract, reasonText, sourceContractId, sourceId, sourceType])
+  }, [
+    contract,
+    reasonText,
+    sourceContractId,
+    sourceId,
+    sourceType,
+    sourceUpdateType,
+  ])
 
   useEffect(() => {
     setNotificationsAsSeen([notification])
@@ -750,7 +755,7 @@ function getReasonForShowingNotification(
   contract: Contract | undefined | null,
   simple?: boolean
 ) {
-  let reasonText = ''
+  let reasonText: string
   switch (source) {
     case 'comment':
       if (reason === 'reply_to_users_answer')
