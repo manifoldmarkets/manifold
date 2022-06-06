@@ -30,15 +30,6 @@ export const onCreateComment = functions
     const commentCreator = await getUser(comment.userId)
     if (!commentCreator) throw new Error('Could not find comment creator')
 
-    await createNotification(
-      comment.id,
-      'comment',
-      'created',
-      contract,
-      commentCreator,
-      eventId
-    )
-
     await firestore
       .collection('contracts')
       .doc(contract.id)
@@ -70,6 +61,27 @@ export const onCreateComment = functions
 
     const comments = await getValues<Comment>(
       firestore.collection('contracts').doc(contractId).collection('comments')
+    )
+    const relatedSourceType = comment.replyToCommentId
+      ? 'comment'
+      : comment.answerOutcome
+      ? 'answer'
+      : undefined
+
+    const relatedUser = comment.replyToCommentId
+      ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
+      : answer?.userId
+
+    await createNotification(
+      comment.id,
+      'comment',
+      'created',
+      commentCreator,
+      eventId,
+      contract,
+      relatedSourceType,
+      relatedUser,
+      comment.text
     )
 
     const recipientUserIds = uniq([
