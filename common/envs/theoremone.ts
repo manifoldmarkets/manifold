@@ -14,8 +14,8 @@ export const THEOREMONE_CONFIG: EnvConfig = {
   },
   // TODO: fill in real endpoints for T1
   functionEndpoints: {
-    placebet: 'https://placebet-w3txbmd3ba-uc.a.run.app',
-    createmarket: 'https://createmarket-w3txbmd3ba-uc.a.run.app',
+    placebet: 'https://placebet-nggbo3neva-uc.a.run.app',
+    createmarket: 'https://createmarket-nggbo3neva-uc.a.run.app',
   },
   adminEmails: [...PROD_CONFIG.adminEmails, 'david.glidden@theoremone.co'],
   whitelistEmail: '@theoremone.co',

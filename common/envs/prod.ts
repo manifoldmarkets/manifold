@@ -40,10 +40,9 @@ export const PROD_CONFIG: EnvConfig = {
     appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
     measurementId: 'G-SSFK1Q138D',
   },
-  // TODO: fill in real endpoints for prod
   functionEndpoints: {
-    placebet: 'https://placebet-w3txbmd3ba-uc.a.run.app',
-    createmarket: 'https://createmarket-w3txbmd3ba-uc.a.run.app',
+    placebet: 'https://placebet-nggbo3neva-uc.a.run.app',
+    createmarket: 'https://createmarket-nggbo3neva-uc.a.run.app',
   },
   adminEmails: [
     'akrolsmir@gmail.com', // Austin
