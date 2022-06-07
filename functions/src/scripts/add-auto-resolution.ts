@@ -20,9 +20,7 @@ async function addAutoResolutionToContracts() {
 
   console.log('Loaded', contracts.length, 'contracts')
 
-  for (const contract of contracts) {
-    addAutoResolutionToContract(contract)
-  }
+  await Promise.all(contracts.map((c) => addAutoResolutionToContract(c)))
 }
 
 async function addAutoResolutionToContract(contract: Contract) {
