@@ -3,7 +3,7 @@ import { Comment } from 'common/comment'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
-import { minBy, maxBy, groupBy, partition, sumBy } from 'lodash'
+import { minBy, maxBy, groupBy, partition, sumBy, Dictionary } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -55,14 +55,76 @@ export function FeedCommentThread(props: {
   }, [inputRef, showReply])
   return (
     <div className={'w-full flex-col pr-1'}>
+      <span
+        className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+        aria-hidden="true"
+      />
+      <CommentRepliesList
+        contract={contract}
+        commentsList={commentsList}
+        betsByUserId={betsByUserId}
+        smallAvatar={smallAvatar}
+        truncate={truncate}
+        bets={bets}
+        scrollAndOpenReplyInput={scrollAndOpenReplyInput}
+      />
+      {showReply && (
+        <div className={'-pb-2 ml-6 flex flex-col pt-5'}>
+          <span
+            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            aria-hidden="true"
+          />
+          <CommentInput
+            contract={contract}
+            betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
+            commentsByCurrentUser={comments.filter(
+              (c) => c.userId === user?.id
+            )}
+            parentCommentId={parentComment.id}
+            replyToUsername={replyToUsername}
+            answerOutcome={comments[0].answerOutcome}
+            setRef={setInputRef}
+            onSubmitComment={() => setShowReply(false)}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function CommentRepliesList(props: {
+  contract: Contract
+  commentsList: Comment[]
+  betsByUserId: Dictionary<Bet[]>
+  scrollAndOpenReplyInput: (comment: Comment) => void
+  bets: Bet[]
+  treatFirstIndexEqually?: boolean
+  smallAvatar?: boolean
+  truncate?: boolean
+}) {
+  const {
+    contract,
+    commentsList,
+    betsByUserId,
+    truncate,
+    smallAvatar,
+    bets,
+    scrollAndOpenReplyInput,
+    treatFirstIndexEqually,
+  } = props
+  return (
+    <>
       {commentsList.map((comment, commentIdx) => (
         <div
           key={comment.id}
           id={comment.id}
-          className={clsx('relative', commentIdx === 0 ? '' : 'mt-3 ml-6')}
+          className={clsx(
+            'relative',
+            !treatFirstIndexEqually && commentIdx === 0 ? '' : 'mt-3 ml-6'
+          )}
         >
           {/*draw a gray line from the comment to the left:*/}
-          {commentIdx != 0 && (
+          {(treatFirstIndexEqually || commentIdx != 0) && (
             <span
               className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
               aria-hidden="true"
@@ -87,24 +149,7 @@ export function FeedCommentThread(props: {
           />
         </div>
       ))}
-      {showReply && (
-        <div className={'-pb-2 ml-6 flex flex-col pt-5'}>
-          <span
-            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
-            aria-hidden="true"
-          />
-          <CommentInput
-            contract={contract}
-            betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
-            commentsByCurrentUser={comments}
-            parentComment={parentComment}
-            replyToUsername={replyToUsername}
-            answerOutcome={comments[0].answerOutcome}
-            setRef={setInputRef}
-          />
-        </div>
-      )}
-    </div>
+    </>
   )
 }
 
@@ -229,7 +274,10 @@ export function getMostRecentCommentableBet(
   user?: User | null,
   answerOutcome?: string
 ) {
-  return betsByCurrentUser
+  const sortedBetsByCurrentUser = betsByCurrentUser.sort(
+    (a, b) => b.createdTime - a.createdTime
+  )
+  return sortedBetsByCurrentUser
     .filter((bet) => {
       if (
         canCommentOnBet(bet, user) &&
@@ -238,7 +286,7 @@ export function getMostRecentCommentableBet(
         )
       ) {
         if (!answerOutcome) return true
-        // If we're in free response, don't allow commenting on ante bet
+        if (sortedBetsByCurrentUser[0].id !== bet.id) return false
         return answerOutcome === bet.outcome
       }
       return false
@@ -266,20 +314,22 @@ export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
   commentsByCurrentUser: Comment[]
-  // Tie a comment to an free response answer outcome
-  answerOutcome?: string
-  // Tie a comment to another comment
-  parentComment?: Comment
   replyToUsername?: string
   setRef?: (ref: HTMLTextAreaElement) => void
+  // Reply to a free response answer
+  answerOutcome?: string
+  // Reply to another comment
+  parentCommentId?: string
+  onSubmitComment?: () => void
 }) {
   const {
     contract,
     betsByCurrentUser,
     commentsByCurrentUser,
     answerOutcome,
-    parentComment,
+    parentCommentId,
     replyToUsername,
+    onSubmitComment,
     setRef,
   } = props
   const user = useUser()
@@ -313,8 +363,9 @@ export function CommentInput(props: {
       user,
       betId,
       answerOutcome,
-      parentComment?.id
+      parentCommentId
     )
+    onSubmitComment?.()
     setComment('')
     setFocused(false)
     setIsSubmitting(false)
@@ -326,7 +377,7 @@ export function CommentInput(props: {
     betsByCurrentUser
   )
 
-  const shouldCollapseAfterClickOutside = false
+  const shouldCollapseAfterClickOutside = !comment
 
   const isNumeric = contract.outcomeType === 'NUMERIC'
 
@@ -382,12 +433,11 @@ export function CommentInput(props: {
                   'textarea textarea-bordered w-full resize-none'
                 )}
                 placeholder={
-                  parentComment || answerOutcome
+                  parentCommentId || answerOutcome
                     ? 'Write a reply... '
                     : 'Write a comment...'
                 }
-                autoFocus={focused}
-                rows={focused ? 3 : 1}
+                autoFocus={true}
                 onFocus={() => setFocused(true)}
                 onBlur={() =>
                   shouldCollapseAfterClickOutside && setFocused(false)
@@ -407,13 +457,12 @@ export function CommentInput(props: {
                 {user && !isSubmitting && (
                   <button
                     className={clsx(
-                      'btn btn-ghost btn-sm block flex flex-row capitalize',
-                      'absolute bottom-4 right-1 col-span-1',
-                      // parentComment ? ' bottom-4 right-2.5' : '',
-                      // 'sm:relative sm:bottom-0 sm:right-0 sm:col-span-2',
-                      focused && comment
-                        ? ''
-                        : 'pointer-events-none text-gray-500'
+                      'btn btn-ghost btn-sm absolute right-2 block flex flex-row capitalize',
+                      parentCommentId || answerOutcome
+                        ? ' bottom-4'
+                        : ' bottom-2',
+                      (!focused || !comment) &&
+                        'pointer-events-none text-gray-500'
                     )}
                     onClick={() => {
                       if (!focused) return

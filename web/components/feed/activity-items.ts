@@ -29,7 +29,6 @@ export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
   betsByCurrentUser: Bet[]
   commentsByCurrentUser: Comment[]
-  answerOutcome?: string
 }
 
 export type DescriptionItem = BaseActivityItem & {
@@ -74,10 +73,10 @@ export type BetGroupItem = BaseActivityItem & {
 
 export type AnswerGroupItem = BaseActivityItem & {
   type: 'answergroup'
+  user: User | undefined | null
   answer: Answer
-  items: ActivityItem[]
-  betsByCurrentUser?: Bet[]
-  commentsByCurrentUser?: Comment[]
+  comments: Comment[]
+  bets: Bet[]
 }
 
 export type CloseItem = BaseActivityItem & {
@@ -232,31 +231,19 @@ function getAnswerGroups(
 
   const answerGroups = outcomes
     .map((outcome) => {
-      const answerBets = bets.filter((bet) => bet.outcome === outcome)
-      const answerComments = comments.filter((comment) =>
-        answerBets.some((bet) => bet.id === comment.betId)
-      )
       const answer = contract.answers?.find(
         (answer) => answer.id === outcome
       ) as Answer
 
-      let items = groupBets(answerBets, answerComments, contract, user?.id, {
-        hideOutcome: true,
-        abbreviated,
-        smallAvatar: true,
-        reversed,
-      })
-
-      if (abbreviated)
-        items = items.slice(-ABBREVIATED_NUM_COMMENTS_OR_BETS_TO_SHOW)
-
+      // TODO: this doesn't abbreviate these groups for activity feed anymore
       return {
         id: outcome,
         type: 'answergroup' as const,
         contract,
-        answer,
-        items,
         user,
+        answer,
+        comments,
+        bets,
       }
     })
     .filter((group) => group.answer)
@@ -276,7 +263,6 @@ function getAnswerAndCommentInputGroups(
   outcomes = sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   )
-  const betsByCurrentUser = bets.filter((bet) => bet.userId === user?.id)
 
   const answerGroups = outcomes
     .map((outcome) => {
@@ -284,25 +270,14 @@ function getAnswerAndCommentInputGroups(
         (answer) => answer.id === outcome
       ) as Answer
 
-      const answerBets = bets.filter((bet) => bet.outcome === outcome)
-      const answerComments = comments.filter(
-        (comment) =>
-          comment.answerOutcome === outcome ||
-          answerBets.some((bet) => bet.id === comment.betId)
-      )
-      const items = getCommentThreads(bets, answerComments, contract)
-
       return {
         id: outcome,
         type: 'answergroup' as const,
         contract,
-        answer,
-        items,
         user,
-        betsByCurrentUser,
-        commentsByCurrentUser: answerComments.filter(
-          (comment) => comment.userId === user?.id
-        ),
+        answer,
+        comments,
+        bets,
       }
     })
     .filter((group) => group.answer) as ActivityItem[]
@@ -427,13 +402,13 @@ export function getAllContractActivityItems(
         }
       )
     )
-    items.push({
-      type: 'commentInput' as const,
-      id: 'commentInput',
-      contract,
-      betsByCurrentUser: [],
-      commentsByCurrentUser: [],
-    })
+    // items.push({
+    //   type: 'commentInput' as const,
+    //   id: 'commentInput',
+    //   contract,
+    //   betsByCurrentUser: [],
+    //   commentsByCurrentUser: [],
+    // })
   } else {
     items.push(
       ...groupBetsAndComments(bets, comments, contract, user?.id, {
@@ -453,13 +428,13 @@ export function getAllContractActivityItems(
   }
 
   if (outcomeType === 'BINARY') {
-    items.push({
-      type: 'commentInput' as const,
-      id: 'commentInput',
-      contract,
-      betsByCurrentUser: [],
-      commentsByCurrentUser: [],
-    })
+    // items.push({
+    //   type: 'commentInput' as const,
+    //   id: 'commentInput',
+    //   contract,
+    //   betsByCurrentUser: [],
+    //   commentsByCurrentUser: [],
+    // })
   }
 
   if (reversed) items.reverse()
