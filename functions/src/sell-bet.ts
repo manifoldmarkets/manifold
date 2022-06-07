@@ -18,26 +18,27 @@ export const sellbet = newEndpoint(['POST'], async (req, auth) => {
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {
-    const userDoc = firestore.doc(`users/${auth.uid}`)
-    const userSnap = await transaction.get(userDoc)
-    if (!userSnap.exists) throw new APIError(400, 'User not found.')
-    const user = userSnap.data() as User
-
     const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await transaction.get(contractDoc)
+    const userDoc = firestore.doc(`users/${auth.uid}`)
+    const betDoc = firestore.doc(`contracts/${contractId}/bets/${betId}`)
+    const [contractSnap, userSnap, betSnap] = await Promise.all([
+      transaction.get(contractDoc),
+      transaction.get(userDoc),
+      transaction.get(betDoc),
+    ])
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
+    if (!userSnap.exists) throw new APIError(400, 'User not found.')
+    if (!betSnap.exists) throw new APIError(400, 'Bet not found.')
+
     const contract = contractSnap.data() as Contract
+    const user = userSnap.data() as User
+    const bet = betSnap.data() as Bet
 
     const { closeTime, mechanism, collectedFees, volume } = contract
     if (mechanism !== 'dpm-2')
       throw new APIError(400, 'You can only sell bets on DPM-2 contracts.')
     if (closeTime && Date.now() > closeTime)
       throw new APIError(400, 'Trading is closed.')
-
-    const betDoc = firestore.doc(`contracts/${contractId}/bets/${betId}`)
-    const betSnap = await transaction.get(betDoc)
-    if (!betSnap.exists) throw new APIError(400, 'Bet not found.')
-    const bet = betSnap.data() as Bet
 
     if (auth.uid !== bet.userId)
       throw new APIError(400, 'The specified bet does not belong to you.')

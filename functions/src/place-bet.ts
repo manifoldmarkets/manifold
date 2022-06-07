@@ -36,16 +36,18 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
   const { amount, contractId } = validate(bodySchema, req.body)
 
   const result = await firestore.runTransaction(async (trans) => {
+    const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
-    const userSnap = await trans.get(userDoc)
+    const [contractSnap, userSnap] = await Promise.all([
+      trans.get(contractDoc),
+      trans.get(userDoc),
+    ])
+    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
+
+    const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
-
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await trans.get(contractDoc)
-    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
-    const contract = contractSnap.data() as Contract
 
     const loanAmount = 0
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =

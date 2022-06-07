@@ -21,15 +21,20 @@ export const sellshares = newEndpoint(['POST'], async (req, auth) => {
 
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {
+    const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
-    const userSnap = await transaction.get(userDoc)
+    const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
+    const [contractSnap, userSnap, userBets] = await Promise.all([
+      transaction.get(contractDoc),
+      transaction.get(userDoc),
+      getValues<Bet>(betsQ), // TODO: why is this not in the transaction??
+    ])
+    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
+
+    const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
 
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await transaction.get(contractDoc)
-    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
-    const contract = contractSnap.data() as Contract
     const { closeTime, mechanism, collectedFees, volume } = contract
 
     if (mechanism !== 'cpmm-1')
@@ -37,16 +42,13 @@ export const sellshares = newEndpoint(['POST'], async (req, auth) => {
     if (closeTime && Date.now() > closeTime)
       throw new APIError(400, 'Trading is closed.')
 
-    const userBets = await getValues<Bet>(
-      contractDoc.collection('bets').where('userId', '==', auth.uid)
-    )
-
     const prevLoanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
 
     const [yesBets, noBets] = partition(
       userBets ?? [],
       (bet) => bet.outcome === 'YES'
     )
+
     const [yesShares, noShares] = [
       sumBy(yesBets, (bet) => bet.shares),
       sumBy(noBets, (bet) => bet.shares),
