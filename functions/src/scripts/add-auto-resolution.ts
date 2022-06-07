@@ -14,11 +14,13 @@ const firestore = admin.firestore()
 async function addAutoResolutionToContracts() {
   console.log('Adding auto resolution to existing contracts')
 
-  const contracts = await getValues<Contract>(firestore.collection('contracts'))
+  const contracts = await getValues<Contract>(
+    firestore.collection('contracts').where('isResolved', '==', false)
+  )
 
   console.log('Loaded', contracts.length, 'contracts')
 
-  for (const contract of contracts.filter((c) => !c.isResolved)) {
+  for (const contract of contracts) {
     addAutoResolutionToContract(contract)
   }
 }
