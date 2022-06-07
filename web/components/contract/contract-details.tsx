@@ -104,8 +104,7 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const { closeTime, autoResolutionTime, creatorName, creatorUsername } =
-    contract
+  const { closeTime, creatorName, creatorUsername } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
   return (
