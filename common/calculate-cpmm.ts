@@ -290,6 +290,17 @@ export function getCpmmLiquidityPoolWeights(
   return totalUserWeights
 }
 
+export function getUserLiquidityShares(
+  userId: string,
+  contract: CPMMContract,
+  liquidities: LiquidityProvision[]
+) {
+  const weights = getCpmmLiquidityPoolWeights(contract, liquidities)
+  const userWeight = weights[userId]
+
+  return mapValues(contract.pool, (shares) => userWeight * shares)
+}
+
 // export function removeCpmmLiquidity(
 //   contract: CPMMContract,
 //   liquidity: number
