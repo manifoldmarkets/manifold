@@ -522,12 +522,6 @@ function NotificationItem(props: {
         (sourceType === 'contract' && sourceUpdateType === 'updated'))
     ) {
       setNotificationText(sourceText)
-    } else if (
-      sourceText &&
-      sourceType === 'contract' &&
-      sourceUpdateType === 'updated'
-    ) {
-      setNotificationText(sourceText)
     } else if (!contract || !sourceContractId || !sourceId) return
     else if (
       sourceType === 'answer' ||
