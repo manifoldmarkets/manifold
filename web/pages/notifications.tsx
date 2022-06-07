@@ -594,7 +594,7 @@ function NotificationItem(props: {
           sourceUpdateType,
           contract
         ) &&
-        contract?.resolution
+        contract.resolution
       )
         setText(contract.resolution)
       else setText(contract.question)
