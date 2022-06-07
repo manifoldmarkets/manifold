@@ -9,6 +9,8 @@ import { CPMMContract, DPMContract } from './contract'
 import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees } from './fees'
 import { User } from './user'
 
+export type CandidateBet<T extends Bet> = Omit<T, 'id' | 'userId'>
+
 export const getSellBetInfo = (
   user: User,
   bet: Bet,
@@ -84,12 +86,10 @@ export const getSellBetInfo = (
 }
 
 export const getCpmmSellBetInfo = (
-  user: User,
   shares: number,
   outcome: 'YES' | 'NO',
   contract: CPMMContract,
-  prevLoanAmount: number,
-  newBetId: string
+  prevLoanAmount: number
 ) => {
   const { pool, p } = contract
 
@@ -100,8 +100,6 @@ export const getCpmmSellBetInfo = (
   )
 
   const loanPaid = Math.min(prevLoanAmount, saleValue)
-  const netAmount = saleValue - loanPaid
-
   const probBefore = getCpmmProbability(pool, p)
   const probAfter = getCpmmProbability(newPool, p)
 
@@ -115,9 +113,7 @@ export const getCpmmSellBetInfo = (
     fees.creatorFee
   )
 
-  const newBet: Bet = {
-    id: newBetId,
-    userId: user.id,
+  const newBet: CandidateBet<Bet> = {
     contractId: contract.id,
     amount: -saleValue,
     shares: -shares,
@@ -129,13 +125,10 @@ export const getCpmmSellBetInfo = (
     fees,
   }
 
-  const newBalance = user.balance + netAmount
-
   return {
     newBet,
     newPool,
     newP,
-    newBalance,
     fees,
   }
 }
