@@ -51,15 +51,14 @@ export const autoResolveMarkets = functions.pubsub
   .schedule('every 1 hours')
   .onRun(async () => {
     const contracts = await getValues<Contract>(
-      firestore.collection('contracts')
+      firestore
+        .collection('contracts')
+        .where('isResolved', '==', false)
+        .where('autoResolutionTime', '<', Date.now())
     )
 
-    const contractsToResolve = contracts
-      .filter((c) => !c.isResolved)
-      .filter((c) => c.autoResolutionTime < Date.now())
-
     await batchedWaitAll(
-      contractsToResolve.map((contract) => async () => {
+      contracts.map((contract) => async () => {
         const result = await autoResolve(contract)
 
         console.log(
