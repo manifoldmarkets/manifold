@@ -488,7 +488,7 @@ export function CommentInput(props: {
               {!user && (
                 <button
                   className={
-                    'btn btn-outline btn-sm text-transform: capitalize'
+                    'btn btn-outline btn-sm text-transform:capitalize mt-2'
                   }
                   onClick={() => submitComment(id)}
                 >
