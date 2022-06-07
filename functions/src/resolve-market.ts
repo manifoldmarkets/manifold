@@ -43,7 +43,7 @@ export const resolveMarket = functions
       if (contract.creatorId !== userId)
         return { status: 'error', message: 'User not creator of contract' }
 
-      return privateResolveMarket(contract, data, contractDoc)
+      return privateResolveMarket(contract, data)
     }
   )
 
@@ -85,8 +85,7 @@ const autoResolve = async (contract: Contract) => {
         ? getFreeResponseResolutions(contract)
         : undefined,
   }
-  const contractDoc = firestore.doc(`contracts/${contract.id}`)
-  return await privateResolveMarket(contract, data, contractDoc, true)
+  return await privateResolveMarket(contract, data, true)
 }
 
 const getFreeResponseResolutions = (contract: Contract & FreeResponse) => {
@@ -114,7 +113,6 @@ const privateResolveMarket = async (
     probabilityInt?: number
     resolutions?: { [outcome: string]: number }
   },
-  contractDoc: admin.firestore.DocumentReference<admin.firestore.DocumentData>,
   autoResolution = false
 ) => {
   const { creatorId, id, outcomeType, closeTime } = contract
@@ -183,6 +181,8 @@ const privateResolveMarket = async (
   const description = autoResolution
     ? contract.description.concat(`\n\n\nContract resolved automatically.`)
     : undefined
+
+  const contractDoc = firestore.doc(`contracts/${contract.id}`)
 
   await contractDoc.update(
     removeUndefinedProps({
