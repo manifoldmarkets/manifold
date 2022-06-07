@@ -15,6 +15,7 @@ export const DEV_CONFIG: EnvConfig = {
   functionEndpoints: {
     placebet: 'https://placebet-w3txbmd3ba-uc.a.run.app',
     sellshares: 'https://sellshares-w3txbmd3ba-uc.a.run.app',
+    sellbet: 'https://sellbet-w3txbmd3ba-uc.a.run.app',
     createmarket: 'https://createmarket-w3txbmd3ba-uc.a.run.app',
   },
 }
