@@ -400,14 +400,15 @@ Parameters:
   and an additional `value` parameter is required which is a number representing
   the target value. (Bet on numeric markets at your own peril.)
 
-- Example request
-  ```
-  $ curl https://manifold.markets/api/v0/bet -X POST -H 'Content-Type: application/json' \
-      -H 'Authorization: Key {...}' \
-      --data-raw '{"amount":1, \
-                   "outcome":"YES", \
-                   "contractId":"{...}"}'
-  ```
+Example request:
+
+```
+$ curl https://manifold.markets/api/v0/bet -X POST -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"amount":1, \
+                 "outcome":"YES", \
+                 "contractId":"{...}"}'
+```
 
 ### `POST /v0/market`
 
@@ -430,16 +431,17 @@ For numeric markets, you must also provide:
 - `min`: The minimum value that the market may resolve to.
 - `max`: The maximum value that the market may resolve to.
 
-- Example request
-  ```
-  $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: application/json' \
-      -H 'Authorization: Key {...}'
-      --data-raw '{"outcomeType":"BINARY", \
-                   "question":"Is there life on Mars?", \
-                   "description":"I'm not going to type some long ass example description.", \
-                   "closeTime":1700000000000, \
-                   initialProb:25}'
-  ```
+Example request:
+
+```
+$ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}'
+    --data-raw '{"outcomeType":"BINARY", \
+                 "question":"Is there life on Mars?", \
+                 "description":"I'm not going to type some long ass example description.", \
+                 "closeTime":1700000000000, \
+                 initialProb:25}'
+```
 
 ## Changelog
 
