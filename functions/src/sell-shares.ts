@@ -16,12 +16,12 @@ const bodySchema = z.object({
   outcome: z.enum(['YES', 'NO']),
 })
 
-export const sellshares = newEndpoint(['POST'], async (req, [bettor, _]) => {
+export const sellshares = newEndpoint(['POST'], async (req, auth) => {
   const { contractId, shares, outcome } = validate(bodySchema, req.body)
 
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {
-    const userDoc = firestore.doc(`users/${bettor.id}`)
+    const userDoc = firestore.doc(`users/${auth.uid}`)
     const userSnap = await transaction.get(userDoc)
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
     const user = userSnap.data() as User
@@ -38,7 +38,7 @@ export const sellshares = newEndpoint(['POST'], async (req, [bettor, _]) => {
       throw new APIError(400, 'Trading is closed.')
 
     const userBets = await getValues<Bet>(
-      contractDoc.collection('bets').where('userId', '==', bettor.id)
+      contractDoc.collection('bets').where('userId', '==', auth.uid)
     )
 
     const prevLoanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)

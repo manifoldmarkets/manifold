@@ -32,11 +32,11 @@ const numericSchema = z.object({
   value: z.number(),
 })
 
-export const placebet = newEndpoint(['POST'], async (req, [bettor, _]) => {
+export const placebet = newEndpoint(['POST'], async (req, auth) => {
   const { amount, contractId } = validate(bodySchema, req.body)
 
   const result = await firestore.runTransaction(async (trans) => {
-    const userDoc = firestore.doc(`users/${bettor.id}`)
+    const userDoc = firestore.doc(`users/${auth.uid}`)
     const userSnap = await trans.get(userDoc)
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
     const user = userSnap.data() as User
@@ -110,7 +110,7 @@ export const placebet = newEndpoint(['POST'], async (req, [bettor, _]) => {
     return { betId: betDoc.id }
   })
 
-  await redeemShares(bettor.id, contractId)
+  await redeemShares(auth.uid, contractId)
   return result
 })
 

@@ -13,12 +13,12 @@ const bodySchema = z.object({
   betId: z.string(),
 })
 
-export const sellbet = newEndpoint(['POST'], async (req, [bettor, _]) => {
+export const sellbet = newEndpoint(['POST'], async (req, auth) => {
   const { contractId, betId } = validate(bodySchema, req.body)
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {
-    const userDoc = firestore.doc(`users/${bettor.id}`)
+    const userDoc = firestore.doc(`users/${auth.uid}`)
     const userSnap = await transaction.get(userDoc)
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
     const user = userSnap.data() as User
@@ -39,7 +39,7 @@ export const sellbet = newEndpoint(['POST'], async (req, [bettor, _]) => {
     if (!betSnap.exists) throw new APIError(400, 'Bet not found.')
     const bet = betSnap.data() as Bet
 
-    if (bettor.id !== bet.userId)
+    if (auth.uid !== bet.userId)
       throw new APIError(400, 'The specified bet does not belong to you.')
     if (bet.isSold)
       throw new APIError(400, 'The specified bet is already sold.')
