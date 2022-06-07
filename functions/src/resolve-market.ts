@@ -85,7 +85,11 @@ const autoResolve = async (contract: Contract) => {
         ? getFreeResponseResolutions(contract)
         : undefined,
   }
-  return await privateResolveMarket(contract, data, true)
+  contract.description = contract.description.concat(
+    `\n\n\nContract resolved automatically.`
+  )
+
+  return await privateResolveMarket(contract, data)
 }
 
 const getFreeResponseResolutions = (contract: Contract & FreeResponse) => {
@@ -112,8 +116,7 @@ const privateResolveMarket = async (
     value?: number
     probabilityInt?: number
     resolutions?: { [outcome: string]: number }
-  },
-  autoResolution = false
+  }
 ) => {
   const { creatorId, id, outcomeType, closeTime } = contract
   const { outcome, probabilityInt, resolutions, value } = data
@@ -178,10 +181,6 @@ const privateResolveMarket = async (
       resolutionProbability
     )
 
-  const description = autoResolution
-    ? contract.description.concat(`\n\n\nContract resolved automatically.`)
-    : undefined
-
   const contractDoc = firestore.doc(`contracts/${contract.id}`)
 
   await contractDoc.update(
@@ -190,7 +189,7 @@ const privateResolveMarket = async (
       resolution: outcome,
       resolutionValue: value,
       resolutionTime,
-      description,
+      description: contract.description,
       closeTime: newCloseTime,
       resolutionProbability,
       resolutions,
