@@ -1,4 +1,4 @@
-import { partition, sumBy } from 'lodash'
+import { sumBy } from 'lodash'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
@@ -44,17 +44,9 @@ export const sellshares = newEndpoint(['POST'], async (req, auth) => {
 
     const prevLoanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
 
-    const [yesBets, noBets] = partition(
-      userBets ?? [],
-      (bet) => bet.outcome === 'YES'
-    )
+    const outcomeBets = userBets.filter((bet) => bet.outcome == outcome)
+    const maxShares = sumBy(outcomeBets, (bet) => bet.shares)
 
-    const [yesShares, noShares] = [
-      sumBy(yesBets, (bet) => bet.shares),
-      sumBy(noBets, (bet) => bet.shares),
-    ]
-
-    const maxShares = outcome === 'YES' ? yesShares : noShares
     if (shares > maxShares + 0.000000000001)
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
