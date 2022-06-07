@@ -6,6 +6,7 @@ import {
 } from 'common/calculate-swap3'
 import { formatPercent } from 'common/util/format'
 import { useState } from 'react'
+import { LiquidityGraph } from 'web/components/contract/liquidity-graph'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 
@@ -86,12 +87,24 @@ function PoolTable(props: { pool: Swap3Pool }) {
   )
 }
 
+function Graph(props: { pool: Swap3Pool }) {
+  const points = [
+    { x: 0, y: 100 },
+    { x: 0.2, y: 100 },
+    { x: 0.2, y: 200 },
+    { x: 0.33, y: 200 },
+    { x: 0.33, y: 100 },
+    { x: 1, y: 100 },
+  ]
+  return <LiquidityGraph points={points} />
+}
+
 export default function Swap() {
   const [pool, setPool] = useState({
     liquidity: 100,
     sqrtRatio: 2,
     tick: fromProb(0.3),
-    ticks: [],
+    tickStates: [],
   })
 
   const [minTick, setMinTick] = useState(0)
@@ -106,8 +119,9 @@ export default function Swap() {
 
   return (
     <Col className="mx-auto max-w-2xl gap-20 p-4">
-      <BalanceTable />
+      {/* <BalanceTable /> */}
       <PoolTable pool={pool} />
+      <Graph pool={pool} />
       <input
         className="input"
         placeholder="Current Prob"
