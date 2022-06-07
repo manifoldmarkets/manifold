@@ -8,6 +8,7 @@ initAdmin()
 import { getValues } from '../utils'
 import { Contract } from '../../../common/contract'
 import { DAY_MS } from '../../../common/util/time'
+import { batchedWaitAll } from '../../../common/util/promise'
 
 const firestore = admin.firestore()
 
@@ -20,7 +21,11 @@ async function addAutoResolutionToContracts() {
 
   console.log('Loaded', contracts.length, 'contracts')
 
-  await Promise.all(contracts.map((c) => addAutoResolutionToContract(c)))
+  await batchedWaitAll(
+    contracts.map((c) => async () => {
+      addAutoResolutionToContract(c)
+    })
+  )
 }
 
 async function addAutoResolutionToContract(contract: Contract) {
