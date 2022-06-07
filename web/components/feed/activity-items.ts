@@ -362,7 +362,9 @@ function getCommentThreads(
   comments: Comment[],
   contract: Contract
 ) {
-  const parentComments = comments.filter((comment) => !comment.replyToCommentId)
+  let parentComments = comments.filter((comment) => !comment.replyToCommentId)
+  if (contract.outcomeType === 'FREE_RESPONSE')
+    parentComments = comments.filter((comment) => !comment.replyToCommentId)
 
   const items = parentComments.map((comment) => ({
     type: 'commentThread' as const,

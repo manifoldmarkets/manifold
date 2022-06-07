@@ -54,7 +54,7 @@ export function FeedCommentThread(props: {
     if (showReply && inputRef) inputRef.focus()
   }, [inputRef, showReply])
   return (
-    <div className={'flex-col pr-1'}>
+    <div className={'w-full flex-col pr-1'}>
       {commentsList.map((comment, commentIdx) => (
         <div
           key={comment.id}
@@ -373,73 +373,46 @@ export function CommentInput(props: {
                 )}
             </div>
 
-            <Row className="grid grid-cols-8 gap-1.5 text-gray-700">
-              <Col
+            <Row className="gap-1.5 text-gray-700">
+              <Textarea
+                ref={setRef}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
                 className={clsx(
-                  'col-span-8 sm:col-span-6',
-                  !user && 'col-span-8'
+                  'textarea textarea-bordered w-full resize-none'
                 )}
-              >
-                <Textarea
-                  ref={setRef}
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className={clsx('textarea textarea-bordered resize-none')}
-                  placeholder={
-                    parentComment || answerOutcome
-                      ? 'Write a reply... '
-                      : 'Write a comment...'
+                placeholder={
+                  parentComment || answerOutcome
+                    ? 'Write a reply... '
+                    : 'Write a comment...'
+                }
+                autoFocus={focused}
+                rows={focused ? 3 : 1}
+                onFocus={() => setFocused(true)}
+                onBlur={() =>
+                  shouldCollapseAfterClickOutside && setFocused(false)
+                }
+                maxLength={MAX_COMMENT_LENGTH}
+                disabled={isSubmitting}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault()
+                    submitComment(id)
+                    e.currentTarget.blur()
                   }
-                  autoFocus={focused}
-                  rows={focused ? 3 : 1}
-                  onFocus={() => setFocused(true)}
-                  onBlur={() =>
-                    shouldCollapseAfterClickOutside && setFocused(false)
-                  }
-                  maxLength={MAX_COMMENT_LENGTH}
-                  disabled={isSubmitting}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                      e.preventDefault()
-                      submitComment(id)
-                      e.currentTarget.blur()
-                    }
-                  }}
-                />
-              </Col>
-              {!user && (
-                <Col
-                  className={clsx(
-                    'col-span-8 sm:col-span-2',
-                    focused ? 'justify-end' : 'justify-center'
-                  )}
-                >
-                  <button
-                    className={
-                      'btn btn-outline btn-sm text-transform: capitalize'
-                    }
-                    onClick={() => submitComment(id)}
-                  >
-                    Sign in to Comment
-                  </button>
-                </Col>
-              )}
+                }}
+              />
 
-              <Col
-                className={clsx(
-                  'col-span-1 sm:col-span-2',
-                  focused ? 'justify-end' : 'justify-center'
-                )}
-              >
+              <Col className={clsx(focused ? 'justify-end' : 'justify-center')}>
                 {user && !isSubmitting && (
                   <button
                     className={clsx(
                       'btn btn-ghost btn-sm block flex flex-row capitalize',
                       'absolute bottom-4 right-1 col-span-1',
-                      parentComment ? ' bottom-6 right-2.5' : '',
-                      'sm:relative sm:bottom-0 sm:right-0 sm:col-span-2',
+                      // parentComment ? ' bottom-4 right-2.5' : '',
+                      // 'sm:relative sm:bottom-0 sm:right-0 sm:col-span-2',
                       focused && comment
-                        ? 'sm:btn-outline'
+                        ? ''
                         : 'pointer-events-none text-gray-500'
                     )}
                     onClick={() => {
@@ -449,12 +422,9 @@ export function CommentInput(props: {
                       }
                     }}
                   >
-                    <span className={'hidden sm:block'}>
-                      {parentComment || answerOutcome ? 'Reply' : 'Comment'}
-                    </span>
                     {focused && (
                       <PaperAirplaneIcon
-                        className={'m-0 min-w-[22px] rotate-90 p-0 sm:hidden'}
+                        className={'m-0 min-w-[22px] rotate-90 p-0 '}
                         height={25}
                       />
                     )}
@@ -464,6 +434,18 @@ export function CommentInput(props: {
                   <LoadingIndicator spinnerClassName={'border-gray-500'} />
                 )}
               </Col>
+            </Row>
+            <Row>
+              {!user && (
+                <button
+                  className={
+                    'btn btn-outline btn-sm text-transform: capitalize'
+                  }
+                  onClick={() => submitComment(id)}
+                >
+                  Sign in to Comment
+                </button>
+              )}
             </Row>
           </div>
         </div>
