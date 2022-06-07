@@ -200,7 +200,8 @@ export function FeedComment(props: {
             )}
           </>
           <CopyLinkDateTimeComponent
-            contract={contract}
+            contractCreatorUsername={contract.creatorUsername}
+            contractSlug={contract.slug}
             createdTime={createdTime}
             elementId={comment.id}
           />

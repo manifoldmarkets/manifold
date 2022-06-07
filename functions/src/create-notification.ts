@@ -26,10 +26,10 @@ export const createNotification = async (
   sourceUpdateType: notification_source_update_types,
   sourceUser: User,
   idempotencyKey: string,
+  sourceText: string,
   sourceContract?: Contract,
   relatedSourceType?: notification_source_types,
-  relatedUserId?: string,
-  sourceText?: string
+  relatedUserId?: string
 ) => {
   const shouldGetNotification = (
     userId: string,
@@ -62,6 +62,10 @@ export const createNotification = async (
           sourceUserName: sourceUser.name,
           sourceUserUsername: sourceUser.username,
           sourceUserAvatarUrl: sourceUser.avatarUrl,
+          sourceText,
+          sourceContractTitle: sourceContract?.question,
+          sourceContractCreatorUsername: sourceContract?.creatorUsername,
+          sourceContractSlug: sourceContract?.slug,
         }
         await notificationRef.set(removeUndefinedProps(notification))
       })
@@ -200,7 +204,8 @@ export const createNotification = async (
       sourceContract &&
       (sourceType === 'comment' ||
         sourceType === 'answer' ||
-        sourceType === 'contract')
+        (sourceType === 'contract' &&
+          (sourceUpdateType === 'updated' || sourceUpdateType === 'resolved')))
     ) {
       if (sourceType === 'comment') {
         await notifyRepliedUsers(userToReasonTexts)
@@ -212,6 +217,8 @@ export const createNotification = async (
       await notifyOtherCommentersOnContract(userToReasonTexts, sourceContract)
     } else if (sourceType === 'follow' && relatedUserId) {
       await notifyFollowedUser(userToReasonTexts, relatedUserId)
+    } else if (sourceType === 'contract' && sourceUpdateType === 'created') {
+      // TODO: notify users following the creator of the contract
     }
     return userToReasonTexts
   }

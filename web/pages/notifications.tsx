@@ -469,10 +469,8 @@ function isNotificationAboutContractResolution(
   contract: Contract | null | undefined
 ) {
   return (
-    (sourceType === 'contract' && !sourceUpdateType && contract?.resolution) ||
-    (sourceType === 'contract' &&
-      sourceUpdateType === 'resolved' &&
-      contract?.resolution)
+    (sourceType === 'contract' && sourceUpdateType === 'resolved') ||
+    (sourceType === 'contract' && !sourceUpdateType && contract?.resolution)
   )
 }
 
@@ -492,20 +490,41 @@ function NotificationItem(props: {
     reason,
     sourceUserUsername,
     createdTime,
+    sourceText,
+    sourceContractTitle,
+    sourceContractCreatorUsername,
+    sourceContractSlug,
   } = notification
   const [notificationText, setNotificationText] = useState<string>('')
   const [contract, setContract] = useState<Contract | null>(null)
 
   useEffect(() => {
-    if (!sourceContractId) return
+    if (
+      !sourceContractId ||
+      (sourceContractSlug && sourceContractCreatorUsername)
+    )
+      return
     getContractFromId(sourceContractId).then((contract) => {
       if (contract) setContract(contract)
     })
-  }, [sourceContractId])
+  }, [sourceContractId, sourceContractTitle])
 
   useEffect(() => {
-    if (!contract || !sourceContractId || !sourceId) return
     if (
+      sourceText &&
+      (sourceType === 'comment' ||
+        sourceType === 'answer' ||
+        (sourceType === 'contract' && sourceUpdateType === 'updated'))
+    ) {
+      setNotificationText(sourceText)
+    } else if (
+      sourceText &&
+      sourceType === 'contract' &&
+      sourceUpdateType === 'updated'
+    ) {
+      setNotificationText(sourceText)
+    } else if (!contract || !sourceContractId || !sourceId) return
+    else if (
       sourceType === 'answer' ||
       sourceType === 'comment' ||
       sourceType === 'contract'
@@ -527,6 +546,7 @@ function NotificationItem(props: {
     reasonText,
     sourceContractId,
     sourceId,
+    sourceText,
     sourceType,
     sourceUpdateType,
   ])
@@ -537,6 +557,10 @@ function NotificationItem(props: {
 
   function getSourceUrl() {
     if (sourceType === 'follow') return `/${sourceUserUsername}`
+    if (sourceContractCreatorUsername && sourceContractSlug)
+      return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
+        sourceId ?? ''
+      )}`
     if (!contract) return ''
     return `/${contract.creatorUsername}/${
       contract.slug
@@ -562,12 +586,9 @@ function NotificationItem(props: {
     sourceType: 'answer' | 'comment' | 'contract',
     sourceUpdateType: notification_source_update_types | undefined,
     setText: (text: string) => void,
-    contract?: Contract
+    contract: Contract
   ) {
-    if (sourceType === 'contract' && !contract)
-      contract = await getContractFromId(sourceContractId)
-
-    if (sourceType === 'contract' && contract) {
+    if (sourceType === 'contract') {
       if (
         isNotificationAboutContractResolution(
           sourceType,
@@ -612,7 +633,7 @@ function NotificationItem(props: {
                   true
                 ).replace(' on', '')}
               <div className={'ml-1 text-black'}>
-                {contract ? (
+                {contract || (sourceContractTitle && sourceText) ? (
                   <NotificationTextLabel
                     contract={contract}
                     defaultText={notificationText}
@@ -666,24 +687,36 @@ function NotificationItem(props: {
                       contract
                     )}
                     <span className={'mx-1 font-bold'}>
-                      {contract?.question}
+                      {contract?.question || sourceContractTitle}
                     </span>
                   </div>
                 )}
               </div>
             </div>
-            {contract && sourceId && (
+            {sourceId && contract && (
               <CopyLinkDateTimeComponent
-                contract={contract}
+                contractCreatorUsername={contract.creatorUsername}
+                contractSlug={contract.slug}
                 createdTime={createdTime}
                 elementId={getSourceIdForLinkComponent(sourceId)}
                 className={'-mx-1 inline-flex sm:inline-block'}
               />
             )}
+            {sourceId &&
+              sourceContractSlug &&
+              sourceContractCreatorUsername && (
+                <CopyLinkDateTimeComponent
+                  contractCreatorUsername={sourceContractCreatorUsername}
+                  contractSlug={sourceContractSlug}
+                  createdTime={createdTime}
+                  elementId={getSourceIdForLinkComponent(sourceId)}
+                  className={'-mx-1 inline-flex sm:inline-block'}
+                />
+              )}
           </div>
         </Row>
         <div className={'mt-1 md:text-base'}>
-          {contract ? (
+          {contract || (sourceContractTitle && sourceText) ? (
             <NotificationTextLabel
               contract={contract}
               defaultText={notificationText}
@@ -704,8 +737,8 @@ function NotificationItem(props: {
 }
 
 function NotificationTextLabel(props: {
-  contract: Contract
   defaultText: string
+  contract?: Contract | null
   sourceType?: notification_source_types
   sourceUpdateType?: notification_source_update_types
   className?: string
@@ -719,7 +752,7 @@ function NotificationTextLabel(props: {
       sourceUpdateType,
       contract
     ) &&
-    contract.resolution
+    contract?.resolution
   ) {
     if (contract.outcomeType === 'FREE_RESPONSE') {
       return (

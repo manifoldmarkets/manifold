@@ -14,6 +14,10 @@ export type Notification = {
   sourceUserName?: string
   sourceUserUsername?: string
   sourceUserAvatarUrl?: string
+  sourceText?: string
+  sourceContractTitle?: string
+  sourceContractCreatorUsername?: string
+  sourceContractSlug?: string
 }
 export type notification_source_types =
   | 'contract'
