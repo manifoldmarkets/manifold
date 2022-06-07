@@ -2,7 +2,9 @@ import {
   calculateLPCost,
   fromProb,
   getSwap3Probability,
+  noShares,
   Swap3Pool,
+  yesShares,
 } from 'common/calculate-swap3'
 import { formatPercent } from 'common/util/format'
 import { useState } from 'react'
@@ -64,23 +66,19 @@ function PoolTable(props: { pool: Swap3Pool }) {
         {pool.liquidity}
       </div>
       <div>
-        <label>Sqrt Ratio: </label>
-        {pool.sqrtRatio}
-      </div>
-      <div>
         <label>Tick: </label>
         {pool.tick}
       </div>
       <div>
         <label>Pool YES: </label>
-        {pool.liquidity * pool.sqrtRatio}
+        {yesShares(pool).toFixed(2)}
       </div>
       <div>
         <label>Pool NO: </label>
-        {pool.liquidity / pool.sqrtRatio}
+        {noShares(pool).toFixed(2)}
       </div>
       <div>
-        <label>Prob: </label>
+        <label>Implied: </label>
         {formatPercent(getSwap3Probability(pool))}
       </div>
     </Row>
@@ -102,7 +100,6 @@ function Graph(props: { pool: Swap3Pool }) {
 export default function Swap() {
   const [pool, setPool] = useState({
     liquidity: 100,
-    sqrtRatio: 2,
     tick: fromProb(0.3),
     tickStates: [],
   })
@@ -124,7 +121,7 @@ export default function Swap() {
       <Graph pool={pool} />
       <input
         className="input"
-        placeholder="Current Prob"
+        placeholder="Current%"
         type="number"
         onChange={(e) =>
           setPool((p) => ({
@@ -139,14 +136,14 @@ export default function Swap() {
         <input className="input" placeholder="Amount" type="number" />
         <input
           className="input"
-          placeholder="Min"
+          placeholder="Min%"
           type="number"
           onChange={(e) => setMinTick(inputPercentToTick(e))}
         />
         Min Tick: {minTick}
         <input
           className="input"
-          placeholder="Max"
+          placeholder="Max%"
           type="number"
           onChange={(e) => setMaxTick(inputPercentToTick(e))}
         />
