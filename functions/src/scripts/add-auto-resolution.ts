@@ -24,7 +24,7 @@ async function addAutoResolutionToContracts() {
 }
 
 async function addAutoResolutionToContract(contract: Contract) {
-  const contractRef = firestore.doc(`folds/${contract.id}`)
+  const contractRef = firestore.doc(`contracts/${contract.id}`)
   if (contract.autoResolutionTime && contract.autoResolution) {
     console.log('Skipping, already has auto resolution', contract.slug)
     return
