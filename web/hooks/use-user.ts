@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
+import { useFirestoreDocumentData } from '@react-query-firebase/firestore'
+import { DocumentData } from 'firebase/firestore'
 import { PrivateUser } from 'common/user'
 import {
   listenForLogin,
   listenForPrivateUser,
   listenForUser,
   User,
+  userDocRef,
 } from 'web/lib/firebase/users'
 import { useStateCheckEquality } from './use-state-check-equality'
 
@@ -34,4 +37,14 @@ export const usePrivateUser = (userId?: string) => {
   }, [userId])
 
   return privateUser
+}
+
+export const useUserById = (userId: string) => {
+  const result = useFirestoreDocumentData<DocumentData, User>(
+    ['uers', userId],
+    userDocRef(userId),
+    { subscribe: true, includeMetadataChanges: true }
+  )
+
+  return result.isLoading ? undefined : result.data
 }

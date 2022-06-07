@@ -35,8 +35,10 @@ export type { User }
 const db = getFirestore(app)
 export const auth = getAuth(app)
 
+export const userDocRef = (userId: string) => doc(db, 'users', userId)
+
 export async function getUser(userId: string) {
-  const docSnap = await getDoc(doc(db, 'users', userId))
+  const docSnap = await getDoc(userDocRef(userId))
   return docSnap.data() as User
 }
 

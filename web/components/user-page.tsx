@@ -23,6 +23,7 @@ import { BetsList } from './bets-list'
 import { Bet } from 'common/bet'
 import { getUserBets } from 'web/lib/firebase/bets'
 import { uniq } from 'lodash'
+import { FollowingButton } from './following-button'
 
 export function UserLink(props: {
   name: string
@@ -160,6 +161,8 @@ export function UserPage(props: {
         )}
 
         <Col className="sm:flex-row sm:gap-4">
+          <FollowingButton user={user} />
+
           {user.website && (
             <SiteLink
               href={
