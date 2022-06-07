@@ -507,7 +507,12 @@ function NotificationItem(props: {
     getContractFromId(sourceContractId).then((contract) => {
       if (contract) setContract(contract)
     })
-  }, [sourceContractId, sourceContractTitle])
+  }, [
+    sourceContractCreatorUsername,
+    sourceContractId,
+    sourceContractSlug,
+    sourceContractTitle,
+  ])
 
   useEffect(() => {
     if (
