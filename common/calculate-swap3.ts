@@ -91,5 +91,5 @@ function toProb(tick: number) {
 
 export function fromProb(prob: number) {
   const ratio = prob / (1 - prob)
-  return Math.log(ratio) / Math.log(1.0001)
+  return Math.floor(Math.log(ratio) / Math.log(1.0001))
 }

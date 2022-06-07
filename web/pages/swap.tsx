@@ -86,16 +86,12 @@ function PoolTable(props: { pool: Swap3Pool }) {
   )
 }
 
-// Stored as optimization. equal to floor(log_sqrt_1.0001(sqrtRatio))
-function tick(sqrtRatio: number) {
-  return Math.floor(Math.log(sqrtRatio) / Math.log(1.0001))
-}
-
 export default function Swap() {
   const [pool, setPool] = useState({
     liquidity: 100,
     sqrtRatio: 2,
-    tick: tick(0.1),
+    tick: fromProb(0.3),
+    ticks: [],
   })
 
   const [minTick, setMinTick] = useState(0)
