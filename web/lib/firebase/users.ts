@@ -11,6 +11,8 @@ import {
   orderBy,
   updateDoc,
   deleteDoc,
+  collectionGroup,
+  onSnapshot,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -29,6 +31,7 @@ import { DAY_MS } from 'common/util/time'
 import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
+import { filterDefined } from 'common/util/array'
 
 export type { User }
 
@@ -263,5 +266,25 @@ export function listenForFollows(
   const follows = collection(db, 'users', userId, 'follows')
   return listenForValues<{ userId: string }>(follows, (docs) =>
     setFollowIds(docs.map(({ userId }) => userId))
+  )
+}
+
+export function listenForFollowers(
+  userId: string,
+  setFollowerIds: (followerIds: string[]) => void
+) {
+  const followersQuery = query(
+    collectionGroup(db, 'follows'),
+    where('userId', '==', userId)
+  )
+  return onSnapshot(
+    followersQuery,
+    { includeMetadataChanges: true },
+    (snapshot) => {
+      if (snapshot.metadata.fromCache) return
+
+      const values = snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
+      setFollowerIds(filterDefined(values))
+    }
   )
 }
