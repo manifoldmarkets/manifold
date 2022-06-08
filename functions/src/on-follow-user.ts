@@ -21,6 +21,7 @@ export const onFollowUser = functions.firestore
       'created',
       followingUser,
       eventId,
+      '',
       undefined,
       undefined,
       follow.userId

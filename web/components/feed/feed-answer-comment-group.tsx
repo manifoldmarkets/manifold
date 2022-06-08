@@ -127,7 +127,8 @@ export function FeedAnswerCommentGroup(props: {
           <div className="text-sm text-gray-500">
             <UserLink username={username} name={name} /> answered
             <CopyLinkDateTimeComponent
-              contract={contract}
+              contractCreatorUsername={contract.creatorUsername}
+              contractSlug={contract.slug}
               createdTime={answer.createdTime}
               elementId={answerElementId}
             />
