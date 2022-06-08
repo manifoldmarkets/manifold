@@ -346,10 +346,6 @@ function calculateMktDpmPayout(contract: DPMContract, bet: Bet) {
     probs = mapValues(totalShares, (shares) => shares ** 2 / squareSum)
   }
 
-  const weightedShareTotal = sumBy(Object.keys(totalShares), (outcome) => {
-    return probs[outcome] * totalShares[outcome]
-  })
-
   const { outcome, amount, shares } = bet
 
   const poolFrac =
@@ -359,7 +355,7 @@ function calculateMktDpmPayout(contract: DPMContract, bet: Bet) {
           (outcome) => {
             return (
               (probs[outcome] * (bet as NumericBet).allOutcomeShares[outcome]) /
-              weightedShareTotal
+              totalShares[outcome]
             )
           }
         )
