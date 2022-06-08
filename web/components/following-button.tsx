@@ -3,11 +3,12 @@ import { PencilIcon } from '@heroicons/react/outline'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
-import { prefetchUsers } from 'web/hooks/use-user'
+import { prefetchUsers, useUser } from 'web/hooks/use-user'
 import { FollowList } from './follow-list'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Tabs } from './layout/tabs'
+import { useDiscoverUsers } from 'web/hooks/use-users'
 
 export function FollowingButton(props: { user: User }) {
   const { user } = props
@@ -114,6 +115,13 @@ function FollowingFollowersDialog(props: {
     prefetchUsers([...followingIds, ...followerIds])
   }, [followingIds, followerIds])
 
+  const currentUser = useUser()
+
+  const discoverUserIds = useDiscoverUsers()
+  useEffect(() => {
+    prefetchUsers(discoverUserIds)
+  }, [discoverUserIds])
+
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="rounded bg-white p-6">
@@ -129,6 +137,14 @@ function FollowingFollowersDialog(props: {
               title: 'Followers',
               content: <FollowList userIds={followerIds} />,
             },
+            ...(currentUser
+              ? [
+                  {
+                    title: 'Discover',
+                    content: <FollowList userIds={discoverUserIds} />,
+                  },
+                ]
+              : []),
           ]}
           defaultIndex={defaultTab === 'following' ? 0 : 1}
         />
