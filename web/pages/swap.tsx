@@ -120,7 +120,7 @@ function Graph(props: { pool: Swap3Pool }) {
     points.push({ x: toProb(tickState.tick), y: liquidity })
   }
   points.push({ x: 1, y: liquidity })
-  return <LiquidityGraph points={points} />
+  return <LiquidityGraph points={points} marker={toProb(pool.tick)} />
 }
 
 export default function Swap() {

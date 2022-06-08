@@ -7,7 +7,7 @@ import { getDpmOutcomeProbabilities } from '../../../common/calculate-dpm'
 import { NumericContract } from '../../../common/contract'
 import { useWindowSize } from '../../hooks/use-window-size'
 import { Col } from '../layout/col'
-import { formatLargeNumber } from 'common/util/format'
+import { formatLargeNumber, formatPercent } from 'common/util/format'
 
 export type GraphPoint = {
   // A probability between 0 and 1
@@ -21,8 +21,9 @@ export const LiquidityGraph = memo(function NumericGraph(props: {
   max?: 1
   points: GraphPoint[]
   height?: number
+  marker?: number // Value between min and max to highlight on x-axis
 }) {
-  const { height, min, max, points } = props
+  const { height, min, max, points, marker } = props
 
   // Really maxLiquidity
   const maxLiquidity = 500
@@ -73,6 +74,18 @@ export const LiquidityGraph = memo(function NumericGraph(props: {
         enableGridX={!!width && width >= 800}
         enableArea
         margin={{ top: 20, right: 28, bottom: 22, left: 50 }}
+        markers={
+          marker
+            ? [
+                {
+                  axis: 'x',
+                  value: marker,
+                  lineStyle: { stroke: '#000', strokeWidth: 2 },
+                  legend: `Implied: ${formatPercent(marker)}`,
+                },
+              ]
+            : []
+        }
       />
     </div>
   )
