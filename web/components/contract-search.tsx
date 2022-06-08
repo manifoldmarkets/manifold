@@ -250,7 +250,12 @@ function CategoryFollowSelector(props: {
 
   const user = useUser()
 
+  const categoriesTitle = `${
+    followedCategories?.length ? followedCategories.length : 'All'
+  } Categories`
   let categoriesDescription = `Showing all categories`
+
+  const followingTitle = `${follows?.length ? follows.length : 'All'} Following`
 
   if (followedCategories.length) {
     const categoriesLabel = followedCategories
@@ -269,7 +274,7 @@ function CategoryFollowSelector(props: {
       defaultIndex={mode === 'categories' ? 0 : 1}
       tabs={[
         {
-          title: 'Categories',
+          title: categoriesTitle,
           content: user && (
             <Row className="items-center gap-1 text-gray-500">
               <div>{categoriesDescription}</div>
@@ -280,7 +285,7 @@ function CategoryFollowSelector(props: {
         ...(user
           ? [
               {
-                title: 'Following',
+                title: followingTitle,
                 content: (
                   <Row className="items-center gap-2 text-gray-500">
                     <div>Showing markets by users you are following.</div>
