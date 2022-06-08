@@ -54,7 +54,6 @@ export function FeedAnswerCommentGroup(props: {
   )
   const commentsList = answerComments.concat(commentReplies)
   const thisAnswerProbOnMount = useRef<number>()
-  // get most recent bet on this answer to find probability
   const thisAnswerProb = bets
     .filter((bet) => bet.outcome === answer.number.toString())
     .sort((a, b) => b.createdTime - a.createdTime)[0].probAfter
