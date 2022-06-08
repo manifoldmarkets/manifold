@@ -23,6 +23,7 @@ import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
 import { CATEGORY_LIST } from 'common/categories'
 import { TagsList } from '../tags-list'
+import { UserFollowButton } from '../follow-button'
 
 export function MiscDetails(props: {
   contract: Contract
@@ -103,7 +104,7 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const { closeTime, creatorName, creatorUsername } = contract
+  const { closeTime, creatorName, creatorUsername, creatorId } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
   return (
@@ -124,6 +125,7 @@ export function ContractDetails(props: {
             username={creatorUsername}
           />
         )}
+        {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
 
       {(!!closeTime || !!resolvedDate) && (
