@@ -26,6 +26,7 @@ export * from './market-close-emails'
 export * from './add-liquidity'
 export * from './on-create-answer'
 export * from './on-update-contract'
+export * from './on-create-contract'
 export * from './on-follow-user'
 
 // v2

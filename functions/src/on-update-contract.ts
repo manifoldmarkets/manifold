@@ -20,6 +20,7 @@ export const onUpdateContract = functions.firestore
         'resolved',
         contractUpdater,
         eventId,
+        contract.question,
         contract
       )
     } else if (
@@ -32,6 +33,7 @@ export const onUpdateContract = functions.firestore
         'updated',
         contractUpdater,
         eventId,
+        contract.question,
         contract
       )
     }
