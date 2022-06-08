@@ -363,13 +363,10 @@ function calculateMktDpmPayout(contract: DPMContract, bet: Bet) {
             )
           }
         )
-      : (probs[outcome] * shares) / weightedShareTotal
+      : (shares / totalShares[outcome]) * probs[outcome]
 
   const totalPool = sum(Object.values(pool))
-  const winnings =
-    outcomeType === 'NUMERIC'
-      ? poolFrac * totalPool
-      : (shares / totalShares[outcome]) * probs[outcome] * totalPool
+  const winnings = poolFrac * totalPool
 
   return deductDpmFees(amount, winnings)
 }
