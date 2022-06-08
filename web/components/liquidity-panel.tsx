@@ -39,7 +39,7 @@ export function LiquidityPanel(props: { contract: CPMMContract }) {
                 content: (
                   <WithdrawLiquidityPanel
                     contract={contract}
-                    lpShares={lpShares as any}
+                    lpShares={lpShares as { YES: number; NO: number }}
                   />
                 ),
               },
