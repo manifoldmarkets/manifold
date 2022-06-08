@@ -5,6 +5,7 @@ import { QueryClient } from 'react-query'
 import { DocumentData } from 'firebase/firestore'
 import { PrivateUser } from 'common/user'
 import {
+  getUser,
   listenForLogin,
   listenForPrivateUser,
   listenForUser,
@@ -54,11 +55,9 @@ export const useUserById = (userId: string) => {
 const queryClient = new QueryClient()
 
 export const prefetchUser = (userId: string) => {
-  queryClient.prefetchQuery(['users', userId])
+  queryClient.prefetchQuery(['users', userId], () => getUser(userId))
 }
 
 export const prefetchUsers = (userIds: string[]) => {
-  userIds.forEach((userId) => {
-    queryClient.prefetchQuery(['users', userId])
-  })
+  userIds.forEach(prefetchUser)
 }
