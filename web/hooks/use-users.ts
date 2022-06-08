@@ -5,7 +5,6 @@ import {
   listenForAllUsers,
   listenForPrivateUsers,
 } from 'web/lib/firebase/users'
-import { useUser } from './use-user'
 import { groupBy, sortBy, difference } from 'lodash'
 import { getContractsOfUserBets } from 'web/lib/firebase/bets'
 import { useFollows } from './use-follows'
@@ -42,14 +41,12 @@ export const usePrivateUsers = () => {
   return users
 }
 
-export const useDiscoverUsers = () => {
-  const user = useUser()
-
+export const useDiscoverUsers = (userId: string | null | undefined) => {
   const [discoverUserIds, setDiscoverUserIds] = useState<string[]>([])
 
   useEffect(() => {
-    if (user)
-      getContractsOfUserBets(user.id).then((contracts) => {
+    if (userId)
+      getContractsOfUserBets(userId).then((contracts) => {
         const creatorCounts = Object.entries(
           groupBy(contracts, 'creatorId')
         ).map(([id, contracts]) => [id, contracts.length] as const)
@@ -60,10 +57,10 @@ export const useDiscoverUsers = () => {
 
         setDiscoverUserIds(topCreatorIds)
       })
-  }, [user])
+  }, [userId])
 
-  const followedUserIds = useFollows(user?.id)
-  const nonSuggestions = [user?.id ?? '', ...(followedUserIds ?? [])]
+  const followedUserIds = useFollows(userId)
+  const nonSuggestions = [userId ?? '', ...(followedUserIds ?? [])]
 
   return difference(discoverUserIds, nonSuggestions).slice(0, 50)
 }
