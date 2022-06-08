@@ -23,7 +23,7 @@ export function LiquidityPanel(props: { contract: CPMMContract }) {
   useEffect(() => {
     if (!showWithdrawal && lpShares && lpShares.YES && lpShares.NO)
       setShowWithdrawal(true)
-  }, [lpShares])
+  }, [showWithdrawal, lpShares])
 
   return (
     <Tabs
