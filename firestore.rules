@@ -65,6 +65,10 @@ service cloud.firestore {
       allow read;
     }
 
+    match /{somePath=**}/liquidity/{liquidityId} {
+      allow read;
+    }
+
     function commentMatchesUser(userId, comment) {
       // it's a bad look if someone can impersonate other ids/names/avatars so check everything
       let user = get(/databases/$(database)/documents/users/$(userId));

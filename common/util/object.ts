@@ -23,3 +23,18 @@ export const addObjects = <T extends { [key: string]: number }>(
 
   return newObj as T
 }
+
+export const subtractObjects = <T extends { [key: string]: number }>(
+  obj1: T,
+  obj2: T
+) => {
+  const keys = union(Object.keys(obj1), Object.keys(obj2))
+  const newObj = {} as any
+
+  for (const key of keys) {
+    newObj[key] = (obj1[key] ?? 0) - (obj2[key] ?? 0)
+  }
+
+  return newObj as T
+}
+
