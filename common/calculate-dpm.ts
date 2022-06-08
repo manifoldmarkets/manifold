@@ -367,7 +367,6 @@ function calculateMktDpmPayout(contract: DPMContract, bet: Bet) {
 
   const totalPool = sum(Object.values(pool))
   const winnings = poolFrac * totalPool
-
   return deductDpmFees(amount, winnings)
 }
 
