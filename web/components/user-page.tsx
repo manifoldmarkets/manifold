@@ -103,7 +103,7 @@ export function UserPage(props: {
   }
 
   return (
-    <Page>
+    <Page key={user.id}>
       <SEO
         title={`${user.name} (@${user.username})`}
         description={user.bio ?? ''}
