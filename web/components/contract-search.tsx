@@ -25,6 +25,7 @@ import { useFollows } from 'web/hooks/use-follows'
 import { EditCategoriesButton } from './feed/category-selector'
 import { CATEGORIES } from 'common/categories'
 import { Tabs } from './layout/tabs'
+import { EditFollowingButton } from './following-button'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -249,11 +250,12 @@ function CategoryFollowSelector(props: {
 
   const user = useUser()
 
-  const categoriesLabel = `Categories ${
-    followedCategories.length ? followedCategories.length : '(All)'
-  }`
-
+  const categoriesTitle = `${
+    followedCategories?.length ? followedCategories.length : 'All'
+  } Categories`
   let categoriesDescription = `Showing all categories`
+
+  const followingTitle = `${follows?.length ? follows.length : 'All'} Following`
 
   if (followedCategories.length) {
     const categoriesLabel = followedCategories
@@ -267,14 +269,12 @@ function CategoryFollowSelector(props: {
     categoriesDescription = `Showing ${categoriesLabel}${andMoreLabel}`
   }
 
-  const followingLabel = `Following ${follows.length}`
-
   return (
     <Tabs
       defaultIndex={mode === 'categories' ? 0 : 1}
       tabs={[
         {
-          title: categoriesLabel,
+          title: categoriesTitle,
           content: user && (
             <Row className="items-center gap-1 text-gray-500">
               <div>{categoriesDescription}</div>
@@ -285,11 +285,11 @@ function CategoryFollowSelector(props: {
         ...(user
           ? [
               {
-                title: followingLabel,
-
+                title: followingTitle,
                 content: (
-                  <Row className="h-8 items-center gap-2 text-gray-500">
+                  <Row className="items-center gap-2 text-gray-500">
                     <div>Showing markets by users you are following.</div>
+                    <EditFollowingButton className="self-start" user={user} />
                   </Row>
                 ),
               },

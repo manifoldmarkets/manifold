@@ -91,11 +91,12 @@ export function EditCategoriesButton(props: {
     <div
       className={clsx(
         className,
-        'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm text-gray-700'
+        'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-700'
       )}
       onClick={() => setIsOpen(true)}
     >
       <PencilIcon className="inline h-4 w-4" />
+      Categories
       <CategorySelectorModal
         user={user}
         isOpen={isOpen}

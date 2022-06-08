@@ -25,13 +25,6 @@ export const transact = cloudFunction<
   { status: 'error' | 'success'; message?: string; txn?: Txn }
 >('transact')
 
-export const sellBet = cloudFunction('sellBet')
-
-export const sellShares = cloudFunction<
-  { contractId: string; shares: number; outcome: 'YES' | 'NO' },
-  { status: 'error' | 'success'; message?: string }
->('sellShares')
-
 export const createAnswer = cloudFunction<
   { contractId: string; text: string; amount: number },
   {

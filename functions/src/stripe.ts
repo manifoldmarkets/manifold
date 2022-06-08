@@ -90,7 +90,7 @@ export const createCheckoutSession = functions
 export const stripeWebhook = functions
   .runWith({
     minInstances: 1,
-    secrets: ['STRIPE_APIKEY', 'STRIPE_WEBHOOKSECRET'],
+    secrets: ['MAILGUN_KEY', 'STRIPE_APIKEY', 'STRIPE_WEBHOOKSECRET'],
   })
   .https.onRequest(async (req, res) => {
     const stripe = initStripe()
