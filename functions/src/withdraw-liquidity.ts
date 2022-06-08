@@ -93,7 +93,7 @@ export const withdrawLiquidity = functions
           )
           .filter((x) => x !== undefined)
 
-        for (let bet of bets) {
+        for (const bet of bets) {
           const doc = firestore
             .collection(`contracts/${contract.id}/bets`)
             .doc()
