@@ -1,7 +1,4 @@
-import {
-  collection,
-  query,
-} from 'firebase/firestore'
+import { collection, query } from 'firebase/firestore'
 
 import { db } from './init'
 import { listenForValues } from './utils'
