@@ -150,9 +150,10 @@ export function UserPage(props: {
         <span className="text-2xl font-bold">{user.name}</span>
         <span className="text-gray-500">@{user.username}</span>
 
+        <Spacer h={4} />
+
         {user.bio && (
           <>
-            <Spacer h={4} />
             <div>
               <Linkify text={user.bio}></Linkify>
             </div>
