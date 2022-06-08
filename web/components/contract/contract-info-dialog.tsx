@@ -9,7 +9,7 @@ import { uniqBy } from 'lodash'
 import { useState } from 'react'
 import { Bet } from 'common/bet'
 
-import { Contract, contractField } from 'common/contract'
+import { AUTO_RESOLUTION, Contract, contractField } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import {
   contractPath,
@@ -38,13 +38,8 @@ export function ContractInfoDialog(props: {
 
   const [open, setOpen] = useState(false)
 
-  const {
-    createdTime,
-    closeTime,
-    resolutionTime,
-    autoResolutionTime,
-    autoResolution,
-  } = contract
+  const { createdTime, closeTime, resolutionTime, autoResolutionTime } =
+    contract
   const tradersCount = uniqBy(bets, 'userId').length
 
   return (
@@ -104,7 +99,7 @@ export function ContractInfoDialog(props: {
                   />
                   <tr>
                     <td>Auto resolution</td>
-                    <td>{contract.autoResolution}</td>
+                    <td>{AUTO_RESOLUTION}</td>
                   </tr>
                 </>
               )}

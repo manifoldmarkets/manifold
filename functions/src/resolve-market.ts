@@ -2,7 +2,12 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { difference, uniq, mapValues, groupBy, sum, sumBy } from 'lodash'
 
-import { Contract, FreeResponse, resolution } from '../../common/contract'
+import {
+  AUTO_RESOLUTION,
+  Contract,
+  FreeResponse,
+  resolution,
+} from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, isProd, payUser } from './utils'
@@ -61,20 +66,14 @@ export const autoResolveMarkets = functions.pubsub
       contracts.map((contract) => async () => {
         const result = await autoResolve(contract)
 
-        console.log(
-          'resolved',
-          contract.slug,
-          contract.autoResolution,
-          'result:',
-          result
-        )
+        console.log('resolved', contract.slug, 'result:', result)
       })
     )
   })
 
 const autoResolve = async (contract: Contract) => {
   const data = {
-    outcome: contract.autoResolution,
+    outcome: AUTO_RESOLUTION,
     value: undefined, // numeric
     probabilityInt:
       contract.outcomeType == 'BINARY'

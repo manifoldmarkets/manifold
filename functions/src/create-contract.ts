@@ -64,7 +64,6 @@ export const createmarket = newEndpoint(['POST'], async (req, [user, _]) => {
     ;({ initialProb } = validate(binarySchema, req.body))
   }
 
-  const autoResolution = 'MKT'
   const autoResolutionTime = closeTime.getTime() + 7 * DAY_MS
 
   // Uses utc time on server:
@@ -106,7 +105,6 @@ export const createmarket = newEndpoint(['POST'], async (req, [user, _]) => {
     ante,
     closeTime.getTime(),
     tags ?? [],
-    autoResolution,
     autoResolutionTime,
     NUMERIC_BUCKET_COUNT,
     min ?? 0,

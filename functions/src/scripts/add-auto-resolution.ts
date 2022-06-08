@@ -30,15 +30,8 @@ async function addAutoResolutionToContracts() {
 
 async function addAutoResolutionToContract(contract: Contract) {
   const contractRef = firestore.doc(`contracts/${contract.id}`)
-  if (contract.autoResolutionTime && contract.autoResolution) {
+  if (contract.autoResolutionTime) {
     console.log('Skipping, already has auto resolution', contract.slug)
-    return
-  }
-  if (contract.autoResolutionTime || contract.autoResolution) {
-    console.error(
-      'Has partial auto resolution, please check manually',
-      contract.slug
-    )
     return
   }
   if (!contract.closeTime) {
@@ -54,7 +47,6 @@ async function addAutoResolutionToContract(contract: Contract) {
   console.log('Adding auto resolution', contract.slug)
 
   await contractRef.update({
-    autoResolution: 'MKT',
     autoResolutionTime: autoResolutionTime,
   } as Partial<Contract>)
 }

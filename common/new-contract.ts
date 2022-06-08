@@ -7,7 +7,6 @@ import {
   FreeResponse,
   Numeric,
   outcomeType,
-  resolution,
 } from './contract'
 import { User } from './user'
 import { parseTags } from './util/parse'
@@ -24,7 +23,6 @@ export function getNewContract(
   ante: number,
   closeTime: number,
   extraTags: string[],
-  autoResolution: resolution,
   autoResolutionTime: number,
 
   // used for numeric markets
@@ -62,7 +60,6 @@ export function getNewContract(
     isResolved: false,
     createdTime: Date.now(),
     closeTime,
-    autoResolution,
     autoResolutionTime,
 
     volume: 0,
