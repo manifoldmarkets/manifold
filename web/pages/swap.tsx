@@ -15,7 +15,7 @@ import { LiquidityGraph } from 'web/components/contract/liquidity-graph'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 
-const users = {
+const users: Record<string, any> = {
   alice: {
     M: 100,
     YES: 0,
