@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
+import { useFirestoreDocumentData } from '@react-query-firebase/firestore'
+import { QueryClient } from 'react-query'
+
+import { DocumentData } from 'firebase/firestore'
 import { PrivateUser } from 'common/user'
 import {
   listenForLogin,
   listenForPrivateUser,
   listenForUser,
   User,
+  userDocRef,
 } from 'web/lib/firebase/users'
 import { useStateCheckEquality } from './use-state-check-equality'
 
@@ -34,4 +39,26 @@ export const usePrivateUser = (userId?: string) => {
   }, [userId])
 
   return privateUser
+}
+
+export const useUserById = (userId: string) => {
+  const result = useFirestoreDocumentData<DocumentData, User>(
+    ['users', userId],
+    userDocRef(userId),
+    { subscribe: true, includeMetadataChanges: true }
+  )
+
+  return result.isLoading ? undefined : result.data
+}
+
+const queryClient = new QueryClient()
+
+export const prefetchUser = (userId: string) => {
+  queryClient.prefetchQuery(['users', userId])
+}
+
+export const prefetchUsers = (userIds: string[]) => {
+  userIds.forEach((userId) => {
+    queryClient.prefetchQuery(['users', userId])
+  })
 }
