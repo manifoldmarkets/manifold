@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { listenForFollowers, listenForFollows } from 'web/lib/firebase/users'
 
-export const useFollows = (userId: string | undefined) => {
+export const useFollows = (userId: string | null | undefined) => {
   const [followIds, setFollowIds] = useState<string[] | undefined>()
 
   useEffect(() => {

@@ -23,7 +23,7 @@ export function FollowingButton(props: { user: User }) {
         Following
       </TextButton>
 
-      <FollowingFollowersDialog
+      <FollowsDialog
         user={user}
         defaultTab="following"
         followingIds={followingIds ?? []}
@@ -45,7 +45,7 @@ export function EditFollowingButton(props: { user: User; className?: string }) {
     <TextButton className={className} onClick={() => setIsOpen(true)}>
       <PencilIcon className="inline h-4 w-4" />
       Following
-      <FollowingFollowersDialog
+      <FollowsDialog
         user={user}
         defaultTab="following"
         followingIds={followingIds ?? []}
@@ -70,7 +70,7 @@ export function FollowersButton(props: { user: User }) {
         Followers
       </TextButton>
 
-      <FollowingFollowersDialog
+      <FollowsDialog
         user={user}
         defaultTab="followers"
         followingIds={followingIds ?? []}
@@ -82,7 +82,7 @@ export function FollowersButton(props: { user: User }) {
   )
 }
 
-function FollowingFollowersDialog(props: {
+function FollowsDialog(props: {
   user: User
   followingIds: string[]
   followerIds: string[]
@@ -99,7 +99,7 @@ function FollowingFollowersDialog(props: {
 
   const currentUser = useUser()
 
-  const discoverUserIds = useDiscoverUsers()
+  const discoverUserIds = useDiscoverUsers(user?.id)
   useEffect(() => {
     prefetchUsers(discoverUserIds)
   }, [discoverUserIds])
@@ -122,7 +122,7 @@ function FollowingFollowersDialog(props: {
             ...(currentUser
               ? [
                   {
-                    title: 'Discover',
+                    title: 'Similar',
                     content: <FollowList userIds={discoverUserIds} />,
                   },
                 ]
