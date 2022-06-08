@@ -105,7 +105,8 @@ export function calculateLPCost(
 }
 
 // TODO: Untested
-function addPosition(
+// Currently, this mutates the pool. Should it return a new object instead?
+export function addPosition(
   pool: Swap3Pool,
   minTick: number,
   maxTick: number,
@@ -119,34 +120,42 @@ function addPosition(
   )
   console.log(`Deducting required N: ${requiredN} and required Y: ${requiredY}`)
 
-  // Add liquidity as we pass through the larger tick
-  const maxTickState = pool.tickStates[maxTick] || {
-    tick: maxTick,
-    liquidityNet: 0,
-    liquidityGross: 0,
-  }
-
-  maxTickState.liquidityNet += deltaL
-  maxTickState.liquidityGross += deltaL
-
-  // And remove it as we pass through the lower one
+  // Add liquidity as we pass through the smaller tick
   const minTickState = pool.tickStates[minTick] || {
     tick: minTick,
     liquidityNet: 0,
     liquidityGross: 0,
   }
 
-  minTickState.liquidityNet -= deltaL
-  minTickState.liquidityGross -= deltaL
+  minTickState.liquidityNet += deltaL
+  minTickState.liquidityGross += deltaL
+  pool.tickStates[minTick] = minTickState
+
+  // And remove it as we pass through the larger one
+  const maxTickState = pool.tickStates[maxTick] || {
+    tick: maxTick,
+    liquidityNet: 0,
+    liquidityGross: 0,
+  }
+
+  maxTickState.liquidityNet -= deltaL
+  maxTickState.liquidityGross -= deltaL
+  pool.tickStates[maxTick] = maxTickState
 
   // TODO: add deltaL to liquidityGross of tickStates between minTick and maxTick
+
+  return pool
+}
+
+export function sortedTickStates(pool: Swap3Pool) {
+  return Object.values(pool.tickStates).sort((a, b) => a.tick - b.tick)
 }
 
 function toRatio(tick: number) {
   return 1.0001 ** tick
 }
 
-function toProb(tick: number) {
+export function toProb(tick: number) {
   const ratio = toRatio(tick)
   return ratio / (ratio + 1)
 }

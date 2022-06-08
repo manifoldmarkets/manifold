@@ -1,9 +1,12 @@
 import {
+  addPosition,
   calculateLPCost,
   fromProb,
   getSwap3Probability,
   noShares,
+  sortedTickStates,
   Swap3Pool,
+  toProb,
   yesShares,
 } from 'common/calculate-swap3'
 import { formatPercent } from 'common/util/format'
@@ -60,40 +63,63 @@ function BalanceTable() {
 function PoolTable(props: { pool: Swap3Pool }) {
   const { pool } = props
   return (
-    <Row className="gap-4">
-      <div>
-        <label>Liquidity: </label>
-        {pool.liquidity}
-      </div>
-      <div>
-        <label>Tick: </label>
-        {pool.tick}
-      </div>
-      <div>
-        <label>Pool YES: </label>
-        {yesShares(pool).toFixed(2)}
-      </div>
-      <div>
-        <label>Pool NO: </label>
-        {noShares(pool).toFixed(2)}
-      </div>
-      <div>
-        <label>Implied: </label>
-        {formatPercent(getSwap3Probability(pool))}
-      </div>
-    </Row>
+    <>
+      <Row className="gap-4">
+        <div>
+          <label>Implied: </label>
+          {formatPercent(getSwap3Probability(pool))}
+        </div>
+
+        <div>
+          <label>Liquidity: </label>
+          {pool.liquidity}
+        </div>
+        <div>
+          <label>Tick: </label>
+          {pool.tick}
+        </div>
+        <div>
+          <label>Pool YES: </label>
+          {yesShares(pool).toFixed(2)}
+        </div>
+        <div>
+          <label>Pool NO: </label>
+          {noShares(pool).toFixed(2)}
+        </div>
+      </Row>
+      {/* Render each tickState as another row in a table */}
+      <table className="w-full">
+        <thead>
+          <tr>
+            <th className="px-4 py-2">Tick</th>
+            <th className="px-4 py-2">Prob</th>
+            <th className="px-4 py-2">Net Liquidity</th>
+          </tr>
+        </thead>
+        {sortedTickStates(pool).map((tickState, i) => (
+          <tr key={i}>
+            <td className="px-4 py-2">{tickState.tick}</td>
+            <td className="px-4 py-2">
+              {formatPercent(toProb(tickState.tick))}
+            </td>
+            <td className="px-4 py-2">{tickState.liquidityNet}</td>
+          </tr>
+        ))}
+      </table>
+    </>
   )
 }
 
 function Graph(props: { pool: Swap3Pool }) {
-  const points = [
-    { x: 0, y: 100 },
-    { x: 0.2, y: 100 },
-    { x: 0.2, y: 200 },
-    { x: 0.33, y: 200 },
-    { x: 0.33, y: 100 },
-    { x: 1, y: 100 },
-  ]
+  const { pool } = props
+  let liquidity = 100 // TODO unhardcode
+  const points = [{ x: 0, y: liquidity }]
+  for (const tickState of sortedTickStates(pool)) {
+    points.push({ x: toProb(tickState.tick), y: liquidity })
+    liquidity += tickState.liquidityNet
+    points.push({ x: toProb(tickState.tick), y: liquidity })
+  }
+  points.push({ x: 1, y: liquidity })
   return <LiquidityGraph points={points} />
 }
 
@@ -115,7 +141,7 @@ export default function Swap() {
   )
 
   return (
-    <Col className="mx-auto max-w-2xl gap-20 p-4">
+    <Col className="mx-auto max-w-2xl gap-10 p-4">
       {/* <BalanceTable /> */}
       <PoolTable pool={pool} />
       <Graph pool={pool} />
@@ -123,17 +149,15 @@ export default function Swap() {
         className="input"
         placeholder="Current%"
         type="number"
-        onChange={(e) =>
-          setPool((p) => ({
-            ...p,
-            tick: inputPercentToTick(e),
-          }))
-        }
+        onChange={(e) => {
+          pool.tick = inputPercentToTick(e)
+          setPool({ ...pool })
+        }}
       />
 
       <Col>
         Alice: Add liquidity
-        <input className="input" placeholder="Amount" type="number" />
+        {/* <input className="input" placeholder="Amount" type="number" /> */}
         <input
           className="input"
           placeholder="Min%"
@@ -152,7 +176,15 @@ export default function Swap() {
           <div>Y required: {requiredY}</div>
           <div>N required: {requiredN}</div>{' '}
         </Row>
-        <button className="btn">Create pool</button>
+        <button
+          className="btn"
+          onClick={() => {
+            addPosition(pool, minTick, maxTick, 100)
+            setPool({ ...pool })
+          }}
+        >
+          Create pool
+        </button>
       </Col>
 
       <Col>
