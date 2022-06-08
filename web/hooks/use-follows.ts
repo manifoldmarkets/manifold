@@ -11,7 +11,6 @@ export const useFollows = (userId: string | undefined) => {
   return followIds
 }
 
-
 export const useFollowers = (userId: string | undefined) => {
   const [followerIds, setFollowerIds] = useState<string[] | undefined>()
 
