@@ -82,7 +82,7 @@ export function FeedCommentThread(props: {
             )}
             parentCommentId={parentComment.id}
             replyToUsername={replyToUsername}
-            answerOutcome={comments[0].answerOutcome}
+            parentAnswerOutcome={comments[0].answerOutcome}
             setRef={setInputRef}
             onSubmitComment={() => setShowReply(false)}
           />
@@ -274,9 +274,12 @@ export function getMostRecentCommentableBet(
   user?: User | null,
   answerOutcome?: string
 ) {
-  const sortedBetsByCurrentUser = betsByCurrentUser.sort(
+  let sortedBetsByCurrentUser = betsByCurrentUser.sort(
     (a, b) => b.createdTime - a.createdTime
   )
+  if (answerOutcome) {
+    sortedBetsByCurrentUser = sortedBetsByCurrentUser.slice(0, 1)
+  }
   return sortedBetsByCurrentUser
     .filter((bet) => {
       if (
@@ -286,12 +289,10 @@ export function getMostRecentCommentableBet(
         )
       ) {
         if (!answerOutcome) return true
-        if (sortedBetsByCurrentUser[0].id !== bet.id) return false
         return answerOutcome === bet.outcome
       }
       return false
     })
-    .sort((b1, b2) => b1.createdTime - b2.createdTime)
     .pop()
 }
 
@@ -317,7 +318,7 @@ export function CommentInput(props: {
   replyToUsername?: string
   setRef?: (ref: HTMLTextAreaElement) => void
   // Reply to a free response answer
-  answerOutcome?: string
+  parentAnswerOutcome?: string
   // Reply to another comment
   parentCommentId?: string
   onSubmitComment?: () => void
@@ -326,7 +327,7 @@ export function CommentInput(props: {
     contract,
     betsByCurrentUser,
     commentsByCurrentUser,
-    answerOutcome,
+    parentAnswerOutcome,
     parentCommentId,
     replyToUsername,
     onSubmitComment,
@@ -341,7 +342,7 @@ export function CommentInput(props: {
     betsByCurrentUser,
     commentsByCurrentUser,
     user,
-    answerOutcome
+    parentAnswerOutcome
   )
   const { id } = mostRecentCommentableBet || { id: undefined }
 
@@ -362,7 +363,7 @@ export function CommentInput(props: {
       comment,
       user,
       betId,
-      answerOutcome,
+      parentAnswerOutcome,
       parentCommentId
     )
     onSubmitComment?.()
@@ -433,7 +434,7 @@ export function CommentInput(props: {
                   'textarea textarea-bordered w-full resize-none'
                 )}
                 placeholder={
-                  parentCommentId || answerOutcome
+                  parentCommentId || parentAnswerOutcome
                     ? 'Write a reply... '
                     : 'Write a comment...'
                 }
@@ -458,7 +459,7 @@ export function CommentInput(props: {
                   <button
                     className={clsx(
                       'btn btn-ghost btn-sm absolute right-2 block flex flex-row capitalize',
-                      parentCommentId || answerOutcome
+                      parentCommentId || parentAnswerOutcome
                         ? ' bottom-4'
                         : ' bottom-2',
                       (!focused || !comment) &&
@@ -487,12 +488,10 @@ export function CommentInput(props: {
             <Row>
               {!user && (
                 <button
-                  className={
-                    'btn btn-outline btn-sm text-transform:capitalize mt-2'
-                  }
+                  className={'btn btn-outline btn-sm mt-2 normal-case'}
                   onClick={() => submitComment(id)}
                 >
-                  Sign in to Comment
+                  Sign in to comment
                 </button>
               )}
             </Row>

@@ -33,10 +33,17 @@ export function FeedAnswerCommentGroup(props: {
 }) {
   const { answer, contract, comments, bets, user } = props
   const { username, avatarUrl, name, text } = answer
+
+  const [replyToUsername, setReplyToUsername] = useState('')
+  const [open, setOpen] = useState(false)
+  const [showReply, setShowReply] = useState(false)
+  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
+  const [highlighted, setHighlighted] = useState(false)
+  const router = useRouter()
+
   const answerElementId = `answer-${answer.id}`
   const betsByUserId = groupBy(bets, (bet) => bet.userId)
   const commentsByUserId = groupBy(comments, (comment) => comment.userId)
-  const [replyToUsername, setReplyToUsername] = useState('')
   const answerComments = comments.filter(
     (comment) => comment.answerOutcome === answer.number.toString()
   )
@@ -50,19 +57,20 @@ export function FeedAnswerCommentGroup(props: {
 
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
-  const [open, setOpen] = useState(false)
-  const [showReply, setShowReply] = useState(false)
-  const betsByCurrentUser = (user && betsByUserId[user.id]) || []
-  const commentsByCurrentUser = (user && commentsByUserId[user.id]) || []
+  const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
+  const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
   const isFreeResponseContractPage = !!commentsByCurrentUser
-  const mostRecentCommentableBet = getMostRecentCommentableBet(
-    betsByCurrentUser,
-    commentsByCurrentUser,
-    user,
-    answer.number.toString()
-  )
-  if (mostRecentCommentableBet && !showReply)
-    scrollAndOpenReplyInput(undefined, answer)
+  useEffect(() => {
+    const mostRecentCommentableBet = getMostRecentCommentableBet(
+      betsByCurrentUser,
+      commentsByCurrentUser,
+      user,
+      answer.number.toString()
+    )
+    if (mostRecentCommentableBet && !showReply)
+      scrollAndOpenReplyInput(undefined, answer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [betsByCurrentUser])
 
   useEffect(() => {
     // Only show one comment input for a bet at a time
@@ -77,8 +85,6 @@ export function FeedAnswerCommentGroup(props: {
     }
   }, [answer.number, bets, user])
 
-  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
-
   function scrollAndOpenReplyInput(comment?: Comment, answer?: Answer) {
     setReplyToUsername(comment?.userUsername ?? answer?.username ?? '')
     setShowReply(true)
@@ -89,8 +95,6 @@ export function FeedAnswerCommentGroup(props: {
     if (showReply && inputRef) inputRef.focus()
   }, [inputRef, showReply])
 
-  const [highlighted, setHighlighted] = useState(false)
-  const router = useRouter()
   useEffect(() => {
     if (router.asPath.endsWith(`#${answerElementId}`)) {
       setHighlighted(true)
@@ -200,7 +204,7 @@ export function FeedAnswerCommentGroup(props: {
             contract={contract}
             betsByCurrentUser={betsByCurrentUser}
             commentsByCurrentUser={commentsByCurrentUser}
-            answerOutcome={answer.number.toString()}
+            parentAnswerOutcome={answer.number.toString()}
             replyToUsername={replyToUsername}
             setRef={setInputRef}
             onSubmitComment={() => setShowReply(false)}

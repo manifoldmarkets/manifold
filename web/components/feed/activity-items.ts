@@ -337,9 +337,7 @@ function getCommentThreads(
   comments: Comment[],
   contract: Contract
 ) {
-  let parentComments = comments.filter((comment) => !comment.replyToCommentId)
-  if (contract.outcomeType === 'FREE_RESPONSE')
-    parentComments = comments.filter((comment) => !comment.replyToCommentId)
+  const parentComments = comments.filter((comment) => !comment.replyToCommentId)
 
   const items = parentComments.map((comment) => ({
     type: 'commentThread' as const,
@@ -402,13 +400,6 @@ export function getAllContractActivityItems(
         }
       )
     )
-    // items.push({
-    //   type: 'commentInput' as const,
-    //   id: 'commentInput',
-    //   contract,
-    //   betsByCurrentUser: [],
-    //   commentsByCurrentUser: [],
-    // })
   } else {
     items.push(
       ...groupBetsAndComments(bets, comments, contract, user?.id, {
@@ -425,16 +416,6 @@ export function getAllContractActivityItems(
   }
   if (contract.resolution) {
     items.push({ type: 'resolve', id: `${contract.resolutionTime}`, contract })
-  }
-
-  if (outcomeType === 'BINARY') {
-    // items.push({
-    //   type: 'commentInput' as const,
-    //   id: 'commentInput',
-    //   contract,
-    //   betsByCurrentUser: [],
-    //   commentsByCurrentUser: [],
-    // })
   }
 
   if (reversed) items.reverse()
