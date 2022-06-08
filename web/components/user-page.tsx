@@ -23,6 +23,7 @@ import { BetsList } from './bets-list'
 import { Bet } from 'common/bet'
 import { getUserBets } from 'web/lib/firebase/bets'
 import { uniq } from 'lodash'
+import { FollowersButton, FollowingButton } from './following-button'
 
 export function UserLink(props: {
   name: string
@@ -149,9 +150,10 @@ export function UserPage(props: {
         <span className="text-2xl font-bold">{user.name}</span>
         <span className="text-gray-500">@{user.username}</span>
 
+        <Spacer h={4} />
+
         {user.bio && (
           <>
-            <Spacer h={4} />
             <div>
               <Linkify text={user.bio}></Linkify>
             </div>
@@ -160,6 +162,9 @@ export function UserPage(props: {
         )}
 
         <Col className="sm:flex-row sm:gap-4">
+          <FollowingButton user={user} />
+          <FollowersButton user={user} />
+
           {user.website && (
             <SiteLink
               href={
