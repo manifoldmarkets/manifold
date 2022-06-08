@@ -36,6 +36,7 @@ export function FollowList(props: { userIds: string[] }) {
           }
           onFollow={() => onFollow(userId)}
           onUnfollow={() => onUnfollow(userId)}
+          hideFollowButton={userId === currentUser?.id}
         />
       ))}
     </Col>
@@ -47,9 +48,17 @@ function UserFollowItem(props: {
   isFollowing: boolean
   onFollow: () => void
   onUnfollow: () => void
+  hideFollowButton?: boolean
   className?: string
 }) {
-  const { userId, isFollowing, onFollow, onUnfollow, className } = props
+  const {
+    userId,
+    isFollowing,
+    onFollow,
+    onUnfollow,
+    hideFollowButton,
+    className,
+  } = props
   const user = useUserById(userId)
 
   return (
@@ -58,11 +67,13 @@ function UserFollowItem(props: {
         <Avatar username={user?.username} avatarUrl={user?.avatarUrl} />
         {user && <UserLink name={user.name} username={user.username} />}
       </Row>
-      <FollowButton
-        isFollowing={isFollowing}
-        onFollow={onFollow}
-        onUnfollow={onUnfollow}
-      />
+      {!hideFollowButton && (
+        <FollowButton
+          isFollowing={isFollowing}
+          onFollow={onFollow}
+          onUnfollow={onUnfollow}
+        />
+      )}
     </Row>
   )
 }
