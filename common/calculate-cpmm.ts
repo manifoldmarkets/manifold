@@ -303,23 +303,3 @@ export function getUserLiquidityShares(
 
   return mapValues(contract.pool, (shares) => userWeight * shares)
 }
-
-// export function removeCpmmLiquidity(
-//   contract: CPMMContract,
-//   liquidity: number
-// ) {
-//   const { YES, NO } = contract.pool
-//   const poolLiquidity = getCpmmLiquidity({ YES, NO })
-//   const p = getCpmmProbability({ YES, NO }, contract.p)
-
-//   const f = liquidity / poolLiquidity
-//   const [payoutYes, payoutNo] = [f * YES, f * NO]
-
-//   const betAmount = Math.abs(payoutYes - payoutNo)
-//   const betOutcome = p >= 0.5 ? 'NO' : 'YES' // opposite side as adding liquidity
-//   const payout = Math.min(payoutYes, payoutNo)
-
-//   const newPool = { YES: YES - payoutYes, NO: NO - payoutNo }
-
-//   return { newPool, payout, betAmount, betOutcome }
-// }
