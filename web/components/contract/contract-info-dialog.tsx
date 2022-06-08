@@ -12,7 +12,7 @@ import {
   contractPool,
   getBinaryProbPercent,
 } from 'web/lib/firebase/contracts'
-import { AddLiquidityPanel } from '../add-liquidity-panel'
+import { LiquidityPanel } from '../liquidity-panel'
 import { CopyLinkButton } from '../copy-link-button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -113,14 +113,9 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <TagsInput contract={contract} />
           <div />
 
-          {contract.mechanism === 'cpmm-1' &&
-            !contract.resolution &&
-            (!closeTime || closeTime > Date.now()) && (
-              <>
-                <div className="">Add liquidity</div>
-                <AddLiquidityPanel contract={contract} />
-              </>
-            )}
+          {contract.mechanism === 'cpmm-1' && !contract.resolution && (
+            <LiquidityPanel contract={contract} />
+          )}
         </Col>
       </Modal>
     </>
