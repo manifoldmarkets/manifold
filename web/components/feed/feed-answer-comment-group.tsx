@@ -1,7 +1,6 @@
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
-import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { formatPercent } from 'common/util/format'
 import React, { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -23,6 +22,7 @@ import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-ti
 import { useRouter } from 'next/router'
 import { groupBy } from 'lodash'
 import { User } from 'common/user'
+import { useEvent } from 'web/hooks/use-event'
 
 export function FeedAnswerCommentGroup(props: {
   contract: any
@@ -54,23 +54,45 @@ export function FeedAnswerCommentGroup(props: {
       answerComments.map((c) => c.id).includes(comment.replyToCommentId)
   )
   const commentsList = answerComments.concat(commentReplies)
-
-  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
-  const probPercent = formatPercent(prob)
+  const thisAnswerProb = bets
+    .filter((bet) => bet.outcome === answer.number.toString())
+    .sort((a, b) => b.createdTime - a.createdTime)[0].probAfter
+  const probPercent = formatPercent(thisAnswerProb)
   const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
   const isFreeResponseContractPage = !!commentsByCurrentUser
+  const mostRecentCommentableBet = getMostRecentCommentableBet(
+    betsByCurrentUser,
+    commentsByCurrentUser,
+    user,
+    answer.number.toString()
+  )
+  const [mostRecentBetTimeAtLoad] = useState(
+    mostRecentCommentableBet?.createdTime ?? 0
+  )
+
+  const scrollAndOpenReplyInput = useEvent(
+    (comment?: Comment, answer?: Answer) => {
+      setReplyToUsername(comment?.userUsername ?? answer?.username ?? '')
+      setShowReply(true)
+      inputRef?.focus()
+    }
+  )
+
   useEffect(() => {
-    const mostRecentCommentableBet = getMostRecentCommentableBet(
-      betsByCurrentUser,
-      commentsByCurrentUser,
-      user,
-      answer.number.toString()
+    if (
+      mostRecentCommentableBet &&
+      mostRecentCommentableBet.createdTime > mostRecentBetTimeAtLoad &&
+      !showReply
     )
-    if (mostRecentCommentableBet && !showReply)
       scrollAndOpenReplyInput(undefined, answer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [betsByCurrentUser])
+  }, [
+    answer,
+    mostRecentBetTimeAtLoad,
+    mostRecentCommentableBet,
+    scrollAndOpenReplyInput,
+    showReply,
+  ])
 
   useEffect(() => {
     // Only show one comment input for a bet at a time
@@ -84,12 +106,6 @@ export function FeedAnswerCommentGroup(props: {
       setShowReply(false)
     }
   }, [answer.number, bets, user])
-
-  function scrollAndOpenReplyInput(comment?: Comment, answer?: Answer) {
-    setReplyToUsername(comment?.userUsername ?? answer?.username ?? '')
-    setShowReply(true)
-    inputRef?.focus()
-  }
 
   useEffect(() => {
     if (showReply && inputRef) inputRef.focus()
