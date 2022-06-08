@@ -5,12 +5,14 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore'
-import { range } from 'lodash'
+import { range, uniq } from 'lodash'
 
 import { db } from './init'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { getValues, listenForValues } from './utils'
+import { getContractFromId } from './contracts'
+import { filterDefined } from 'common/util/array'
 export type { Bet }
 
 function getBetsCollection(contractId: string) {
@@ -74,6 +76,15 @@ export async function getUserBets(
       )
     )
     .catch((reason) => reason)
+}
+
+export async function getContractsOfUserBets(userId: string) {
+  const bets: Bet[] = await getUserBets(userId, { includeRedemptions: false })
+  const contractIds = uniq(bets.map((bet) => bet.contractId))
+  const contracts = await Promise.all(
+    contractIds.map((contractId) => getContractFromId(contractId))
+  )
+  return filterDefined(contracts)
 }
 
 export function listenForUserBets(

@@ -45,16 +45,17 @@ import toast from 'react-hot-toast'
 export default function Notifications() {
   const user = useUser()
   const [unseenNotificationGroups, setUnseenNotificationGroups] = useState<
-    NotificationGroup[]
-  >([])
+    NotificationGroup[] | undefined
+  >(undefined)
   const allNotificationGroups = usePreferredGroupedNotifications(user?.id, {
     unseenOnly: false,
   })
 
   useEffect(() => {
+    if (!allNotificationGroups) return
     // Don't re-add notifications that are visible right now or have been seen already.
     const currentlyVisibleUnseenNotificationIds = Object.values(
-      unseenNotificationGroups
+      unseenNotificationGroups ?? []
     )
       .map((n) => n.notifications.map((n) => n.id))
       .flat()
@@ -92,7 +93,7 @@ export default function Notifications() {
           tabs={[
             {
               title: 'New Notifications',
-              content: (
+              content: unseenNotificationGroups ? (
                 <div className={''}>
                   {unseenNotificationGroups.length === 0 &&
                     "You don't have any new notifications."}
@@ -113,11 +114,13 @@ export default function Notifications() {
                     )
                   )}
                 </div>
+              ) : (
+                <LoadingIndicator />
               ),
             },
             {
               title: 'All Notifications',
-              content: (
+              content: allNotificationGroups ? (
                 <div className={''}>
                   {allNotificationGroups.length === 0 &&
                     "You don't have any notifications. Try changing your settings to see more."}
@@ -138,6 +141,8 @@ export default function Notifications() {
                     )
                   )}
                 </div>
+              ) : (
+                <LoadingIndicator />
               ),
             },
             {
@@ -271,9 +276,6 @@ function NotificationSettings() {
   const [emailNotificationSettings, setEmailNotificationSettings] =
     useState<notification_subscribe_types>('all')
   const [privateUser, setPrivateUser] = useState<PrivateUser | null>(null)
-  const [showSettings, setShowSettings] = useState<'in-app' | 'email' | 'none'>(
-    'none'
-  )
 
   useEffect(() => {
     if (user) listenForPrivateUser(user.id, setPrivateUser)
@@ -305,7 +307,6 @@ function NotificationSettings() {
   const success = 'Notification Settings Changed!'
   function changeEmailNotifications(newValue: notification_subscribe_types) {
     if (!privateUser) return
-    setShowSettings('email')
     if (newValue === 'all') {
       toast.promise(
         updatePrivateUser(privateUser.id, {
@@ -362,7 +363,6 @@ function NotificationSettings() {
         error: (err) => `${err.message}`,
       }
     )
-    setShowSettings('in-app')
   }
 
   useEffect(() => {
@@ -402,6 +402,29 @@ function NotificationSettings() {
         className={'col-span-4 p-2'}
         toggleClassName={'w-24'}
       />
+      <div className={'mt-4 text-sm'}>
+        <div>
+          <div className={''}>
+            You will receive notifications for:
+            <NotificationSettingLine
+              label={"Resolution of questions you've interacted with"}
+              highlight={notificationSettings !== 'none'}
+            />
+            <NotificationSettingLine
+              highlight={notificationSettings !== 'none'}
+              label={'Activity on your own questions, comments, & answers'}
+            />
+            <NotificationSettingLine
+              highlight={notificationSettings !== 'none'}
+              label={"Activity on questions you're betting on"}
+            />
+            <NotificationSettingLine
+              label={"Activity on questions you've ever bet or commented on"}
+              highlight={notificationSettings === 'all'}
+            />
+          </div>
+        </div>
+      </div>
       <div className={'mt-4'}>Email Notifications</div>
       <ChoicesToggleGroup
         currentChoice={emailNotificationSettings}
@@ -412,52 +435,26 @@ function NotificationSettings() {
         className={'col-span-4 p-2'}
         toggleClassName={'w-24'}
       />
-      <div className={'mt-4 text-base'}>
-        {showSettings === 'in-app' ? (
-          <div>
-            <div className={''}>
-              You will receive notifications for:
-              <NotificationSettingLine
-                label={"Resolution of questions you've interacted with"}
-                highlight={notificationSettings !== 'none'}
-              />
-              <NotificationSettingLine
-                highlight={notificationSettings !== 'none'}
-                label={'Activity on your own questions, comments, & answers'}
-              />
-              <NotificationSettingLine
-                highlight={notificationSettings !== 'none'}
-                label={"Activity on questions you're betting on"}
-              />
-              <NotificationSettingLine
-                label={"Activity on questions you've ever bet or commented on"}
-                highlight={notificationSettings === 'all'}
-              />
-            </div>
-          </div>
-        ) : showSettings === 'email' ? (
-          <div>
-            You will receive emails for:
-            <NotificationSettingLine
-              label={"Resolution of questions you're betting on"}
-              highlight={emailNotificationSettings !== 'none'}
-            />
-            <NotificationSettingLine
-              label={'Closure of your questions'}
-              highlight={emailNotificationSettings !== 'none'}
-            />
-            <NotificationSettingLine
-              label={'Activity on your questions'}
-              highlight={emailNotificationSettings === 'all'}
-            />
-            <NotificationSettingLine
-              label={"Activity on questions you've answered or commented on"}
-              highlight={emailNotificationSettings === 'all'}
-            />
-          </div>
-        ) : (
-          <div />
-        )}
+      <div className={'mt-4 text-sm'}>
+        <div>
+          You will receive emails for:
+          <NotificationSettingLine
+            label={"Resolution of questions you're betting on"}
+            highlight={emailNotificationSettings !== 'none'}
+          />
+          <NotificationSettingLine
+            label={'Closure of your questions'}
+            highlight={emailNotificationSettings !== 'none'}
+          />
+          <NotificationSettingLine
+            label={'Activity on your questions'}
+            highlight={emailNotificationSettings === 'all'}
+          />
+          <NotificationSettingLine
+            label={"Activity on questions you've answered or commented on"}
+            highlight={emailNotificationSettings === 'all'}
+          />
+        </div>
       </div>
     </div>
   )
@@ -469,10 +466,8 @@ function isNotificationAboutContractResolution(
   contract: Contract | null | undefined
 ) {
   return (
-    (sourceType === 'contract' && !sourceUpdateType && contract?.resolution) ||
-    (sourceType === 'contract' &&
-      sourceUpdateType === 'resolved' &&
-      contract?.resolution)
+    (sourceType === 'contract' && sourceUpdateType === 'resolved') ||
+    (sourceType === 'contract' && !sourceUpdateType && contract?.resolution)
   )
 }
 
@@ -492,32 +487,58 @@ function NotificationItem(props: {
     reason,
     sourceUserUsername,
     createdTime,
+    sourceText,
+    sourceContractTitle,
+    sourceContractCreatorUsername,
+    sourceContractSlug,
   } = notification
   const [notificationText, setNotificationText] = useState<string>('')
   const [contract, setContract] = useState<Contract | null>(null)
 
   useEffect(() => {
-    if (!sourceContractId) return
-    getContractFromId(sourceContractId).then((contract) => {
-      if (contract) setContract(contract)
-    })
-  }, [sourceContractId])
+    if (
+      !sourceContractId ||
+      (sourceContractSlug && sourceContractCreatorUsername)
+    )
+      return
+    getContractFromId(sourceContractId)
+      .then((contract) => {
+        if (contract) setContract(contract)
+      })
+      .catch((e) => console.log(e))
+  }, [
+    sourceContractCreatorUsername,
+    sourceContractId,
+    sourceContractSlug,
+    sourceContractTitle,
+  ])
 
   useEffect(() => {
-    if (!contract || !sourceContractId || !sourceId) return
     if (
+      sourceText &&
+      (sourceType === 'comment' ||
+        sourceType === 'answer' ||
+        (sourceType === 'contract' && sourceUpdateType === 'updated'))
+    ) {
+      setNotificationText(sourceText)
+    } else if (!contract || !sourceContractId || !sourceId) return
+    else if (
       sourceType === 'answer' ||
       sourceType === 'comment' ||
       sourceType === 'contract'
     ) {
-      getNotificationText(
-        sourceId,
-        sourceContractId,
-        sourceType,
-        sourceUpdateType,
-        setNotificationText,
-        contract
-      )
+      try {
+        getNotificationText(
+          sourceId,
+          sourceContractId,
+          sourceType,
+          sourceUpdateType,
+          setNotificationText,
+          contract
+        )
+      } catch (err) {
+        console.error(err)
+      }
     } else if (reasonText) {
       // Handle arbitrary notifications with reason text here.
       setNotificationText(reasonText)
@@ -527,6 +548,7 @@ function NotificationItem(props: {
     reasonText,
     sourceContractId,
     sourceId,
+    sourceText,
     sourceType,
     sourceUpdateType,
   ])
@@ -537,6 +559,10 @@ function NotificationItem(props: {
 
   function getSourceUrl() {
     if (sourceType === 'follow') return `/${sourceUserUsername}`
+    if (sourceContractCreatorUsername && sourceContractSlug)
+      return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
+        sourceId ?? ''
+      )}`
     if (!contract) return ''
     return `/${contract.creatorUsername}/${
       contract.slug
@@ -562,19 +588,16 @@ function NotificationItem(props: {
     sourceType: 'answer' | 'comment' | 'contract',
     sourceUpdateType: notification_source_update_types | undefined,
     setText: (text: string) => void,
-    contract?: Contract
+    contract: Contract
   ) {
-    if (sourceType === 'contract' && !contract)
-      contract = await getContractFromId(sourceContractId)
-
-    if (sourceType === 'contract' && contract) {
+    if (sourceType === 'contract') {
       if (
         isNotificationAboutContractResolution(
           sourceType,
           sourceUpdateType,
           contract
         ) &&
-        contract?.resolution
+        contract.resolution
       )
         setText(contract.resolution)
       else setText(contract.question)
@@ -602,31 +625,24 @@ function NotificationItem(props: {
               className={'mr-0 flex-shrink-0'}
             />
             <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
-              {sourceType &&
-                reason &&
-                getReasonForShowingNotification(
-                  sourceType,
-                  reason,
-                  sourceUpdateType,
-                  contract,
-                  true
-                ).replace(' on', '')}
+              <span className={'flex-shrink-0'}>
+                {sourceType &&
+                  reason &&
+                  getReasonForShowingNotification(
+                    sourceType,
+                    reason,
+                    sourceUpdateType,
+                    contract,
+                    true
+                  ).replace(' on', '')}
+              </span>
               <div className={'ml-1 text-black'}>
-                {contract ? (
-                  <NotificationTextLabel
-                    contract={contract}
-                    defaultText={notificationText}
-                    className={'line-clamp-1'}
-                    sourceUpdateType={sourceUpdateType}
-                    sourceType={sourceType}
-                  />
-                ) : sourceType != 'follow' ? (
-                  <LoadingIndicator
-                    spinnerClassName={'border-gray-500 h-4 w-4'}
-                  />
-                ) : (
-                  <div />
-                )}
+                <NotificationTextLabel
+                  contract={contract}
+                  defaultText={notificationText}
+                  className={'line-clamp-1'}
+                  notification={notification}
+                />
               </div>
             </div>
           </div>
@@ -666,35 +682,40 @@ function NotificationItem(props: {
                       contract
                     )}
                     <span className={'mx-1 font-bold'}>
-                      {contract?.question}
+                      {contract?.question || sourceContractTitle}
                     </span>
                   </div>
                 )}
               </div>
             </div>
-            {contract && sourceId && (
+            {sourceId && contract && (
               <CopyLinkDateTimeComponent
-                contract={contract}
+                contractCreatorUsername={contract.creatorUsername}
+                contractSlug={contract.slug}
                 createdTime={createdTime}
                 elementId={getSourceIdForLinkComponent(sourceId)}
                 className={'-mx-1 inline-flex sm:inline-block'}
               />
             )}
+            {sourceId &&
+              sourceContractSlug &&
+              sourceContractCreatorUsername && (
+                <CopyLinkDateTimeComponent
+                  contractCreatorUsername={sourceContractCreatorUsername}
+                  contractSlug={sourceContractSlug}
+                  createdTime={createdTime}
+                  elementId={getSourceIdForLinkComponent(sourceId)}
+                  className={'-mx-1 inline-flex sm:inline-block'}
+                />
+              )}
           </div>
         </Row>
         <div className={'mt-1 md:text-base'}>
-          {contract ? (
-            <NotificationTextLabel
-              contract={contract}
-              defaultText={notificationText}
-              sourceType={sourceType}
-              sourceUpdateType={sourceUpdateType}
-            />
-          ) : sourceType != 'follow' ? (
-            <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
-          ) : (
-            <div />
-          )}
+          <NotificationTextLabel
+            contract={contract}
+            defaultText={notificationText}
+            notification={notification}
+          />
         </div>
 
         <div className={'mt-6 border-b border-gray-300'} />
@@ -704,14 +725,21 @@ function NotificationItem(props: {
 }
 
 function NotificationTextLabel(props: {
-  contract: Contract
   defaultText: string
-  sourceType?: notification_source_types
-  sourceUpdateType?: notification_source_update_types
+  contract?: Contract | null
+  notification: Notification
   className?: string
 }) {
-  const { contract, className, sourceUpdateType, sourceType, defaultText } =
-    props
+  const { contract, className, defaultText, notification } = props
+  const { sourceUpdateType, sourceType, sourceText, sourceContractTitle } =
+    notification
+  if (
+    !contract &&
+    !sourceContractTitle &&
+    !sourceText &&
+    sourceType !== 'follow'
+  )
+    return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
 
   if (
     isNotificationAboutContractResolution(
@@ -719,7 +747,7 @@ function NotificationTextLabel(props: {
       sourceUpdateType,
       contract
     ) &&
-    contract.resolution
+    contract?.resolution
   ) {
     if (contract.outcomeType === 'FREE_RESPONSE') {
       return (
@@ -782,7 +810,8 @@ function getReasonForShowingNotification(
       else reasonText = `commented on`
       break
     case 'contract':
-      if (
+      if (reason === 'you_follow_user') reasonText = 'created a new question'
+      else if (
         isNotificationAboutContractResolution(
           source,
           sourceUpdateType,
@@ -794,7 +823,8 @@ function getReasonForShowingNotification(
       break
     case 'answer':
       if (reason === 'on_users_contract') reasonText = `answered your question `
-      if (reason === 'on_contract_with_users_comment') reasonText = `answered`
+      else if (reason === 'on_contract_with_users_comment')
+        reasonText = `answered`
       else if (reason === 'on_contract_with_users_answer')
         reasonText = `answered`
       else if (reason === 'on_contract_with_users_shares_in')

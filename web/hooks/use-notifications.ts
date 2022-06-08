@@ -17,8 +17,8 @@ export function usePreferredGroupedNotifications(
   options: { unseenOnly: boolean }
 ) {
   const [notificationGroups, setNotificationGroups] = useState<
-    NotificationGroup[]
-  >([])
+    NotificationGroup[] | undefined
+  >(undefined)
 
   const notifications = usePreferredNotifications(userId, options)
   useEffect(() => {

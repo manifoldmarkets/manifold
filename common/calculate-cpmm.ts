@@ -1,4 +1,4 @@
-import { sum, groupBy, mapValues, sumBy } from 'lodash'
+import { sum, groupBy, mapValues, sumBy, partition } from 'lodash'
 
 import { CPMMContract } from './contract'
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, noFees, PLATFORM_FEE } from './fees'
@@ -260,27 +260,30 @@ export function addCpmmLiquidity(
   return { newPool, liquidity, newP }
 }
 
+const calculateLiquidityDelta = (p: number) => (l: LiquidityProvision) => {
+  const oldLiquidity = getCpmmLiquidity(l.pool, p)
+
+  const newPool = addObjects(l.pool, { YES: l.amount, NO: l.amount })
+  const newLiquidity = getCpmmLiquidity(newPool, p)
+
+  const liquidity = newLiquidity - oldLiquidity
+  return liquidity
+}
+
 export function getCpmmLiquidityPoolWeights(
   contract: CPMMContract,
   liquidities: LiquidityProvision[]
 ) {
-  const { p } = contract
+  const [antes, nonAntes] = partition(liquidities, (l) => !!l.isAnte)
 
-  const liquidityShares = liquidities.map((l) => {
-    const oldLiquidity = getCpmmLiquidity(l.pool, p)
+  const calcLiqudity = calculateLiquidityDelta(contract.p)
+  const liquidityShares = nonAntes.map(calcLiqudity)
 
-    const newPool = addObjects(l.pool, { YES: l.amount, NO: l.amount })
-    const newLiquidity = getCpmmLiquidity(newPool, p)
-
-    const liquidity = newLiquidity - oldLiquidity
-    return liquidity
-  })
-
-  const shareSum = sum(liquidityShares)
+  const shareSum = sum(liquidityShares) + sum(antes.map(calcLiqudity))
 
   const weights = liquidityShares.map((s, i) => ({
     weight: s / shareSum,
-    providerId: liquidities[i].userId,
+    providerId: nonAntes[i].userId,
   }))
 
   const userWeights = groupBy(weights, (w) => w.providerId)
@@ -290,22 +293,13 @@ export function getCpmmLiquidityPoolWeights(
   return totalUserWeights
 }
 
-// export function removeCpmmLiquidity(
-//   contract: CPMMContract,
-//   liquidity: number
-// ) {
-//   const { YES, NO } = contract.pool
-//   const poolLiquidity = getCpmmLiquidity({ YES, NO })
-//   const p = getCpmmProbability({ YES, NO }, contract.p)
+export function getUserLiquidityShares(
+  userId: string,
+  contract: CPMMContract,
+  liquidities: LiquidityProvision[]
+) {
+  const weights = getCpmmLiquidityPoolWeights(contract, liquidities)
+  const userWeight = weights[userId] ?? 0
 
-//   const f = liquidity / poolLiquidity
-//   const [payoutYes, payoutNo] = [f * YES, f * NO]
-
-//   const betAmount = Math.abs(payoutYes - payoutNo)
-//   const betOutcome = p >= 0.5 ? 'NO' : 'YES' // opposite side as adding liquidity
-//   const payout = Math.min(payoutYes, payoutNo)
-
-//   const newPool = { YES: YES - payoutYes, NO: NO - payoutNo }
-
-//   return { newPool, payout, betAmount, betOutcome }
-// }
+  return mapValues(contract.pool, (shares) => userWeight * shares)
+}

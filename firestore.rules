@@ -24,9 +24,8 @@ service cloud.firestore {
       allow write: if request.auth.uid == userId;
     }
 
-    match /users/{userId}/follows/{followUserId} {
+    match /{somePath=**}/follows/{followUserId} {
       allow read;
-      allow write: if request.auth.uid == userId;
     }
 
     match /private-users/{userId} {
@@ -63,6 +62,10 @@ service cloud.firestore {
     }
 
     match /{somePath=**}/bets/{betId} {
+      allow read;
+    }
+
+    match /{somePath=**}/liquidity/{liquidityId} {
       allow read;
     }
 
