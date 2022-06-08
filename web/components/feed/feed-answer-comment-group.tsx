@@ -64,6 +64,7 @@ export function FeedAnswerCommentGroup(props: {
 
   useEffect(() => {
     thisAnswerProbOnMount.current = thisAnswerProb.valueOf()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
