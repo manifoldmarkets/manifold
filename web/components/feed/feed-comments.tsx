@@ -461,7 +461,7 @@ export function CommentInput(props: {
                 {user && !isSubmitting && (
                   <button
                     className={clsx(
-                      'btn btn-ghost btn-sm absolute right-2 flex-row capitalize pl-2',
+                      'btn btn-ghost btn-sm absolute right-2 flex-row pl-2 capitalize',
                       parentCommentId || parentAnswerOutcome
                         ? ' bottom-4'
                         : ' bottom-2',
