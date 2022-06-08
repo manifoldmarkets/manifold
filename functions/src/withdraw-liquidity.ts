@@ -103,8 +103,8 @@ export const withdrawLiquidity = functions
         return userShares
       })
 
-      console.log(userId, 'withrdaws', result)
-      return result
+      console.log('userid', userId, 'withrdaws', result)
+      return { status: 'success', userShares: result }
     }
   )
 
