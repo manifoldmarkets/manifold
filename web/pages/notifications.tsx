@@ -276,9 +276,6 @@ function NotificationSettings() {
   const [emailNotificationSettings, setEmailNotificationSettings] =
     useState<notification_subscribe_types>('all')
   const [privateUser, setPrivateUser] = useState<PrivateUser | null>(null)
-  const [showSettings, setShowSettings] = useState<'in-app' | 'email' | 'none'>(
-    'none'
-  )
 
   useEffect(() => {
     if (user) listenForPrivateUser(user.id, setPrivateUser)
@@ -310,7 +307,6 @@ function NotificationSettings() {
   const success = 'Notification Settings Changed!'
   function changeEmailNotifications(newValue: notification_subscribe_types) {
     if (!privateUser) return
-    setShowSettings('email')
     if (newValue === 'all') {
       toast.promise(
         updatePrivateUser(privateUser.id, {
@@ -367,7 +363,6 @@ function NotificationSettings() {
         error: (err) => `${err.message}`,
       }
     )
-    setShowSettings('in-app')
   }
 
   useEffect(() => {
@@ -407,6 +402,29 @@ function NotificationSettings() {
         className={'col-span-4 p-2'}
         toggleClassName={'w-24'}
       />
+      <div className={'mt-4 text-sm'}>
+        <div>
+          <div className={''}>
+            You will receive notifications for:
+            <NotificationSettingLine
+              label={"Resolution of questions you've interacted with"}
+              highlight={notificationSettings !== 'none'}
+            />
+            <NotificationSettingLine
+              highlight={notificationSettings !== 'none'}
+              label={'Activity on your own questions, comments, & answers'}
+            />
+            <NotificationSettingLine
+              highlight={notificationSettings !== 'none'}
+              label={"Activity on questions you're betting on"}
+            />
+            <NotificationSettingLine
+              label={"Activity on questions you've ever bet or commented on"}
+              highlight={notificationSettings === 'all'}
+            />
+          </div>
+        </div>
+      </div>
       <div className={'mt-4'}>Email Notifications</div>
       <ChoicesToggleGroup
         currentChoice={emailNotificationSettings}
@@ -417,52 +435,26 @@ function NotificationSettings() {
         className={'col-span-4 p-2'}
         toggleClassName={'w-24'}
       />
-      <div className={'mt-4 text-base'}>
-        {showSettings === 'in-app' ? (
-          <div>
-            <div className={''}>
-              You will receive notifications for:
-              <NotificationSettingLine
-                label={"Resolution of questions you've interacted with"}
-                highlight={notificationSettings !== 'none'}
-              />
-              <NotificationSettingLine
-                highlight={notificationSettings !== 'none'}
-                label={'Activity on your own questions, comments, & answers'}
-              />
-              <NotificationSettingLine
-                highlight={notificationSettings !== 'none'}
-                label={"Activity on questions you're betting on"}
-              />
-              <NotificationSettingLine
-                label={"Activity on questions you've ever bet or commented on"}
-                highlight={notificationSettings === 'all'}
-              />
-            </div>
-          </div>
-        ) : showSettings === 'email' ? (
-          <div>
-            You will receive emails for:
-            <NotificationSettingLine
-              label={"Resolution of questions you're betting on"}
-              highlight={emailNotificationSettings !== 'none'}
-            />
-            <NotificationSettingLine
-              label={'Closure of your questions'}
-              highlight={emailNotificationSettings !== 'none'}
-            />
-            <NotificationSettingLine
-              label={'Activity on your questions'}
-              highlight={emailNotificationSettings === 'all'}
-            />
-            <NotificationSettingLine
-              label={"Activity on questions you've answered or commented on"}
-              highlight={emailNotificationSettings === 'all'}
-            />
-          </div>
-        ) : (
-          <div />
-        )}
+      <div className={'mt-4 text-sm'}>
+        <div>
+          You will receive emails for:
+          <NotificationSettingLine
+            label={"Resolution of questions you're betting on"}
+            highlight={emailNotificationSettings !== 'none'}
+          />
+          <NotificationSettingLine
+            label={'Closure of your questions'}
+            highlight={emailNotificationSettings !== 'none'}
+          />
+          <NotificationSettingLine
+            label={'Activity on your questions'}
+            highlight={emailNotificationSettings === 'all'}
+          />
+          <NotificationSettingLine
+            label={"Activity on questions you've answered or commented on"}
+            highlight={emailNotificationSettings === 'all'}
+          />
+        </div>
       </div>
     </div>
   )
