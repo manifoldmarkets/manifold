@@ -11,7 +11,7 @@ import { UserLink } from './user-page'
 export function FollowList(props: { userIds: string[] }) {
   const { userIds } = props
   const currentUser = useUser()
-  const followedUserIds = useFollows(currentUser?.id) ?? []
+  const followedUserIds = useFollows(currentUser?.id)
 
   const onFollow = (userId: string) => {
     if (!currentUser) return
@@ -24,11 +24,16 @@ export function FollowList(props: { userIds: string[] }) {
 
   return (
     <Col className="gap-2">
+      {userIds.length === 0 && (
+        <div className="text-gray-500">No users yet...</div>
+      )}
       {userIds.map((userId) => (
         <UserFollowItem
           key={userId}
           userId={userId}
-          isFollowing={followedUserIds.includes(userId)}
+          isFollowing={
+            followedUserIds ? followedUserIds.includes(userId) : false
+          }
           onFollow={() => onFollow(userId)}
           onUnfollow={() => onUnfollow(userId)}
         />
