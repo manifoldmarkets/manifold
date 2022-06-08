@@ -272,13 +272,9 @@ const calculateLiquidityDelta = (p: number) => (l: LiquidityProvision) => {
 
 export function getCpmmLiquidityPoolWeights(
   contract: CPMMContract,
-  liquidities: LiquidityProvision[],
-  excludeAntes = true
+  liquidities: LiquidityProvision[]
 ) {
-  const [antes, nonAntes] = partition(
-    liquidities,
-    (l) => excludeAntes && !!l.isAnte
-  )
+  const [antes, nonAntes] = partition(liquidities, (l) => !!l.isAnte)
 
   const calcLiqudity = calculateLiquidityDelta(contract.p)
   const liquidityShares = nonAntes.map(calcLiqudity)
