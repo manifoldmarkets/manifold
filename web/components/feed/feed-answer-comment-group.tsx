@@ -1,9 +1,8 @@
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
-import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { formatPercent } from 'common/util/format'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
@@ -54,13 +53,22 @@ export function FeedAnswerCommentGroup(props: {
       answerComments.map((c) => c.id).includes(comment.replyToCommentId)
   )
   const commentsList = answerComments.concat(commentReplies)
-
-  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
-  const probPercent = formatPercent(prob)
+  const thisAnswerProbOnMount = useRef<number>()
+  // get most recent bet on this answer to find probability
+  const thisAnswerProb = bets
+    .filter((bet) => bet.outcome === answer.number.toString())
+    .sort((a, b) => b.createdTime - a.createdTime)[0].probAfter
+  const probPercent = formatPercent(thisAnswerProb)
   const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
   const isFreeResponseContractPage = !!commentsByCurrentUser
+
   useEffect(() => {
+    thisAnswerProbOnMount.current = thisAnswerProb.valueOf()
+  }, [])
+
+  useEffect(() => {
+    if (thisAnswerProbOnMount.current === thisAnswerProb) return
     const mostRecentCommentableBet = getMostRecentCommentableBet(
       betsByCurrentUser,
       commentsByCurrentUser,
