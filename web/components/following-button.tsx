@@ -54,11 +54,7 @@ export function EditFollowingButton(props: { user: User; className?: string }) {
       onClick={() => setOpen(true)}
     >
       <PencilIcon className="inline h-4 w-4" />
-      <div>
-        <span className="font-semibold">{followingIds?.length ?? ''}</span>{' '}
-        Following
-      </div>
-
+      Following
       <FollowingFollowersDialog
         user={user}
         defaultTab="following"
