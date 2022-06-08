@@ -260,7 +260,7 @@ export function addCpmmLiquidity(
   return { newPool, liquidity, newP }
 }
 
-const calculateContractLiquidity = (p: number) => (l: LiquidityProvision) => {
+const calculateLiquidityDelta = (p: number) => (l: LiquidityProvision) => {
   const oldLiquidity = getCpmmLiquidity(l.pool, p)
 
   const newPool = addObjects(l.pool, { YES: l.amount, NO: l.amount })
@@ -280,7 +280,7 @@ export function getCpmmLiquidityPoolWeights(
     (l) => excludeAntes && !!l.isAnte
   )
 
-  const calcLiqudity = calculateContractLiquidity(contract.p)
+  const calcLiqudity = calculateLiquidityDelta(contract.p)
   const liquidityShares = nonAntes.map(calcLiqudity)
 
   const shareSum = sum(liquidityShares) + sum(antes.map(calcLiqudity))
