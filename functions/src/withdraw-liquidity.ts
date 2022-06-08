@@ -77,7 +77,7 @@ export const withdrawLiquidity = functions
         // surplus shares become user's bets
         const bets = Object.entries(userShares)
           .map(([outcome, shares]) =>
-            shares - payout <= 0
+            shares - payout < 1 // don't create bet if less than 1 share
               ? undefined
               : ({
                   userId: userId,
