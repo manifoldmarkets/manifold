@@ -72,6 +72,27 @@ export const createNotification = async (
     )
   }
 
+  const notifyUsersFollowers = async (
+    userToReasonTexts: user_to_reason_texts
+  ) => {
+    const followers = await firestore
+      .collectionGroup('follows')
+      .where('userId', '==', sourceUser.id)
+      .get()
+
+    followers.docs.forEach((doc) => {
+      const followerUserId = doc.ref.parent.parent?.id
+      if (
+        followerUserId &&
+        shouldGetNotification(followerUserId, userToReasonTexts)
+      ) {
+        userToReasonTexts[followerUserId] = {
+          reason: 'you_follow_user',
+        }
+      }
+    })
+  }
+
   const notifyRepliedUsers = async (
     userToReasonTexts: user_to_reason_texts
   ) => {
@@ -218,7 +239,7 @@ export const createNotification = async (
     } else if (sourceType === 'follow' && relatedUserId) {
       await notifyFollowedUser(userToReasonTexts, relatedUserId)
     } else if (sourceType === 'contract' && sourceUpdateType === 'created') {
-      // TODO: notify users following the creator of the contract
+      await notifyUsersFollowers(userToReasonTexts)
     }
     return userToReasonTexts
   }

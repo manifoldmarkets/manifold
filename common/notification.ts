@@ -46,3 +46,4 @@ export type notification_reason_types =
   | 'reply_to_users_answer'
   | 'reply_to_users_comment'
   | 'on_new_follow'
+  | 'you_follow_user'

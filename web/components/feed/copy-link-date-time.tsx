@@ -1,7 +1,5 @@
-import { Contract } from 'common/contract'
 import React, { useState } from 'react'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { DateTimeTooltip } from 'web/components/datetime-tooltip'
 import Link from 'next/link'

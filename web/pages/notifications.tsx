@@ -45,16 +45,17 @@ import toast from 'react-hot-toast'
 export default function Notifications() {
   const user = useUser()
   const [unseenNotificationGroups, setUnseenNotificationGroups] = useState<
-    NotificationGroup[]
-  >([])
+    NotificationGroup[] | undefined
+  >(undefined)
   const allNotificationGroups = usePreferredGroupedNotifications(user?.id, {
     unseenOnly: false,
   })
 
   useEffect(() => {
+    if (!allNotificationGroups) return
     // Don't re-add notifications that are visible right now or have been seen already.
     const currentlyVisibleUnseenNotificationIds = Object.values(
-      unseenNotificationGroups
+      unseenNotificationGroups ?? []
     )
       .map((n) => n.notifications.map((n) => n.id))
       .flat()
@@ -92,7 +93,7 @@ export default function Notifications() {
           tabs={[
             {
               title: 'New Notifications',
-              content: (
+              content: unseenNotificationGroups ? (
                 <div className={''}>
                   {unseenNotificationGroups.length === 0 &&
                     "You don't have any new notifications."}
@@ -113,11 +114,13 @@ export default function Notifications() {
                     )
                   )}
                 </div>
+              ) : (
+                <LoadingIndicator />
               ),
             },
             {
               title: 'All Notifications',
-              content: (
+              content: allNotificationGroups ? (
                 <div className={''}>
                   {allNotificationGroups.length === 0 &&
                     "You don't have any notifications. Try changing your settings to see more."}
@@ -138,6 +141,8 @@ export default function Notifications() {
                     )
                   )}
                 </div>
+              ) : (
+                <LoadingIndicator />
               ),
             },
             {
@@ -504,9 +509,11 @@ function NotificationItem(props: {
       (sourceContractSlug && sourceContractCreatorUsername)
     )
       return
-    getContractFromId(sourceContractId).then((contract) => {
-      if (contract) setContract(contract)
-    })
+    getContractFromId(sourceContractId)
+      .then((contract) => {
+        if (contract) setContract(contract)
+      })
+      .catch((e) => console.log(e))
   }, [
     sourceContractCreatorUsername,
     sourceContractId,
@@ -528,14 +535,18 @@ function NotificationItem(props: {
       sourceType === 'comment' ||
       sourceType === 'contract'
     ) {
-      getNotificationText(
-        sourceId,
-        sourceContractId,
-        sourceType,
-        sourceUpdateType,
-        setNotificationText,
-        contract
-      )
+      try {
+        getNotificationText(
+          sourceId,
+          sourceContractId,
+          sourceType,
+          sourceUpdateType,
+          setNotificationText,
+          contract
+        )
+      } catch (err) {
+        console.error(err)
+      }
     } else if (reasonText) {
       // Handle arbitrary notifications with reason text here.
       setNotificationText(reasonText)
@@ -622,31 +633,24 @@ function NotificationItem(props: {
               className={'mr-0 flex-shrink-0'}
             />
             <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
-              {sourceType &&
-                reason &&
-                getReasonForShowingNotification(
-                  sourceType,
-                  reason,
-                  sourceUpdateType,
-                  contract,
-                  true
-                ).replace(' on', '')}
+              <span className={'flex-shrink-0'}>
+                {sourceType &&
+                  reason &&
+                  getReasonForShowingNotification(
+                    sourceType,
+                    reason,
+                    sourceUpdateType,
+                    contract,
+                    true
+                  ).replace(' on', '')}
+              </span>
               <div className={'ml-1 text-black'}>
-                {contract || (sourceContractTitle && sourceText) ? (
-                  <NotificationTextLabel
-                    contract={contract}
-                    defaultText={notificationText}
-                    className={'line-clamp-1'}
-                    sourceUpdateType={sourceUpdateType}
-                    sourceType={sourceType}
-                  />
-                ) : sourceType != 'follow' ? (
-                  <LoadingIndicator
-                    spinnerClassName={'border-gray-500 h-4 w-4'}
-                  />
-                ) : (
-                  <div />
-                )}
+                <NotificationTextLabel
+                  contract={contract}
+                  defaultText={notificationText}
+                  className={'line-clamp-1'}
+                  notification={notification}
+                />
               </div>
             </div>
           </div>
@@ -715,18 +719,11 @@ function NotificationItem(props: {
           </div>
         </Row>
         <div className={'mt-1 md:text-base'}>
-          {contract || (sourceContractTitle && sourceText) ? (
-            <NotificationTextLabel
-              contract={contract}
-              defaultText={notificationText}
-              sourceType={sourceType}
-              sourceUpdateType={sourceUpdateType}
-            />
-          ) : sourceType != 'follow' ? (
-            <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
-          ) : (
-            <div />
-          )}
+          <NotificationTextLabel
+            contract={contract}
+            defaultText={notificationText}
+            notification={notification}
+          />
         </div>
 
         <div className={'mt-6 border-b border-gray-300'} />
@@ -738,12 +735,19 @@ function NotificationItem(props: {
 function NotificationTextLabel(props: {
   defaultText: string
   contract?: Contract | null
-  sourceType?: notification_source_types
-  sourceUpdateType?: notification_source_update_types
+  notification: Notification
   className?: string
 }) {
-  const { contract, className, sourceUpdateType, sourceType, defaultText } =
-    props
+  const { contract, className, defaultText, notification } = props
+  const { sourceUpdateType, sourceType, sourceText, sourceContractTitle } =
+    notification
+  if (
+    !contract &&
+    !sourceContractTitle &&
+    !sourceText &&
+    sourceType !== 'follow'
+  )
+    return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
 
   if (
     isNotificationAboutContractResolution(
@@ -814,7 +818,8 @@ function getReasonForShowingNotification(
       else reasonText = `commented on`
       break
     case 'contract':
-      if (
+      if (reason === 'you_follow_user') reasonText = 'created a new question'
+      else if (
         isNotificationAboutContractResolution(
           source,
           sourceUpdateType,
@@ -826,7 +831,8 @@ function getReasonForShowingNotification(
       break
     case 'answer':
       if (reason === 'on_users_contract') reasonText = `answered your question `
-      if (reason === 'on_contract_with_users_comment') reasonText = `answered`
+      else if (reason === 'on_contract_with_users_comment')
+        reasonText = `answered`
       else if (reason === 'on_contract_with_users_answer')
         reasonText = `answered`
       else if (reason === 'on_contract_with_users_shares_in')
