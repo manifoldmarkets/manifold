@@ -434,6 +434,8 @@ export function CommentInput(props: {
                 className={clsx(
                   'textarea textarea-bordered w-full resize-none'
                 )}
+                // Make room for floating submit button.
+                style={{ paddingRight: 48 }}
                 placeholder={
                   parentCommentId || parentAnswerOutcome
                     ? 'Write a reply... '
@@ -459,7 +461,7 @@ export function CommentInput(props: {
                 {user && !isSubmitting && (
                   <button
                     className={clsx(
-                      'btn btn-ghost btn-sm absolute right-2 block flex flex-row capitalize',
+                      'btn btn-ghost btn-sm absolute right-2 flex-row capitalize pl-2',
                       parentCommentId || parentAnswerOutcome
                         ? ' bottom-4'
                         : ' bottom-2',
