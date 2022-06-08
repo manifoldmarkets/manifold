@@ -21,6 +21,7 @@
     "@heroicons/react": "1.0.5",
     "@nivo/core": "0.74.0",
     "@nivo/line": "0.74.0",
+    "@react-query-firebase/firestore": "0.4.2",
     "algoliasearch": "4.13.0",
     "clsx": "1.1.1",
     "cors": "2.8.5",
@@ -37,7 +38,8 @@
     "react-dom": "17.0.2",
     "react-expanding-textarea": "2.3.5",
     "react-hot-toast": "^2.2.0",
-    "react-instantsearch-hooks-web": "6.24.1"
+    "react-instantsearch-hooks-web": "6.24.1",
+    "react-query": "3.39.0"
   },
   "devDependencies": {
     "@tailwindcss/forms": "0.4.0",

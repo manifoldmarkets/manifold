@@ -193,7 +193,7 @@ export function ContractPageContent(props: Parameters<typeof ContractPage>[0]) {
           </>
         )}
 
-        {isNumeric && (
+        {isNumeric && allowTrade && (
           <NumericBetPanel className="xl:hidden" contract={contract} />
         )}
 

@@ -17,7 +17,7 @@ import { Title } from './title'
 import { User } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api-call'
-import { sellShares } from 'web/lib/firebase/fn-call'
+import { sellShares } from 'web/lib/firebase/api-call'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel } from './outcome-label'
@@ -398,23 +398,27 @@ export function SellPanel(props: {
     // Sell all shares if remaining shares would be < 1
     const sellAmount = amount === Math.floor(shares) ? shares : amount
 
-    const result = await sellShares({
+    await sellShares({
       shares: sellAmount,
       outcome: sharesOutcome,
       contractId: contract.id,
-    }).then((r) => r.data)
-
-    console.log('Sold shares. Result:', result)
-
-    if (result?.status === 'success') {
-      setIsSubmitting(false)
-      setWasSubmitted(true)
-      setAmount(undefined)
-      if (onSellSuccess) onSellSuccess()
-    } else {
-      setError(result?.message || 'Error selling')
-      setIsSubmitting(false)
-    }
+    })
+      .then((r) => {
+        console.log('Sold shares. Result:', r)
+        setIsSubmitting(false)
+        setWasSubmitted(true)
+        setAmount(undefined)
+        if (onSellSuccess) onSellSuccess()
+      })
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.toString())
+        } else {
+          console.error(e)
+          setError('Error selling')
+        }
+        setIsSubmitting(false)
+      })
   }
 
   const initialProb = getProbability(contract)
