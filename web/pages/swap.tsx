@@ -3,6 +3,7 @@ import {
   calculateLPCost,
   fromProb,
   getSwap3Probability,
+  grossLiquidity,
   noShares,
   sortedTickStates,
   Swap3Pool,
@@ -14,6 +15,7 @@ import { useState } from 'react'
 import { LiquidityGraph } from 'web/components/contract/liquidity-graph'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { addLiquidity } from 'web/lib/firebase/fn-call'
 
 const users: Record<string, any> = {
   alice: {
@@ -94,6 +96,7 @@ function PoolTable(props: { pool: Swap3Pool }) {
             <th className="px-4 py-2">Tick</th>
             <th className="px-4 py-2">Prob</th>
             <th className="px-4 py-2">Net Liquidity</th>
+            <th className="px-4 py-2">Gross Liquidity</th>
           </tr>
         </thead>
         {sortedTickStates(pool).map((tickState, i) => (
@@ -103,6 +106,7 @@ function PoolTable(props: { pool: Swap3Pool }) {
               {formatPercent(toProb(tickState.tick))}
             </td>
             <td className="px-4 py-2">{tickState.liquidityNet}</td>
+            <td className="px-4 py-2">{tickState.liquidityGross}</td>
           </tr>
         ))}
       </table>
@@ -112,23 +116,28 @@ function PoolTable(props: { pool: Swap3Pool }) {
 
 function Graph(props: { pool: Swap3Pool }) {
   const { pool } = props
-  let liquidity = 100 // TODO unhardcode
-  const points = [{ x: 0, y: liquidity }]
+  const points = []
+  let lastGross = 0
   for (const tickState of sortedTickStates(pool)) {
-    points.push({ x: toProb(tickState.tick), y: liquidity })
-    liquidity += tickState.liquidityNet
-    points.push({ x: toProb(tickState.tick), y: liquidity })
+    const { tick, liquidityGross } = tickState
+    points.push({ x: toProb(tick), y: lastGross })
+    points.push({ x: toProb(tick), y: liquidityGross })
+    lastGross = liquidityGross
   }
-  points.push({ x: 1, y: liquidity })
   return <LiquidityGraph points={points} marker={toProb(pool.tick)} />
 }
 
 export default function Swap() {
-  const [pool, setPool] = useState({
-    liquidity: 100,
+  // Set up an initial pool with 100 liquidity from 0% to 100%
+  // TODO: Not sure why maxTick of 2**23 breaks it, but 2**20 is okay...
+  let INIT_POOL: Swap3Pool = {
+    liquidity: 0,
     tick: fromProb(0.3),
     tickStates: [],
-  })
+  }
+  INIT_POOL = addPosition(INIT_POOL, -(2 ** 23), 2 ** 20, 100)
+  INIT_POOL = grossLiquidity(INIT_POOL)
+  const [pool, setPool] = useState(INIT_POOL)
 
   const [minTick, setMinTick] = useState(0)
   const [maxTick, setMaxTick] = useState(0)
@@ -180,6 +189,7 @@ export default function Swap() {
           className="btn"
           onClick={() => {
             addPosition(pool, minTick, maxTick, 100)
+            grossLiquidity(pool)
             setPool({ ...pool })
           }}
         >

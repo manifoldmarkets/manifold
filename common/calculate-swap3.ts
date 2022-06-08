@@ -78,12 +78,9 @@ export function getSwap3Probability(pool: Swap3Pool) {
 
 function calculatePurchase(
   pool: Swap3Pool,
-  amount: number,
+  amount: number, // In M$
   outcome: 'YES' | 'NO'
-) {
-  const shares = 10
-  const newPool = {}
-}
+) {}
 
 export function calculateLPCost(
   curTick: number,
@@ -104,7 +101,6 @@ export function calculateLPCost(
   }
 }
 
-// TODO: Untested
 // Currently, this mutates the pool. Should it return a new object instead?
 export function addPosition(
   pool: Swap3Pool,
@@ -128,7 +124,6 @@ export function addPosition(
   }
 
   minTickState.liquidityNet += deltaL
-  minTickState.liquidityGross += deltaL
   pool.tickStates[minTick] = minTickState
 
   // And remove it as we pass through the larger one
@@ -139,11 +134,18 @@ export function addPosition(
   }
 
   maxTickState.liquidityNet -= deltaL
-  maxTickState.liquidityGross -= deltaL
   pool.tickStates[maxTick] = maxTickState
 
-  // TODO: add deltaL to liquidityGross of tickStates between minTick and maxTick
+  return pool
+}
 
+// This also mutates the pool directly
+export function grossLiquidity(pool: Swap3Pool) {
+  let liquidityGross = 0
+  for (const tickState of sortedTickStates(pool)) {
+    liquidityGross += tickState.liquidityNet
+    tickState.liquidityGross = liquidityGross
+  }
   return pool
 }
 
