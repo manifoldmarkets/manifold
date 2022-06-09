@@ -1,5 +1,6 @@
 import {
   addPosition,
+  buyYes,
   calculateLPCost,
   fromProb,
   getSwap3Probability,
@@ -136,11 +137,14 @@ export default function Swap() {
     tickStates: [],
   }
   INIT_POOL = addPosition(INIT_POOL, -(2 ** 23), 2 ** 20, 100)
+  INIT_POOL = addPosition(INIT_POOL, fromProb(0.32), fromProb(0.35), 100)
   INIT_POOL = grossLiquidity(INIT_POOL)
+
   const [pool, setPool] = useState(INIT_POOL)
 
   const [minTick, setMinTick] = useState(0)
   const [maxTick, setMaxTick] = useState(0)
+  const [buyAmount, setBuyAmount] = useState(0)
 
   const { requiredN, requiredY } = calculateLPCost(
     pool.tick,
@@ -148,6 +152,8 @@ export default function Swap() {
     maxTick,
     100 // deltaL
   )
+
+  const { newPoolTick, yesPurchased } = buyYes(pool, buyAmount)
 
   return (
     <Col className="mx-auto max-w-2xl gap-10 p-4">
@@ -200,10 +206,20 @@ export default function Swap() {
       <Col>
         Bob: Buy Tokens
         {/* <input className="input" placeholder="User" type="text" /> */}
-        <input className="input" placeholder="Amount" type="number" />
+        <input
+          className="input"
+          placeholder="Amount"
+          type="number"
+          onChange={(e) => setBuyAmount(parseFloat(e.target.value))}
+        />
+        <Row className="gap-2 py-2">
+          <div>Y shares purchaseable: {yesPurchased.toFixed(2)}</div>
+          <div>New Tick: {newPoolTick}</div>
+          <div>New prob: {formatPercent(toProb(newPoolTick))}</div>
+        </Row>
         <Row className="gap-2">
           <button className="btn">Buy YES</button>
-          <button className="btn">Buy NO</button>
+          {/* <button className="btn">Buy NO</button> */}
         </Row>
       </Col>
     </Col>

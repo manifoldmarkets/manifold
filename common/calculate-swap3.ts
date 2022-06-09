@@ -89,6 +89,7 @@ export function calculateLPCost(
   deltaL: number
 ) {
   // TODO: this is subtly wrong, because of rounding between curTick and sqrtPrice
+  // Also below in buyYES
   const upperTick = Math.min(maxTick, Math.max(minTick, curTick))
   const costN = toRatio(upperTick) ** 0.5 - toRatio(minTick) ** 0.5
 
@@ -98,6 +99,62 @@ export function calculateLPCost(
   return {
     requiredN: deltaL * costN,
     requiredY: deltaL * costY,
+  }
+}
+
+// Returns a preview of the new pool + number of YES shares purchased.
+// Does NOT modify the pool
+// Hm, logic is pretty complicated. Let's see if we can simplify this.
+export function buyYes(
+  pool: Swap3Pool,
+  amount: number // In M$
+) {
+  const tickStates = sortedTickStates(pool)
+  let tick = pool.tick
+  let stateIndex = 0
+  let amountLeft = amount
+  let yesPurchased = 0
+  while (amountLeft > 0) {
+    // Find the current tick state
+    while (tick >= tickStates[stateIndex + 1].tick) {
+      stateIndex++
+      if (stateIndex > tickStates.length - 2) {
+        // We've reached the end of the tick states...
+        throw new Error('Ran out of tick states')
+      }
+    }
+    const state = tickStates[stateIndex]
+    const nextState = tickStates[stateIndex + 1]
+
+    // Copied from above; TODO extract to common function
+    const noCost = toRatio(nextState.tick) ** 0.5 - toRatio(tick) ** 0.5
+    const yesCost =
+      1 / toRatio(tick) ** 0.5 - 1 / toRatio(nextState.tick) ** 0.5
+
+    if (noCost * state.liquidityGross <= amountLeft) {
+      // We can fully purchase up until the next tick state
+      amountLeft -= noCost * state.liquidityGross
+      yesPurchased += yesCost * state.liquidityGross
+      tick = nextState.tick
+    } else {
+      // Buy as much as we can at the current tick state. Derivation:
+      // noCostLeft = toRatio(upTick) ** 0.5 - toRatio(tick) ** 0.5
+      // (noCostLeft + toRatio(tick) ** 0.5) ** 2 = toRatio(upTick)
+      // TODO check flooring done here
+      const noCostLeft = amountLeft / state.liquidityGross
+      const finalTick = fromRatio((noCostLeft + toRatio(tick) ** 0.5) ** 2)
+      const yesCostLeft =
+        1 / toRatio(tick) ** 0.5 - 1 / toRatio(finalTick) ** 0.5
+
+      amountLeft = 0
+      yesPurchased += yesCostLeft * state.liquidityGross
+      tick = finalTick
+    }
+  }
+
+  return {
+    newPoolTick: tick,
+    yesPurchased,
   }
 }
 
@@ -165,5 +222,9 @@ export function toProb(tick: number) {
 // Returns the tick for a given probability from 0 to 1
 export function fromProb(prob: number) {
   const ratio = prob / (1 - prob)
+  return fromRatio(ratio)
+}
+
+function fromRatio(ratio: number) {
   return Math.floor(Math.log(ratio) / Math.log(1.0001))
 }
