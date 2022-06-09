@@ -26,7 +26,7 @@ export function Avatar(props: {
   return avatarUrl ? (
     <img
       className={clsx(
-        'flex-shrink-0 rounded-full rounded-full bg-white object-cover',
+        'flex-shrink-0 rounded-full bg-white object-cover',
         `w-${s} h-${s}`,
         !noLink && 'cursor-pointer',
         className

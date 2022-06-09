@@ -65,7 +65,7 @@ export function NewContract(props: { question: string; tag?: string }) {
   }, [creator])
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
-  const [initialProb, setInitialProb] = useState(50)
+  const [initialProb] = useState(50)
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
   const [description, setDescription] = useState('')
@@ -90,7 +90,6 @@ export function NewContract(props: { question: string; tag?: string }) {
   const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
   const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
   const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
-  const [probErrorText, setProbErrorText] = useState('')
   const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -192,56 +191,6 @@ export function NewContract(props: { question: string; tag?: string }) {
       )}
 
       <Spacer h={6} />
-
-      {outcomeType === 'BINARY' && (
-        <div className="form-control">
-          <Row className="label justify-start">
-            <span className="mb-1">How likely is it to happen?</span>
-          </Row>
-          <Row className={'justify-start'}>
-            <ChoicesToggleGroup
-              currentChoice={initialProb}
-              setChoice={(option) => {
-                setProbErrorText('')
-                setInitialProb(option as number)
-              }}
-              choicesMap={{
-                Unlikely: 25,
-                'Not Sure': 50,
-                Likely: 75,
-              }}
-              isSubmitting={isSubmitting}
-              className={'col-span-4 sm:col-span-3'}
-            >
-              <Row className={'col-span-3 items-center justify-start'}>
-                <input
-                  type="number"
-                  value={initialProb}
-                  className={
-                    'input-bordered input-md max-w-[100px] rounded-md border-gray-300 pr-2 text-lg'
-                  }
-                  min={5}
-                  max={95}
-                  disabled={isSubmitting}
-                  onChange={(e) => {
-                    // show error if prob is less than 5 or greater than 95:
-                    const prob = parseInt(e.target.value)
-                    setInitialProb(prob)
-                    if (prob < 5 || prob > 95)
-                      setProbErrorText('Probability must be between 5% and 95%')
-                    else setProbErrorText('')
-                  }}
-                />
-                <span className={'ml-1'}>%</span>
-              </Row>
-            </ChoicesToggleGroup>
-          </Row>
-          {probErrorText && (
-            <div className="text-error mt-2 ml-1 text-sm">{probErrorText}</div>
-          )}
-          <Spacer h={6} />
-        </div>
-      )}
 
       {outcomeType === 'NUMERIC' && (
         <div className="form-control items-start">
