@@ -12,6 +12,7 @@ import {
   getDoc,
   updateDoc,
   limit,
+  startAfter,
 } from 'firebase/firestore'
 import { range, sortBy, sum } from 'lodash'
 
@@ -147,8 +148,15 @@ export async function listTaggedContractsCaseInsensitive(
   return snapshot.docs.map((doc) => doc.data() as Contract)
 }
 
-export async function listAllContracts(): Promise<Contract[]> {
-  const q = query(contractCollection, orderBy('createdTime', 'desc'))
+export async function listAllContracts(
+  n: number,
+  before?: string
+): Promise<Contract[]> {
+  let q = query(contractCollection, orderBy('createdTime', 'desc'), limit(n))
+  if (before != null) {
+    const snap = await getDoc(doc(db, 'contracts', before))
+    q = query(q, startAfter(snap))
+  }
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => doc.data() as Contract)
 }

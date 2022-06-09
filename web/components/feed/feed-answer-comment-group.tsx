@@ -1,9 +1,8 @@
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
-import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { formatPercent } from 'common/util/format'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
@@ -23,6 +22,8 @@ import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-ti
 import { useRouter } from 'next/router'
 import { groupBy } from 'lodash'
 import { User } from 'common/user'
+import { useEvent } from 'web/hooks/use-event'
+import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 
 export function FeedAnswerCommentGroup(props: {
   contract: any
@@ -54,42 +55,74 @@ export function FeedAnswerCommentGroup(props: {
       answerComments.map((c) => c.id).includes(comment.replyToCommentId)
   )
   const commentsList = answerComments.concat(commentReplies)
-
-  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
-  const probPercent = formatPercent(prob)
+  const thisAnswerProb = getDpmOutcomeProbability(
+    contract.totalShares,
+    answer.id
+  )
+  const probPercent = formatPercent(thisAnswerProb)
   const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
   const isFreeResponseContractPage = !!commentsByCurrentUser
-  useEffect(() => {
-    const mostRecentCommentableBet = getMostRecentCommentableBet(
-      betsByCurrentUser,
-      commentsByCurrentUser,
-      user,
-      answer.number.toString()
+  const mostRecentCommentableBet = getMostRecentCommentableBet(
+    betsByCurrentUser,
+    commentsByCurrentUser,
+    user,
+    answer.number.toString()
+  )
+  const [usersMostRecentBetTimeAtLoad, setUsersMostRecentBetTimeAtLoad] =
+    useState<number | undefined>(
+      !user ? undefined : mostRecentCommentableBet?.createdTime ?? 0
     )
-    if (mostRecentCommentableBet && !showReply)
+
+  useEffect(() => {
+    if (user && usersMostRecentBetTimeAtLoad === undefined)
+      setUsersMostRecentBetTimeAtLoad(
+        mostRecentCommentableBet?.createdTime ?? 0
+      )
+  }, [
+    mostRecentCommentableBet?.createdTime,
+    user,
+    usersMostRecentBetTimeAtLoad,
+  ])
+
+  const scrollAndOpenReplyInput = useEvent(
+    (comment?: Comment, answer?: Answer) => {
+      setReplyToUsername(comment?.userUsername ?? answer?.username ?? '')
+      setShowReply(true)
+      inputRef?.focus()
+    }
+  )
+
+  useEffect(() => {
+    if (
+      mostRecentCommentableBet &&
+      usersMostRecentBetTimeAtLoad !== undefined &&
+      mostRecentCommentableBet.createdTime > usersMostRecentBetTimeAtLoad &&
+      !showReply
+    )
       scrollAndOpenReplyInput(undefined, answer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [betsByCurrentUser])
+  }, [
+    answer,
+    usersMostRecentBetTimeAtLoad,
+    mostRecentCommentableBet,
+    scrollAndOpenReplyInput,
+    showReply,
+  ])
 
   useEffect(() => {
     // Only show one comment input for a bet at a time
     const usersMostRecentBet = bets
       .filter((b) => b.userId === user?.id)
-      .sort((a, b) => b.createdTime - a.createdTime)[0]
+      .sort((a, b) => b.createdTime - a.createdTime)
     if (
-      usersMostRecentBet &&
-      usersMostRecentBet.outcome !== answer.number.toString()
+      usersMostRecentBet.length > 1 &&
+      usersMostRecentBet[0].outcome !== answer.number.toString()
     ) {
       setShowReply(false)
     }
-  }, [answer.number, bets, user])
-
-  function scrollAndOpenReplyInput(comment?: Comment, answer?: Answer) {
-    setReplyToUsername(comment?.userUsername ?? answer?.username ?? '')
-    setShowReply(true)
-    inputRef?.focus()
-  }
+    // if we pass memoized bets this still runs on every render, which we don't want
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bets.length, user, answer.number])
 
   useEffect(() => {
     if (showReply && inputRef) inputRef.focus()
