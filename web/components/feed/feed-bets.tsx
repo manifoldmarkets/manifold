@@ -1,7 +1,8 @@
+import dayjs from 'dayjs'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { User } from 'common/user'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 import clsx from 'clsx'
@@ -18,10 +19,14 @@ export function FeedBet(props: {
   bet: Bet
   hideOutcome: boolean
   smallAvatar: boolean
-  bettor?: User // If set: reveal bettor identity
 }) {
-  const { contract, bet, hideOutcome, smallAvatar, bettor } = props
-  const { userId } = bet
+  const { contract, bet, hideOutcome, smallAvatar } = props
+  const { userId, createdTime } = bet
+
+  const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const bettor = isBeforeJune2022 ? undefined : useUserById(userId)
+
   const user = useUser()
   const isSelf = user?.id === userId
 
