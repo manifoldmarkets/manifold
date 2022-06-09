@@ -20,7 +20,7 @@ export const onUpdateContract = functions.firestore
         'resolved',
         contractUpdater,
         eventId,
-        contract.question,
+        contract.resolution ?? contract.question,
         contract
       )
     } else if (
