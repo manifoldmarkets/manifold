@@ -69,9 +69,21 @@ export function FeedAnswerCommentGroup(props: {
     user,
     answer.number.toString()
   )
-  const [usersMostRecentBetTimeAtLoad] = useState(
-    mostRecentCommentableBet?.createdTime ?? 0
-  )
+  const [usersMostRecentBetTimeAtLoad, setUsersMostRecentBetTimeAtLoad] =
+    useState<number | undefined>(
+      !user ? undefined : mostRecentCommentableBet?.createdTime ?? 0
+    )
+
+  useEffect(() => {
+    if (user && usersMostRecentBetTimeAtLoad === undefined)
+      setUsersMostRecentBetTimeAtLoad(
+        mostRecentCommentableBet?.createdTime ?? 0
+      )
+  }, [
+    mostRecentCommentableBet?.createdTime,
+    user,
+    usersMostRecentBetTimeAtLoad,
+  ])
 
   const scrollAndOpenReplyInput = useEvent(
     (comment?: Comment, answer?: Answer) => {
@@ -84,6 +96,7 @@ export function FeedAnswerCommentGroup(props: {
   useEffect(() => {
     if (
       mostRecentCommentableBet &&
+      usersMostRecentBetTimeAtLoad !== undefined &&
       mostRecentCommentableBet.createdTime > usersMostRecentBetTimeAtLoad &&
       !showReply
     )
