@@ -42,8 +42,8 @@ export async function getTaggedContracts(tag: string) {
   return taggedContracts.filter((c) => (c.closeTime ?? Infinity) > Date.now())
 }
 
-export async function getRecentBetsAndComments(contract: Contract) {
-  const contractDoc = firestore.collection('contracts').doc(contract.id)
+export async function getRecentBetsAndComments(contractId: string) {
+  const contractDoc = firestore.collection('contracts').doc(contractId)
 
   const [recentBets, recentComments] = await Promise.all([
     getValues<Bet>(
@@ -64,7 +64,6 @@ export async function getRecentBetsAndComments(contract: Contract) {
   ])
 
   return {
-    contract,
     recentBets,
     recentComments,
   }
