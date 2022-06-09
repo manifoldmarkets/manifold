@@ -13,6 +13,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import React, { Fragment } from 'react'
 import { uniqBy, partition, sumBy, groupBy } from 'lodash'
 import { JoinSpans } from 'web/components/join-spans'
+import { UserLink } from '../user-page'
 
 export function FeedBet(props: {
   contract: Contract
@@ -83,8 +84,12 @@ export function BetStatusText(props: {
 
   return (
     <div className="text-sm text-gray-500">
-      <span>{isSelf ? 'You' : bettor ? bettor.name : 'A trader'}</span> {bought}{' '}
-      {money}
+      {bettor ? (
+        <UserLink name={bettor.name} username={bettor.username} />
+      ) : (
+        <span>{isSelf ? 'You' : 'A trader'}</span>
+      )}{' '}
+      {bought} {money}
       {!hideOutcome && (
         <>
           {' '}
