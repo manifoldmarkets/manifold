@@ -114,8 +114,9 @@ export function buyYes(
   let stateIndex = 0
   let amountLeft = amount
   let yesPurchased = 0
-  while (amountLeft > 0) {
-    // Find the current tick state
+  // Stop if there's epsilon M$ left, due to rounding issues
+  while (amountLeft > 1e-6) {
+    // Find the current & next states for this tick
     while (tick >= tickStates[stateIndex + 1].tick) {
       stateIndex++
       if (stateIndex > tickStates.length - 2) {
@@ -126,32 +127,22 @@ export function buyYes(
     const state = tickStates[stateIndex]
     const nextState = tickStates[stateIndex + 1]
 
-    // Copied from above; TODO extract to common function
-    const noCost = toRatio(nextState.tick) ** 0.5 - toRatio(tick) ** 0.5
-    const yesCost =
-      1 / toRatio(tick) ** 0.5 - 1 / toRatio(nextState.tick) ** 0.5
+    // nextState.tick purchases through the bucket; fullTick uses the remaining amountLeft
+    const fullCostN = amountLeft / state.liquidityGross
+    // Note: fullTick is NOT floored here; it's for the sqrtPrice to buy up to
+    const fullTick = fromRatioUnfloored((fullCostN + toRatio(tick) ** 0.5) ** 2)
+    const nextTick = Math.min(nextState.tick, fullTick)
 
-    if (noCost * state.liquidityGross <= amountLeft) {
-      // We can fully purchase up until the next tick state
-      amountLeft -= noCost * state.liquidityGross
-      yesPurchased += yesCost * state.liquidityGross
-      tick = nextState.tick
-    } else {
-      // Buy as much as we can at the current tick state. Derivation:
-      // noCostLeft = toRatio(upTick) ** 0.5 - toRatio(tick) ** 0.5
-      // (noCostLeft + toRatio(tick) ** 0.5) ** 2 = toRatio(upTick)
-      // TODO check flooring done here
-      const noCostLeft = amountLeft / state.liquidityGross
-      const finalTick = fromRatio((noCostLeft + toRatio(tick) ** 0.5) ** 2)
-      const yesCostLeft =
-        1 / toRatio(tick) ** 0.5 - 1 / toRatio(finalTick) ** 0.5
+    // Copied from above; TODO extract to common function?
+    const noCost = toRatio(nextTick) ** 0.5 - toRatio(tick) ** 0.5
+    const yesCost = 1 / toRatio(tick) ** 0.5 - 1 / toRatio(nextTick) ** 0.5
 
-      amountLeft = 0
-      yesPurchased += yesCostLeft * state.liquidityGross
-      tick = finalTick
-    }
+    amountLeft -= noCost * state.liquidityGross
+    yesPurchased += yesCost * state.liquidityGross
+    tick = Math.floor(nextTick)
   }
 
+  // Right now we eat the epsilon amounntLeft as a fee. Could return it, shrug.
   return {
     newPoolTick: tick,
     yesPurchased,
@@ -227,4 +218,8 @@ export function fromProb(prob: number) {
 
 function fromRatio(ratio: number) {
   return Math.floor(Math.log(ratio) / Math.log(1.0001))
+}
+
+function fromRatioUnfloored(ratio: number) {
+  return Math.log(ratio) / Math.log(1.0001)
 }
