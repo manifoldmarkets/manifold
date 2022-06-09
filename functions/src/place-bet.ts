@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { APIError, newEndpoint, validate } from './api'
-import { Contract } from '../../common/contract'
+import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
 import { User } from '../../common/user'
 import {
   BetInfo,
@@ -81,8 +81,13 @@ export const placebet = newEndpoint(['POST'], async (req, [bettor, _]) => {
       }
     })()
 
-    if (newP != null && !isFinite(newP)) {
-      throw new APIError(400, 'Trade rejected due to overflow error.')
+    if (
+      mechanism == 'cpmm-1' &&
+      (!newP ||
+        !isFinite(newP) ||
+        Math.min(...Object.values(contract.pool)) < CPMM_MIN_POOL_QTY)
+    ) {
+      throw new APIError(400, 'Bet too large for current liquidity pool.')
     }
 
     const newBalance = user.balance - amount - loanAmount

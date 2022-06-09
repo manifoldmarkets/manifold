@@ -94,6 +94,9 @@ export type outcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
 export const OUTCOME_TYPES = ['BINARY', 'FREE_RESPONSE', 'NUMERIC'] as const
+
 export const MAX_QUESTION_LENGTH = 480
 export const MAX_DESCRIPTION_LENGTH = 10000
 export const MAX_TAG_LENGTH = 60
+
+export const CPMM_MIN_POOL_QTY = 1e-4
