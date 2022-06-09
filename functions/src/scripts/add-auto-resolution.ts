@@ -22,9 +22,7 @@ async function addAutoResolutionToContracts() {
   console.log('Loaded', contracts.length, 'contracts')
 
   await batchedWaitAll(
-    contracts.map((c) => async () => {
-      addAutoResolutionToContract(c)
-    })
+    contracts.map((c) => () => addAutoResolutionToContract(c))
   )
 }
 

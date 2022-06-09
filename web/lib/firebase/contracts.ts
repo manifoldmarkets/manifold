@@ -43,11 +43,9 @@ export function contractUrl(contract: Contract) {
 }
 
 export function contractMetrics(contract: Contract) {
-  const { createdTime, resolutionTime, isResolved, autoResolutionTime } =
-    contract
+  const { createdTime, resolutionTime, isResolved } = contract
 
   const createdDate = dayjs(createdTime).format('MMM D')
-  const autoResolutionDate = dayjs(autoResolutionTime).format('MMM D')
 
   const resolvedDate = isResolved
     ? dayjs(resolutionTime).format('MMM D')
@@ -55,7 +53,7 @@ export function contractMetrics(contract: Contract) {
 
   const volumeLabel = `${formatMoney(contract.volume)} bet`
 
-  return { volumeLabel, createdDate, autoResolutionDate, resolvedDate }
+  return { volumeLabel, createdDate, resolvedDate }
 }
 
 export function contractPool(contract: Contract) {

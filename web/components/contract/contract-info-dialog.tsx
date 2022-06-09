@@ -91,17 +91,11 @@ export function ContractInfoDialog(props: {
               )}
 
               {autoResolutionTime && !resolutionTime && (
-                <>
-                  <EditableResolutionTime
-                    time={autoResolutionTime}
-                    contract={contract}
-                    isCreator={isCreator}
-                  />
-                  <tr>
-                    <td>Auto resolution</td>
-                    <td>{AUTO_RESOLUTION}</td>
-                  </tr>
-                </>
+                <EditableResolutionTime
+                  time={autoResolutionTime}
+                  contract={contract}
+                  isCreator={isCreator}
+                />
               )}
 
               {resolutionTime && (
