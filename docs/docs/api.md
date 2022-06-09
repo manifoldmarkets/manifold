@@ -40,7 +40,7 @@ Lists all markets, ordered by creation date descending.
 
 Parameters:
 
-- `n`: Optional. How many markets to return. The maximum and the default is 1000.
+- `limit`: Optional. How many markets to return. The maximum and the default is 1000.
 - `before`: Optional. The ID of the market before which the list will start. For
   example, if you ask for the most recent 10 markets, and then perform a second
   query for 10 more markets with `before=[the id of the 10th market]`, you will
@@ -50,7 +50,7 @@ Requires no authorization.
 
 - Example request
   ```
-  http://manifold.markets/api/v0/markets?n=1
+  http://manifold.markets/api/v0/markets?limit=1
   ```
 - Example response
   ```json

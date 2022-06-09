@@ -10,7 +10,7 @@ export default async function handler(
 ) {
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
   let before: string | undefined
-  let n: number | undefined
+  let limit: number | undefined
   if (req.query.before != null) {
     if (typeof req.query.before !== 'string') {
       res.status(400).json({ error: 'before must be null or a market ID.' })
@@ -18,24 +18,24 @@ export default async function handler(
     }
     before = req.query.before
   }
-  if (req.query.n != null) {
-    if (typeof req.query.n !== 'string') {
+  if (req.query.limit != null) {
+    if (typeof req.query.limit !== 'string') {
       res
         .status(400)
-        .json({ error: 'n must be null or a number of markets to return.' })
+        .json({ error: 'limit must be null or a number of markets to return.' })
       return
     }
-    n = parseInt(req.query.n)
+    limit = parseInt(req.query.limit)
   } else {
-    n = 1000
+    limit = 1000
   }
-  if (n < 1 || n > 1000) {
-    res.status(400).json({ error: 'n must be between 1 and 1000.' })
+  if (limit < 1 || limit > 1000) {
+    res.status(400).json({ error: 'limit must be between 1 and 1000.' })
     return
   }
 
   try {
-    const contracts = await listAllContracts(n, before)
+    const contracts = await listAllContracts(limit, before)
     // Serve from Vercel cache, then update. see https://vercel.com/docs/concepts/functions/edge-caching
     res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate')
     res.status(200).json(contracts.map(toLiteMarket))
