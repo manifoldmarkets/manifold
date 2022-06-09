@@ -30,8 +30,12 @@ import { UsersIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
 import {
+  BinaryOutcomeLabel,
+  CancelLabel,
   FreeResponseOutcomeLabel,
+  MultiLabel,
   OutcomeLabel,
+  ProbPercentLabel,
 } from 'web/components/outcome-label'
 import {
   groupNotifications,
@@ -746,26 +750,39 @@ function NotificationTextLabel(props: {
       sourceType,
       sourceUpdateType,
       contract
-    ) &&
-    contract?.resolution
+    )
   ) {
-    if (contract.outcomeType === 'FREE_RESPONSE') {
+    if (sourceText) {
+      if (sourceText === 'YES' || sourceText == 'NO') {
+        return <BinaryOutcomeLabel outcome={sourceText as any} />
+      }
+      if (sourceText.includes('%'))
+        return (
+          <ProbPercentLabel prob={parseFloat(sourceText.replace('%', ''))} />
+        )
+      if (sourceText === 'CANCEL') return <CancelLabel />
+      if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
+      // Show free response answer text
+      return <span>{sourceText}</span>
+    } else if (contract?.resolution) {
+      if (contract.outcomeType === 'FREE_RESPONSE') {
+        return (
+          <FreeResponseOutcomeLabel
+            contract={contract}
+            resolution={contract.resolution}
+            truncate={'long'}
+            answerClassName={className}
+          />
+        )
+      }
       return (
-        <FreeResponseOutcomeLabel
+        <OutcomeLabel
           contract={contract}
-          resolution={contract.resolution}
+          outcome={contract.resolution}
           truncate={'long'}
-          answerClassName={className}
         />
       )
-    }
-    return (
-      <OutcomeLabel
-        contract={contract}
-        outcome={contract.resolution}
-        truncate={'long'}
-      />
-    )
+    } else return <div />
   } else if (sourceType === 'contract') {
     return (
       <div className={clsx('text-indigo-700 hover:underline', className)}>
