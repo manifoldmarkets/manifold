@@ -441,7 +441,7 @@ export function CommentInput(props: {
                     ? 'Write a reply... '
                     : 'Write a comment...'
                 }
-                autoFocus={true}
+                autoFocus={focused}
                 onFocus={() => setFocused(true)}
                 onBlur={() =>
                   shouldCollapseAfterClickOutside && setFocused(false)
