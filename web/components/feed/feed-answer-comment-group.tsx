@@ -2,7 +2,7 @@ import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { formatPercent } from 'common/util/format'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
@@ -113,14 +113,16 @@ export function FeedAnswerCommentGroup(props: {
     // Only show one comment input for a bet at a time
     const usersMostRecentBet = bets
       .filter((b) => b.userId === user?.id)
-      .sort((a, b) => b.createdTime - a.createdTime)[0]
+      .sort((a, b) => b.createdTime - a.createdTime)
     if (
-      usersMostRecentBet &&
-      usersMostRecentBet.outcome !== answer.number.toString()
+      usersMostRecentBet.length > 1 &&
+      usersMostRecentBet[0].outcome !== answer.number.toString()
     ) {
       setShowReply(false)
     }
-  }, [answer.number, bets, user])
+    // if we pass memoized bets this still runs on every render, which we don't want
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bets.length, user, answer.number])
 
   useEffect(() => {
     if (showReply && inputRef) inputRef.focus()
