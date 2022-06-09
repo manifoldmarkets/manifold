@@ -15,7 +15,7 @@ export function FollowButton(props: {
   const user = useUser()
 
   const smallStyle =
-    'btn !btn-xs border-2 border-gray-600 bg-white normal-case text-gray-600 hover:border-gray-600 hover:bg-white hover:text-gray-600'
+    'btn !btn-xs border-2 border-gray-500 bg-white normal-case text-gray-500 hover:border-gray-500 hover:bg-white hover:text-gray-500'
 
   if (!user || isFollowing === undefined)
     return (
