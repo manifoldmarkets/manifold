@@ -14,13 +14,25 @@ export const onUpdateContract = functions.firestore
 
     const previousValue = change.before.data() as Contract
     if (previousValue.isResolved !== contract.isResolved) {
+      let resolutionText = contract.resolution ?? contract.question
+      if (contract.outcomeType === 'FREE_RESPONSE') {
+        const answerText = contract.answers.find(
+          (answer) => answer.id === contract.resolution
+        )?.text
+        if (answerText) resolutionText = answerText
+      } else if (contract.outcomeType === 'BINARY') {
+        if (resolutionText === 'MKT' && contract.resolutionProbability)
+          resolutionText = `${contract.resolutionProbability}%`
+        else if (resolutionText === 'MKT') resolutionText = 'PROB'
+      }
+
       await createNotification(
         contract.id,
         'contract',
         'resolved',
         contractUpdater,
         eventId,
-        contract.resolution ?? contract.question,
+        resolutionText,
         contract
       )
     } else if (
