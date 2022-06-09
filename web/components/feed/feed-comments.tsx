@@ -2,8 +2,18 @@ import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
-import React, { useEffect, useState } from 'react'
-import { minBy, maxBy, groupBy, partition, sumBy, Dictionary } from 'lodash'
+import React, { useEffect, useMemo, useState } from 'react'
+import {
+  minBy,
+  maxBy,
+  groupBy,
+  partition,
+  sumBy,
+  sum,
+  debounce,
+  Dictionary,
+  flow,
+} from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -24,6 +34,13 @@ import { Col } from 'web/components/layout/col'
 import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
+import {
+  ChevronDoubleRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from '@heroicons/react/solid'
+import { invQuad, quad } from 'web/lib/util/math'
+import Tooltip from '../tooltip'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -256,16 +273,113 @@ export function FeedComment(props: {
           moreHref={contractPath(contract)}
           shouldTruncate={truncate}
         />
-        {onReplyClick && (
-          <button
-            className={'text-xs font-bold text-gray-500 hover:underline'}
-            onClick={() => onReplyClick(comment)}
-          >
-            Reply
-          </button>
-        )}
+        <Row className="mt-2 gap-4 text-gray-500">
+          <Tipper contract={contract} comment={comment} />
+
+          {onReplyClick && (
+            <button
+              className={'text-xs font-bold  hover:underline'}
+              onClick={() => onReplyClick(comment)}
+            >
+              Reply
+            </button>
+          )}
+        </Row>
       </div>
     </Row>
+  )
+}
+
+function Tipper(prop: { contract: Contract; comment: Comment }) {
+  const { contract, comment } = prop
+  const { tips = {} } = comment
+
+  const me = useUser()
+  const myId = me?.id || ''
+  const savedTip = tips[myId] || 0
+
+  // optimistically increase the tip count, but debounce the update
+  const [localTip, setLocalTip] = useState(savedTip)
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const score = useMemo(
+    flow(
+      () => ({ ...tips, [myId]: localTip }),
+      Object.values,
+      (x) => x.map(invQuad),
+      sum
+    ),
+    [localTip]
+  )
+
+  const saveTip = debounce((tip: number) => {
+    if (tip === savedTip) {
+      return
+    }
+
+    const change = tip - savedTip
+
+    console.log('updated tip:', change, ' to:', tip)
+    // TODO: save to firebase
+  }, 1000)
+
+  const changeTip = (tip: number) => {
+    setLocalTip(tip)
+    saveTip(tip)
+  }
+
+  return (
+    <Row className="items-center">
+      <DownTip value={localTip} onChange={changeTip} />
+      <span className="mx-1">{score} </span>
+      <UpTip value={localTip} onChange={changeTip} />
+      {localTip === 0 ? (
+        ''
+      ) : (
+        <span className={localTip > 0 ? 'text-primary' : 'text-red-400'}>
+          ({formatMoney(localTip)} tip)
+        </span>
+      )}
+    </Row>
+  )
+}
+
+function DownTip(prop: { value: number; onChange: (tip: number) => void }) {
+  const { onChange, value } = prop
+  const marginal = 5 * invQuad(value)
+  const disabled = value === 0
+  return (
+    <Tooltip text={!disabled && `refund ${formatMoney(marginal)}`}>
+      <button
+        className="flex h-max items-center hover:text-red-600 disabled:text-gray-300"
+        disabled={disabled}
+        onClick={() => onChange(value - marginal)}
+      >
+        <ChevronLeftIcon className="h-7 w-7" />
+      </button>
+    </Tooltip>
+  )
+}
+
+function UpTip(prop: { value: number; onChange: (tip: number) => void }) {
+  const { onChange, value } = prop
+  const marginal = 5 * invQuad(value) + 5
+
+  return (
+    <Tooltip text={`pay ${formatMoney(marginal)}`}>
+      <button
+        className="hover:text-primary flex h-max items-center"
+        onClick={() => onChange(value + marginal)}
+      >
+        {value >= quad(2) ? (
+          <ChevronDoubleRightIcon className="text-primary h-7 w-7" />
+        ) : value > 0 ? (
+          <ChevronRightIcon className="text-primary h-7 w-7" />
+        ) : (
+          <ChevronRightIcon className="h-7 w-7" />
+        )}
+      </button>
+    </Tooltip>
   )
 }
 
