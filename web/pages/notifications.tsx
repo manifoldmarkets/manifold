@@ -685,7 +685,7 @@ function NotificationItem(props: {
                       sourceUpdateType,
                       contract
                     )}
-                    <span className={'mx-1 font-bold hover:underline'}>
+                    <span className={'mx-1 font-bold'}>
                       {contract?.question || sourceContractTitle}
                     </span>
                   </div>
@@ -762,14 +762,8 @@ function NotificationTextLabel(props: {
         )
       if (sourceText === 'CANCEL') return <CancelLabel />
       if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
-      return (
-        <span
-          style={{ wordBreak: 'break-word' }}
-          className={clsx('whitespace-pre-line break-words', className)}
-        >
-          {sourceText}
-        </span>
-      )
+      // Show free response answer text
+      return <span>{sourceText}</span>
     } else if (contract?.resolution) {
       if (contract.outcomeType === 'FREE_RESPONSE') {
         return (
