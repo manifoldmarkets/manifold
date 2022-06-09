@@ -23,6 +23,7 @@ import { useRouter } from 'next/router'
 import { groupBy } from 'lodash'
 import { User } from 'common/user'
 import { useEvent } from 'web/hooks/use-event'
+import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 
 export function FeedAnswerCommentGroup(props: {
   contract: any
@@ -54,9 +55,10 @@ export function FeedAnswerCommentGroup(props: {
       answerComments.map((c) => c.id).includes(comment.replyToCommentId)
   )
   const commentsList = answerComments.concat(commentReplies)
-  const thisAnswerProb = bets
-    .filter((bet) => bet.outcome === answer.number.toString())
-    .sort((a, b) => b.createdTime - a.createdTime)[0].probAfter
+  const thisAnswerProb = getDpmOutcomeProbability(
+    contract.totalShares,
+    answer.id
+  )
   const probPercent = formatPercent(thisAnswerProb)
   const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
@@ -67,7 +69,7 @@ export function FeedAnswerCommentGroup(props: {
     user,
     answer.number.toString()
   )
-  const [mostRecentBetTimeAtLoad] = useState(
+  const [usersMostRecentBetTimeAtLoad] = useState(
     mostRecentCommentableBet?.createdTime ?? 0
   )
 
@@ -82,13 +84,13 @@ export function FeedAnswerCommentGroup(props: {
   useEffect(() => {
     if (
       mostRecentCommentableBet &&
-      mostRecentCommentableBet.createdTime > mostRecentBetTimeAtLoad &&
+      mostRecentCommentableBet.createdTime > usersMostRecentBetTimeAtLoad &&
       !showReply
     )
       scrollAndOpenReplyInput(undefined, answer)
   }, [
     answer,
-    mostRecentBetTimeAtLoad,
+    usersMostRecentBetTimeAtLoad,
     mostRecentCommentableBet,
     scrollAndOpenReplyInput,
     showReply,
