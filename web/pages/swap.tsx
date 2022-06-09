@@ -115,8 +115,8 @@ function PoolTable(props: { pool: Swap3Pool }) {
   )
 }
 
-function Graph(props: { pool: Swap3Pool }) {
-  const { pool } = props
+function Graph(props: { pool: Swap3Pool; previewMarker?: number }) {
+  const { pool, previewMarker } = props
   const points = []
   let lastGross = 0
   for (const tickState of sortedTickStates(pool)) {
@@ -125,7 +125,13 @@ function Graph(props: { pool: Swap3Pool }) {
     points.push({ x: toProb(tick), y: liquidityGross })
     lastGross = liquidityGross
   }
-  return <LiquidityGraph points={points} marker={toProb(pool.tick)} />
+  return (
+    <LiquidityGraph
+      points={points}
+      marker={toProb(pool.tick)}
+      previewMarker={previewMarker}
+    />
+  )
 }
 
 export default function Swap() {
@@ -159,7 +165,12 @@ export default function Swap() {
     <Col className="mx-auto max-w-2xl gap-10 p-4">
       {/* <BalanceTable /> */}
       <PoolTable pool={pool} />
-      <Graph pool={pool} />
+      <Graph
+        pool={pool}
+        previewMarker={
+          newPoolTick === pool.tick ? undefined : toProb(newPoolTick)
+        }
+      />
       <input
         className="input"
         placeholder="Current%"

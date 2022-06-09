@@ -1,4 +1,4 @@
-import { DatumValue } from '@nivo/core'
+import { CartesianMarkerProps, DatumValue } from '@nivo/core'
 import { Point, ResponsiveLine } from '@nivo/line'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { memo } from 'react'
@@ -22,8 +22,9 @@ export const LiquidityGraph = memo(function NumericGraph(props: {
   points: GraphPoint[]
   height?: number
   marker?: number // Value between min and max to highlight on x-axis
+  previewMarker?: number
 }) {
-  const { height, min, max, points, marker } = props
+  const { height, min, max, points, marker, previewMarker } = props
 
   // Really maxLiquidity
   const maxLiquidity = 500
@@ -40,6 +41,23 @@ export const LiquidityGraph = memo(function NumericGraph(props: {
   const { width } = useWindowSize()
 
   const numXTickValues = !width || width < 800 ? 2 : 5
+
+  const markers: CartesianMarkerProps<DatumValue>[] = []
+  if (marker) {
+    markers.push({
+      axis: 'x',
+      value: marker,
+      lineStyle: { stroke: '#000', strokeWidth: 2 },
+      legend: `Implied: ${formatPercent(marker)}`,
+    })
+  }
+  if (previewMarker) {
+    markers.push({
+      axis: 'x',
+      value: previewMarker,
+      lineStyle: { stroke: '#8888', strokeWidth: 2 },
+    })
+  }
 
   return (
     <div
@@ -74,18 +92,7 @@ export const LiquidityGraph = memo(function NumericGraph(props: {
         enableGridX={!!width && width >= 800}
         enableArea
         margin={{ top: 20, right: 28, bottom: 22, left: 50 }}
-        markers={
-          marker
-            ? [
-                {
-                  axis: 'x',
-                  value: marker,
-                  lineStyle: { stroke: '#000', strokeWidth: 2 },
-                  legend: `Implied: ${formatPercent(marker)}`,
-                },
-              ]
-            : []
-        }
+        markers={markers}
       />
     </div>
   )
