@@ -44,6 +44,7 @@ import {
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { CheckIcon, XIcon } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
+import { formatMoney, formatPercent } from 'common/util/format'
 
 export default function Notifications() {
   const user = useUser()
@@ -565,7 +566,7 @@ function NotificationItem(props: {
       sourceType === 'contract'
     ) {
       try {
-        parseNotificationText(
+        parseOldStyleNotificationText(
           sourceId,
           sourceContractId,
           sourceType,
@@ -619,7 +620,7 @@ function NotificationItem(props: {
     }
   }
 
-  async function parseNotificationText(
+  async function parseOldStyleNotificationText(
     sourceId: string,
     sourceContractId: string,
     sourceType: 'answer' | 'comment' | 'contract',
@@ -772,61 +773,54 @@ function NotificationTextLabel(props: {
   const { contract, className, defaultText, notification, justSummary } = props
   const { sourceUpdateType, sourceType, sourceText, sourceContractTitle } =
     notification
-  if (!contract && !sourceText && sourceType !== 'follow')
-    return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
-
-  if (
-    isNotificationAboutContractResolution(
-      sourceType,
-      sourceUpdateType,
-      contract
-    )
-  ) {
-    if (sourceText) {
-      if (sourceText === 'YES' || sourceText == 'NO') {
-        return <BinaryOutcomeLabel outcome={sourceText as any} />
-      }
-      if (sourceText.includes('%'))
-        return (
-          <ProbPercentLabel prob={parseFloat(sourceText.replace('%', ''))} />
-        )
-      if (sourceText === 'CANCEL') return <CancelLabel />
-      if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
-      // Show free response answer text
-      return <span>{sourceText}</span>
-    } else if (contract?.resolution) {
-      if (contract.outcomeType === 'FREE_RESPONSE') {
-        return (
-          <FreeResponseOutcomeLabel
-            contract={contract}
-            resolution={contract.resolution}
-            truncate={'long'}
-            answerClassName={className}
-          />
-        )
-      }
-      return (
-        <OutcomeLabel
-          contract={contract}
-          outcome={contract.resolution}
-          truncate={'long'}
-        />
-      )
-    } else return <div />
-  } else if (sourceType === 'contract') {
+  if (sourceType === 'contract') {
     if (justSummary)
       return <span>{contract?.question || sourceContractTitle}</span>
-    // Ignore contract update source text until we improve them
-    return <div />
-  } else {
+    if (!sourceText) return <div />
+    // Resolved contracts
+    if (
+      isNotificationAboutContractResolution(
+        sourceType,
+        sourceUpdateType,
+        contract
+      )
+    ) {
+      {
+        if (sourceText === 'YES' || sourceText == 'NO') {
+          return <BinaryOutcomeLabel outcome={sourceText as any} />
+        }
+        if (sourceText.includes('%'))
+          return (
+            <ProbPercentLabel prob={parseFloat(sourceText.replace('%', ''))} />
+          )
+        if (sourceText === 'CANCEL') return <CancelLabel />
+        if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
+      }
+    }
+    // Close date will be a number - it looks better without it
+    if (sourceUpdateType === 'closed') {
+      return <div />
+    }
+    // Updated contracts
+    // Description will be in default text
+    if (parseInt(sourceText) > 0) {
+      return (
+        <span>
+          Updated close time: {new Date(parseInt(sourceText)).toLocaleString()}
+        </span>
+      )
+    }
+  } else if (sourceType === 'liquidity' && sourceText) {
     return (
-      <div
-        className={className ? className : 'line-clamp-4 whitespace-pre-line'}
-      >
-        <Linkify text={defaultText} />
-      </div>
+      <span className="text-blue-400">{formatMoney(parseInt(sourceText))}</span>
     )
   }
+  // return default text
+  return (
+    <div className={className ? className : 'line-clamp-4 whitespace-pre-line'}>
+      <Linkify text={defaultText} />
+    </div>
+  )
 }
 
 function getReasonForShowingNotification(
@@ -865,6 +859,8 @@ function getReasonForShowingNotification(
         )
       )
         reasonText = `resolved`
+      else if (sourceUpdateType === 'closed')
+        reasonText = `please resolve your question`
       else reasonText = `updated`
       break
     case 'answer':
@@ -879,6 +875,9 @@ function getReasonForShowingNotification(
       break
     case 'follow':
       reasonText = 'followed you'
+      break
+    case 'liquidity':
+      reasonText = 'added liquidity to your question'
       break
     default:
       reasonText = ''

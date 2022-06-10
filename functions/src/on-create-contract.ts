@@ -18,7 +18,7 @@ export const onCreateContract = functions.firestore
       'created',
       contractCreator,
       eventId,
-      contract.question,
+      contract.description,
       contract
     )
   })

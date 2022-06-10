@@ -4,8 +4,9 @@ import * as admin from 'firebase-admin'
 import { Contract } from '../../common/contract'
 import { getPrivateUser, getUserByUsername } from './utils'
 import { sendMarketCloseEmail } from './emails'
+import { createNotification } from './create-notification'
 
-export const marketCloseEmails = functions
+export const marketCloseNotifications = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
   .pubsub.schedule('every 1 hours')
   .onRun(async () => {
@@ -56,5 +57,14 @@ async function sendMarketCloseEmails() {
     if (!privateUser) continue
 
     await sendMarketCloseEmail(user, privateUser, contract)
+    await createNotification(
+      contract.id,
+      'contract',
+      'closed',
+      user,
+      'closed' + contract.id.slice(6, contract.id.length),
+      contract.closeTime?.toString() ?? new Date().toString(),
+      contract
+    )
   }
 }
