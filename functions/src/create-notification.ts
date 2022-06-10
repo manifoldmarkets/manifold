@@ -161,9 +161,13 @@ export const createNotification = async (
 
   const notifyContractCreator = async (
     userToReasonTexts: user_to_reason_texts,
-    sourceContract: Contract
+    sourceContract: Contract,
+    options?: { force: boolean }
   ) => {
-    if (shouldGetNotification(sourceContract.creatorId, userToReasonTexts))
+    if (
+      options?.force ||
+      shouldGetNotification(sourceContract.creatorId, userToReasonTexts)
+    )
       userToReasonTexts[sourceContract.creatorId] = {
         reason: 'on_users_contract',
       }
@@ -261,6 +265,10 @@ export const createNotification = async (
         await notifyOtherCommentersOnContract(userToReasonTexts, sourceContract)
       } else if (sourceType === 'contract' && sourceUpdateType === 'created') {
         await notifyUsersFollowers(userToReasonTexts)
+      } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
+        await notifyContractCreator(userToReasonTexts, sourceContract, {
+          force: true,
+        })
       } else if (sourceType === 'liquidity' && sourceUpdateType === 'created') {
         await notifyContractCreator(userToReasonTexts, sourceContract)
       }

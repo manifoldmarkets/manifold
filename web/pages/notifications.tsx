@@ -566,7 +566,7 @@ function NotificationItem(props: {
       sourceType === 'contract'
     ) {
       try {
-        parseNotificationText(
+        parseOldStyleNotificationText(
           sourceId,
           sourceContractId,
           sourceType,
@@ -620,7 +620,7 @@ function NotificationItem(props: {
     }
   }
 
-  async function parseNotificationText(
+  async function parseOldStyleNotificationText(
     sourceId: string,
     sourceContractId: string,
     sourceType: 'answer' | 'comment' | 'contract',
@@ -797,13 +797,12 @@ function NotificationTextLabel(props: {
         if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
       }
     }
+    // Close date will be a number - it looks better without it
     if (sourceUpdateType === 'closed') {
-      // TODO: implement closed contract notification
-      return <span>Please resolve your market!</span>
+      return <div />
     }
     // Updated contracts
     // Description will be in default text
-    // Close date will be a number
     if (parseInt(sourceText) > 0) {
       return (
         <span>
@@ -860,6 +859,8 @@ function getReasonForShowingNotification(
         )
       )
         reasonText = `resolved`
+      else if (sourceUpdateType === 'closed')
+        reasonText = `please resolve your question`
       else reasonText = `updated`
       break
     case 'answer':
