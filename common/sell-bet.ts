@@ -1,6 +1,5 @@
 import { Bet } from './bet'
 import {
-  getDpmProbability,
   calculateDpmShareValue,
   deductDpmFees,
   getDpmOutcomeProbability,
