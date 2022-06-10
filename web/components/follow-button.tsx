@@ -57,7 +57,7 @@ export function UserFollowButton(props: { userId: string; small?: boolean }) {
   const following = useFollows(currentUser?.id)
   const isFollowing = following?.includes(userId)
 
-  if (!currentUser) return null
+  if (!currentUser || currentUser.id === userId) return null
 
   return (
     <FollowButton
