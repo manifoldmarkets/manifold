@@ -38,7 +38,7 @@ export function CopyLinkDateTimeComponent(props: {
     <div className={clsx('inline', className)}>
       <DateTimeTooltip time={createdTime}>
         <Link
-          href={`/${contractCreatorUsername}/${contractCreatorUsername}#${elementId}`}
+          href={`/${contractCreatorUsername}/${contractSlug}#${elementId}`}
           passHref={true}
         >
           <a
