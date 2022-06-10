@@ -7,7 +7,6 @@ import { memo } from 'react'
 import { Bet } from 'common/bet'
 import { FreeResponseContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
-import { useBets } from 'web/hooks/use-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
 const NUM_LINES = 6
@@ -17,10 +16,8 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
   bets: Bet[]
   height?: number
 }) {
-  const { contract, height } = props
+  const { contract, bets, height } = props
   const { createdTime, resolutionTime, closeTime, answers } = contract
-
-  const bets = useBets(contract.id) ?? props.bets
 
   const { probsByOutcome, sortedOutcomes } = computeProbsByOutcome(
     bets,
