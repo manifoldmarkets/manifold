@@ -134,6 +134,67 @@ function Graph(props: { pool: Swap3Pool; previewMarker?: number }) {
   )
 }
 
+function LiquidityPanel(props: {
+  pool: Swap3Pool
+  setPool: (pool: Swap3Pool) => void
+}) {
+  const { pool, setPool } = props
+  const [minTick, setMinTick] = useState(0)
+  const [maxTick, setMaxTick] = useState(0)
+  const [deltaL, setDeltaL] = useState(100)
+
+  const { requiredN, requiredY } = calculateLPCost(
+    pool.tick,
+    minTick,
+    maxTick,
+    deltaL
+  )
+
+  return (
+    <Col>
+      <h2 className="my-2 text-xl">Add liquidity</h2>
+      {/* <input className="input" placeholder="Amount" type="number" /> */}
+      <Row className="gap-2">
+        <input
+          className="input"
+          placeholder="Min%"
+          type="number"
+          onChange={(e) => setMinTick(inputPercentToTick(e))}
+        />
+        {/* Min Tick: {minTick} */}
+        <input
+          className="input"
+          placeholder="Max%"
+          type="number"
+          onChange={(e) => setMaxTick(inputPercentToTick(e))}
+        />
+        {/* Max Tick: {maxTick} */}
+        <input
+          className="input"
+          placeholder="delta Liquidity"
+          type="number"
+          value={deltaL}
+          onChange={(e) => setDeltaL(parseFloat(e.target.value))}
+        />
+      </Row>
+      <Row className="gap-2 py-2">
+        <div>Y required: {requiredY.toFixed(2)}</div>
+        <div>N required: {requiredN.toFixed(2)}</div>{' '}
+      </Row>
+      <button
+        className="btn"
+        onClick={() => {
+          addPosition(pool, minTick, maxTick, deltaL)
+          grossLiquidity(pool)
+          setPool({ ...pool })
+        }}
+      >
+        Create pool
+      </button>
+    </Col>
+  )
+}
+
 export default function Swap() {
   // Set up an initial pool with 100 liquidity from 0% to 100%
   // TODO: Not sure why maxTick of 2**23 breaks it, but 2**20 is okay...
@@ -147,18 +208,7 @@ export default function Swap() {
   INIT_POOL = grossLiquidity(INIT_POOL)
 
   const [pool, setPool] = useState(INIT_POOL)
-
-  const [minTick, setMinTick] = useState(0)
-  const [maxTick, setMaxTick] = useState(0)
-  const [deltaL, setDeltaL] = useState(100)
   const [buyAmount, setBuyAmount] = useState(0)
-
-  const { requiredN, requiredY } = calculateLPCost(
-    pool.tick,
-    minTick,
-    maxTick,
-    deltaL
-  )
 
   const { newPoolTick, yesPurchased } = buyYes(pool, buyAmount)
 
@@ -182,47 +232,7 @@ export default function Swap() {
         }}
       />
 
-      <Col>
-        <h2 className="my-2 text-xl">Add liquidity</h2>
-        {/* <input className="input" placeholder="Amount" type="number" /> */}
-        <Row className="gap-2">
-          <input
-            className="input"
-            placeholder="Min%"
-            type="number"
-            onChange={(e) => setMinTick(inputPercentToTick(e))}
-          />
-          {/* Min Tick: {minTick} */}
-          <input
-            className="input"
-            placeholder="Max%"
-            type="number"
-            onChange={(e) => setMaxTick(inputPercentToTick(e))}
-          />
-          {/* Max Tick: {maxTick} */}
-          <input
-            className="input"
-            placeholder="delta Liquidity"
-            type="number"
-            value={deltaL}
-            onChange={(e) => setDeltaL(parseFloat(e.target.value))}
-          />
-        </Row>
-        <Row className="gap-2 py-2">
-          <div>Y required: {requiredY.toFixed(2)}</div>
-          <div>N required: {requiredN.toFixed(2)}</div>{' '}
-        </Row>
-        <button
-          className="btn"
-          onClick={() => {
-            addPosition(pool, minTick, maxTick, 100)
-            grossLiquidity(pool)
-            setPool({ ...pool })
-          }}
-        >
-          Create pool
-        </button>
-      </Col>
+      <LiquidityPanel pool={pool} setPool={setPool} />
 
       <Col>
         <h2 className="my-2 text-xl">Limit Order</h2>
