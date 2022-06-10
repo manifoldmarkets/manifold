@@ -37,6 +37,7 @@ import {
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
 import { SignUpPrompt } from './sign-up-prompt'
+import { isIOS } from 'web/lib/util/device'
 
 export function BetPanel(props: {
   contract: BinaryContract
@@ -203,7 +204,10 @@ function BuyPanel(props: {
   const [inputRef, focusAmountInput] = useFocus()
 
   useEffect(() => {
-    if (selected) focusAmountInput()
+    if (selected) {
+      if (isIOS()) window.scrollTo(0, window.scrollY + 200)
+      focusAmountInput()
+    }
   }, [selected, focusAmountInput])
 
   function onBetChoice(choice: 'YES' | 'NO') {
