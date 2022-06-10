@@ -48,11 +48,10 @@ export function FeedAnswerCommentGroup(props: {
   const commentsList = comments.filter(
     (comment) => comment.answerOutcome === answer.number.toString()
   )
-  const thisAnswerProb =
-    bets
-      .filter((b) => b.outcome === answer.number.toString())
-      .sort((a, b) => b.createdTime - a.createdTime)[0]?.probAfter ||
-    getDpmOutcomeProbability(contract.totalShares, answer.id)
+  const thisAnswerProb = getDpmOutcomeProbability(
+    contract.totalShares,
+    answer.id
+  )
   const probPercent = formatPercent(thisAnswerProb)
   const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
