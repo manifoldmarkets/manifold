@@ -477,7 +477,7 @@ export function WasabiCharts() {
       <Spacer h={4} />
       <iframe
         className="w-full"
-        height={12000}
+        height={21000}
         src="https://wasabipesto.com/jupyter/manifold/"
         frameBorder="0"
         style={{ border: 0 }}
