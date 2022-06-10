@@ -9,7 +9,7 @@ import { uniqBy } from 'lodash'
 import { useState } from 'react'
 import { Bet } from 'common/bet'
 
-import { AUTO_RESOLUTION, Contract, contractField } from 'common/contract'
+import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import {
   contractPath,
