@@ -228,7 +228,9 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
 
   const { userProfits, top5Ids } = useMemo(() => {
     // Create a map of userIds to total profits (including sales)
-    const betsByUser = groupBy(bets, 'userId')
+    const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
+    const betsByUser = groupBy(openBets, 'userId')
+
     const userProfits = mapValues(betsByUser, (bets) =>
       sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
     )
@@ -242,7 +244,6 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
   }, [contract, bets])
 
   useEffect(() => {
-    console.log('foo')
     if (top5Ids.length > 0) {
       listUsers(top5Ids).then((users) => {
         const sortedUsers = sortBy(users, (user) => -userProfits[user.id])
