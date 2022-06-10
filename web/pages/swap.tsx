@@ -150,13 +150,14 @@ export default function Swap() {
 
   const [minTick, setMinTick] = useState(0)
   const [maxTick, setMaxTick] = useState(0)
+  const [deltaL, setDeltaL] = useState(100)
   const [buyAmount, setBuyAmount] = useState(0)
 
   const { requiredN, requiredY } = calculateLPCost(
     pool.tick,
     minTick,
     maxTick,
-    100 // deltaL
+    deltaL
   )
 
   const { newPoolTick, yesPurchased } = buyYes(pool, buyAmount)
@@ -182,25 +183,34 @@ export default function Swap() {
       />
 
       <Col>
-        Alice: Add liquidity
+        <h2 className="my-2 text-xl">Add liquidity</h2>
         {/* <input className="input" placeholder="Amount" type="number" /> */}
-        <input
-          className="input"
-          placeholder="Min%"
-          type="number"
-          onChange={(e) => setMinTick(inputPercentToTick(e))}
-        />
-        Min Tick: {minTick}
-        <input
-          className="input"
-          placeholder="Max%"
-          type="number"
-          onChange={(e) => setMaxTick(inputPercentToTick(e))}
-        />
-        Max Tick: {maxTick}
+        <Row className="gap-2">
+          <input
+            className="input"
+            placeholder="Min%"
+            type="number"
+            onChange={(e) => setMinTick(inputPercentToTick(e))}
+          />
+          {/* Min Tick: {minTick} */}
+          <input
+            className="input"
+            placeholder="Max%"
+            type="number"
+            onChange={(e) => setMaxTick(inputPercentToTick(e))}
+          />
+          {/* Max Tick: {maxTick} */}
+          <input
+            className="input"
+            placeholder="delta Liquidity"
+            type="number"
+            value={deltaL}
+            onChange={(e) => setDeltaL(parseFloat(e.target.value))}
+          />
+        </Row>
         <Row className="gap-2 py-2">
-          <div>Y required: {requiredY}</div>
-          <div>N required: {requiredN}</div>{' '}
+          <div>Y required: {requiredY.toFixed(2)}</div>
+          <div>N required: {requiredN.toFixed(2)}</div>{' '}
         </Row>
         <button
           className="btn"
@@ -215,7 +225,12 @@ export default function Swap() {
       </Col>
 
       <Col>
-        Bob: Buy Tokens
+        <h2 className="my-2 text-xl">Limit Order</h2>
+        TODO
+      </Col>
+
+      <Col>
+        <h2 className="my-2 text-xl">Buy Shares</h2>
         {/* <input className="input" placeholder="User" type="text" /> */}
         <input
           className="input"
