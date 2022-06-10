@@ -76,7 +76,7 @@ export default function ContractEmbedPage(props: {
 
 function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
-  const { question, resolution, outcomeType } = contract
+  const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
 

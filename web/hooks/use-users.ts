@@ -8,6 +8,7 @@ import {
 import { groupBy, sortBy, difference } from 'lodash'
 import { getContractsOfUserBets } from 'web/lib/firebase/bets'
 import { useFollows } from './use-follows'
+import { useUser } from './use-user'
 
 export const useUsers = () => {
   const [users, setUsers] = useState<User[]>([])
@@ -59,8 +60,9 @@ export const useDiscoverUsers = (userId: string | null | undefined) => {
       })
   }, [userId])
 
-  const followedUserIds = useFollows(userId)
-  const nonSuggestions = [userId ?? '', ...(followedUserIds ?? [])]
+  const user = useUser()
+  const followedUserIds = useFollows(user?.id)
+  const nonSuggestions = [user?.id ?? '', ...(followedUserIds ?? [])]
 
   return difference(discoverUserIds, nonSuggestions).slice(0, 50)
 }

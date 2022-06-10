@@ -38,6 +38,7 @@ import { FeedComment } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { useBets } from 'web/hooks/use-bets'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -84,41 +85,43 @@ export default function ContractPage(props: {
     bets: [],
     slug: '',
   }
-  return <ContractPageContent {...props} />
-}
-
-export function ContractPageContent(props: Parameters<typeof ContractPage>[0]) {
-  const { backToHome } = props
-
-  const user = useUser()
-  const { width, height } = useWindowSize()
 
   const contract = useContractWithPreload(props.contract)
-  const { bets, comments } = props
-  const [showConfetti, setShowConfetti] = useState(false)
-
-  useEffect(() => {
-    const shouldSeeConfetti = !!(
-      user &&
-      contract &&
-      contract.creatorId === user.id &&
-      Date.now() - contract.createdTime < 10 * 1000
-    )
-    setShowConfetti(shouldSeeConfetti)
-  }, [contract, user])
 
   const inIframe = useIsIframe()
   if (inIframe) {
     return <ContractEmbedPage {...props} />
   }
 
-  // Sort for now to see if bug is fixed.
-  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-  bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-
   if (!contract) {
     return <Custom404 />
   }
+
+  return <ContractPageContent {...{ ...props, contract }} />
+}
+
+export function ContractPageContent(
+  props: Parameters<typeof ContractPage>[0] & { contract: Contract }
+) {
+  const { contract, backToHome, comments } = props
+
+  const bets = useBets(contract.id) ?? props.bets
+  // Sort for now to see if bug is fixed.
+  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+
+  const user = useUser()
+  const { width, height } = useWindowSize()
+
+  const [showConfetti, setShowConfetti] = useState(false)
+
+  useEffect(() => {
+    const shouldSeeConfetti = !!(
+      user &&
+      contract.creatorId === user.id &&
+      Date.now() - contract.createdTime < 10 * 1000
+    )
+    setShowConfetti(shouldSeeConfetti)
+  }, [contract, user])
 
   const { creatorId, isResolved, question, outcomeType } = contract
 
@@ -181,7 +184,7 @@ export function ContractPageContent(props: Parameters<typeof ContractPage>[0]) {
 
         <ContractOverview
           contract={contract}
-          bets={bets ?? []}
+          bets={bets}
           comments={comments ?? []}
         />
 
@@ -228,7 +231,9 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
 
   const { userProfits, top5Ids } = useMemo(() => {
     // Create a map of userIds to total profits (including sales)
-    const betsByUser = groupBy(bets, 'userId')
+    const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
+    const betsByUser = groupBy(openBets, 'userId')
+
     const userProfits = mapValues(betsByUser, (bets) =>
       sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
     )
@@ -242,7 +247,6 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
   }, [contract, bets])
 
   useEffect(() => {
-    console.log('foo')
     if (top5Ids.length > 0) {
       listUsers(top5Ids).then((users) => {
         const sortedUsers = sortBy(users, (user) => -userProfits[user.id])

@@ -161,9 +161,11 @@ export function UserPage(props: {
           </>
         )}
 
-        <Col className="sm:flex-row sm:items-center sm:gap-4">
-          <FollowingButton user={user} />
-          <FollowersButton user={user} />
+        <Col className="gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <Row className="gap-4">
+            <FollowingButton user={user} />
+            <FollowersButton user={user} />
+          </Row>
 
           {user.website && (
             <SiteLink

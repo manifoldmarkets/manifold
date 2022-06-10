@@ -2,7 +2,6 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { Comment } from 'web/lib/firebase/comments'
 import { User } from 'common/user'
-import { useBets } from 'web/hooks/use-bets'
 import { ContractActivity } from '../feed/contract-activity'
 import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
@@ -15,12 +14,9 @@ export function ContractTabs(props: {
   bets: Bet[]
   comments: Comment[]
 }) {
-  const { contract, user, comments } = props
+  const { contract, user, bets, comments } = props
   const { outcomeType } = contract
 
-  const bets = useBets(contract.id) ?? props.bets
-  // Decending creation time.
-  bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
   const userBets = user && bets.filter((bet) => bet.userId === user.id)
 
   const betActivity = (

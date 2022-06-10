@@ -40,7 +40,10 @@ export function ContractInfoDialog(props: {
 
   const { createdTime, closeTime, resolutionTime, autoResolutionTime } =
     contract
-  const tradersCount = uniqBy(bets, 'userId').length
+  const tradersCount = uniqBy(
+    bets.filter((bet) => !bet.isAnte),
+    'userId'
+  ).length
 
   return (
     <>
