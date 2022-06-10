@@ -30,7 +30,10 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
 
   const { createdTime, closeTime, resolutionTime } = contract
-  const tradersCount = uniqBy(bets, 'userId').length
+  const tradersCount = uniqBy(
+    bets.filter((bet) => !bet.isAnte),
+    'userId'
+  ).length
 
   return (
     <>
