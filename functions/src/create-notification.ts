@@ -246,11 +246,11 @@ export const createNotification = async (
           (sourceUpdateType === 'updated' || sourceUpdateType === 'resolved'))
       ) {
         if (sourceType === 'comment') {
-          if (relatedUserId)
+          if (relatedUserId && relatedSourceType)
             await notifyRepliedUsers(
               userToReasonTexts,
               relatedUserId,
-              sourceType
+              relatedSourceType
             )
           if (sourceText) await notifyTaggedUsers(userToReasonTexts, sourceText)
         }
