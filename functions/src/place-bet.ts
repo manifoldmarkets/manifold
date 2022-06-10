@@ -85,7 +85,7 @@ export const placebet = newEndpoint(['POST'], async (req, [bettor, _]) => {
       mechanism == 'cpmm-1' &&
       (!newP ||
         !isFinite(newP) ||
-        Math.min(...Object.values(contract.pool)) < CPMM_MIN_POOL_QTY)
+        Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
     ) {
       throw new APIError(400, 'Bet too large for current liquidity pool.')
     }
