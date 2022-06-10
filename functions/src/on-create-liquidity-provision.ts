@@ -13,6 +13,9 @@ export const onCreateLiquidityProvision = functions.firestore
     if (!contract)
       throw new Error('Could not find contract corresponding with liquidity')
 
+    // Ignore Manifold Markets liquidity for now - users see a notification for free market liquidity provision
+    if (liquidity.userId === 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2') return
+
     const liquidityProvider = await getUser(liquidity.userId)
     if (!liquidityProvider) throw new Error('Could not find liquidity provider')
 
