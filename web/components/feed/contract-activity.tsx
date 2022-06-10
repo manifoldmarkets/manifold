@@ -10,7 +10,7 @@ import {
 } from './activity-items'
 import { FeedItems } from './feed-items'
 import { User } from 'common/user'
-import { useContract } from 'web/hooks/use-contract'
+import { useContract, useContractWithPreload } from 'web/hooks/use-contract'
 
 export function ContractActivity(props: {
   contract: Contract
@@ -28,38 +28,40 @@ export function ContractActivity(props: {
   className?: string
   betRowClassName?: string
 }) {
-  const { user, mode, contractPath, className, betRowClassName } = props
+  const { user, mode, contractPath, className, betRowClassName, contract } =
+    props
 
-  const contract = useContract(props.contract.id) ?? props.contract
+  const liveContract = useContractWithPreload(contract) ?? props.contract
 
   const updatedComments =
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    mode === 'only-recent' ? undefined : useComments(contract.id)
+    mode === 'only-recent' ? undefined : useComments(liveContract.id)
   const comments = updatedComments ?? props.comments
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const updatedBets = mode === 'only-recent' ? undefined : useBets(contract.id)
+  const updatedBets =
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    mode === 'only-recent' ? undefined : useBets(liveContract.id)
   const bets = (updatedBets ?? props.bets).filter((bet) => !bet.isRedemption)
-
+  // if (!liveContract) return <div />
   const items =
     mode === 'only-recent'
-      ? getRecentContractActivityItems(contract, bets, comments, user, {
+      ? getRecentContractActivityItems(liveContract, bets, comments, user, {
           contractPath,
         })
       : mode === 'comments' ||
         mode === 'bets' ||
         mode === 'free-response-comment-answer-groups'
-      ? getSpecificContractActivityItems(contract, bets, comments, user, {
+      ? getSpecificContractActivityItems(liveContract, bets, comments, user, {
           mode,
         })
       : // only used in abbreviated mode with folds/communities, all mode isn't used
-        getAllContractActivityItems(contract, bets, comments, user, {
+        getAllContractActivityItems(liveContract, bets, comments, user, {
           abbreviated: mode === 'abbreviated',
         })
 
   return (
     <FeedItems
-      contract={contract}
+      contract={liveContract}
       items={items}
       className={className}
       betRowClassName={betRowClassName}
