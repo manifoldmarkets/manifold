@@ -29,12 +29,12 @@ export const updateContractMetrics = functions.pubsub
   })
 
 const computeVolumes = async (contractId: string, durationsMs: number[]) => {
-  const longestDurationMs = max(durationsMs)
-  /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const longestDurationMs = max(durationsMs)!
   const allBets = await getValues<Bet>(
     firestore
       .collection(`contracts/${contractId}/bets`)
-      .where('createdTime', '>', Date.now() - longestDurationMs!)
+      .where('createdTime', '>', Date.now() - longestDurationMs)
   )
   return durationsMs.map((duration) => {
     const cutoff = Date.now() - duration
