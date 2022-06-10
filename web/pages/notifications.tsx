@@ -795,9 +795,11 @@ function NotificationTextLabel(props: {
           )
         if (sourceText === 'CANCEL') return <CancelLabel />
         if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
-        // Show free response answer text
-        return <span>{sourceText}</span>
       }
+    }
+    if (sourceUpdateType === 'closed') {
+      // TODO: implement closed contract notification
+      return <span>Please resolve your market!</span>
     }
     // Updated contracts
     // Description will be in default text
