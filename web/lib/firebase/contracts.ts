@@ -57,12 +57,12 @@ export function contractMetrics(contract: Contract) {
 }
 
 export function contractPool(contract: Contract) {
-  return contractPoolValue(contract) === 0
+  return getPoolValue(contract) === 0
     ? 'Empty Pool'
-    : formatMoney(contractPoolValue(contract))
+    : formatMoney(getPoolValue(contract))
 }
 
-export function contractPoolValue(contract: Contract) {
+export function getPoolValue(contract: Contract) {
   return contract.mechanism === 'cpmm-1'
     ? contract.totalLiquidity
     : contract.mechanism === 'dpm-2'
