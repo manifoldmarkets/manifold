@@ -24,7 +24,6 @@ async function addCloseTimeToContracts() {
 }
 
 async function addCloseTimeToContract(contract: Contract) {
-  const contractRef = firestore.doc(`contracts/${contract.id}`)
   if (contract.closeTime) {
     return
   }
@@ -33,6 +32,7 @@ async function addCloseTimeToContract(contract: Contract) {
     console.error('No close time found', contract.slug)
     return
   }
+  const contractRef = firestore.doc(`contracts/${contract.id}`)
   await contractRef.update({
     closeTime,
   } as Partial<Contract>)

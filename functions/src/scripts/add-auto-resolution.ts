@@ -27,11 +27,11 @@ async function addAutoResolutionToContracts() {
 }
 
 async function addAutoResolutionToContract(contract: Contract) {
-  const contractRef = firestore.doc(`contracts/${contract.id}`)
   if (contract.autoResolutionTime) {
     console.log('Skipping, already has auto resolution', contract.slug)
     return
   }
+  const contractRef = firestore.doc(`contracts/${contract.id}`)
   if (!contract.closeTime) {
     console.error('Has no close time, please check manually', contract.slug)
     return
