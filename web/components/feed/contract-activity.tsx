@@ -10,7 +10,7 @@ import {
 } from './activity-items'
 import { FeedItems } from './feed-items'
 import { User } from 'common/user'
-import { useContract, useContractWithPreload } from 'web/hooks/use-contract'
+import { useContractWithPreload } from 'web/hooks/use-contract'
 
 export function ContractActivity(props: {
   contract: Contract
