@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { sum, sumBy } from 'lodash'
+import { groupBy, sum, sumBy } from 'lodash'
 
 import { getValues } from './utils'
 import { Contract } from '../../common/contract'
@@ -14,22 +14,28 @@ const firestore = admin.firestore()
 export const updateUserMetrics = functions.pubsub
   .schedule('every 15 minutes')
   .onRun(async () => {
-    const [users, contracts] = await Promise.all([
+    const [users, contracts, bets] = await Promise.all([
       getValues<User>(firestore.collection('users')),
       getValues<Contract>(firestore.collection('contracts')),
+      firestore.collectionGroup('bets').get(),
     ])
 
     const contractsDict = Object.fromEntries(
       contracts.map((contract) => [contract.id, contract])
     )
 
+    const betsByUser = groupBy(
+      bets.docs.map((doc) => doc.data() as Bet),
+      (bet) => bet.userId
+    )
+
     await batchedWaitAll(
       users.map((user) => async () => {
-        const [investmentValue, creatorVolume] = await Promise.all([
-          computeInvestmentValue(user, contractsDict),
-          computeTotalPool(user, contractsDict),
-        ])
-
+        const investmentValue = computeInvestmentValue(
+          betsByUser[user.id] ?? [],
+          contractsDict
+        )
+        const creatorVolume = computeTotalPool(user, contractsDict)
         const totalValue = user.balance + investmentValue
         const totalPnL = totalValue - user.totalDeposits
 
@@ -41,13 +47,10 @@ export const updateUserMetrics = functions.pubsub
     )
   })
 
-const computeInvestmentValue = async (
-  user: User,
+const computeInvestmentValue = (
+  bets: Bet[],
   contractsDict: { [k: string]: Contract }
 ) => {
-  const query = firestore.collectionGroup('bets').where('userId', '==', user.id)
-  const bets = await getValues<Bet>(query)
-
   return sumBy(bets, (bet) => {
     const contract = contractsDict[bet.contractId]
     if (!contract || contract.isResolved) return 0
@@ -58,7 +61,7 @@ const computeInvestmentValue = async (
   })
 }
 
-const computeTotalPool = async (
+const computeTotalPool = (
   user: User,
   contractsDict: { [k: string]: Contract }
 ) => {
