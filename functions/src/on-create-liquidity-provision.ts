@@ -3,7 +3,7 @@ import { getContract, getUser } from './utils'
 import { createNotification } from './create-notification'
 import { LiquidityProvision } from 'common/liquidity-provision'
 
-export const onAddLiquidity = functions.firestore
+export const onCreateLiquidityProvision = functions.firestore
   .document('contracts/{contractId}/liquidity/{liquidityId}')
   .onCreate(async (change, context) => {
     const liquidity = change.data() as LiquidityProvision
@@ -13,14 +13,14 @@ export const onAddLiquidity = functions.firestore
     if (!contract)
       throw new Error('Could not find contract corresponding with liquidity')
 
-    const liquidityAdder = await getUser(liquidity.userId)
-    if (!liquidityAdder) throw new Error('Could not find liquidity adder')
+    const liquidityProvider = await getUser(liquidity.userId)
+    if (!liquidityProvider) throw new Error('Could not find liquidity provider')
 
     await createNotification(
       contract.id,
       'liquidity',
       'created',
-      liquidityAdder,
+      liquidityProvider,
       eventId,
       liquidity.amount.toString(),
       contract

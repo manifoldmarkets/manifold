@@ -28,7 +28,7 @@ export * from './on-create-answer'
 export * from './on-update-contract'
 export * from './on-create-contract'
 export * from './on-follow-user'
-export * from './on-add-liquidity'
+export * from './on-create-liquidity-provision'
 
 // v2
 export * from './health'
