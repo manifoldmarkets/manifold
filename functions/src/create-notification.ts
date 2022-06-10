@@ -238,7 +238,6 @@ export const createNotification = async (
     })
   }
 
-  // TODO: Notify users of their own closed but not resolved contracts.
   const getUsersToNotify = async () => {
     const userToReasonTexts: user_to_reason_texts = {}
     // The following functions modify the userToReasonTexts object in place.
