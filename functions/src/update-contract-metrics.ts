@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { sumBy } from 'lodash'
+import { max, sumBy } from 'lodash'
 
 import { getValues } from './utils'
 import { Contract } from '../../common/contract'
@@ -20,9 +20,10 @@ export const updateContractMetrics = functions.pubsub
 
     await batchedWaitAll(
       contracts.map((contract) => async () => {
-        const volume24Hours = await computeVolumeFrom(contract, oneDay)
-        const volume7Days = await computeVolumeFrom(contract, oneDay * 7)
-
+        const [volume24Hours, volume7Days] = await computeVolumes(contract, [
+          oneDay,
+          oneDay * 7,
+        ])
         const contractRef = firestore.doc(`contracts/${contract.id}`)
         return contractRef.update({
           volume24Hours,
@@ -32,12 +33,18 @@ export const updateContractMetrics = functions.pubsub
     )
   })
 
-const computeVolumeFrom = async (contract: Contract, timeAgoMs: number) => {
-  const bets = await getValues<Bet>(
+const computeVolumes = async (contract: Contract, durationsMs: number[]) => {
+  const longestDurationMs = max(durationsMs)
+  /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+  const allBets = await getValues<Bet>(
     firestore
       .collection(`contracts/${contract.id}/bets`)
-      .where('createdTime', '>', Date.now() - timeAgoMs)
+      .where('createdTime', '>', Date.now() - longestDurationMs!)
   )
 
-  return sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
+  return durationsMs.map((duration) => {
+    const cutoff = Date.now() - duration
+    const bets = allBets.filter((b) => b.createdTime > cutoff)
+    return sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
+  })
 }
