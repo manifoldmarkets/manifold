@@ -3,6 +3,7 @@ import {
   getDpmProbability,
   calculateDpmShareValue,
   deductDpmFees,
+  getDpmOutcomeProbability,
 } from './calculate-dpm'
 import { calculateCpmmSale, getCpmmProbability } from './calculate-cpmm'
 import { CPMMContract, DPMContract } from './contract'
@@ -25,8 +26,8 @@ export const getSellBetInfo = (bet: Bet, contract: DPMContract) => {
 
   const newTotalBets = { ...totalBets, [outcome]: totalBets[outcome] - amount }
 
-  const probBefore = getDpmProbability(totalShares)
-  const probAfter = getDpmProbability(newTotalShares)
+  const probBefore = getDpmOutcomeProbability(totalShares, outcome)
+  const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
 
   const profit = adjShareValue - amount
 
