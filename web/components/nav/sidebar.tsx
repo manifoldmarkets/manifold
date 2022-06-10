@@ -165,15 +165,14 @@ export default function Sidebar(props: { className?: string }) {
       const now = new Date().getTime()
       const timeUntil = nextUtcResetTime - now
       const hoursUntil = timeUntil / 1000 / 60 / 60
-      const minutesUntil = Math.floor((hoursUntil * 60) % 60)
-      const secondsUntil = Math.floor((hoursUntil * 60 * 60) % 60)
-      const hoursUntilFloor = Math.floor(hoursUntil)
+      const minutesUntil = (hoursUntil * 60) % 60
+      const secondsUntil = Math.round((hoursUntil * 60 * 60) % 60)
       const timeString =
-        minutesUntil < 1
+        hoursUntil < 1 && minutesUntil < 1
           ? `${secondsUntil}s`
-          : hoursUntilFloor < 1
-          ? `${minutesUntil}m`
-          : `${hoursUntilFloor}h`
+          : hoursUntil < 1
+          ? `${Math.round(minutesUntil)}m`
+          : `${Math.floor(hoursUntil)}h`
       setCountdown(timeString)
     }, 1000)
     return () => clearInterval(interval)
