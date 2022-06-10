@@ -1,4 +1,4 @@
-// Existing contracts don't have auto resolutions (Time + resolution). Let's add them.
+// Existing contracts don't have auto resolutions. Let's add it.
 
 import * as admin from 'firebase-admin'
 
