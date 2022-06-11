@@ -10,25 +10,6 @@ const firestore = admin.firestore()
 
 const oneDay = 1000 * 60 * 60 * 24
 
-export const updateContractMetrics = functions
-  .runWith({ memory: '1GB' })
-  .pubsub.schedule('every 15 minutes')
-  .onRun(async () => {
-    const contractDocs = await firestore.collection('contracts').listDocuments()
-    await batchedWaitAll(
-      contractDocs.map((doc) => async () => {
-        const [volume24Hours, volume7Days] = await computeVolumes(doc.id, [
-          oneDay,
-          oneDay * 7,
-        ])
-        return doc.update({
-          volume24Hours,
-          volume7Days,
-        })
-      })
-    )
-  })
-
 const computeVolumes = async (contractId: string, durationsMs: number[]) => {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const longestDurationMs = max(durationsMs)!
@@ -43,3 +24,24 @@ const computeVolumes = async (contractId: string, durationsMs: number[]) => {
     return sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
   })
 }
+
+export const updateContractMetricsCore = async () => {
+  const contractDocs = await firestore.collection('contracts').listDocuments()
+  await batchedWaitAll(
+    contractDocs.map((doc) => async () => {
+      const [volume24Hours, volume7Days] = await computeVolumes(doc.id, [
+        oneDay,
+        oneDay * 7,
+      ])
+      return doc.update({
+        volume24Hours,
+        volume7Days,
+      })
+    })
+  )
+}
+
+export const updateContractMetrics = functions
+  .runWith({ memory: '1GB' })
+  .pubsub.schedule('every 15 minutes')
+  .onRun(updateContractMetricsCore)
