@@ -162,7 +162,7 @@ export function addPosition(
     maxTick,
     deltaL
   )
-  console.log(`Deducting required N: ${requiredN} and required Y: ${requiredY}`)
+  // console.log(`Deducting required N: ${requiredN} and required Y: ${requiredY}`)
 
   // Add liquidity as we pass through the smaller tick
   const minTickState = pool.tickStates[minTick] || {
@@ -184,6 +184,41 @@ export function addPosition(
   maxTickState.liquidityNet -= deltaL
   pool.tickStates[maxTick] = maxTickState
 
+  return pool
+}
+
+export function addBalancer(pool: Swap3Pool, p: number, deltaL: number) {
+  // TODO: math is borked, shouldn't be returning infinity
+  function tickL(tick: number) {
+    const q = 1 - p
+    return deltaL * 2 * p ** q * q ** p * 1.0001 ** ((p - 0.5) * tick)
+  }
+
+  // See how much liquidity is provided at +/- 5pp around p
+  // const minTick = fromProb(p - 0.1)
+  // const maxTick = fromProb(p + 0.05)
+  const minTick = fromProb(0.000001)
+  const maxTick = fromProb(0.999999)
+  let totalN = 0
+  let totalY = 0
+  const stride = 300
+  for (let t = minTick; t <= maxTick; t += stride) {
+    // console.log('liquidity at tick ', t, toProb(t), tickL(t))
+    const { requiredN, requiredY } = calculateLPCost(
+      fromProb(p),
+      t,
+      t + stride,
+      tickL(t)
+    )
+    totalN += requiredN
+    totalY += requiredY
+    // Add liquidity
+    addPosition(pool, t, t + stride, tickL(t))
+  }
+
+  console.log('rough number of ticks', (maxTick - minTick) / stride)
+  console.log(`Total N: ${totalN} and total Y: ${totalY}`)
+  grossLiquidity(pool)
   return pool
 }
 

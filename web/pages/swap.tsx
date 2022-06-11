@@ -1,4 +1,5 @@
 import {
+  addBalancer,
   addPosition,
   buyYes,
   calculateLPCost,
@@ -203,8 +204,9 @@ export default function Swap() {
     tick: fromProb(0.3),
     tickStates: [],
   }
-  INIT_POOL = addPosition(INIT_POOL, -(2 ** 23), 2 ** 20, 100)
-  INIT_POOL = addPosition(INIT_POOL, fromProb(0.32), fromProb(0.35), 100)
+  INIT_POOL = addPosition(INIT_POOL, -(2 ** 23), 2 ** 20, 1)
+  // INIT_POOL = addPosition(INIT_POOL, fromProb(0.32), fromProb(0.35), 100)
+  INIT_POOL = addBalancer(INIT_POOL, 0.3, 100)
   INIT_POOL = grossLiquidity(INIT_POOL)
 
   const [pool, setPool] = useState(INIT_POOL)
@@ -215,7 +217,7 @@ export default function Swap() {
   return (
     <Col className="mx-auto max-w-2xl gap-10 p-4">
       {/* <BalanceTable /> */}
-      <PoolTable pool={pool} />
+      {/* <PoolTable pool={pool} /> */}
       <Graph
         pool={pool}
         previewMarker={
