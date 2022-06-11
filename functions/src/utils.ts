@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin'
 
+import { chunk } from 'lodash'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 
@@ -12,6 +13,20 @@ export const logMemory = () => {
   for (const [k, v] of Object.entries(used)) {
     log(`${k} ${Math.round((v / 1024 / 1024) * 100) / 100} MB`)
   }
+}
+
+export const mapAsync = async <T, U>(
+  xs: T[],
+  fn: (x: T) => Promise<U>,
+  concurrency = 100
+) => {
+  const results = []
+  const chunks = chunk(xs, concurrency)
+  for (let i = 0; i < chunks.length; i++) {
+    log(`${i * concurrency}/${xs.length} processed...`)
+    results.push(...(await Promise.all(chunks[i].map(fn))))
+  }
+  return results
 }
 
 export const isProd =

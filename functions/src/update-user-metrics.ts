@@ -2,11 +2,10 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy, sum, sumBy } from 'lodash'
 
-import { getValues, log, logMemory } from './utils'
+import { getValues, log, logMemory, mapAsync } from './utils'
 import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import { User } from '../../common/user'
-import { batchedWaitAll } from '../../common/util/promise'
 import { calculatePayout } from '../../common/calculate'
 
 const firestore = admin.firestore()
@@ -58,22 +57,19 @@ export const updateUserMetricsCore = async () => {
     (bet) => bet.userId
   )
 
-  await batchedWaitAll(
-    users.map((user) => async () => {
-      const investmentValue = computeInvestmentValue(
-        betsByUser[user.id] ?? [],
-        contractsDict
-      )
-      const creatorVolume = computeTotalPool(user, contractsDict)
-      const totalValue = user.balance + investmentValue
-      const totalPnL = totalValue - user.totalDeposits
-
-      await firestore.collection('users').doc(user.id).update({
-        totalPnLCached: totalPnL,
-        creatorVolumeCached: creatorVolume,
-      })
+  await mapAsync(users, async (user) => {
+    const investmentValue = computeInvestmentValue(
+      betsByUser[user.id] ?? [],
+      contractsDict
+    )
+    const creatorVolume = computeTotalPool(user, contractsDict)
+    const totalValue = user.balance + investmentValue
+    const totalPnL = totalValue - user.totalDeposits
+    return await firestore.collection('users').doc(user.id).update({
+      totalPnLCached: totalPnL,
+      creatorVolumeCached: creatorVolume,
     })
-  )
+  })
   log(`Updated metrics for ${users.length} users.`)
 }
 

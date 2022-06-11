@@ -2,9 +2,8 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { max, sumBy } from 'lodash'
 
-import { getValues, log, logMemory } from './utils'
+import { getValues, log, logMemory, mapAsync } from './utils'
 import { Bet } from '../../common/bet'
-import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
@@ -29,18 +28,16 @@ export const updateContractMetricsCore = async () => {
   const contractDocs = await firestore.collection('contracts').listDocuments()
   log(`Loaded ${contractDocs.length} contract IDs.`)
   logMemory()
-  await batchedWaitAll(
-    contractDocs.map((doc) => async () => {
-      const [volume24Hours, volume7Days] = await computeVolumes(doc.id, [
-        oneDay,
-        oneDay * 7,
-      ])
-      return doc.update({
-        volume24Hours,
-        volume7Days,
-      })
+  await mapAsync(contractDocs, async (doc) => {
+    const [volume24Hours, volume7Days] = await computeVolumes(doc.id, [
+      oneDay,
+      oneDay * 7,
+    ])
+    return await doc.update({
+      volume24Hours,
+      volume7Days,
     })
-  )
+  })
   log(`Updated metrics for ${contractDocs.length} contracts.`)
 }
 
