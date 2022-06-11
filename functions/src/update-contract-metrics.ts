@@ -1,9 +1,8 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { sumBy } from 'lodash'
+import { max, sumBy } from 'lodash'
 
 import { getValues } from './utils'
-import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import { batchedWaitAll } from '../../common/util/promise'
 
@@ -14,17 +13,14 @@ const oneDay = 1000 * 60 * 60 * 24
 export const updateContractMetrics = functions.pubsub
   .schedule('every 15 minutes')
   .onRun(async () => {
-    const contracts = await getValues<Contract>(
-      firestore.collection('contracts')
-    )
-
+    const contractDocs = await firestore.collection('contracts').listDocuments()
     await batchedWaitAll(
-      contracts.map((contract) => async () => {
-        const volume24Hours = await computeVolumeFrom(contract, oneDay)
-        const volume7Days = await computeVolumeFrom(contract, oneDay * 7)
-
-        const contractRef = firestore.doc(`contracts/${contract.id}`)
-        return contractRef.update({
+      contractDocs.map((doc) => async () => {
+        const [volume24Hours, volume7Days] = await computeVolumes(doc.id, [
+          oneDay,
+          oneDay * 7,
+        ])
+        return doc.update({
           volume24Hours,
           volume7Days,
         })
@@ -32,12 +28,17 @@ export const updateContractMetrics = functions.pubsub
     )
   })
 
-const computeVolumeFrom = async (contract: Contract, timeAgoMs: number) => {
-  const bets = await getValues<Bet>(
+const computeVolumes = async (contractId: string, durationsMs: number[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const longestDurationMs = max(durationsMs)!
+  const allBets = await getValues<Bet>(
     firestore
-      .collection(`contracts/${contract.id}/bets`)
-      .where('createdTime', '>', Date.now() - timeAgoMs)
+      .collection(`contracts/${contractId}/bets`)
+      .where('createdTime', '>', Date.now() - longestDurationMs)
   )
-
-  return sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
+  return durationsMs.map((duration) => {
+    const cutoff = Date.now() - duration
+    const bets = allBets.filter((b) => b.createdTime > cutoff)
+    return sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
+  })
 }
