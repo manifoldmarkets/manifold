@@ -11,8 +11,9 @@ import { calculatePayout } from '../../common/calculate'
 
 const firestore = admin.firestore()
 
-export const updateUserMetrics = functions.pubsub
-  .schedule('every 15 minutes')
+export const updateUserMetrics = functions
+  .runWith({ memory: '1GB' })
+  .pubsub.schedule('every 15 minutes')
   .onRun(async () => {
     const [users, contracts, bets] = await Promise.all([
       getValues<User>(firestore.collection('users')),

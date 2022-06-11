@@ -10,8 +10,9 @@ const firestore = admin.firestore()
 
 const oneDay = 1000 * 60 * 60 * 24
 
-export const updateContractMetrics = functions.pubsub
-  .schedule('every 15 minutes')
+export const updateContractMetrics = functions
+  .runWith({ memory: '1GB' })
+  .pubsub.schedule('every 15 minutes')
   .onRun(async () => {
     const contractDocs = await firestore.collection('contracts').listDocuments()
     await batchedWaitAll(
