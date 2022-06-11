@@ -9,7 +9,6 @@ import {
   listenForInactiveContracts,
   listenForNewContracts,
 } from 'web/lib/firebase/contracts'
-import { listenForTaggedContracts } from 'web/lib/firebase/folds'
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -46,21 +45,6 @@ export const useInactiveContracts = () => {
   useEffect(() => {
     return listenForInactiveContracts(setContracts)
   }, [])
-
-  return contracts
-}
-
-export const useTaggedContracts = (tags: string[] | undefined) => {
-  const [contracts, setContracts] = useState<Contract[] | undefined>(
-    tags && tags.length === 0 ? [] : undefined
-  )
-  const tagsKey = tags?.map((tag) => tag.toLowerCase()).join(',') ?? ''
-
-  useEffect(() => {
-    if (!tags || tags.length === 0) return
-    return listenForTaggedContracts(tags, setContracts)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tagsKey])
 
   return contracts
 }

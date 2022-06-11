@@ -103,13 +103,6 @@ export async function getFoldContracts(fold: Fold) {
   return [...approvedContracts, ...includedContracts]
 }
 
-export function listenForTaggedContracts(
-  tags: string[],
-  setContracts: (contracts: Contract[]) => void
-) {
-  return listenForValues<Contract>(contractsByTagsQuery(tags), setContracts)
-}
-
 export function listenForFold(
   foldId: string,
   setFold: (fold: Fold | null) => void

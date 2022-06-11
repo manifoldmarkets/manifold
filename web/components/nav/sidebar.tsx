@@ -7,15 +7,12 @@ import {
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
-  ChatAltIcon,
   SparklesIcon,
   NewspaperIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useFollowedFolds } from 'web/hooks/use-fold'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
@@ -179,8 +176,6 @@ export default function Sidebar(props: { className?: string }) {
   }, [])
 
   const user = useUser()
-  let folds = useFollowedFolds(user) || []
-  folds = sortBy(folds, 'followCount').reverse()
   const mustWaitForFreeMarketStatus = useHasCreatedContractToday(user)
   const navigationOptions =
     user === null

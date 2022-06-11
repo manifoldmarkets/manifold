@@ -56,8 +56,8 @@ export default function Create() {
 }
 
 // Allow user to create a new contract
-export function NewContract(props: { question: string; tag?: string }) {
-  const { question, tag } = props
+export function NewContract(props: { question: string }) {
+  const { question } = props
   const creator = useUser()
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function NewContract(props: { question: string; tag?: string }) {
   // const [tagText, setTagText] = useState<string>(tag ?? '')
   // const tags = parseWordsAsTags(tagText)
 
-  const [ante, setAnte] = useState(FIXED_ANTE)
+  const [ante, _setAnte] = useState(FIXED_ANTE)
 
   const mustWaitForDailyFreeMarketStatus = useHasCreatedContractToday(creator)
 
