@@ -7,6 +7,7 @@ import {
   Contract,
   FreeResponse,
   resolution,
+  RESOLUTIONS,
 } from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
@@ -132,17 +133,21 @@ const privateResolveMarket = async (
     case 'NUMERIC':
       if (isNaN(+outcome) && outcome !== 'CANCEL')
         return { status: 'error', message: 'Invalid outcome' }
+      break
+    case 'BINARY':
+      if (!RESOLUTIONS.includes(outcome))
+        return { status: 'error', message: 'Invalid outcome' }
+      if (
+        probabilityInt &&
+        (probabilityInt < 0 ||
+          probabilityInt > 100 ||
+          !isFinite(probabilityInt))
+      )
+        return { status: 'error', message: 'Invalid probability' }
   }
 
   if (value && !isFinite(value))
     return { status: 'error', message: 'Invalid value' }
-
-  if (
-    outcomeType === 'BINARY' &&
-    probabilityInt &&
-    (probabilityInt < 0 || probabilityInt > 100 || !isFinite(probabilityInt))
-  )
-    return { status: 'error', message: 'Invalid probability' }
 
   if (contract.resolution)
     return { status: 'error', message: 'Contract already resolved' }
