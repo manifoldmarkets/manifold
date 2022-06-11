@@ -6,9 +6,11 @@ import { Charity } from 'common/charity'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { manaToUSD } from '../../../common/util/format'
 import { Row } from '../layout/row'
+import { Col } from '../layout/col'
 
-export function CharityCard(props: { charity: Charity }) {
-  const { name, slug, photo, preview, id, tags } = props.charity
+export function CharityCard(props: { charity: Charity; match?: number }) {
+  const { charity, match } = props
+  const { slug, photo, preview, id, tags } = charity
 
   const txns = useCharityTxns(id)
   const raised = sumBy(txns, (txn) => txn.amount)
@@ -32,19 +34,29 @@ export function CharityCard(props: { charity: Charity }) {
           {/* <h3 className="card-title line-clamp-3">{name}</h3> */}
           <div className="line-clamp-4 text-sm">{preview}</div>
           {raised > 0 && (
-            <Row className="text-primary mt-4 flex-1 items-end justify-center gap-2">
-              <span className="text-3xl">
-                {raised < 100
-                  ? manaToUSD(raised)
-                  : '$' + Math.floor(raised / 100)}
-              </span>
-              <span>raised</span>
-            </Row>
+            <>
+              <Row className="text-primary mt-4 flex-1 items-end justify-center gap-6">
+                <Col>
+                  <span className="text-3xl">{formatUsd(raised)}</span>
+                  <span>raised</span>
+                </Col>
+                {match && (
+                  <Col className="text-gray-500">
+                    <span className="text-xl">+{formatUsd(match)}</span>
+                    <span className="">match</span>
+                  </Col>
+                )}
+              </Row>
+            </>
           )}
         </div>
       </div>
     </Link>
   )
+}
+
+function formatUsd(mana: number) {
+  return mana < 100 ? manaToUSD(mana) : '$' + Math.floor(mana / 100)
 }
 
 function FeaturedBadge() {

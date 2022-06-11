@@ -9,6 +9,8 @@ import { SiteLink } from 'web/components/site-link'
 import { Title } from 'web/components/title'
 import { getAllCharityTxns } from 'web/lib/firebase/txns'
 import { formatMoney } from 'common/util/format'
+import { quadraticMatches } from 'common/quadratic-funding'
+import { Txn } from 'common/txn'
 
 export async function getStaticProps() {
   const txns = await getAllCharityTxns()
@@ -20,11 +22,14 @@ export async function getStaticProps() {
     (charity) => (charity.tags?.includes('Featured') ? 0 : 1),
     (charity) => -totals[charity.id],
   ])
+  const matches = quadraticMatches(txns, totalRaised)
 
   return {
     props: {
       totalRaised,
       charities: sortedCharities,
+      matches,
+      txns,
     },
     revalidate: 60,
   }
@@ -33,8 +38,10 @@ export async function getStaticProps() {
 export default function Charity(props: {
   totalRaised: number
   charities: CharityType[]
+  matches: { [charityId: string]: number }
+  txns: Txn[]
 }) {
-  const { totalRaised, charities } = props
+  const { totalRaised, charities, matches, txns } = props
 
   const [query, setQuery] = useState('')
   const debouncedQuery = debounce(setQuery, 50)
@@ -73,7 +80,11 @@ export default function Charity(props: {
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
           {filterCharities.map((charity) => (
-            <CharityCard charity={charity} key={charity.name} />
+            <CharityCard
+              charity={charity}
+              key={charity.name}
+              match={matches[charity.id]}
+            />
           ))}
         </div>
         {filterCharities.length === 0 && (
