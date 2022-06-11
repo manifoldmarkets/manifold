@@ -59,6 +59,7 @@ export const autoResolveMarkets = functions.pubsub
       firestore
         .collection('contracts')
         .where('isResolved', '==', false)
+        .where('closeTime', '>', Date.now())
         .where('autoResolutionTime', '<', Date.now())
     )
 
