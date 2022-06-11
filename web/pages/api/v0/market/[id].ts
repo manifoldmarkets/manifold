@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { listAllBets } from 'web/lib/firebase/bets'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
@@ -19,11 +19,6 @@ export default async function handler(
     listAllComments(contractId),
   ])
 
-  const bets = allBets.map(({ userId, ...bet }) => bet) as Exclude<
-    Bet,
-    'userId'
-  >[]
-
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })
     return
@@ -33,7 +28,7 @@ export default async function handler(
   res.setHeader('Cache-Control', 'max-age=0, s-maxage=120')
   return res.status(200).json({
     ...toLiteMarket(contract),
-    bets,
+    allBets,
     comments,
   })
 }
