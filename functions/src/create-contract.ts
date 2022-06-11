@@ -28,6 +28,7 @@ import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { DAY_MS } from '../../common/util/time'
+import { User } from '../../common/user'
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -49,7 +50,7 @@ const numericSchema = z.object({
   max: z.number(),
 })
 
-export const createmarket = newEndpoint(['POST'], async (req, [user, _]) => {
+export const createmarket = newEndpoint(['POST'], async (req, auth) => {
   const { question, description, tags, closeTime, outcomeType } = validate(
     bodySchema,
     req.body
@@ -73,9 +74,15 @@ export const createmarket = newEndpoint(['POST'], async (req, [user, _]) => {
     freeMarketResetTime = freeMarketResetTime - 24 * 60 * 60 * 1000
   }
 
+  const userDoc = await firestore.collection('users').doc(auth.uid).get()
+  if (!userDoc.exists) {
+    throw new APIError(400, 'No user exists with the authenticated user ID.')
+  }
+  const user = userDoc.data() as User
+
   const userContractsCreatedTodaySnapshot = await firestore
     .collection(`contracts`)
-    .where('creatorId', '==', user.id)
+    .where('creatorId', '==', auth.uid)
     .where('createdTime', '>=', freeMarketResetTime)
     .get()
   console.log('free market reset time: ', freeMarketResetTime)

@@ -1,4 +1,4 @@
-import { partition, sumBy } from 'lodash'
+import { sumBy } from 'lodash'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
@@ -16,20 +16,25 @@ const bodySchema = z.object({
   outcome: z.enum(['YES', 'NO']),
 })
 
-export const sellshares = newEndpoint(['POST'], async (req, [bettor, _]) => {
+export const sellshares = newEndpoint(['POST'], async (req, auth) => {
   const { contractId, shares, outcome } = validate(bodySchema, req.body)
 
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {
-    const userDoc = firestore.doc(`users/${bettor.id}`)
-    const userSnap = await transaction.get(userDoc)
+    const contractDoc = firestore.doc(`contracts/${contractId}`)
+    const userDoc = firestore.doc(`users/${auth.uid}`)
+    const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
+    const [contractSnap, userSnap, userBets] = await Promise.all([
+      transaction.get(contractDoc),
+      transaction.get(userDoc),
+      getValues<Bet>(betsQ), // TODO: why is this not in the transaction??
+    ])
+    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
+
+    const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
 
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await transaction.get(contractDoc)
-    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
-    const contract = contractSnap.data() as Contract
     const { closeTime, mechanism, collectedFees, volume } = contract
 
     if (mechanism !== 'cpmm-1')
@@ -37,22 +42,11 @@ export const sellshares = newEndpoint(['POST'], async (req, [bettor, _]) => {
     if (closeTime && Date.now() > closeTime)
       throw new APIError(400, 'Trading is closed.')
 
-    const userBets = await getValues<Bet>(
-      contractDoc.collection('bets').where('userId', '==', bettor.id)
-    )
-
     const prevLoanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
 
-    const [yesBets, noBets] = partition(
-      userBets ?? [],
-      (bet) => bet.outcome === 'YES'
-    )
-    const [yesShares, noShares] = [
-      sumBy(yesBets, (bet) => bet.shares),
-      sumBy(noBets, (bet) => bet.shares),
-    ]
+    const outcomeBets = userBets.filter((bet) => bet.outcome == outcome)
+    const maxShares = sumBy(outcomeBets, (bet) => bet.shares)
 
-    const maxShares = outcome === 'YES' ? yesShares : noShares
     if (shares > maxShares + 0.000000000001)
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 

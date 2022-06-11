@@ -10,7 +10,7 @@ import {
 } from './activity-items'
 import { FeedItems } from './feed-items'
 import { User } from 'common/user'
-import { useContract } from 'web/hooks/use-contract'
+import { useContractWithPreload } from 'web/hooks/use-contract'
 
 export function ContractActivity(props: {
   contract: Contract
@@ -30,17 +30,17 @@ export function ContractActivity(props: {
 }) {
   const { user, mode, contractPath, className, betRowClassName } = props
 
-  const contract = useContract(props.contract.id) ?? props.contract
+  const contract = useContractWithPreload(props.contract) ?? props.contract
 
   const updatedComments =
     // eslint-disable-next-line react-hooks/rules-of-hooks
     mode === 'only-recent' ? undefined : useComments(contract.id)
   const comments = updatedComments ?? props.comments
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const updatedBets = mode === 'only-recent' ? undefined : useBets(contract.id)
+  const updatedBets =
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    mode === 'only-recent' ? undefined : useBets(contract.id)
   const bets = (updatedBets ?? props.bets).filter((bet) => !bet.isRedemption)
-
   const items =
     mode === 'only-recent'
       ? getRecentContractActivityItems(contract, bets, comments, user, {
