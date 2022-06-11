@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy, sum, sumBy } from 'lodash'
 
-import { getValues } from './utils'
+import { getValues, log, logMemory } from './utils'
 import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import { User } from '../../common/user'
@@ -44,6 +44,10 @@ export const updateUserMetricsCore = async () => {
     getValues<Contract>(firestore.collection('contracts')),
     firestore.collectionGroup('bets').get(),
   ])
+  log(
+    `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.docs.length} bets.`
+  )
+  logMemory()
 
   const contractsDict = Object.fromEntries(
     contracts.map((contract) => [contract.id, contract])
@@ -70,6 +74,7 @@ export const updateUserMetricsCore = async () => {
       })
     })
   )
+  log(`Updated metrics for ${users.length} users.`)
 }
 
 export const updateUserMetrics = functions

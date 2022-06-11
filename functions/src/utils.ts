@@ -3,6 +3,17 @@ import * as admin from 'firebase-admin'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 
+export const log = (...args: unknown[]) => {
+  console.log(`[${new Date().toISOString()}]`, ...args)
+}
+
+export const logMemory = () => {
+  const used = process.memoryUsage()
+  for (const [k, v] of Object.entries(used)) {
+    log(`${k} ${Math.round((v / 1024 / 1024) * 100) / 100} MB`)
+  }
+}
+
 export const isProd =
   admin.instanceId().app.options.projectId === 'mantic-markets'
 

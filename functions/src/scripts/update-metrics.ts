@@ -1,13 +1,15 @@
 import { initAdmin } from './script-init'
 initAdmin()
 
+import { log, logMemory } from '../utils'
 import { updateContractMetricsCore } from '../update-contract-metrics'
 import { updateUserMetricsCore } from '../update-user-metrics'
 
 async function updateMetrics() {
-  console.log('Updating contract metrics...')
+  logMemory()
+  log('Updating contract metrics...')
   await updateContractMetricsCore()
-  console.log('Updating user metrics...')
+  log('Updating user metrics...')
   await updateUserMetricsCore()
 }
 
