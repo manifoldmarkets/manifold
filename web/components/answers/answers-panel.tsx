@@ -156,9 +156,7 @@ function getAnswerItems(
   answers: Answer[],
   user: User | undefined | null
 ) {
-  let outcomes = uniq(answers.map((answer) => answer.number.toString())).filter(
-    (outcome) => getOutcomeProbability(contract, outcome) > 0.0001
-  )
+  let outcomes = uniq(answers.map((answer) => answer.number.toString()))
   outcomes = sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   ).reverse()
