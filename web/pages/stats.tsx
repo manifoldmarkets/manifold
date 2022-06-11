@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import { zip, uniq, sumBy } from 'lodash'
+import { zip, uniq, sumBy, concat, countBy, sortBy, sum } from 'lodash'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   DailyCountChart,
@@ -148,6 +148,39 @@ export async function getStaticPropz() {
   })
   const dailySignups = dailyNewUsers.map((users) => users.length)
 
+  const dailyTopTenthActions = zip(
+    dailyContracts,
+    dailyBets,
+    dailyComments
+  ).map(([contracts, bets, comments]) => {
+    const userIds = concat(
+      contracts?.map((c) => c.creatorId) ?? [],
+      bets?.map((b) => b.userId) ?? [],
+      comments?.map((c) => c.userId) ?? []
+    )
+    const counts = Object.entries(countBy(userIds))
+    const topTenth = sortBy(counts, ([, count]) => count)
+      .reverse()
+      // Take the top 10% of users, except for the top 2, to avoid outliers.
+      .slice(2, counts.length * 0.1)
+    const topTenthTotal = sumBy(topTenth, ([_, count]) => count)
+    return topTenthTotal
+  })
+  const weeklyTopTenthActions = dailyTopTenthActions.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i
+    const total = sum(dailyTopTenthActions.slice(start, end))
+    if (end - start < 7) return (total * 7) / (end - start)
+    return total
+  })
+  const monthlyTopTenthActions = dailyTopTenthActions.map((_, i) => {
+    const start = Math.max(0, i - 29)
+    const end = i
+    const total = sum(dailyTopTenthActions.slice(start, end))
+    if (end - start < 30) return (total * 30) / (end - start)
+    return total
+  })
+
   return {
     props: {
       startDate: startDate.valueOf(),
@@ -161,6 +194,9 @@ export async function getStaticPropz() {
       weekOnWeekRetention,
       weeklyActivationRate,
       monthlyRetention,
+      dailyTopTenthActions,
+      weeklyTopTenthActions,
+      monthlyTopTenthActions,
     },
     revalidate: 60 * 60, // Regenerate after an hour
   }
@@ -178,6 +214,9 @@ export default function Analytics(props: {
   weekOnWeekRetention: number[]
   monthlyRetention: number[]
   weeklyActivationRate: number[]
+  dailyTopTenthActions: number[]
+  weeklyTopTenthActions: number[]
+  monthlyTopTenthActions: number[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     startDate: 0,
@@ -191,6 +230,9 @@ export default function Analytics(props: {
     weekOnWeekRetention: [],
     monthlyRetention: [],
     weeklyActivationRate: [],
+    dailyTopTenthActions: [],
+    weeklyTopTenthActions: [],
+    monthlyTopTenthActions: [],
   }
   return (
     <Page>
@@ -226,6 +268,9 @@ export function CustomAnalytics(props: {
   weekOnWeekRetention: number[]
   monthlyRetention: number[]
   weeklyActivationRate: number[]
+  dailyTopTenthActions: number[]
+  weeklyTopTenthActions: number[]
+  monthlyTopTenthActions: number[]
 }) {
   const {
     dailyActiveUsers,
@@ -238,6 +283,9 @@ export function CustomAnalytics(props: {
     weekOnWeekRetention,
     monthlyRetention,
     weeklyActivationRate,
+    dailyTopTenthActions,
+    weeklyTopTenthActions,
+    monthlyTopTenthActions,
   } = props
 
   const startDate = dayjs(props.startDate).add(12, 'hours').valueOf()
@@ -437,6 +485,47 @@ export function CustomAnalytics(props: {
         ]}
       />
       <Spacer h={8} />
+
+      <Title text="Total actions by top tenth" />
+      <p className="text-gray-500">
+        From the top 10% of users, how many bets, comments, and markets did they
+        create? (Excluding top 2 users each day.)
+      </p>
+      <Tabs
+        defaultIndex={1}
+        tabs={[
+          {
+            title: 'Daily',
+            content: (
+              <DailyCountChart
+                dailyCounts={dailyTopTenthActions}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Weekly',
+            content: (
+              <DailyCountChart
+                dailyCounts={weeklyTopTenthActions}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Monthly',
+            content: (
+              <DailyCountChart
+                dailyCounts={monthlyTopTenthActions}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+        ]}
+      />
     </Col>
   )
 }
