@@ -43,7 +43,7 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
                 {match && (
                   <Col className="text-gray-500">
                     <span className="text-xl">+{formatUsd(match)}</span>
-                    <span className="">match</span>
+                    <span className="">matched</span>
                   </Col>
                 )}
               </Row>
