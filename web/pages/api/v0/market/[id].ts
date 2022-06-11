@@ -13,7 +13,7 @@ export default async function handler(
   const { id } = req.query
   const contractId = id as string
 
-  const [contract, allBets, comments] = await Promise.all([
+  const [contract, bets, comments] = await Promise.all([
     getContractFromId(contractId),
     listAllBets(contractId),
     listAllComments(contractId),
@@ -28,7 +28,7 @@ export default async function handler(
   res.setHeader('Cache-Control', 'max-age=0, s-maxage=120')
   return res.status(200).json({
     ...toLiteMarket(contract),
-    allBets,
+    bets,
     comments,
   })
 }
