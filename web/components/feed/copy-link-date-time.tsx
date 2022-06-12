@@ -45,13 +45,13 @@ export function CopyLinkDateTimeComponent(props: {
             onClick={(event) => copyLinkToComment(event)}
             className={'mx-1 cursor-pointer'}
           >
-            <span className="whitespace-nowrap rounded-sm px-1 text-gray-400 hover:bg-gray-100 ">
+            <span className="whitespace-nowrap rounded-sm px-1 text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-900 ">
               {fromNow(createdTime)}
               {showToast && (
                 <ToastClipboard className={'left-24 sm:-left-16'} />
               )}
               <LinkIcon
-                className="ml-1 mb-0.5 inline-block text-gray-400"
+                className="ml-1 mb-0.5 inline-block text-gray-400 dark:text-gray-600"
                 height={13}
               />
             </span>

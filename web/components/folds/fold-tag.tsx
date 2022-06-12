@@ -7,7 +7,7 @@ export function FoldTag(props: { fold: Fold }) {
   return (
     <div
       className={clsx(
-        'rounded-full bg-white px-4 py-2 shadow-md hover:bg-gray-100',
+        'rounded-full bg-white dark:bg-black px-4 py-2 shadow-md hover:bg-gray-100 dark:hover:bg-gray-900',
         'cursor-pointer'
       )}
     >

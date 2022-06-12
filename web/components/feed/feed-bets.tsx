@@ -50,7 +50,7 @@ export function FeedBet(props: {
           />
         ) : (
           <div className="relative px-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
               <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
             </div>
           </div>
@@ -159,7 +159,7 @@ export function FeedBetGroup(props: {
     <>
       <div>
         <div className="relative px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
             <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
         </div>

@@ -49,7 +49,7 @@ const Home = (props: { hotContracts: Contract[] }) => {
           <FeedPromo hotContracts={hotContracts ?? []} />
           {/* <p className="mt-6 text-gray-500">
             View{' '}
-            <SiteLink href="/markets" className="font-bold text-gray-700">
+            <SiteLink href="/markets" className="font-bold text-gray-700 dark:text-gray-300">
               all markets
             </SiteLink>
           </p> */}

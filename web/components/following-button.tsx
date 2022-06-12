@@ -46,7 +46,7 @@ export function EditFollowingButton(props: { user: User; className?: string }) {
     <div
       className={clsx(
         className,
-        'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-700'
+        'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-700 dark:text-gray-300'
       )}
       onClick={() => setIsOpen(true)}
     >
@@ -113,7 +113,7 @@ function FollowsDialog(props: {
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="rounded bg-white p-6">
+      <Col className="rounded bg-white dark:bg-black p-6">
         <div className="p-2 pb-1 text-xl">{user.name}</div>
         <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
         <Tabs

@@ -38,7 +38,7 @@ export function MiscDetails(props: {
   ).slice(0, 1)
 
   return (
-    <Row className="items-center gap-3 text-sm text-gray-400">
+    <Row className="items-center gap-3 text-sm text-gray-400 dark:text-gray-600">
       {showHotVolume ? (
         <Row className="gap-0.5">
           <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
@@ -56,7 +56,7 @@ export function MiscDetails(props: {
       )}
 
       {categories.length > 0 && (
-        <TagsList className="text-gray-400" tags={categories} noLabel />
+        <TagsList className="text-gray-400 dark:text-gray-600" tags={categories} noLabel />
       )}
     </Row>
   )
@@ -67,7 +67,7 @@ export function AvatarDetails(props: { contract: Contract }) {
   const { creatorName, creatorUsername } = contract
 
   return (
-    <Row className="items-center gap-2 text-sm text-gray-400">
+    <Row className="items-center gap-2 text-sm text-gray-400 dark:text-gray-600">
       <Avatar
         username={creatorUsername}
         avatarUrl={contract.creatorAvatarUrl}

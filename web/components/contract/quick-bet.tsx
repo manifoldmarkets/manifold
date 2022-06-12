@@ -147,7 +147,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       className={clsx(
         'relative -my-4 -mr-5 min-w-[5.5rem] justify-center gap-2 pr-5 pl-1 align-middle'
         // Use this for colored QuickBet panes
-        // `bg-opacity-10 bg-${color}`
+        // `bg-opacity-10 dark:bg-opacity-990 bg-${color}`
       )}
     >
       {/* Up bet triangle */}
@@ -158,7 +158,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
           onMouseLeave={() => setUpHover(false)}
           onClick={() => placeQuickBet('UP')}
         />
-        <div className="mt-2 text-center text-xs text-transparent peer-hover:text-gray-400">
+        <div className="mt-2 text-center text-xs text-transparent peer-hover:text-gray-400 dark:hover:text-gray-600">
           {formatMoney(10)}
         </div>
 
@@ -166,14 +166,14 @@ export function QuickBet(props: { contract: Contract; user: User }) {
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? textColor : 'text-gray-400'
+              upHover ? textColor : 'text-gray-400 dark:text-gray-600'
             )}
           />
         ) : (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? textColor : 'text-gray-200'
+              upHover ? textColor : 'text-gray-200 dark:text-gray-800'
             )}
           />
         )}
@@ -186,7 +186,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
         <div>
           <div className="peer absolute bottom-0 left-0 right-0 h-[50%] cursor-default"></div>
           <TriangleDownFillIcon
-            className={clsx('mx-auto h-5 w-5 text-gray-200')}
+            className={clsx('mx-auto h-5 w-5 text-gray-200 dark:text-gray-800')}
           />
         </div>
       ) : (
@@ -201,18 +201,18 @@ export function QuickBet(props: { contract: Contract; user: User }) {
             <TriangleDownFillIcon
               className={clsx(
                 'mx-auto h-5 w-5',
-                downHover ? 'text-red-500' : 'text-gray-400'
+                downHover ? 'text-red-500' : 'text-gray-400 dark:text-gray-600'
               )}
             />
           ) : (
             <TriangleDownFillIcon
               className={clsx(
                 'mx-auto h-5 w-5',
-                downHover ? 'text-red-500' : 'text-gray-200'
+                downHover ? 'text-red-500' : 'text-gray-200 dark:text-gray-800'
               )}
             />
           )}
-          <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400">
+          <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400 dark:hover:text-gray-600">
             {formatMoney(10)}
           </div>
         </div>
@@ -230,7 +230,7 @@ export function ProbBar(props: { contract: Contract; previewProb?: number }) {
       <div
         className={clsx(
           'absolute right-0 top-0 w-1.5 rounded-tr-md transition-all',
-          'bg-gray-100'
+          'bg-gray-100 dark:bg-gray-900'
         )}
         style={{ height: `${100 * (1 - prob)}%` }}
       />

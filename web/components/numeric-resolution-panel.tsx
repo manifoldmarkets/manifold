@@ -53,13 +53,13 @@ export function NumericResolutionPanel(props: {
 
   const submitButtonClass =
     outcomeMode === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
+      ? 'bg-yellow-400 dark:bg-yellow-600 hover:bg-yellow-500'
       : outcome !== undefined
       ? 'btn-primary'
       : 'btn-disabled'
 
   return (
-    <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
+    <Col className={clsx('rounded-md bg-white dark:bg-black px-8 py-6', className)}>
       <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
 
       <div className="mb-3 text-sm text-gray-500">Outcome</div>

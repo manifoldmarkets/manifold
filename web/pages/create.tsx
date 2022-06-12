@@ -33,7 +33,7 @@ export default function Create() {
             <div className="form-control w-full">
               <label className="label">
                 <span className="mb-1">
-                  Question<span className={'text-red-700'}>*</span>
+                  Question<span className={'text-red-700 dark:text-red-300'}>*</span>
                 </span>
               </label>
 
@@ -185,7 +185,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         className={'col-span-4'}
       />
       {marketInfoText && (
-        <div className="mt-3 ml-1 text-sm text-indigo-700">
+        <div className="mt-3 ml-1 text-sm text-indigo-700 dark:text-indigo-300">
           {marketInfoText}
         </div>
       )}

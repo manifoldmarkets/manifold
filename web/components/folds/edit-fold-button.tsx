@@ -50,7 +50,7 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
       <label
         htmlFor="edit"
         className={clsx(
-          'modal-button cursor-pointer whitespace-nowrap text-sm text-gray-700'
+          'modal-button cursor-pointer whitespace-nowrap text-sm text-gray-700 dark:text-gray-300'
         )}
       >
         <PencilIcon className="inline h-4 w-4" /> Edit

@@ -45,13 +45,13 @@ export function AnswerItem(props: {
         'flex flex-col gap-4 rounded p-4 sm:flex-row',
         wasResolvedTo
           ? resolution === 'MKT'
-            ? 'mb-2 bg-blue-50'
-            : 'mb-10 bg-green-50'
+            ? 'mb-2 bg-blue-50 dark:bg-blue-950'
+            : 'mb-10 bg-green-50 dark:bg-green-950'
           : chosenProb === undefined
-          ? 'bg-gray-50'
+          ? 'bg-gray-50 dark:bg-gray-950'
           : showChoice === 'radio'
-          ? 'bg-green-50'
-          : 'bg-blue-50'
+          ? 'bg-green-50 dark:bg-green-950'
+          : 'bg-blue-50 dark:bg-blue-950'
       )}
     >
       <Col className="flex-1 gap-3">
@@ -143,7 +143,7 @@ export function AnswerItem(props: {
               <div
                 className={clsx(
                   'text-xl',
-                  resolution === 'MKT' ? 'text-blue-700' : 'text-green-700'
+                  resolution === 'MKT' ? 'text-blue-700 dark:text-blue-300' : 'text-green-700 dark:text-green-300'
                 )}
               >
                 Chosen{' '}

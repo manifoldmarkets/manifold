@@ -28,7 +28,7 @@ export function NumericBetPanel(props: {
   const user = useUser()
 
   return (
-    <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
+    <Col className={clsx('rounded-md bg-white dark:bg-black px-8 py-6', className)}>
       <div className="mb-6 text-2xl">Place your bet</div>
 
       <NumericBuyPanel contract={contract} user={user} />

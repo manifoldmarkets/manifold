@@ -48,14 +48,14 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
         </div>
         <Spacer h={6} />
         <button
-          className="self-center rounded-md border-none bg-gradient-to-r from-teal-500 to-green-500 py-4 px-6 text-lg font-semibold normal-case text-white hover:from-teal-600 hover:to-green-600"
+          className="self-center rounded-md border-none bg-gradient-to-r from-teal-500 to-green-500 py-4 px-6 text-lg font-semibold normal-case text-white dark:text-black hover:from-teal-600 hover:to-green-600"
           onClick={firebaseLogin}
         >
           Start betting now
         </button>{' '}
       </Col>
 
-      <Row className="m-4 mb-6 items-center gap-1 text-xl font-semibold text-gray-800">
+      <Row className="m-4 mb-6 items-center gap-1 text-xl font-semibold text-gray-800 dark:text-gray-200">
         <SparklesIcon className="inline h-5 w-5" aria-hidden="true" />
         Trending markets
       </Row>
@@ -94,7 +94,7 @@ export default function FeedCreate(props: {
   return (
     <div
       className={clsx(
-        'w-full cursor-text rounded bg-white p-4 shadow-md',
+        'w-full cursor-text rounded bg-white dark:bg-black p-4 shadow-md',
         isExpanded ? 'ring-2 ring-indigo-300' : '',
         className
       )}
@@ -123,7 +123,7 @@ export default function FeedCreate(props: {
           <textarea
             ref={inputRef as any}
             className={clsx(
-              'w-full resize-none appearance-none border-transparent bg-transparent p-0 text-indigo-700 placeholder:text-gray-400 focus:border-transparent focus:ring-transparent',
+              'w-full resize-none appearance-none border-transparent bg-transparent p-0 text-indigo-700 dark:text-indigo-300 placeholder:text-gray-400 dark:text-gray-600 focus:border-transparent focus:ring-transparent',
               question && 'text-lg sm:text-xl',
               !question && 'text-base sm:text-lg'
             )}

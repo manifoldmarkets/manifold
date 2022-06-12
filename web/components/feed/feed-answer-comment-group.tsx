@@ -131,7 +131,7 @@ export function FeedAnswerCommentGroup(props: {
           answer={answer}
           contract={contract}
           closePanel={() => setOpen(false)}
-          className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
+          className="sm:max-w-84 !rounded-md bg-white dark:bg-black !px-8 !py-6"
           isModal={true}
         />
       </Modal>
@@ -221,7 +221,7 @@ export function FeedAnswerCommentGroup(props: {
       {showReply && (
         <div className={'ml-6 pt-4'}>
           <span
-            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200 dark:bg-gray-800"
             aria-hidden="true"
           />
           <CommentInput

@@ -12,7 +12,7 @@ import { contractPath } from 'web/lib/firebase/contracts'
 
 function avatarHtml(avatarUrl: string) {
   return `<img
-  class="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center"
+  class="h-10 w-10 rounded-full bg-gray-400 dark:bg-gray-600 flex items-center justify-center"
   src="${avatarUrl}"
   alt=""
 />`

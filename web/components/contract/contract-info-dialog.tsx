@@ -38,19 +38,19 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   return (
     <>
       <button
-        className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:cursor-pointer hover:bg-gray-100"
+        className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
         onClick={() => setOpen(true)}
       >
         <DotsHorizontalIcon
           className={clsx(
-            'h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500'
+            'h-6 w-6 flex-shrink-0 text-gray-400 dark:text-gray-600 group-hover:text-gray-500'
           )}
           aria-hidden="true"
         />
       </button>
 
       <Modal open={open} setOpen={setOpen}>
-        <Col className="gap-4 rounded bg-white p-6">
+        <Col className="gap-4 rounded bg-white dark:bg-black p-6">
           <Title className="!mt-0 !mb-0" text="Market info" />
 
           <div>Share</div>

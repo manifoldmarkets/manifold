@@ -35,7 +35,7 @@ function FollowFoldButton(props: {
       className={clsx(
         'rounded-full border-2 px-4 py-1 shadow-md',
         'cursor-pointer',
-        followed ? 'border-gray-300 bg-gray-300' : 'bg-white'
+        followed ? 'border-gray-300 dark:border-gray-700 bg-gray-300 dark:bg-gray-700' : 'bg-white dark:bg-black'
       )}
       onClick={onClick}
     >
@@ -80,7 +80,7 @@ export const FastFoldFollowing = (props: {
 
   return (
     <>
-      <Row className="mx-3 mb-3 items-center gap-2 text-sm text-gray-800">
+      <Row className="mx-3 mb-3 items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
         <SearchIcon className="inline h-5 w-5" aria-hidden="true" />
         Personalize your feed — click on a community to follow
       </Row>

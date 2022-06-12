@@ -46,7 +46,7 @@ export function ContractDescription(props: {
   return (
     <div
       className={clsx(
-        'mt-2 whitespace-pre-line break-words text-gray-700',
+        'mt-2 whitespace-pre-line break-words text-gray-700 dark:text-gray-300',
         className
       )}
     >

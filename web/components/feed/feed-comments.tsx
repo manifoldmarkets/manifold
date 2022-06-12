@@ -56,7 +56,7 @@ export function FeedCommentThread(props: {
   return (
     <div className={'w-full flex-col pr-1'}>
       <span
-        className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+        className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200 dark:bg-gray-800"
         aria-hidden="true"
       />
       <CommentRepliesList
@@ -71,7 +71,7 @@ export function FeedCommentThread(props: {
       {showReply && (
         <div className={'-pb-2 ml-6 flex flex-col pt-5'}>
           <span
-            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200 dark:bg-gray-800"
             aria-hidden="true"
           />
           <CommentInput
@@ -126,7 +126,7 @@ export function CommentRepliesList(props: {
           {/*draw a gray line from the comment to the left:*/}
           {(treatFirstIndexEqually || commentIdx != 0) && (
             <span
-              className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+              className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200 dark:bg-gray-800"
               aria-hidden="true"
             />
           )}
@@ -422,7 +422,7 @@ export function CommentInput(props: {
                 )}
             </div>
 
-            <Row className="gap-1.5 text-gray-700">
+            <Row className="gap-1.5 text-gray-700 dark:text-gray-300">
               <Textarea
                 ref={setRef}
                 value={comment}
@@ -510,12 +510,12 @@ export function TruncatedComment(props: {
 
   return (
     <div
-      className="mt-2 whitespace-pre-line break-words text-gray-700"
+      className="mt-2 whitespace-pre-line break-words text-gray-700 dark:text-gray-300"
       style={{ fontSize: 15 }}
     >
       <Linkify text={truncated} />
       {truncated != comment && (
-        <SiteLink href={moreHref} className="text-indigo-700">
+        <SiteLink href={moreHref} className="text-indigo-700 dark:text-indigo-300">
           ... (show more)
         </SiteLink>
       )}

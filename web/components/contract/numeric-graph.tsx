@@ -84,7 +84,7 @@ function formatPercent(y: DatumValue) {
 function Tooltip(props: { point: Point }) {
   const { point } = props
   return (
-    <Col className="border border-gray-300 bg-white py-2 px-3">
+    <Col className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-black py-2 px-3">
       <div
         className="pb-1"
         style={{

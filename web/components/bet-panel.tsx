@@ -58,11 +58,11 @@ export function BetPanel(props: {
       <SellRow
         contract={contract}
         user={user}
-        className={'rounded-t-md bg-gray-100 px-6 py-6'}
+        className={'rounded-t-md bg-gray-100 dark:bg-gray-900 px-6 py-6'}
       />
       <Col
         className={clsx(
-          'rounded-b-md bg-white px-8 py-6',
+          'rounded-b-md bg-white dark:bg-black px-8 py-6',
           !sharesOutcome && 'rounded-t-md',
           className
         )}
@@ -116,7 +116,7 @@ export function BetPanelSwitcher(props: {
   return (
     <Col className={className}>
       {sharesOutcome && mechanism === 'cpmm-1' && (
-        <Col className="rounded-t-md bg-gray-100 px-6 py-6">
+        <Col className="rounded-t-md bg-gray-100 dark:bg-gray-900 px-6 py-6">
           <Row className="items-center justify-between gap-2">
             <div>
               You have {formatWithCommas(floorShares)}{' '}
@@ -146,7 +146,7 @@ export function BetPanelSwitcher(props: {
 
       <Col
         className={clsx(
-          'rounded-b-md bg-white px-8 py-6',
+          'rounded-b-md bg-white dark:bg-black px-8 py-6',
           !sharesOutcome && 'rounded-t-md'
         )}
       >
@@ -361,7 +361,7 @@ function BuyPanel(props: {
               ? 'btn-disabled'
               : betChoice === 'YES'
               ? 'btn-primary'
-              : 'border-none bg-red-400 hover:bg-red-500',
+              : 'border-none bg-red-400 dark:bg-red-600 hover:bg-red-500',
             isSubmitting ? 'loading' : ''
           )}
           onClick={betDisabled ? undefined : submitBet}
@@ -508,7 +508,7 @@ export function SellPanel(props: {
             ? 'btn-disabled'
             : sharesOutcome === 'YES'
             ? 'btn-primary'
-            : 'border-none bg-red-400 hover:bg-red-500',
+            : 'border-none bg-red-400 dark:bg-red-600 hover:bg-red-500',
           isSubmitting ? 'loading' : ''
         )}
         onClick={betDisabled ? undefined : submitSell}

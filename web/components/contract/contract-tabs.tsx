@@ -47,7 +47,7 @@ export function ContractTabs(props: {
       {outcomeType === 'FREE_RESPONSE' && (
         <Col className={'mt-8 flex w-full '}>
           <div className={'text-md mt-8 mb-2 text-left'}>General Comments</div>
-          <div className={'mb-4 w-full border-b border-gray-200'} />
+          <div className={'mb-4 w-full border-b border-gray-200 dark:border-gray-800'} />
           <ContractActivity
             contract={contract}
             bets={bets}

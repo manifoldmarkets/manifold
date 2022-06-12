@@ -223,20 +223,20 @@ function NotificationGroupItem(props: {
   return (
     <div
       className={clsx(
-        'relative cursor-pointer bg-white px-2 pt-6 text-sm',
+        'relative cursor-pointer bg-white dark:bg-black px-2 pt-6 text-sm',
         className,
-        !expanded ? 'hover:bg-gray-100' : ''
+        !expanded ? 'hover:bg-gray-100 dark:hover:bg-gray-900' : ''
       )}
       onClick={() => setExpanded(!expanded)}
     >
       {expanded && (
         <span
-          className="absolute top-14 left-6 -ml-px h-[calc(100%-5rem)] w-0.5 bg-gray-200"
+          className="absolute top-14 left-6 -ml-px h-[calc(100%-5rem)] w-0.5 bg-gray-200 dark:bg-gray-800"
           aria-hidden="true"
         />
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
           <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
         </div>
         <div className={'flex-1 overflow-hidden pl-2 sm:flex'}>
@@ -304,7 +304,7 @@ function NotificationGroupItem(props: {
           </div>
         </div>
 
-        <div className={'mt-6 border-b border-gray-300'} />
+        <div className={'mt-6 border-b border-gray-300 dark:border-gray-700'} />
       </div>
     </div>
   )
@@ -422,7 +422,7 @@ function NotificationSettings() {
   }) {
     const { label, highlight } = props
     return (
-      <Row className={clsx('my-1 text-gray-300', highlight && '!text-black')}>
+      <Row className={clsx('my-1 text-gray-300 dark:text-gray-700', highlight && '!text-black')}>
         {highlight ? <CheckIcon height={20} /> : <XIcon height={20} />}
         {label}
       </Row>
@@ -691,7 +691,7 @@ function NotificationItem(props: {
   }
 
   return (
-    <div className={'bg-white px-2 pt-6 text-sm sm:px-4'}>
+    <div className={'bg-white dark:bg-black px-2 pt-6 text-sm sm:px-4'}>
       <a href={getSourceUrl()}>
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <Avatar
@@ -757,7 +757,7 @@ function NotificationItem(props: {
           />
         </div>
 
-        <div className={'mt-6 border-b border-gray-300'} />
+        <div className={'mt-6 border-b border-gray-300 dark:border-gray-700'} />
       </a>
     </div>
   )
@@ -812,7 +812,7 @@ function NotificationTextLabel(props: {
     }
   } else if (sourceType === 'liquidity' && sourceText) {
     return (
-      <span className="text-blue-400">{formatMoney(parseInt(sourceText))}</span>
+      <span className="text-blue-400 dark:text-blue-600">{formatMoney(parseInt(sourceText))}</span>
     )
   }
   // return default text

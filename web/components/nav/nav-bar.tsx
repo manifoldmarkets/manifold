@@ -59,12 +59,12 @@ export function BottomNavBar() {
       : getNavigation(user?.username || 'error')
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 dark:border-t-998 bg-white dark:bg-black text-xs text-gray-700 dark:text-gray-300 lg:hidden">
       {navigationOptions.map((item) => (
         <NavBarItem key={item.name} item={item} currentPage={currentPage} />
       ))}
       <div
-        className="w-full select-none py-1 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
+        className="w-full select-none py-1 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-800 hover:text-indigo-700 dark:hover:text-indigo-300"
         onClick={() => setSidebarOpen(true)}
       >
         {user === null ? (
@@ -103,8 +103,8 @@ function NavBarItem(props: { item: Item; currentPage: string }) {
     <Link href={item.href}>
       <a
         className={clsx(
-          'block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700',
-          currentPage === item.href && 'bg-gray-200 text-indigo-700'
+          'block w-full py-1 px-3 text-center hover:bg-indigo-200 dark:hover:bg-indigo-800 hover:text-indigo-700 dark:hover:text-indigo-300',
+          currentPage === item.href && 'bg-gray-200 dark:bg-gray-800 text-indigo-700 dark:text-indigo-300'
         )}
       >
         <item.icon className="my-1 mx-auto h-6 w-6" />
@@ -137,7 +137,7 @@ export function MobileSidebar(props: {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="fixed inset-0 bg-gray-600 bg-opacity-75" />
+            <Dialog.Overlay className="fixed inset-0 bg-gray-600 dark:bg-gray-400 bg-opacity-75 dark:bg-opacity-925" />
           </Transition.Child>
           <Transition.Child
             as={Fragment}
@@ -148,7 +148,7 @@ export function MobileSidebar(props: {
             leaveFrom="translate-x-0"
             leaveTo="-translate-x-full"
           >
-            <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4">
+            <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white dark:bg-black pt-5 pb-4">
               <Transition.Child
                 as={Fragment}
                 enter="ease-in-out duration-300"
@@ -165,7 +165,7 @@ export function MobileSidebar(props: {
                     onClick={() => setSidebarOpen(false)}
                   >
                     <span className="sr-only">Close sidebar</span>
-                    <XIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                    <XIcon className="h-6 w-6 text-white dark:text-black" aria-hidden="true" />
                   </button>
                 </div>
               </Transition.Child>

@@ -41,7 +41,7 @@ const Home = () => {
         </Col>
         <button
           type="button"
-          className="fixed bottom-[70px] right-3 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-3 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
+          className="fixed bottom-[70px] right-3 inline-flex items-center rounded-full border border-transparent bg-indigo-600 dark:bg-indigo-400 p-3 text-white dark:text-black shadow-sm hover:bg-indigo-700 dark:hover:bg-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
           onClick={() => router.push('/create')}
         >
           <PlusSmIcon className="h-8 w-8" aria-hidden="true" />

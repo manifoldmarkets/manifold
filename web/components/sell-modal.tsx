@@ -30,7 +30,7 @@ export function SellSharesModal(props: {
 
   return (
     <Modal open={true} setOpen={setOpen}>
-      <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
+      <Col className={clsx('rounded-md bg-white dark:bg-black px-8 py-6', className)}>
         <Title className="!mt-0" text={'Sell shares'} />
 
         <div className="mb-6">

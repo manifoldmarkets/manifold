@@ -60,15 +60,15 @@ export function ResolutionPanel(props: {
     outcome === 'YES'
       ? 'btn-primary'
       : outcome === 'NO'
-      ? 'bg-red-400 hover:bg-red-500'
+      ? 'bg-red-400 dark:bg-red-600 hover:bg-red-500'
       : outcome === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
+      ? 'bg-yellow-400 dark:bg-yellow-600 hover:bg-yellow-500'
       : outcome === 'MKT'
-      ? 'bg-blue-400 hover:bg-blue-500'
+      ? 'bg-blue-400 dark:bg-blue-600 hover:bg-blue-500'
       : 'btn-disabled'
 
   return (
-    <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
+    <Col className={clsx('rounded-md bg-white dark:bg-black px-8 py-6', className)}>
       <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
 
       <div className="mb-3 text-sm text-gray-500">Outcome</div>

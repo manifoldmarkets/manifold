@@ -35,8 +35,8 @@ export function ChoicesToggleGroup(props: {
             clsx(
               active ? 'ring-2 ring-indigo-500 ring-offset-2' : '',
               currentChoice === choicesMap[choiceKey]
-                ? 'border-transparent bg-indigo-500 text-white hover:bg-indigo-600'
-                : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50',
+                ? 'border-transparent bg-indigo-500 text-white dark:text-black hover:bg-indigo-600 dark:hover:bg-indigo-400'
+                : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-black text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-950',
               'flex cursor-pointer items-center justify-center rounded-md border py-3 px-3 text-sm font-medium normal-case',
               "hover:ring-offset-2' hover:ring-2 hover:ring-indigo-500",
               toggleClassName

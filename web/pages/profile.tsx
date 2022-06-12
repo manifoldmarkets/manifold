@@ -148,7 +148,7 @@ export default function ProfilePage() {
     <Page>
       <SEO title="Profile" description="User profile settings" url="/profile" />
 
-      <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
+      <Col className="max-w-lg rounded bg-white dark:bg-black p-6 shadow-md sm:mx-auto">
         <Row className="justify-between">
           <Title className="!mt-0" text="Edit Profile" />
           <SiteLink className="btn btn-primary" href={`/${user?.username}`}>
@@ -165,7 +165,7 @@ export default function ProfilePage() {
                   src={avatarUrl}
                   width={80}
                   height={80}
-                  className="flex items-center justify-center rounded-full bg-gray-400"
+                  className="flex items-center justify-center rounded-full bg-gray-400 dark:bg-gray-600"
                 />
                 <input type="file" name="file" onChange={fileHandler} />
               </>
@@ -207,7 +207,7 @@ export default function ProfilePage() {
               /> */}
               <label className="label">
                 Banner image{' '}
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-gray-400 dark:text-gray-600">
                   Not editable for now
                 </span>
               </label>

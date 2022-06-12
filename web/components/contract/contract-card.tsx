@@ -51,7 +51,7 @@ export function ContractCard(props: {
     <div>
       <Col
         className={clsx(
-          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:cursor-pointer hover:bg-gray-100',
+          'relative gap-3 rounded-lg bg-white dark:bg-black py-4 pl-6 pr-5 shadow-md hover:cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900',
           className
         )}
       >
@@ -82,7 +82,7 @@ export function ContractCard(props: {
             </div>
             <AvatarDetails contract={contract} />
             <p
-              className="break-words font-semibold text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
+              className="break-words font-semibold text-indigo-700 dark:text-indigo-300 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
               style={{ /* For iOS safari */ wordBreak: 'break-word' }}
             >
               {question}
@@ -125,7 +125,7 @@ export function ContractCard(props: {
 
               {outcomeType === 'FREE_RESPONSE' && (
                 <FreeResponseResolutionOrChance
-                  className="self-end text-gray-600"
+                  className="self-end text-gray-600 dark:text-gray-400"
                   contract={contract}
                   truncate="long"
                 />
@@ -185,7 +185,7 @@ function FreeResponseTopAnswer(props: {
 
   return topAnswer ? (
     <AnswerLabel
-      className="!text-gray-600"
+      className="!text-gray-600 dark:text-gray-400"
       answer={topAnswer}
       truncate={truncate}
     />
@@ -255,7 +255,7 @@ export function NumericResolutionOrExpectation(props: {
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
-            <div className="text-blue-400">{resolutionValue}</div>
+            <div className="text-blue-400 dark:text-blue-600">{resolutionValue}</div>
           )}
         </>
       ) : (

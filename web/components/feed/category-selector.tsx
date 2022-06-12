@@ -69,9 +69,9 @@ function CategoryButton(props: {
     <div
       className={clsx(
         className,
-        'rounded-full border-2 px-4 py-1 shadow-md hover:bg-gray-200',
+        'rounded-full border-2 px-4 py-1 shadow-md hover:bg-gray-200 dark:hover:bg-gray-800',
         'cursor-pointer select-none',
-        isFollowed ? 'border-gray-300 bg-gray-300' : 'bg-white'
+        isFollowed ? 'border-gray-300 dark:border-gray-700 bg-gray-300 dark:bg-gray-700' : 'bg-white dark:bg-black'
       )}
       onClick={toggle}
     >
@@ -91,7 +91,7 @@ export function EditCategoriesButton(props: {
     <div
       className={clsx(
         className,
-        'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-700'
+        'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-700 dark:text-gray-300'
       )}
       onClick={() => setIsOpen(true)}
     >
@@ -123,7 +123,7 @@ function CategorySelectorModal(props: {
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="rounded bg-white p-6">
+      <Col className="rounded bg-white dark:bg-black p-6">
         <button
           className="btn btn-sm btn-outline mb-4 self-start normal-case"
           onClick={() => {

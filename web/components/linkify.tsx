@@ -28,7 +28,7 @@ export function Linkify(props: { text: string; gray?: boolean }) {
       <>
         {whitespace}
         <SiteLink
-          className={gray ? 'text-gray-500' : 'text-indigo-700'}
+          className={gray ? 'text-gray-500' : 'text-indigo-700 dark:text-indigo-300'}
           href={href}
         >
           {symbol}

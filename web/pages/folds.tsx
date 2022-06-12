@@ -125,7 +125,7 @@ function FoldCard(props: { fold: Fold; curator: User | undefined }) {
   return (
     <Col
       key={fold.id}
-      className="relative gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100"
+      className="relative gap-1 rounded-xl bg-white dark:bg-black p-8 shadow-md hover:bg-gray-100 dark:hover:bg-gray-900"
     >
       <Link href={foldPath(fold)}>
         <a className="absolute left-0 right-0 top-0 bottom-0" />

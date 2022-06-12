@@ -58,7 +58,7 @@ export function FeedItems(props: {
             {activityItemIdx !== items.length - 1 ||
             item.type === 'answergroup' ? (
               <span
-                className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+                className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200 dark:bg-gray-800"
                 aria-hidden="true"
               />
             ) : null}
@@ -129,7 +129,7 @@ export function FeedQuestion(props: {
       <div className="min-w-0 flex-1 py-1.5">
         <div className="mb-2 text-sm text-gray-500">
           <UserLink
-            className="text-gray-900"
+            className="text-gray-900 dark:text-gray-100"
             name={creatorName}
             username={creatorUsername}
           />{' '}
@@ -139,7 +139,7 @@ export function FeedQuestion(props: {
             {isNew || volume === 0 ? (
               <NewContractBadge />
             ) : (
-              <span className="hidden text-gray-400 sm:inline">
+              <span className="hidden text-gray-400 dark:text-gray-600 sm:inline">
                 {volumeLabel}
               </span>
             )}
@@ -151,7 +151,7 @@ export function FeedQuestion(props: {
               props.contractPath ? props.contractPath : contractPath(contract)
             }
             onClick={() => trackClick(contract.id)}
-            className="text-lg text-indigo-700 sm:text-xl"
+            className="text-lg text-indigo-700 dark:text-indigo-300 sm:text-xl"
           >
             {question}
           </SiteLink>
@@ -187,7 +187,7 @@ function FeedDescription(props: { contract: Contract }) {
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
           <UserLink
-            className="text-gray-900"
+            className="text-gray-900 dark:text-gray-100"
             name={creatorName}
             username={creatorUsername}
           />{' '}
@@ -224,7 +224,7 @@ function FeedResolve(props: { contract: Contract }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
             <OutcomeIcon outcome={resolution} />
           </div>
         </div>
@@ -232,7 +232,7 @@ function FeedResolve(props: { contract: Contract }) {
       <div className="min-w-0 flex-1 py-1.5">
         <div className="text-sm text-gray-500">
           <UserLink
-            className="text-gray-900"
+            className="text-gray-900 dark:text-gray-100"
             name={creatorName}
             username={creatorUsername}
           />{' '}
@@ -257,7 +257,7 @@ function FeedClose(props: { contract: Contract }) {
     <>
       <div>
         <div className="relative px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
             <LockClosedIcon
               className="h-5 w-5 text-gray-500"
               aria-hidden="true"
@@ -282,7 +282,7 @@ function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
     <>
       <button onClick={() => setExpanded(true)}>
         <div className="relative px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700">
             <DotsVerticalIcon
               className="h-5 w-5 text-gray-500"
               aria-hidden="true"
@@ -293,7 +293,7 @@ function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
 
       <button onClick={() => setExpanded(true)}>
         <div className="min-w-0 flex-1 py-1.5">
-          <div className="text-sm text-gray-500 hover:text-gray-700">
+          <div className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
             <span>Show all activity</span>
           </div>
         </div>

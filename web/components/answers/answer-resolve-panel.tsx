@@ -61,13 +61,13 @@ export function AnswerResolvePanel(props: {
 
   const resolutionButtonClass =
     resolveOption === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
+      ? 'bg-yellow-400 dark:bg-yellow-600 hover:bg-yellow-500'
       : resolveOption === 'CHOOSE' && answers.length
       ? 'btn-primary'
       : resolveOption === 'CHOOSE_MULTIPLE' &&
         answers.length > 1 &&
         answers.every((answer) => chosenAnswers[answer] > 0)
-      ? 'bg-blue-400 hover:bg-blue-500'
+      ? 'bg-blue-400 dark:bg-blue-600 hover:bg-blue-500'
       : 'btn-disabled'
 
   return (

@@ -87,14 +87,14 @@ export default function Charity(props: {
           src="https://manifold.markets/embed/ManifoldMarkets/total-donations-for-manifold-for-go"
           title="Total donations for Manifold for Charity this May (in USD)"
           frameBorder="0"
-          className="m-10 w-full rounded-xl bg-white p-10"
+          className="m-10 w-full rounded-xl bg-white dark:bg-black p-10"
         ></iframe>
 
         <div className="mt-10 text-gray-500">
           Don't see your favorite charity? Recommend it{' '}
           <SiteLink
             href="https://manifold.markets/Sinclair/which-charities-should-manifold-add"
-            className="text-indigo-700"
+            className="text-indigo-700 dark:text-indigo-300"
           >
             here
           </SiteLink>

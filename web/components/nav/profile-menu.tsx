@@ -8,7 +8,7 @@ export function ProfileSummary(props: { user: User }) {
   const { user } = props
   return (
     <Link href={`/${user.username}`}>
-      <a className="group flex flex-row items-center gap-4 rounded-md py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+      <a className="group flex flex-row items-center gap-4 rounded-md py-3 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-700 dark:hover:text-gray-300">
         <Avatar avatarUrl={user.avatarUrl} username={user.username} noLink />
 
         <div className="truncate">

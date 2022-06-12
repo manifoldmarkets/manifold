@@ -27,7 +27,7 @@ export function CopyLinkButton(props: {
     >
       <Menu.Button
         className={clsx(
-          'btn btn-xs border-2 border-green-600 bg-white normal-case text-green-600 hover:border-green-600 hover:bg-white',
+          'btn btn-xs border-2 border-green-600 dark:border-green-400 bg-white dark:bg-black normal-case text-green-600 dark:text-green-400 hover:border-green-600 dark:hover:border-green-400 hover:bg-white dark:hover:bg-black',
           buttonClassName
         )}
       >

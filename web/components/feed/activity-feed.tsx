@@ -22,7 +22,7 @@ export function ActivityFeed(props: {
       {feed.map((item) => (
         <ContractActivity
           key={item.contract.id}
-          className="rounded-md bg-white py-6 px-2 sm:px-4"
+          className="rounded-md bg-white dark:bg-black py-6 px-2 sm:px-4"
           user={user}
           contract={item.contract}
           bets={item.recentBets}

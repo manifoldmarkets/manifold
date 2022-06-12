@@ -29,7 +29,7 @@ export function ConfirmationButton(props: {
   return (
     <>
       <Modal open={open} setOpen={setOpen}>
-        <Col className="gap-4 rounded-md bg-white px-8 py-6">
+        <Col className="gap-4 rounded-md bg-white dark:bg-black px-8 py-6">
           {children}
           <Row className="gap-4">
             <button

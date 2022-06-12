@@ -171,13 +171,13 @@ export function ContractPageContent(
         />
       )}
 
-      <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
+      <Col className="w-full justify-between rounded border-0 border-gray-100 dark:border-gray-900 bg-white dark:bg-black py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         {backToHome && (
           <button
-            className="btn btn-sm mb-4 items-center gap-2 self-start border-0 border-gray-700 bg-white normal-case text-gray-700 hover:bg-white hover:text-gray-700 lg:hidden"
+            className="btn btn-sm mb-4 items-center gap-2 self-start border-0 border-gray-700 dark:border-gray-300 bg-white dark:bg-black normal-case text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-black hover:text-gray-700 dark:hover:text-gray-300 lg:hidden"
             onClick={backToHome}
           >
-            <ArrowLeftIcon className="h-5 w-5 text-gray-700" />
+            <ArrowLeftIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
             Back
           </button>
         )}
@@ -308,7 +308,7 @@ function ContractTopTrades(props: {
       {topCommentId && profitById[topCommentId] > 0 && (
         <>
           <Title text="💬 Proven correct" className="!mt-0" />
-          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
+          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 dark:bg-gray-950 px-2 py-4">
             <FeedComment
               contract={contract}
               comment={commentsById[topCommentId]}
@@ -329,7 +329,7 @@ function ContractTopTrades(props: {
       {topBettor && topBetId !== topCommentId && profitById[topBetId] > 0 && (
         <>
           <Title text="💸 Smartest money" className="!mt-0" />
-          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
+          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 dark:bg-gray-950 px-2 py-4">
             <FeedBet
               contract={contract}
               bet={betsById[topBetId]}

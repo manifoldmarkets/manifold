@@ -190,19 +190,19 @@ function OpenAnswer(props: {
   const [open, setOpen] = useState(false)
 
   return (
-    <Col className={'border-base-200 bg-base-200 flex-1 rounded-md px-2'}>
+    <Col className={'border-base-200 dark:border-gray-800 bg-base-200 dark:bg-gray-800 flex-1 rounded-md px-2'}>
       <Modal open={open} setOpen={setOpen}>
         <AnswerBetPanel
           answer={answer}
           contract={contract}
           closePanel={() => setOpen(false)}
-          className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
+          className="sm:max-w-84 !rounded-md bg-white dark:bg-black !px-8 !py-6"
           isModal={true}
         />
       </Modal>
 
       <div
-        className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 bg-opacity-10"
+        className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 dark:bg-green-400 bg-opacity-10 dark:bg-opacity-990"
         style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
       />
 

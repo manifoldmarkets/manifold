@@ -33,9 +33,9 @@ export function YesNoSelector(props: {
         <button
           className={clsx(
             commonClassNames,
-            'hover:bg-primary-focus border-primary hover:border-primary-focus hover:text-white',
+            'hover:bg-primary-focus border-primary hover:border-primary-focus hover:text-white dark:hover:text-black',
             selected == 'YES'
-              ? 'bg-primary text-white'
+              ? 'bg-primary text-white dark:text-black'
               : 'text-primary bg-transparent',
             btnClassName
           )}
@@ -50,10 +50,10 @@ export function YesNoSelector(props: {
         <button
           className={clsx(
             commonClassNames,
-            'border-red-400 hover:border-red-500 hover:bg-red-500 hover:text-white',
+            'border-red-400 dark:border-red-600 hover:border-red-500 hover:bg-red-500 hover:text-white dark:hover:text-black',
             selected == 'NO'
-              ? 'bg-red-400 text-white'
-              : 'bg-transparent text-red-400',
+              ? 'bg-red-400 dark:bg-red-600 text-white dark:text-black'
+              : 'bg-transparent text-red-400 dark:text-red-600',
             btnClassName
           )}
           onClick={() => onSelect('NO')}
@@ -185,7 +185,7 @@ export function BuyButton(props: { className?: string; onClick?: () => void }) {
   return (
     <button
       className={clsx(
-        'hover:bg-primary-focus border-primary hover:border-primary-focus inline-flex flex-1  items-center justify-center rounded-lg border-2 p-2 hover:text-white',
+        'hover:bg-primary-focus border-primary hover:border-primary-focus inline-flex flex-1  items-center justify-center rounded-lg border-2 p-2 hover:text-white dark:hover:text-black',
         'text-primary bg-transparent text-lg',
         className
       )}
@@ -240,11 +240,11 @@ function Button(props: {
       type="button"
       className={clsx(
         'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 font-medium shadow-sm',
-        color === 'green' && 'btn-primary text-white',
-        color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
-        color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
-        color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
-        color === 'gray' && 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+        color === 'green' && 'btn-primary text-white dark:text-black',
+        color === 'red' && 'bg-red-400 dark:bg-red-600 text-white dark:text-black hover:bg-red-500',
+        color === 'yellow' && 'bg-yellow-400 dark:bg-yellow-600 text-white dark:text-black hover:bg-yellow-500',
+        color === 'blue' && 'bg-blue-400 dark:bg-blue-600 text-white dark:text-black hover:bg-blue-500',
+        color === 'gray' && 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700',
         className
       )}
       onClick={onClick}

@@ -269,7 +269,7 @@ function ContractBets(props: {
     <div
       tabIndex={0}
       className={clsx(
-        'collapse collapse-arrow relative bg-white p-4 pr-6',
+        'collapse collapse-arrow relative bg-white dark:bg-black p-4 pr-6',
         collapsed ? 'collapse-close' : 'collapse-open pb-2'
       )}
     >
@@ -281,7 +281,7 @@ function ContractBets(props: {
           <Row className="mr-2 max-w-lg">
             <Link href={contractPath(contract)}>
               <a
-                className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
+                className="font-medium text-indigo-700 dark:text-indigo-300 hover:underline hover:decoration-indigo-400 hover:decoration-2"
                 onClick={(e) => e.stopPropagation()}
               >
                 {contract.question}
@@ -696,8 +696,8 @@ function ProfitBadge(props: { profitPercent: number }) {
   if (!profitPercent) return null
   const colors =
     profitPercent > 0
-      ? 'bg-green-100 text-green-800'
-      : 'bg-red-100 text-red-800'
+      ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+      : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
 
   return (
     <span

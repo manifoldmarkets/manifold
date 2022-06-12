@@ -35,7 +35,7 @@ export function OutcomeLabel(props: {
       contract={contract}
       resolution={outcome}
       truncate={truncate}
-      answerClassName={'font-bold text-base-400'}
+      answerClassName={'font-bold text-base-400 dark:text-gray-600'}
     />
   )
 }
@@ -99,24 +99,24 @@ export function YesLabel() {
 }
 
 export function NoLabel() {
-  return <span className="text-red-400">NO</span>
+  return <span className="text-red-400 dark:text-red-600">NO</span>
 }
 
 export function CancelLabel() {
-  return <span className="text-yellow-400">N/A</span>
+  return <span className="text-yellow-400 dark:text-yellow-600">N/A</span>
 }
 
 export function ProbLabel() {
-  return <span className="text-blue-400">PROB</span>
+  return <span className="text-blue-400 dark:text-blue-600">PROB</span>
 }
 
 export function MultiLabel() {
-  return <span className="text-blue-400">MANY</span>
+  return <span className="text-blue-400 dark:text-blue-600">MANY</span>
 }
 
 export function ProbPercentLabel(props: { prob: number }) {
   const { prob } = props
-  return <span className="text-blue-400">{formatPercent(prob)}</span>
+  return <span className="text-blue-400 dark:text-blue-600">{formatPercent(prob)}</span>
 }
 
 export function AnswerNumberLabel(props: { number: string }) {

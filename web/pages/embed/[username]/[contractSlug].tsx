@@ -92,9 +92,9 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
       : 0
 
   return (
-    <Col className="w-full flex-1 bg-white">
+    <Col className="w-full flex-1 bg-white dark:bg-black">
       <div className="relative flex flex-col pt-2" ref={setElem}>
-        <div className="px-3 text-xl text-indigo-700 md:text-2xl">
+        <div className="px-3 text-xl text-indigo-700 dark:text-indigo-300 md:text-2xl">
           <SiteLink href={href}>{question}</SiteLink>
         </div>
 

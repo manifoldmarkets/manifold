@@ -15,7 +15,7 @@ export function CharityCard(props: { charity: Charity }) {
 
   return (
     <Link href={`/charity/${slug}`} passHref>
-      <div className="card card-compact transition:shadow flex-1 cursor-pointer border-2 bg-white hover:shadow-md">
+      <div className="card card-compact transition:shadow flex-1 cursor-pointer border-2 bg-white dark:bg-black hover:shadow-md">
         <Row className="mt-6 mb-2">
           {tags?.includes('Featured') && <FeaturedBadge />}
         </Row>
@@ -49,7 +49,7 @@ export function CharityCard(props: { charity: Charity }) {
 
 function FeaturedBadge() {
   return (
-    <span className="inline-flex items-center gap-1 bg-yellow-100 px-3 py-0.5 text-sm font-medium text-yellow-800">
+    <span className="inline-flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900 px-3 py-0.5 text-sm font-medium text-yellow-800 dark:text-yellow-200">
       <StarIcon className="h-4 w-4" aria-hidden="true" /> Featured
     </span>
   )

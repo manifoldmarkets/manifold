@@ -53,7 +53,7 @@ export function FoldTag(props: { fold: { slug: string; name: string } }) {
     <SiteLink href={`/fold/${slug}`} className="flex items-center">
       <div
         className={clsx(
-          'rounded-full border-2 bg-white px-4 py-1 shadow-md',
+          'rounded-full border-2 bg-white dark:bg-black px-4 py-1 shadow-md',
           'cursor-pointer'
         )}
       >

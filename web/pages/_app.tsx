@@ -82,7 +82,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
         <meta
           name="twitter:image"
-          content="https://manifold.markets/logo-bg-white.png"
+          content="https://manifold.markets/logo-bg-white dark:bg-black.png"
           key="image2"
         />
         <meta

@@ -33,7 +33,7 @@ export function ShareEmbedButton(props: {
         style={{
           backgroundColor: 'white',
           border: '2px solid #9ca3af',
-          color: '#9ca3af', // text-gray-400
+          color: '#9ca3af', // text-gray-400 dark:text-gray-600
         }}
       >
         <CodeIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />

@@ -72,7 +72,7 @@ function CharityPage(props: { charity: Charity }) {
       )}
 
       <Col className="mx-1 w-full items-center sm:px-0">
-        <Col className="max-w-2xl rounded bg-white px-8 py-6">
+        <Col className="max-w-2xl rounded bg-white dark:bg-black px-8 py-6">
           <Title className="!mt-0" text={name} />
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
@@ -88,7 +88,7 @@ function CharityPage(props: { charity: Charity }) {
               numSupporters={numSupporters}
             />
           </Row>
-          <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
+          <h2 className="mt-7 mb-2 text-xl text-indigo-700 dark:text-indigo-300">About</h2>
           <Blurb text={description} />
           {newToOld.map((txn) => (
             <Donation key={txn.id} txn={txn} />
@@ -125,7 +125,7 @@ function Blurb({ text }: { text: string }) {
       <button
         onClick={() => setOpen(!open)}
         className={clsx(
-          'btn btn-link capitalize-none my-3 normal-case text-indigo-700',
+          'btn btn-link capitalize-none my-3 normal-case text-indigo-700 dark:text-indigo-300',
           hideExpander && 'invisible'
         )}
       >
@@ -195,7 +195,7 @@ function DonationBox(props: {
   }
 
   return (
-    <div className="rounded-lg bg-white py-6 px-8 shadow-lg">
+    <div className="rounded-lg bg-white dark:bg-black py-6 px-8 shadow-lg">
       <Title text="Donate" className="!mt-0" />
       <form onSubmit={onSubmit}>
         <label

@@ -39,9 +39,9 @@ function toPrediction(contract: BinaryContract): Prediction {
 function PredictionRow(props: { prediction: Prediction }) {
   const { prediction } = props
   return (
-    <Row className="justify-between gap-4 p-4 hover:bg-gray-300">
+    <Row className="justify-between gap-4 p-4 hover:bg-gray-300 dark:hover:bg-gray-700">
       <Col className="justify-between">
-        <div className="mb-2 font-medium text-indigo-700">
+        <div className="mb-2 font-medium text-indigo-700 dark:text-indigo-300">
           <Linkify text={prediction.question} />
         </div>
         <div className="text-sm text-gray-500">{prediction.description}</div>
@@ -70,7 +70,7 @@ function PredictionRow(props: { prediction: Prediction }) {
 function PredictionList(props: { predictions: Prediction[] }) {
   const { predictions } = props
   return (
-    <Col className="divide-y divide-gray-300 rounded-md border border-gray-300">
+    <Col className="divide-y divide-gray-300 rounded-md border border-gray-300 dark:border-gray-700">
       {predictions.map((prediction) =>
         prediction.createdUrl ? (
           <Link href={prediction.createdUrl}>
@@ -164,7 +164,7 @@ ${TEST_VALUE}
   return (
     <Page>
       <Title text="Make Predictions" />
-      <div className="w-full rounded-lg bg-gray-100 px-6 py-4 shadow-xl">
+      <div className="w-full rounded-lg bg-gray-100 dark:bg-gray-900 px-6 py-4 shadow-xl">
         <form>
           <div className="form-control">
             <label className="label">
@@ -282,7 +282,7 @@ ${TEST_VALUE}
         <>
           <Spacer h={16} />
           <Title text="Created Predictions" />
-          <div className="w-full rounded-lg bg-gray-100 px-6 py-4 shadow-xl">
+          <div className="w-full rounded-lg bg-gray-100 dark:bg-gray-900 px-6 py-4 shadow-xl">
             <PredictionList predictions={createdContracts.map(toPrediction)} />
           </div>
         </>

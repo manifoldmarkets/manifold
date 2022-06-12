@@ -121,8 +121,8 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
       <a
         className={clsx(
           item.href == currentPage
-            ? 'bg-gray-200 text-gray-900'
-            : 'text-gray-600 hover:bg-gray-100',
+            ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900',
           'group flex items-center rounded-md px-3 py-2 text-sm font-medium'
         )}
         aria-current={item.href == currentPage ? 'page' : undefined}
@@ -131,7 +131,7 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
           className={clsx(
             item.href == currentPage
               ? 'text-gray-500'
-              : 'text-gray-400 group-hover:text-gray-500',
+              : 'text-gray-400 dark:text-gray-600 group-hover:text-gray-500',
             '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
           )}
           aria-hidden="true"
@@ -144,9 +144,9 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
 
 function MoreButton() {
   return (
-    <a className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:cursor-pointer hover:bg-gray-100">
+    <a className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900">
       <DotsHorizontalIcon
-        className="-ml-1 mr-3 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
+        className="-ml-1 mr-3 h-6 w-6 flex-shrink-0 text-gray-400 dark:text-gray-600 group-hover:text-gray-500"
         aria-hidden="true"
       />
       <span className="truncate">More</span>
@@ -193,7 +193,7 @@ export default function Sidebar(props: { className?: string }) {
     'from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700'
 
   const buttonStyle =
-    'border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r py-2.5 text-base font-semibold text-white shadow-sm lg:-ml-0'
+    'border-w-0 dark:border-w-1000 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r py-2.5 text-base font-semibold text-white dark:text-black shadow-sm lg:-ml-0'
 
   return (
     <nav aria-label="Sidebar" className={className}>
@@ -251,7 +251,7 @@ export default function Sidebar(props: { className?: string }) {
       mustWaitForFreeMarketStatus != 'loading' &&
       mustWaitForFreeMarketStatus ? (
         <Row className="mt-2 justify-center">
-          <Row className="gap-1 text-sm text-gray-400">
+          <Row className="gap-1 text-sm text-gray-400 dark:text-gray-600">
             Next free question in {countdown}
           </Row>
         </Row>
@@ -260,7 +260,7 @@ export default function Sidebar(props: { className?: string }) {
         mustWaitForFreeMarketStatus != 'loading' &&
         !mustWaitForFreeMarketStatus && (
           <Row className="mt-2 justify-center">
-            <Row className="gap-1 text-sm text-indigo-400">
+            <Row className="gap-1 text-sm text-indigo-400 dark:text-indigo-600">
               Daily free question
               <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
             </Row>

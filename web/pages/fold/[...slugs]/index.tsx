@@ -227,10 +227,10 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
 
   return (
     <Col>
-      <div className="rounded-t bg-indigo-500 px-4 py-3 text-sm text-white">
+      <div className="rounded-t bg-indigo-500 px-4 py-3 text-sm text-white dark:text-black">
         About community
       </div>
-      <Col className="gap-2 rounded-b bg-white p-4">
+      <Col className="gap-2 rounded-b bg-white dark:bg-black p-4">
         <Row>
           <div className="mr-1 text-gray-500">Curated by</div>
           <UserLink
@@ -274,10 +274,10 @@ function YourPerformance(props: {
 
   return user ? (
     <Col>
-      <div className="rounded bg-indigo-500 px-4 py-3 text-sm text-white">
+      <div className="rounded bg-indigo-500 px-4 py-3 text-sm text-white dark:text-black">
         Your performance
       </div>
-      <div className="bg-white p-2">
+      <div className="bg-white dark:bg-black p-2">
         <table className="table-compact table w-full text-gray-500">
           <tbody>
             <tr>

@@ -123,7 +123,7 @@ export function UserPage(props: {
             username={user.username}
             avatarUrl={user.avatarUrl}
             size={20}
-            className="bg-white ring-4 ring-white"
+            className="bg-white dark:bg-black ring-4 ring-white"
           />
         </div>
 
@@ -313,17 +313,17 @@ import { useFollows } from 'web/hooks/use-follows'
 function AlertBox(props: { title: string; text: string }) {
   const { title, text } = props
   return (
-    <div className="rounded-md bg-yellow-50 p-4">
+    <div className="rounded-md bg-yellow-50 dark:bg-yellow-950 p-4">
       <div className="flex">
         <div className="flex-shrink-0">
           <ExclamationIcon
-            className="h-5 w-5 text-yellow-400"
+            className="h-5 w-5 text-yellow-400 dark:text-yellow-600"
             aria-hidden="true"
           />
         </div>
         <div className="ml-3">
-          <h3 className="text-sm font-medium text-yellow-800">{title}</h3>
-          <div className="mt-2 text-sm text-yellow-700">
+          <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">{title}</h3>
+          <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
             <Linkify text={text} />
           </div>
         </div>

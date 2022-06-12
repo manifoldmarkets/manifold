@@ -11,7 +11,7 @@ export const getStaticProps = fromPropz(getStaticPropz)
 
 export default function AnalyticsEmbed(props: Parameters<typeof Analytics>[0]) {
   return (
-    <Col className="w-full bg-white px-2">
+    <Col className="w-full bg-white dark:bg-black px-2">
       <CustomAnalytics {...props} />
       <Spacer h={8} />
       <FirebaseAnalytics />

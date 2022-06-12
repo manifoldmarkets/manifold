@@ -15,13 +15,13 @@ export function Checkbox(props: {
           <input
             id={label}
             type="checkbox"
-            className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            className="h-5 w-5 rounded border-gray-300 dark:border-gray-700 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500"
             checked={checked}
             onChange={(e) => toggle(!e.target.checked)}
           />
         </div>
         <div className="ml-3">
-          <label htmlFor={label} className="font-medium text-gray-700">
+          <label htmlFor={label} className="font-medium text-gray-700 dark:text-gray-300">
             {label}
           </label>
         </div>

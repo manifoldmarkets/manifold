@@ -32,7 +32,7 @@ export function NumberInput(props: {
   return (
     <Col className={className}>
       <label className="input-group">
-        <span className="bg-gray-200 text-sm">{label}</span>
+        <span className="bg-gray-200 dark:bg-gray-800 text-sm">{label}</span>
         <input
           className={clsx(
             'input input-bordered max-w-[200px] text-lg',
