@@ -25,7 +25,7 @@ export default function Document() {
         />
       </Head>
 
-      <body className="font-readex-pro bg-base-200 min-h-screen">
+      <body className="font-readex-pro bg-base-200 min-h-screen text-gray-800">
         <Main />
         <NextScript />
       </body>
