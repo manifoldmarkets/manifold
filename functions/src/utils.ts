@@ -22,30 +22,18 @@ type UpdateSpec = {
 
 export const writeUpdatesAsync = async (
   db: admin.firestore.Firestore,
-  updates: UpdateSpec[]
+  updates: UpdateSpec[],
+  batchSize = 500 // 500 = Firestore batch limit
 ) => {
-  const chunks = chunk(updates, 500) // 500 = Firestore batch limit
-  for (const updates of chunks) {
+  const chunks = chunk(updates, batchSize)
+  for (let i = 0; i < chunks.length; i++) {
+    log(`${i * batchSize}/${updates.length} updates written...`)
     const batch = db.batch()
     for (const { doc, fields } of updates) {
       batch.update(doc, fields)
     }
     await batch.commit()
   }
-}
-
-export const mapAsync = async <T, U>(
-  xs: T[],
-  fn: (x: T) => Promise<U>,
-  concurrency = 100
-) => {
-  const results = []
-  const chunks = chunk(xs, concurrency)
-  for (let i = 0; i < chunks.length; i++) {
-    log(`${i * concurrency}/${xs.length} processed...`)
-    results.push(...(await Promise.all(chunks[i].map(fn))))
-  }
-  return results
 }
 
 export const isProd =

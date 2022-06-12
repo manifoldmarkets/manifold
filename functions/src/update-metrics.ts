@@ -1,8 +1,8 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, max, sum, sumBy } from 'lodash'
+import { groupBy, sum, sumBy } from 'lodash'
 
-import { getValues, log, logMemory, mapAsync, writeUpdatesAsync } from './utils'
+import { getValues, log, logMemory, writeUpdatesAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
@@ -50,19 +50,18 @@ export const updateMetricsCore = async () => {
   )
   logMemory()
 
+  const now = Date.now()
   const betsByContract = groupBy(bets, (bet) => bet.contractId)
-  const contractUpdates = await mapAsync(contracts, async (contract) => {
+  const contractUpdates = contracts.map((contract) => {
     const contractBets = betsByContract[contract.id] ?? []
     return {
       doc: firestore.collection('contracts').doc(contract.id),
       fields: {
-        volume24Hours: computeVolume(contractBets, oneDay),
-        volume7Days: computeVolume(contractBets, oneDay * 7),
+        volume24Hours: computeVolume(contractBets, now - oneDay),
+        volume7Days: computeVolume(contractBets, now - oneDay * 7),
       },
     }
   })
-  log(`Recomputed metrics for ${contracts.length} contracts.`)
-
   await writeUpdatesAsync(firestore, contractUpdates)
   log(`Updated metrics for ${contracts.length} contracts.`)
 
@@ -87,16 +86,14 @@ export const updateMetricsCore = async () => {
       },
     }
   })
-  log(`Recomputed metrics for ${users.length} users.`)
-
   await writeUpdatesAsync(firestore, userUpdates)
   log(`Updated metrics for ${users.length} users.`)
 }
 
-const computeVolume = async (contractBets: Bet[], duration: number) => {
-  const cutoff = Date.now() - duration
-  const bets = contractBets.filter((b) => b.createdTime > cutoff)
-  return sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
+const computeVolume = async (contractBets: Bet[], since: number) => {
+  return sumBy(contractBets, (b) =>
+    b.createdTime > since && !b.isRedemption ? Math.abs(b.amount) : 0
+  )
 }
 
 export const updateMetrics = functions
