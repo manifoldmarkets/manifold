@@ -15,6 +15,25 @@ export const logMemory = () => {
   }
 }
 
+type UpdateSpec = {
+  doc: admin.firestore.DocumentReference
+  fields: { [k: string]: unknown }
+}
+
+export const writeUpdatesAsync = async (
+  db: admin.firestore.Firestore,
+  updates: UpdateSpec[]
+) => {
+  const chunks = chunk(updates, 500) // 500 = Firestore batch limit
+  for (const updates of chunks) {
+    const batch = db.batch()
+    for (const { doc, fields } of updates) {
+      batch.update(doc, fields)
+    }
+    await batch.commit()
+  }
+}
+
 export const mapAsync = async <T, U>(
   xs: T[],
   fn: (x: T) => Promise<U>,

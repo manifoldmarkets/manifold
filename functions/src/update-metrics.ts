@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy, max, sum, sumBy } from 'lodash'
 
-import { getValues, log, logMemory, mapAsync } from './utils'
+import { getValues, log, logMemory, mapAsync, writeUpdatesAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
@@ -50,16 +50,22 @@ export const updateMetricsCore = async () => {
   )
   logMemory()
 
-  await mapAsync(contracts, async (contract) => {
+  const contractUpdates = await mapAsync(contracts, async (contract) => {
     const [volume24Hours, volume7Days] = await computeVolumes(contract.id, [
       oneDay,
       oneDay * 7,
     ])
-    return await firestore.collection('contracts').doc(contract.id).update({
-      volume24Hours,
-      volume7Days,
-    })
+    return {
+      doc: firestore.collection('contracts').doc(contract.id),
+      fields: {
+        volume24Hours,
+        volume7Days,
+      },
+    }
   })
+  log(`Recomputed metrics for ${contracts.length} contracts.`)
+
+  await writeUpdatesAsync(firestore, contractUpdates)
   log(`Updated metrics for ${contracts.length} contracts.`)
 
   const contractsDict = Object.fromEntries(
@@ -71,7 +77,7 @@ export const updateMetricsCore = async () => {
     (bet) => bet.userId
   )
 
-  await mapAsync(users, async (user) => {
+  const userUpdates = users.map((user) => {
     const investmentValue = computeInvestmentValue(
       betsByUser[user.id] ?? [],
       contractsDict
@@ -79,11 +85,17 @@ export const updateMetricsCore = async () => {
     const creatorVolume = computeTotalPool(user, contractsDict)
     const totalValue = user.balance + investmentValue
     const totalPnL = totalValue - user.totalDeposits
-    return await firestore.collection('users').doc(user.id).update({
-      totalPnLCached: totalPnL,
-      creatorVolumeCached: creatorVolume,
-    })
+    return {
+      doc: firestore.collection('users').doc(user.id),
+      fields: {
+        totalPnLCached: totalPnL,
+        creatorVolumeCached: creatorVolume,
+      },
+    }
   })
+  log(`Recomputed metrics for ${users.length} users.`)
+
+  await writeUpdatesAsync(firestore, userUpdates)
   log(`Updated metrics for ${users.length} users.`)
 }
 
