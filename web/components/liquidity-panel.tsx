@@ -11,6 +11,7 @@ import { useUserLiquidity } from 'web/hooks/use-liquidity'
 import { Tabs } from './layout/tabs'
 import { NoLabel, YesLabel } from './outcome-label'
 import { Col } from './layout/col'
+import { InfoTooltip } from './info-tooltip'
 
 export function LiquidityPanel(props: { contract: CPMMContract }) {
   const { contract } = props
@@ -29,13 +30,13 @@ export function LiquidityPanel(props: { contract: CPMMContract }) {
     <Tabs
       tabs={[
         {
-          title: 'Add liquidity',
+          title: 'Subsidize',
           content: <AddLiquidityPanel contract={contract} />,
         },
         ...(showWithdrawal
           ? [
               {
-                title: 'Withdraw liquidity',
+                title: 'Withdraw',
                 content: (
                   <WithdrawLiquidityPanel
                     contract={contract}
@@ -45,6 +46,10 @@ export function LiquidityPanel(props: { contract: CPMMContract }) {
               },
             ]
           : []),
+        {
+          title: 'Pool',
+          content: <ViewLiquidityPanel contract={contract} />,
+        },
       ]}
     />
   )
@@ -98,8 +103,9 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
 
   return (
     <>
-      <div className="mb-2 text-gray-500">
-        Subsidize this market by adding liquidity for traders.
+      <div className="align-center mb-4 text-gray-500">
+        Subsidize this market by adding M$ to the liquidity pool.{' '}
+        <InfoTooltip text="The greater the M$ subsidy, the greater the incentive for traders to particiapte, the more accurate the market will be." />
       </div>
 
       <Row>
@@ -125,6 +131,27 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
 
       {isLoading && <div>Processing...</div>}
     </>
+  )
+}
+
+function ViewLiquidityPanel(props: { contract: CPMMContract }) {
+  const { contract } = props
+  const { id: contractId, pool } = contract
+  const { YES: yesShares, NO: noShares } = pool
+
+  return (
+    <Col className="mb-4">
+      <div className="mb-4 text-gray-500">
+        The liquidity pool for this market currently contains:
+      </div>
+      <span>
+        {yesShares.toFixed(2)} <YesLabel /> shares
+      </span>
+
+      <span>
+        {noShares.toFixed(2)} <NoLabel /> shares
+      </span>
+    </Col>
   )
 }
 
