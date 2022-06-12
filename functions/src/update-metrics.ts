@@ -43,23 +43,21 @@ export const updateMetricsCore = async () => {
   const [users, contracts, bets] = await Promise.all([
     getValues<User>(firestore.collection('users')),
     getValues<Contract>(firestore.collection('contracts')),
-    firestore.collectionGroup('bets').get(),
+    getValues<Bet>(firestore.collectionGroup('bets')),
   ])
   log(
-    `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.docs.length} bets.`
+    `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
   )
   logMemory()
 
+  const betsByContract = groupBy(bets, (bet) => bet.contractId)
   const contractUpdates = await mapAsync(contracts, async (contract) => {
-    const [volume24Hours, volume7Days] = await computeVolumes(contract.id, [
-      oneDay,
-      oneDay * 7,
-    ])
+    const contractBets = betsByContract[contract.id] ?? []
     return {
       doc: firestore.collection('contracts').doc(contract.id),
       fields: {
-        volume24Hours,
-        volume7Days,
+        volume24Hours: computeVolume(contractBets, oneDay),
+        volume7Days: computeVolume(contractBets, oneDay * 7),
       },
     }
   })
@@ -72,11 +70,7 @@ export const updateMetricsCore = async () => {
     contracts.map((contract) => [contract.id, contract])
   )
 
-  const betsByUser = groupBy(
-    bets.docs.map((doc) => doc.data() as Bet),
-    (bet) => bet.userId
-  )
-
+  const betsByUser = groupBy(bets, (bet) => bet.userId)
   const userUpdates = users.map((user) => {
     const investmentValue = computeInvestmentValue(
       betsByUser[user.id] ?? [],
@@ -99,19 +93,10 @@ export const updateMetricsCore = async () => {
   log(`Updated metrics for ${users.length} users.`)
 }
 
-const computeVolumes = async (contractId: string, durationsMs: number[]) => {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const longestDurationMs = max(durationsMs)!
-  const allBets = await getValues<Bet>(
-    firestore
-      .collection(`contracts/${contractId}/bets`)
-      .where('createdTime', '>', Date.now() - longestDurationMs)
-  )
-  return durationsMs.map((duration) => {
-    const cutoff = Date.now() - duration
-    const bets = allBets.filter((b) => b.createdTime > cutoff)
-    return sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
-  })
+const computeVolume = async (contractBets: Bet[], duration: number) => {
+  const cutoff = Date.now() - duration
+  const bets = contractBets.filter((b) => b.createdTime > cutoff)
+  return sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
 }
 
 export const updateMetrics = functions
