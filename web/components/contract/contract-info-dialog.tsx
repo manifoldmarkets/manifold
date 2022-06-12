@@ -21,6 +21,7 @@ import { ShareEmbedButton } from '../share-embed-button'
 import { TagsInput } from '../tags-input'
 import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
+import { InfoTooltip } from '../info-tooltip'
 
 export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
@@ -29,11 +30,20 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
 
-  const { createdTime, closeTime, resolutionTime } = contract
+  const { createdTime, closeTime, resolutionTime, mechanism, outcomeType } =
+    contract
+
   const tradersCount = uniqBy(
     bets.filter((bet) => !bet.isAnte),
     'userId'
   ).length
+  
+  const typeDisplay =
+    outcomeType === 'BINARY'
+      ? 'YES / NO'
+      : outcomeType === 'FREE_RESPONSE'
+      ? 'Free response'
+      : 'Numeric'
 
   return (
     <>
@@ -69,8 +79,31 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <div />
 
           <div>Stats</div>
+
           <table className="table-compact table-zebra table w-full text-gray-500">
             <tbody>
+              <tr>
+                <td>Type</td>
+                <td>{typeDisplay}</td>
+              </tr>
+
+              <tr>
+                <td>Payout</td>
+                <td>
+                  {mechanism === 'cpmm-1' ? (
+                    <>
+                      Fixed{' '}
+                      <InfoTooltip text="Each YES share is worth M$1 if YES wins." />
+                    </>
+                  ) : (
+                    <div>
+                      Parimutuel{' '}
+                      <InfoTooltip text="Each share is a fraction of the pool. " />
+                    </div>
+                  )}
+                </td>
+              </tr>
+
               <tr>
                 <td>Market created</td>
                 <td>{formatTime(createdTime)}</td>
@@ -106,7 +139,9 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
               </tr>
 
               <tr>
-                <td>Pool</td>
+                <td>
+                  {mechanism === 'cpmm-1' ? 'Liquidity pool' : 'Betting pool'}
+                </td>
                 <td>{contractPool(contract)}</td>
               </tr>
             </tbody>
