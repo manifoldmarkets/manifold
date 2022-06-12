@@ -26,17 +26,8 @@ const computeInvestmentValue = (
   })
 }
 
-const computeTotalPool = (
-  user: User,
-  contractsDict: { [k: string]: Contract }
-) => {
-  const creatorContracts = Object.values(contractsDict).filter(
-    (contract) => contract.creatorId === user.id
-  )
-  const pools = creatorContracts.map((contract) =>
-    sum(Object.values(contract.pool))
-  )
-  return sum(pools)
+const computeTotalPool = (contracts: Contract[]) => {
+  return sum(contracts.map((contract) => sum(Object.values(contract.pool))))
 }
 
 export const updateMetricsCore = async () => {
@@ -65,17 +56,18 @@ export const updateMetricsCore = async () => {
   await writeUpdatesAsync(firestore, contractUpdates)
   log(`Updated metrics for ${contracts.length} contracts.`)
 
-  const contractsDict = Object.fromEntries(
+  const contractsById = Object.fromEntries(
     contracts.map((contract) => [contract.id, contract])
   )
-
+  const contractsByUser = groupBy(contracts, (contract) => contract.creatorId)
   const betsByUser = groupBy(bets, (bet) => bet.userId)
   const userUpdates = users.map((user) => {
     const investmentValue = computeInvestmentValue(
       betsByUser[user.id] ?? [],
-      contractsDict
+      contractsById
     )
-    const creatorVolume = computeTotalPool(user, contractsDict)
+    const creatorContracts = contractsByUser[user.id] ?? []
+    const creatorVolume = computeTotalPool(creatorContracts)
     const totalValue = user.balance + investmentValue
     const totalPnL = totalValue - user.totalDeposits
     return {
