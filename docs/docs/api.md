@@ -101,7 +101,6 @@ Requires no authorization.
     pool: number
     probability?: number
     p?: number
-    totalShares?: number
 
     volume: number
     volume7Days: number

@@ -92,7 +92,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     pool: getPoolValue(contract),
     probability,
     p,
-    totalShares: getTotalShares(contract),
     outcomeType,
     mechanism,
     volume,
@@ -102,11 +101,4 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolution,
     resolutionTime,
   })
-}
-
-function getTotalShares(contract: Contract): number {
-  const shares =
-    contract.mechanism === 'dpm-2' ? contract.totalShares : contract.pool
-
-  return sum(Object.values(shares))
 }
