@@ -202,7 +202,7 @@ function OpenAnswer(props: {
       </Modal>
 
       <div
-        className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 dark:bg-green-400 bg-opacity-10 dark:bg-opacity-990"
+        className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 dark:bg-green-400 bg-opacity-10"
         style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
       />
 

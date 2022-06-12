@@ -422,7 +422,7 @@ function NotificationSettings() {
   }) {
     const { label, highlight } = props
     return (
-      <Row className={clsx('my-1 text-gray-300 dark:text-gray-700', highlight && '!text-black')}>
+      <Row className={clsx('my-1 text-gray-300 dark:text-gray-700', highlight && '!text-black dark:text-white')}>
         {highlight ? <CheckIcon height={20} /> : <XIcon height={20} />}
         {label}
       </Row>
@@ -674,7 +674,7 @@ function NotificationItem(props: {
                     true
                   ).replace(' on', '')}
               </span>
-              <div className={'ml-1 text-black'}>
+              <div className={'ml-1 text-black dark:text-white'}>
                 <NotificationTextLabel
                   contract={contract}
                   defaultText={defaultNotificationText}

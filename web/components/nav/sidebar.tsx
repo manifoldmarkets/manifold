@@ -193,7 +193,7 @@ export default function Sidebar(props: { className?: string }) {
     'from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700'
 
   const buttonStyle =
-    'border-w-0 dark:border-w-1000 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r py-2.5 text-base font-semibold text-white dark:text-black shadow-sm lg:-ml-0'
+    'border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r py-2.5 text-base font-semibold text-white dark:text-black shadow-sm lg:-ml-0'
 
   return (
     <nav aria-label="Sidebar" className={className}>

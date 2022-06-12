@@ -147,7 +147,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       className={clsx(
         'relative -my-4 -mr-5 min-w-[5.5rem] justify-center gap-2 pr-5 pl-1 align-middle'
         // Use this for colored QuickBet panes
-        // `bg-opacity-10 dark:bg-opacity-990 bg-${color}`
+        // `bg-opacity-10 bg-${color}`
       )}
     >
       {/* Up bet triangle */}

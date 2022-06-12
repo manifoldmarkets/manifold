@@ -19,7 +19,7 @@ export function UserCommentsList(props: {
   return (
     <Col className={'bg-white dark:bg-black'}>
       {Array.from(commentsByUniqueContracts).map(([contract, comments]) => (
-        <div key={contract.id} className={'border-width-1 dark:border-width-999 border-b p-5'}>
+        <div key={contract.id} className={'border-width-1 border-b p-5'}>
           <div className={'mb-2 text-sm text-indigo-700 dark:text-indigo-300'}>
             <SiteLink href={contractPath(contract)}>
               {contract.question}

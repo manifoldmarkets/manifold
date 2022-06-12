@@ -59,7 +59,7 @@ export function BottomNavBar() {
       : getNavigation(user?.username || 'error')
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 dark:border-t-998 bg-white dark:bg-black text-xs text-gray-700 dark:text-gray-300 lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white dark:bg-black text-xs text-gray-700 dark:text-gray-300 lg:hidden">
       {navigationOptions.map((item) => (
         <NavBarItem key={item.name} item={item} currentPage={currentPage} />
       ))}
@@ -137,7 +137,7 @@ export function MobileSidebar(props: {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="fixed inset-0 bg-gray-600 dark:bg-gray-400 bg-opacity-75 dark:bg-opacity-925" />
+            <Dialog.Overlay className="fixed inset-0 bg-gray-600 dark:bg-gray-400 bg-opacity-75" />
           </Transition.Child>
           <Transition.Child
             as={Fragment}

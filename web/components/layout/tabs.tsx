@@ -40,7 +40,7 @@ export function Tabs(props: {
                   activeIndex === i
                     ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
                     : 'border-transparent text-gray-500 hover:border-gray-300 dark:hover:border-gray-700 hover:text-gray-700 dark:hover:text-gray-300',
-                  'cursor-pointer whitespace-nowrap border-b-2 dark:border-b-998 py-3 px-1 text-sm font-medium',
+                  'cursor-pointer whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium',
                   className
                 )}
                 aria-current={activeIndex === i ? 'page' : undefined}
