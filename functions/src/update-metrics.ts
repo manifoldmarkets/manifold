@@ -1,14 +1,16 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, sum, sumBy } from 'lodash'
+import { groupBy, max, sum, sumBy } from 'lodash'
 
 import { getValues, log, logMemory, mapAsync } from './utils'
-import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
+import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { calculatePayout } from '../../common/calculate'
 
 const firestore = admin.firestore()
+
+const oneDay = 1000 * 60 * 60 * 24
 
 const computeInvestmentValue = (
   bets: Bet[],
@@ -37,7 +39,7 @@ const computeTotalPool = (
   return sum(pools)
 }
 
-export const updateUserMetricsCore = async () => {
+export const updateMetricsCore = async () => {
   const [users, contracts, bets] = await Promise.all([
     getValues<User>(firestore.collection('users')),
     getValues<Contract>(firestore.collection('contracts')),
@@ -47,6 +49,18 @@ export const updateUserMetricsCore = async () => {
     `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.docs.length} bets.`
   )
   logMemory()
+
+  await mapAsync(contracts, async (contract) => {
+    const [volume24Hours, volume7Days] = await computeVolumes(contract.id, [
+      oneDay,
+      oneDay * 7,
+    ])
+    return await firestore.collection('contracts').doc(contract.id).update({
+      volume24Hours,
+      volume7Days,
+    })
+  })
+  log(`Updated metrics for ${contracts.length} contracts.`)
 
   const contractsDict = Object.fromEntries(
     contracts.map((contract) => [contract.id, contract])
@@ -73,7 +87,22 @@ export const updateUserMetricsCore = async () => {
   log(`Updated metrics for ${users.length} users.`)
 }
 
-export const updateUserMetrics = functions
+const computeVolumes = async (contractId: string, durationsMs: number[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const longestDurationMs = max(durationsMs)!
+  const allBets = await getValues<Bet>(
+    firestore
+      .collection(`contracts/${contractId}/bets`)
+      .where('createdTime', '>', Date.now() - longestDurationMs)
+  )
+  return durationsMs.map((duration) => {
+    const cutoff = Date.now() - duration
+    const bets = allBets.filter((b) => b.createdTime > cutoff)
+    return sumBy(bets, (bet) => (bet.isRedemption ? 0 : Math.abs(bet.amount)))
+  })
+}
+
+export const updateMetrics = functions
   .runWith({ memory: '1GB' })
   .pubsub.schedule('every 15 minutes')
-  .onRun(updateUserMetricsCore)
+  .onRun(updateMetricsCore)
