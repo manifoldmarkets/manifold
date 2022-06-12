@@ -13,15 +13,11 @@ export function quadraticMatches(
   )
 
   // Weight for each charity = [sum of sqrt(individual donor)] ^ 2
-  const weights: Record<string, number> = {}
-  for (const [charityId, byDonor] of Object.entries(donationsByDonors)) {
-    const sumByDonor = mapValues(byDonor, (txns) =>
-      sum(txns.map((txn) => txn.amount))
-    )
-    const sumOfRoots = Object.values(sumByDonor)
-      .map((s) => s ** 0.5)
-      .reduce((a, b) => a + b)
-    weights[charityId] = sumOfRoots ** 2
+  const weights = mapValues(donationsByDonors, (byDonor) => {
+    const sumByDonor = Object.values(byDonor)
+      .map((txns) => sumBy(txns, "amount"))
+    const sumOfRoots = sumBy(sumByDonor, Math.sqrt)
+    return sumOfRoots ** 2
   }
 
   // Then distribute the matching pool based on the individual weights
