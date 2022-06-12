@@ -87,6 +87,10 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
 
   const ante = FIXED_ANTE
 
+  // TODO: this is broken because it's not in a transaction
+  if (ante > user.balance && !isFree)
+    throw new APIError(400, `Balance must be at least ${ante}.`)
+
   console.log(
     'creating contract for',
     user.username,
