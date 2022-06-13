@@ -20,7 +20,7 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
           className="self-center"
           src="/flappy-logo.gif"
         />
-        <div className='self-center m-4 max-w-[550px]'>
+        <div className="m-4 max-w-[550px] self-center">
           <h1 className="text-3xl sm:text-6xl xl:text-6xl">
             <div className="font-semibold sm:mb-2">
               Predict{' '}
@@ -42,7 +42,6 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
           <br /> */}
           </div>
         </div>
-
         <Spacer h={6} />
         <button
           className="self-center rounded-md border-none bg-gradient-to-r from-indigo-500 to-blue-500 py-4 px-6 text-lg font-semibold normal-case text-white hover:from-indigo-600 hover:to-blue-600"
