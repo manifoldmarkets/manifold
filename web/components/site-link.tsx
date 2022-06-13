@@ -14,7 +14,7 @@ export const SiteLink = (props: {
     <MaybeLink href={href}>
       <a
         className={clsx(
-          'z-10 break-words hover:underline hover:decoration-indigo-400 hover:decoration-2',
+          'z-10 break-words hover:underline hover:decoration-indigo-400 dark:hover:decoration-indigo-600 hover:decoration-2',
           className
         )}
         href={href}

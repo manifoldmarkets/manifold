@@ -82,7 +82,7 @@ export function ContractCard(props: {
             </div>
             <AvatarDetails contract={contract} />
             <p
-              className="break-words font-semibold text-indigo-700 dark:text-indigo-300 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
+              className="break-words font-semibold text-indigo-700 dark:text-indigo-300 peer-hover:underline peer-hover:decoration-indigo-400 dark:hover:decoration-indigo-600 peer-hover:decoration-2"
               style={{ /* For iOS safari */ wordBreak: 'break-word' }}
             >
               {question}

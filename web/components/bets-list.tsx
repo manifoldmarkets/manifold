@@ -281,7 +281,7 @@ function ContractBets(props: {
           <Row className="mr-2 max-w-lg">
             <Link href={contractPath(contract)}>
               <a
-                className="font-medium text-indigo-700 dark:text-indigo-300 hover:underline hover:decoration-indigo-400 hover:decoration-2"
+                className="font-medium text-indigo-700 dark:text-indigo-300 hover:underline hover:decoration-indigo-400 dark:hover:decoration-indigo-600 hover:decoration-2"
                 onClick={(e) => e.stopPropagation()}
               >
                 {contract.question}
@@ -337,8 +337,7 @@ function ContractBets(props: {
       </Row>
 
       <div
-        className="collapse-content !px-0"
-        style={{ backgroundColor: 'white' }}
+        className="collapse-content !px-0 bg-white dark:bg-black"
       >
         <Spacer h={8} />
 

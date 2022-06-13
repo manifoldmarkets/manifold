@@ -59,7 +59,7 @@ function UsersTable() {
             name: 'Username',
             formatter: (cell) =>
               html(`<a
-              class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              class="hover:underline hover:decoration-indigo-400 dark:hover:decoration-indigo-600 hover:decoration-2"
               href="/${cell}">@${cell}</a>`),
           },
           'Email',
@@ -83,7 +83,7 @@ function UsersTable() {
             name: 'ID',
             formatter: (cell) =>
               html(`<a
-              class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              class="hover:underline hover:decoration-indigo-400 dark:hover:decoration-indigo-600 hover:decoration-2"
               href="https://console.firebase.google.com/project/mantic-markets/firestore/data/~2Fusers~2F${cell}">${cell}</a>`),
           },
         ]}
@@ -112,7 +112,7 @@ function ContractsTable() {
       const questionLink = r(
         <div className="w-60">
           <a
-            className="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+            className="hover:underline hover:decoration-indigo-400 dark:hover:decoration-indigo-600 hover:decoration-2"
             href={contractPath(contract)}
           >
             {contract.question}
@@ -131,7 +131,7 @@ function ContractsTable() {
           name: 'Username',
           formatter: (cell) =>
             html(`<a
-              class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              class="hover:underline hover:decoration-indigo-400 dark:hover:decoration-indigo-600 hover:decoration-2"
               target="_blank"
               href="/${cell}">@${cell}</a>`),
         },
@@ -184,7 +184,7 @@ function ContractsTable() {
           name: 'ID',
           formatter: (cell) =>
             html(`<a
-              class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              class="hover:underline hover:decoration-indigo-400 dark:hover:decoration-indigo-600 hover:decoration-2"
               target="_blank"
               href="https://console.firebase.google.com/project/mantic-markets/firestore/data/~2Fcontracts~2F${cell}">${cell}</a>`),
         },

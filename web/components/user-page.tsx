@@ -123,7 +123,7 @@ export function UserPage(props: {
             username={user.username}
             avatarUrl={user.avatarUrl}
             size={20}
-            className="bg-white dark:bg-black ring-4 ring-white"
+            className="bg-white dark:bg-black ring-4 ring-white dark:ring-gray-800"
           />
         </div>
 

@@ -254,7 +254,7 @@ function NotificationGroupItem(props: {
                       : `/${contract?.creatorUsername}/${contract?.slug}`
                   }
                   className={
-                    'font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2'
+                    'font-bold hover:underline hover:decoration-indigo-400 dark:hover:decoration-indigo-600 hover:decoration-2'
                   }
                 >
                   {sourceContractTitle || contract?.question}
@@ -727,7 +727,7 @@ function NotificationItem(props: {
                           : `/${contract?.creatorUsername}/${contract?.slug}`
                       }
                       className={
-                        'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2'
+                        'ml-1 font-bold hover:underline hover:decoration-indigo-400 dark:hover:decoration-indigo-600 hover:decoration-2'
                       }
                     >
                       {contract?.question || sourceContractTitle}

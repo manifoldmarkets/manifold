@@ -65,7 +65,7 @@ export function RevealableTagsInput(props: {
     return (
       <div
         className={clsx(
-          'cursor-pointer text-gray-500 hover:underline hover:decoration-indigo-400 hover:decoration-2',
+          'cursor-pointer text-gray-500 hover:underline hover:decoration-indigo-400 dark:hover:decoration-indigo-600 hover:decoration-2',
           className
         )}
         onClick={() => setHidden((hidden) => !hidden)}

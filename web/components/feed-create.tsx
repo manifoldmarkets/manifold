@@ -95,7 +95,7 @@ export default function FeedCreate(props: {
     <div
       className={clsx(
         'w-full cursor-text rounded bg-white dark:bg-black p-4 shadow-md',
-        isExpanded ? 'ring-2 ring-indigo-300' : '',
+        isExpanded ? 'ring-2 ring-indigo-300 dark:ring-indigo-700' : '',
         className
       )}
       onClick={() => {
