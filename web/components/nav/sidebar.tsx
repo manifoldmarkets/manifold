@@ -51,7 +51,7 @@ function getNavigation(username: string) {
       icon: NotificationsIcon,
     },
 
-    { name: 'Charity', href: '/charity', icon: HeartIcon },
+    { name: 'Get M$', href: '/add-funds', icon: CashIcon },
   ]
 }
 
@@ -63,14 +63,15 @@ function getMoreNavigation(user?: User | null) {
   if (!user) {
     return [
       { name: 'Leaderboards', href: '/leaderboards' },
+      { name: 'Charity', href: '/charity' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
       { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
     ]
   }
 
   return [
-    { name: 'Get M$', href: '/add-funds' },
     { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Charity', href: '/charity' },
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
