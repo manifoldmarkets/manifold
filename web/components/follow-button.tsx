@@ -30,7 +30,7 @@ export function FollowButton(props: {
     return (
       <button
         className={clsx(
-          'btn btn-outline btn-sm',
+          'btn btn-outline btn-sm dark:border-gray-200 dark:text-gray-200 dark:hover:bg-gray-200 dark:hover:text-gray-800',
           small && smallStyle,
           className
         )}

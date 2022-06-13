@@ -185,7 +185,7 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
 
         <Row className="gap-8">
           <select
-            className="select select-bordered self-start"
+            className="select select-bordered self-start dark:text-gray-800"
             value={filter}
             onChange={(e) => setFilter(e.target.value as BetFilter)}
           >
@@ -197,7 +197,7 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
           </select>
 
           <select
-            className="select select-bordered self-start"
+            className="select select-bordered self-start dark:text-gray-800"
             value={sort}
             onChange={(e) => setSort(e.target.value as BetSort)}
           >
@@ -337,7 +337,8 @@ function ContractBets(props: {
       </Row>
 
       <div
-        className="collapse-content !px-0 bg-white dark:bg-black"
+        className="collapse-content !px-0"
+        style={{ backgroundColor: 'white' }}
       >
         <Spacer h={8} />
 

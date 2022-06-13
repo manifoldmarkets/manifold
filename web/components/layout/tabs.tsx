@@ -23,7 +23,7 @@ export function Tabs(props: {
 
   return (
     <div>
-      <div className="border-b border-gray-200 dark:border-gray-800">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           {tabs.map((tab, i) => (
             <Link href={tab.href ?? '#'} key={tab.title} shallow={!!tab.href}>

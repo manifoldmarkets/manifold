@@ -125,13 +125,13 @@ export function ContractSearch(props: {
         <SearchBox
           className="flex-1"
           classNames={{
-            form: 'before:top-6',
+            form: 'before:top-6 dark:bg-gray-800',
             input: '!pl-10 !input !input-bordered shadow-none w-[100px]',
             resetIcon: 'mt-2 hidden sm:flex',
           }}
         />
         <select
-          className="!select !select-bordered dark:text-black"
+          className="!select !select-bordered dark:text-gray-800"
           value={filter}
           onChange={(e) => setFilter(e.target.value as filter)}
         >

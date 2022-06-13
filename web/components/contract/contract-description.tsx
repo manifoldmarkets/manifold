@@ -106,7 +106,7 @@ function EditContract(props: {
   return editing ? (
     <div className="mt-4">
       <Textarea
-        className="textarea textarea-bordered mb-1 h-24 w-full resize-none"
+        className="textarea textarea-bordered mb-1 h-24 w-full resize-none dark:bg-black dark:text-gray-200"
         rows={3}
         value={text}
         onChange={(e) => setText(e.target.value || '')}
@@ -123,7 +123,7 @@ function EditContract(props: {
       />
       <Row className="gap-2">
         <button
-          className="btn btn-neutral btn-outline btn-sm"
+          className="btn btn-neutral btn-outline btn-sm dark:border-gray-200 dark:text-gray-200"
           onClick={() => onSave(text)}
         >
           Save
@@ -139,7 +139,7 @@ function EditContract(props: {
   ) : (
     <Row>
       <button
-        className="btn btn-neutral btn-outline btn-xs mt-4"
+        className="btn btn-neutral btn-outline btn-xs mt-4 dark:border-gray-200 dark:text-gray-200"
         onClick={() => setEditing(true)}
       >
         {props.buttonText}

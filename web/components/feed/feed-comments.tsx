@@ -428,7 +428,7 @@ export function CommentInput(props: {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 className={clsx(
-                  'textarea textarea-bordered w-full resize-none dark:bg-black dark:border-gray-800'
+                  'textarea textarea-bordered w-full resize-none dark:bg-black dark:border-gray-700'
                 )}
                 // Make room for floating submit button.
                 style={{ paddingRight: 48 }}

@@ -34,7 +34,7 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
         <input
           style={{ maxWidth: 150 }}
           placeholder="Type a tag..."
-          className="input input-sm input-bordered resize-none"
+          className="input input-sm input-bordered resize-none dark:bg-black dark:text-gray-200 dark:border-gray-700"
           disabled={isSubmitting}
           value={tagText}
           maxLength={MAX_TAG_LENGTH}
@@ -46,7 +46,7 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
             }
           }}
         />
-        <button className="btn btn-xs btn-outline" onClick={updateTags}>
+        <button className="btn btn-xs btn-outline dark:border-gray-200 dark:text-gray-200" onClick={updateTags}>
           Save tags
         </button>
       </Row>

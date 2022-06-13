@@ -229,7 +229,7 @@ function EditableCloseDate(props: {
         <div className="form-control mr-1 items-start">
           <input
             type="datetime-local"
-            className="input input-bordered"
+            className="input input-bordered dark:bg-black dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseDate(e.target.value || '')}
             min={Date.now()}

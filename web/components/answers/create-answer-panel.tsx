@@ -79,7 +79,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="textarea textarea-bordered w-full resize-none dark:bg-black dark:border-gray-800"
+          className="textarea textarea-bordered w-full resize-none dark:bg-black dark:border-gray-700"
           placeholder="Type your answer..."
           rows={1}
           maxLength={MAX_ANSWER_LENGTH}
@@ -138,7 +138,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
           {user ? (
             <button
               className={clsx(
-                'btn mt-2',
+                'btn mt-2 dark:border-gray-200 dark:text-gray-200',
                 canSubmit ? 'btn-outline' : 'btn-disabled',
                 isSubmitting && 'loading'
               )}

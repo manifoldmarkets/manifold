@@ -190,7 +190,7 @@ function OpenAnswer(props: {
   const [open, setOpen] = useState(false)
 
   return (
-    <Col className={'border-base-200 dark:border-gray-800 bg-base-200 dark:bg-gray-800 flex-1 rounded-md px-2'}>
+    <Col className={'border-base-200 dark:border-gray-700 bg-base-200 dark:bg-gray-800 flex-1 rounded-md px-2'}>
       <Modal open={open} setOpen={setOpen}>
         <AnswerBetPanel
           answer={answer}
