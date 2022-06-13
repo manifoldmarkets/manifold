@@ -68,7 +68,7 @@ export default function Charity(props: {
             type="text"
             onChange={(e) => debouncedQuery(e.target.value)}
             placeholder="Search charities"
-            className="input input-bordered mb-6 w-full"
+            className="input input-bordered mb-6 w-full dark:bg-black"
           />
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
