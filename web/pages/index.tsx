@@ -3,7 +3,7 @@ import Router from 'next/router'
 
 import { Contract, getContractsBySlugs } from 'web/lib/firebase/contracts'
 import { Page } from 'web/components/page'
-import { FeedPromo } from 'web/components/feed-create'
+import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
@@ -46,7 +46,7 @@ const Home = (props: { hotContracts: Contract[] }) => {
       </div>
       <Col className="items-center">
         <Col className="max-w-3xl">
-          <FeedPromo hotContracts={hotContracts ?? []} />
+          <LandingPagePanel hotContracts={hotContracts ?? []} />
           {/* <p className="mt-6 text-gray-500">
             View{' '}
             <SiteLink href="/markets" className="font-bold text-gray-700">
