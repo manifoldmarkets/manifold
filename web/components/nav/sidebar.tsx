@@ -69,7 +69,7 @@ function getMoreNavigation(user?: User | null) {
   }
 
   return [
-    { name: 'Add funds', href: '/add-funds' },
+    { name: 'Get M$', href: '/add-funds' },
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -104,7 +104,7 @@ const signedOutMobileNavigation = [
 ]
 
 const mobileNavigation = [
-  { name: 'Add funds', href: '/add-funds', icon: CashIcon },
+  { name: 'Get M$', href: '/add-funds', icon: CashIcon },
   ...signedOutMobileNavigation,
 ]
 

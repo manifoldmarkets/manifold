@@ -24,7 +24,7 @@ export function AddFundsButton(props: { className?: string }) {
           className
         )}
       >
-        Add funds
+        Get M$
       </label>
       <input type="checkbox" id="add-funds" className="modal-toggle" />
 

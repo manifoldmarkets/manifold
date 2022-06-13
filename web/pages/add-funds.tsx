@@ -16,7 +16,7 @@ export default function AddFundsPage() {
 
   return (
     <Page>
-      <SEO title="Add funds" description="Add funds" url="/add-funds" />
+      <SEO title="Get Manifold Dollars" description="Get Manifold Dollars" url="/add-funds" />
 
       <Col className="items-center">
         <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
@@ -29,7 +29,7 @@ export default function AddFundsPage() {
           />
 
           <div className="mb-6 text-gray-500">
-            Use Manifold Dollars to trade in your favorite markets. <br /> (Not
+            Purchase Manifold Dollars to trade in your favorite markets. <br /> (Not
             redeemable for cash.)
           </div>
 
@@ -54,7 +54,7 @@ export default function AddFundsPage() {
           >
             <button
               type="submit"
-              className="btn btn-primary w-full bg-gradient-to-r from-teal-500 to-green-500 font-medium hover:from-teal-600 hover:to-green-600"
+              className="btn btn-primary w-full bg-gradient-to-r from-indigo-500 to-blue-500 font-medium hover:from-indigo-600 hover:to-blue-600"
             >
               Checkout
             </button>

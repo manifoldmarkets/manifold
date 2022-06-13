@@ -348,7 +348,7 @@ export function NewContract(props: { question: string; tag?: string }) {
                   className="btn btn-xs btn-primary"
                   onClick={() => (window.location.href = '/add-funds')}
                 >
-                  Add funds
+                  Get M$
                 </button>
               </div>
             )}
