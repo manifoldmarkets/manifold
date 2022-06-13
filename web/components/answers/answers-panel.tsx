@@ -1,5 +1,5 @@
 import { sortBy, partition, sum, uniq } from 'lodash'
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { FreeResponseContract } from 'common/contract'
 import { Col } from '../layout/col'
@@ -85,7 +85,7 @@ export function AnswersPanel(props: { contract: FreeResponseContract }) {
     })
   }
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     setChosenAnswers({})
   }, [resolveOption])
 
@@ -116,7 +116,7 @@ export function AnswersPanel(props: { contract: FreeResponseContract }) {
       {!resolveOption && (
         <div className={clsx('flow-root pr-2 md:pr-0')}>
           <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
-            {answerItems.map((item, activityItemIdx) => (
+            {answerItems.map((item) => (
               <div key={item.id} className={'relative pb-2'}>
                 <div className="relative flex items-start space-x-3">
                   <OpenAnswer {...item} />
