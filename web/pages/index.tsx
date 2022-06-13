@@ -40,7 +40,7 @@ const Home = (props: { hotContracts: Contract[] }) => {
   }
 
   return (
-    <Page assertUser="signed-out">
+    <Page>
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
         <ManifoldLogo />
       </div>

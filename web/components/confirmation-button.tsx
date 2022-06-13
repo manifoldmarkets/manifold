@@ -5,7 +5,6 @@ import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 
 export function ConfirmationButton(props: {
-  id: string
   openModalBtn: {
     label: string
     icon?: JSX.Element
@@ -22,7 +21,7 @@ export function ConfirmationButton(props: {
   onSubmit: () => void
   children: ReactNode
 }) {
-  const { id, openModalBtn, cancelBtn, submitBtn, onSubmit, children } = props
+  const { openModalBtn, cancelBtn, submitBtn, onSubmit, children } = props
 
   const [open, setOpen] = useState(false)
 
@@ -67,7 +66,6 @@ export function ResolveConfirmationButton(props: {
     props
   return (
     <ConfirmationButton
-      id="resolution-modal"
       openModalBtn={{
         className: clsx(
           'border-none self-start',
