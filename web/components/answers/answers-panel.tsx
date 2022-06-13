@@ -116,7 +116,7 @@ export function AnswersPanel(props: { contract: FreeResponseContract }) {
       {!resolveOption && (
         <div className={clsx('flow-root pr-2 md:pr-0')}>
           <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
-            {answerItems.map((item, activityItemIdx) => (
+            {answerItems.map((item) => (
               <div key={item.id} className={'relative pb-2'}>
                 <div className="relative flex items-start space-x-3">
                   <OpenAnswer {...item} />
