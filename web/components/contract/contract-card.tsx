@@ -185,7 +185,7 @@ function FreeResponseTopAnswer(props: {
 
   return topAnswer ? (
     <AnswerLabel
-      className="!text-gray-600 dark:text-gray-400"
+      className="text-gray-600 dark:text-gray-400"
       answer={topAnswer}
       truncate={truncate}
     />
