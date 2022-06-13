@@ -45,13 +45,13 @@ export function AnswerItem(props: {
         'flex flex-col gap-4 rounded p-4 sm:flex-row',
         wasResolvedTo
           ? resolution === 'MKT'
-            ? 'mb-2 bg-blue-50 dark:bg-blue-950'
-            : 'mb-10 bg-green-50 dark:bg-green-950'
+            ? 'mb-2 bg-blue-50 dark:bg-blue-900'
+            : 'mb-10 bg-green-50 dark:bg-green-900'
           : chosenProb === undefined
-          ? 'bg-gray-50 dark:bg-gray-950'
+          ? 'bg-gray-50 dark:bg-gray-900'
           : showChoice === 'radio'
-          ? 'bg-green-50 dark:bg-green-950'
-          : 'bg-blue-50 dark:bg-blue-950'
+          ? 'bg-green-50 dark:bg-green-900'
+          : 'bg-blue-50 dark:bg-blue-900'
       )}
     >
       <Col className="flex-1 gap-3">

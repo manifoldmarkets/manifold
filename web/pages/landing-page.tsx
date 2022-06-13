@@ -104,7 +104,7 @@ function FeaturesSection() {
   ]
 
   return (
-    <div id="about" className="w-full bg-green-50 dark:bg-green-950 py-16">
+    <div id="about" className="w-full bg-green-50 dark:bg-green-900 py-16">
       <div className="mx-auto max-w-4xl py-12">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="lg:text-center">

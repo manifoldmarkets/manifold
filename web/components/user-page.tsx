@@ -313,7 +313,7 @@ import { useFollows } from 'web/hooks/use-follows'
 function AlertBox(props: { title: string; text: string }) {
   const { title, text } = props
   return (
-    <div className="rounded-md bg-yellow-50 dark:bg-yellow-950 p-4">
+    <div className="rounded-md bg-yellow-50 dark:bg-yellow-900 p-4">
       <div className="flex">
         <div className="flex-shrink-0">
           <ExclamationIcon

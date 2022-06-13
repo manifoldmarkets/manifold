@@ -308,7 +308,7 @@ function ContractTopTrades(props: {
       {topCommentId && profitById[topCommentId] > 0 && (
         <>
           <Title text="💬 Proven correct" className="!mt-0" />
-          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 dark:bg-gray-950 px-2 py-4">
+          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 dark:bg-gray-900 px-2 py-4">
             <FeedComment
               contract={contract}
               comment={commentsById[topCommentId]}
@@ -329,7 +329,7 @@ function ContractTopTrades(props: {
       {topBettor && topBetId !== topCommentId && profitById[topBetId] > 0 && (
         <>
           <Title text="💸 Smartest money" className="!mt-0" />
-          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 dark:bg-gray-950 px-2 py-4">
+          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 dark:bg-gray-900 px-2 py-4">
             <FeedBet
               contract={contract}
               bet={betsById[topBetId]}
