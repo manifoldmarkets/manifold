@@ -30,11 +30,10 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { FeedAnswerCommentGroup } from 'web/components/feed/feed-answer-comment-group'
 import {
   FeedCommentThread,
-  FeedComment,
   CommentInput,
   TruncatedComment,
 } from 'web/components/feed/feed-comments'
-import { FeedBet, FeedBetGroup } from 'web/components/feed/feed-bets'
+import { FeedBet } from 'web/components/feed/feed-bets'
 import { NumericContract } from 'common/contract'
 
 export function FeedItems(props: {
@@ -82,12 +81,8 @@ export function FeedItem(props: { item: ActivityItem }) {
       return <FeedQuestion {...item} />
     case 'description':
       return <FeedDescription {...item} />
-    case 'comment':
-      return <FeedComment {...item} />
     case 'bet':
       return <FeedBet {...item} />
-    case 'betgroup':
-      return <FeedBetGroup {...item} />
     case 'answergroup':
       return <FeedAnswerCommentGroup {...item} />
     case 'close':
