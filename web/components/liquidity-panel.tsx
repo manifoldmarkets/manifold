@@ -136,7 +136,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
 
 function ViewLiquidityPanel(props: { contract: CPMMContract }) {
   const { contract } = props
-  const { id: contractId, pool } = contract
+  const { pool } = contract
   const { YES: yesShares, NO: noShares } = pool
 
   return (
