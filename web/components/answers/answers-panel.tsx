@@ -1,5 +1,5 @@
 import { sortBy, partition, sum, uniq } from 'lodash'
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { FreeResponseContract } from 'common/contract'
 import { Col } from '../layout/col'
@@ -27,13 +27,11 @@ import { BuyButton } from 'web/components/yes-no-selector'
 
 export function AnswersPanel(props: { contract: FreeResponseContract }) {
   const { contract } = props
-  const { creatorId, resolution, resolutions, totalBets } = contract
+  const { creatorId, resolution, resolutions } = contract
 
   const answers = useAnswers(contract.id) ?? contract.answers
   const [winningAnswers, losingAnswers] = partition(
-    answers.filter(
-      (answer) => answer.id !== '0' && totalBets[answer.id] > 0.000000001
-    ),
+    answers.filter((answer) => answer.id !== '0'),
     (answer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
   )
@@ -85,7 +83,7 @@ export function AnswersPanel(props: { contract: FreeResponseContract }) {
     })
   }
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     setChosenAnswers({})
   }, [resolveOption])
 
