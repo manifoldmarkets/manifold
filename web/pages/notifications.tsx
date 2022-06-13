@@ -31,9 +31,7 @@ import { Linkify } from 'web/components/linkify'
 import {
   BinaryOutcomeLabel,
   CancelLabel,
-  FreeResponseOutcomeLabel,
   MultiLabel,
-  OutcomeLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import {
@@ -44,7 +42,7 @@ import {
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { CheckIcon, XIcon } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 
 export default function Notifications() {
   const user = useUser()
@@ -184,7 +182,7 @@ function NotificationGroupItem(props: {
   className?: string
 }) {
   const { notificationGroup, className } = props
-  const { sourceContractId, notifications, timePeriod } = notificationGroup
+  const { sourceContractId, notifications } = notificationGroup
   const {
     sourceContractTitle,
     sourceContractSlug,
