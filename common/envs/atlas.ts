@@ -24,8 +24,8 @@ export const ATLAS_CONFIG: EnvConfig = {
   whitelistEmail: '',
   moneyMoniker: 'A$',
   visibility: 'PRIVATE',
-  faviconPath: '/theoremone/logo.ico',
-  navbarLogoPath: '/theoremone/TheoremOne-Logo.svg',
+  faviconPath: '/atlas/atlas-favicon.png',
+  navbarLogoPath: '',
   newQuestionPlaceholders: [
     'Will we have at least 5 new team members by the end of this quarter?',
     'Will we meet or exceed our goals this sprint?',
