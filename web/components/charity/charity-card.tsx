@@ -8,7 +8,7 @@ import { manaToUSD } from '../../../common/util/format'
 import { Row } from '../layout/row'
 
 export function CharityCard(props: { charity: Charity }) {
-  const { name, slug, photo, preview, id, tags } = props.charity
+  const { slug, photo, preview, id, tags } = props.charity
 
   const txns = useCharityTxns(id)
   const raised = sumBy(txns, (txn) => txn.amount)

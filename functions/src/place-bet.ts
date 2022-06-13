@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { APIError, newEndpoint, validate } from './api'
-import { Contract } from '../../common/contract'
+import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
 import { User } from '../../common/user'
 import {
   BetInfo,
@@ -32,20 +32,22 @@ const numericSchema = z.object({
   value: z.number(),
 })
 
-export const placebet = newEndpoint(['POST'], async (req, [bettor, _]) => {
+export const placebet = newEndpoint(['POST'], async (req, auth) => {
   const { amount, contractId } = validate(bodySchema, req.body)
 
   const result = await firestore.runTransaction(async (trans) => {
-    const userDoc = firestore.doc(`users/${bettor.id}`)
-    const userSnap = await trans.get(userDoc)
+    const contractDoc = firestore.doc(`contracts/${contractId}`)
+    const userDoc = firestore.doc(`users/${auth.uid}`)
+    const [contractSnap, userSnap] = await Promise.all([
+      trans.get(contractDoc),
+      trans.get(userDoc),
+    ])
+    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
+
+    const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
-
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await trans.get(contractDoc)
-    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
-    const contract = contractSnap.data() as Contract
 
     const loanAmount = 0
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =
@@ -81,8 +83,13 @@ export const placebet = newEndpoint(['POST'], async (req, [bettor, _]) => {
       }
     })()
 
-    if (newP != null && !isFinite(newP)) {
-      throw new APIError(400, 'Trade rejected due to overflow error.')
+    if (
+      mechanism == 'cpmm-1' &&
+      (!newP ||
+        !isFinite(newP) ||
+        Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
+    ) {
+      throw new APIError(400, 'Bet too large for current liquidity pool.')
     }
 
     const newBalance = user.balance - amount - loanAmount
@@ -105,7 +112,7 @@ export const placebet = newEndpoint(['POST'], async (req, [bettor, _]) => {
     return { betId: betDoc.id }
   })
 
-  await redeemShares(bettor.id, contractId)
+  await redeemShares(auth.uid, contractId)
   return result
 })
 

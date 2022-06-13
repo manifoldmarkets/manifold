@@ -6,14 +6,17 @@ import { onRequest, Request } from 'firebase-functions/v2/https'
 import * as Cors from 'cors'
 import { z } from 'zod'
 
-import { User, PrivateUser } from '../../common/user'
+import { PrivateUser } from '../../common/user'
 import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
 } from '../../common/envs/constants'
 
 type Output = Record<string, unknown>
-type AuthedUser = [User, PrivateUser]
+type AuthedUser = {
+  uid: string
+  creds: JwtCredentials | (KeyCredentials & { privateUser: PrivateUser })
+}
 type Handler = (req: Request, user: AuthedUser) => Promise<Output>
 type JwtCredentials = { kind: 'jwt'; data: admin.auth.DecodedIdToken }
 type KeyCredentials = { kind: 'key'; data: string }
@@ -60,24 +63,13 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
 
 export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
   const firestore = admin.firestore()
-  const users = firestore.collection('users')
   const privateUsers = firestore.collection('private-users')
   switch (creds.kind) {
     case 'jwt': {
-      const { user_id } = creds.data
-      if (typeof user_id !== 'string') {
+      if (typeof creds.data.user_id !== 'string') {
         throw new APIError(403, 'JWT must contain Manifold user ID.')
       }
-      const [userSnap, privateUserSnap] = await Promise.all([
-        users.doc(user_id).get(),
-        privateUsers.doc(user_id).get(),
-      ])
-      if (!userSnap.exists || !privateUserSnap.exists) {
-        throw new APIError(403, 'No user exists with the provided ID.')
-      }
-      const user = userSnap.data() as User
-      const privateUser = privateUserSnap.data() as PrivateUser
-      return [user, privateUser]
+      return { uid: creds.data.user_id, creds }
     }
     case 'key': {
       const key = creds.data
@@ -86,13 +78,8 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
         throw new APIError(403, `No private user exists with API key ${key}.`)
       }
       const privateUserSnap = privateUserQ.docs[0]
-      const userSnap = await users.doc(privateUserSnap.id).get()
-      if (!userSnap.exists) {
-        throw new APIError(403, `No user exists with ID ${privateUserSnap.id}.`)
-      }
-      const user = userSnap.data() as User
       const privateUser = privateUserSnap.data() as PrivateUser
-      return [user, privateUser]
+      return { uid: privateUser.id, creds: { privateUser, ...creds } }
     }
     default:
       throw new APIError(500, 'Invalid credential type.')

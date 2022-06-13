@@ -23,6 +23,7 @@ import { useRouter } from 'next/router'
 import { groupBy } from 'lodash'
 import { User } from 'common/user'
 import { useEvent } from 'web/hooks/use-event'
+import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 
 export function FeedAnswerCommentGroup(props: {
   contract: any
@@ -44,19 +45,13 @@ export function FeedAnswerCommentGroup(props: {
   const answerElementId = `answer-${answer.id}`
   const betsByUserId = groupBy(bets, (bet) => bet.userId)
   const commentsByUserId = groupBy(comments, (comment) => comment.userId)
-  const answerComments = comments.filter(
+  const commentsList = comments.filter(
     (comment) => comment.answerOutcome === answer.number.toString()
   )
-  const commentReplies = comments.filter(
-    (comment) =>
-      comment.replyToCommentId &&
-      !comment.answerOutcome &&
-      answerComments.map((c) => c.id).includes(comment.replyToCommentId)
+  const thisAnswerProb = getDpmOutcomeProbability(
+    contract.totalShares,
+    answer.id
   )
-  const commentsList = answerComments.concat(commentReplies)
-  const thisAnswerProb = bets
-    .filter((bet) => bet.outcome === answer.number.toString())
-    .sort((a, b) => b.createdTime - a.createdTime)[0].probAfter
   const probPercent = formatPercent(thisAnswerProb)
   const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
@@ -67,9 +62,21 @@ export function FeedAnswerCommentGroup(props: {
     user,
     answer.number.toString()
   )
-  const [mostRecentBetTimeAtLoad] = useState(
-    mostRecentCommentableBet?.createdTime ?? 0
-  )
+  const [usersMostRecentBetTimeAtLoad, setUsersMostRecentBetTimeAtLoad] =
+    useState<number | undefined>(
+      !user ? undefined : mostRecentCommentableBet?.createdTime ?? 0
+    )
+
+  useEffect(() => {
+    if (user && usersMostRecentBetTimeAtLoad === undefined)
+      setUsersMostRecentBetTimeAtLoad(
+        mostRecentCommentableBet?.createdTime ?? 0
+      )
+  }, [
+    mostRecentCommentableBet?.createdTime,
+    user,
+    usersMostRecentBetTimeAtLoad,
+  ])
 
   const scrollAndOpenReplyInput = useEvent(
     (comment?: Comment, answer?: Answer) => {
@@ -82,13 +89,14 @@ export function FeedAnswerCommentGroup(props: {
   useEffect(() => {
     if (
       mostRecentCommentableBet &&
-      mostRecentCommentableBet.createdTime > mostRecentBetTimeAtLoad &&
+      usersMostRecentBetTimeAtLoad !== undefined &&
+      mostRecentCommentableBet.createdTime > usersMostRecentBetTimeAtLoad &&
       !showReply
     )
       scrollAndOpenReplyInput(undefined, answer)
   }, [
     answer,
-    mostRecentBetTimeAtLoad,
+    usersMostRecentBetTimeAtLoad,
     mostRecentCommentableBet,
     scrollAndOpenReplyInput,
     showReply,
@@ -96,16 +104,15 @@ export function FeedAnswerCommentGroup(props: {
 
   useEffect(() => {
     // Only show one comment input for a bet at a time
-    const usersMostRecentBet = bets
-      .filter((b) => b.userId === user?.id)
-      .sort((a, b) => b.createdTime - a.createdTime)[0]
     if (
-      usersMostRecentBet &&
-      usersMostRecentBet.outcome !== answer.number.toString()
-    ) {
+      betsByCurrentUser.length > 1 &&
+      betsByCurrentUser.sort((a, b) => b.createdTime - a.createdTime)[0]
+        ?.outcome !== answer.number.toString()
+    )
       setShowReply(false)
-    }
-  }, [answer.number, bets, user])
+    // Even if we pass memoized bets this still runs on every render, which we don't want
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [betsByCurrentUser.length, user, answer.number])
 
   useEffect(() => {
     if (showReply && inputRef) inputRef.focus()
@@ -118,7 +125,7 @@ export function FeedAnswerCommentGroup(props: {
   }, [answerElementId, router.asPath])
 
   return (
-    <Col className={'relative flex-1 gap-2'}>
+    <Col className={'relative flex-1 gap-2'} key={answer.id + 'comment'}>
       <Modal open={open} setOpen={setOpen}>
         <AnswerBetPanel
           answer={answer}

@@ -28,8 +28,7 @@ export function CopyLinkDateTimeComponent(props: {
     event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
   ) {
     event.preventDefault()
-    const elementLocation = `https://${ENV_CONFIG.domain}/${contractCreatorUsername}/${contractSlug}
-    )}#${elementId}`
+    const elementLocation = `https://${ENV_CONFIG.domain}/${contractCreatorUsername}/${contractSlug}#${elementId}`
 
     copyToClipboard(elementLocation)
     setShowToast(true)
@@ -39,7 +38,7 @@ export function CopyLinkDateTimeComponent(props: {
     <div className={clsx('inline', className)}>
       <DateTimeTooltip time={createdTime}>
         <Link
-          href={`/${contractCreatorUsername}/${contractCreatorUsername}#${elementId}`}
+          href={`/${contractCreatorUsername}/${contractSlug}#${elementId}`}
           passHref={true}
         >
           <a

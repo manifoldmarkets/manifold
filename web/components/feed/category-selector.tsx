@@ -125,7 +125,7 @@ function CategorySelectorModal(props: {
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="rounded bg-white p-6">
         <button
-          className="btn btn-sm btn-ghost mb-3 self-start"
+          className="btn btn-sm btn-outline mb-4 self-start normal-case"
           onClick={() => {
             if (selectAll) {
               updateUser(user.id, {

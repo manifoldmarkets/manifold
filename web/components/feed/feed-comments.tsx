@@ -341,7 +341,6 @@ export function CommentInput(props: {
   } = props
   const user = useUser()
   const [comment, setComment] = useState('')
-  const [focused, setFocused] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const mostRecentCommentableBet = getMostRecentCommentableBet(
@@ -374,7 +373,6 @@ export function CommentInput(props: {
     )
     onSubmitComment?.()
     setComment('')
-    setFocused(false)
     setIsSubmitting(false)
   }
 
@@ -383,8 +381,6 @@ export function CommentInput(props: {
     Date.now(),
     betsByCurrentUser
   )
-
-  const shouldCollapseAfterClickOutside = !comment
 
   const isNumeric = contract.outcomeType === 'NUMERIC'
 
@@ -446,11 +442,7 @@ export function CommentInput(props: {
                     ? 'Write a reply... '
                     : 'Write a comment...'
                 }
-                autoFocus={true}
-                onFocus={() => setFocused(true)}
-                onBlur={() =>
-                  shouldCollapseAfterClickOutside && setFocused(false)
-                }
+                autoFocus={false}
                 maxLength={MAX_COMMENT_LENGTH}
                 disabled={isSubmitting}
                 onKeyDown={(e) => {
@@ -462,7 +454,7 @@ export function CommentInput(props: {
                 }}
               />
 
-              <Col className={clsx(focused ? 'justify-end' : 'justify-center')}>
+              <Col className={clsx('justify-end')}>
                 {user && !isSubmitting && (
                   <button
                     className={clsx(
@@ -470,22 +462,16 @@ export function CommentInput(props: {
                       parentCommentId || parentAnswerOutcome
                         ? ' bottom-4'
                         : ' bottom-2',
-                      (!focused || !comment) &&
-                        'pointer-events-none text-gray-500'
+                      !comment && 'pointer-events-none text-gray-500'
                     )}
                     onClick={() => {
-                      if (!focused) return
-                      else {
-                        submitComment(id)
-                      }
+                      submitComment(id)
                     }}
                   >
-                    {focused && (
-                      <PaperAirplaneIcon
-                        className={'m-0 min-w-[22px] rotate-90 p-0 '}
-                        height={25}
-                      />
-                    )}
+                    <PaperAirplaneIcon
+                      className={'m-0 min-w-[22px] rotate-90 p-0 '}
+                      height={25}
+                    />
                   </button>
                 )}
                 {isSubmitting && (

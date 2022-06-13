@@ -55,7 +55,7 @@ export default function Charity(props: {
     <Page>
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="max-w-xl gap-2">
-          <Title className="!mt-0" text="Manifold for Good" />
+          <Title className="!mt-0" text="Manifold for Charity" />
           <div className="mb-6 text-gray-500">
             Donate your winnings to charity! Every {formatMoney(100)} you give
             turns into $1 USD we send to your chosen charity.
@@ -85,7 +85,7 @@ export default function Charity(props: {
         <iframe
           height="405"
           src="https://manifold.markets/embed/ManifoldMarkets/total-donations-for-manifold-for-go"
-          title="Total donations for Manifold for Good this May (in USD)"
+          title="Total donations for Manifold for Charity this May (in USD)"
           frameBorder="0"
           className="m-10 w-full rounded-xl bg-white p-10"
         ></iframe>

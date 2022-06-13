@@ -1,6 +1,5 @@
 import dayjs from 'dayjs'
-import { zip, uniq, sumBy } from 'lodash'
-import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { zip, uniq, sumBy, concat, countBy, sortBy, sum } from 'lodash'
 import {
   DailyCountChart,
   DailyPercentChart,
@@ -148,6 +147,56 @@ export async function getStaticPropz() {
   })
   const dailySignups = dailyNewUsers.map((users) => users.length)
 
+  const dailyTopTenthActions = zip(
+    dailyContracts,
+    dailyBets,
+    dailyComments
+  ).map(([contracts, bets, comments]) => {
+    const userIds = concat(
+      contracts?.map((c) => c.creatorId) ?? [],
+      bets?.map((b) => b.userId) ?? [],
+      comments?.map((c) => c.userId) ?? []
+    )
+    const counts = Object.values(countBy(userIds))
+    const sortedCounts = sortBy(counts, (count) => count).reverse()
+    if (sortedCounts.length === 0) return 0
+    const tenthPercentile = sortedCounts[Math.floor(sortedCounts.length * 0.1)]
+    return tenthPercentile
+  })
+  const weeklyTopTenthActions = dailyTopTenthActions.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i
+    const total = sum(dailyTopTenthActions.slice(start, end))
+    if (end - start < 7) return (total * 7) / (end - start)
+    return total
+  })
+  const monthlyTopTenthActions = dailyTopTenthActions.map((_, i) => {
+    const start = Math.max(0, i - 29)
+    const end = i
+    const total = sum(dailyTopTenthActions.slice(start, end))
+    if (end - start < 30) return (total * 30) / (end - start)
+    return total
+  })
+
+  // Total mana divided by 100.
+  const dailyManaBet = dailyBets.map((bets) => {
+    return Math.round(sumBy(bets, (bet) => bet.amount) / 100)
+  })
+  const weeklyManaBet = dailyManaBet.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i
+    const total = sum(dailyManaBet.slice(start, end))
+    if (end - start < 7) return (total * 7) / (end - start)
+    return total
+  })
+  const monthlyManaBet = dailyManaBet.map((_, i) => {
+    const start = Math.max(0, i - 29)
+    const end = i
+    const total = sum(dailyManaBet.slice(start, end))
+    if (end - start < 30) return (total * 30) / (end - start)
+    return total
+  })
+
   return {
     props: {
       startDate: startDate.valueOf(),
@@ -161,6 +210,16 @@ export async function getStaticPropz() {
       weekOnWeekRetention,
       weeklyActivationRate,
       monthlyRetention,
+      topTenthActions: {
+        daily: dailyTopTenthActions,
+        weekly: weeklyTopTenthActions,
+        monthly: monthlyTopTenthActions,
+      },
+      manaBet: {
+        daily: dailyManaBet,
+        weekly: weeklyManaBet,
+        monthly: monthlyManaBet,
+      },
     },
     revalidate: 60 * 60, // Regenerate after an hour
   }
@@ -178,6 +237,16 @@ export default function Analytics(props: {
   weekOnWeekRetention: number[]
   monthlyRetention: number[]
   weeklyActivationRate: number[]
+  topTenthActions: {
+    daily: number[]
+    weekly: number[]
+    monthly: number[]
+  }
+  manaBet: {
+    daily: number[]
+    weekly: number[]
+    monthly: number[]
+  }
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     startDate: 0,
@@ -191,6 +260,16 @@ export default function Analytics(props: {
     weekOnWeekRetention: [],
     monthlyRetention: [],
     weeklyActivationRate: [],
+    topTenthActions: {
+      daily: [],
+      weekly: [],
+      monthly: [],
+    },
+    manaBet: {
+      daily: [],
+      weekly: [],
+      monthly: [],
+    },
   }
   return (
     <Page>
@@ -226,6 +305,16 @@ export function CustomAnalytics(props: {
   weekOnWeekRetention: number[]
   monthlyRetention: number[]
   weeklyActivationRate: number[]
+  topTenthActions: {
+    daily: number[]
+    weekly: number[]
+    monthly: number[]
+  }
+  manaBet: {
+    daily: number[]
+    weekly: number[]
+    monthly: number[]
+  }
 }) {
   const {
     dailyActiveUsers,
@@ -238,6 +327,8 @@ export function CustomAnalytics(props: {
     weekOnWeekRetention,
     monthlyRetention,
     weeklyActivationRate,
+    topTenthActions,
+    manaBet,
   } = props
 
   const startDate = dayjs(props.startDate).add(12, 'hours').valueOf()
@@ -437,6 +528,87 @@ export function CustomAnalytics(props: {
         ]}
       />
       <Spacer h={8} />
+
+      <Title text="Action count of top tenth" />
+      <p className="text-gray-500">
+        Number of actions (bets, comments, markets created) taken by the tenth
+        percentile of top users.
+      </p>
+      <Tabs
+        defaultIndex={1}
+        tabs={[
+          {
+            title: 'Daily',
+            content: (
+              <DailyCountChart
+                dailyCounts={topTenthActions.daily}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Weekly',
+            content: (
+              <DailyCountChart
+                dailyCounts={topTenthActions.weekly}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Monthly',
+            content: (
+              <DailyCountChart
+                dailyCounts={topTenthActions.monthly}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+        ]}
+      />
+
+      <Title text="Total mana bet" />
+      <p className="text-gray-500">
+        Sum of bet amounts. (Divided by 100 to be more readable.)
+      </p>
+      <Tabs
+        defaultIndex={1}
+        tabs={[
+          {
+            title: 'Daily',
+            content: (
+              <DailyCountChart
+                dailyCounts={manaBet.daily}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Weekly',
+            content: (
+              <DailyCountChart
+                dailyCounts={manaBet.weekly}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Monthly',
+            content: (
+              <DailyCountChart
+                dailyCounts={manaBet.monthly}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+        ]}
+      />
     </Col>
   )
 }
@@ -477,7 +649,7 @@ export function WasabiCharts() {
       <Spacer h={4} />
       <iframe
         className="w-full"
-        height={12000}
+        height={21000}
         src="https://wasabipesto.com/jupyter/manifold/"
         frameBorder="0"
         style={{ border: 0 }}

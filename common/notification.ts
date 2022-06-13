@@ -18,6 +18,7 @@ export type Notification = {
   sourceContractTitle?: string
   sourceContractCreatorUsername?: string
   sourceContractSlug?: string
+  sourceContractTags?: string[]
 }
 export type notification_source_types =
   | 'contract'

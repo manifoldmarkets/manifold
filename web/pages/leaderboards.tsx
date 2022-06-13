@@ -8,8 +8,8 @@ import { fromPropz, usePropz } from 'web/hooks/use-propz'
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
   const [topTraders, topCreators] = await Promise.all([
-    getTopTraders().catch((_) => {}),
-    getTopCreators().catch((_) => {}),
+    getTopTraders().catch(() => {}),
+    getTopCreators().catch(() => {}),
   ])
 
   return {
@@ -50,7 +50,7 @@ export default function Leaderboards(props: {
           users={topCreators}
           columns={[
             {
-              header: 'Market volume',
+              header: 'Total bet',
               renderCell: (user) => formatMoney(user.creatorVolumeCached),
             },
           ]}

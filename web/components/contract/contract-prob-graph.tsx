@@ -5,7 +5,6 @@ import { memo } from 'react'
 import { Bet } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
-import { useBetsWithoutAntes } from 'web/hooks/use-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
 export const ContractProbGraph = memo(function ContractProbGraph(props: {
@@ -16,9 +15,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   const { contract, height } = props
   const { resolutionTime, closeTime } = contract
 
-  const bets = useBetsWithoutAntes(contract, props.bets).filter(
-    (b) => !b.isRedemption
-  )
+  const bets = props.bets.filter((bet) => !bet.isAnte && !bet.isRedemption)
 
   const startProb = getInitialProbability(contract)
 

@@ -1,8 +1,7 @@
 import Link from 'next/link'
-import { firebaseLogout, User } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
-import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 
 export function ProfileSummary(props: { user: User }) {
   const { user } = props

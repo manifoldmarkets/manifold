@@ -24,8 +24,9 @@ APIs that require authentication accept an `Authorization` header in one of two 
   identity. This is what our web client uses. It will probably be annoying for
   you to generate and we will not document it further here.
 
-API requests that accept parameters should have a body with a JSON object with
-one property per parameter.
+API requests that accept parameters should either have the parameters in the
+query string if they are GET requests, or have a body with a JSON object with
+one property per parameter if they are POST requests.
 
 API responses should always either have a body with a JSON result object (if
 the response was a 200) or with a JSON object representing an error (if the
@@ -35,13 +36,21 @@ response was a 4xx or 5xx.)
 
 ### `GET /v0/markets`
 
-Lists all markets.
+Lists all markets, ordered by creation date descending.
+
+Parameters:
+
+- `limit`: Optional. How many markets to return. The maximum and the default is 1000.
+- `before`: Optional. The ID of the market before which the list will start. For
+  example, if you ask for the most recent 10 markets, and then perform a second
+  query for 10 more markets with `before=[the id of the 10th market]`, you will
+  get markets 11 through 20.
 
 Requires no authorization.
 
 - Example request
   ```
-  http://manifold.markets/api/v0/markets
+  http://manifold.markets/api/v0/markets?limit=1
   ```
 - Example response
   ```json
@@ -445,6 +454,7 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
 
 ## Changelog
 
+- 2022-06-08: Add paging to markets endpoint
 - 2022-06-05: Add new authorized write endpoints
 - 2022-02-28: Add `resolutionTime` to markets, change `closeTime` definition
 - 2022-02-19: Removed user IDs from bets
