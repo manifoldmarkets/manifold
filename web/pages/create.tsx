@@ -39,7 +39,7 @@ export default function Create() {
 
               <Textarea
                 placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
-                className="input input-bordered resize-none"
+                className="input input-bordered resize-none dark:bg-black dark:border-gray-700"
                 autoFocus
                 maxLength={MAX_QUESTION_LENGTH}
                 value={question}
@@ -202,7 +202,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           <Row className="gap-2">
             <input
               type="number"
-              className="input input-bordered"
+              className="input input-bordered dark:bg-black dark:border-gray-700"
               placeholder="MIN"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setMinString(e.target.value)}
@@ -213,7 +213,7 @@ export function NewContract(props: { question: string; tag?: string }) {
             />
             <input
               type="number"
-              className="input input-bordered"
+              className="input input-bordered dark:bg-black dark:border-gray-700"
               placeholder="MAX"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setMaxString(e.target.value)}
@@ -232,7 +232,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         </label>
 
         <select
-          className="select select-bordered w-full max-w-xs"
+          className="select select-bordered w-full max-w-xs dark:bg-black dark:border-gray-700"
           value={category}
           onChange={(e) => setCategory(e.currentTarget.value ?? '')}
         >
@@ -271,7 +271,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         <Row>
           <input
             type={'date'}
-            className="input input-bordered mt-4"
+            className="input input-bordered mt-4 dark:bg-black dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) =>
               setCloseDate(dayjs(e.target.value).format('YYYY-MM-DD') || '')
@@ -282,7 +282,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           />
           <input
             type={'time'}
-            className="input input-bordered mt-4 ml-2"
+            className="input input-bordered mt-4 ml-2 dark:bg-black dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseHoursMinutes(e.target.value)}
             min={'00:00'}
@@ -300,7 +300,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
         <Textarea
-          className="textarea textarea-bordered w-full resize-none"
+          className="textarea textarea-bordered w-full resize-none dark:bg-black dark:border-gray-700"
           rows={3}
           maxLength={MAX_DESCRIPTION_LENGTH}
           placeholder={descriptionPlaceholder}
@@ -327,7 +327,7 @@ export function NewContract(props: { question: string; tag?: string }) {
           {mustWaitForDailyFreeMarketStatus != 'loading' &&
           !mustWaitForDailyFreeMarketStatus ? (
             <div className="label-text text-primary pl-1">
-              <span className={'label-text text-neutral line-through '}>
+              <span className={'label-text text-neutral line-through dark:text-gray-200'}>
                 {formatMoney(ante)}
               </span>{' '}
               FREE
