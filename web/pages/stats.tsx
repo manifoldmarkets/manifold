@@ -157,13 +157,11 @@ export async function getStaticPropz() {
       bets?.map((b) => b.userId) ?? [],
       comments?.map((c) => c.userId) ?? []
     )
-    const counts = Object.entries(countBy(userIds))
-    const topTenth = sortBy(counts, ([, count]) => count)
-      .reverse()
-      // Take the top 10% of users, except for the top 2, to avoid outliers.
-      .slice(2, counts.length * 0.1)
-    const topTenthTotal = sumBy(topTenth, ([_, count]) => count)
-    return topTenthTotal
+    const counts = Object.values(countBy(userIds))
+    const sortedCounts = sortBy(counts, (count) => count).reverse()
+    if (sortedCounts.length === 0) return 0
+    const tenthPercentile = sortedCounts[Math.floor(sortedCounts.length * 0.1)]
+    return tenthPercentile
   })
   const weeklyTopTenthActions = dailyTopTenthActions.map((_, i) => {
     const start = Math.max(0, i - 6)
@@ -212,9 +210,11 @@ export async function getStaticPropz() {
       weekOnWeekRetention,
       weeklyActivationRate,
       monthlyRetention,
-      dailyTopTenthActions,
-      weeklyTopTenthActions,
-      monthlyTopTenthActions,
+      topTenthActions: {
+        daily: dailyTopTenthActions,
+        weekly: weeklyTopTenthActions,
+        monthly: monthlyTopTenthActions,
+      },
       manaBet: {
         daily: dailyManaBet,
         weekly: weeklyManaBet,
@@ -237,9 +237,11 @@ export default function Analytics(props: {
   weekOnWeekRetention: number[]
   monthlyRetention: number[]
   weeklyActivationRate: number[]
-  dailyTopTenthActions: number[]
-  weeklyTopTenthActions: number[]
-  monthlyTopTenthActions: number[]
+  topTenthActions: {
+    daily: number[]
+    weekly: number[]
+    monthly: number[]
+  }
   manaBet: {
     daily: number[]
     weekly: number[]
@@ -258,9 +260,11 @@ export default function Analytics(props: {
     weekOnWeekRetention: [],
     monthlyRetention: [],
     weeklyActivationRate: [],
-    dailyTopTenthActions: [],
-    weeklyTopTenthActions: [],
-    monthlyTopTenthActions: [],
+    topTenthActions: {
+      daily: [],
+      weekly: [],
+      monthly: [],
+    },
     manaBet: {
       daily: [],
       weekly: [],
@@ -301,9 +305,11 @@ export function CustomAnalytics(props: {
   weekOnWeekRetention: number[]
   monthlyRetention: number[]
   weeklyActivationRate: number[]
-  dailyTopTenthActions: number[]
-  weeklyTopTenthActions: number[]
-  monthlyTopTenthActions: number[]
+  topTenthActions: {
+    daily: number[]
+    weekly: number[]
+    monthly: number[]
+  }
   manaBet: {
     daily: number[]
     weekly: number[]
@@ -321,9 +327,7 @@ export function CustomAnalytics(props: {
     weekOnWeekRetention,
     monthlyRetention,
     weeklyActivationRate,
-    dailyTopTenthActions,
-    weeklyTopTenthActions,
-    monthlyTopTenthActions,
+    topTenthActions,
     manaBet,
   } = props
 
@@ -525,10 +529,10 @@ export function CustomAnalytics(props: {
       />
       <Spacer h={8} />
 
-      <Title text="Total actions by top tenth" />
+      <Title text="Action count of top tenth" />
       <p className="text-gray-500">
-        From the top 10% of users, how many bets, comments, and markets did they
-        create? (Excluding top 2 users each day.)
+        Number of actions (bets, comments, markets created) taken by the tenth
+        percentile of top users.
       </p>
       <Tabs
         defaultIndex={1}
@@ -537,7 +541,7 @@ export function CustomAnalytics(props: {
             title: 'Daily',
             content: (
               <DailyCountChart
-                dailyCounts={dailyTopTenthActions}
+                dailyCounts={topTenthActions.daily}
                 startDate={startDate}
                 small
               />
@@ -547,7 +551,7 @@ export function CustomAnalytics(props: {
             title: 'Weekly',
             content: (
               <DailyCountChart
-                dailyCounts={weeklyTopTenthActions}
+                dailyCounts={topTenthActions.weekly}
                 startDate={startDate}
                 small
               />
@@ -557,7 +561,7 @@ export function CustomAnalytics(props: {
             title: 'Monthly',
             content: (
               <DailyCountChart
-                dailyCounts={monthlyTopTenthActions}
+                dailyCounts={topTenthActions.monthly}
                 startDate={startDate}
                 small
               />
