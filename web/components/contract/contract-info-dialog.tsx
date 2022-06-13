@@ -37,7 +37,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
     bets.filter((bet) => !bet.isAnte),
     'userId'
   ).length
-  
+
   const typeDisplay =
     outcomeType === 'BINARY'
       ? 'YES / NO'
