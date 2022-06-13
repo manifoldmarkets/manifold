@@ -9,6 +9,7 @@ import { ContractSearch } from 'web/components/contract-search'
 import { Contract } from 'common/contract'
 import { ContractPageContent } from './[username]/[contractSlug]'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { useContractWithPreload } from 'web/hooks/use-contract'
 
 const Home = () => {
   const user = useUser()
@@ -104,7 +105,9 @@ const useContractPage = () => {
     if (contract) window.scrollTo(0, 0)
   }, [contract])
 
-  return [contract, setContract] as const
+  const updatedContract = useContractWithPreload(contract)
+
+  return [updatedContract, setContract] as const
 }
 
 export default Home
