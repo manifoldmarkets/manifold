@@ -86,12 +86,12 @@ export default function ContractPage(props: {
     slug: '',
   }
 
-  const contract = useContractWithPreload(props.contract)
-
   const inIframe = useIsIframe()
   if (inIframe) {
     return <ContractEmbedPage {...props} />
   }
+
+  const { contract } = props
 
   if (!contract) {
     return <Custom404 />
@@ -103,7 +103,9 @@ export default function ContractPage(props: {
 export function ContractPageContent(
   props: Parameters<typeof ContractPage>[0] & { contract: Contract }
 ) {
-  const { contract, backToHome, comments } = props
+  const { backToHome, comments } = props
+
+  const contract = useContractWithPreload(props.contract) ?? props.contract
 
   const bets = useBets(contract.id) ?? props.bets
   // Sort for now to see if bug is fixed.

@@ -23,7 +23,7 @@ const Home = () => {
 
   return (
     <>
-      <Page assertUser="signed-in" suspend={!!contract}>
+      <Page suspend={!!contract}>
         <Col className="mx-auto w-full p-2">
           <ContractSearch
             querySortOptions={{
