@@ -6,11 +6,12 @@ import { Toaster } from 'react-hot-toast'
 
 export function Page(props: {
   margin?: boolean
+  assertUser?: 'signed-in' | 'signed-out'
   rightSidebar?: ReactNode
   suspend?: boolean
   children?: ReactNode
 }) {
-  const { margin, children, rightSidebar, suspend } = props
+  const { margin, assertUser, children, rightSidebar, suspend } = props
 
   return (
     <>

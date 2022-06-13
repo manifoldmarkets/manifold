@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import {
   BanIcon,
   CheckIcon,
+  DotsVerticalIcon,
   LockClosedIcon,
   XIcon,
 } from '@heroicons/react/solid'
@@ -270,6 +271,33 @@ function FeedClose(props: { contract: Contract }) {
           <RelativeTimestamp time={contract.closeTime || 0} />
         </div>
       </div>
+    </>
+  )
+}
+
+// TODO: Should highlight the entire Feed segment
+function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
+  const { setExpanded } = props
+  return (
+    <>
+      <button onClick={() => setExpanded(true)}>
+        <div className="relative px-1">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300">
+            <DotsVerticalIcon
+              className="h-5 w-5 text-gray-500"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+      </button>
+
+      <button onClick={() => setExpanded(true)}>
+        <div className="min-w-0 flex-1 py-1.5">
+          <div className="text-sm text-gray-500 hover:text-gray-700">
+            <span>Show all activity</span>
+          </div>
+        </div>
+      </button>
     </>
   )
 }

@@ -24,12 +24,13 @@ export function ChoicesToggleGroup(props: {
     <RadioGroup
       className={clsx(className, 'flex flex-row flex-wrap items-center gap-3')}
       value={currentChoice.toString()}
-      onChange={setChoice}
+      onChange={(str) => null}
     >
       {Object.keys(choicesMap).map((choiceKey) => (
         <RadioGroup.Option
           key={choiceKey}
           value={choicesMap[choiceKey]}
+          onClick={() => setChoice(choicesMap[choiceKey])}
           className={({ active }) =>
             clsx(
               active ? 'ring-2 ring-indigo-500 ring-offset-2' : '',

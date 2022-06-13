@@ -53,6 +53,7 @@ function NumericBuyPanel(props: {
 
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
 
+  const [valueError, setValueError] = useState<string | undefined>()
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)

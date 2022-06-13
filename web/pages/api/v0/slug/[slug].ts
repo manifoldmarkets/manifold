@@ -24,7 +24,6 @@ export default async function handler(
     listAllComments(contract.id),
   ])
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const bets = allBets.map(({ userId, ...bet }) => bet) as Exclude<
     Bet,
     'userId'

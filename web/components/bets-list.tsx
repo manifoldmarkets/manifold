@@ -138,8 +138,9 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
       return !hasSoldAll
     })
 
-  const unsettled = contracts.filter(
-    (c) => !c.isResolved && contractsMetrics[c.id].invested !== 0
+  const [settled, unsettled] = partition(
+    contracts,
+    (c) => c.isResolved || contractsMetrics[c.id].invested === 0
   )
 
   const currentInvested = sumBy(
@@ -260,7 +261,7 @@ function ContractBets(props: {
 
   const isBinary = outcomeType === 'BINARY'
 
-  const { payout, profit, profitPercent } = getContractBetMetrics(
+  const { payout, profit, profitPercent, invested } = getContractBetMetrics(
     contract,
     bets
   )
@@ -656,6 +657,7 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
 
   return (
     <ConfirmationButton
+      id={`sell-${bet.id}`}
       openModalBtn={{
         className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
         label: 'Sell',

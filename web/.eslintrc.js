@@ -8,15 +8,8 @@ module.exports = {
   ],
   rules: {
     '@typescript-eslint/no-empty-function': 'off',
+    '@typescript-eslint/no-unused-vars': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/no-unused-vars': [
-      'error',
-      {
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-        caughtErrorsIgnorePattern: '^_',
-      },
-    ],
     '@next/next/no-img-element': 'off',
     '@next/next/no-typos': 'off',
     'lodash/import-scope': [2, 'member'],

@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import { zip, uniq, sumBy, concat, countBy, sortBy, sum } from 'lodash'
+import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   DailyCountChart,
   DailyPercentChart,

@@ -27,8 +27,10 @@ import { EditFoldButton } from 'web/components/folds/edit-fold-button'
 import Custom404 from '../../404'
 import { FollowFoldButton } from 'web/components/folds/follow-fold-button'
 import { SEO } from 'web/components/SEO'
+import { useTaggedContracts } from 'web/hooks/use-contracts'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { filterDefined } from 'common/util/array'
 import { findActiveContracts } from 'web/components/feed/find-active-contracts'
 import { Tabs } from 'web/components/layout/tabs'
 
@@ -130,6 +132,15 @@ export default function FoldPage(props: {
 
   const user = useUser()
   const isCurator = user && fold && user.id === fold.curatorId
+
+  const taggedContracts = useTaggedContracts(fold?.tags) ?? props.contracts
+  const contractsMap = Object.fromEntries(
+    taggedContracts.map((contract) => [contract.id, contract])
+  )
+
+  const contracts = filterDefined(
+    props.contracts.map((contract) => contractsMap[contract.id])
+  )
 
   if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
     return <Custom404 />

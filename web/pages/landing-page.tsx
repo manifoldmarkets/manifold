@@ -8,14 +8,19 @@ import {
 } from '@heroicons/react/outline'
 
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { ContractsGrid } from 'web/components/contract/contracts-list'
 import { Col } from 'web/components/layout/col'
 import Link from 'next/link'
+import { Contract } from 'web/lib/firebase/contracts'
 
-export default function LandingPage() {
+export default function LandingPage(props: { hotContracts: Contract[] }) {
+  const { hotContracts } = props
+
   return (
     <div>
       <Hero />
       <FeaturesSection />
+      {/* <ExploreMarketsSection hotContracts={hotContracts} /> */}
     </div>
   )
 }
@@ -141,6 +146,23 @@ function FeaturesSection() {
           </Link>
         </Col>
       </div>
+    </div>
+  )
+}
+
+function ExploreMarketsSection(props: { hotContracts: Contract[] }) {
+  const { hotContracts } = props
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      <p className="my-12 text-3xl font-extrabold leading-8 tracking-tight text-indigo-700 sm:text-4xl">
+        Today's top markets
+      </p>
+
+      <ContractsGrid
+        contracts={hotContracts}
+        loadMore={() => {}}
+        hasMore={false}
+      />
     </div>
   )
 }
