@@ -105,7 +105,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
     <>
       <div className="align-center mb-4 text-gray-500">
         Subsidize this market by adding M$ to the liquidity pool.{' '}
-        <InfoTooltip text="The greater the M$ subsidy, the greater the incentive for traders to particiapte, the more accurate the market will be." />
+        <InfoTooltip text="The greater the M$ subsidy, the greater the incentive for traders to participate, the more accurate the market will be." />
       </div>
 
       <Row>
