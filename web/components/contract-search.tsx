@@ -131,7 +131,7 @@ export function ContractSearch(props: {
           }}
         />
         <select
-          className="!select !select-bordered"
+          className="!select !select-bordered dark:text-black"
           value={filter}
           onChange={(e) => setFilter(e.target.value as filter)}
         >

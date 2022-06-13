@@ -12,7 +12,7 @@ export function ShareMarket(props: { contract: Contract; className?: string }) {
       <div>Share your market</div>
       <Row className="mb-6 items-center">
         <input
-          className="input input-bordered flex-1 rounded-r-none text-gray-500"
+          className="input input-bordered flex-1 rounded-r-none text-gray-500 dark:bg-black dark:border-gray-800"
           readOnly
           type="text"
           value={contractUrl(contract)}

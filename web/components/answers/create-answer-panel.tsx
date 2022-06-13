@@ -79,7 +79,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="textarea textarea-bordered w-full resize-none"
+          className="textarea textarea-bordered w-full resize-none dark:bg-black dark:border-gray-800"
           placeholder="Type your answer..."
           rows={1}
           maxLength={MAX_ANSWER_LENGTH}
