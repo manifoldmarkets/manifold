@@ -41,7 +41,7 @@ export default function Charity(props: {
   matches: { [charityId: string]: number }
   txns: Txn[]
 }) {
-  const { totalRaised, charities, matches, txns } = props
+  const { totalRaised, charities, matches } = props
 
   const [query, setQuery] = useState('')
   const debouncedQuery = debounce(setQuery, 50)
