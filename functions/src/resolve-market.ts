@@ -54,7 +54,7 @@ export const resolveMarket = functions
   )
 
 export const autoResolveMarkets = functions.pubsub
-  .schedule('every 1 hours')
+  .schedule('every 1 minutes')
   .onRun(async () => {
     const contracts = await getValues<Contract>(
       firestore
