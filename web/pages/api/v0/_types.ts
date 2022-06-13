@@ -32,7 +32,7 @@ export type LiteMarket = {
   volume7Days: number
   volume24Hours: number
 
-  autoResolutionTime: number
+  autoResolutionTime?: number
 
   isResolved: boolean
   resolution?: string

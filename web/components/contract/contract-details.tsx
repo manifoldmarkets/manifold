@@ -218,7 +218,6 @@ function EditableCloseDate(props: {
     else if (newCloseTime > Date.now()) {
       const { description, autoResolutionTime } = contract
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
-      const newAutoResolutionTime = newCloseTime + 7 * DAY_MS
       let newDescription = description.concat(
         `\n\nClose date updated to ${formattedCloseDate}`
       )
@@ -227,14 +226,17 @@ function EditableCloseDate(props: {
         closeTime: newCloseTime,
       }
 
-      if (newAutoResolutionTime >= autoResolutionTime) {
-        update.autoResolutionTime = newAutoResolutionTime
-        const formattedNewAutoResolutionTime = dayjs(
-          newAutoResolutionTime
-        ).format('YYYY-MM-DD h:mm a')
-        newDescription = newDescription.concat(
-          `\nAuto resolution date updated to ${formattedNewAutoResolutionTime}`
-        )
+      if (autoResolutionTime) {
+        const newAutoResolutionTime = newCloseTime + 7 * DAY_MS
+        if (newAutoResolutionTime >= autoResolutionTime) {
+          update.autoResolutionTime = newAutoResolutionTime
+          const formattedNewAutoResolutionTime = dayjs(
+            newAutoResolutionTime
+          ).format('YYYY-MM-DD h:mm a')
+          newDescription = newDescription.concat(
+            `\nAuto resolution date updated to ${formattedNewAutoResolutionTime}`
+          )
+        }
       }
 
       update.description = newDescription

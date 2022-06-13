@@ -23,12 +23,12 @@ export function getNewContract(
   ante: number,
   closeTime: number,
   extraTags: string[],
-  autoResolutionTime: number,
 
   // used for numeric markets
   bucketCount: number,
   min: number,
-  max: number
+  max: number,
+  autoResolutionTime?: number
 ) {
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`

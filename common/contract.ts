@@ -33,7 +33,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isResolved: boolean
   resolutionTime?: number // When the market is resolved
   resolution?: string
-  autoResolutionTime: number // When the market will be resolved automatically
+  autoResolutionTime?: number // When the market will be resolved automatically
   closeEmailsSent?: number
 
   volume: number
