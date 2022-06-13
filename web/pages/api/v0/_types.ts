@@ -1,7 +1,7 @@
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
-import { Contract, resolution } from 'common/contract'
+import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
 
 export type LiteMarket = {
