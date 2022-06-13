@@ -1,16 +1,10 @@
-import { sample } from 'lodash'
-import { SparklesIcon, XIcon } from '@heroicons/react/solid'
-import { Avatar } from './avatar'
-import { useEffect, useRef, useState } from 'react'
+import { SparklesIcon } from '@heroicons/react/solid'
 import { Spacer } from './layout/spacer'
-import { NewContract } from '../pages/create'
-import { firebaseLogin, User } from 'web/lib/firebase/users'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { ContractsGrid } from './contract/contracts-list'
-import { Contract, MAX_QUESTION_LENGTH } from 'common/contract'
+import { Contract } from 'common/contract'
 import { Col } from './layout/col'
-import clsx from 'clsx'
 import { Row } from './layout/row'
-import { ENV_CONFIG } from '../../common/envs/constants'
 import { SiteLink } from './site-link'
 import { formatMoney } from 'common/util/format'
 
@@ -65,92 +59,5 @@ export function FeedPromo(props: { hotContracts: Contract[] }) {
         hasMore={false}
       />
     </>
-  )
-}
-
-export default function FeedCreate(props: {
-  user?: User
-  tag?: string
-  placeholder?: string
-  className?: string
-}) {
-  const { user, tag, className } = props
-  const [question, setQuestion] = useState('')
-  const [isExpanded, setIsExpanded] = useState(false)
-  const inputRef = useRef<HTMLTextAreaElement | null>()
-
-  // Rotate through a new placeholder each day
-  // Easter egg idea: click your own name to shuffle the placeholder
-  // const daysSinceEpoch = Math.floor(Date.now() / 1000 / 60 / 60 / 24)
-
-  // Take care not to produce a different placeholder on the server and client
-  const [defaultPlaceholder, setDefaultPlaceholder] = useState('')
-  useEffect(() => {
-    setDefaultPlaceholder(`e.g. ${sample(ENV_CONFIG.newQuestionPlaceholders)}`)
-  }, [])
-
-  const placeholder = props.placeholder ?? defaultPlaceholder
-
-  return (
-    <div
-      className={clsx(
-        'w-full cursor-text rounded bg-white p-4 shadow-md',
-        isExpanded ? 'ring-2 ring-indigo-300' : '',
-        className
-      )}
-      onClick={() => {
-        !isExpanded && inputRef.current?.focus()
-      }}
-    >
-      <div className="relative flex items-start space-x-3">
-        <Avatar username={user?.username} avatarUrl={user?.avatarUrl} noLink />
-
-        <div className="min-w-0 flex-1">
-          <Row className="justify-between">
-            <p className="my-0.5 text-sm">Ask a question... </p>
-            {isExpanded && (
-              <button
-                className="btn btn-xs btn-circle btn-ghost rounded"
-                onClick={() => setIsExpanded(false)}
-              >
-                <XIcon
-                  className="mx-auto h-6 w-6 text-gray-500"
-                  aria-hidden="true"
-                />
-              </button>
-            )}
-          </Row>
-          <textarea
-            ref={inputRef as any}
-            className={clsx(
-              'w-full resize-none appearance-none border-transparent bg-transparent p-0 text-indigo-700 placeholder:text-gray-400 focus:border-transparent focus:ring-transparent',
-              question && 'text-lg sm:text-xl',
-              !question && 'text-base sm:text-lg'
-            )}
-            placeholder={placeholder}
-            value={question}
-            rows={question.length > 68 ? 4 : 2}
-            maxLength={MAX_QUESTION_LENGTH}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setQuestion(e.target.value.replace('\n', ''))}
-            onFocus={() => setIsExpanded(true)}
-          />
-        </div>
-      </div>
-
-      {/* Hide component instead of deleting, so edits to NewContract don't get lost */}
-      <div className={isExpanded ? '' : 'hidden'}>
-        <NewContract question={question} tag={tag} />
-      </div>
-
-      {/* Show a fake "Create Market" button, which gets replaced with the NewContract one*/}
-      {!isExpanded && (
-        <div className="flex justify-end sm:-mt-4">
-          <button className="btn btn-sm capitalize" disabled>
-            Create Market
-          </button>
-        </div>
-      )}
-    </div>
   )
 }

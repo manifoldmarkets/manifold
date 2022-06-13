@@ -98,7 +98,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
           setError('Server error')
         }
       })
-      .catch((e) => setError('Server error'))
+      .catch((_) => setError('Server error'))
   }
 
   return (
@@ -162,7 +162,7 @@ function WithdrawLiquidityPanel(props: {
   const { contract, lpShares } = props
   const { YES: yesShares, NO: noShares } = lpShares
 
-  const [error, setError] = useState<string | undefined>(undefined)
+  const [_error, setError] = useState<string | undefined>(undefined)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -171,12 +171,12 @@ function WithdrawLiquidityPanel(props: {
     setIsSuccess(false)
 
     withdrawLiquidity({ contractId: contract.id })
-      .then((r) => {
+      .then((_) => {
         setIsSuccess(true)
         setError(undefined)
         setIsLoading(false)
       })
-      .catch((e) => setError('Server error'))
+      .catch((_) => setError('Server error'))
   }
 
   if (isSuccess)
