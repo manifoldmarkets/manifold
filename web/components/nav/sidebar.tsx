@@ -48,7 +48,9 @@ function getNavigation(username: string) {
       icon: NotificationsIcon,
     },
 
-    { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+    ...(IS_PRIVATE_MANIFOLD
+      ? []
+      : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ]
 }
 
@@ -102,7 +104,9 @@ const signedOutMobileNavigation = [
 ]
 
 const mobileNavigation = [
-  { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+  ...(IS_PRIVATE_MANIFOLD
+    ? []
+    : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ...signedOutMobileNavigation,
 ]
 
