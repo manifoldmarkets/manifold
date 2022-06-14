@@ -3,6 +3,7 @@ import { uniq } from 'lodash'
 import { LinkIcon } from '@heroicons/react/solid'
 import { PencilIcon } from '@heroicons/react/outline'
 
+import { Notification } from 'common/notification'
 import { follow, unfollow, User } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
@@ -28,6 +29,15 @@ import { FollowersButton, FollowingButton } from './following-button'
 import { AlertBox } from './alert-box'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
+import {
+  groupNotifications,
+  NotificationGroup,
+  usePreferredGroupedNotifications,
+} from 'web/hooks/use-notifications'
+import {
+  NotificationGroupItem,
+  NotificationItem,
+} from 'web/pages/notifications'
 
 export function UserLink(props: {
   name: string
@@ -48,7 +58,7 @@ export function UserLink(props: {
   )
 }
 
-export const TAB_IDS = ['markets', 'comments', 'bets']
+export const TAB_IDS = ['markets', 'comments', 'bets', 'notifications']
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 
 export function UserPage(props: {
@@ -105,6 +115,42 @@ export function UserPage(props: {
     if (!currentUser) return
     unfollow(currentUser.id, user.id)
   }
+
+  // Notifs stuff. TODO: Only works on your own profile... Check Firebase permissions
+  const [unseenNotificationGroups, setUnseenNotificationGroups] = useState<
+    NotificationGroup[] | undefined
+  >(undefined)
+  const allNotificationGroups = usePreferredGroupedNotifications(user?.id, {
+    unseenOnly: false,
+  })
+  console.log(
+    'allNotificationGroups length',
+    (allNotificationGroups || []).length
+  )
+
+  useEffect(() => {
+    if (!allNotificationGroups) return
+    // Don't re-add notifications that are visible right now or have been seen already.
+    const currentlyVisibleUnseenNotificationIds = Object.values(
+      unseenNotificationGroups ?? []
+    )
+      .map((n) => n.notifications.map((n) => n.id))
+      .flat()
+    const unseenGroupedNotifications = groupNotifications(
+      allNotificationGroups
+        .map((notification: NotificationGroup) => notification.notifications)
+        .flat()
+        .filter(
+          (notification: Notification) =>
+            !notification.isSeen ||
+            currentlyVisibleUnseenNotificationIds.includes(notification.id)
+        )
+    )
+    setUnseenNotificationGroups(unseenGroupedNotifications)
+
+    // We don't want unseenNotificationsGroup to be in the dependencies as we update it here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allNotificationGroups])
 
   return (
     <Page key={user.id}>
@@ -286,6 +332,34 @@ export function UserPage(props: {
                 tabIcon: (
                   <div className="px-0.5 font-bold">{usersBets.length}</div>
                 ),
+              },
+              {
+                title: 'Notifications',
+                content: allNotificationGroups ? (
+                  <div className={''}>
+                    {allNotificationGroups.length === 0 &&
+                      "You don't have any notifications. Try changing your settings to see more."}
+                    {allNotificationGroups.map((notification) =>
+                      notification.notifications.length === 1 ? (
+                        <NotificationItem
+                          notification={notification.notifications[0]}
+                          key={notification.notifications[0].id}
+                        />
+                      ) : (
+                        <NotificationGroupItem
+                          notificationGroup={notification}
+                          key={
+                            notification.sourceContractId +
+                            notification.timePeriod
+                          }
+                        />
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <LoadingIndicator />
+                ),
+                tabIcon: <div className="px-0.5 font-bold">4</div>,
               },
             ]}
           />

@@ -177,7 +177,7 @@ const setNotificationsAsSeen = (notifications: Notification[]) => {
   return notifications
 }
 
-function NotificationGroupItem(props: {
+export function NotificationGroupItem(props: {
   notificationGroup: NotificationGroup
   className?: string
 }) {
@@ -510,7 +510,7 @@ function isNotificationAboutContractResolution(
   )
 }
 
-function NotificationItem(props: {
+export function NotificationItem(props: {
   notification: Notification
   justSummary?: boolean
 }) {
