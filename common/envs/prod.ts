@@ -8,6 +8,7 @@ export type EnvConfig = {
   domain: string
   firebaseConfig: FirebaseConfig
   functionEndpoints: Record<V2CloudFunction, string>
+  heapId?: string
 
   // Access controls
   adminEmails: string[]
@@ -34,6 +35,7 @@ type FirebaseConfig = {
 
 export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
+  heapId: '29268260',
   firebaseConfig: {
     apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
     authDomain: 'mantic-markets.firebaseapp.com',

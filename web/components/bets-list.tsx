@@ -482,7 +482,10 @@ export function ContractBetsTable(props: {
 }) {
   const { contract, className, isYourBets } = props
 
-  const bets = props.bets.filter((b) => !b.isAnte)
+  const bets = sortBy(
+    props.bets.filter((b) => !b.isAnte),
+    (bet) => bet.createdTime
+  ).reverse()
 
   const [sales, buys] = partition(bets, (bet) => bet.sale)
 
