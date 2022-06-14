@@ -57,11 +57,17 @@ export function contractMetrics(contract: Contract) {
 }
 
 export function contractPool(contract: Contract) {
+  return getPoolValue(contract) === 0
+    ? 'Empty Pool'
+    : formatMoney(getPoolValue(contract))
+}
+
+export function getPoolValue(contract: Contract) {
   return contract.mechanism === 'cpmm-1'
-    ? formatMoney(contract.totalLiquidity)
+    ? contract.totalLiquidity
     : contract.mechanism === 'dpm-2'
-    ? formatMoney(sum(Object.values(contract.pool)))
-    : 'Empty pool'
+    ? sum(Object.values(contract.pool))
+    : 0
 }
 
 export function getBinaryProb(contract: BinaryContract) {
