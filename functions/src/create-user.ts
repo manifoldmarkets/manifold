@@ -67,8 +67,8 @@ export const createUser = functions
       balance,
       totalDeposits: balance,
       createdTime: Date.now(),
-      totalPnLCached: 0,
-      creatorVolumeCached: 0,
+      totalPnLCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
+      creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
     }
 
     await firestore.collection('users').doc(userId).create(user)

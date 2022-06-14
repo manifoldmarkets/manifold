@@ -15,8 +15,18 @@ export type User = {
 
   balance: number
   totalDeposits: number
-  totalPnLCached: number
-  creatorVolumeCached: number
+  totalPnLCached: {
+    daily: number
+    weekly: number
+    monthly: number
+    allTime: number
+  }
+  creatorVolumeCached: {
+    daily: number
+    weekly: number
+    monthly: number
+    allTime: number
+  }
 
   followedCategories?: string[]
 }
