@@ -69,7 +69,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolutionTime,
   } = contract
 
-  const { p } = contract as any
+  const { p, totalLiquidity } = contract as any
 
   const probability =
     contract.outcomeType === 'BINARY' ? getProbability(contract) : undefined
@@ -91,6 +91,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     pool: getPoolValue(contract),
     probability,
     p,
+    totalLiquidity,
     outcomeType,
     mechanism,
     volume,
