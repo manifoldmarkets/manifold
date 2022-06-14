@@ -19,4 +19,5 @@ export const DEV_CONFIG: EnvConfig = {
     createmarket: 'https://createmarket-w3txbmd3ba-uc.a.run.app',
   },
   heapId: '1877426215',
+  amplitudeApiKey: 'fd8cbfd964b9a205b8678a39faae71b3',
 }
