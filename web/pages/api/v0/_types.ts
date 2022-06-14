@@ -1,9 +1,8 @@
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
-import { Contract, DPM } from 'common/contract'
+import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
-import { sum } from 'lodash'
 import { getPoolValue } from 'web/lib/firebase/contracts'
 
 export type LiteMarket = {
