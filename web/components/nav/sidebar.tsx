@@ -7,15 +7,12 @@ import {
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
-  ChatAltIcon,
   SparklesIcon,
   NewspaperIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useFollowedFolds } from 'web/hooks/use-fold'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
@@ -51,7 +48,7 @@ function getNavigation(username: string) {
       icon: NotificationsIcon,
     },
 
-    { name: 'Charity', href: '/charity', icon: HeartIcon },
+    { name: 'Get M$', href: '/add-funds', icon: CashIcon },
   ]
 }
 
@@ -63,18 +60,19 @@ function getMoreNavigation(user?: User | null) {
   if (!user) {
     return [
       { name: 'Leaderboards', href: '/leaderboards' },
+      { name: 'Charity', href: '/charity' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
       { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
     ]
   }
 
   return [
-    { name: 'Add funds', href: '/add-funds' },
     { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Charity', href: '/charity' },
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
-    { name: 'About', href: 'https://docs.manifold.markets' },
+    { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
   ]
 }
@@ -83,7 +81,11 @@ const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
+  {
+    name: 'About',
+    href: 'https://docs.manifold.markets/$how-to',
+    icon: BookOpenIcon,
+  },
 ]
 
 const signedOutMobileNavigation = [
@@ -100,11 +102,15 @@ const signedOutMobileNavigation = [
     href: 'https://twitter.com/ManifoldMarkets',
     icon: IconFromUrl('/twitter-logo.svg'),
   },
-  { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
+  {
+    name: 'About',
+    href: 'https://docs.manifold.markets/$how-to',
+    icon: BookOpenIcon,
+  },
 ]
 
 const mobileNavigation = [
-  { name: 'Add funds', href: '/add-funds', icon: CashIcon },
+  { name: 'Get M$', href: '/add-funds', icon: CashIcon },
   ...signedOutMobileNavigation,
 ]
 
@@ -179,8 +185,6 @@ export default function Sidebar(props: { className?: string }) {
   }, [])
 
   const user = useUser()
-  let folds = useFollowedFolds(user) || []
-  folds = sortBy(folds, 'followCount').reverse()
   const mustWaitForFreeMarketStatus = useHasCreatedContractToday(user)
   const navigationOptions =
     user === null

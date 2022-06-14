@@ -1,53 +1,19 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { sum, sumBy } from 'lodash'
+import { groupBy, sum, sumBy } from 'lodash'
 
-import { getValues } from './utils'
+import { getValues, log, logMemory, mapAsync } from './utils'
 import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import { User } from '../../common/user'
-import { batchedWaitAll } from '../../common/util/promise'
 import { calculatePayout } from '../../common/calculate'
 
 const firestore = admin.firestore()
 
-export const updateUserMetrics = functions.pubsub
-  .schedule('every 15 minutes')
-  .onRun(async () => {
-    const [users, contracts] = await Promise.all([
-      getValues<User>(firestore.collection('users')),
-      getValues<Contract>(firestore.collection('contracts')),
-    ])
-
-    const contractsDict = Object.fromEntries(
-      contracts.map((contract) => [contract.id, contract])
-    )
-
-    await batchedWaitAll(
-      users.map((user) => async () => {
-        const [investmentValue, creatorVolume] = await Promise.all([
-          computeInvestmentValue(user, contractsDict),
-          computeTotalPool(user, contractsDict),
-        ])
-
-        const totalValue = user.balance + investmentValue
-        const totalPnL = totalValue - user.totalDeposits
-
-        await firestore.collection('users').doc(user.id).update({
-          totalPnLCached: totalPnL,
-          creatorVolumeCached: creatorVolume,
-        })
-      })
-    )
-  })
-
-const computeInvestmentValue = async (
-  user: User,
+const computeInvestmentValue = (
+  bets: Bet[],
   contractsDict: { [k: string]: Contract }
 ) => {
-  const query = firestore.collectionGroup('bets').where('userId', '==', user.id)
-  const bets = await getValues<Bet>(query)
-
   return sumBy(bets, (bet) => {
     const contract = contractsDict[bet.contractId]
     if (!contract || contract.isResolved) return 0
@@ -58,7 +24,7 @@ const computeInvestmentValue = async (
   })
 }
 
-const computeTotalPool = async (
+const computeTotalPool = (
   user: User,
   contractsDict: { [k: string]: Contract }
 ) => {
@@ -71,9 +37,43 @@ const computeTotalPool = async (
   return sum(pools)
 }
 
-// const computeVolume = async (contract: Contract) => {
-//   const bets = await getValues<Bet>(
-//     firestore.collection(`contracts/${contract.id}/bets`)
-//   )
-//   return sumBy(bets, (bet) => Math.abs(bet.amount))
-// }
+export const updateUserMetricsCore = async () => {
+  const [users, contracts, bets] = await Promise.all([
+    getValues<User>(firestore.collection('users')),
+    getValues<Contract>(firestore.collection('contracts')),
+    firestore.collectionGroup('bets').get(),
+  ])
+  log(
+    `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.docs.length} bets.`
+  )
+  logMemory()
+
+  const contractsDict = Object.fromEntries(
+    contracts.map((contract) => [contract.id, contract])
+  )
+
+  const betsByUser = groupBy(
+    bets.docs.map((doc) => doc.data() as Bet),
+    (bet) => bet.userId
+  )
+
+  await mapAsync(users, async (user) => {
+    const investmentValue = computeInvestmentValue(
+      betsByUser[user.id] ?? [],
+      contractsDict
+    )
+    const creatorVolume = computeTotalPool(user, contractsDict)
+    const totalValue = user.balance + investmentValue
+    const totalPnL = totalValue - user.totalDeposits
+    return await firestore.collection('users').doc(user.id).update({
+      totalPnLCached: totalPnL,
+      creatorVolumeCached: creatorVolume,
+    })
+  })
+  log(`Updated metrics for ${users.length} users.`)
+}
+
+export const updateUserMetrics = functions
+  .runWith({ memory: '1GB' })
+  .pubsub.schedule('every 15 minutes')
+  .onRun(updateUserMetricsCore)

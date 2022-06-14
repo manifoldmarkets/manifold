@@ -15,35 +15,97 @@ Our community is the beating heart of Manifold; your individual contributions ar
 
 ## Awarded bounties
 
-🥧 *Awarded 2022-03-14*
+🎈 *Awarded on 2022-06-14*
 
-**[Kevin Zielnicki](https://manifold.markets/kjz): M$ 10,000**
+[\*\*Wasabipesto](https://manifold.markets/wasabipesto):\*\* **M$20,000**
+
+- For creating an awesome stats page which features and analyses various data sets! This can be found on the second tab of our [analytics page](https://manifold.markets/stats).
+
+**[Jack](https://manifold.markets/jack): M$10,000**
+
+- For adding a bunch of charities to [Manifold for Good](https://manifold.markets/charity), working out market math with Austin, and excellent comment activity.
+
+**[Forrest](https://manifold.markets/Forrest): M$10,000**
+
+- For a variety of [open source code contributions](https://github.com/manifoldmarkets/manifold/commits?author=ForrestWeiswolf), making our code base easier to use and maintain.
+
+**[IsaacKing](https://manifold.markets/IsaacKing): M$10,000**
+
+- For responsible disclosure of an exploit involving liquidity withdrawal, which has [now been fixed](https://github.com/manifoldmarkets/manifold/pull/472)! Removing one infinite money glitch at a time.
+
+**[Sjlver](https://manifold.markets/Sjlver): M$5,000**
+
+- For responsible disclosure of a potential exploit. We would say what it is, but it isn’t quite fixed yet! 🤫
+
+_🌿 Announced on 2022-05-02_
+
+[\*\*Marshall Polaris](https://manifold.markets/mqp): M$200K\*\*
+
+- For spearheading the effort to [open-source Manifold](https://github.com/manifoldmarkets/manifold), by documenting our processes, triaging bugs, and improving the new contributor experience.
+- Marshall contributed over 2 weeks of part-time volunteer work; as such, we are awarding an amount that reflects the extraordinary amount of effort he’s put in.
+
+[\*\*Vincent Luczkow](https://manifold.markets/VincentLuczkow): M$10,000\*\*
+
+- For building and releasing https://github.com/vluzko/manifold-markets-python, a super cool Python visualization of the calibration accuracy of all Manifold markets. Turns out we’re doing okay!
+
+[\*\*Akhil Wable](https://manifold.markets/AkhilWable): M$10,000\*\*
+
+- For writing up [Akhil’s Product Suggestions](https://www.notion.so/Akhil-s-Product-Suggestions-672e1cba393d4242852ff95ae79528df), an extensive, thoughtful list of improvements we could make to our platform.
+
+[\*\*Alex K. Chen](https://manifold.markets/AlexKChen): M$6,000\*\*
+
+- For the creation of a metric ton of innovative, long term questions. At the time of award, Alex was singlehandedly responsible for 20% of all markets posted in April.
+
+[\*\*ZorbaTHut](https://manifold.markets/ZorbaTHut): M$5,000\*\*
+
+- For [testing out futarchy](https://manifold.markets/tag/themotte_leaving) on an important problem for the community of The Motte.
+
+**[Tetraspace](https://manifold.markets/Tetraspace): M$3,500**
+
+- For the creation of [a focused set of questions on UK politics](https://twitter.com/TetraspaceWest/status/1516824123149848579), with relevant real-world predictions.
+- For the idea and execution of using FR bounded buckets for mapping out a scalar range ([example market](https://manifold.markets/Tetraspace/if-ron-desantis-is-elected-presiden), [discussion here](https://manifold.markets/StephenMalina/how-many-daily-active-users-will-ma)).
+
+**[tcheasdfjkl](https://manifold.markets/tcheasdfjkl): M$2,500**
+
+- For calling out numerous areas of improvement, e.g. around our profit numbers being wonky, and problems with the DPM ⇒ CFMM market conversions.
+
+[\*\*Jack](https://manifold.markets/JackC): M$500\*\*
+
+- For recommending we list the Long-Term Future Fund as a supported charity.
+
+[\*\*N.C. Young](https://manifold.markets/NcyRocks): M$500\*\*
+
+- For recommending we list the Givewell Maximum Impact Fund as a supported charity.
+
+  \**🥧 *Awarded 2022-03-14\*
+
+[\*\*Kevin Zielnicki](https://manifold.markets/kjz): M$10,000\*\*
 
 - For identifying issues with our Dynamic Parimutuel Market Maker in an [excellent blog post](https://kevin.zielnicki.com/2022/02/17/manifold/) (and [associated market](https://manifold.markets/kjz/will-manifolds-developers-agree-wit)), leading us to change to a different mechanism.
 
-**[Pepe](https://manifold.markets/Pepe): M$ 10,000**
+**[Pepe](https://manifold.markets/Pepe): M$10,000**
 
-- For developing the function used in our Constant Function Market Maker and working with us to polish it on Discord, making it easier for us to provision liquidity compared to a CPMM.
+- For developing the function used in our Constant Function Market Maker, making it easier for us to provision liquidity compared to a CPMM.
 
-**[Gurkenglas](https://manifold.markets/Gurkenglas): M$ 5,000**
+**[Gurkenglas](https://manifold.markets/Gurkenglas): M$5,000**
 
-- For concrete suggestions on Discord around improving our market maker algorithms, and creating useful graphs to make our different market makers more legible.
+- For concrete suggestions around improving our market maker algorithms, and creating useful graphs to make our different market makers more legible.
 
-**[Scott Alexander](https://manifold.markets/ScottAlexander): M$ 5,000**
+**[Scott Alexander](https://manifold.markets/ScottAlexander): M$5,000**
 
 - For [developing and publicizing the idea of providing interest-free loans on each market](https://astralcodexten.substack.com/p/play-money-and-reputation-systems), helping make long-term markets more accurate.
 
-**[David Glidden](https://manifold.markets/dglid): M$ 5,000**
+**[David Glidden](https://manifold.markets/dglid): M$5,000**
 
 - For taking on the mantle of [@MetaculusBot](https://manifold.markets/MetaculusBot), which allows traders access to a wider spread of topics, and permits head-to-head comparisons between our prediction markets and other forecasting platforms.
 
-**[Isaac King](https://manifold.markets/IsaacKing): M$ 5,000**
+**[Isaac King](https://manifold.markets/IsaacKing): M$5,000**
 
-- For [compiling a comprehensive FAQ](https://outsidetheasylum.blog/manifold-markets-faq/) that answers a variety of questions that new users commonly face, and also inspiring us to move to [this open-source docs platform](http://docs.manifold.markets/).
+- For [compiling an FAQ](https://outsidetheasylum.blog/manifold-markets-faq/) that answers a variety of questions that new users commonly face, and also inspiring us to move to [this open-source docs platform](http://docs.manifold.markets/).
 
-**[Blazer](https://manifold.markets/BlazingDarkness): M$ 2,500**
+[\*\*Blazer](https://manifold.markets/BlazingDarkness/was-it-an-unpleasant-surprise-when): M$2,500\*\*
 
-- For [calling out our mistake](https://manifold.markets/BlazingDarkness/was-it-an-unpleasant-surprise-when) in retroactively publicizing all market creator’s trades, leading us to revert this feature entirely.
+- For [calling out our mistake](https://manifold.markets/BlazingDarkness/was-it-an-unpleasant-surprise-when) in retroactively publicizing the market creator’s trades, leading us to revert this feature entirely.
 
 ⛑️ _Awarded 2022-01-09_
 

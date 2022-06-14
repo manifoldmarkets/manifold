@@ -18,10 +18,12 @@ export const useContract = (contractId: string) => {
   return result.isLoading ? undefined : result.data
 }
 
-export const useContractWithPreload = (initial: Contract | null) => {
-  const [contract, setContract] = useStateCheckEquality<Contract | null>(
-    initial
-  )
+export const useContractWithPreload = (
+  initial: Contract | null | undefined
+) => {
+  const [contract, setContract] = useStateCheckEquality<
+    Contract | null | undefined
+  >(initial)
   const contractId = initial?.id
 
   useEffect(() => {
