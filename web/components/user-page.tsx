@@ -1,4 +1,8 @@
 import clsx from 'clsx'
+import { uniq } from 'lodash'
+import { LinkIcon } from '@heroicons/react/solid'
+import { PencilIcon } from '@heroicons/react/outline'
+
 import { follow, unfollow, User } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
@@ -9,9 +13,7 @@ import { Col } from './layout/col'
 import { Linkify } from './linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
-import { LinkIcon } from '@heroicons/react/solid'
 import { genHash } from 'common/util/random'
-import { PencilIcon } from '@heroicons/react/outline'
 import { Tabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
 import { useEffect, useState } from 'react'
@@ -22,8 +24,10 @@ import { LoadingIndicator } from './loading-indicator'
 import { BetsList } from './bets-list'
 import { Bet } from 'common/bet'
 import { getUserBets } from 'web/lib/firebase/bets'
-import { uniq } from 'lodash'
 import { FollowersButton, FollowingButton } from './following-button'
+import { AlertBox } from './alert-box'
+import { useFollows } from 'web/hooks/use-follows'
+import { FollowButton } from './follow-button'
 
 export function UserLink(props: {
   name: string
@@ -304,30 +308,4 @@ export function defaultBannerUrl(userId: string) {
     'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
   ]
   return defaultBanner[genHash(userId)() % defaultBanner.length]
-}
-
-import { ExclamationIcon } from '@heroicons/react/solid'
-import { FollowButton } from './follow-button'
-import { useFollows } from 'web/hooks/use-follows'
-
-function AlertBox(props: { title: string; text: string }) {
-  const { title, text } = props
-  return (
-    <div className="rounded-md bg-yellow-50 p-4">
-      <div className="flex">
-        <div className="flex-shrink-0">
-          <ExclamationIcon
-            className="h-5 w-5 text-yellow-400"
-            aria-hidden="true"
-          />
-        </div>
-        <div className="ml-3">
-          <h3 className="text-sm font-medium text-yellow-800">{title}</h3>
-          <div className="mt-2 text-sm text-yellow-700">
-            <Linkify text={text} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }

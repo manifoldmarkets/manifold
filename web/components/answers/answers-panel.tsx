@@ -1,5 +1,5 @@
 import { sortBy, partition, sum, uniq } from 'lodash'
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { FreeResponseContract } from 'common/contract'
 import { Col } from '../layout/col'
@@ -85,7 +85,7 @@ export function AnswersPanel(props: { contract: FreeResponseContract }) {
     })
   }
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     setChosenAnswers({})
   }, [resolveOption])
 
