@@ -2,7 +2,7 @@
 
 Manifold Markets is a novel site where users can bet against each other to predict the outcomes of all types of questions. Engage in intense discussion, or joke with friends, whilst putting play-money where your mouth is.
 
-# Mana
+## Mana
 
 Mana (M$) is our virtual play currency that cannot be converted to real money.
 
@@ -13,11 +13,11 @@ Mana (M$) is our virtual play currency that cannot be converted to real money.
 - **It sets us apart**
   Using play-money sets us apart from other similar sites as we don’t want our users to solely focus on monetary gains. Instead we prioritize providing value in the form of an enjoyable experience and facilitating a more informed world through the power of prediction markets.
 
-# How probabilities work
+## How probabilities work
 
 The probability of a market represents what the collective bets of users predict the chances of an outcome occurring is. How this is calculated depends on the type of market - see below!
 
-# Types of markets
+## Types of markets
 
 There are currently 3 types of markets: Yes/No (binary), Free response, and Numerical.
 
@@ -34,7 +34,7 @@ There are currently 3 types of markets: Yes/No (binary), Free response, and Nume
 - **Numerical**
   Retracted whilst we make improvements. You still may see some old ones floating around though. Questions which can be answered by a number within a given range. Betting on a value will cause you to buy shares from ‘buckets’ surrounding the number you choose.
 
-# Build your portfolio
+## Compete and build your portfolio
 
 Generate profits to prove your expertise and shine above your friends.
 
@@ -54,3 +54,5 @@ To the moon 🚀
 
 - **Create innovative answers**
   Certain free response markets provide room for creativity! The answers themselves can often affect the outcome based on how compelling they are.
+
+More questions? Check out **[this community-driven FAQ](https://outsidetheasylum.blog/manifold-markets-faq/)**!
