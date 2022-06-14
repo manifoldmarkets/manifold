@@ -1,10 +1,8 @@
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
-import { Contract, DPM } from 'common/contract'
+import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
-import { sum } from 'lodash'
-import { getPoolValue } from 'web/lib/firebase/contracts'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -28,7 +26,7 @@ export type LiteMarket = {
   pool: number
   probability?: number
   p?: number
-  totalShares?: number
+  totalLiquidity?: number
 
   volume: number
   volume7Days: number
@@ -60,6 +58,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     description,
     tags,
     slug,
+    pool,
     outcomeType,
     mechanism,
     volume,
@@ -70,7 +69,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolutionTime,
   } = contract
 
-  const { p } = contract as any
+  const { p, totalLiquidity } = contract as any
 
   const probability =
     contract.outcomeType === 'BINARY' ? getProbability(contract) : undefined
@@ -89,9 +88,10 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     description,
     tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
-    pool: getPoolValue(contract),
+    pool: pool.YES + pool.NO,
     probability,
     p,
+    totalLiquidity,
     outcomeType,
     mechanism,
     volume,
