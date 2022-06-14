@@ -1,3 +1,4 @@
 export function identifyUser(userId: string) {
-  (window as any)?.heap?.identify(userId)
+  const w = window as any // needed to stop weird prettier/eslint conflict
+  w?.heap?.identify(userId)
 }
