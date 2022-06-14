@@ -23,8 +23,8 @@ export const ATLAS_CONFIG: EnvConfig = {
   moneyMoniker: 'A$',
   startingBalance: 5000,
   visibility: 'PRIVATE',
-  faviconPath: '/atlas/atlas-favicon.png',
-  navbarLogoPath: '',
+  // faviconPath: '/atlas/atlas-favicon.png',
+  navbarLogoPath: '/atlas/atlas-logo-white.svg',
   newQuestionPlaceholders: [
     'Will we have at least 5 new team members by the end of this quarter?',
     'Will we meet or exceed our goals this sprint?',
