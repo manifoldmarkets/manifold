@@ -27,6 +27,7 @@ export type LiteMarket = {
   pool: number
   probability?: number
   p?: number
+  totalLiquidity?: number
   totalShares?: number
 
   volume: number
