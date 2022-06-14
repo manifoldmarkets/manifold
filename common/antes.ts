@@ -14,10 +14,6 @@ import { ENV_CONFIG } from './envs/constants'
 
 export const FIXED_ANTE = ENV_CONFIG.fixedAnte ?? 10
 
-// deprecated
-export const PHANTOM_ANTE = 0.001
-export const MINIMUM_ANTE = 50
-
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
 
 export function getCpmmInitialLiquidity(

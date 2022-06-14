@@ -109,7 +109,6 @@ export function NewContract(props: { question: string }) {
     question.length > 0 &&
     ante !== undefined &&
     ante !== null &&
-    ante >= MINIMUM_ANTE &&
     (ante <= balance ||
       (mustWaitForDailyFreeMarketStatus != 'loading' &&
         !mustWaitForDailyFreeMarketStatus)) &&
