@@ -16,7 +16,7 @@ import { Page } from 'web/components/page'
 import { SiteLink } from 'web/components/site-link'
 import { Title } from 'web/components/title'
 import { getAllCharityTxns } from 'web/lib/firebase/txns'
-import { formatMoney, manaToUSD } from 'common/util/format'
+import { manaToUSD } from 'common/util/format'
 import { quadraticMatches } from 'common/quadratic-funding'
 import { Txn } from 'common/txn'
 
@@ -101,8 +101,15 @@ export default function Charity(props: {
         <Col className="">
           <Title className="!mt-0" text="Manifold for Charity" />
           <span className="text-gray-600">
-            Donate your winnings: every {formatMoney(100)} you contribute turns
-            into $1 USD to your chosen charity!
+            Through July 15, up to $25k of donations will be matched via{' '}
+            <SiteLink href="https://wtfisqf.com/" className="font-bold">
+              quadratic funding
+            </SiteLink>
+            , courtesy of{' '}
+            <SiteLink href="https://ftxfuturefund.org/" className="font-bold">
+              the FTX Future Fund
+            </SiteLink>
+            !
           </span>
           <DonatedStats
             stats={[
@@ -144,38 +151,28 @@ export default function Charity(props: {
           </div>
         )}
 
-        <iframe
-          height="405"
-          src="https://manifold.markets/embed/ManifoldMarkets/total-donations-for-manifold-for-go"
-          title="Total donations for Manifold for Charity this May (in USD)"
-          frameBorder="0"
-          className="m-10 w-full rounded-xl bg-white p-10"
-        ></iframe>
+        <div className="mt-10 w-full rounded-xl bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-5">
+          <iframe
+            height="405"
+            src="https://manifold.markets/ManifoldMarkets/how-much-will-be-donated-through-ma"
+            title="Total donations for Manifold for Charity this May (in USD)"
+            frameBorder="0"
+            className="w-full rounded-xl bg-white p-10"
+          ></iframe>
+        </div>
 
         <div className="mt-10 text-gray-500">
-          Don't see your favorite charity? Recommend it by emailing
+          <span className="font-semibold">Notes</span>
+          <br />
+          - Don't see your favorite charity? Recommend it by emailing
           charity@manifold.markets!
           <br />
+          - Manifold is not affiliated with non-Featured charities; we're just
+          fans of their work.
           <br />
-          <span className="italic">
-            Notes:
-            <br />
-            - Manifold is not affiliated with non-Featured charities; we're just
-            fans of their work!
-            <br />
-            - As Manifold itself is a for-profit entity, your contributions will
-            not be tax deductible.
-            <br />- Donation matches are courtesy of{' '}
-            <SiteLink href="https://ftxfuturefund.org/" className="font-bold">
-              the FTX Future Fund
-            </SiteLink>
-            , and are allocated via{' '}
-            <SiteLink href="https://wtfisqf.com/" className="font-bold">
-              quadratic funding
-            </SiteLink>
-            .
-            <br />- Donations + matches are wired once each quarter.
-          </span>
+          - As Manifold itself is a for-profit entity, your contributions will
+          not be tax deductible.
+          <br />- Donations + matches are wired once each quarter.
         </div>
       </Col>
     </Page>
