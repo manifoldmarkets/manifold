@@ -19,6 +19,7 @@ export type EnvConfig = {
   faviconPath?: string // Should be a file in /public
   navbarLogoPath?: string
   newQuestionPlaceholders: string[]
+  startingBalance?: number
 }
 
 type FirebaseConfig = {
