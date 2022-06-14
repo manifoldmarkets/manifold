@@ -4,6 +4,7 @@ export type Bet = {
   id: string
   userId: string
   contractId: string
+  createdTime: number
 
   amount: number // bet size; negative if SELL bet
   loanAmount?: number
@@ -26,7 +27,18 @@ export type Bet = {
   isLiquidityProvision?: boolean
   isRedemption?: boolean
 
-  createdTime: number
+  // For limit orders.
+  limitProb?: number // [0, 1]. Bet to this probability.
+  isFilled?: boolean // Whether all of the bet amount has been filled.
+  isCancelled?: boolean // Whether to prevent any further fills.
+  // A record of each transaction that partially (or fully) fills the bet amount.
+  // I.e. A limit order could be filled by partially matching with several bets.
+  // Non-limit orders can also be filled by matching with multiple limit orders.
+  fills?: {
+    matchedBetId: string
+    amount: number
+    shares: number
+  }[]
 }
 
 export type NumericBet = Bet & {

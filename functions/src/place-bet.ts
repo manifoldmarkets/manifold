@@ -21,6 +21,7 @@ const bodySchema = z.object({
 
 const binarySchema = z.object({
   outcome: z.enum(['YES', 'NO']),
+  limitProb: z.number().gte(0).lte(1).optional(),
 })
 
 const freeResponseSchema = z.object({
