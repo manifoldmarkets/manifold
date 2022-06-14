@@ -26,7 +26,7 @@ import { EditCategoriesButton } from './feed/category-selector'
 import { CATEGORIES } from 'common/categories'
 import { Tabs } from './layout/tabs'
 import { EditFollowingButton } from './following-button'
-import { ContractSearchFirestore } from 'web/pages/contract-search-firestore'
+import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
