@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { APIError, newEndpoint, validate } from './api'
-import { Contract } from '../../common/contract'
+import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
 import { User } from '../../common/user'
 import { getCpmmSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
@@ -57,8 +57,12 @@ export const sellshares = newEndpoint(['POST'], async (req, auth) => {
       prevLoanAmount
     )
 
-    if (!isFinite(newP)) {
-      throw new APIError(500, 'Trade rejected due to overflow error.')
+    if (
+      !newP ||
+      !isFinite(newP) ||
+      Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY
+    ) {
+      throw new APIError(400, 'Sale too large for current liquidity pool.')
     }
 
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
