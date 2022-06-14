@@ -95,20 +95,14 @@ Requires no authorization.
     description: string
     tags: string[]
     url: string
-    outcomeType: string
-    mechanism: string
 
     pool: number
-    probability?: number
-    p?: number
-
-    volume: number
+    probability: number
     volume7Days: number
     volume24Hours: number
-
     isResolved: boolean
-    resolution?: string
     resolutionTime?: number
+    resolution?: string
   }
   ```
 
