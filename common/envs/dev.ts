@@ -18,4 +18,5 @@ export const DEV_CONFIG: EnvConfig = {
     sellbet: 'https://sellbet-w3txbmd3ba-uc.a.run.app',
     createmarket: 'https://createmarket-w3txbmd3ba-uc.a.run.app',
   },
+  heapId: '1877426215',
 }
