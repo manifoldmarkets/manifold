@@ -8,7 +8,7 @@ import {
 
 import { ENV_CONFIG } from 'common/envs/constants'
 
-init(ENV_CONFIG.amplitudeApiKey ?? '')
+init(ENV_CONFIG.amplitudeApiKey ?? '', undefined, { includeReferrer: true })
 
 export { track }
 
