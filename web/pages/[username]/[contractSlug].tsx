@@ -39,6 +39,7 @@ import { FeedBet } from 'web/components/feed/feed-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
+import { CPMMBinaryContract } from 'common/contract'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -142,7 +143,10 @@ export function ContractPageContent(
         (isNumeric ? (
           <NumericBetPanel className="hidden xl:flex" contract={contract} />
         ) : (
-          <BetPanel className="hidden xl:flex" contract={contract} />
+          <BetPanel
+            className="hidden xl:flex"
+            contract={contract as CPMMBinaryContract}
+          />
         ))}
       {allowResolve &&
         (isNumeric ? (

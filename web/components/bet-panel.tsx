@@ -4,7 +4,7 @@ import { partition, sumBy } from 'lodash'
 import { SwitchHorizontalIcon } from '@heroicons/react/solid'
 
 import { useUser } from 'web/hooks/use-user'
-import { BinaryContract, CPMMBinaryContract } from 'common/contract'
+import { CPMMBinaryContract } from 'common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
@@ -42,7 +42,7 @@ import { isIOS } from 'web/lib/util/device'
 import { ProbabilityInput } from './probability-input'
 
 export function BetPanel(props: {
-  contract: BinaryContract
+  contract: CPMMBinaryContract
   className?: string
 }) {
   const { contract, className } = props
@@ -91,7 +91,7 @@ export function BetPanel(props: {
 }
 
 export function BetPanelSwitcher(props: {
-  contract: BinaryContract
+  contract: CPMMBinaryContract
   className?: string
   title?: string // Set if BetPanel is on a feed modal
   selected?: 'YES' | 'NO'
@@ -170,19 +170,16 @@ export function BetPanelSwitcher(props: {
           text={tradeType === 'BUY' ? title ?? 'Place a trade' : 'Sell shares'}
         />
 
-        {tradeType === 'SELL' &&
-          mechanism == 'cpmm-1' &&
-          user &&
-          sharesOutcome && (
-            <SellPanel
-              contract={contract}
-              shares={yesShares || noShares}
-              sharesOutcome={sharesOutcome}
-              user={user}
-              userBets={userBets ?? []}
-              onSellSuccess={onBetSuccess}
-            />
-          )}
+        {tradeType === 'SELL' && user && sharesOutcome && (
+          <SellPanel
+            contract={contract}
+            shares={yesShares || noShares}
+            sharesOutcome={sharesOutcome}
+            user={user}
+            userBets={userBets ?? []}
+            onSellSuccess={onBetSuccess}
+          />
+        )}
 
         {tradeType === 'BUY' && (
           <BuyPanel
@@ -200,7 +197,7 @@ export function BetPanelSwitcher(props: {
 }
 
 function BuyPanel(props: {
-  contract: BinaryContract
+  contract: CPMMBinaryContract
   user: User | null | undefined
   isLimitOrder?: boolean
   selected?: 'YES' | 'NO'
@@ -293,20 +290,12 @@ function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const cpmmFees =
-    contract.mechanism === 'cpmm-1' &&
-    getCpmmLiquidityFee(contract, betAmount ?? 0, betChoice ?? 'YES').totalFees
+  const cpmmFees = getCpmmLiquidityFee(
+    contract,
+    betAmount ?? 0,
+    betChoice ?? 'YES'
+  ).totalFees
 
-  const dpmTooltip =
-    contract.mechanism === 'dpm-2'
-      ? `Current payout for ${formatWithCommas(shares)} / ${formatWithCommas(
-          shares +
-            contract.totalShares[betChoice ?? 'YES'] -
-            (contract.phantomShares
-              ? contract.phantomShares[betChoice ?? 'YES']
-              : 0)
-        )} ${betChoice ?? 'YES'} shares`
-      : undefined
   return (
     <>
       <YesNoSelector
@@ -355,24 +344,9 @@ function BuyPanel(props: {
         <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
             <div>
-              {contract.mechanism === 'dpm-2' ? (
-                <>
-                  Estimated
-                  <br /> payout if{' '}
-                  <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
-                </>
-              ) : (
-                <>
-                  Payout if <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
-                </>
-              )}
+              Payout if <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
             </div>
-
-            {cpmmFees !== false && (
-              <InfoTooltip text={`Includes ${formatMoney(cpmmFees)} in fees`} />
-            )}
-
-            {dpmTooltip && <InfoTooltip text={dpmTooltip} />}
+            <InfoTooltip text={`Includes ${formatMoney(cpmmFees)} in fees`} />
           </Row>
           <div>
             <span className="mr-2 whitespace-nowrap">
