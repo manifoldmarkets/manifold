@@ -12,13 +12,11 @@ export const ATLAS_CONFIG: EnvConfig = {
     measurementId: 'G-FR9SJTFF2K',
     region: 'us-central1',
   },
-  // TODO: fill in real endpoints for atlas
-  // Where do we get these?
   functionEndpoints: {
-    placebet: 'https://placebet-nggbo3neva-uc.a.run.app',
-    sellshares: 'https://sellshares-nggbo3neva-uc.a.run.app',
-    sellbet: 'https://sellbet-nggbo3neva-uc.a.run.app',
-    createmarket: 'https://createmarket-nggbo3neva-uc.a.run.app',
+    placebet: 'https://placebet-txwwmth7kq-uc.a.run.app',
+    sellshares: 'https://sellshares-txwwmth7kq-uc.a.run.app',
+    sellbet: 'https://sellbet-txwwmth7kq-uc.a.run.app',
+    createmarket: 'https://createmarket-txwwmth7kq-uc.a.run.app',
   },
   adminEmails: [...PROD_CONFIG.adminEmails],
   whitelistEmail: '',
