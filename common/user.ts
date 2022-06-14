@@ -1,4 +1,4 @@
-import { ENV, ENV_CONFIG } from './envs/constants'
+import { ENV_CONFIG } from './envs/constants'
 
 export type User = {
   id: string
