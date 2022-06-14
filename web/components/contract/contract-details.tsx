@@ -23,6 +23,7 @@ import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
 import { CATEGORY_LIST } from 'common/categories'
 import { TagsList } from '../tags-list'
+import { DAY_MS } from 'common/util/time'
 import { UserFollowButton } from '../follow-button'
 
 export function MiscDetails(props: {
@@ -160,14 +161,19 @@ export function ContractDetails(props: {
           )}
         </Row>
       )}
-
       <Row className="items-center gap-1">
         <DatabaseIcon className="h-5 w-5" />
 
         <div className="whitespace-nowrap">{volumeLabel}</div>
       </Row>
 
-      {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
+      {!disabled && (
+        <ContractInfoDialog
+          contract={contract}
+          bets={bets}
+          isCreator={isCreator ?? false}
+        />
+      )}
     </Row>
   )
 }
@@ -210,15 +216,32 @@ function EditableCloseDate(props: {
     const newCloseTime = dayjs(closeDate).valueOf()
     if (newCloseTime === closeTime) setIsEditingCloseTime(false)
     else if (newCloseTime > Date.now()) {
-      const { description } = contract
+      const { description, autoResolutionTime } = contract
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
-      const newDescription = `${description}\n\nClose date updated to ${formattedCloseDate}`
+      let newDescription = description.concat(
+        `\n\nClose date updated to ${formattedCloseDate}`
+      )
 
-      updateContract(contract.id, {
+      const update: Partial<Contract> = {
         closeTime: newCloseTime,
-        description: newDescription,
-      })
+      }
 
+      if (autoResolutionTime) {
+        const newAutoResolutionTime = newCloseTime + 7 * DAY_MS
+        if (newAutoResolutionTime >= autoResolutionTime) {
+          update.autoResolutionTime = newAutoResolutionTime
+          const formattedNewAutoResolutionTime = dayjs(
+            newAutoResolutionTime
+          ).format('YYYY-MM-DD h:mm a')
+          newDescription = newDescription.concat(
+            `\nAuto resolution date updated to ${formattedNewAutoResolutionTime}`
+          )
+        }
+      }
+
+      update.description = newDescription
+
+      updateContract(contract.id, update)
       setIsEditingCloseTime(false)
     }
   }
