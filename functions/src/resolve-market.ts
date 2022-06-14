@@ -138,7 +138,7 @@ const privateResolveMarket = async (
       if (!RESOLUTIONS.includes(outcome))
         return { status: 'error', message: 'Invalid outcome' }
       if (
-        probabilityInt &&
+        probabilityInt !== undefined &&
         (probabilityInt < 0 ||
           probabilityInt > 100 ||
           !isFinite(probabilityInt))
@@ -155,9 +155,8 @@ const privateResolveMarket = async (
   const creator = await getUser(creatorId)
   if (!creator) return { status: 'error', message: 'Creator not found' }
 
-  const resolutionProbability = probabilityInt
-    ? probabilityInt / 100
-    : undefined
+  const resolutionProbability =
+    probabilityInt !== undefined ? probabilityInt / 100 : undefined
 
   const resolutionTime = Date.now()
   const newCloseTime = closeTime
