@@ -9,7 +9,7 @@ import {
   listenForInactiveContracts,
   listenForNewContracts,
 } from 'web/lib/firebase/contracts'
-import { listenForTaggedContracts } from 'web/lib/firebase/folds'
+import { listenForTaggedContracts } from 'web/lib/firebase/groups'
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()

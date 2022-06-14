@@ -3,15 +3,15 @@ import * as admin from 'firebase-admin'
 
 const firestore = admin.firestore()
 
-export const onFoldFollow = functions.firestore
-  .document('folds/{foldId}/followers/{userId}')
+export const onGroupFollow = functions.firestore
+  .document('groups/{groupId}/followers/{userId}')
   .onWrite(async (change, context) => {
-    const { foldId } = context.params
+    const { groupId } = context.params
 
     const snapshot = await firestore
-      .collection(`folds/${foldId}/followers`)
+      .collection(`groups/${groupId}/followers`)
       .get()
     const followCount = snapshot.size
 
-    await firestore.doc(`folds/${foldId}`).update({ followCount })
+    await firestore.doc(`groups/${groupId}`).update({ followCount })
   })

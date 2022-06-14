@@ -3,24 +3,22 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { PlusCircleIcon } from '@heroicons/react/solid'
 import { parseWordsAsTags } from 'common/util/parse'
-import { createFold } from 'web/lib/firebase/fn-call'
-import { foldPath } from 'web/lib/firebase/folds'
+import { createGroup } from 'web/lib/firebase/fn-call'
+import { groupPath } from 'web/lib/firebase/groups'
 import { toCamelCase } from 'common/util/format'
 import { ConfirmationButton } from '../confirmation-button'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
-import { TagsList } from '../tags-list'
 import { Title } from '../title'
 
 export function CreateFoldButton() {
   const [name, setName] = useState('')
   const [about, setAbout] = useState('')
-  const [otherTags, setOtherTags] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const router = useRouter()
 
-  const tags = parseWordsAsTags(toCamelCase(name) + ' ' + otherTags)
+  const tags = parseWordsAsTags(toCamelCase(name))
 
   const updateName = (newName: string) => {
     setName(newName)
@@ -29,14 +27,19 @@ export function CreateFoldButton() {
   const onSubmit = async () => {
     setIsSubmitting(true)
 
-    const result = await createFold({
+    const result = await createGroup({
       name,
       tags,
       about,
-    }).then((r) => r.data || {})
+    })
+      .then((r) => r.data || {})
+      .catch((e) => {
+        console.error(e)
+        return e
+      })
 
-    if (result.fold) {
-      await router.push(foldPath(result.fold)).catch((e) => {
+    if (result.group) {
+      await router.push(groupPath(result.group)).catch((e) => {
         console.log(e)
         setIsSubmitting(false)
       })
@@ -62,20 +65,18 @@ export function CreateFoldButton() {
       }}
       onSubmit={onSubmit}
     >
-      <Title className="!mt-0" text="Create a community" />
+      <Title className="!mt-0" text="Create a group" />
 
       <Col className="gap-1 text-gray-500">
-        <div>
-          Markets are included in a community if they match one or more tags.
-        </div>
+        <div>Markets are included in a group if you add them on creation.</div>
       </Col>
 
-      <Spacer h={4} />
+      {/*<Spacer h={4} />*/}
 
       <div>
         <div className="form-control w-full">
           <label className="label">
-            <span className="mb-1">Community name</span>
+            <span className="mb-1">Group name</span>
           </label>
 
           <input
@@ -92,7 +93,7 @@ export function CreateFoldButton() {
 
         <div className="form-control w-full">
           <label className="label">
-            <span className="mb-1">About</span>
+            <span className="mb-1">Description</span>
           </label>
 
           <input
@@ -107,34 +108,34 @@ export function CreateFoldButton() {
 
         <Spacer h={4} />
 
-        <label className="label">
-          <span className="mb-1">Primary tag</span>
-        </label>
-        <TagsList noLink noLabel tags={[`#${toCamelCase(name)}`]} />
+        {/*<label className="label">*/}
+        {/*  <span className="mb-1">Primary tag</span>*/}
+        {/*</label>*/}
+        {/*<TagsList noLink noLabel tags={[`#${toCamelCase(name)}`]} />*/}
+
+        {/*<Spacer h={4} />*/}
+
+        {/*<div className="form-control w-full">*/}
+        {/*  <label className="label">*/}
+        {/*    <span className="mb-1">Additional tags</span>*/}
+        {/*  </label>*/}
+
+        {/*  <input*/}
+        {/*    placeholder="Politics, Economics, Rationality (Optional)"*/}
+        {/*    className="input input-bordered resize-none"*/}
+        {/*    disabled={isSubmitting}*/}
+        {/*    value={otherTags}*/}
+        {/*    onChange={(e) => setOtherTags(e.target.value || '')}*/}
+        {/*  />*/}
+        {/*</div>*/}
 
         <Spacer h={4} />
 
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="mb-1">Additional tags</span>
-          </label>
-
-          <input
-            placeholder="Politics, Economics, Rationality (Optional)"
-            className="input input-bordered resize-none"
-            disabled={isSubmitting}
-            value={otherTags}
-            onChange={(e) => setOtherTags(e.target.value || '')}
-          />
-        </div>
-
-        <Spacer h={4} />
-
-        <TagsList
-          tags={parseWordsAsTags(otherTags).map((tag) => `#${tag}`)}
-          noLink
-          noLabel
-        />
+        {/*<TagsList*/}
+        {/*  tags={parseWordsAsTags(otherTags).map((tag) => `#${tag}`)}*/}
+        {/*  noLink*/}
+        {/*  noLabel*/}
+        {/*/>*/}
       </div>
     </ConfirmationButton>
   )

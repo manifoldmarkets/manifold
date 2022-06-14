@@ -1,48 +1,48 @@
 import { flatten, take, partition, sortBy } from 'lodash'
 
-import { Fold } from 'common/fold'
+import { Group } from 'common/group'
 import { Comment } from 'common/comment'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
 import { Contract } from 'web/lib/firebase/contracts'
 import {
-  foldPath,
-  getFoldBySlug,
-  getFoldContracts,
-} from '../../../lib/firebase/folds'
-import { TagsList } from '../../../components/tags-list'
-import { Row } from '../../../components/layout/row'
-import { UserLink } from '../../../components/user-page'
-import { getUser, User } from '../../../lib/firebase/users'
-import { Spacer } from '../../../components/layout/spacer'
-import { Col } from '../../../components/layout/col'
-import { useUser } from '../../../hooks/use-user'
-import { useFold } from '../../../hooks/use-fold'
+  groupPath,
+  getGroupBySlug,
+  getGroupContracts,
+} from 'web/lib/firebase/groups'
+import { Row } from 'web/components/layout/row'
+import { UserLink } from 'web/components/user-page'
+import { getUser, User } from 'web/lib/firebase/users'
+import { Spacer } from 'web/components/layout/spacer'
+import { Col } from 'web/components/layout/col'
+import { useUser } from 'web/hooks/use-user'
+import { useGroup } from 'web/hooks/use-group'
 import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
-import { EditFoldButton } from 'web/components/folds/edit-fold-button'
+import { EditGroupButton } from 'web/components/folds/edit-group-button'
 import Custom404 from '../../404'
-import { FollowFoldButton } from 'web/components/folds/follow-fold-button'
+import { FollowGroupButton } from 'web/components/folds/follow-group-button'
 import { SEO } from 'web/components/SEO'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { findActiveContracts } from 'web/components/feed/find-active-contracts'
 import { Tabs } from 'web/components/layout/tabs'
+import { ContractsGrid } from 'web/components/contract/contracts-list'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
-  const fold = await getFoldBySlug(slugs[0])
-  const curatorPromise = fold ? getUser(fold.curatorId) : null
+  const group = await getGroupBySlug(slugs[0])
+  const curatorPromise = group ? getUser(group.curatorId) : null
 
-  const contracts = fold ? await getFoldContracts(fold).catch((_) => []) : []
+  const contracts = group ? await getGroupContracts(group).catch((_) => []) : []
 
   const bets = await Promise.all(
-    contracts.map((contract) => listAllBets(contract.id))
+    contracts.map((contract: Contract) => listAllBets(contract.id))
   )
 
   let activeContracts = findActiveContracts(contracts, [], flatten(bets), {})
@@ -52,6 +52,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   )
   activeContracts = [...unresolved, ...resolved]
 
+  // TODO: this only counts binary market pools.
   const creatorScores = scoreCreators(contracts)
   const traderScores = scoreTraders(contracts, bets)
   const [topCreators, topTraders] = await Promise.all([
@@ -63,7 +64,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   return {
     props: {
-      fold,
+      group,
       curator,
       contracts,
       activeContracts,
@@ -94,8 +95,8 @@ export async function getStaticPaths() {
 }
 const foldSubpages = [undefined, 'activity', 'markets', 'leaderboards'] as const
 
-export default function FoldPage(props: {
-  fold: Fold | null
+export default function GroupPage(props: {
+  group: Group | null
   curator: User
   contracts: Contract[]
   activeContracts: Contract[]
@@ -107,7 +108,7 @@ export default function FoldPage(props: {
   topCreators: User[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
-    fold: null,
+    group: null,
     curator: null,
     contracts: [],
     activeContracts: [],
@@ -118,33 +119,31 @@ export default function FoldPage(props: {
     creatorScores: {},
     topCreators: [],
   }
-  const { curator, traderScores, topTraders, creatorScores, topCreators } =
-    props
+  const {
+    curator,
+    traderScores,
+    topTraders,
+    creatorScores,
+    topCreators,
+    contracts,
+  } = props
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
 
   const page = (slugs?.[1] ?? 'activity') as typeof foldSubpages[number]
 
-  const fold = useFold(props.fold?.id) ?? props.fold
-
+  const group = useGroup(props.group?.id) ?? props.group
   const user = useUser()
-  const isCurator = user && fold && user.id === fold.curatorId
+  const isCurator = user && group && user.id === group.curatorId
 
-  if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
+  if (group === null || !foldSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
   }
 
   const rightSidebar = (
     <Col className="mt-6 gap-12">
-      <Row className="justify-end">
-        {isCurator ? (
-          <EditFoldButton className="ml-1" fold={fold} />
-        ) : (
-          <FollowFoldButton className="ml-1" fold={fold} />
-        )}
-      </Row>
-      <FoldOverview fold={fold} curator={curator} />
+      <GroupOverview group={group} curator={curator} isCurator={!!isCurator} />
       <YourPerformance
         traderScores={traderScores}
         creatorScores={creatorScores}
@@ -164,45 +163,39 @@ export default function FoldPage(props: {
       />
     </Col>
   )
-
   return (
     <Page rightSidebar={rightSidebar}>
       <SEO
-        title={fold.name}
-        description={`Curated by ${curator.name}. ${fold.about}`}
-        url={foldPath(fold)}
+        title={group.name}
+        description={`Curated by ${curator.name}. ${group.about}`}
+        url={groupPath(group)}
       />
 
       <div className="px-3 lg:px-1">
-        <Row className="mb-6 justify-between">
-          <Title className="!m-0" text={fold.name} />
+        <Row className="mb-6 items-center justify-between">
+          <Title className="!m-0" text={group.name} />
+          {!isCurator && <FollowGroupButton className="m-2" group={group} />}
         </Row>
-
-        <Col className="mb-6 gap-2 text-gray-500 md:hidden">
-          <Row>
-            <div className="mr-1">Curated by</div>
-            <UserLink
-              className="text-neutral"
-              name={curator.name}
-              username={curator.username}
-            />
-          </Row>
-          <Linkify text={fold.about ?? ''} />
-        </Col>
       </div>
 
       <Tabs
         defaultIndex={page === 'leaderboards' ? 1 : 0}
         tabs={[
           {
-            title: 'Markets',
-            content: <div>This view is deprecated.</div>,
-            href: foldPath(fold, 'markets'),
+            title: 'Questions',
+            content: (
+              <ContractsGrid
+                contracts={contracts}
+                hasMore={false}
+                loadMore={() => {}}
+              />
+            ),
+            href: groupPath(group, 'markets'),
           },
           {
             title: 'Leaderboards',
             content: leaderboardsTab,
-            href: foldPath(fold, 'leaderboards'),
+            href: groupPath(group, 'leaderboards'),
           },
         ]}
       />
@@ -210,15 +203,20 @@ export default function FoldPage(props: {
   )
 }
 
-function FoldOverview(props: { fold: Fold; curator: User }) {
-  const { fold, curator } = props
-  const { about, tags } = fold
+function GroupOverview(props: {
+  group: Group
+  curator: User
+  isCurator: boolean
+}) {
+  const { group, curator, isCurator } = props
+  const { about } = group
 
   return (
     <Col>
-      <div className="rounded-t bg-indigo-500 px-4 py-3 text-sm text-white">
-        About community
-      </div>
+      <Row className="items-center justify-end rounded-t bg-indigo-500 px-4 py-3 text-sm text-white">
+        <Row className="flex-1 justify-start">About community</Row>
+        {isCurator && <EditGroupButton className={'ml-1'} group={group} />}
+      </Row>
       <Col className="gap-2 rounded-b bg-white p-4">
         <Row>
           <div className="mr-1 text-gray-500">Curated by</div>
@@ -237,14 +235,6 @@ function FoldOverview(props: { fold: Fold; curator: User }) {
             </div>
           </>
         )}
-
-        <div className="divider" />
-
-        <div className="mb-2 text-gray-500">
-          Includes markets matching any of these tags:
-        </div>
-
-        <TagsList tags={tags} noLabel />
       </Col>
     </Col>
   )
@@ -270,12 +260,12 @@ function YourPerformance(props: {
         <table className="table-compact table w-full text-gray-500">
           <tbody>
             <tr>
-              <td>Trading profit</td>
+              <td>Total profit</td>
               <td>{formatMoney(yourTraderScore ?? 0)}</td>
             </tr>
             {yourCreatorScore && (
               <tr>
-                <td>Created market vol</td>
+                <td>Total created pool</td>
                 <td>{formatMoney(yourCreatorScore)}</td>
               </tr>
             )}
@@ -319,7 +309,7 @@ function FoldLeaderboards(props: {
         users={topCreators}
         columns={[
           {
-            header: 'Market vol',
+            header: 'Market pool',
             renderCell: (user) =>
               formatMoney(topCreatorScores[topCreators.indexOf(user)]),
           },

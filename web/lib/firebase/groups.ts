@@ -11,46 +11,46 @@ import {
   where,
 } from 'firebase/firestore'
 import { sortBy } from 'lodash'
-import { Fold } from 'common/fold'
+import { Group } from 'common/group'
 import { Contract, contractCollection } from './contracts'
 import { db } from './init'
 import { User } from './users'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
 
-const foldCollection = collection(db, 'folds')
+const groupCollection = collection(db, 'groups')
 
-export function foldPath(
-  fold: Fold,
+export function groupPath(
+  group: Group,
   subpath?: 'edit' | 'markets' | 'leaderboards'
 ) {
-  return `/fold/${fold.slug}${subpath ? `/${subpath}` : ''}`
+  return `/group/${group.slug}${subpath ? `/${subpath}` : ''}`
 }
 
-export function updateFold(fold: Fold, updates: Partial<Fold>) {
-  return updateDoc(doc(foldCollection, fold.id), updates)
+export function updateGroup(group: Group, updates: Partial<Group>) {
+  return updateDoc(doc(groupCollection, group.id), updates)
 }
 
-export function deleteFold(fold: Fold) {
-  return deleteDoc(doc(foldCollection, fold.id))
+export function deleteGroup(group: Group) {
+  return deleteDoc(doc(groupCollection, group.id))
 }
 
-export async function listAllFolds() {
-  return getValues<Fold>(foldCollection)
+export async function listAllGroups() {
+  return getValues<Group>(groupCollection)
 }
 
-export function listenForFolds(setFolds: (folds: Fold[]) => void) {
-  return listenForValues(foldCollection, setFolds)
+export function listenForGroups(setGroups: (groups: Group[]) => void) {
+  return listenForValues(groupCollection, setGroups)
 }
 
-export function getFold(foldId: string) {
-  return getValue<Fold>(doc(foldCollection, foldId))
+export function getGroup(groupId: string) {
+  return getValue<Group>(doc(groupCollection, groupId))
 }
 
-export async function getFoldBySlug(slug: string) {
-  const q = query(foldCollection, where('slug', '==', slug))
-  const folds = await getValues<Fold>(q)
+export async function getGroupBySlug(slug: string) {
+  const q = query(groupCollection, where('slug', '==', slug))
+  const groups = await getValues<Group>(q)
 
-  return folds.length === 0 ? null : folds[0]
+  return groups.length === 0 ? null : groups[0]
 }
 
 function contractsByTagsQuery(tags: string[]) {
@@ -63,14 +63,14 @@ function contractsByTagsQuery(tags: string[]) {
   )
 }
 
-export async function getFoldContracts(fold: Fold) {
+export async function getGroupContracts(group: Group) {
   const {
     tags,
     contractIds,
     excludedContractIds,
     creatorIds,
     excludedCreatorIds,
-  } = fold
+  } = group
 
   const [tagsContracts, includedContracts] = await Promise.all([
     tags.length > 0 ? getValues<Contract>(contractsByTagsQuery(tags)) : [],
@@ -110,111 +110,111 @@ export function listenForTaggedContracts(
   return listenForValues<Contract>(contractsByTagsQuery(tags), setContracts)
 }
 
-export function listenForFold(
-  foldId: string,
-  setFold: (fold: Fold | null) => void
+export function listenForGroup(
+  groupId: string,
+  setGroup: (group: Group | null) => void
 ) {
-  return listenForValue(doc(foldCollection, foldId), setFold)
+  return listenForValue(doc(groupCollection, groupId), setGroup)
 }
 
-export function followFold(foldId: string, userId: string) {
-  const followDoc = doc(foldCollection, foldId, 'followers', userId)
+export function followGroup(groupId: string, userId: string) {
+  const followDoc = doc(groupCollection, groupId, 'followers', userId)
   return setDoc(followDoc, { userId })
 }
 
-export function unfollowFold(fold: Fold, user: User) {
-  const followDoc = doc(foldCollection, fold.id, 'followers', user.id)
+export function unfollowGroup(group: Group, user: User) {
+  const followDoc = doc(groupCollection, group.id, 'followers', user.id)
   return deleteDoc(followDoc)
 }
 
-export async function followFoldFromSlug(slug: string, userId: string) {
-  const snap = await getDocs(query(foldCollection, where('slug', '==', slug)))
+export async function followGroupFromSlug(slug: string, userId: string) {
+  const snap = await getDocs(query(groupCollection, where('slug', '==', slug)))
   if (snap.empty) return undefined
 
-  const foldDoc = snap.docs[0]
-  const followDoc = doc(foldDoc.ref, 'followers', userId)
+  const groupDoc = snap.docs[0]
+  const followDoc = doc(groupDoc.ref, 'followers', userId)
 
   return setDoc(followDoc, { userId })
 }
 
-export async function unfollowFoldFromSlug(slug: string, userId: string) {
-  const snap = await getDocs(query(foldCollection, where('slug', '==', slug)))
+export async function unfollowGroupFromSlug(slug: string, userId: string) {
+  const snap = await getDocs(query(groupCollection, where('slug', '==', slug)))
   if (snap.empty) return undefined
 
-  const foldDoc = snap.docs[0]
-  const followDoc = doc(foldDoc.ref, 'followers', userId)
+  const groupDoc = snap.docs[0]
+  const followDoc = doc(groupDoc.ref, 'followers', userId)
 
   return deleteDoc(followDoc)
 }
 
 export function listenForFollow(
-  foldId: string,
+  groupId: string,
   userId: string,
   setFollow: (following: boolean) => void
 ) {
-  const followDoc = doc(foldCollection, foldId, 'followers', userId)
+  const followDoc = doc(groupCollection, groupId, 'followers', userId)
   return listenForValue(followDoc, (value) => {
     setFollow(!!value)
   })
 }
 
-export async function getFoldsByTags(tags: string[]) {
+export async function getGroupsByTags(tags: string[]) {
   if (tags.length === 0) return []
 
   // TODO: split into multiple queries if tags.length > 10.
   const lowercaseTags = tags.map((tag) => tag.toLowerCase()).slice(0, 10)
 
-  const folds = await getValues<Fold>(
+  const groups = await getValues<Group>(
     query(
-      foldCollection,
+      groupCollection,
       where('lowercaseTags', 'array-contains-any', lowercaseTags)
     )
   )
 
-  return sortBy(folds, (fold) => -1 * fold.followCount)
+  return sortBy(groups, (group) => -1 * group.followCount)
 }
 
-export function listenForFoldsWithTags(
+export function listenForGroupsWithTags(
   tags: string[],
-  setFolds: (folds: Fold[]) => void
+  setGroups: (groups: Group[]) => void
 ) {
   // TODO: split into multiple queries if tags.length > 10.
   const lowercaseTags = tags.map((tag) => tag.toLowerCase()).slice(0, 10)
 
   const q = query(
-    foldCollection,
+    groupCollection,
     where('lowercaseTags', 'array-contains-any', lowercaseTags)
   )
 
-  return listenForValues<Fold>(q, (folds) => {
-    const sorted = sortBy(folds, (fold) => -1 * fold.followCount)
-    setFolds(sorted)
+  return listenForValues<Group>(q, (groups) => {
+    const sorted = sortBy(groups, (group) => -1 * group.followCount)
+    setGroups(sorted)
   })
 }
 
-export async function getFollowedFolds(userId: string) {
+export async function getFollowedGroups(userId: string) {
   const snapshot = await getDocs(
     query(collectionGroup(db, 'followers'), where('userId', '==', userId))
   )
-  const foldIds = snapshot.docs.map(
+  const groupIds = snapshot.docs.map(
     (doc) => doc.ref.parent.parent?.id as string
   )
-  return foldIds
+  return groupIds
 }
 
-export function listenForFollowedFolds(
+export function listenForFollowedGroups(
   userId: string,
-  setFoldIds: (foldIds: string[]) => void
+  setGroupIds: (groupIds: string[]) => void
 ) {
   return onSnapshot(
     query(collectionGroup(db, 'followers'), where('userId', '==', userId)),
     (snapshot) => {
       if (snapshot.metadata.fromCache) return
 
-      const foldIds = snapshot.docs.map(
+      const groupIds = snapshot.docs.map(
         (doc) => doc.ref.parent.parent?.id as string
       )
-      setFoldIds(foldIds)
+      setGroupIds(groupIds)
     }
   )
 }

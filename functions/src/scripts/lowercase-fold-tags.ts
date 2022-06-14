@@ -5,13 +5,13 @@ import { initAdmin } from './script-init'
 initAdmin()
 
 import { getValues } from '../utils'
-import { Fold } from '../../../common/fold'
+import { Group } from 'common/group'
 
 async function lowercaseFoldTags() {
   const firestore = admin.firestore()
   console.log('Updating fold tags')
 
-  const folds = await getValues<Fold>(firestore.collection('folds'))
+  const folds = await getValues<Group>(firestore.collection('folds'))
 
   console.log('Loaded', folds.length, 'folds')
 
@@ -25,7 +25,7 @@ async function lowercaseFoldTags() {
 
     await foldRef.update({
       lowercaseTags,
-    } as Partial<Fold>)
+    } as Partial<Group>)
   }
 }
 

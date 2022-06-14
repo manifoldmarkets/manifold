@@ -111,5 +111,13 @@ service cloud.firestore {
                        && request.resource.data.diff(resource.data).affectedKeys()
                                                                     .hasOnly(['isSeen', 'viewTime']);
     }
+
+    match /groups/{groupId} {
+          allow read;
+          allow update: if request.auth.uid == resource.data.curatorId
+            && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['name', 'about', 'tags', 'lowercaseTags']);
+          allow delete: if request.auth.uid == resource.data.curatorId;
+        }
   }
 }

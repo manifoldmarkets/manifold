@@ -1,7 +1,7 @@
 import clsx from 'clsx'
-import { Fold } from 'common/fold'
+import { Group } from 'common/group'
 
-export function FoldTag(props: { fold: Fold }) {
+export function FoldTag(props: { fold: Group }) {
   const { fold } = props
   const { name } = fold
   return (

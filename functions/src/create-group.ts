@@ -5,9 +5,9 @@ import { getUser } from './utils'
 import { Contract } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
-import { Fold } from '../../common/fold'
+import { Group } from '../../common/group'
 
-export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
+export const createGroup = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
     data: {
       name: string
@@ -38,7 +38,7 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
       return { status: 'error', message: 'Tags must be an array of strings' }
 
     console.log(
-      'creating fold for',
+      'creating group for',
       creator.username,
       'named',
       name,
@@ -50,10 +50,10 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
 
     const slug = await getSlug(name)
 
-    const foldRef = firestore.collection('folds').doc()
+    const groupRef = firestore.collection('groups').doc()
 
-    const fold: Fold = {
-      id: foldRef.id,
+    const group: Group = {
+      id: groupRef.id,
       curatorId: userId,
       slug,
       name,
@@ -67,27 +67,27 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
       followCount: 0,
     }
 
-    await foldRef.create(fold)
+    await groupRef.create(group)
 
-    await foldRef.collection('followers').doc(userId).set({ userId })
+    await groupRef.collection('followers').doc(userId).set({ userId })
 
-    return { status: 'success', fold }
+    return { status: 'success', group: group }
   }
 )
 
 const getSlug = async (name: string) => {
   const proposedSlug = slugify(name)
 
-  const preexistingFold = await getFoldFromSlug(proposedSlug)
+  const preexistingGroup = await getGroupFromSlug(proposedSlug)
 
-  return preexistingFold ? proposedSlug + '-' + randomString() : proposedSlug
+  return preexistingGroup ? proposedSlug + '-' + randomString() : proposedSlug
 }
 
 const firestore = admin.firestore()
 
-export async function getFoldFromSlug(slug: string) {
+export async function getGroupFromSlug(slug: string) {
   const snap = await firestore
-    .collection('folds')
+    .collection('groups')
     .where('slug', '==', slug)
     .get()
 

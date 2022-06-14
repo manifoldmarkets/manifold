@@ -1,4 +1,4 @@
-export type Fold = {
+export type Group = {
   id: string
   slug: string
   name: string

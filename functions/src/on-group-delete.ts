@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 
-export const onFoldDelete = functions.firestore
-  .document('folds/{foldId}')
+export const onGroupDelete = functions.firestore
+  .document('groups/{groupId}')
   .onDelete(async (change, _context) => {
     const snapshot = await change.ref.collection('followers').get()
 

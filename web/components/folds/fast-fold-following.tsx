@@ -4,9 +4,9 @@ import { SearchIcon } from '@heroicons/react/outline'
 
 import { User } from 'common/user'
 import {
-  followFoldFromSlug,
-  unfollowFoldFromSlug,
-} from 'web/lib/firebase/folds'
+  followGroupFromSlug,
+  unfollowGroupFromSlug,
+} from 'web/lib/firebase/groups'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 
@@ -22,10 +22,10 @@ function FollowFoldButton(props: {
 
   const onClick = async () => {
     if (followed) {
-      if (user) await unfollowFoldFromSlug(slug, user.id)
+      if (user) await unfollowGroupFromSlug(slug, user.id)
       setFollowed(false)
     } else {
-      if (user) await followFoldFromSlug(slug, user.id)
+      if (user) await followGroupFromSlug(slug, user.id)
       setFollowed(true)
     }
   }
