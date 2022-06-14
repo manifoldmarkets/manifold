@@ -25,7 +25,7 @@ import { useSaveShares } from '../use-save-shares'
 import { sellShares } from 'web/lib/firebase/api-call'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 
-const BET_SIZE = 10
+const BET_SIZE = 1
 
 export function QuickBet(props: { contract: Contract; user: User }) {
   const { contract, user } = props
