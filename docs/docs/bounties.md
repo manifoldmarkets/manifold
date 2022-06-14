@@ -17,7 +17,7 @@ Our community is the beating heart of Manifold; your individual contributions ar
 
 🎈 *Awarded on 2022-06-14*
 
-[\*\*Wasabipesto](https://manifold.markets/wasabipesto):\*\* **M$20,000**
+**[Wasabipesto](https://manifold.markets/wasabipesto): M$20,000**
 
 - For creating an awesome stats page which features and analyses various data sets! This can be found on the second tab of our [analytics page](https://manifold.markets/stats).
 
@@ -39,24 +39,24 @@ Our community is the beating heart of Manifold; your individual contributions ar
 
 _🌿 Announced on 2022-05-02_
 
-[\*\*Marshall Polaris](https://manifold.markets/mqp): M$200K\*\*
+**[Marshall Polaris](https://manifold.markets/mqp): M$200K**
 
 - For spearheading the effort to [open-source Manifold](https://github.com/manifoldmarkets/manifold), by documenting our processes, triaging bugs, and improving the new contributor experience.
 - Marshall contributed over 2 weeks of part-time volunteer work; as such, we are awarding an amount that reflects the extraordinary amount of effort he’s put in.
 
-[\*\*Vincent Luczkow](https://manifold.markets/VincentLuczkow): M$10,000\*\*
+**[Vincent Luczkow](https://manifold.markets/VincentLuczkow): M$10,000**
 
 - For building and releasing https://github.com/vluzko/manifold-markets-python, a super cool Python visualization of the calibration accuracy of all Manifold markets. Turns out we’re doing okay!
 
-[\*\*Akhil Wable](https://manifold.markets/AkhilWable): M$10,000\*\*
+**[Akhil Wable](https://manifold.markets/AkhilWable): M$10,000**
 
 - For writing up [Akhil’s Product Suggestions](https://www.notion.so/Akhil-s-Product-Suggestions-672e1cba393d4242852ff95ae79528df), an extensive, thoughtful list of improvements we could make to our platform.
 
-[\*\*Alex K. Chen](https://manifold.markets/AlexKChen): M$6,000\*\*
+**[Alex K. Chen](https://manifold.markets/AlexKChen): M$6,000**
 
 - For the creation of a metric ton of innovative, long term questions. At the time of award, Alex was singlehandedly responsible for 20% of all markets posted in April.
 
-[\*\*ZorbaTHut](https://manifold.markets/ZorbaTHut): M$5,000\*\*
+**[ZorbaTHut](https://manifold.markets/ZorbaTHut): M$5,000**
 
 - For [testing out futarchy](https://manifold.markets/tag/themotte_leaving) on an important problem for the community of The Motte.
 
@@ -69,17 +69,17 @@ _🌿 Announced on 2022-05-02_
 
 - For calling out numerous areas of improvement, e.g. around our profit numbers being wonky, and problems with the DPM ⇒ CFMM market conversions.
 
-[\*\*Jack](https://manifold.markets/JackC): M$500\*\*
+**[Jack](https://manifold.markets/JackC): M$500**
 
 - For recommending we list the Long-Term Future Fund as a supported charity.
 
-[\*\*N.C. Young](https://manifold.markets/NcyRocks): M$500\*\*
+**[N.C. Young](https://manifold.markets/NcyRocks): M$500**
 
 - For recommending we list the Givewell Maximum Impact Fund as a supported charity.
 
   \**🥧 *Awarded 2022-03-14\*
 
-[\*\*Kevin Zielnicki](https://manifold.markets/kjz): M$10,000\*\*
+**[Kevin Zielnicki](https://manifold.markets/kjz): M$10,000**
 
 - For identifying issues with our Dynamic Parimutuel Market Maker in an [excellent blog post](https://kevin.zielnicki.com/2022/02/17/manifold/) (and [associated market](https://manifold.markets/kjz/will-manifolds-developers-agree-wit)), leading us to change to a different mechanism.
 
@@ -103,7 +103,7 @@ _🌿 Announced on 2022-05-02_
 
 - For [compiling an FAQ](https://outsidetheasylum.blog/manifold-markets-faq/) that answers a variety of questions that new users commonly face, and also inspiring us to move to [this open-source docs platform](http://docs.manifold.markets/).
 
-[\*\*Blazer](https://manifold.markets/BlazingDarkness/was-it-an-unpleasant-surprise-when): M$2,500\*\*
+**[Blazer](https://manifold.markets/BlazingDarkness/was-it-an-unpleasant-surprise-when): M$2,500**
 
 - For [calling out our mistake](https://manifold.markets/BlazingDarkness/was-it-an-unpleasant-surprise-when) in retroactively publicizing the market creator’s trades, leading us to revert this feature entirely.
 
