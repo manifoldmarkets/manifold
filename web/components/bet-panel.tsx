@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 import { partition, sumBy } from 'lodash'
+import { SwitchHorizontalIcon } from '@heroicons/react/solid'
 
 import { useUser } from 'web/hooks/use-user'
 import { BinaryContract, CPMMBinaryContract } from 'common/contract'
@@ -38,6 +39,7 @@ import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
 import { SignUpPrompt } from './sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
+import { ProbabilityInput } from './probability-input'
 
 export function BetPanel(props: {
   contract: BinaryContract
@@ -53,6 +55,8 @@ export function BetPanel(props: {
     ? 'NO'
     : undefined
 
+  const [isLimitOrder, setIsLimitOrder] = useState(false)
+
   return (
     <Col className={className}>
       <SellRow
@@ -62,15 +66,23 @@ export function BetPanel(props: {
       />
       <Col
         className={clsx(
-          'rounded-b-md bg-white px-8 py-6',
+          'relative rounded-b-md bg-white px-8 py-6 pt-12',
           !sharesOutcome && 'rounded-t-md',
           className
         )}
       >
-        <div className="mb-6 text-2xl">Place your bet</div>
-        {/* <Title className={clsx('!mt-0 text-neutral')} text="Place a trade" /> */}
+        <button
+          className="btn btn-ghost btn-sm absolute right-3 top-1 mt-1 gap-2 self-end text-sm normal-case"
+          onClick={() => setIsLimitOrder(!isLimitOrder)}
+        >
+          <SwitchHorizontalIcon className="inline h-4 w-4" />
+          {isLimitOrder ? <>Simple bet</> : <>Limit bet</>}
+        </button>
+        <div className="mb-6 text-2xl">
+          {isLimitOrder ? <>Bet to a probability</> : <>Place your bet</>}
+        </div>
 
-        <BuyPanel contract={contract} user={user} />
+        <BuyPanel contract={contract} user={user} isLimitOrder={isLimitOrder} />
 
         <SignUpPrompt />
       </Col>
@@ -190,13 +202,19 @@ export function BetPanelSwitcher(props: {
 function BuyPanel(props: {
   contract: BinaryContract
   user: User | null | undefined
+  isLimitOrder?: boolean
   selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
 }) {
-  const { contract, user, selected, onBuySuccess } = props
+  const { contract, user, isLimitOrder, selected, onBuySuccess } = props
+
+  const initialProb = getProbability(contract)
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const [betProb, setBetProb] = useState<number | undefined>(
+    Math.round(100 * initialProb)
+  )
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -255,8 +273,6 @@ function BuyPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getProbability(contract)
-
   const outcomeProb = getOutcomeProbabilityAfterBet(
     contract,
     betChoice || 'YES',
@@ -309,16 +325,32 @@ function BuyPanel(props: {
         disabled={isSubmitting}
         inputRef={inputRef}
       />
-
-      <Col className="mt-3 w-full gap-3">
-        <Row className="items-center justify-between text-sm">
-          <div className="text-gray-500">Probability</div>
-          <div>
-            {formatPercent(initialProb)}
-            <span className="mx-2">→</span>
-            {formatPercent(resultProb)}
+      {isLimitOrder && (
+        <>
+          <div className="my-3 text-left text-sm text-gray-500">
+            Probability
           </div>
-        </Row>
+          <ProbabilityInput
+            inputClassName="w-full max-w-none"
+            prob={betProb}
+            onChange={setBetProb}
+            error={error}
+            setError={setError}
+            disabled={isSubmitting}
+          />
+        </>
+      )}
+      <Col className="mt-3 w-full gap-3">
+        {!isLimitOrder && (
+          <Row className="items-center justify-between text-sm">
+            <div className="text-gray-500">Probability</div>
+            <div>
+              {formatPercent(initialProb)}
+              <span className="mx-2">→</span>
+              {formatPercent(resultProb)}
+            </div>
+          </Row>
+        )}
 
         <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
