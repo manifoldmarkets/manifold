@@ -10,8 +10,9 @@ import {
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
+import { ENV_CONFIG } from './envs/constants'
 
-export const FIXED_ANTE = 100
+export const FIXED_ANTE = ENV_CONFIG.fixedAnte ?? 10
 
 // deprecated
 export const PHANTOM_ANTE = 0.001
