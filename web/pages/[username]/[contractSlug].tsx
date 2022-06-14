@@ -39,6 +39,7 @@ import { FeedBet } from 'web/components/feed/feed-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
+import { AlertBox } from 'web/components/alert-box'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -189,6 +190,12 @@ export function ContractPageContent(
           bets={bets}
           comments={comments ?? []}
         />
+        {isNumeric && (
+          <AlertBox
+            title="Warning"
+            text="Numeric markets were introduced as an experimental feature and are now deprecated."
+          />
+        )}
 
         {outcomeType === 'FREE_RESPONSE' && (
           <>
