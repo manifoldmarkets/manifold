@@ -35,15 +35,17 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
           <div className="line-clamp-4 text-sm">{preview}</div>
           {raised > 0 && (
             <>
-              <Row className="text-primary mt-4 flex-1 items-end justify-center gap-6">
+              <Row className="mt-4 flex-1 items-end justify-center gap-6 text-gray-900">
                 <Col>
-                  <span className="text-3xl">{formatUsd(raised)}</span>
+                  <span className="text-3xl font-semibold">
+                    {formatUsd(raised)}
+                  </span>
                   <span>raised</span>
                 </Col>
                 {match && (
                   <Col className="text-gray-500">
                     <span className="text-xl">+{formatUsd(match)}</span>
-                    <span className="">matched</span>
+                    <span className="">match</span>
                   </Col>
                 )}
               </Row>
