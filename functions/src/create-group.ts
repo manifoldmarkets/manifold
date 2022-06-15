@@ -12,7 +12,9 @@ export const createGroup = functions.runWith({ minInstances: 1 }).https.onCall(
     data: {
       name: string
       about: string
-      tags: string[]
+      memberIds: string[]
+      anyoneCanJoin: boolean
+      visibility: 'public' | 'private' | 'unlisted'
     },
     context
   ) => {
@@ -32,10 +34,21 @@ export const createGroup = functions.runWith({ minInstances: 1 }).https.onCall(
       return { status: 'error', message: 'About must be a string' }
     about = about.trim().slice(0, 140)
 
-    const { tags } = data
+    const { memberIds, anyoneCanJoin, visibility } = data
+    if (!Array.isArray(memberIds))
+      return {
+        status: 'error',
+        message: 'memberIds must be an array of strings',
+      }
 
-    if (!Array.isArray(tags))
-      return { status: 'error', message: 'Tags must be an array of strings' }
+    if (typeof anyoneCanJoin !== 'boolean')
+      return { status: 'error', message: 'anyoneCanJoin must be a boolean' }
+
+    if (typeof visibility !== 'string')
+      return { status: 'error', message: 'visibility must be a string' }
+
+    // Add creator id to member ids for querying convenience
+    if (!memberIds.includes(creator.id)) memberIds.push(creator.id)
 
     console.log(
       'creating group for',
@@ -44,32 +57,37 @@ export const createGroup = functions.runWith({ minInstances: 1 }).https.onCall(
       name,
       'about',
       about,
-      'tags',
-      tags
+      'other member ids',
+      memberIds
     )
 
     const slug = await getSlug(name)
 
     const groupRef = firestore.collection('groups').doc()
 
+    // TODO: create notification for members added to the memberIds
     const group: Group = {
       id: groupRef.id,
-      curatorId: userId,
+      creatorId: creator.id,
       slug,
       name,
       about,
-      tags,
-      lowercaseTags: tags.map((tag) => tag.toLowerCase()),
       createdTime: Date.now(),
+      mostRecentActivityTime: Date.now(),
       contractIds: [],
-      excludedContractIds: [],
-      excludedCreatorIds: [],
-      followCount: 0,
+      followCount: memberIds.length,
+      visibility,
+      anyoneCanJoin,
+      memberIds,
     }
 
     await groupRef.create(group)
 
-    await groupRef.collection('followers').doc(userId).set({ userId })
+    await Promise.all(
+      memberIds.map(async (memberId) => {
+        await firestore.collection('followers').doc(memberId).set({ memberId })
+      })
+    )
 
     return { status: 'success', group: group }
   }
