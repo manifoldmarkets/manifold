@@ -112,7 +112,7 @@ export function NewContract(props: { question: string }) {
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
-  const hasUnsavedChanges = Boolean(question || description)
+  const hasUnsavedChanges = !isSubmitting && Boolean(question || description)
   useWarnUnsavedChanges(hasUnsavedChanges)
 
   const isValid =
