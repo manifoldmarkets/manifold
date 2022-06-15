@@ -114,7 +114,7 @@ function DownTip(prop: {
   return (
     <Tooltip
       className="tooltip-bottom"
-      text={!disabled && `refund ${formatMoney(marginal)}`}
+      text={!disabled && `Refund ${formatMoney(marginal)}`}
     >
       <button
         className="flex h-max items-center hover:text-red-600 disabled:text-gray-300"
@@ -138,7 +138,7 @@ function UpTip(prop: {
   return (
     <Tooltip
       className="tooltip-bottom"
-      text={!disabled && `pay ${formatMoney(marginal)}`}
+      text={!disabled && `Tip ${formatMoney(marginal)}`}
     >
       <button
         className="hover:text-primary flex h-max items-center disabled:text-gray-300"
