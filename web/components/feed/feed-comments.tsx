@@ -260,11 +260,11 @@ export function FeedComment(props: {
           moreHref={contractPath(contract)}
           shouldTruncate={truncate}
         />
-        <Row className="mt-2 gap-4 text-gray-500">
+        <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
           <Tipper comment={comment} tips={tips ?? {}} />
           {onReplyClick && (
             <button
-              className={'text-xs font-bold  hover:underline'}
+              className="font-bold hover:underline"
               onClick={() => onReplyClick(comment)}
             >
               Reply

@@ -4,6 +4,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -75,13 +76,13 @@ function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   }
 
   return (
-    <Row className="items-center">
+    <Row className="items-center gap-0.5">
       <DownTip
         value={localTip}
         onChange={changeTip}
         disabled={!me || localTip <= 0}
       />
-      <span className="mx-1">{score} </span>
+      <span className="font-bold">{Math.floor(score)} </span>
       <UpTip
         value={localTip}
         onChange={changeTip}
@@ -90,7 +91,12 @@ function Tipper(prop: { comment: Comment; tips: CommentTips }) {
       {localTip === 0 ? (
         ''
       ) : (
-        <span className={localTip > 0 ? 'text-primary' : 'text-red-400'}>
+        <span
+          className={clsx(
+            'font-semibold',
+            localTip > 0 ? 'text-primary' : 'text-red-400'
+          )}
+        >
           ({formatMoney(localTip)} tip)
         </span>
       )}
@@ -106,13 +112,16 @@ function DownTip(prop: {
   const { onChange, value, disabled } = prop
   const marginal = 5 * invQuad(value)
   return (
-    <Tooltip text={!disabled && `refund ${formatMoney(marginal)}`}>
+    <Tooltip
+      className="tooltip-bottom"
+      text={!disabled && `refund ${formatMoney(marginal)}`}
+    >
       <button
         className="flex h-max items-center hover:text-red-600 disabled:text-gray-300"
         disabled={disabled}
         onClick={() => onChange(value - marginal)}
       >
-        <ChevronLeftIcon className="h-7 w-7" />
+        <ChevronLeftIcon className="h-6 w-6" />
       </button>
     </Tooltip>
   )
@@ -127,18 +136,21 @@ function UpTip(prop: {
   const marginal = 5 * invQuad(value) + 5
 
   return (
-    <Tooltip text={!disabled && `pay ${formatMoney(marginal)}`}>
+    <Tooltip
+      className="tooltip-bottom"
+      text={!disabled && `pay ${formatMoney(marginal)}`}
+    >
       <button
         className="hover:text-primary flex h-max items-center disabled:text-gray-300"
         disabled={disabled}
         onClick={() => onChange(value + marginal)}
       >
         {value >= quad(2) ? (
-          <ChevronDoubleRightIcon className="text-primary h-7 w-7" />
+          <ChevronDoubleRightIcon className="text-primary mx-1 h-6 w-6" />
         ) : value > 0 ? (
-          <ChevronRightIcon className="text-primary h-7 w-7" />
+          <ChevronRightIcon className="text-primary h-6 w-6" />
         ) : (
-          <ChevronRightIcon className="h-7 w-7" />
+          <ChevronRightIcon className="h-6 w-6" />
         )}
       </button>
     </Tooltip>
