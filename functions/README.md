@@ -59,5 +59,5 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 
 Secrets are strings that shouldn't be checked into Git (eg API keys, passwords). We store these using [Google Secret Manager](https://console.cloud.google.com/security/secret-manager), which provides them as environment variables to functions that require them. Some useful workflows:
 
-- Set a secret: `$ firebase functions:secrets:set stripe.test_secret="THE-API-KEY"`
 - Read a secret: `$ firebase functions:secrets:access STRIPE_APIKEY`
+- Set a secret: `$ firebase functions:secrets:set STRIPE_APIKEY`

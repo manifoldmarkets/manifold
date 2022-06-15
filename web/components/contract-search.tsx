@@ -19,13 +19,14 @@ import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
-import { ENV } from 'common/envs/constants'
+import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { EditCategoriesButton } from './feed/category-selector'
 import { CATEGORIES } from 'common/categories'
 import { Tabs } from './layout/tabs'
 import { EditFollowingButton } from './following-button'
+import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -118,6 +119,10 @@ export function ContractSearch(props: {
   ])
 
   const indexName = `${indexPrefix}contracts-${sort}`
+
+  if (IS_PRIVATE_MANIFOLD) {
+    return <ContractSearchFirestore querySortOptions={querySortOptions} />
+  }
 
   return (
     <InstantSearch searchClient={searchClient} indexName={indexName}>

@@ -1,3 +1,5 @@
+import { ENV_CONFIG } from './envs/constants'
+
 export type User = {
   id: string
   createdTime: number
@@ -21,8 +23,9 @@ export type User = {
   followedCategories?: string[]
 }
 
-export const STARTING_BALANCE = 1000
-export const SUS_STARTING_BALANCE = 10 // for sus users, i.e. multiple sign ups for same person
+export const STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 1000
+// for sus users, i.e. multiple sign ups for same person
+export const SUS_STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 10
 
 export type PrivateUser = {
   id: string // same as User.id
