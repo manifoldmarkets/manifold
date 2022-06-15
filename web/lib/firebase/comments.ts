@@ -14,6 +14,7 @@ import { db } from './init'
 import { User } from 'common/user'
 import { Comment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
+import { track } from '@amplitude/analytics-browser'
 
 export type { Comment }
 
@@ -41,6 +42,12 @@ export async function createComment(
     userAvatarUrl: commenter.avatarUrl,
     betId: betId,
     answerOutcome: answerOutcome,
+    replyToCommentId: replyToCommentId,
+  })
+  track('comment', {
+    contractId,
+    commentId: ref.id,
+    betId: betId,
     replyToCommentId: replyToCommentId,
   })
   return await setDoc(ref, comment)

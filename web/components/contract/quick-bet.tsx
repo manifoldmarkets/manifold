@@ -24,6 +24,7 @@ import { OUTCOME_TO_COLOR } from '../outcome-label'
 import { useSaveShares } from '../use-save-shares'
 import { sellShares } from 'web/lib/firebase/api-call'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
+import { track } from 'web/lib/service/analytics'
 
 const BET_SIZE = 10
 
@@ -120,6 +121,12 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       loading: message,
       success: message,
       error: (err) => `${err.message}`,
+    })
+
+    track('quick bet', {
+      slug: contract.slug,
+      direction,
+      contractId: contract.id,
     })
   }
 

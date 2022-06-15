@@ -7,6 +7,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { ContractsGrid } from './contract/contracts-list'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
+import { withTracking } from 'web/lib/service/analytics'
 
 export function LandingPagePanel(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
@@ -45,7 +46,7 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
         <Spacer h={6} />
         <button
           className="self-center rounded-md border-none bg-gradient-to-r from-indigo-500 to-blue-500 py-4 px-6 text-lg font-semibold normal-case text-white hover:from-indigo-600 hover:to-blue-600"
-          onClick={firebaseLogin}
+          onClick={withTracking(firebaseLogin, 'landing page button click')}
         >
           Get started
         </button>{' '}

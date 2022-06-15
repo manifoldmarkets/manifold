@@ -24,6 +24,7 @@ import {
 } from 'common/calculate-dpm'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
+import { track } from 'web/lib/service/analytics'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -72,6 +73,15 @@ export function AnswerBetPanel(props: {
         }
         setIsSubmitting(false)
       })
+
+    track('bet', {
+      location: 'answer panel',
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount: betAmount,
+      outcome: answerId,
+    })
   }
 
   const betDisabled = isSubmitting || !betAmount || error
