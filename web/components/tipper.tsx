@@ -1,14 +1,17 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import {
   ChevronDoubleRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@heroicons/react/solid'
 import { Comment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { debounce, flow, sum } from 'lodash'
-import { useMemo, useState } from 'react'
+import { debounce, sumBy } from 'lodash'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { CommentTips } from 'web/hooks/use-comment-tips'
 import { useUser } from 'web/hooks/use-user'
+import { transact } from 'web/lib/firebase/fn-call'
 import { Row } from './layout/row'
 import Tooltip from './tooltip'
 
@@ -18,36 +21,57 @@ const quad = (x: number) => (5 / 2) * x * (x + 1)
 // inverse (see https://math.stackexchange.com/questions/2041988/how-to-get-inverse-of-formula-for-sum-of-integers-from-1-to-nsee )
 const invQuad = (y: number) => Math.sqrt((2 / 5) * y + 1 / 4) - 1 / 2
 
-function Tipper(prop: { contract: Contract; comment: Comment }) {
-  const { contract, comment } = prop
-  const { tips = {} } = comment
+function Tipper(prop: { comment: Comment; tips: CommentTips }) {
+  const { comment, tips } = prop
 
   const me = useUser()
-  const myId = me?.id || ''
-  const savedTip = tips[myId] || 0
+  const myId = me?.id ?? ''
+  const savedTip = tips[myId] as number | undefined
 
   // optimistically increase the tip count, but debounce the update
-  const [localTip, setLocalTip] = useState(savedTip)
+  const [localTip, setLocalTip] = useState(savedTip ?? 0)
+  const initialized = useRef(false)
+  useEffect(() => {
+    if (savedTip && !initialized.current) {
+      setLocalTip(savedTip)
+      initialized.current = true
+    }
+  }, [savedTip])
 
   const score = useMemo(() => {
     const tipVals = Object.values({ ...tips, [myId]: localTip })
     return sumBy(tipVals, invQuad)
   }, [localTip, tips, myId])
 
-  const saveTip = debounce((tip: number) => {
-    if (tip === savedTip) {
-      return
-    }
+  // declare debounced function only on first render
+  const [saveTip] = useState(() =>
+    debounce(async (user: User, change: number) => {
+      if (change === 0) {
+        return
+      }
 
-    const change = tip - savedTip
-
-    console.log('updated tip:', change, ' to:', tip)
-    // TODO: save to firebase
-  }, 1000)
+      await transact({
+        amount: change,
+        fromId: user.id,
+        fromType: 'USER',
+        toId: comment.userId,
+        toType: 'USER',
+        token: 'M$',
+        category: 'TIP',
+        data: {
+          contractId: comment.contractId,
+          commentId: comment.id,
+        },
+        description: `${user.name} tipped M$ ${change} to ${comment.userName} for a comment`,
+      })
+    }, 1500)
+  )
+  // instant save on unrender
+  useEffect(() => () => void saveTip.flush(), [])
 
   const changeTip = (tip: number) => {
     setLocalTip(tip)
-    saveTip(tip)
+    me && saveTip(me, tip - (savedTip ?? 0))
   }
 
   return (
