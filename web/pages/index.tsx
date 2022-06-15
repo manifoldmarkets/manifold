@@ -11,16 +11,16 @@ import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 export async function getStaticProps() {
   // These hardcoded markets will be shown in the frontpage for signed-out users:
   const hotContracts = await getContractsBySlugs([
-    'if-boris-johnson-is-leader-of-the-c',
-    'will-ethereum-merge-to-proofofstake',
+    'will-max-go-to-prom-with-a-girl',
+    'will-ethereum-switch-to-proof-of-st',
     'will-russia-control-the-majority-of',
     'will-elon-musk-buy-twitter-this-yea',
-    'will-an-ai-get-gold-on-any-internat',
-    'how-many-us-supreme-court-justices',
+    'will-trump-be-charged-by-the-grand',
+    'will-spacex-launch-a-starship-into',
     'who-will-win-the-nba-finals-champio',
-    'what-database-will-manifold-be-prim',
-    'will-the-supreme-court-leakers-iden',
-    'will-over-25-of-participants-in-the-163d54309e43',
+    'who-will-be-time-magazine-person-of',
+    'will-congress-hold-any-hearings-abo-e21f987033b3',
+    'will-at-least-10-world-cities-have',
   ])
 
   return {
