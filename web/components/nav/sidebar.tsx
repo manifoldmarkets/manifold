@@ -14,7 +14,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogin, firebaseLogout, User } from 'web/lib/firebase/users'
+import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
@@ -26,6 +26,7 @@ import { Row } from '../layout/row'
 import NotificationsIcon from 'web/components/notifications-icon'
 import React, { useEffect, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { CreateQuestionButton } from 'web/components/create-question-button'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
@@ -185,12 +186,6 @@ export default function Sidebar(props: { className?: string }) {
   const mobileNavigationOptions =
     user === null ? signedOutMobileNavigation : mobileNavigation
 
-  const gradient =
-    'from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700'
-
-  const buttonStyle =
-    'border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r py-2.5 text-base font-semibold text-white shadow-sm lg:-ml-0'
-
   return (
     <nav aria-label="Sidebar" className={className}>
       <ManifoldLogo className="pb-6" twoLine />
@@ -226,22 +221,7 @@ export default function Sidebar(props: { className?: string }) {
         />
       </div>
 
-      <div className={'aligncenter flex justify-center'}>
-        {user ? (
-          <Link href={'/create'} passHref>
-            <button className={clsx(gradient, buttonStyle)}>
-              Create a question
-            </button>
-          </Link>
-        ) : (
-          <button
-            onClick={firebaseLogin}
-            className={clsx(gradient, buttonStyle)}
-          >
-            Sign in
-          </button>
-        )}
-      </div>
+      <CreateQuestionButton user={user} />
 
       {user &&
       mustWaitForFreeMarketStatus != 'loading' &&

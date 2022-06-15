@@ -7,17 +7,29 @@ import { deleteGroup, updateGroup } from 'web/lib/firebase/groups'
 import { Spacer } from '../layout/spacer'
 import { useRouter } from 'next/router'
 import { Modal } from 'web/components/layout/modal'
+import { FilterSelectUsers } from 'web/components/filter-select-users'
+import { User } from 'common/user'
 
 export function EditGroupButton(props: { group: Group; className?: string }) {
   const { group, className } = props
+  const { memberIds } = group
   const router = useRouter()
 
   const [name, setName] = useState(group.name)
   const [about, setAbout] = useState(group.about ?? '')
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [addMemberUsers, setAddMemberUsers] = useState<User[]>([])
 
-  const saveDisabled = name === group.name && about === (group.about ?? '')
+  function updateOpen(newOpen: boolean) {
+    setAddMemberUsers([])
+    setOpen(newOpen)
+  }
+
+  const saveDisabled =
+    name === group.name &&
+    about === (group.about ?? '') &&
+    addMemberUsers.length === 0
 
   const onSubmit = async () => {
     setIsSubmitting(true)
@@ -25,10 +37,11 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
     await updateGroup(group, {
       name,
       about,
+      memberIds: [...memberIds, ...addMemberUsers.map((user) => user.id)],
     })
 
     setIsSubmitting(false)
-    setOpen(false)
+    updateOpen(false)
   }
 
   return (
@@ -37,11 +50,11 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
         className={clsx(
           'btn-ghost cursor-pointer whitespace-nowrap rounded-full text-sm text-white'
         )}
-        onClick={() => setOpen(!open)}
+        onClick={() => updateOpen(!open)}
       >
         <PencilIcon className="inline h-4 w-4" /> Edit
       </div>
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={updateOpen}>
         <div className="h-full rounded-md bg-white p-8">
           <div className="form-control w-full">
             <label className="label">
@@ -74,13 +87,25 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
             />
           </div>
 
+          <Spacer h={4} />
+
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="mb-0">Add members</span>
+            </label>
+            <FilterSelectUsers
+              setSelectedUsers={setAddMemberUsers}
+              ignoreUserIds={memberIds}
+            />
+          </div>
+
           <div className="modal-action">
             <label
               htmlFor="edit"
               onClick={() => {
                 if (confirm('Are you sure you want to delete this group?')) {
                   deleteGroup(group)
-                  setOpen(false)
+                  updateOpen(false)
                   router.replace('/groups')
                 }
               }}
@@ -93,7 +118,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
             <label
               htmlFor="edit"
               className={'btn'}
-              onClick={() => setOpen(false)}
+              onClick={() => updateOpen(false)}
             >
               Cancel
             </label>

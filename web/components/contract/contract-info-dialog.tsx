@@ -18,7 +18,6 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { ShareEmbedButton } from '../share-embed-button'
-import { TagsInput } from '../tags-input'
 import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
 import { InfoTooltip } from '../info-tooltip'
@@ -147,9 +146,9 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
             </tbody>
           </table>
 
-          <div>Tags</div>
-          <TagsInput contract={contract} />
-          <div />
+          {/*<div>Tags</div>*/}
+          {/*<TagsInput contract={contract} />*/}
+          {/*<div />*/}
 
           {contract.mechanism === 'cpmm-1' && !contract.resolution && (
             <LiquidityPanel contract={contract} />

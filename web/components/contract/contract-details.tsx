@@ -3,6 +3,7 @@ import {
   DatabaseIcon,
   PencilIcon,
   TrendingUpIcon,
+  UserGroupIcon,
 } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
@@ -24,6 +25,8 @@ import NewContractBadge from '../new-contract-badge'
 import { CATEGORY_LIST } from 'common/categories'
 import { TagsList } from '../tags-list'
 import { UserFollowButton } from '../follow-button'
+import { groupPath } from 'web/lib/firebase/groups'
+import { SiteLink } from 'web/components/site-link'
 
 export function MiscDetails(props: {
   contract: Contract
@@ -104,7 +107,14 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const { closeTime, creatorName, creatorUsername, creatorId } = contract
+  const {
+    closeTime,
+    creatorName,
+    creatorUsername,
+    creatorId,
+    groupNames,
+    groupSlugs,
+  } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
   return (
@@ -127,6 +137,16 @@ export function ContractDetails(props: {
         )}
         {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
+      {groupSlugs && groupNames && (
+        <Row className={'line-clamp-1 max-w-xs overflow-ellipsis'}>
+          <SiteLink href={`${groupPath(groupSlugs[0])}`}>
+            <span>
+              <UserGroupIcon className="mx-1 inline h-5 w-5" />
+              {groupNames[0]}
+            </span>
+          </SiteLink>
+        </Row>
+      )}
 
       {(!!closeTime || !!resolvedDate) && (
         <Row className="items-center gap-1">
