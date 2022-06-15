@@ -22,9 +22,9 @@ import {
   calculateDpmPayoutAfterCorrectBet,
   getDpmOutcomeProbabilityAfterBet,
 } from 'common/calculate-dpm'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
+import { SignUpPrompt } from '../sign-up-prompt'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -183,12 +183,7 @@ export function AnswerBetPanel(props: {
           {isSubmitting ? 'Submitting...' : 'Submit trade'}
         </button>
       ) : (
-        <button
-          className="btn self-stretch whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-          onClick={firebaseLogin}
-        >
-          Sign up to bet!
-        </button>
+        <SignUpPrompt />
       )}
     </Col>
   )

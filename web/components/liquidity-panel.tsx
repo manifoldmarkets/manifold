@@ -12,6 +12,7 @@ import { Tabs } from './layout/tabs'
 import { NoLabel, YesLabel } from './outcome-label'
 import { Col } from './layout/col'
 import { InfoTooltip } from './info-tooltip'
+import { track } from 'web/lib/service/analytics'
 
 export function LiquidityPanel(props: { contract: CPMMContract }) {
   const { contract } = props
@@ -57,7 +58,7 @@ export function LiquidityPanel(props: { contract: CPMMContract }) {
 
 function AddLiquidityPanel(props: { contract: CPMMContract }) {
   const { contract } = props
-  const { id: contractId } = contract
+  const { id: contractId, slug } = contract
 
   const user = useUser()
 
@@ -99,6 +100,8 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
         }
       })
       .catch((_) => setError('Server error'))
+
+    track('add liquidity', { amount, contractId, slug })
   }
 
   return (
@@ -177,6 +180,8 @@ function WithdrawLiquidityPanel(props: {
         setIsLoading(false)
       })
       .catch((_) => setError('Server error'))
+
+    track('withdraw liquidity')
   }
 
   if (isSuccess)

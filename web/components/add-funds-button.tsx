@@ -61,7 +61,7 @@ export function AddFundsButton(props: { className?: string }) {
             >
               <button
                 type="submit"
-                className="btn btn-primary bg-gradient-to-r from-teal-500 to-green-500 px-10 font-medium hover:from-teal-600 hover:to-green-600"
+                className="btn btn-primary bg-gradient-to-r from-indigo-500 to-blue-500 px-10 font-medium hover:from-indigo-600 hover:to-blue-600"
               >
                 Checkout
               </button>

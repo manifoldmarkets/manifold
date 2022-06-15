@@ -26,6 +26,7 @@ import { Row } from '../layout/row'
 import NotificationsIcon from 'web/components/notifications-icon'
 import React, { useEffect, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { trackCallback, withTracking } from 'web/lib/service/analytics'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
@@ -125,6 +126,7 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
   return (
     <Link href={item.href} key={item.name}>
       <a
+        onClick={trackCallback('sidebar: ' + item.name)}
         className={clsx(
           item.href == currentPage
             ? 'bg-gray-200 text-gray-900'
@@ -216,7 +218,11 @@ export default function Sidebar(props: { className?: string }) {
         {user && (
           <MenuButton
             menuItems={[
-              { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
+              {
+                name: 'Sign out',
+                href: '#',
+                onClick: withTracking(firebaseLogout, 'sign out'),
+              },
             ]}
             buttonContent={<MoreButton />}
           />
@@ -237,13 +243,16 @@ export default function Sidebar(props: { className?: string }) {
       <div className={'aligncenter flex justify-center'}>
         {user ? (
           <Link href={'/create'} passHref>
-            <button className={clsx(gradient, buttonStyle)}>
+            <button
+              className={clsx(gradient, buttonStyle)}
+              onClick={trackCallback('create question button')}
+            >
               Create a question
             </button>
           </Link>
         ) : (
           <button
-            onClick={firebaseLogin}
+            onClick={withTracking(firebaseLogin, 'sign in')}
             className={clsx(gradient, buttonStyle)}
           >
             Sign in

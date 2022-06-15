@@ -24,6 +24,7 @@ import { Col } from 'web/components/layout/col'
 import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
+import { track } from 'web/lib/service/analytics'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -354,6 +355,7 @@ export function CommentInput(props: {
 
   async function submitComment(betId: string | undefined) {
     if (!user) {
+      track('sign in to comment')
       return await firebaseLogin()
     }
     if (!comment || isSubmitting) return
