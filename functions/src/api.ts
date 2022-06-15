@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { logger } from 'firebase-functions/v2'
 import { HttpsOptions, onRequest, Request } from 'firebase-functions/v2/https'
-
+import { log } from './utils'
 import { z } from 'zod'
 
 import { PrivateUser } from '../../common/user'
@@ -114,12 +114,14 @@ const DEFAULT_OPTS: HttpsOptions = {
 
 export const newEndpoint = (methods: [string], fn: Handler) =>
   onRequest(DEFAULT_OPTS, async (req, res) => {
+    log('Request processing started.')
     try {
       if (!methods.includes(req.method)) {
         const allowed = methods.join(', ')
         throw new APIError(405, `This endpoint supports only ${allowed}.`)
       }
       const authedUser = await lookupUser(await parseCredentials(req))
+      log('User credentials processed.')
       res.status(200).json(await fn(req, authedUser))
     } catch (e) {
       if (e instanceof APIError) {
