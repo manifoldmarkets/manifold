@@ -1,15 +1,24 @@
-import { Fragment } from 'react'
+import React, { Fragment } from 'react'
 import { Menu, Transition } from '@headlessui/react'
 import clsx from 'clsx'
 
+export type MenuItem = {
+  name: string
+  href: string
+  onClick?: () => void
+}
+
 export function MenuButton(props: {
   buttonContent: JSX.Element
-  menuItems: { name: string; href: string; onClick?: () => void }[]
+  menuItems: MenuItem[]
   className?: string
 }) {
   const { buttonContent, menuItems, className } = props
   return (
-    <Menu as="div" className={clsx('relative z-40 flex-shrink-0', className)}>
+    <Menu
+      as="div"
+      className={clsx(className ? className : 'relative z-40 flex-shrink-0')}
+    >
       <div>
         <Menu.Button className="w-full rounded-full">
           <span className="sr-only">Open user menu</span>
@@ -25,7 +34,7 @@ export function MenuButton(props: {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <Menu.Items className="absolute left-0 mt-2 w-40 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
           {menuItems.map((item) => (
             <Menu.Item key={item.name}>
               {({ active }) => (

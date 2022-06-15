@@ -44,6 +44,14 @@ export const useFollowingGroup = (
   return following
 }
 
+export const useMemberGroups = (user: User | null | undefined) => {
+  const [memberGroups, setMemberGroups] = useState<Group[] | undefined>()
+  useEffect(() => {
+    if (user) return listenForMemberGroups(user.id, setMemberGroups)
+  }, [user])
+  return memberGroups
+}
+
 // Note: We cache member group ids in localstorage to speed up the initial load
 export const useMemberGroupIds = (user: User | null | undefined) => {
   const [memberGroupIds, setMemberGroupIds] = useState<string[] | undefined>(

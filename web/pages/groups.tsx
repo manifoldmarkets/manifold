@@ -77,6 +77,16 @@ export default function Groups(props: {
       check(g.about || '') ||
       check(creatorsDict[g.creatorId].username)
   )
+
+  const matchesOrderedByRecentActivity = sortBy(groups, [
+    (group) => -1 * group.mostRecentActivityTime,
+  ]).filter(
+    (g) =>
+      check(g.name) ||
+      check(g.about || '') ||
+      check(creatorsDict[g.creatorId].username)
+  )
+
   // Not strictly necessary, but makes the "hold delete" experience less laggy
   const debouncedQuery = debounce(setQuery, 50)
 
@@ -97,24 +107,6 @@ export default function Groups(props: {
 
             <Tabs
               tabs={[
-                {
-                  title: 'My Groups',
-                  content: user ? (
-                    <Col className={'gap-3'}>
-                      {groups
-                        .filter((group) => memberGroupIds.includes(group.id))
-                        .map((group) => (
-                          <GroupCard
-                            group={group}
-                            key={group.id}
-                            creator={user}
-                          />
-                        ))}
-                    </Col>
-                  ) : (
-                    <div />
-                  ),
-                },
                 {
                   title: 'All',
                   content: (
@@ -138,7 +130,39 @@ export default function Groups(props: {
                     </Col>
                   ),
                 },
-              ]}
+              ]
+                .concat(
+                  user
+                    ? {
+                        title: 'My Groups',
+                        content: (
+                          <Col>
+                            <input
+                              type="text"
+                              onChange={(e) => debouncedQuery(e.target.value)}
+                              placeholder="Search your groups"
+                              className="input input-bordered mb-4 w-full"
+                            />
+
+                            <Col className="gap-4">
+                              {matchesOrderedByRecentActivity
+                                .filter((match) =>
+                                  match.memberIds.includes(user.id)
+                                )
+                                .map((group) => (
+                                  <GroupCard
+                                    key={group.id}
+                                    group={group}
+                                    creator={creatorsDict[group.creatorId]}
+                                  />
+                                ))}
+                            </Col>
+                          </Col>
+                        ),
+                      }
+                    : []
+                )
+                .reverse()}
             />
           </Col>
         </Col>
