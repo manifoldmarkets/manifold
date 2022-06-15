@@ -22,22 +22,23 @@ import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
-import { EditGroupButton } from 'web/components/folds/edit-group-button'
+import { EditGroupButton } from 'web/components/groups/edit-group-button'
 import Custom404 from '../../404'
-import { FollowGroupButton } from 'web/components/folds/follow-group-button'
 import { SEO } from 'web/components/SEO'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { findActiveContracts } from 'web/components/feed/find-active-contracts'
 import { Tabs } from 'web/components/layout/tabs'
 import { ContractsGrid } from 'web/components/contract/contracts-list'
+import { CreateQuestionButton } from 'web/components/create-question-button'
+import { useEffect, useState } from 'react'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
   const group = await getGroupBySlug(slugs[0])
-  const curatorPromise = group ? getUser(group.curatorId) : null
+  const creatorPromise = group ? getUser(group.creatorId) : null
 
   const contracts = group ? await getGroupContracts(group).catch((_) => []) : []
 
@@ -60,12 +61,12 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     toTopUsers(traderScores),
   ])
 
-  const curator = await curatorPromise
+  const creator = await creatorPromise
 
   return {
     props: {
       group,
-      curator,
+      creator,
       contracts,
       activeContracts,
       traderScores,
@@ -93,11 +94,16 @@ async function toTopUsers(userScores: { [userId: string]: number }) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const foldSubpages = [undefined, 'activity', 'markets', 'leaderboards'] as const
+const groupSubpages = [
+  undefined,
+  'discussion',
+  'questions',
+  'rankings',
+] as const
 
 export default function GroupPage(props: {
   group: Group | null
-  curator: User
+  creator: User
   contracts: Contract[]
   activeContracts: Contract[]
   activeContractBets: Bet[][]
@@ -109,7 +115,7 @@ export default function GroupPage(props: {
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
-    curator: null,
+    creator: null,
     contracts: [],
     activeContracts: [],
     activeContractBets: [],
@@ -120,7 +126,7 @@ export default function GroupPage(props: {
     topCreators: [],
   }
   const {
-    curator,
+    creator,
     traderScores,
     topTraders,
     creatorScores,
@@ -131,19 +137,20 @@ export default function GroupPage(props: {
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
 
-  const page = (slugs?.[1] ?? 'activity') as typeof foldSubpages[number]
+  const page = (slugs?.[1] ?? 'discussion') as typeof groupSubpages[number]
 
   const group = useGroup(props.group?.id) ?? props.group
   const user = useUser()
-  const isCurator = user && group && user.id === group.curatorId
+  const isCreator = user && group && user.id === group.creatorId
 
-  if (group === null || !foldSubpages.includes(page) || slugs[2]) {
+  if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
   }
+  const { memberIds } = group
 
   const rightSidebar = (
     <Col className="mt-6 gap-12">
-      <GroupOverview group={group} curator={curator} isCurator={!!isCurator} />
+      <GroupOverview group={group} creator={creator} isCreator={!!isCreator} />
       <YourPerformance
         traderScores={traderScores}
         creatorScores={creatorScores}
@@ -154,7 +161,7 @@ export default function GroupPage(props: {
 
   const leaderboardsTab = (
     <Col className="gap-8 px-4 lg:flex-row">
-      <FoldLeaderboards
+      <GroupLeaderboards
         traderScores={traderScores}
         creatorScores={creatorScores}
         topTraders={topTraders}
@@ -167,35 +174,46 @@ export default function GroupPage(props: {
     <Page rightSidebar={rightSidebar}>
       <SEO
         title={group.name}
-        description={`Curated by ${curator.name}. ${group.about}`}
-        url={groupPath(group)}
+        description={`Created by ${creator.name}. ${group.about}`}
+        url={groupPath(group.slug)}
       />
 
       <div className="px-3 lg:px-1">
-        <Row className="mb-6 items-center justify-between">
-          <Title className="!m-0" text={group.name} />
-          {!isCurator && <FollowGroupButton className="m-2" group={group} />}
+        <Row className={'mb-4 items-center justify-between'}>
+          <Title className="" text={group.name} />
+          {user && memberIds.includes(user.id) && (
+            <CreateQuestionButton
+              user={user}
+              overrideText={'Add a question'}
+              className={'w-40'}
+              query={`?groupId=${group.id}`}
+            />
+          )}
         </Row>
       </div>
 
       <Tabs
-        defaultIndex={page === 'leaderboards' ? 1 : 0}
+        defaultIndex={page === 'rankings' ? 1 : 0}
         tabs={[
           {
             title: 'Questions',
             content: (
-              <ContractsGrid
-                contracts={contracts}
-                hasMore={false}
-                loadMore={() => {}}
-              />
+              <div className={'mt-2'}>
+                {contracts.length > 0 && (
+                  <ContractsGrid
+                    contracts={contracts}
+                    hasMore={false}
+                    loadMore={() => {}}
+                  />
+                )}
+              </div>
             ),
-            href: groupPath(group, 'markets'),
+            href: groupPath(group.slug, 'questions'),
           },
           {
-            title: 'Leaderboards',
+            title: 'Rankings',
             content: leaderboardsTab,
-            href: groupPath(group, 'leaderboards'),
+            href: groupPath(group.slug, 'rankings'),
           },
         ]}
       />
@@ -205,26 +223,53 @@ export default function GroupPage(props: {
 
 function GroupOverview(props: {
   group: Group
-  curator: User
-  isCurator: boolean
+  creator: User
+  isCreator: boolean
 }) {
-  const { group, curator, isCurator } = props
-  const { about } = group
+  const { group, creator, isCreator } = props
+  const { about, memberIds } = group
+  const [members, setMembers] = useState<User[]>([])
+  useEffect(() => {
+    if (memberIds.length > 1)
+      // get users via their user ids:
+      Promise.all(
+        memberIds.filter((mId) => mId !== creator.id).map(getUser)
+      ).then((users) => {
+        const members = users.filter((user) => user)
+        setMembers(members)
+      })
+  }, [memberIds])
 
   return (
     <Col>
       <Row className="items-center justify-end rounded-t bg-indigo-500 px-4 py-3 text-sm text-white">
-        <Row className="flex-1 justify-start">About community</Row>
-        {isCurator && <EditGroupButton className={'ml-1'} group={group} />}
+        <Row className="flex-1 justify-start">About group</Row>
+        {isCreator && <EditGroupButton className={'ml-1'} group={group} />}
       </Row>
       <Col className="gap-2 rounded-b bg-white p-4">
         <Row>
-          <div className="mr-1 text-gray-500">Curated by</div>
+          <div className="mr-1 text-gray-500">Created by</div>
           <UserLink
             className="text-neutral"
-            name={curator.name}
-            username={curator.username}
+            name={creator.name}
+            username={creator.username}
           />
+        </Row>
+        <Row>
+          {group.memberIds.length > 1 && (
+            <>
+              <div className="mr-1 text-gray-500">Other members</div>
+              <div className={'mt-0 grid grid-cols-4 gap-1'}>
+                {members.map((member) => (
+                  <UserLink
+                    className="text-neutral col-span-2"
+                    name={member.name}
+                    username={member.username}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </Row>
 
         {about && (
@@ -276,7 +321,7 @@ function YourPerformance(props: {
   ) : null
 }
 
-function FoldLeaderboards(props: {
+function GroupLeaderboards(props: {
   traderScores: { [userId: string]: number }
   creatorScores: { [userId: string]: number }
   topTraders: User[]

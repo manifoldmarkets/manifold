@@ -20,10 +20,10 @@ import { getValue, getValues, listenForValue, listenForValues } from './utils'
 const groupCollection = collection(db, 'groups')
 
 export function groupPath(
-  group: Group,
-  subpath?: 'edit' | 'markets' | 'leaderboards'
+  groupSlug: string,
+  subpath?: 'edit' | 'questions' | 'rankings' | 'discussion'
 ) {
-  return `/group/${group.slug}${subpath ? `/${subpath}` : ''}`
+  return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }
 
 export function updateGroup(group: Group, updates: Partial<Group>) {
@@ -53,28 +53,10 @@ export async function getGroupBySlug(slug: string) {
   return groups.length === 0 ? null : groups[0]
 }
 
-function contractsByTagsQuery(tags: string[]) {
-  // TODO: if tags.length > 10, execute multiple parallel queries
-  const lowercaseTags = tags.map((tag) => tag.toLowerCase()).slice(0, 10)
-
-  return query(
-    contractCollection,
-    where('lowercaseTags', 'array-contains-any', lowercaseTags)
-  )
-}
-
 export async function getGroupContracts(group: Group) {
-  const {
-    tags,
-    contractIds,
-    excludedContractIds,
-    creatorIds,
-    excludedCreatorIds,
-  } = group
+  const { contractIds } = group
 
-  const [tagsContracts, includedContracts] = await Promise.all([
-    tags.length > 0 ? getValues<Contract>(contractsByTagsQuery(tags)) : [],
-
+  const [includedContracts] = await Promise.all([
     // TODO: if contractIds.length > 10, execute multiple parallel queries
     contractIds.length > 0
       ? getValues<Contract>(
@@ -83,31 +65,7 @@ export async function getGroupContracts(group: Group) {
       : [],
   ])
 
-  const excludedContractsSet = new Set(excludedContractIds)
-
-  const creatorSet = creatorIds ? new Set(creatorIds) : undefined
-  const excludedCreatorSet = excludedCreatorIds
-    ? new Set(excludedCreatorIds)
-    : undefined
-
-  const approvedContracts = tagsContracts.filter((contract) => {
-    const { id, creatorId } = contract
-
-    if (excludedContractsSet.has(id)) return false
-    if (creatorSet && !creatorSet.has(creatorId)) return false
-    if (excludedCreatorSet && excludedCreatorSet.has(creatorId)) return false
-
-    return true
-  })
-
-  return [...approvedContracts, ...includedContracts]
-}
-
-export function listenForTaggedContracts(
-  tags: string[],
-  setContracts: (contracts: Contract[]) => void
-) {
-  return listenForValues<Contract>(contractsByTagsQuery(tags), setContracts)
+  return [...includedContracts]
 }
 
 export function listenForGroup(
@@ -158,40 +116,6 @@ export function listenForFollow(
   })
 }
 
-export async function getGroupsByTags(tags: string[]) {
-  if (tags.length === 0) return []
-
-  // TODO: split into multiple queries if tags.length > 10.
-  const lowercaseTags = tags.map((tag) => tag.toLowerCase()).slice(0, 10)
-
-  const groups = await getValues<Group>(
-    query(
-      groupCollection,
-      where('lowercaseTags', 'array-contains-any', lowercaseTags)
-    )
-  )
-
-  return sortBy(groups, (group) => -1 * group.followCount)
-}
-
-export function listenForGroupsWithTags(
-  tags: string[],
-  setGroups: (groups: Group[]) => void
-) {
-  // TODO: split into multiple queries if tags.length > 10.
-  const lowercaseTags = tags.map((tag) => tag.toLowerCase()).slice(0, 10)
-
-  const q = query(
-    groupCollection,
-    where('lowercaseTags', 'array-contains-any', lowercaseTags)
-  )
-
-  return listenForValues<Group>(q, (groups) => {
-    const sorted = sortBy(groups, (group) => -1 * group.followCount)
-    setGroups(sorted)
-  })
-}
-
 export async function getFollowedGroups(userId: string) {
   const snapshot = await getDocs(
     query(collectionGroup(db, 'followers'), where('userId', '==', userId))
@@ -217,4 +141,16 @@ export function listenForFollowedGroups(
       setGroupIds(groupIds)
     }
   )
+}
+
+export function listenForMemberGroups(
+  userId: string,
+  setGroups: (groups: Group[]) => void
+) {
+  const q = query(groupCollection, where('memberIds', 'array-contains', userId))
+
+  return listenForValues<Group>(q, (groups) => {
+    const sorted = sortBy(groups, [(group) => -group.mostRecentActivityTime])
+    setGroups(sorted)
+  })
 }

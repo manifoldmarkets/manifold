@@ -16,7 +16,13 @@ export const withdrawLiquidity = cloudFunction<
 >('withdrawLiquidity')
 
 export const createGroup = cloudFunction<
-  { name: string; about: string; tags: string[] },
+  {
+    name: string
+    about: string
+    memberIds: string[]
+    anyoneCanJoin: boolean
+    visibility: 'public' | 'private' | 'unlisted'
+  },
   { status: 'error' | 'success'; message?: string; group?: Group }
 >('createGroup')
 

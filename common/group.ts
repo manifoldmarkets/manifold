@@ -3,21 +3,12 @@ export type Group = {
   slug: string
   name: string
   about: string
-  curatorId: string // User id
+  creatorId: string // User id
   createdTime: number
-
-  tags: string[]
-  lowercaseTags: string[]
-
+  mostRecentActivityTime: number
+  memberIds: string[] // User ids
+  anyoneCanJoin: boolean
+  visibility: 'public' | 'private' | 'unlisted'
   contractIds: string[]
-  excludedContractIds: string[]
-
-  // Invariant: exactly one of the following is defined.
-  // Default: creatorIds: undefined, excludedCreatorIds: []
-  creatorIds?: string[]
-  excludedCreatorIds?: string[]
-
   followCount: number
-
-  disallowMarketCreation?: boolean
 }

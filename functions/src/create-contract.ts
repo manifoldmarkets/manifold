@@ -10,6 +10,7 @@ import {
   MAX_TAG_LENGTH,
   NumericContract,
   OUTCOME_TYPES,
+  MAX_GROUP_PARTS_LENGTH,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
@@ -28,6 +29,7 @@ import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
+import { Group } from 'common/group'
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -38,6 +40,7 @@ const bodySchema = z.object({
     'Close time must be in the future.'
   ),
   outcomeType: z.enum(OUTCOME_TYPES),
+  groupId: z.string().min(1).max(MAX_GROUP_PARTS_LENGTH),
 })
 
 const binarySchema = z.object({
@@ -50,10 +53,8 @@ const numericSchema = z.object({
 })
 
 export const createmarket = newEndpoint(['POST'], async (req, auth) => {
-  const { question, description, tags, closeTime, outcomeType } = validate(
-    bodySchema,
-    req.body
-  )
+  const { question, description, tags, closeTime, outcomeType, groupId } =
+    validate(bodySchema, req.body)
 
   let min, max, initialProb
   if (outcomeType === 'NUMERIC') {
@@ -76,6 +77,16 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     throw new APIError(400, 'No user exists with the authenticated user ID.')
   }
   const user = userDoc.data() as User
+
+  const groupDoc = await firestore.collection('groups').doc(groupId).get()
+  if (!groupDoc.exists) {
+    throw new APIError(400, 'No group exists with the given group ID.')
+  }
+
+  const group = groupDoc.data() as Group
+  if (!group.memberIds.includes(user.id)) {
+    throw new APIError(400, 'User is not a member of the group.')
+  }
 
   const userContractsCreatedTodaySnapshot = await firestore
     .collection(`contracts`)
@@ -115,7 +126,10 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     tags ?? [],
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
-    max ?? 0
+    max ?? 0,
+    group.id,
+    group.name,
+    group.slug
   )
 
   if (!isFree && ante) await chargeUser(user.id, ante, true)

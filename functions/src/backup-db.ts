@@ -41,7 +41,7 @@ export const backupDb = functions.pubsub
         // NOTE: Subcollections are not backed up by default
         collectionIds: [
           'contracts',
-          'folds',
+          'groups',
           'private-users',
           'stripe-transactions',
           'users',
@@ -50,6 +50,7 @@ export const backupDb = functions.pubsub
           'followers',
           'answers',
           'txns',
+          'messages',
         ],
       })
       .then((responses) => {

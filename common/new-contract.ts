@@ -27,7 +27,11 @@ export function getNewContract(
   // used for numeric markets
   bucketCount: number,
   min: number,
-  max: number
+  max: number,
+
+  groupId: string,
+  groupName: string,
+  groupSlug: string
 ) {
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
@@ -69,6 +73,10 @@ export function getNewContract(
       liquidityFee: 0,
       platformFee: 0,
     },
+
+    groupIds: [groupId],
+    groupNames: [groupName],
+    groupSlugs: [groupSlug],
   })
 
   return contract as Contract

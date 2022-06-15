@@ -28,6 +28,8 @@ export * from './on-update-contract'
 export * from './on-create-contract'
 export * from './on-follow-user'
 export * from './on-create-liquidity-provision'
+export * from './on-update-group'
+export * from './on-create-group'
 
 // v2
 export * from './health'
