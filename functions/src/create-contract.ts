@@ -27,7 +27,6 @@ import {
 import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
-import { DAY_MS } from '../../common/util/time'
 import { User } from '../../common/user'
 
 const bodySchema = z.object({
@@ -64,8 +63,6 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
   if (outcomeType === 'BINARY') {
     ;({ initialProb } = validate(binarySchema, req.body))
   }
-
-  const autoResolutionTime = closeTime.getTime() + 7 * DAY_MS
 
   // Uses utc time on server:
   const today = new Date()
@@ -116,7 +113,6 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     ante,
     closeTime.getTime(),
     tags ?? [],
-    autoResolutionTime,
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0
