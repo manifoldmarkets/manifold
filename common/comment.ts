@@ -11,8 +11,6 @@ export type Comment = {
   text: string
   createdTime: number
 
-  tips?: { [userId: string]: number }
-
   // Denormalized, for rendering comments
   userName: string
   userUsername: string

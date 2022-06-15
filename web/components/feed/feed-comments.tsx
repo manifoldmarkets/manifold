@@ -2,7 +2,7 @@ import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { minBy, maxBy, groupBy, partition, sumBy, Dictionary } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
@@ -25,6 +25,7 @@ import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
 import Tipper from '../tipper'
+import { useCommentTips } from './feed-context'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -183,6 +184,8 @@ export function FeedComment(props: {
     money = formatMoney(Math.abs(matchedBet.amount))
   }
 
+  const tips = useCommentTips(comment.id)
+
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
   useEffect(() => {
@@ -258,8 +261,7 @@ export function FeedComment(props: {
           shouldTruncate={truncate}
         />
         <Row className="mt-2 gap-4 text-gray-500">
-          <Tipper contract={contract} comment={comment} />
-
+          <Tipper comment={comment} tips={tips ?? {}} />
           {onReplyClick && (
             <button
               className={'text-xs font-bold  hover:underline'}

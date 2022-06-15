@@ -39,6 +39,7 @@ import { FeedBet } from 'web/components/feed/feed-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
+import { FeedContextProvider } from 'web/components/feed/feed-context'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -173,56 +174,58 @@ export function ContractPageContent(
         />
       )}
 
-      <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
-        {backToHome && (
-          <button
-            className="btn btn-sm mb-4 items-center gap-2 self-start border-0 border-gray-700 bg-white normal-case text-gray-700 hover:bg-white hover:text-gray-700 lg:hidden"
-            onClick={backToHome}
-          >
-            <ArrowLeftIcon className="h-5 w-5 text-gray-700" />
-            Back
-          </button>
-        )}
+      <FeedContextProvider contractId={contract.id}>
+        <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
+          {backToHome && (
+            <button
+              className="btn btn-sm mb-4 items-center gap-2 self-start border-0 border-gray-700 bg-white normal-case text-gray-700 hover:bg-white hover:text-gray-700 lg:hidden"
+              onClick={backToHome}
+            >
+              <ArrowLeftIcon className="h-5 w-5 text-gray-700" />
+              Back
+            </button>
+          )}
 
-        <ContractOverview
-          contract={contract}
-          bets={bets}
-          comments={comments ?? []}
-        />
+          <ContractOverview
+            contract={contract}
+            bets={bets}
+            comments={comments ?? []}
+          />
 
-        {outcomeType === 'FREE_RESPONSE' && (
-          <>
-            <Spacer h={4} />
-            <AnswersPanel contract={contract} />
-            <Spacer h={4} />
-          </>
-        )}
+          {outcomeType === 'FREE_RESPONSE' && (
+            <>
+              <Spacer h={4} />
+              <AnswersPanel contract={contract} />
+              <Spacer h={4} />
+            </>
+          )}
 
-        {isNumeric && allowTrade && (
-          <NumericBetPanel className="xl:hidden" contract={contract} />
-        )}
+          {isNumeric && allowTrade && (
+            <NumericBetPanel className="xl:hidden" contract={contract} />
+          )}
 
-        {isResolved && (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2">
-              <ContractLeaderboard contract={contract} bets={bets} />
-              <ContractTopTrades
-                contract={contract}
-                bets={bets}
-                comments={comments}
-              />
-            </div>
-            <Spacer h={12} />
-          </>
-        )}
+          {isResolved && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2">
+                <ContractLeaderboard contract={contract} bets={bets} />
+                <ContractTopTrades
+                  contract={contract}
+                  bets={bets}
+                  comments={comments}
+                />
+              </div>
+              <Spacer h={12} />
+            </>
+          )}
 
-        <ContractTabs
-          contract={contract}
-          user={user}
-          bets={bets}
-          comments={comments}
-        />
-      </Col>
+          <ContractTabs
+            contract={contract}
+            user={user}
+            bets={bets}
+            comments={comments}
+          />
+        </Col>
+      </FeedContextProvider>
     </Page>
   )
 }
