@@ -60,12 +60,14 @@ export const autoResolveMarkets = functions.pubsub
       firestore
         .collection('contracts')
         .where('isResolved', '==', false)
-        .where('closeTime', '>', Date.now())
         .where('autoResolutionTime', '<', Date.now())
+    )
+    const closedContracts = contracts.filter(
+      (c) => c.closeTime && c.closeTime < Date.now()
     )
 
     await batchedWaitAll(
-      contracts.map((contract) => async () => {
+      closedContracts.map((contract) => async () => {
         const result = await autoResolve(contract)
 
         console.log('resolved', contract.slug, 'result:', result)
