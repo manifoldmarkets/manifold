@@ -18,12 +18,12 @@ const Home = () => {
 
   const router = useRouter()
 
+  useTracking('view home')
+
   if (user === null) {
     Router.replace('/')
     return <></>
   }
-
-  useTracking('view home')
 
   return (
     <>

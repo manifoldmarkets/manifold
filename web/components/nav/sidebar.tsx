@@ -26,7 +26,7 @@ import { Row } from '../layout/row'
 import NotificationsIcon from 'web/components/notifications-icon'
 import React, { useEffect, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
-import { track, trackCallback, withTracking } from 'web/lib/service/analytics'
+import { trackCallback, withTracking } from 'web/lib/service/analytics'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {

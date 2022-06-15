@@ -22,7 +22,6 @@ import {
   calculateDpmPayoutAfterCorrectBet,
   getDpmOutcomeProbabilityAfterBet,
 } from 'common/calculate-dpm'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
 import { SignUpPrompt } from '../sign-up-prompt'

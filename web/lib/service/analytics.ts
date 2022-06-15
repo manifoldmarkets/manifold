@@ -15,7 +15,7 @@ export { track }
 // Convenience functions:
 
 export const trackCallback =
-  (eventName: string, eventProperties?: any) => (e: any) => {
+  (eventName: string, eventProperties?: any) => () => {
     track(eventName, eventProperties)
   }
 
