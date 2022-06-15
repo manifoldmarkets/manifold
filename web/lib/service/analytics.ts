@@ -12,6 +12,12 @@ init(ENV_CONFIG.amplitudeApiKey ?? '', undefined, { includeReferrer: true })
 
 export { track }
 
+export const trackCallback =
+  (eventName: string, eventProperties?: any) => () => {
+    track(eventName, eventProperties)
+    return false
+  }
+
 // convenience function
 export const withTracking =
   (
@@ -19,8 +25,14 @@ export const withTracking =
     eventName: string,
     eventProperties?: any
   ) =>
-  () =>
-    Promise.all([f(), track(eventName, eventProperties).promise])
+  async () => {
+    const promise = f()
+
+    track(eventName, eventProperties)
+
+    await promise
+    return false
+  }
 
 export async function identifyUser(userId: string) {
   setUserId(userId)
