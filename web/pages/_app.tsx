@@ -5,7 +5,6 @@ import Head from 'next/head'
 import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
 import { QueryClient, QueryClientProvider } from 'react-query'
-import { ENV_CONFIG } from 'common/envs/constants'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
