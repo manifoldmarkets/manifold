@@ -61,7 +61,6 @@ export const autoResolveMarkets = functions
       firestore
         .collection('contracts')
         .where('isResolved', '==', false)
-        .where('closeTime', '>', Date.now())
         .where('autoResolutionTime', '<', Date.now())
     )
 
@@ -75,6 +74,19 @@ export const autoResolveMarkets = functions
   })
 
 const autoResolve = async (contract: Contract) => {
+  const { closeTime, autoResolutionTime } = contract
+  if (closeTime && autoResolutionTime && closeTime > autoResolutionTime) {
+    console.error(
+      'contract ',
+      contract.id,
+      'is supposed to be resolved before it closes.\nClose time:',
+      closeTime,
+      '\nAuto resolution time:',
+      autoResolutionTime
+    )
+    return
+  }
+
   const data = {
     outcome: AUTO_RESOLUTION,
     value: undefined, // numeric
