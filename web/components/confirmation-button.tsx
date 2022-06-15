@@ -20,38 +20,59 @@ export function ConfirmationButton(props: {
   }
   onSubmit: () => void
   children: ReactNode
+  onOpenStateChange?: (isOpen: boolean) => void
+  onAsyncSubmit?: () => Promise<boolean>
 }) {
-  const { openModalBtn, cancelBtn, submitBtn, onSubmit, children } = props
+  const {
+    openModalBtn,
+    cancelBtn,
+    submitBtn,
+    onSubmit,
+    children,
+    onOpenStateChange,
+    onAsyncSubmit,
+  } = props
 
   const [open, setOpen] = useState(false)
 
+  function updateOpen(newOpen: boolean) {
+    onOpenStateChange?.(newOpen)
+    setOpen(newOpen)
+  }
+
   return (
     <>
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={updateOpen}>
         <Col className="gap-4 rounded-md bg-white px-8 py-6">
           {children}
           <Row className="gap-4">
-            <button
-              className={clsx('btn', cancelBtn?.className)}
-              onClick={() => setOpen(false)}
+            <div
+              className={clsx('btn normal-case', cancelBtn?.className)}
+              onClick={() => updateOpen(false)}
             >
               {cancelBtn?.label ?? 'Cancel'}
-            </button>
-            <button
-              className={clsx('btn', submitBtn?.className)}
-              onClick={onSubmit}
+            </div>
+            <div
+              className={clsx('btn normal-case', submitBtn?.className)}
+              onClick={
+                onAsyncSubmit
+                  ? () =>
+                      onAsyncSubmit().then((success) => updateOpen(!success))
+                  : onSubmit
+              }
             >
               {submitBtn?.label ?? 'Submit'}
-            </button>
+            </div>
           </Row>
         </Col>
       </Modal>
-      <button
-        className={clsx('btn', openModalBtn.className)}
-        onClick={() => setOpen(true)}
+      <div
+        className={clsx('btn normal-case', openModalBtn.className)}
+        onClick={() => updateOpen(true)}
       >
+        {openModalBtn.icon}
         {openModalBtn.label}
-      </button>
+      </div>
     </>
   )
 }
