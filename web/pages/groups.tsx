@@ -12,6 +12,7 @@ import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, User } from 'web/lib/firebase/users'
+import { Tabs } from 'web/components/layout/tabs'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])
@@ -94,22 +95,51 @@ export default function Groups(props: {
               questions added solely by its members. Start a group today!
             </div>
 
-            <input
-              type="text"
-              onChange={(e) => debouncedQuery(e.target.value)}
-              placeholder="Search groups"
-              className="input input-bordered mb-4 w-full"
-            />
-          </Col>
+            <Tabs
+              tabs={[
+                {
+                  title: 'My Groups',
+                  content: user ? (
+                    <Col className={'gap-3'}>
+                      {groups
+                        .filter((group) => memberGroupIds.includes(group.id))
+                        .map((group) => (
+                          <GroupCard
+                            group={group}
+                            key={group.id}
+                            creator={user}
+                          />
+                        ))}
+                    </Col>
+                  ) : (
+                    <div />
+                  ),
+                },
+                {
+                  title: 'All',
+                  content: (
+                    <Col>
+                      <input
+                        type="text"
+                        onChange={(e) => debouncedQuery(e.target.value)}
+                        placeholder="Search groups"
+                        className="input input-bordered mb-4 w-full"
+                      />
 
-          <Col className="gap-4">
-            {matches.map((group) => (
-              <GroupCard
-                key={group.id}
-                group={group}
-                creator={creatorsDict[group.creatorId]}
-              />
-            ))}
+                      <Col className="gap-4">
+                        {matches.map((group) => (
+                          <GroupCard
+                            key={group.id}
+                            group={group}
+                            creator={creatorsDict[group.creatorId]}
+                          />
+                        ))}
+                      </Col>
+                    </Col>
+                  ),
+                },
+              ]}
+            />
           </Col>
         </Col>
       </Col>

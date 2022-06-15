@@ -9,6 +9,7 @@ import {
   PresentationChartLineIcon,
   SparklesIcon,
   NewspaperIcon,
+  UserGroupIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -38,6 +39,7 @@ function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
 function getNavigation(username: string) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
+    { name: 'Groups', href: '/groups', icon: UserGroupIcon },
     {
       name: 'Portfolio',
       href: `/${username}/bets`,
@@ -103,6 +105,7 @@ const signedOutMobileNavigation = [
 ]
 
 const mobileNavigation = [
+  { name: 'Groups', href: '/groups', icon: UserGroupIcon },
   { name: 'Get M$', href: '/add-funds', icon: CashIcon },
   ...signedOutMobileNavigation,
 ]
