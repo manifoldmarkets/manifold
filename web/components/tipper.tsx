@@ -76,9 +76,17 @@ function Tipper(prop: { comment: Comment; tips: CommentTips }) {
 
   return (
     <Row className="items-center">
-      <DownTip value={localTip} onChange={changeTip} />
+      <DownTip
+        value={localTip}
+        onChange={changeTip}
+        disabled={!me || localTip <= 0}
+      />
       <span className="mx-1">{score} </span>
-      <UpTip value={localTip} onChange={changeTip} />
+      <UpTip
+        value={localTip}
+        onChange={changeTip}
+        disabled={!me || me.id === comment.userId}
+      />
       {localTip === 0 ? (
         ''
       ) : (
@@ -90,10 +98,13 @@ function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   )
 }
 
-function DownTip(prop: { value: number; onChange: (tip: number) => void }) {
-  const { onChange, value } = prop
+function DownTip(prop: {
+  value: number
+  onChange: (tip: number) => void
+  disabled?: boolean
+}) {
+  const { onChange, value, disabled } = prop
   const marginal = 5 * invQuad(value)
-  const disabled = value === 0
   return (
     <Tooltip text={!disabled && `refund ${formatMoney(marginal)}`}>
       <button
@@ -107,14 +118,19 @@ function DownTip(prop: { value: number; onChange: (tip: number) => void }) {
   )
 }
 
-function UpTip(prop: { value: number; onChange: (tip: number) => void }) {
-  const { onChange, value } = prop
+function UpTip(prop: {
+  value: number
+  onChange: (tip: number) => void
+  disabled?: boolean
+}) {
+  const { onChange, value, disabled } = prop
   const marginal = 5 * invQuad(value) + 5
 
   return (
-    <Tooltip text={`pay ${formatMoney(marginal)}`}>
+    <Tooltip text={!disabled && `pay ${formatMoney(marginal)}`}>
       <button
-        className="hover:text-primary flex h-max items-center"
+        className="hover:text-primary flex h-max items-center disabled:text-gray-300"
+        disabled={disabled}
         onClick={() => onChange(value + marginal)}
       >
         {value >= quad(2) ? (
