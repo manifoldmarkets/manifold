@@ -6,6 +6,7 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { TagsList } from './tags-list'
 import { MAX_TAG_LENGTH } from 'common/contract'
+import { track } from 'web/lib/service/analytics'
 
 export function TagsInput(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -24,6 +25,7 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
     })
     setIsSubmitting(false)
     setTagText('')
+    track('save tags')
   }
 
   return (
