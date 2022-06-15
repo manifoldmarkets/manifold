@@ -116,10 +116,10 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     ante,
     closeTime.getTime(),
     tags ?? [],
-    autoResolutionTime,
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
-    max ?? 0
+    max ?? 0,
+    autoResolutionTime
   )
 
   if (!isFree && ante) await chargeUser(user.id, ante, true)
