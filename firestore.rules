@@ -56,7 +56,7 @@ service cloud.firestore {
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['tags', 'lowercaseTags']);
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                                                                 .hasOnly(['description', 'closeTime', 'autoResolutionTime'])
+                                                                 .hasOnly(['description', 'closeTime'])
                        && resource.data.creatorId == request.auth.uid;
       allow update: if isAdmin();
     }

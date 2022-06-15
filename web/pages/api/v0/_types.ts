@@ -32,8 +32,6 @@ export type LiteMarket = {
   volume7Days: number
   volume24Hours: number
 
-  autoResolutionTime?: number
-
   isResolved: boolean
   resolution?: string
   resolutionTime?: number
@@ -66,7 +64,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     volume,
     volume7Days,
     volume24Hours,
-    autoResolutionTime,
     isResolved,
     resolution,
     resolutionTime,
@@ -100,7 +97,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     volume,
     volume7Days,
     volume24Hours,
-    autoResolutionTime,
     isResolved,
     resolution,
     resolutionTime,

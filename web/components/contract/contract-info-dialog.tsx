@@ -1,8 +1,4 @@
-import {
-  DotsHorizontalIcon,
-  PencilIcon,
-  CheckIcon,
-} from '@heroicons/react/outline'
+import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { uniqBy } from 'lodash'
@@ -15,7 +11,6 @@ import {
   contractPath,
   contractPool,
   getBinaryProbPercent,
-  updateContract,
 } from 'web/lib/firebase/contracts'
 import { LiquidityPanel } from '../liquidity-panel'
 import { CopyLinkButton } from '../copy-link-button'
@@ -28,25 +23,15 @@ import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
 import { InfoTooltip } from '../info-tooltip'
 
-const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
-
-export function ContractInfoDialog(props: {
-  contract: Contract
-  bets: Bet[]
-  isCreator: boolean
-}) {
-  const { contract, bets, isCreator } = props
+export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
 
   const [open, setOpen] = useState(false)
 
-  const {
-    createdTime,
-    closeTime,
-    resolutionTime,
-    mechanism,
-    outcomeType,
-    autoResolutionTime,
-  } = contract
+  const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
+
+  const { createdTime, closeTime, resolutionTime, mechanism, outcomeType } =
+    contract
 
   const tradersCount = uniqBy(
     bets.filter((bet) => !bet.isAnte),
@@ -131,14 +116,6 @@ export function ContractInfoDialog(props: {
                 </tr>
               )}
 
-              {autoResolutionTime && !resolutionTime && (
-                <EditableResolutionTime
-                  time={autoResolutionTime}
-                  contract={contract}
-                  isCreator={isCreator}
-                />
-              )}
-
               {resolutionTime && (
                 <tr>
                   <td>Market resolved</td>
@@ -202,73 +179,4 @@ const getTweetText = (contract: Contract, isCreator: boolean) => {
   const url = `https://manifold.markets${contractPath(contract)}?t=${timeParam}`
 
   return `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
-}
-
-export function EditableResolutionTime(props: {
-  time: number
-  contract: Contract
-  isCreator: boolean
-}) {
-  const { time, contract, isCreator } = props
-
-  const [isEditing, setIsEditing] = useState(false)
-  const [timeString, setTimeString] = useState(time && formatTime(time))
-
-  const onSave = () => {
-    const newTime = dayjs(timeString).valueOf()
-    if (newTime === time) setIsEditing(false)
-    else if (
-      contract.closeTime &&
-      newTime > (contract.closeTime ?? Date.now())
-    ) {
-      const formattedTime = dayjs(newTime).format('YYYY-MM-DD h:mm a')
-      const newDescription = `${contract.description}\n\nAuto resolution date updated to ${formattedTime}`
-
-      updateContract(contract.id, {
-        autoResolutionTime: newTime,
-        description: newDescription,
-      })
-
-      setIsEditing(false)
-    }
-  }
-
-  return (
-    <tr>
-      <td>
-        Market autoresolves
-        {isCreator &&
-          (isEditing ? (
-            <button className="btn btn-xs btn-ghost" onClick={onSave}>
-              <CheckIcon className="inline h-4 w-4" />
-            </button>
-          ) : (
-            <button
-              className="btn btn-xs btn-ghost"
-              onClick={() => setIsEditing(true)}
-            >
-              <PencilIcon className="inline h-4 w-4" />
-            </button>
-          ))}
-      </td>
-      <td>
-        {isEditing ? (
-          <div className="form-control mr-1 items-start">
-            <input
-              type="datetime-local"
-              className="input input-xs"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setTimeString(e.target.value || '')}
-              min={contract.closeTime}
-              value={timeString}
-            />
-          </div>
-        ) : (
-          <div className="form-control mr-1 items-start">
-            {formatTime(time)}
-          </div>
-        )}
-      </td>
-    </tr>
-  )
 }

@@ -27,8 +27,7 @@ export function getNewContract(
   // used for numeric markets
   bucketCount: number,
   min: number,
-  max: number,
-  autoResolutionTime?: number
+  max: number
 ) {
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
@@ -60,7 +59,6 @@ export function getNewContract(
     isResolved: false,
     createdTime: Date.now(),
     closeTime,
-    autoResolutionTime,
 
     volume: 0,
     volume24Hours: 0,
