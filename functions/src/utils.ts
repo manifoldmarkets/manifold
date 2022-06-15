@@ -29,7 +29,7 @@ export const writeUpdatesAsync = async (
   for (let i = 0; i < chunks.length; i++) {
     log(`${i * batchSize}/${updates.length} updates written...`)
     const batch = db.batch()
-    for (const { doc, fields } of updates) {
+    for (const { doc, fields } of chunks[i]) {
       batch.update(doc, fields)
     }
     await batch.commit()

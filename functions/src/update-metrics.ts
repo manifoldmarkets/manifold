@@ -82,7 +82,7 @@ export const updateMetricsCore = async () => {
   log(`Updated metrics for ${users.length} users.`)
 }
 
-const computeVolume = async (contractBets: Bet[], since: number) => {
+const computeVolume = (contractBets: Bet[], since: number) => {
   return sumBy(contractBets, (b) =>
     b.createdTime > since && !b.isRedemption ? Math.abs(b.amount) : 0
   )
