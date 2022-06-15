@@ -22,9 +22,12 @@ import { removeUndefinedProps } from 'common/util/object'
 import { CATEGORIES } from 'common/categories'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { track } from 'web/lib/service/analytics'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
+
+  useTracking('view create page')
 
   return (
     <Page>

@@ -3,6 +3,7 @@ import clsx from 'clsx'
 
 import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { trackCallback } from 'web/lib/service/analytics'
 
 export function ManifoldLogo(props: {
   className?: string
