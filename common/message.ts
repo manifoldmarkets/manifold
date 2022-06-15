@@ -1,5 +1,3 @@
-// Currently, comments are created after the bet, not atomically with the bet.
-// They're uniquely identified by the pair contractId/betId.
 export type Message = {
   id: string
   userId: string
@@ -11,7 +9,7 @@ export type Message = {
 
   replyToMessageId?: string
 
-  // Denormalized, for rendering comments
+  // Denormalized, for rendering messages
   userName: string
   userUsername: string
   userAvatarUrl?: string
