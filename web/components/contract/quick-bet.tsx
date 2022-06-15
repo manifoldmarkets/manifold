@@ -159,7 +159,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
           onClick={() => placeQuickBet('UP')}
         />
         <div className="mt-2 text-center text-xs text-transparent peer-hover:text-gray-400">
-          {formatMoney(10)}
+          {formatMoney(BET_SIZE)}
         </div>
 
         {hasUpShares > 0 ? (
@@ -213,7 +213,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
             />
           )}
           <div className="mb-2 text-center text-xs text-transparent peer-hover:text-gray-400">
-            {formatMoney(10)}
+            {formatMoney(BET_SIZE)}
           </div>
         </div>
       )}
