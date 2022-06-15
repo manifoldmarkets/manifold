@@ -1,9 +1,7 @@
 import * as admin from 'firebase-admin'
-import { Response } from 'express'
 import { logger } from 'firebase-functions/v2'
-import { onRequest, Request } from 'firebase-functions/v2/https'
+import { HttpsOptions, onRequest, Request } from 'firebase-functions/v2/https'
 
-import * as Cors from 'cors'
 import { z } from 'zod'
 
 import { PrivateUser } from '../../common/user'
@@ -88,21 +86,6 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
   }
 }
 
-export const applyCors = (
-  req: Request,
-  res: Response,
-  params: Cors.CorsOptions
-) => {
-  return new Promise((resolve, reject) => {
-    Cors(params)(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result)
-      }
-      return resolve(result)
-    })
-  })
-}
-
 export const zTimestamp = () => {
   return z.preprocess((arg) => {
     return typeof arg == 'number' ? new Date(arg) : undefined
@@ -124,13 +107,14 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
   }
 }
 
+const DEFAULT_OPTS: HttpsOptions = {
+  minInstances: 1,
+  cors: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
+}
+
 export const newEndpoint = (methods: [string], fn: Handler) =>
-  onRequest({ minInstances: 1 }, async (req, res) => {
+  onRequest(DEFAULT_OPTS, async (req, res) => {
     try {
-      await applyCors(req, res, {
-        origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
-        methods: methods,
-      })
       if (!methods.includes(req.method)) {
         const allowed = methods.join(', ')
         throw new APIError(405, `This endpoint supports only ${allowed}.`)
