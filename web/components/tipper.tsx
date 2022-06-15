@@ -29,16 +29,10 @@ function Tipper(prop: { contract: Contract; comment: Comment }) {
   // optimistically increase the tip count, but debounce the update
   const [localTip, setLocalTip] = useState(savedTip)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const score = useMemo(
-    flow(
-      () => ({ ...tips, [myId]: localTip }),
-      Object.values,
-      (x) => x.map(invQuad),
-      sum
-    ),
-    [localTip]
-  )
+  const score = useMemo(() => {
+    const tipVals = Object.values({ ...tips, [myId]: localTip })
+    return sumBy(tipVals, invQuad)
+  }, [localTip, tips, myId])
 
   const saveTip = debounce((tip: number) => {
     if (tip === savedTip) {
