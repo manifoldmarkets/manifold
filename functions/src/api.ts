@@ -33,6 +33,12 @@ export class APIError {
   }
 }
 
+const auth = admin.auth()
+const firestore = admin.firestore()
+const privateUsers = firestore.collection(
+  'private-users'
+) as admin.firestore.CollectionReference<PrivateUser>
+
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
   const authHeader = req.get('Authorization')
   if (!authHeader) {
@@ -47,8 +53,7 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
   switch (scheme) {
     case 'Bearer':
       try {
-        const jwt = await admin.auth().verifyIdToken(payload)
-        return { kind: 'jwt', data: jwt }
+        return { kind: 'jwt', data: await auth.verifyIdToken(payload) }
       } catch (err) {
         // This is somewhat suspicious, so get it into the firebase console
         logger.error('Error verifying Firebase JWT: ', err)
@@ -62,8 +67,6 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
 }
 
 export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
-  const firestore = admin.firestore()
-  const privateUsers = firestore.collection('private-users')
   switch (creds.kind) {
     case 'jwt': {
       if (typeof creds.data.user_id !== 'string') {
@@ -77,8 +80,7 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
       if (privateUserQ.empty) {
         throw new APIError(403, `No private user exists with API key ${key}.`)
       }
-      const privateUserSnap = privateUserQ.docs[0]
-      const privateUser = privateUserSnap.data() as PrivateUser
+      const privateUser = privateUserQ.docs[0].data()
       return { uid: privateUser.id, creds: { privateUser, ...creds } }
     }
     default:
