@@ -53,8 +53,9 @@ export const resolveMarket = functions
     }
   )
 
-export const autoResolveMarkets = functions.pubsub
-  .schedule('every 1 minutes')
+export const autoResolveMarkets = functions
+  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .pubsub.schedule('every 1 minutes')
   .onRun(async () => {
     const contracts = await getValues<Contract>(
       firestore
