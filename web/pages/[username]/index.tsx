@@ -1,17 +1,18 @@
 import { useRouter } from 'next/router'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { UserPage } from 'web/components/user-page'
 import { useUser } from 'web/hooks/use-user'
 import Custom404 from '../404'
 
-export default function UserProfile(props: {
-  tab?: 'markets' | 'comments' | 'bets'
-}) {
+export default function UserProfile() {
   const router = useRouter()
   const [user, setUser] = useState<User | null | 'loading'>('loading')
-  const { username } = router.query as { username: string }
+  const { username, tab } = router.query as {
+    username: string
+    tab?: string | undefined
+  }
   useEffect(() => {
     if (username) {
       getUserByUsername(username).then(setUser)
@@ -19,16 +20,16 @@ export default function UserProfile(props: {
   }, [username])
 
   const currentUser = useUser()
-
-  if (user === 'loading') return <></>
-
-  return user ? (
-    <UserPage
-      user={user}
-      currentUser={currentUser || undefined}
-      defaultTabTitle={props.tab}
-    />
-  ) : (
-    <Custom404 />
-  )
+  const userPage = useMemo(() => {
+    return user && user !== 'loading' ? (
+      <UserPage
+        user={user}
+        currentUser={currentUser || undefined}
+        defaultTabTitle={tab}
+      />
+    ) : (
+      <div />
+    )
+  }, [user, currentUser, tab])
+  return user ? userPage : <Custom404 />
 }

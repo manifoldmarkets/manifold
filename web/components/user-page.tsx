@@ -31,6 +31,7 @@ import { FollowButton } from './follow-button'
 import { listenForMemberGroups } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { GroupCard } from 'web/pages/groups'
+import { useRouter } from 'next/router'
 
 export function UserLink(props: {
   name: string
@@ -57,7 +58,7 @@ const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 export function UserPage(props: {
   user: User
   currentUser?: User
-  defaultTabTitle?: 'markets' | 'comments' | 'bets'
+  defaultTabTitle?: string | undefined
 }) {
   const { user, currentUser, defaultTabTitle } = props
   const isCurrentUser = user.id === currentUser?.id
@@ -71,6 +72,7 @@ export function UserPage(props: {
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
+  const router = useRouter()
 
   useEffect(() => {
     if (!user) return
@@ -231,17 +233,17 @@ export function UserPage(props: {
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
             className={'pb-2 pt-1 '}
-            defaultIndex={TAB_IDS.indexOf(defaultTabTitle || 'markets')}
+            defaultIndex={
+              defaultTabTitle ? TAB_IDS.indexOf(defaultTabTitle) : 0
+            }
             onClick={(tabName) => {
               const tabId = tabName.toLowerCase()
-              const subpath = tabId === 'markets' ? '' : '' + tabId
+              const subpath = tabId === 'markets' ? '' : '?tab=' + tabId
               // BUG: if you start on `/Bob/bets`, then click on Markets, use-query-and-sort-params
               // rewrites the url incorrectly to `/Bob/bets` instead of `/Bob`
-              window.history.replaceState(
-                '',
-                '',
-                `/${user.username}?tab=${subpath}`
-              )
+              router.push(`/${user.username}${subpath}`, undefined, {
+                shallow: true,
+              })
             }}
             tabs={[
               {
