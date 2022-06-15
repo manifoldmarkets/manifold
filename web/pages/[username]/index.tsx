@@ -5,6 +5,7 @@ import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { UserPage } from 'web/components/user-page'
 import { useUser } from 'web/hooks/use-user'
 import Custom404 from '../404'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export default function UserProfile() {
   const router = useRouter()
@@ -31,5 +32,8 @@ export default function UserProfile() {
       <div />
     )
   }, [user, currentUser, tab])
+
+  useTracking('view user profile', { username })
+
   return user ? userPage : <Custom404 />
 }

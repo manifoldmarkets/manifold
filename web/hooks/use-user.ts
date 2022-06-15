@@ -13,6 +13,7 @@ import {
   userDocRef,
 } from 'web/lib/firebase/users'
 import { useStateCheckEquality } from './use-state-check-equality'
+import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 
 export const useUser = () => {
   const [user, setUser] = useStateCheckEquality<User | null | undefined>(
@@ -21,11 +22,14 @@ export const useUser = () => {
 
   useEffect(() => listenForLogin(setUser), [setUser])
 
-  const userId = user?.id
-
   useEffect(() => {
-    if (userId) return listenForUser(userId, setUser)
-  }, [userId, setUser])
+    if (user) {
+      identifyUser(user.id)
+      setUserProperty('username', user.username)
+
+      return listenForUser(user.id, setUser)
+    }
+  }, [user, setUser])
 
   return user
 }

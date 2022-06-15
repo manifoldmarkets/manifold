@@ -33,13 +33,18 @@ import {
 } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
+import { track } from 'web/lib/service/analytics'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
   // get query params:
   const router = useRouter()
   const { groupId } = router.query as { groupId: string }
+  useTracking('view create page')
   if (!router.isReady) return <div />
+
   return (
     <Page>
       <div className="mx-auto w-full max-w-2xl">
@@ -100,6 +105,9 @@ export function NewContract(props: { question: string; groupId?: string }) {
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
   const mustWaitForDailyFreeMarketStatus = useHasCreatedContractToday(creator)
+  const isFree =
+    mustWaitForDailyFreeMarketStatus != 'loading' &&
+    !mustWaitForDailyFreeMarketStatus
 
   // useEffect(() => {
   //   if (ante === null && creator) {
@@ -132,6 +140,9 @@ export function NewContract(props: { question: string; groupId?: string }) {
   const max = maxString ? parseFloat(maxString) : undefined
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
+
+  const hasUnsavedChanges = Boolean(question || description)
+  useWarnUnsavedChanges(hasUnsavedChanges)
 
   const isValid =
     (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&
@@ -178,11 +189,18 @@ export function NewContract(props: { question: string; groupId?: string }) {
           groupId: selectedGroup?.id,
         })
       )
+      track('create market', {
+        slug: result.slug,
+        initialProb,
+        selectedGroup: selectedGroup?.id,
+        isFree,
+      })
       if (result && selectedGroup) {
         await updateGroup(selectedGroup, {
           contractIds: [...selectedGroup.contractIds, result.id],
         })
       }
+
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.log('error creating contract', e)

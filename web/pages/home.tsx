@@ -9,12 +9,16 @@ import { ContractSearch } from 'web/components/contract-search'
 import { Contract } from 'common/contract'
 import { ContractPageContent } from './[username]/[contractSlug]'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { useTracking } from 'web/hooks/use-tracking'
+import { track } from 'web/lib/service/analytics'
 
 const Home = () => {
   const user = useUser()
   const [contract, setContract] = useContractPage()
 
   const router = useRouter()
+
+  useTracking('view home')
 
   if (user === null) {
     Router.replace('/')
@@ -42,7 +46,10 @@ const Home = () => {
         <button
           type="button"
           className="fixed bottom-[70px] right-3 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-3 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
-          onClick={() => router.push('/create')}
+          onClick={() => {
+            router.push('/create')
+            track('mobile create button')
+          }}
         >
           <PlusSmIcon className="h-8 w-8" aria-hidden="true" />
         </button>

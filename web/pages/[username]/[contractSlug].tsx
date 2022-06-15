@@ -40,6 +40,7 @@ import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
 import { AlertBox } from 'web/components/alert-box'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -107,6 +108,12 @@ export function ContractPageContent(
   const { backToHome, comments } = props
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
+
+  useTracking('view market', {
+    slug: contract.slug,
+    contractId: contract.id,
+    creatorId: contract.creatorId,
+  })
 
   const bets = useBets(contract.id) ?? props.bets
   // Sort for now to see if bug is fixed.

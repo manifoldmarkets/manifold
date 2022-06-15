@@ -227,6 +227,34 @@
     "@algolia/logger-common" "4.13.1"
     "@algolia/requester-common" "4.13.1"
 
+"@amplitude/analytics-browser@0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@amplitude/analytics-browser/-/analytics-browser-0.4.1.tgz#d686ab89fb12cdb3ba6aaade87b8d4bb8f72e86f"
+  integrity sha512-omiUvv2v+sznKjFj5s4vBoVkfqsEAFqW1FQUpZuWpaekOb4/n5zhTAzs2NQMq1hFxmIh9DxqM4wY0y347CFBHg==
+  dependencies:
+    "@amplitude/analytics-core" "^0.3.1"
+    "@amplitude/analytics-types" "^0.2.1"
+    "@amplitude/ua-parser-js" "^0.7.26"
+    tslib "^2.3.1"
+
+"@amplitude/analytics-core@^0.3.1":
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/@amplitude/analytics-core/-/analytics-core-0.3.1.tgz#e86eb8e5cbab06063f04b7cf9f41a238d9a124b8"
+  integrity sha512-BgfSE49GXyYQtqL0E6xQhw9VcaYaAOgqAedyHB1VsvgVQUXEv8z1GM6GhGZVqCA5afwtq6fu80p2iqGTGuSP+g==
+  dependencies:
+    "@amplitude/analytics-types" "^0.2.1"
+    tslib "^2.3.1"
+
+"@amplitude/analytics-types@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@amplitude/analytics-types/-/analytics-types-0.2.1.tgz#ab4f9b4bbec8afa768a27af78f75bb69dd2a3fc7"
+  integrity sha512-+FfXlCjHysYWliRBjD2wQ2gZ4V6jGKskdt9j8npv9Rmzdehj04OAHudZ/UrgH5++88As9ww1wyaS7y4sm4x8vA==
+
+"@amplitude/ua-parser-js@^0.7.26":
+  version "0.7.31"
+  resolved "https://registry.yarnpkg.com/@amplitude/ua-parser-js/-/ua-parser-js-0.7.31.tgz#749bf7cb633cfcc7ff3c10805bad7c5f6fbdbc61"
+  integrity sha512-+z8UGRaj13Pt5NDzOnkTBy49HE2CX64jeL0ArB86HAtilpnfkPB7oqkigN7Lf2LxscMg4QhFD7mmCfedh3rqTg==
+
 "@ampproject/remapping@^2.1.0":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@ampproject/remapping/-/remapping-2.2.0.tgz#56c133824780de3174aed5ab6834f3026790154d"
@@ -9294,7 +9322,7 @@ react-helmet-async@*, react-helmet-async@^1.2.3:
     react-fast-compare "^3.2.0"
     shallowequal "^1.1.0"
 
-react-hot-toast@^2.2.0:
+react-hot-toast@2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/react-hot-toast/-/react-hot-toast-2.2.0.tgz#ab6f4caed4214b9534f94bb8cfaaf21b051e62b9"
   integrity sha512-248rXw13uhf/6TNDVzagX+y7R8J183rp7MwUMNkcrBRyHj/jWOggfXTGlM8zAOuh701WyVW+eUaWG2LeSufX9g==

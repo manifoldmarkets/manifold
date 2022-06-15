@@ -31,6 +31,8 @@ import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { groupPath } from 'web/lib/firebase/groups'
+import { trackCallback, withTracking } from 'web/lib/service/analytics'
+import { Group } from 'common/group'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
@@ -77,7 +79,7 @@ function getMoreNavigation(user?: User | null) {
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
-    { name: 'About', href: 'https://docs.manifold.markets' },
+    { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
   ]
 }
@@ -86,7 +88,11 @@ const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
+  {
+    name: 'About',
+    href: 'https://docs.manifold.markets/$how-to',
+    icon: BookOpenIcon,
+  },
 ]
 
 const signedOutMobileNavigation = [
@@ -103,7 +109,11 @@ const signedOutMobileNavigation = [
     href: 'https://twitter.com/ManifoldMarkets',
     icon: IconFromUrl('/twitter-logo.svg'),
   },
-  { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
+  {
+    name: 'About',
+    href: 'https://docs.manifold.markets/$how-to',
+    icon: BookOpenIcon,
+  },
 ]
 
 const signedInMobileNavigation = [
@@ -122,6 +132,7 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
   return (
     <Link href={item.href} key={item.name}>
       <a
+        onClick={trackCallback('sidebar: ' + item.name)}
         className={clsx(
           item.href == currentPage
             ? 'bg-gray-200 text-gray-900'
@@ -206,7 +217,7 @@ export default function Sidebar(props: { className?: string }) {
   useEffect(() => {
     if (memberGroups)
       setMemberItems(
-        memberGroups.map((group) => ({
+        memberGroups.map((group: Group) => ({
           name: group.name,
           href: groupPath(group.slug),
         }))
@@ -244,7 +255,11 @@ export default function Sidebar(props: { className?: string }) {
         {user && (
           <MenuButton
             menuItems={[
-              { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
+              {
+                name: 'Sign out',
+                href: '#',
+                onClick: withTracking(firebaseLogout, 'sign out'),
+              },
             ]}
             buttonContent={<MoreButton />}
           />
@@ -282,7 +297,6 @@ export default function Sidebar(props: { className?: string }) {
           buttonContent={<MoreButton />}
         />
       </div>
-
       <CreateQuestionButton user={user} />
 
       {user &&
