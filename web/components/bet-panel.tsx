@@ -434,13 +434,13 @@ export function SellPanel(props: {
         setIsSubmitting(false)
       })
 
-     track('sell shares', {
-       outcomeType: contract.outcomeType,
-       slug: contract.slug,
-       contractId: contract.id,
-       shares: sellAmount,
-       outcome: sharesOutcome,
-     })
+    track('sell shares', {
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      shares: sellAmount,
+      outcome: sharesOutcome,
+    })
   }
 
   const initialProb = getProbability(contract)
