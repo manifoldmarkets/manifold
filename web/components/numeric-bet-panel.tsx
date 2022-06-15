@@ -19,6 +19,7 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import { SignUpPrompt } from './sign-up-prompt'
+import { track } from 'web/lib/service/analytics'
 
 export function NumericBetPanel(props: {
   contract: NumericContract
@@ -96,6 +97,15 @@ function NumericBuyPanel(props: {
         }
         setIsSubmitting(false)
       })
+
+    track('bet', {
+      location: 'numeric panel',
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount: betAmount,
+      value,
+    })
   }
 
   const betDisabled = isSubmitting || !betAmount || !bucketChoice || error

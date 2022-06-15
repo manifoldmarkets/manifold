@@ -15,18 +15,25 @@ export const logMemory = () => {
   }
 }
 
-export const mapAsync = async <T, U>(
-  xs: T[],
-  fn: (x: T) => Promise<U>,
-  concurrency = 100
+type UpdateSpec = {
+  doc: admin.firestore.DocumentReference
+  fields: { [k: string]: unknown }
+}
+
+export const writeUpdatesAsync = async (
+  db: admin.firestore.Firestore,
+  updates: UpdateSpec[],
+  batchSize = 500 // 500 = Firestore batch limit
 ) => {
-  const results = []
-  const chunks = chunk(xs, concurrency)
+  const chunks = chunk(updates, batchSize)
   for (let i = 0; i < chunks.length; i++) {
-    log(`${i * concurrency}/${xs.length} processed...`)
-    results.push(...(await Promise.all(chunks[i].map(fn))))
+    log(`${i * batchSize}/${updates.length} updates written...`)
+    const batch = db.batch()
+    for (const { doc, fields } of chunks[i]) {
+      batch.update(doc, fields)
+    }
+    await batch.commit()
   }
-  return results
 }
 
 export const isProd =
