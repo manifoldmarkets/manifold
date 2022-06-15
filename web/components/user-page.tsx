@@ -28,6 +28,9 @@ import { FollowersButton, FollowingButton } from './following-button'
 import { AlertBox } from './alert-box'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
+import { listenForMemberGroups } from 'web/lib/firebase/groups'
+import { Group } from 'common/group'
+import { GroupCard } from 'web/pages/groups'
 
 export function UserLink(props: {
   name: string
@@ -48,7 +51,7 @@ export function UserLink(props: {
   )
 }
 
-export const TAB_IDS = ['markets', 'comments', 'bets']
+export const TAB_IDS = ['markets', 'comments', 'bets', 'groups']
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 
 export function UserPage(props: {
@@ -64,6 +67,7 @@ export function UserPage(props: {
     'loading'
   )
   const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
+  const [usersGroups, setUsersGroups] = useState<Group[] | 'loading'>('loading')
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
@@ -73,6 +77,7 @@ export function UserPage(props: {
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
     getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
+    listenForMemberGroups(user.id, setUsersGroups)
   }, [user])
 
   useEffect(() => {
@@ -229,10 +234,14 @@ export function UserPage(props: {
             defaultIndex={TAB_IDS.indexOf(defaultTabTitle || 'markets')}
             onClick={(tabName) => {
               const tabId = tabName.toLowerCase()
-              const subpath = tabId === 'markets' ? '' : '/' + tabId
+              const subpath = tabId === 'markets' ? '' : '' + tabId
               // BUG: if you start on `/Bob/bets`, then click on Markets, use-query-and-sort-params
               // rewrites the url incorrectly to `/Bob/bets` instead of `/Bob`
-              window.history.replaceState('', '', `/${user.username}${subpath}`)
+              window.history.replaceState(
+                '',
+                '',
+                `/${user.username}?tab=${subpath}`
+              )
             }}
             tabs={[
               {
@@ -285,6 +294,24 @@ export function UserPage(props: {
                 ),
                 tabIcon: (
                   <div className="px-0.5 font-bold">{usersBets.length}</div>
+                ),
+              },
+              {
+                title: 'Groups',
+                content: (
+                  <Col className={'gap-3'}>
+                    {usersGroups !== 'loading' &&
+                      usersGroups.map((group) => (
+                        <GroupCard
+                          group={group}
+                          key={group.id}
+                          creator={user}
+                        />
+                      ))}
+                  </Col>
+                ),
+                tabIcon: (
+                  <div className="px-0.5 font-bold">{usersGroups.length}</div>
                 ),
               },
             ]}
