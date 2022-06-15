@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 
-function Tooltip(
+export function Tooltip(
   props: {
     text: string | false | undefined | null
   } & JSX.IntrinsicElements['div']
@@ -14,5 +14,3 @@ function Tooltip(
     <>{children}</>
   )
 }
-
-export default Tooltip

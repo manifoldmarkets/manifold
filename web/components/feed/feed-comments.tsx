@@ -24,7 +24,7 @@ import { Col } from 'web/components/layout/col'
 import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
-import Tipper from '../tipper'
+import { Tipper } from '../tipper'
 import { useCommentTips } from './feed-context'
 
 export function FeedCommentThread(props: {

@@ -14,7 +14,7 @@ import { CommentTips } from 'web/hooks/use-comment-tips'
 import { useUser } from 'web/hooks/use-user'
 import { transact } from 'web/lib/firebase/fn-call'
 import { Row } from './layout/row'
-import Tooltip from './tooltip'
+import { Tooltip } from './tooltip'
 
 // xth triangle number * 5  =  5 + 10 + 15 + ... + (x * 5)
 const quad = (x: number) => (5 / 2) * x * (x + 1)
@@ -22,7 +22,7 @@ const quad = (x: number) => (5 / 2) * x * (x + 1)
 // inverse (see https://math.stackexchange.com/questions/2041988/how-to-get-inverse-of-formula-for-sum-of-integers-from-1-to-nsee )
 const invQuad = (y: number) => Math.sqrt((2 / 5) * y + 1 / 4) - 1 / 2
 
-function Tipper(prop: { comment: Comment; tips: CommentTips }) {
+export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   const { comment, tips } = prop
 
   const me = useUser()
@@ -156,5 +156,3 @@ function UpTip(prop: {
     </Tooltip>
   )
 }
-
-export default Tipper
