@@ -66,9 +66,7 @@ export const autoResolveMarkets = functions
 
     await batchedWaitAll(
       contracts.map((contract) => async () => {
-        const result = await autoResolve(contract)
-
-        console.log('resolved', contract.slug, 'result:', result)
+        await autoResolve(contract)
       })
     )
   })
@@ -77,14 +75,14 @@ const autoResolve = async (contract: Contract) => {
   const { closeTime, autoResolutionTime } = contract
   if (closeTime && autoResolutionTime && closeTime > autoResolutionTime) {
     console.error(
-      'contract ',
+      'contract',
       contract.id,
-      'is supposed to be resolved before it closes.\nClose time:',
-      closeTime,
-      '\nAuto resolution time:',
-      autoResolutionTime
+      'is supposed to be resolved before it closes. Close time:',
+      new Date(closeTime),
+      'Auto resolution time:',
+      new Date(autoResolutionTime)
     )
-    return
+    return { status: 'error', message: 'Invalid auto resolution time' }
   }
 
   const data = {
@@ -102,8 +100,9 @@ const autoResolve = async (contract: Contract) => {
   contract.description = contract.description.concat(
     `\n\n\nContract resolved automatically.`
   )
-
-  return await privateResolveMarket(contract, data)
+  const result = await privateResolveMarket(contract, data)
+  console.log('resolved', contract.slug, 'result:', result)
+  return result
 }
 
 const getFreeResponseResolutions = (contract: Contract & FreeResponse) => {
