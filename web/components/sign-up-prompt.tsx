@@ -8,7 +8,7 @@ export function SignUpPrompt() {
 
   return user === null ? (
     <button
-      className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
+      className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-indigo-500 to-blue-500 px-10 text-lg font-medium normal-case hover:from-indigo-600 hover:to-blue-600"
       onClick={withTracking(firebaseLogin, 'sign up to bet')}
     >
       Sign up to bet!

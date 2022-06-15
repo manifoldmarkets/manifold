@@ -253,7 +253,7 @@ export default function Sidebar(props: { className?: string }) {
         ) : (
           <button
             onClick={withTracking(firebaseLogin, 'sign in')}
-            className={clsx(gradient, buttonStyle)}
+            className="btn btn-outline btn-sm mx-auto mt-4 -ml-1 w-full rounded-md normal-case"
           >
             Sign in
           </button>
