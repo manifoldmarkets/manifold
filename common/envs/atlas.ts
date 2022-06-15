@@ -21,7 +21,7 @@ export const ATLAS_CONFIG: EnvConfig = {
   adminEmails: [...PROD_CONFIG.adminEmails],
   whitelistEmail: '',
   moneyMoniker: '📎',
-  fixedAnte: 10,
+  fixedAnte: 25,
   startingBalance: 500,
   visibility: 'PRIVATE',
   // faviconPath: '/atlas/atlas-favicon.png',
