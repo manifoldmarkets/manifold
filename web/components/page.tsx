@@ -16,7 +16,7 @@ export function Page(props: {
     <>
       <div
         className={clsx(
-          'mx-auto w-full pb-14 lg:grid lg:grid-cols-12 lg:gap-8 lg:pt-6 xl:max-w-7xl',
+          'mx-auto w-full pb-14 lg:grid lg:grid-cols-12 lg:gap-2 lg:pt-6 xl:max-w-7xl xl:gap-8',
           margin && 'px-4'
         )}
         style={suspend ? visuallyHiddenStyle : undefined}
