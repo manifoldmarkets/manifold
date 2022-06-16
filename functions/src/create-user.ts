@@ -15,6 +15,7 @@ import {
 } from '../../common/util/clean-username'
 import { sendWelcomeEmail } from './emails'
 import { isWhitelisted } from '../../common/envs/constants'
+import { track } from './analytics'
 
 export const createUser = functions
   .runWith({ minInstances: 1, secrets: ['MAILGUN_KEY'] })
@@ -85,6 +86,8 @@ export const createUser = functions
     await firestore.collection('private-users').doc(userId).create(privateUser)
 
     await sendWelcomeEmail(user, privateUser)
+
+    await track(userId, 'create user', { username }, { ip: ipAddress })
 
     return { status: 'success', user }
   })
