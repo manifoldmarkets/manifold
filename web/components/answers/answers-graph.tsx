@@ -108,6 +108,7 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
         }}
         colors={{ scheme: 'pastel1' }}
         pointSize={0}
+        curve='stepAfter'
         enableSlices="x"
         enableGridX={!!width && width >= 800}
         enableArea

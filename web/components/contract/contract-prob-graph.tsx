@@ -84,7 +84,8 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
           format: (time) => formatTime(+time, lessThanAWeek),
         }}
         colors={{ datum: 'color' }}
-        pointSize={bets.length > 100 ? 0 : 10}
+        curve='stepAfter'
+        pointSize={0}
         pointBorderWidth={1}
         pointBorderColor="#fff"
         enableSlices="x"
