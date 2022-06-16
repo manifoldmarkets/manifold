@@ -24,6 +24,7 @@ import NewContractBadge from '../new-contract-badge'
 import { CATEGORY_LIST } from 'common/categories'
 import { TagsList } from '../tags-list'
 import { UserFollowButton } from '../follow-button'
+import { DAY_MS } from 'common/util/time'
 
 export function MiscDetails(props: {
   contract: Contract
@@ -31,11 +32,13 @@ export function MiscDetails(props: {
   showCloseTime?: boolean
 }) {
   const { contract, showHotVolume, showCloseTime } = props
-  const { volume, volume24Hours, closeTime, tags, isResolved } = contract
+  const { volume, volume24Hours, closeTime, tags, isResolved, createdTime } =
+    contract
   // Show at most one category that this contract is tagged by
   const categories = CATEGORY_LIST.filter((category) =>
     tags.map((t) => t.toLowerCase()).includes(category)
   ).slice(0, 1)
+  const isNew = createdTime > Date.now() - DAY_MS && !isResolved
 
   return (
     <Row className="items-center gap-3 text-sm text-gray-400">
@@ -49,7 +52,7 @@ export function MiscDetails(props: {
           {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
           {fromNow(closeTime || 0)}
         </Row>
-      ) : volume > 0 || isResolved ? (
+      ) : volume > 0 || !isNew ? (
         <Row>{contractPool(contract)} pool</Row>
       ) : (
         <NewContractBadge />
