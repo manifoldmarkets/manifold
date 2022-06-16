@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useContext } from 'react'
-import { CommentTipMap, useTipTxns } from 'web/hooks/use-comment-tips'
+import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 
 const FeedContext = createContext<CommentTipMap | null | undefined>(null)
 
@@ -13,6 +13,7 @@ export function FeedContextProvider(props: {
   return <FeedContext.Provider value={value}>{children}</FeedContext.Provider>
 }
 
-const useAllTips = () => useContext(FeedContext)
+const useContractTips = () => useContext(FeedContext)
 
-export const useCommentTips = (commentId: string) => useAllTips()?.[commentId]
+export const useCommentTips = (commentId: string) =>
+  useContractTips()?.[commentId]
