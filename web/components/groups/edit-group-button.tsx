@@ -27,9 +27,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
   }
 
   const saveDisabled =
-    name === group.name &&
-    about === (group.about ?? '') &&
-    addMemberUsers.length === 0
+    name === group.name && about === group.about && addMemberUsers.length === 0
 
   const onSubmit = async () => {
     setIsSubmitting(true)

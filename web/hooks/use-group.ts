@@ -4,9 +4,9 @@ import { User } from 'common/user'
 import {
   listenForGroup,
   listenForGroups,
-  listenForFollow,
   listenForMemberGroups,
 } from 'web/lib/firebase/groups'
+import { getUser } from 'web/lib/firebase/users'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -26,22 +26,6 @@ export const useGroups = () => {
   }, [])
 
   return groups
-}
-
-export const useFollowingGroup = (
-  group: Group,
-  user: User | null | undefined
-) => {
-  const [following, setFollowing] = useState<boolean | undefined>()
-
-  const groupId = group?.id
-  const userId = user?.id
-
-  useEffect(() => {
-    if (userId) return listenForFollow(groupId, userId, setFollowing)
-  }, [groupId, userId])
-
-  return following
 }
 
 export const useMemberGroups = (user: User | null | undefined) => {
@@ -75,4 +59,20 @@ export const useMemberGroupIds = (user: User | null | undefined) => {
   }, [user])
 
   return memberGroupIds
+}
+
+export function useMembers(group: Group) {
+  const [members, setMembers] = useState<User[]>([])
+  useEffect(() => {
+    const { memberIds, creatorId } = group
+    if (memberIds.length > 1)
+      // get users via their user ids:
+      Promise.all(
+        memberIds.filter((mId) => mId !== creatorId).map(getUser)
+      ).then((users) => {
+        const members = users.filter((user) => user)
+        setMembers(members)
+      })
+  }, [group])
+  return members
 }

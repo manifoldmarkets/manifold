@@ -50,7 +50,6 @@ export const backupDb = functions.pubsub
           'followers',
           'answers',
           'txns',
-          'messages',
         ],
       })
       .then((responses) => {

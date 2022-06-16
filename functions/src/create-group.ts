@@ -65,12 +65,6 @@ export const creategroup = newEndpoint(['POST'], async (req, auth) => {
 
   await groupRef.create(group)
 
-  await Promise.all(
-    memberIds.map(async (memberId) => {
-      await firestore.collection('followers').doc(memberId).set({ memberId })
-    })
-  )
-
   return { status: 'success', group: group }
 })
 

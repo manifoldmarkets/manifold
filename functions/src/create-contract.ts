@@ -10,7 +10,6 @@ import {
   MAX_TAG_LENGTH,
   NumericContract,
   OUTCOME_TYPES,
-  MAX_GROUP_PARTS_LENGTH,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
@@ -29,7 +28,7 @@ import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
-import { Group } from 'common/group'
+import { Group, MAX_ID_LENGTH } from 'common/group'
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -40,7 +39,7 @@ const bodySchema = z.object({
     'Close time must be in the future.'
   ),
   outcomeType: z.enum(OUTCOME_TYPES),
-  groupId: z.string().min(1).max(MAX_GROUP_PARTS_LENGTH).optional(),
+  groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
 })
 
 const binarySchema = z.object({

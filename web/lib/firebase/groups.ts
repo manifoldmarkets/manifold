@@ -1,12 +1,8 @@
 import {
   collection,
-  collectionGroup,
   deleteDoc,
   doc,
-  getDocs,
-  onSnapshot,
   query,
-  setDoc,
   updateDoc,
   where,
 } from 'firebase/firestore'
@@ -14,9 +10,7 @@ import { sortBy } from 'lodash'
 import { Group } from 'common/group'
 import { Contract, contractCollection } from './contracts'
 import { db } from './init'
-import { getUser, User } from './users'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
-import { useEffect, useState } from 'react'
 
 const groupCollection = collection(db, 'groups')
 
@@ -76,74 +70,6 @@ export function listenForGroup(
   return listenForValue(doc(groupCollection, groupId), setGroup)
 }
 
-export function followGroup(groupId: string, userId: string) {
-  const followDoc = doc(groupCollection, groupId, 'followers', userId)
-  return setDoc(followDoc, { userId })
-}
-
-export function unfollowGroup(group: Group, user: User) {
-  const followDoc = doc(groupCollection, group.id, 'followers', user.id)
-  return deleteDoc(followDoc)
-}
-
-export async function followGroupFromSlug(slug: string, userId: string) {
-  const snap = await getDocs(query(groupCollection, where('slug', '==', slug)))
-  if (snap.empty) return undefined
-
-  const groupDoc = snap.docs[0]
-  const followDoc = doc(groupDoc.ref, 'followers', userId)
-
-  return setDoc(followDoc, { userId })
-}
-
-export async function unfollowGroupFromSlug(slug: string, userId: string) {
-  const snap = await getDocs(query(groupCollection, where('slug', '==', slug)))
-  if (snap.empty) return undefined
-
-  const groupDoc = snap.docs[0]
-  const followDoc = doc(groupDoc.ref, 'followers', userId)
-
-  return deleteDoc(followDoc)
-}
-
-export function listenForFollow(
-  groupId: string,
-  userId: string,
-  setFollow: (following: boolean) => void
-) {
-  const followDoc = doc(groupCollection, groupId, 'followers', userId)
-  return listenForValue(followDoc, (value) => {
-    setFollow(!!value)
-  })
-}
-
-export async function getFollowedGroups(userId: string) {
-  const snapshot = await getDocs(
-    query(collectionGroup(db, 'followers'), where('userId', '==', userId))
-  )
-  const groupIds = snapshot.docs.map(
-    (doc) => doc.ref.parent.parent?.id as string
-  )
-  return groupIds
-}
-
-export function listenForFollowedGroups(
-  userId: string,
-  setGroupIds: (groupIds: string[]) => void
-) {
-  return onSnapshot(
-    query(collectionGroup(db, 'followers'), where('userId', '==', userId)),
-    (snapshot) => {
-      if (snapshot.metadata.fromCache) return
-
-      const groupIds = snapshot.docs.map(
-        (doc) => doc.ref.parent.parent?.id as string
-      )
-      setGroupIds(groupIds)
-    }
-  )
-}
-
 export function listenForMemberGroups(
   userId: string,
   setGroups: (groups: Group[]) => void
@@ -154,20 +80,4 @@ export function listenForMemberGroups(
     const sorted = sortBy(groups, [(group) => -group.mostRecentActivityTime])
     setGroups(sorted)
   })
-}
-
-export function useMembers(group: Group) {
-  const [members, setMembers] = useState<User[]>([])
-  useEffect(() => {
-    const { memberIds, creatorId } = group
-    if (memberIds.length > 1)
-      // get users via their user ids:
-      Promise.all(
-        memberIds.filter((mId) => mId !== creatorId).map(getUser)
-      ).then((users) => {
-        const members = users.filter((user) => user)
-        setMembers(members)
-      })
-  }, [group])
-  return members
 }

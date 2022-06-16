@@ -10,7 +10,6 @@ import {
   groupPath,
   getGroupBySlug,
   getGroupContracts,
-  useMembers,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
@@ -18,7 +17,7 @@ import { getUser, User } from 'web/lib/firebase/users'
 import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import { useGroup } from 'web/hooks/use-group'
+import { useGroup, useMembers } from 'web/hooks/use-group'
 import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'

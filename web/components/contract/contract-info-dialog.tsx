@@ -146,9 +146,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
             </tbody>
           </table>
 
-          {/*<div>Tags</div>*/}
-          {/*<TagsInput contract={contract} />*/}
-          {/*<div />*/}
+          {/*TODO: allow users to add current markets to a group?*/}
 
           {contract.mechanism === 'cpmm-1' && !contract.resolution && (
             <LiquidityPanel contract={contract} />

@@ -319,6 +319,7 @@ function CommentStatus(props: {
   )
 }
 
+//TODO: move commentinput and comment input text area into their own files
 export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
@@ -508,7 +509,6 @@ export function CommentInputTextArea(props: {
             <button
               className={clsx(
                 'btn btn-ghost btn-sm absolute right-2 flex-row pl-2 capitalize',
-                // parentCommentId || parentAnswerOutcome
                 isReply ? ' bottom-4' : ' bottom-2',
                 !commentText && 'pointer-events-none text-gray-500'
               )}

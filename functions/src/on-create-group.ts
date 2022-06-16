@@ -10,7 +10,7 @@ export const onCreateGroup = functions.firestore
     const { eventId } = context
 
     const groupCreator = await getUser(group.creatorId)
-    if (!groupCreator) throw new Error('Could not find contract updater')
+    if (!groupCreator) throw new Error('Could not find group creator')
     // create notifications for all members of the group
     for (const memberId of group.memberIds) {
       await createNotification(
