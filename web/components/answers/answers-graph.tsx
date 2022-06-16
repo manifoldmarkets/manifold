@@ -113,7 +113,7 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
         enableGridX={!!width && width >= 800}
         enableArea
         areaOpacity={1}
-        margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+        margin={{ top: 20, right: 0, bottom: 22, left: 40 }}
         legends={[
           {
             anchor: 'top-left',
