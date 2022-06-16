@@ -354,10 +354,11 @@ Requires no authorization.
 - Response type: A `FullMarket`
 
   ```tsx
-  // A complete market, along with bets and comments
+  // A complete market, along with bets, comments, and answers (for free response markets)
   type FullMarket = LiteMarket & {
     bets: Bet[]
     comments: Comment[]
+    answers?: Answer[]
   }
 
   type Bet = {
