@@ -4,6 +4,7 @@ import { Page } from 'web/components/page'
 import { getTopCreators, getTopTraders, User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -31,6 +32,8 @@ export default function Leaderboards(props: {
     topCreators: [],
   }
   const { topTraders, topCreators } = props
+
+  useTracking('view leaderboards')
 
   return (
     <Page margin>

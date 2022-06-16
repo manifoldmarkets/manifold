@@ -9,6 +9,7 @@ import { Col } from '../layout/col'
 import { useState } from 'react'
 import { updateUser, User } from 'web/lib/firebase/users'
 import { Checkbox } from '../checkbox'
+import { track } from 'web/lib/service/analytics'
 
 export function CategorySelector(props: {
   category: string
@@ -93,7 +94,10 @@ export function EditCategoriesButton(props: {
         className,
         'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-700'
       )}
-      onClick={() => setIsOpen(true)}
+      onClick={() => {
+        setIsOpen(true)
+        track('edit categories button')
+      }}
     >
       <PencilIcon className="inline h-4 w-4" />
       Categories

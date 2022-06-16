@@ -39,6 +39,8 @@ import { FeedBet } from 'web/components/feed/feed-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
+import { AlertBox } from 'web/components/alert-box'
+import { useTracking } from 'web/hooks/use-tracking'
 import { FeedContextProvider } from 'web/components/feed/feed-context'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -107,6 +109,12 @@ export function ContractPageContent(
   const { backToHome, comments } = props
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
+
+  useTracking('view market', {
+    slug: contract.slug,
+    contractId: contract.id,
+    creatorId: contract.creatorId,
+  })
 
   const bets = useBets(contract.id) ?? props.bets
   // Sort for now to see if bug is fixed.
@@ -191,6 +199,12 @@ export function ContractPageContent(
             bets={bets}
             comments={comments ?? []}
           />
+          {isNumeric && (
+            <AlertBox
+              title="Warning"
+              text="Numeric markets were introduced as an experimental feature and are now deprecated."
+            />
+          )}
 
           {outcomeType === 'FREE_RESPONSE' && (
             <>
