@@ -27,7 +27,7 @@ const config = {
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
-          editUrl: 'https://github.com/manifoldmarkets/docs/tree/main/',
+          editUrl: 'https://github.com/manifoldmarkets/manifold/tree/main/docs/docs',
           remarkPlugins: [math],
           rehypePlugins: [katex],
         },
