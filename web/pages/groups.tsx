@@ -184,11 +184,18 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
       <Row className="items-center justify-between gap-2">
         <span className="text-xl">{group.name}</span>
       </Row>
-      <Row className="items-center gap-2 text-sm text-gray-500">
-        <div>{group.contractIds.length} questions</div>
-        <div>•</div>
-        <div>{group.memberIds.length} members</div>
-        <div>•</div>
+      <div className="flex flex-col items-start justify-start gap-2 text-sm text-gray-500 sm:flex-row">
+        <div>
+          {group.contractIds.length} questions
+          <span className={'sm:hidden'}>
+            <span className={'mx-2'}>•</span>
+            {group.memberIds.length} members
+          </span>
+        </div>
+        <div className={'hidden sm:block'}>
+          •<span className={'mx-2'}>{group.memberIds.length} members</span>
+          <span>•</span>
+        </div>
         <Row>
           <div className="mr-1">Created by</div>
           <UserLink
@@ -197,7 +204,7 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
             username={creator?.username ?? ''}
           />
         </Row>
-      </Row>
+      </div>
       <div className="text-sm text-gray-500">{group.about}</div>
     </Col>
   )
