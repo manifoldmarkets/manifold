@@ -78,7 +78,13 @@ export const withdrawLiquidity = functions
           } as Partial<User>)
 
           const newPool = subtractObjects(contract.pool, userShares)
-          const newTotalLiquidity = contract.totalLiquidity - payout
+
+          const minPoolShares = Math.min(...Object.values(newPool))
+          const adjustedTotal = contract.totalLiquidity - payout
+
+          // total liquidity is a bogus number; use minPoolShares to prevent from going negative
+          const newTotalLiquidity = Math.max(adjustedTotal, minPoolShares)
+
           trans.update(contractDoc, {
             pool: newPool,
             totalLiquidity: newTotalLiquidity,

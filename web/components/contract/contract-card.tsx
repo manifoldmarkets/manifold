@@ -22,6 +22,8 @@ import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { QuickBet, ProbBar, getColor } from './quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
+import { track } from '@amplitude/analytics-browser'
+import { trackCallback } from 'web/lib/service/analytics'
 
 export function ContractCard(props: {
   contract: Contract
@@ -71,12 +73,22 @@ export function ContractCard(props: {
                     if (e.ctrlKey || e.metaKey) return
 
                     e.preventDefault()
+                    track('click market card', {
+                      slug: contract.slug,
+                      contractId: contract.id,
+                    })
                     onClick()
                   }}
                 />
               ) : (
                 <Link href={contractPath(contract)}>
-                  <a className="absolute top-0 left-0 right-0 bottom-0" />
+                  <a
+                    onClick={trackCallback('click market card', {
+                      slug: contract.slug,
+                      contractId: contract.id,
+                    })}
+                    className="absolute top-0 left-0 right-0 bottom-0"
+                  />
                 </Link>
               )}
             </div>

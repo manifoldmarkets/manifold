@@ -40,6 +40,7 @@ import { useSaveShares } from './use-save-shares'
 import { SignUpPrompt } from './sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
 import { ProbabilityInput } from './probability-input'
+import { track } from 'web/lib/service/analytics'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract
@@ -266,6 +267,15 @@ function BuyPanel(props: {
         }
         setIsSubmitting(false)
       })
+
+    track('bet', {
+      location: 'bet panel',
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount: betAmount,
+      outcome: betChoice,
+    })
   }
 
   const betDisabled = isSubmitting || !betAmount || error
@@ -429,6 +439,14 @@ export function SellPanel(props: {
         }
         setIsSubmitting(false)
       })
+
+    track('sell shares', {
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      shares: sellAmount,
+      outcome: sharesOutcome,
+    })
   }
 
   const initialProb = getProbability(contract)

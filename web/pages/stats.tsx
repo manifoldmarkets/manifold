@@ -16,6 +16,7 @@ import { getDailyContracts } from 'web/lib/firebase/contracts'
 import { getDailyNewUsers } from 'web/lib/firebase/users'
 import { SiteLink } from 'web/components/site-link'
 import { Linkify } from 'web/components/linkify'
+import { average } from 'common/util/math'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -61,7 +62,7 @@ export async function getStaticPropz() {
   })
 
   const monthlyActiveUsers = dailyUserIds.map((_, i) => {
-    const start = Math.max(0, i - 30)
+    const start = Math.max(0, i - 29)
     const end = i
     const uniques = new Set<string>()
     for (let j = start; j <= end; j++)
@@ -166,16 +167,12 @@ export async function getStaticPropz() {
   const weeklyTopTenthActions = dailyTopTenthActions.map((_, i) => {
     const start = Math.max(0, i - 6)
     const end = i
-    const total = sum(dailyTopTenthActions.slice(start, end))
-    if (end - start < 7) return (total * 7) / (end - start)
-    return total
+    return average(dailyTopTenthActions.slice(start, end))
   })
   const monthlyTopTenthActions = dailyTopTenthActions.map((_, i) => {
     const start = Math.max(0, i - 29)
     const end = i
-    const total = sum(dailyTopTenthActions.slice(start, end))
-    if (end - start < 30) return (total * 30) / (end - start)
-    return total
+    return average(dailyTopTenthActions.slice(start, end))
   })
 
   // Total mana divided by 100.
@@ -193,7 +190,8 @@ export async function getStaticPropz() {
     const start = Math.max(0, i - 29)
     const end = i
     const total = sum(dailyManaBet.slice(start, end))
-    if (end - start < 30) return (total * 30) / (end - start)
+    const range = end - start + 1
+    if (range < 30) return (total * 30) / range
     return total
   })
 

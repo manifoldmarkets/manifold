@@ -26,6 +26,8 @@ import { EditCategoriesButton } from './feed/category-selector'
 import { CATEGORIES } from 'common/categories'
 import { Tabs } from './layout/tabs'
 import { EditFollowingButton } from './following-button'
+import { track } from '@amplitude/analytics-browser'
+import { trackCallback } from 'web/lib/service/analytics'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -134,6 +136,7 @@ export function ContractSearch(props: {
           className="!select !select-bordered"
           value={filter}
           onChange={(e) => setFilter(e.target.value as filter)}
+          onBlur={trackCallback('select search filter')}
         >
           <option value="open">Open</option>
           <option value="closed">Closed</option>
@@ -145,6 +148,7 @@ export function ContractSearch(props: {
           classNames={{
             select: '!select !select-bordered',
           }}
+          onBlur={trackCallback('select search sort')}
         />
         <Configure
           facetFilters={filters}
@@ -296,7 +300,11 @@ function CategoryFollowSelector(props: {
             ]
           : []),
       ]}
-      onClick={(_, index) => setMode(index === 0 ? 'categories' : 'following')}
+      onClick={(_, index) => {
+        const mode = index === 0 ? 'categories' : 'following'
+        setMode(mode)
+        track(`click ${mode} tab`)
+      }}
     />
   )
 }

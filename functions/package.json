@@ -20,6 +20,7 @@
   },
   "main": "lib/functions/src/index.js",
   "dependencies": {
+    "@amplitude/node": "1.10.0",
     "cors": "2.8.5",
     "fetch": "1.1.0",
     "firebase-admin": "10.0.0",

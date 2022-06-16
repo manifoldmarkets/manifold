@@ -449,7 +449,7 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
                  "question":"Is there life on Mars?", \
                  "description":"I'm not going to type some long ass example description.", \
                  "closeTime":1700000000000, \
-                 initialProb:25}'
+                 "initialProb":25}'
 ```
 
 ## Changelog
