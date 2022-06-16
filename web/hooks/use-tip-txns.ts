@@ -11,8 +11,7 @@ export function useTipTxns(contractId: string): CommentTipMap {
 
   useEffect(() => {
     return listenForTipTxns(contractId, setTxns)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contractId])
+  }, [contractId, setTxns])
 
   return useMemo(() => {
     const byComment = groupBy(txns, 'data.commentId')

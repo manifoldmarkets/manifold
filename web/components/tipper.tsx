@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import {
   ChevronDoubleRightIcon,
   ChevronLeftIcon,
@@ -68,7 +67,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
     }, 1500)
   )
   // instant save on unrender
-  useEffect(() => () => void saveTip.flush(), [])
+  useEffect(() => () => void saveTip.flush(), [saveTip])
 
   const changeTip = (tip: number) => {
     setLocalTip(tip)
