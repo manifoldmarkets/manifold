@@ -1,7 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
 import { listAllComments } from 'web/lib/firebase/comments'
-import { getContractFromId } from 'web/lib/firebase/contracts'
+import {
+  getContractFromId,
+  FreeResponseContract,
+} from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { FullMarket, ApiError, toLiteMarket } from '../_types'
 
@@ -25,6 +28,8 @@ export default async function handler(
     'userId'
   >[]
 
+  const answers = (contract as FreeResponseContract).answers
+
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })
     return
@@ -36,5 +41,6 @@ export default async function handler(
     ...toLiteMarket(contract),
     bets,
     comments,
+    answers,
   })
 }

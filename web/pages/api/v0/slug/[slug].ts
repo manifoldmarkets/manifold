@@ -2,7 +2,10 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
 import { listAllComments } from 'web/lib/firebase/comments'
-import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import {
+  getContractFromSlug,
+  FreeResponseContract,
+} from 'web/lib/firebase/contracts'
 import { FullMarket, ApiError, toLiteMarket } from '../_types'
 
 export default async function handler(
@@ -24,6 +27,8 @@ export default async function handler(
     listAllComments(contract.id),
   ])
 
+  const answers = (contract as FreeResponseContract).answers
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const bets = allBets.map(({ userId, ...bet }) => bet) as Exclude<
     Bet,
@@ -36,5 +41,6 @@ export default async function handler(
     ...toLiteMarket(contract),
     bets,
     comments,
+    answers,
   })
 }
