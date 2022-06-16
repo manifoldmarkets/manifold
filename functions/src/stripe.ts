@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 
 import { getPrivateUser, getUser, isProd, payUser } from './utils'
 import { sendThankYouEmail } from './emails'
+import { track } from './analytics'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -152,6 +153,13 @@ const issueMoneys = async (session: StripeSession) => {
   if (!privateUser) return
 
   await sendThankYouEmail(user, privateUser)
+
+  await track(
+    userId,
+    'M$ purchase',
+    { amount: payout, sessionId },
+    { revenue: payout / 100 }
+  )
 }
 
 const firestore = admin.firestore()
