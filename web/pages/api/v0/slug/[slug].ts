@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { assertHTTPMethod } from 'web/lib/api/validation'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
@@ -9,6 +10,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<FullMarket | ApiError>
 ) {
+  if (!assertHTTPMethod(req, res, 'GET')) {
+    return
+  }
+
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
   const { slug } = req.query
 

@@ -3,11 +3,16 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { listAllContracts } from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { toLiteMarket } from './_types'
+import { assertHTTPMethod } from 'web/lib/api/validation'
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (!assertHTTPMethod(req, res, 'GET')) {
+    return
+  }
+
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
   let before: string | undefined
   let limit: number | undefined
