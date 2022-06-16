@@ -36,7 +36,7 @@ export function MenuButton(props: {
       >
         <Menu.Items className="absolute left-0 mt-2 w-40 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
           {menuItems.map((item) => (
-            <Menu.Item key={item.name}>
+            <Menu.Item key={item.href}>
               {({ active }) => (
                 <a
                   href={item.href}
@@ -44,7 +44,7 @@ export function MenuButton(props: {
                   onClick={item.onClick}
                   className={clsx(
                     active ? 'bg-gray-100' : '',
-                    'block py-2 px-4 text-sm text-gray-700'
+                    'line-clamp-3 block py-1.5 px-4 text-sm text-gray-700'
                   )}
                 >
                   {item.name}

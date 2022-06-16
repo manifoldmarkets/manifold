@@ -58,7 +58,7 @@ export async function createCommentOnGroup(
   user: User,
   replyToCommentId?: string
 ) {
-  const ref = doc(getCommentsCollection(groupId))
+  const ref = doc(getCommentsOnGroupCollection(groupId))
   const comment: Comment = removeUndefinedProps({
     id: ref.id,
     groupId,

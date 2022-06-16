@@ -242,7 +242,7 @@ export default function Sidebar(props: { className?: string }) {
           />
         )}
         {mobileNavigationOptions.map((item) => (
-          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
+          <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
         {!user && (
           <SidebarItem
@@ -269,23 +269,20 @@ export default function Sidebar(props: { className?: string }) {
       <div className="hidden space-y-1 lg:block">
         {navigationOptions.map((item) =>
           item.name === 'Notifications' ? (
-            <>
-              <SidebarItem
-                key={item.name}
-                item={item}
-                currentPage={currentPage}
-              />
+            <div key={item.href}>
+              <SidebarItem item={item} currentPage={currentPage} />
               {user && (
                 <MenuButton
+                  key={'groupsdropdown'}
                   buttonContent={<GroupsButton />}
                   menuItems={[{ name: 'All', href: '/groups' }, ...memberItems]}
                   className={'relative z-50 flex-shrink-0'}
                 />
               )}
-            </>
+            </div>
           ) : (
             <SidebarItem
-              key={item.name}
+              key={item.href}
               item={item}
               currentPage={currentPage}
             />

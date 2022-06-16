@@ -742,8 +742,8 @@ function NotificationItem(props: {
             </div>
             {sourceId && sourceContractSlug && sourceContractCreatorUsername ? (
               <CopyLinkDateTimeComponent
-                contractCreatorUsername={sourceContractCreatorUsername}
-                contractSlug={sourceContractSlug}
+                prefix={sourceContractCreatorUsername}
+                slug={sourceContractSlug}
                 createdTime={createdTime}
                 elementId={getSourceIdForLinkComponent(sourceId)}
                 className={'-mx-1 inline-flex sm:inline-block'}

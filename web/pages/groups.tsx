@@ -10,9 +10,10 @@ import { Title } from 'web/components/title'
 import { UserLink } from 'web/components/user-page'
 import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
-import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
+import { groupPath, listAllGroups, useMembers } from 'web/lib/firebase/groups'
 import { getUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
+import { GroupMembersList } from 'web/pages/group/[...slugs]'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])
@@ -97,7 +98,9 @@ export default function Groups(props: {
           <Col className="px-4 sm:px-0">
             <Row className="items-center justify-between">
               <Title text="Explore groups" />
-              {user && <CreateGroupButton user={user} />}
+              {user && (
+                <CreateGroupButton user={user} goToGroupOnSubmit={true} />
+              )}
             </Row>
 
             <div className="mb-6 text-gray-500">
@@ -185,17 +188,7 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
         <span className="text-xl">{group.name}</span>
       </Row>
       <div className="flex flex-col items-start justify-start gap-2 text-sm text-gray-500 sm:flex-row">
-        <div>
-          {group.contractIds.length} questions
-          <span className={'sm:hidden'}>
-            <span className={'mx-2'}>•</span>
-            {group.memberIds.length} members
-          </span>
-        </div>
-        <div className={'hidden sm:block'}>
-          •<span className={'mx-2'}>{group.memberIds.length} members</span>
-          <span>•</span>
-        </div>
+        <div>{group.contractIds.length} questions</div>
         <Row>
           <div className="mr-1">Created by</div>
           <UserLink
@@ -204,6 +197,11 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
             username={creator?.username ?? ''}
           />
         </Row>
+        {group.memberIds.length > 1 && (
+          <Row>
+            <GroupMembersList group={group} />
+          </Row>
+        )}
       </div>
       <div className="text-sm text-gray-500">{group.about}</div>
     </Col>

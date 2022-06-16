@@ -14,14 +14,15 @@ import { sortBy } from 'lodash'
 import { Group } from 'common/group'
 import { Contract, contractCollection } from './contracts'
 import { db } from './init'
-import { User } from './users'
+import { getUser, User } from './users'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
+import { useEffect, useState } from 'react'
 
 const groupCollection = collection(db, 'groups')
 
 export function groupPath(
   groupSlug: string,
-  subpath?: 'edit' | 'questions' | 'rankings' | 'discussion'
+  subpath?: 'edit' | 'questions' | 'details' | 'discussion'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }
@@ -153,4 +154,20 @@ export function listenForMemberGroups(
     const sorted = sortBy(groups, [(group) => -group.mostRecentActivityTime])
     setGroups(sorted)
   })
+}
+
+export function useMembers(group: Group) {
+  const [members, setMembers] = useState<User[]>([])
+  useEffect(() => {
+    const { memberIds, creatorId } = group
+    if (memberIds.length > 1)
+      // get users via their user ids:
+      Promise.all(
+        memberIds.filter((mId) => mId !== creatorId).map(getUser)
+      ).then((users) => {
+        const members = users.filter((user) => user)
+        setMembers(members)
+      })
+  }, [group])
+  return members
 }

@@ -31,8 +31,10 @@ export function CreateGroupButton(props: {
 
   function updateMemberUsers(users: User[]) {
     setDefaultName(
-      `${user.name}${
-        users.length > 0 ? ', ' + users.map((user) => user.name).join(', ') : ''
+      `${user.name.split(' ')[0]}${
+        users.length > 0
+          ? ', ' + users.map((user) => user.name.split(' ')[0]).join(', ')
+          : ''
       }'s group`
     )
     setMemberUsers(users)
@@ -67,7 +69,7 @@ export function CreateGroupButton(props: {
     if (result.group) {
       updateMemberUsers([])
       if (goToGroupOnSubmit)
-        await router.push(groupPath(result.group.slug)).catch((e) => {
+        router.push(groupPath(result.group.slug)).catch((e) => {
           console.log(e)
           setErrorText(e.message)
         })

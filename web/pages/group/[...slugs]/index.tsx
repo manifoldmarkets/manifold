@@ -10,6 +10,7 @@ import {
   groupPath,
   getGroupBySlug,
   getGroupContracts,
+  useMembers,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
@@ -31,9 +32,10 @@ import { findActiveContracts } from 'web/components/feed/find-active-contracts'
 import { Tabs } from 'web/components/layout/tabs'
 import { ContractsGrid } from 'web/components/contract/contracts-list'
 import { CreateQuestionButton } from 'web/components/create-question-button'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Discussion } from 'web/components/groups/Discussion'
 import { listenForCommentsOnGroup } from 'web/lib/firebase/comments'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -96,12 +98,7 @@ async function toTopUsers(userScores: { [userId: string]: number }) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const groupSubpages = [
-  undefined,
-  'discussion',
-  'questions',
-  'rankings',
-] as const
+const groupSubpages = [undefined, 'discussion', 'questions', 'details'] as const
 
 export default function GroupPage(props: {
   group: Group | null
@@ -141,7 +138,7 @@ export default function GroupPage(props: {
   const page = (slugs?.[1] ?? 'discussion') as typeof groupSubpages[number]
 
   const group = useGroup(props.group?.id) ?? props.group
-  const [messages, setMessages] = useState<Comment[]>([])
+  const [messages, setMessages] = useState<Comment[] | undefined>(undefined)
   useEffect(() => {
     if (group) listenForCommentsOnGroup(group.id, setMessages)
   }, [group])
@@ -155,18 +152,31 @@ export default function GroupPage(props: {
   const { memberIds } = group
 
   const rightSidebar = (
-    <Col className="mt-6 gap-12">
+    <Col className="mt-6 hidden xl:block">
       <GroupOverview group={group} creator={creator} isCreator={!!isCreator} />
       <YourPerformance
         traderScores={traderScores}
         creatorScores={creatorScores}
         user={user}
       />
+      {contracts.length > 0 && (
+        <div className={'mt-2'}>
+          <div className={'my-2 text-lg text-indigo-700'}>Recent Questions</div>
+          <ContractsGrid
+            contracts={contracts
+              .sort((a, b) => b.createdTime - a.createdTime)
+              .slice(0, 3)}
+            hasMore={false}
+            loadMore={() => {}}
+            className={'md:grid-cols-1'}
+          />
+        </div>
+      )}
     </Col>
   )
 
   const leaderboardsTab = (
-    <Col className="gap-8 px-4 lg:flex-row">
+    <Col className="mt-4 gap-8 px-4 lg:flex-row">
       <GroupLeaderboards
         traderScores={traderScores}
         creatorScores={creatorScores}
@@ -185,13 +195,13 @@ export default function GroupPage(props: {
       />
 
       <div className="px-3 lg:px-1">
-        <Row className={'mb-4 items-center justify-between'}>
-          <Title className="" text={group.name} />
+        <Row className={' items-center justify-between gap-4 '}>
+          <Title className={'line-clamp-2'} text={group.name} />
           {user && memberIds.includes(user.id) && (
             <CreateQuestionButton
               user={user}
               overrideText={'Add a question'}
-              className={'w-40'}
+              className={'w-40 flex-shrink-0'}
               query={`?groupId=${group.id}`}
             />
           )}
@@ -199,12 +209,14 @@ export default function GroupPage(props: {
       </div>
 
       <Tabs
-        defaultIndex={page === 'rankings' ? 1 : 0}
+        defaultIndex={page === 'details' ? 2 : page === 'questions' ? 1 : 0}
         tabs={[
           {
             title: 'Discussion',
-            content: (
+            content: messages ? (
               <Discussion messages={messages} user={user} group={group} />
+            ) : (
+              <LoadingIndicator />
             ),
             href: groupPath(group.slug, 'discussion'),
           },
@@ -212,21 +224,41 @@ export default function GroupPage(props: {
             title: 'Questions',
             content: (
               <div className={'mt-2'}>
-                {contracts.length > 0 && (
+                {contracts.length > 0 ? (
                   <ContractsGrid
                     contracts={contracts}
                     hasMore={false}
                     loadMore={() => {}}
                   />
+                ) : (
+                  <div className="p-2 text-gray-500">
+                    No questions yet. 🦗... Why not add one?
+                  </div>
                 )}
               </div>
             ),
             href: groupPath(group.slug, 'questions'),
           },
           {
-            title: 'Rankings',
-            content: leaderboardsTab,
-            href: groupPath(group.slug, 'rankings'),
+            title: 'Details',
+            content: (
+              <>
+                <div className={'xl:hidden'}>
+                  <GroupOverview
+                    group={group}
+                    creator={creator}
+                    isCreator={!!isCreator}
+                  />
+                  <YourPerformance
+                    traderScores={traderScores}
+                    creatorScores={creatorScores}
+                    user={user}
+                  />
+                </div>
+                {leaderboardsTab}
+              </>
+            ),
+            href: groupPath(group.slug, 'details'),
           },
         ]}
       />
@@ -240,18 +272,7 @@ function GroupOverview(props: {
   isCreator: boolean
 }) {
   const { group, creator, isCreator } = props
-  const { about, memberIds } = group
-  const [members, setMembers] = useState<User[]>([])
-  useEffect(() => {
-    if (memberIds.length > 1)
-      // get users via their user ids:
-      Promise.all(
-        memberIds.filter((mId) => mId !== creator.id).map(getUser)
-      ).then((users) => {
-        const members = users.filter((user) => user)
-        setMembers(members)
-      })
-  }, [memberIds])
+  const { about } = group
 
   return (
     <Col>
@@ -268,23 +289,7 @@ function GroupOverview(props: {
             username={creator.username}
           />
         </Row>
-        <Row>
-          {group.memberIds.length > 1 && (
-            <>
-              <div className="mr-1 text-gray-500">Other members</div>
-              <div className={'mt-0 grid grid-cols-4 gap-1'}>
-                {members.map((member) => (
-                  <UserLink
-                    className="text-neutral col-span-2"
-                    name={member.name}
-                    username={member.username}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </Row>
-
+        <GroupMembersList group={group} />
         {about && (
           <>
             <Spacer h={2} />
@@ -295,6 +300,31 @@ function GroupOverview(props: {
         )}
       </Col>
     </Col>
+  )
+}
+
+export function GroupMembersList(props: { group: Group }) {
+  const { group } = props
+  const members = useMembers(group)
+  if (group.memberIds.length === 1) return <div />
+  return (
+    <div>
+      <div>
+        <div className="flex flex-wrap gap-1 text-gray-500">
+          Other members
+          {members.slice(0, members.length).map((member, i) => (
+            <div key={member.id} className={'flex-shrink'}>
+              <UserLink
+                className="text-neutral "
+                name={member.name}
+                username={member.username}
+              />
+              {members.length > 1 && i !== members.length - 1 && <span>,</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 

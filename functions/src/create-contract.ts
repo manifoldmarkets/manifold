@@ -40,7 +40,7 @@ const bodySchema = z.object({
     'Close time must be in the future.'
   ),
   outcomeType: z.enum(OUTCOME_TYPES),
-  groupId: z.string().min(1).max(MAX_GROUP_PARTS_LENGTH),
+  groupId: z.string().min(1).max(MAX_GROUP_PARTS_LENGTH).optional(),
 })
 
 const binarySchema = z.object({
@@ -78,14 +78,17 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
   }
   const user = userDoc.data() as User
 
-  const groupDoc = await firestore.collection('groups').doc(groupId).get()
-  if (!groupDoc.exists) {
-    throw new APIError(400, 'No group exists with the given group ID.')
-  }
+  let group = null
+  if (groupId) {
+    const groupDoc = await firestore.collection('groups').doc(groupId).get()
+    if (!groupDoc.exists) {
+      throw new APIError(400, 'No group exists with the given group ID.')
+    }
 
-  const group = groupDoc.data() as Group
-  if (!group.memberIds.includes(user.id)) {
-    throw new APIError(400, 'User is not a member of the group.')
+    group = groupDoc.data() as Group
+    if (!group.memberIds.includes(user.id)) {
+      throw new APIError(400, 'User is not a member of the group.')
+    }
   }
 
   const userContractsCreatedTodaySnapshot = await firestore
@@ -127,11 +130,13 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0,
-    {
-      groupId: group.id,
-      groupName: group.name,
-      groupSlug: group.slug,
-    }
+    group
+      ? {
+          groupId: group.id,
+          groupName: group.name,
+          groupSlug: group.slug,
+        }
+      : undefined
   )
 
   if (!isFree && ante) await chargeUser(user.id, ante, true)

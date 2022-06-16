@@ -150,8 +150,8 @@ export function FeedAnswerCommentGroup(props: {
           <div className="text-sm text-gray-500">
             <UserLink username={username} name={name} /> answered
             <CopyLinkDateTimeComponent
-              contractCreatorUsername={contract.creatorUsername}
-              contractSlug={contract.slug}
+              prefix={contract.creatorUsername}
+              slug={contract.slug}
               createdTime={answer.createdTime}
               elementId={answerElementId}
             />
@@ -231,7 +231,10 @@ export function FeedAnswerCommentGroup(props: {
             parentAnswerOutcome={answer.number.toString()}
             replyToUsername={replyToUsername}
             setRef={setInputRef}
-            onSubmitComment={() => setShowReply(false)}
+            onSubmitComment={() => {
+              setShowReply(false)
+              setReplyToUsername('')
+            }}
           />
         </div>
       )}

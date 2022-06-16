@@ -29,7 +29,7 @@ export function getNewContract(
   bucketCount: number,
   min: number,
   max: number,
-  groupDetails: GroupDetails
+  groupDetails?: GroupDetails
 ) {
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
@@ -71,7 +71,7 @@ export function getNewContract(
       liquidityFee: 0,
       platformFee: 0,
     },
-    groupDetails: [groupDetails],
+    groupDetails: groupDetails ? [groupDetails] : undefined,
   })
 
   return contract as Contract
