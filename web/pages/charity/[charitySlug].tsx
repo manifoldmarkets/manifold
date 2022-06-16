@@ -20,6 +20,7 @@ import Confetti from 'react-confetti'
 import { Donation } from 'web/components/charity/feed-items'
 import Image from 'next/image'
 import { manaToUSD } from '../../../common/util/format'
+import { track } from 'web/lib/service/analytics'
 
 export default function CharityPageWrapper() {
   const router = useRouter()
@@ -179,6 +180,7 @@ function DonationBox(props: {
     e.preventDefault()
     setIsSubmitting(true)
     setError(undefined)
+
     await transact({
       amount,
       fromId: user.id,
@@ -189,9 +191,11 @@ function DonationBox(props: {
       category: 'CHARITY',
       description: `${user.name} donated M$ ${amount} to ${charity.name}`,
     }).catch((err) => console.log('Error', err))
+
     setIsSubmitting(false)
     setAmount(undefined)
     setShowConfetti(true)
+    track('donation', { charityId: charity.id, amount })
   }
 
   return (
