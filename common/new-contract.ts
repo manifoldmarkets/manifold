@@ -15,6 +15,7 @@ import { removeUndefinedProps } from './util/object'
 export function getNewContract(
   id: string,
   slug: string,
+  url: string,
   creator: User,
   question: string,
   outcomeType: outcomeType,
@@ -44,6 +45,7 @@ export function getNewContract(
   const contract: Contract = removeUndefinedProps({
     id,
     slug,
+    url,
     ...propsByOutcomeType,
 
     creatorId: creator.id,

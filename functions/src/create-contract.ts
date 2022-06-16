@@ -13,6 +13,7 @@ import {
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
+import { DOMAIN } from '../../common/envs/constants'
 
 import { chargeUser } from './utils'
 import { APIError, newEndpoint, validate, zTimestamp } from './api'
@@ -101,10 +102,12 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
   )
 
   const slug = await getSlug(question)
+  const url = `https://${DOMAIN}/${user.username}/${slug}`
   const contractRef = firestore.collection('contracts').doc()
   const contract = getNewContract(
     contractRef.id,
     slug,
+    url,
     user,
     question,
     outcomeType,

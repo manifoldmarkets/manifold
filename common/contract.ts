@@ -12,6 +12,7 @@ export type AnyContractType =
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
+  url: string
 
   creatorId: string
   creatorName: string

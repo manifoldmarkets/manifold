@@ -3,6 +3,7 @@ import { getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
+import { DOMAIN } from '../../../../common/envs/constants'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -87,7 +88,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     question,
     description,
     tags,
-    url: `https://manifold.markets/${creatorUsername}/${slug}`,
+    url: `https://${DOMAIN}/${creatorUsername}/${slug}`,
     pool: pool.YES + pool.NO,
     probability,
     p,
