@@ -1,4 +1,5 @@
 import { Bet } from 'common/bet'
+import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
@@ -40,6 +41,7 @@ export type LiteMarket = {
 export type FullMarket = LiteMarket & {
   bets: Exclude<Bet, 'userId'>[]
   comments: Comment[]
+  answers?: Answer[]
 }
 
 export type ApiError = {
