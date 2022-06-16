@@ -31,7 +31,7 @@ export function MiscDetails(props: {
   showCloseTime?: boolean
 }) {
   const { contract, showHotVolume, showCloseTime } = props
-  const { volume, volume24Hours, closeTime, tags } = contract
+  const { volume, volume24Hours, closeTime, tags, isResolved } = contract
   // Show at most one category that this contract is tagged by
   const categories = CATEGORY_LIST.filter((category) =>
     tags.map((t) => t.toLowerCase()).includes(category)
@@ -49,7 +49,7 @@ export function MiscDetails(props: {
           {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
           {fromNow(closeTime || 0)}
         </Row>
-      ) : volume > 0 ? (
+      ) : volume > 0 || isResolved ? (
         <Row>{contractPool(contract)} pool</Row>
       ) : (
         <NewContractBadge />
