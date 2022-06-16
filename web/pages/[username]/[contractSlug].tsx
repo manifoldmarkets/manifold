@@ -41,7 +41,7 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
-import { FeedContextProvider } from 'web/components/feed/feed-context'
+import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -120,6 +120,8 @@ export function ContractPageContent(
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
+  const tips = useTipTxns(contract.id)
+
   const user = useUser()
   const { width, height } = useWindowSize()
 
@@ -182,64 +184,60 @@ export function ContractPageContent(
         />
       )}
 
-      <FeedContextProvider contractId={contract.id}>
-        <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
-          {backToHome && (
-            <button
-              className="btn btn-sm mb-4 items-center gap-2 self-start border-0 border-gray-700 bg-white normal-case text-gray-700 hover:bg-white hover:text-gray-700 lg:hidden"
-              onClick={backToHome}
-            >
-              <ArrowLeftIcon className="h-5 w-5 text-gray-700" />
-              Back
-            </button>
-          )}
+      <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
+        {backToHome && (
+          <button
+            className="btn btn-sm mb-4 items-center gap-2 self-start border-0 border-gray-700 bg-white normal-case text-gray-700 hover:bg-white hover:text-gray-700 lg:hidden"
+            onClick={backToHome}
+          >
+            <ArrowLeftIcon className="h-5 w-5 text-gray-700" />
+            Back
+          </button>
+        )}
 
-          <ContractOverview
-            contract={contract}
-            bets={bets}
-            comments={comments ?? []}
+        <ContractOverview contract={contract} bets={bets} />
+        {isNumeric && (
+          <AlertBox
+            title="Warning"
+            text="Numeric markets were introduced as an experimental feature and are now deprecated."
           />
-          {isNumeric && (
-            <AlertBox
-              title="Warning"
-              text="Numeric markets were introduced as an experimental feature and are now deprecated."
-            />
-          )}
+        )}
 
-          {outcomeType === 'FREE_RESPONSE' && (
-            <>
-              <Spacer h={4} />
-              <AnswersPanel contract={contract} />
-              <Spacer h={4} />
-            </>
-          )}
+        {outcomeType === 'FREE_RESPONSE' && (
+          <>
+            <Spacer h={4} />
+            <AnswersPanel contract={contract} />
+            <Spacer h={4} />
+          </>
+        )}
 
-          {isNumeric && allowTrade && (
-            <NumericBetPanel className="xl:hidden" contract={contract} />
-          )}
+        {isNumeric && allowTrade && (
+          <NumericBetPanel className="xl:hidden" contract={contract} />
+        )}
 
-          {isResolved && (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2">
-                <ContractLeaderboard contract={contract} bets={bets} />
-                <ContractTopTrades
-                  contract={contract}
-                  bets={bets}
-                  comments={comments}
-                />
-              </div>
-              <Spacer h={12} />
-            </>
-          )}
+        {isResolved && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2">
+              <ContractLeaderboard contract={contract} bets={bets} />
+              <ContractTopTrades
+                contract={contract}
+                bets={bets}
+                comments={comments}
+                tips={tips}
+              />
+            </div>
+            <Spacer h={12} />
+          </>
+        )}
 
-          <ContractTabs
-            contract={contract}
-            user={user}
-            bets={bets}
-            comments={comments}
-          />
-        </Col>
-      </FeedContextProvider>
+        <ContractTabs
+          contract={contract}
+          user={user}
+          bets={bets}
+          tips={tips}
+          comments={comments}
+        />
+      </Col>
     </Page>
   )
 }
@@ -293,8 +291,9 @@ function ContractTopTrades(props: {
   contract: Contract
   bets: Bet[]
   comments: Comment[]
+  tips: CommentTipMap
 }) {
-  const { contract, bets, comments } = props
+  const { contract, bets, comments, tips } = props
   const commentsById = keyBy(comments, 'id')
   const betsById = keyBy(bets, 'id')
 
@@ -331,6 +330,7 @@ function ContractTopTrades(props: {
             <FeedComment
               contract={contract}
               comment={commentsById[topCommentId]}
+              tips={tips[topCommentId]}
               betsBySameUser={[betsById[topCommentId]]}
               truncate={false}
               smallAvatar={false}

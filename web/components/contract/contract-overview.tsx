@@ -25,7 +25,6 @@ import { NumericGraph } from './numeric-graph'
 export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
-  comments: Comment[]
   className?: string
 }) => {
   const { contract, bets, className } = props

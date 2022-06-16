@@ -26,18 +26,26 @@ import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
 import { track } from 'web/lib/service/analytics'
 import { Tipper } from '../tipper'
-import { useCommentTips } from './feed-context'
+import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 
 export function FeedCommentThread(props: {
   contract: Contract
   comments: Comment[]
+  tips: CommentTipMap
   parentComment: Comment
   bets: Bet[]
   truncate?: boolean
   smallAvatar?: boolean
 }) {
-  const { contract, comments, bets, truncate, smallAvatar, parentComment } =
-    props
+  const {
+    contract,
+    comments,
+    bets,
+    tips,
+    truncate,
+    smallAvatar,
+    parentComment,
+  } = props
   const [showReply, setShowReply] = useState(false)
   const [replyToUsername, setReplyToUsername] = useState('')
   const betsByUserId = groupBy(bets, (bet) => bet.userId)
@@ -66,6 +74,7 @@ export function FeedCommentThread(props: {
         contract={contract}
         commentsList={commentsList}
         betsByUserId={betsByUserId}
+        tips={tips}
         smallAvatar={smallAvatar}
         truncate={truncate}
         bets={bets}
@@ -99,6 +108,7 @@ export function CommentRepliesList(props: {
   contract: Contract
   commentsList: Comment[]
   betsByUserId: Dictionary<Bet[]>
+  tips: CommentTipMap
   scrollAndOpenReplyInput: (comment: Comment) => void
   bets: Bet[]
   treatFirstIndexEqually?: boolean
@@ -109,6 +119,7 @@ export function CommentRepliesList(props: {
     contract,
     commentsList,
     betsByUserId,
+    tips,
     truncate,
     smallAvatar,
     bets,
@@ -136,6 +147,7 @@ export function CommentRepliesList(props: {
           <FeedComment
             contract={contract}
             comment={comment}
+            tips={tips[comment.id]}
             betsBySameUser={betsByUserId[comment.userId] ?? []}
             onReplyClick={scrollAndOpenReplyInput}
             probAtCreatedTime={
@@ -159,6 +171,7 @@ export function CommentRepliesList(props: {
 export function FeedComment(props: {
   contract: Contract
   comment: Comment
+  tips: CommentTips
   betsBySameUser: Bet[]
   probAtCreatedTime?: number
   truncate?: boolean
@@ -168,6 +181,7 @@ export function FeedComment(props: {
   const {
     contract,
     comment,
+    tips,
     betsBySameUser,
     probAtCreatedTime,
     truncate,
@@ -184,8 +198,6 @@ export function FeedComment(props: {
     bought = matchedBet.amount >= 0 ? 'bought' : 'sold'
     money = formatMoney(Math.abs(matchedBet.amount))
   }
-
-  const tips = useCommentTips(comment.id)
 
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
