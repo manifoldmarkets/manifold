@@ -32,8 +32,11 @@ import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
+import { Leaderboard } from 'web/components/leaderboard'
 
 export type { User }
+
+export type LeaderboardPeriod = 'daily' | 'weekly' | 'monthly' | 'allTime'
 
 const db = getFirestore(app)
 export const auth = getAuth(app)
@@ -178,25 +181,23 @@ export function listenForPrivateUsers(
   listenForValues(q, setUsers)
 }
 
-const topTradersQuery = query(
-  collection(db, 'users'),
-  orderBy('totalPnLCached', 'desc'),
-  limit(21)
-)
+export function getTopTraders(period: LeaderboardPeriod) {
+  const topTraders = query(
+    collection(db, 'users'),
+    orderBy('totalPnLCached.' + period, 'desc'),
+    limit(20)
+  )
 
-export async function getTopTraders() {
-  const users = await getValues<User>(topTradersQuery)
-  return users.slice(0, 20)
+  return getValues(topTraders)
 }
 
-const topCreatorsQuery = query(
-  collection(db, 'users'),
-  orderBy('creatorVolumeCached', 'desc'),
-  limit(20)
-)
-
-export function getTopCreators() {
-  return getValues<User>(topCreatorsQuery)
+export function getTopCreators(period: LeaderboardPeriod) {
+  const topCreators = query(
+    collection(db, 'users'),
+    orderBy('creatorVolumeCached.' + period, 'desc'),
+    limit(20)
+  )
+  return getValues(topCreators)
 }
 
 export function getUsers() {
