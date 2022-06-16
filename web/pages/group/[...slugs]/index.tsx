@@ -32,6 +32,8 @@ import { Tabs } from 'web/components/layout/tabs'
 import { ContractsGrid } from 'web/components/contract/contracts-list'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useEffect, useState } from 'react'
+import { Discussion } from 'web/components/groups/Discussion'
+import { listenForCommentsOnGroup } from 'web/lib/firebase/comments'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -136,10 +138,14 @@ export default function GroupPage(props: {
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
-
   const page = (slugs?.[1] ?? 'discussion') as typeof groupSubpages[number]
 
   const group = useGroup(props.group?.id) ?? props.group
+  const [messages, setMessages] = useState<Comment[]>([])
+  useEffect(() => {
+    if (group) listenForCommentsOnGroup(group.id, setMessages)
+  }, [group])
+
   const user = useUser()
   const isCreator = user && group && user.id === group.creatorId
 
@@ -195,6 +201,13 @@ export default function GroupPage(props: {
       <Tabs
         defaultIndex={page === 'rankings' ? 1 : 0}
         tabs={[
+          {
+            title: 'Discussion',
+            content: (
+              <Discussion messages={messages} user={user} group={group} />
+            ),
+            href: groupPath(group.slug, 'discussion'),
+          },
           {
             title: 'Questions',
             content: (

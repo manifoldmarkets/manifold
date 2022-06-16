@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { createGroup } from 'web/lib/firebase/fn-call'
 import { groupPath } from 'web/lib/firebase/groups'
 import { ConfirmationButton } from '../confirmation-button'
 import { Col } from '../layout/col'
@@ -9,6 +8,8 @@ import { Spacer } from '../layout/spacer'
 import { Title } from '../title'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { User } from 'common/user'
+import { MAX_GROUP_NAME_LENGTH } from 'common/group'
+import { createGroup } from 'web/lib/firebase/api-call'
 
 export function CreateGroupButton(props: {
   user: User
@@ -43,19 +44,25 @@ export function CreateGroupButton(props: {
   const onSubmit = async () => {
     setIsSubmitting(true)
     const groupName = name !== '' ? name : defaultName
-    const result = await createGroup({
+    if (groupName.length > MAX_GROUP_NAME_LENGTH) {
+      setErrorText(
+        `group name must be less than ${MAX_GROUP_NAME_LENGTH} characters`
+      )
+      setIsSubmitting(false)
+      return false
+    } else setErrorText('')
+    const newGroup = {
       name: groupName,
-      about: '',
+      about: 'nada',
       memberIds: memberUsers.map((user) => user.id),
       anyoneCanJoin: true,
-      visibility: 'public',
+    }
+    const result = await createGroup(newGroup).catch((e) => {
+      setErrorText(e.message)
+      setIsSubmitting(false)
+      console.error(e)
+      return e
     })
-      .then((r) => r.data || {})
-      .catch((e) => {
-        setErrorText(e.message)
-        console.error(e)
-        return e
-      })
 
     if (result.group) {
       updateMemberUsers([])
@@ -93,7 +100,7 @@ export function CreateGroupButton(props: {
         ),
       }}
       onSubmit={() => {}}
-      onAsyncSubmit={onSubmit}
+      onSubmitWithSuccess={onSubmit}
       onOpenStateChange={(isOpen) => {
         onOpenStateChange?.(isOpen)
         updateMemberUsers([])
@@ -125,7 +132,7 @@ export function CreateGroupButton(props: {
             className="input input-bordered resize-none"
             disabled={isSubmitting}
             value={name}
-            maxLength={140}
+            maxLength={75}
             onChange={(e) => updateName(e.target.value || '')}
           />
         </div>

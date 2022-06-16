@@ -13,6 +13,8 @@ export const onUpdateGroup = functions.firestore
     if (prevGroup.mostRecentActivityTime !== group.mostRecentActivityTime)
       return
 
-    group.mostRecentActivityTime = new Date().getTime()
-    await firestore.collection('groups').doc(group.id).set(group)
+    await firestore
+      .collection('groups')
+      .doc(group.id)
+      .update({ mostRecentActivityTime: new Date().getTime() })
   })

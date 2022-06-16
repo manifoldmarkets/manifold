@@ -58,3 +58,7 @@ export function sellShares(params: any) {
 export function sellBet(params: any) {
   return call(getFunctionUrl('sellbet'), 'POST', params)
 }
+
+export function createGroup(params: any) {
+  return call(getFunctionUrl('creategroup'), 'POST', params)
+}

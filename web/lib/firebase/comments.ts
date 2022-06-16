@@ -20,7 +20,7 @@ export type { Comment }
 
 export const MAX_COMMENT_LENGTH = 10000
 
-export async function createComment(
+export async function createCommentOnContract(
   contractId: string,
   text: string,
   commenter: User,
@@ -52,9 +52,38 @@ export async function createComment(
   })
   return await setDoc(ref, comment)
 }
+export async function createCommentOnGroup(
+  groupId: string,
+  text: string,
+  user: User,
+  replyToCommentId?: string
+) {
+  const ref = doc(getCommentsCollection(groupId))
+  const comment: Comment = removeUndefinedProps({
+    id: ref.id,
+    groupId,
+    userId: user.id,
+    text: text.slice(0, MAX_COMMENT_LENGTH),
+    createdTime: Date.now(),
+    userName: user.name,
+    userUsername: user.username,
+    userAvatarUrl: user.avatarUrl,
+    replyToCommentId: replyToCommentId,
+  })
+  track('comment', {
+    user,
+    commentId: ref.id,
+    groupId,
+    replyToCommentId: replyToCommentId,
+  })
+  return await setDoc(ref, comment)
+}
 
 function getCommentsCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'comments')
+}
+function getCommentsOnGroupCollection(groupId: string) {
+  return collection(db, 'groups', groupId, 'comments')
 }
 
 export async function listAllComments(contractId: string) {
@@ -63,7 +92,7 @@ export async function listAllComments(contractId: string) {
   return comments
 }
 
-export function listenForComments(
+export function listenForCommentsOnContract(
   contractId: string,
   setComments: (comments: Comment[]) => void
 ) {
@@ -75,16 +104,17 @@ export function listenForComments(
     }
   )
 }
-
-// Return a map of betId -> comment
-export function mapCommentsByBetId(comments: Comment[]) {
-  const map: Record<string, Comment> = {}
-  for (const comment of comments) {
-    if (comment.betId) {
-      map[comment.betId] = comment
+export function listenForCommentsOnGroup(
+  groupId: string,
+  setComments: (comments: Comment[]) => void
+) {
+  return listenForValues<Comment>(
+    getCommentsOnGroupCollection(groupId),
+    (comments) => {
+      comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+      setComments(comments)
     }
-  }
-  return map
+  )
 }
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000

@@ -107,14 +107,8 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const {
-    closeTime,
-    creatorName,
-    creatorUsername,
-    creatorId,
-    groupNames,
-    groupSlugs,
-  } = contract
+  const { closeTime, creatorName, creatorUsername, creatorId, groupDetails } =
+    contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
   return (
@@ -137,12 +131,12 @@ export function ContractDetails(props: {
         )}
         {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
-      {groupSlugs && groupNames && (
+      {groupDetails && (
         <Row className={'line-clamp-1 max-w-xs overflow-ellipsis'}>
-          <SiteLink href={`${groupPath(groupSlugs[0])}`}>
+          <SiteLink href={`${groupPath(groupDetails[0].groupSlug)}`}>
             <span>
               <UserGroupIcon className="mx-1 inline h-5 w-5" />
-              {groupNames[0]}
+              {groupDetails[0].groupName}
             </span>
           </SiteLink>
         </Row>

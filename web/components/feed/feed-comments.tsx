@@ -15,7 +15,10 @@ import { OutcomeLabel } from 'web/components/outcome-label'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { createComment, MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
+import {
+  createCommentOnContract,
+  MAX_COMMENT_LENGTH,
+} from 'web/lib/firebase/comments'
 import Textarea from 'react-expanding-textarea'
 import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
@@ -360,7 +363,7 @@ export function CommentInput(props: {
     }
     if (!comment || isSubmitting) return
     setIsSubmitting(true)
-    await createComment(
+    await createCommentOnContract(
       contract.id,
       comment,
       user,

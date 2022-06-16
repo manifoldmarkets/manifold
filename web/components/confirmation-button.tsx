@@ -21,7 +21,7 @@ export function ConfirmationButton(props: {
   onSubmit: () => void
   children: ReactNode
   onOpenStateChange?: (isOpen: boolean) => void
-  onAsyncSubmit?: () => Promise<boolean>
+  onSubmitWithSuccess?: () => Promise<boolean>
 }) {
   const {
     openModalBtn,
@@ -30,7 +30,7 @@ export function ConfirmationButton(props: {
     onSubmit,
     children,
     onOpenStateChange,
-    onAsyncSubmit,
+    onSubmitWithSuccess,
   } = props
 
   const [open, setOpen] = useState(false)
@@ -55,9 +55,11 @@ export function ConfirmationButton(props: {
             <div
               className={clsx('btn normal-case', submitBtn?.className)}
               onClick={
-                onAsyncSubmit
+                onSubmitWithSuccess
                   ? () =>
-                      onAsyncSubmit().then((success) => updateOpen(!success))
+                      onSubmitWithSuccess().then((success) =>
+                        updateOpen(!success)
+                      )
                   : onSubmit
               }
             >

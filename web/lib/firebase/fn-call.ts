@@ -15,17 +15,6 @@ export const withdrawLiquidity = cloudFunction<
   { status: 'error' | 'success'; userShares: { [outcome: string]: number } }
 >('withdrawLiquidity')
 
-export const createGroup = cloudFunction<
-  {
-    name: string
-    about: string
-    memberIds: string[]
-    anyoneCanJoin: boolean
-    visibility: 'public' | 'private' | 'unlisted'
-  },
-  { status: 'error' | 'success'; message?: string; group?: Group }
->('createGroup')
-
 export const transact = cloudFunction<
   Omit<Txn, 'id' | 'createdTime'>,
   { status: 'error' | 'success'; message?: string; txn?: Txn }

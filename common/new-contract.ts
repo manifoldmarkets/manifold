@@ -11,6 +11,7 @@ import {
 import { User } from './user'
 import { parseTags } from './util/parse'
 import { removeUndefinedProps } from './util/object'
+import { GroupDetails } from 'common/group'
 
 export function getNewContract(
   id: string,
@@ -28,10 +29,7 @@ export function getNewContract(
   bucketCount: number,
   min: number,
   max: number,
-
-  groupId: string,
-  groupName: string,
-  groupSlug: string
+  groupDetails: GroupDetails
 ) {
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
@@ -73,10 +71,7 @@ export function getNewContract(
       liquidityFee: 0,
       platformFee: 0,
     },
-
-    groupIds: [groupId],
-    groupNames: [groupName],
-    groupSlugs: [groupSlug],
+    groupDetails: [groupDetails],
   })
 
   return contract as Contract

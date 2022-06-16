@@ -1,97 +1,78 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { getUser } from './utils'
 import { Contract } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
-import { Group } from '../../common/group'
+import {
+  Group,
+  MAX_ABOUT_LENGTH,
+  MAX_GROUP_NAME_LENGTH,
+  MAX_ID_LENGTH,
+} from '../../common/group'
+import { newEndpoint, validate } from '../../functions/src/api'
+import { z } from 'zod'
 
-export const createGroup = functions.runWith({ minInstances: 1 }).https.onCall(
-  async (
-    data: {
-      name: string
-      about: string
-      memberIds: string[]
-      anyoneCanJoin: boolean
-      visibility: 'public' | 'private' | 'unlisted'
-    },
-    context
-  ) => {
-    const userId = context?.auth?.uid
-    if (!userId) return { status: 'error', message: 'Not authorized' }
+const bodySchema = z.object({
+  name: z.string().min(1).max(MAX_GROUP_NAME_LENGTH),
+  about: z.string().min(1).max(MAX_ABOUT_LENGTH),
+  memberIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)),
+  anyoneCanJoin: z.boolean(),
+})
 
-    const creator = await getUser(userId)
-    if (!creator) return { status: 'error', message: 'User not found' }
+export const creategroup = newEndpoint(['POST'], async (req, auth) => {
+  const { name, about, memberIds, anyoneCanJoin } = validate(
+    bodySchema,
+    req.body
+  )
+  const userId = auth.uid
+  if (!userId) return { status: 'error', message: 'Not authorized' }
 
-    let { name, about } = data
+  const creator = await getUser(userId)
+  if (!creator) return { status: 'error', message: 'User not found' }
 
-    if (!name || typeof name !== 'string')
-      return { status: 'error', message: 'Name must be a non-empty string' }
-    name = name.trim().slice(0, 140)
+  // Add creator id to member ids for convenience
+  if (!memberIds.includes(creator.id)) memberIds.push(creator.id)
 
-    if (typeof about !== 'string')
-      return { status: 'error', message: 'About must be a string' }
-    about = about.trim().slice(0, 140)
+  console.log(
+    'creating group for',
+    creator.username,
+    'named',
+    name,
+    'about',
+    about,
+    'other member ids',
+    memberIds
+  )
 
-    const { memberIds, anyoneCanJoin, visibility } = data
-    if (!Array.isArray(memberIds))
-      return {
-        status: 'error',
-        message: 'memberIds must be an array of strings',
-      }
+  const slug = await getSlug(name)
 
-    if (typeof anyoneCanJoin !== 'boolean')
-      return { status: 'error', message: 'anyoneCanJoin must be a boolean' }
+  const groupRef = firestore.collection('groups').doc()
 
-    if (typeof visibility !== 'string')
-      return { status: 'error', message: 'visibility must be a string' }
-
-    // Add creator id to member ids for querying convenience
-    if (!memberIds.includes(creator.id)) memberIds.push(creator.id)
-
-    console.log(
-      'creating group for',
-      creator.username,
-      'named',
-      name,
-      'about',
-      about,
-      'other member ids',
-      memberIds
-    )
-
-    const slug = await getSlug(name)
-
-    const groupRef = firestore.collection('groups').doc()
-
-    // TODO: create notification for members added to the memberIds
-    const group: Group = {
-      id: groupRef.id,
-      creatorId: creator.id,
-      slug,
-      name,
-      about,
-      createdTime: Date.now(),
-      mostRecentActivityTime: Date.now(),
-      contractIds: [],
-      followCount: memberIds.length,
-      visibility,
-      anyoneCanJoin,
-      memberIds,
-    }
-
-    await groupRef.create(group)
-
-    await Promise.all(
-      memberIds.map(async (memberId) => {
-        await firestore.collection('followers').doc(memberId).set({ memberId })
-      })
-    )
-
-    return { status: 'success', group: group }
+  const group: Group = {
+    id: groupRef.id,
+    creatorId: creator.id,
+    slug,
+    name,
+    about,
+    createdTime: Date.now(),
+    mostRecentActivityTime: Date.now(),
+    contractIds: [],
+    followCount: memberIds.length,
+    anyoneCanJoin,
+    memberIds,
   }
-)
+
+  await groupRef.create(group)
+
+  await Promise.all(
+    memberIds.map(async (memberId) => {
+      await firestore.collection('followers').doc(memberId).set({ memberId })
+    })
+  )
+
+  return { status: 'success', group: group }
+})
 
 const getSlug = async (name: string) => {
   const proposedSlug = slugify(name)

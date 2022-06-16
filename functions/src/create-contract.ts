@@ -127,9 +127,11 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0,
-    group.id,
-    group.name,
-    group.slug
+    {
+      groupId: group.id,
+      groupName: group.name,
+      groupSlug: group.slug,
+    }
   )
 
   if (!isFree && ante) await chargeUser(user.id, ante, true)

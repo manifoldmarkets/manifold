@@ -80,12 +80,15 @@ export function UserPage(props: {
     getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
   }, [user])
 
+  // TODO: display comments on groups
   useEffect(() => {
     const uniqueContractIds = uniq(
       usersComments.map((comment) => comment.contractId)
     )
     Promise.all(
-      uniqueContractIds.map((contractId) => getContractFromId(contractId))
+      uniqueContractIds.map(
+        (contractId) => contractId && getContractFromId(contractId)
+      )
     ).then((contracts) => {
       const commentsByContract = new Map<Contract, Comment[]>()
       contracts.forEach((contract) => {

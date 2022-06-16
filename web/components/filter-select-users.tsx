@@ -70,7 +70,7 @@ export function FilterSelectUsers(props: {
             >
               <div className="py-1">
                 {filteredUsers.map((user: User) => (
-                  <Menu.Item>
+                  <Menu.Item key={user.id}>
                     {({ active }) => (
                       <span
                         className={clsx(
