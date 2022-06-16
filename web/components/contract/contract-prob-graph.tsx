@@ -55,7 +55,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
 
   return (
     <div
-      className="w-full overflow-hidden"
+      className="w-full overflow-visible"
       style={{ height: height ?? (!width || width >= 800 ? 350 : 250) }}
     >
       <ResponsiveLine
@@ -85,7 +85,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
         enableSlices="x"
         enableGridX={!!width && width >= 800}
         enableArea
-        margin={{ top: 20, right: 0, bottom: 25, left: 40 }}
+        margin={{ top: 20, right: 20, bottom: 25, left: 40 }}
         animate={false}
       />
     </div>
