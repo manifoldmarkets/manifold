@@ -70,6 +70,7 @@ export const createUser = functions
       createdTime: Date.now(),
       totalPnLCached: 0,
       creatorVolumeCached: 0,
+      followerCountCached: 0,
     }
 
     await firestore.collection('users').doc(userId).create(user)

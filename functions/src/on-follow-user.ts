@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { getUser } from './utils'
+import { getUser, cacheUserFollowerCount } from './utils'
 import { createNotification } from './create-notification'
 
 export const onFollowUser = functions.firestore
@@ -14,6 +14,8 @@ export const onFollowUser = functions.firestore
 
     const followingUser = await getUser(userId)
     if (!followingUser) throw new Error('Could not find following user')
+
+    await cacheUserFollowerCount(followingUser.id)
 
     await createNotification(
       followingUser.id,

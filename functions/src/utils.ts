@@ -122,3 +122,17 @@ export const chargeUser = (
 
   return updateUserBalance(userId, -charge, isAnte)
 }
+
+export async function cacheUserFollowerCount(userId: string) {
+  const followersSnap = await firestore
+    .collection('users')
+    .doc(userId)
+    .collection('follows')
+    .get()
+  const followers = followersSnap.docs.length
+
+  await firestore
+    .collection('users')
+    .doc(userId)
+    .update({ followerCountCached: followers })
+}
