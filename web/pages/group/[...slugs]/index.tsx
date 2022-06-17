@@ -1,10 +1,10 @@
-import { flatten, take, partition, sortBy } from 'lodash'
+import { take, sortBy } from 'lodash'
 
 import { Group } from 'common/group'
 import { Comment } from 'common/comment'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { listAllBets } from 'web/lib/firebase/bets'
 import { Contract } from 'web/lib/firebase/contracts'
 import {
   groupPath,

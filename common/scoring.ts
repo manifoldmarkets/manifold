@@ -1,4 +1,4 @@
-import { groupBy, sumBy, mapValues, partition, sum } from 'lodash'
+import { groupBy, sumBy, mapValues, partition } from 'lodash'
 
 import { Bet } from './bet'
 import { Contract } from './contract'
