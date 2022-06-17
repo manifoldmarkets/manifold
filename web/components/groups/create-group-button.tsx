@@ -39,9 +39,6 @@ export function CreateGroupButton(props: {
     )
     setMemberUsers(users)
   }
-  const updateName = (newName: string) => {
-    setName(newName)
-  }
 
   const onSubmit = async () => {
     setIsSubmitting(true)
@@ -102,6 +99,7 @@ export function CreateGroupButton(props: {
       onOpenChanged={(isOpen) => {
         onOpenStateChange?.(isOpen)
         updateMemberUsers([])
+        setName('')
       }}
     >
       <Title className="!my-0" text="Create a group" />
@@ -130,8 +128,8 @@ export function CreateGroupButton(props: {
             className="input input-bordered resize-none"
             disabled={isSubmitting}
             value={name}
-            maxLength={75}
-            onChange={(e) => updateName(e.target.value || '')}
+            maxLength={MAX_GROUP_NAME_LENGTH}
+            onChange={(e) => setName(e.target.value || '')}
           />
         </div>
 
