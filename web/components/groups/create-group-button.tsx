@@ -46,25 +46,23 @@ export function CreateGroupButton(props: {
   const onSubmit = async () => {
     setIsSubmitting(true)
     const groupName = name !== '' ? name : defaultName
-    if (groupName.length > MAX_GROUP_NAME_LENGTH) {
-      setErrorText(
-        `group name must be less than ${MAX_GROUP_NAME_LENGTH} characters`
-      )
-      setIsSubmitting(false)
-      return false
-    } else setErrorText('')
     const newGroup = {
       name: groupName,
-      about: '',
       memberIds: memberUsers.map((user) => user.id),
       anyoneCanJoin: false,
     }
     const result = await createGroup(newGroup).catch((e) => {
-      setErrorText(e.message)
+      const errorDetails = e.details[0]
+      if (errorDetails)
+        setErrorText(
+          `Error with ${errorDetails.field} field - ${errorDetails.error} `
+        )
+      else setErrorText(e.message)
       setIsSubmitting(false)
       console.error(e)
       return e
     })
+    console.log(result.details)
 
     if (result.group) {
       updateMemberUsers([])
@@ -76,8 +74,6 @@ export function CreateGroupButton(props: {
       setIsSubmitting(false)
       return true
     } else {
-      console.log(result.status, result.message)
-      setErrorText(result.message)
       setIsSubmitting(false)
       return false
     }

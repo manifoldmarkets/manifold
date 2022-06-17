@@ -16,9 +16,9 @@ import { z } from 'zod'
 
 const bodySchema = z.object({
   name: z.string().min(1).max(MAX_GROUP_NAME_LENGTH),
-  about: z.string().min(1).max(MAX_ABOUT_LENGTH),
   memberIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)),
   anyoneCanJoin: z.boolean(),
+  about: z.string().min(1).max(MAX_ABOUT_LENGTH).optional(),
 })
 
 export const creategroup = newEndpoint(['POST'], async (req, auth) => {
@@ -55,7 +55,7 @@ export const creategroup = newEndpoint(['POST'], async (req, auth) => {
     creatorId: creator.id,
     slug,
     name,
-    about,
+    about: about ?? '',
     createdTime: Date.now(),
     mostRecentActivityTime: Date.now(),
     // TODO: allow users to add contract ids on group creation
