@@ -20,7 +20,7 @@ export function ConfirmationButton(props: {
   }
   onSubmit: () => void
   children: ReactNode
-  onOpenStateChange?: (isOpen: boolean) => void
+  onOpenChanged?: (isOpen: boolean) => void
   onSubmitWithSuccess?: () => Promise<boolean>
 }) {
   const {
@@ -29,14 +29,14 @@ export function ConfirmationButton(props: {
     submitBtn,
     onSubmit,
     children,
-    onOpenStateChange,
+    onOpenChanged,
     onSubmitWithSuccess,
   } = props
 
   const [open, setOpen] = useState(false)
 
   function updateOpen(newOpen: boolean) {
-    onOpenStateChange?.(newOpen)
+    onOpenChanged?.(newOpen)
     setOpen(newOpen)
   }
 

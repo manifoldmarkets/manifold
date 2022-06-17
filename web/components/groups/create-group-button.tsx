@@ -103,7 +103,7 @@ export function CreateGroupButton(props: {
       }}
       onSubmit={() => {}}
       onSubmitWithSuccess={onSubmit}
-      onOpenStateChange={(isOpen) => {
+      onOpenChanged={(isOpen) => {
         onOpenStateChange?.(isOpen)
         updateMemberUsers([])
       }}
