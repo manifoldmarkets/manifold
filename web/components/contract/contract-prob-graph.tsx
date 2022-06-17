@@ -1,5 +1,6 @@
 import { DatumValue } from '@nivo/core'
-import { ResponsiveLine } from '@nivo/line'
+import { ResponsiveLine, SliceTooltipProps } from '@nivo/line'
+import { BasicTooltip } from '@nivo/tooltip'
 import dayjs from 'dayjs'
 import { memo } from 'react'
 import { Bet } from 'common/bet'
@@ -72,7 +73,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
           min: startDate,
           max: latestTime.toDate(),
         }}
-        xFormat={(d) => formatTime(+d.valueOf(), lessThanAWeek)}
+        xFormat={(d) => formatTooltipTime(+d.valueOf())}
         axisBottom={{
           tickValues: numXTickValues,
           format: (time) => formatTime(+time, lessThanAWeek),
@@ -87,13 +88,43 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
         enableArea
         margin={{ top: 20, right: 20, bottom: 25, left: 40 }}
         animate={false}
+        sliceTooltip={SliceTooltip}
       />
     </div>
   )
 })
 
+const SliceTooltip = ({ slice }: SliceTooltipProps) => {
+  return (
+    <BasicTooltip
+      id={slice.points.map((point) => [
+        <span key="date">
+          <strong>{point.data[`yFormatted`]}</strong>
+          <br></br>
+          {point.data['xFormatted']}
+        </span>,
+      ])}
+    />
+  )
+}
+
 function formatPercent(y: DatumValue) {
   return `${Math.round(+y.toString())}%`
+}
+
+function formatTooltipTime(time: number) {
+  const d = dayjs(time)
+
+  if (d.add(1, 'minute').isAfter(Date.now())) return 'Now'
+
+  if (d.isSame(Date.now(), 'day') || d.add(2, 'hour').isAfter(Date.now()))
+    return dayjs(time).format('h:mma')
+
+  if (d.add(36, 'hour').isAfter(Date.now())) return d.format('MMM D ha')
+
+  if (d.isSame(Date.now(), 'year')) return dayjs(time).format('MMM D')
+
+  return dayjs(time).format('MMM D, YYYY')
 }
 
 function formatTime(time: number, includeTime: boolean) {
