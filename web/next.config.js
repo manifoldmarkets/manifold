@@ -2,6 +2,17 @@ const API_DOCS_URL = 'https://docs.manifold.markets/api'
 
 /** @type {import('next').NextConfig} */
 module.exports = {
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.(graphql|gql)$/,
+      exclude: /node_modules/,
+      loader: 'graphql-tag/loader',
+    })
+    return config
+  },
+  webpackDevMiddleware: (config) => {
+    return config
+  },
   staticPageGenerationTimeout: 600, // e.g. stats page
   reactStrictMode: true,
   optimizeFonts: false,

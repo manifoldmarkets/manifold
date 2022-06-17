@@ -36,6 +36,7 @@
     "daisyui": "1.16.4",
     "dayjs": "1.10.7",
     "firebase": "9.6.0",
+    "graphql": "16.5.0",
     "gridjs": "5.0.2",
     "gridjs-react": "5.0.2",
     "lodash": "4.17.21",
