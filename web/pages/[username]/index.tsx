@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { UserPage } from 'web/components/user-page'
@@ -21,19 +21,18 @@ export default function UserProfile() {
   }, [username])
 
   const currentUser = useUser()
-  const userPage = useMemo(() => {
-    return user && user !== 'loading' ? (
-      <UserPage
-        user={user}
-        currentUser={currentUser || undefined}
-        defaultTabTitle={tab}
-      />
-    ) : (
-      <div />
-    )
-  }, [user, currentUser, tab])
 
   useTracking('view user profile', { username })
 
-  return user ? userPage : <Custom404 />
+  if (user === 'loading') return <div />
+
+  return user ? (
+    <UserPage
+      user={user}
+      currentUser={currentUser || undefined}
+      defaultTabTitle={tab}
+    />
+  ) : (
+    <Custom404 />
+  )
 }
