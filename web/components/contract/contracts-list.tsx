@@ -15,6 +15,7 @@ export function ContractsGrid(props: {
   showCloseTime?: boolean
   onContractClick?: (contract: Contract) => void
   className?: string
+  hideQuickBet?: boolean
 }) {
   const {
     contracts,
@@ -23,6 +24,7 @@ export function ContractsGrid(props: {
     loadMore,
     onContractClick,
     className,
+    hideQuickBet,
   } = props
 
   const [elem, setElem] = useState<HTMLElement | null>(null)
@@ -60,6 +62,7 @@ export function ContractsGrid(props: {
             onClick={
               onContractClick ? () => onContractClick(contract) : undefined
             }
+            hideQuickBet={hideQuickBet}
           />
         ))}
       </ul>

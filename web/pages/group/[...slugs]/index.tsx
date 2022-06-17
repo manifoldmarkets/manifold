@@ -1,15 +1,22 @@
-import { take, sortBy } from 'lodash'
+import { take, sortBy, debounce } from 'lodash'
 
 import { Group } from 'common/group'
 import { Comment } from 'common/comment'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { listAllBets } from 'web/lib/firebase/bets'
-import { Contract } from 'web/lib/firebase/contracts'
+import {
+  Contract,
+  listContracts,
+  listenForUserContracts,
+  setContract,
+  updateContract,
+} from 'web/lib/firebase/contracts'
 import {
   groupPath,
   getGroupBySlug,
   getGroupContracts,
+  updateGroup,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
@@ -34,6 +41,12 @@ import React, { useEffect, useState } from 'react'
 import { Discussion } from 'web/components/groups/Discussion'
 import { listenForCommentsOnGroup } from 'web/lib/firebase/comments'
 import { LoadingIndicator } from 'web/components/loading-indicator'
+import { Modal } from 'web/components/layout/modal'
+import { PlusIcon } from '@heroicons/react/outline'
+import { ContractSearch } from 'web/components/contract-search'
+import { useContracts } from 'web/hooks/use-contracts'
+import { SearchBox } from 'react-instantsearch-hooks-web'
+import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -61,7 +74,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     props: {
       group,
       creator,
-      contracts,
       traderScores,
       topTraders,
       creatorScores,
@@ -92,7 +104,6 @@ const groupSubpages = [undefined, 'discussion', 'questions', 'details'] as const
 export default function GroupPage(props: {
   group: Group | null
   creator: User
-  contracts: Contract[]
   traderScores: { [userId: string]: number }
   topTraders: User[]
   creatorScores: { [userId: string]: number }
@@ -101,20 +112,13 @@ export default function GroupPage(props: {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
     creator: null,
-    contracts: [],
     traderScores: {},
     topTraders: [],
     creatorScores: {},
     topCreators: [],
   }
-  const {
-    creator,
-    traderScores,
-    topTraders,
-    creatorScores,
-    topCreators,
-    contracts,
-  } = props
+  const { creator, traderScores, topTraders, creatorScores, topCreators } =
+    props
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -122,17 +126,23 @@ export default function GroupPage(props: {
 
   const group = useGroup(props.group?.id) ?? props.group
   const [messages, setMessages] = useState<Comment[] | undefined>(undefined)
+  const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
   useEffect(() => {
     if (group) listenForCommentsOnGroup(group.id, setMessages)
   }, [group])
 
-  const user = useUser()
-  const isCreator = user && group && user.id === group.creatorId
+  useEffect(() => {
+    if (group)
+      getGroupContracts(group).then((contracts) => setContracts(contracts))
+  }, [group])
 
+  const user = useUser()
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
   }
   const { memberIds } = group
+  const isCreator = user && group && user.id === group.creatorId
+  const isMember = user && memberIds.includes(user.id)
 
   const rightSidebar = (
     <Col className="mt-6 hidden xl:block">
@@ -142,7 +152,7 @@ export default function GroupPage(props: {
         creatorScores={creatorScores}
         user={user}
       />
-      {contracts.length > 0 && (
+      {contracts && (
         <div className={'mt-2'}>
           <div className={'my-2 text-lg text-indigo-700'}>Recent Questions</div>
           <ContractsGrid
@@ -159,7 +169,7 @@ export default function GroupPage(props: {
   )
 
   const leaderboardsTab = (
-    <Col className="mt-4 gap-8 px-4 lg:flex-row">
+    <Col className="mt-4 gap-8 px-4 md:flex-row">
       <GroupLeaderboards
         traderScores={traderScores}
         creatorScores={creatorScores}
@@ -180,11 +190,11 @@ export default function GroupPage(props: {
       <div className="px-3 lg:px-1">
         <Row className={' items-center justify-between gap-4 '}>
           <Title className={'line-clamp-2'} text={group.name} />
-          {user && memberIds.includes(user.id) && (
+          {isMember && (
             <CreateQuestionButton
               user={user}
-              overrideText={'Add a question'}
-              className={'w-40 flex-shrink-0'}
+              overrideText={'Add a new question'}
+              className={'w-48 flex-shrink-0'}
               query={`?groupId=${group.id}`}
             />
           )}
@@ -207,17 +217,22 @@ export default function GroupPage(props: {
             title: 'Questions',
             content: (
               <div className={'mt-2'}>
-                {contracts.length > 0 ? (
-                  <ContractsGrid
-                    contracts={contracts}
-                    hasMore={false}
-                    loadMore={() => {}}
-                  />
+                {contracts ? (
+                  contracts.length > 0 ? (
+                    <ContractsGrid
+                      contracts={contracts}
+                      hasMore={false}
+                      loadMore={() => {}}
+                    />
+                  ) : (
+                    <div className="p-2 text-gray-500">
+                      No questions yet. 🦗... Why not add one?
+                    </div>
+                  )
                 ) : (
-                  <div className="p-2 text-gray-500">
-                    No questions yet. 🦗... Why not add one?
-                  </div>
+                  <LoadingIndicator />
                 )}
+                {isMember && <AddContractButton group={group} user={user} />}
               </div>
             ),
             href: groupPath(group.slug, 'questions'),
@@ -386,6 +401,91 @@ function GroupLeaderboards(props: {
           },
         ]}
       />
+    </>
+  )
+}
+
+function AddContractButton(props: { group: Group; user: User }) {
+  const { group, user } = props
+  const [open, setOpen] = useState(false)
+  const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
+  const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    return listenForUserContracts(user.id, (contracts) => {
+      setContracts(
+        contracts.filter(
+          (c) =>
+            !group.contractIds.includes(c.id) &&
+            // TODO: It'll be easy to allow questions to be in multiple groups as long as we
+            // have the on-update-group function update the newly added contract's groupDetails (via contractIds)
+            !c.groupDetails
+        )
+      )
+    })
+  }, [group.contractIds, user.id])
+
+  async function addContractToGroup(contract: Contract) {
+    await updateGroup(group, {
+      ...group,
+      contractIds: [...group.contractIds, contract.id],
+    })
+    setOpen(false)
+  }
+
+  // List groups with the highest question count, then highest member count
+  // TODO use find-active-contracts to sort by?
+  const matches = sortBy(contracts, [
+    (contract) => -1 * contract.createdTime,
+  ]).filter(
+    (c) =>
+      checkAgainstQuery(query, c.question) ||
+      checkAgainstQuery(query, c.description) ||
+      checkAgainstQuery(query, c.tags.flat().join(' '))
+  )
+  const debouncedQuery = debounce(setQuery, 50)
+  return (
+    <>
+      <Modal open={open} setOpen={setOpen}>
+        <Col className={'max-h-[60vh] w-full gap-4 rounded-md bg-white p-8'}>
+          <div className={'text-lg text-indigo-700'}>
+            Select a question to add to your group
+          </div>
+          <input
+            type="text"
+            onChange={(e) => debouncedQuery(e.target.value)}
+            placeholder="Search your questions"
+            className="input input-bordered mb-4 w-full"
+          />
+          <div className={'overflow-y-scroll'}>
+            {contracts ? (
+              <ContractsGrid
+                contracts={matches}
+                loadMore={() => {}}
+                hasMore={false}
+                onContractClick={(contract) => {
+                  addContractToGroup(contract)
+                }}
+                className={'flex grid-cols-1 flex-col gap-3 p-1'}
+                hideQuickBet={true}
+              />
+            ) : (
+              <LoadingIndicator />
+            )}
+          </div>
+        </Col>
+      </Modal>
+      <Row className={'items-center justify-center'}>
+        <button
+          className={
+            'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-500'
+          }
+          onClick={() => setOpen(true)}
+        >
+          <PlusIcon className="mr-1 h-5 w-5" />
+          Add old questions to this group
+        </button>
+      </Row>
     </>
   )
 }

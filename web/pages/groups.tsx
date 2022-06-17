@@ -14,6 +14,7 @@ import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
 import { GroupMembersList } from 'web/pages/group/[...slugs]'
+import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])
@@ -61,11 +62,6 @@ export default function Groups(props: {
   }, [creatorsDict, groups])
 
   const [query, setQuery] = useState('')
-  // Copied from contracts-list.tsx; extract if we copy this again
-  const queryWords = query.toLowerCase().split(' ')
-  function check(corpus: string) {
-    return queryWords.every((word) => corpus.toLowerCase().includes(word))
-  }
 
   // List groups with the highest question count, then highest member count
   // TODO use find-active-contracts to sort by?
@@ -74,18 +70,18 @@ export default function Groups(props: {
     (group) => -1 * group.memberIds.length,
   ]).filter(
     (g) =>
-      check(g.name) ||
-      check(g.about || '') ||
-      check(creatorsDict[g.creatorId].username)
+      checkAgainstQuery(query, g.name) ||
+      checkAgainstQuery(query, g.about || '') ||
+      checkAgainstQuery(query, creatorsDict[g.creatorId].username)
   )
 
   const matchesOrderedByRecentActivity = sortBy(groups, [
     (group) => -1 * group.mostRecentActivityTime,
   ]).filter(
     (g) =>
-      check(g.name) ||
-      check(g.about || '') ||
-      check(creatorsDict[g.creatorId].username)
+      checkAgainstQuery(query, g.name) ||
+      checkAgainstQuery(query, g.about || '') ||
+      checkAgainstQuery(query, creatorsDict[g.creatorId].username)
   )
 
   // Not strictly necessary, but makes the "hold delete" experience less laggy
