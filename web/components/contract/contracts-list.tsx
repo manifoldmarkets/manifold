@@ -49,8 +49,7 @@ export function ContractsGrid(props: {
     <Col className="gap-8">
       <ul
         className={clsx(
-          'grid w-full grid-cols-1 gap-4 md:grid-cols-2',
-          className
+          className ? className : 'grid w-full grid-cols-1 gap-4 md:grid-cols-2'
         )}
       >
         {contracts.map((contract) => (

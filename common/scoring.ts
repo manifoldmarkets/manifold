@@ -1,13 +1,17 @@
-import { groupBy, sumBy, mapValues, partition } from 'lodash'
+import { groupBy, sumBy, mapValues, partition, sum } from 'lodash'
 
 import { Bet } from './bet'
-import { Contract } from './contract'
+import { Contract, CPMM } from './contract'
 import { getPayouts } from './payouts'
 
 export function scoreCreators(contracts: Contract[]) {
   const creatorScore = mapValues(
     groupBy(contracts, ({ creatorId }) => creatorId),
-    (contracts) => sumBy(contracts, ({ pool }) => (pool.YES + pool.NO) / 2)
+    (contracts) =>
+      contracts.map((contract) => {
+        if (contract.mechanism === 'cpmm-1') return contract.totalLiquidity
+        return sum(Object.values(contract.pool))
+      })
   )
 
   return creatorScore

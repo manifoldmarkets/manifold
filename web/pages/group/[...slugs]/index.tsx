@@ -167,7 +167,7 @@ export default function GroupPage(props: {
               .slice(0, 3)}
             hasMore={false}
             loadMore={() => {}}
-            className={'md:grid-cols-1'}
+            className={'grid w-full grid-cols-1 gap-4'}
           />
         </div>
       )}
