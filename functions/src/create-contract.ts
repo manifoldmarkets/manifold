@@ -28,7 +28,7 @@ import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
-import { Group, MAX_ID_LENGTH } from 'common/group'
+import { Group, MAX_ID_LENGTH } from '../../common/group'
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),

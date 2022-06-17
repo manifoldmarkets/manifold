@@ -56,7 +56,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   )
   activeContracts = [...unresolved, ...resolved]
 
-  // TODO: this only counts binary market pools.
   const creatorScores = scoreCreators(contracts)
   const traderScores = scoreTraders(contracts, bets)
   const [topCreators, topTraders] = await Promise.all([

@@ -1,7 +1,7 @@
 import { groupBy, sumBy, mapValues, partition, sum } from 'lodash'
 
 import { Bet } from './bet'
-import { Contract, CPMM } from './contract'
+import { Contract } from './contract'
 import { getPayouts } from './payouts'
 
 export function scoreCreators(contracts: Contract[]) {

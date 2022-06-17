@@ -70,7 +70,7 @@ export async function createCommentOnGroup(
     userAvatarUrl: user.avatarUrl,
     replyToCommentId: replyToCommentId,
   })
-  track('comment', {
+  track('group message', {
     user,
     commentId: ref.id,
     groupId,
