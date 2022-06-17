@@ -185,6 +185,7 @@ function GroupsButton() {
     </SidebarButton>
   )
 }
+
 export default function Sidebar(props: { className?: string }) {
   const { className } = props
   const router = useRouter()
