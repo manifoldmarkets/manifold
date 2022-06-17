@@ -1,6 +1,5 @@
 import {
   HomeIcon,
-  CakeIcon,
   SearchIcon,
   BookOpenIcon,
   DotsHorizontalIcon,
@@ -11,6 +10,7 @@ import {
   NewspaperIcon,
   UserGroupIcon,
   ChevronDownIcon,
+  TrendingUpIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -97,7 +97,7 @@ const signedOutNavigation = [
 
 const signedOutMobileNavigation = [
   { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
+  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
   { name: 'Blog', href: 'https://news.manifold.markets', icon: NewspaperIcon },
   {
     name: 'Discord',
