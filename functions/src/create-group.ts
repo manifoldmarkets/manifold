@@ -58,7 +58,6 @@ export const creategroup = newEndpoint(['POST'], async (req, auth) => {
     createdTime: Date.now(),
     mostRecentActivityTime: Date.now(),
     contractIds: [],
-    followCount: memberIds.length,
     anyoneCanJoin,
     memberIds,
   }

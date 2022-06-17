@@ -9,7 +9,6 @@ export type Group = {
   memberIds: string[] // User ids
   anyoneCanJoin: boolean
   contractIds: string[]
-  followCount: number
 }
 export const MAX_GROUP_NAME_LENGTH = 75
 export const MAX_ABOUT_LENGTH = 140
