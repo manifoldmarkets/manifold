@@ -135,12 +135,10 @@ export function ContractDetails(props: {
         {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
       {groupDetails && (
-        <Row className={'line-clamp-1 max-w-xs overflow-ellipsis'}>
+        <Row className={'line-clamp-1 mt-1 max-w-[200px]'}>
           <SiteLink href={`${groupPath(groupDetails[0].groupSlug)}`}>
-            <span>
-              <UserGroupIcon className="mx-1 inline h-5 w-5" />
-              {groupDetails[0].groupName}
-            </span>
+            <UserGroupIcon className="mx-1 mb-1 inline h-5 w-5" />
+            <span>{groupDetails[0].groupName}</span>
           </SiteLink>
         </Row>
       )}
@@ -149,13 +147,8 @@ export function ContractDetails(props: {
         <Row className="items-center gap-1">
           <ClockIcon className="h-5 w-5" />
 
-          {/* <DateTimeTooltip text="Market created:" time={contract.createdTime}>
-            {createdDate}
-          </DateTimeTooltip> */}
-
           {resolvedDate && contract.resolutionTime ? (
             <>
-              {/* {' - '} */}
               <DateTimeTooltip
                 text="Market resolved:"
                 time={contract.resolutionTime}
@@ -167,7 +160,6 @@ export function ContractDetails(props: {
 
           {!resolvedDate && closeTime && (
             <>
-              {/* {' - '}{' '} */}
               <EditableCloseDate
                 closeTime={closeTime}
                 contract={contract}

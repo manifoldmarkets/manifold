@@ -20,22 +20,12 @@ import { formatMoney } from 'common/util/format'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import {
-  CheckIcon,
-  PlusCircleIcon,
-  SelectorIcon,
-} from '@heroicons/react/outline'
-import { Combobox } from '@headlessui/react'
-import {
-  getGroup,
-  listenForMemberGroups,
-  updateGroup,
-} from 'web/lib/firebase/groups'
+import { getGroup, updateGroup } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
-import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
+import { GroupSelector } from 'web/components/groups/group-selector'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -89,7 +79,6 @@ export function NewContract(props: { question: string; groupId?: string }) {
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
   const [description, setDescription] = useState('')
-  const [memberGroups, setMemberGroups] = useState<Group[]>([])
   // const [tagText, setTagText] = useState<string>(tag ?? '')
   // const tags = parseWordsAsTags(tagText)
   useEffect(() => {
@@ -100,7 +89,6 @@ export function NewContract(props: { question: string; groupId?: string }) {
           setShowGroupSelector(false)
         }
       })
-    else if (creator) listenForMemberGroups(creator.id, setMemberGroups)
   }, [creator, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
@@ -123,13 +111,11 @@ export function NewContract(props: { question: string; groupId?: string }) {
   const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
   const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [query, setQuery] = useState('')
   const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(
     undefined
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
 
-  const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
@@ -214,12 +200,6 @@ export function NewContract(props: { question: string; groupId?: string }) {
 
   if (!creator) return <></>
 
-  const filteredGroups =
-    query === ''
-      ? memberGroups
-      : memberGroups.filter((group) => {
-          return group.name.toLowerCase().includes(query.toLowerCase())
-        })
   return (
     <div>
       <label className="label">
@@ -284,98 +264,13 @@ export function NewContract(props: { question: string; groupId?: string }) {
         </div>
       )}
 
-      {showGroupSelector && (
-        <div className="form-control items-start">
-          <Combobox
-            as="div"
-            value={selectedGroup}
-            onChange={setSelectedGroup}
-            nullable={true}
-          >
-            <Combobox.Label className="label justify-start gap-2">
-              Add to Group
-              <InfoTooltip text="Question will be displayed alongside the other questions in the group and winnings will contribute to the group's leaderboard." />
-            </Combobox.Label>
-            <div className="relative mt-2">
-              <Combobox.Input
-                className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                onChange={(event) => setQuery(event.target.value)}
-                displayValue={(group: Group) => group && group.name}
-              />
-              <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
-                <SelectorIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
-              </Combobox.Button>
+      <GroupSelector
+        selectedGroup={selectedGroup}
+        setSelectedGroup={setSelectedGroup}
+        creator={creator}
+        showSelector={showGroupSelector}
+      />
 
-              <Combobox.Options
-                static={isCreatingNewGroup}
-                className="absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
-              >
-                {filteredGroups.map((group: Group) => (
-                  <Combobox.Option
-                    key={group.id}
-                    value={group}
-                    className={({ active }) =>
-                      clsx(
-                        'relative h-12 cursor-pointer select-none py-2 pl-4 pr-9',
-                        active ? 'bg-indigo-500 text-white' : 'text-gray-900'
-                      )
-                    }
-                  >
-                    {({ active, selected }) => (
-                      <>
-                        {selected && (
-                          <span
-                            className={clsx(
-                              'absolute inset-y-0 left-2 flex items-center pr-4',
-                              active ? 'text-white' : 'text-indigo-600'
-                            )}
-                          >
-                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                          </span>
-                        )}
-                        <span
-                          className={clsx(
-                            'ml-5 mt-1 block truncate',
-                            selected && 'font-semibold'
-                          )}
-                        >
-                          {group.name}
-                        </span>
-                      </>
-                    )}
-                  </Combobox.Option>
-                ))}
-
-                <CreateGroupButton
-                  user={creator}
-                  onOpenStateChange={setIsCreatingNewGroup}
-                  className={
-                    'w-full justify-start rounded-none border-0 bg-white pl-2 text-base font-normal text-gray-900 hover:bg-indigo-500 hover:text-white'
-                  }
-                  label={'Create a new Group'}
-                  goToGroupOnSubmit={false}
-                  icon={
-                    <PlusCircleIcon className="text-primary mr-2 h-5 w-5" />
-                  }
-                />
-              </Combobox.Options>
-            </div>
-          </Combobox>
-        </div>
-      )}
-      {!showGroupSelector && (
-        <>
-          <div className={'label justify-start'}>
-            In Group:
-            <span className=" ml-1.5 text-indigo-600">
-              {selectedGroup?.name}
-            </span>
-          </div>
-        </>
-      )}
       <Spacer h={6} />
 
       <div className="form-control mb-1 items-start">
