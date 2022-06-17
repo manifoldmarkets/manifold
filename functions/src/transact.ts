@@ -11,17 +11,7 @@ export const transact = functions
     const userId = context?.auth?.uid
     if (!userId) return { status: 'error', message: 'Not authorized' }
 
-    const {
-      amount,
-      fromType,
-      fromId,
-      toId,
-      toType,
-      category,
-      token,
-      data: innerData,
-      description,
-    } = data
+    const { amount, fromType, fromId, toId, toType, description } = data
 
     if (fromType !== 'USER')
       return {
@@ -35,7 +25,7 @@ export const transact = functions
         message: 'Must be authenticated with userId equal to specified fromId.',
       }
 
-    if (isNaN(amount) || !isFinite(amount))
+    if (amount <= 0 || isNaN(amount) || !isFinite(amount))
       return { status: 'error', message: 'Invalid amount' }
 
     // Run as transaction to prevent race conditions.
@@ -79,10 +69,9 @@ export const transact = functions
         toType,
 
         amount,
-        category,
-        data: innerData,
-        token,
-
+        // TODO: Unhardcode once we have non-donation txns
+        token: 'M$',
+        category: 'CHARITY',
         description,
       })
 
