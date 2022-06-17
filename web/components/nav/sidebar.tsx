@@ -155,31 +155,36 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
     </Link>
   )
 }
-function GroupsButton() {
+
+function SidebarButton(props: {
+  text: string
+  icon: React.ComponentType<{ className?: string }>
+  children?: React.ReactNode
+}) {
+  const { text, children } = props
   return (
     <a className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:cursor-pointer hover:bg-gray-100">
-      <UserGroupIcon
+      <props.icon
         className="-ml-1 mr-3 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
         aria-hidden="true"
       />
-      <span className="truncate">Groups</span>
-      <ChevronDownIcon className=" mt-0.5 ml-2 h-5 w-5" aria-hidden="true" />
+      <span className="truncate">{text}</span>
+      {children}
     </a>
   )
 }
 
 function MoreButton() {
-  return (
-    <a className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:cursor-pointer hover:bg-gray-100">
-      <DotsHorizontalIcon
-        className="-ml-1 mr-3 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
-        aria-hidden="true"
-      />
-      <span className="truncate">More</span>
-    </a>
-  )
+  return <SidebarButton text={'More'} icon={DotsHorizontalIcon} />
 }
 
+function GroupsButton() {
+  return (
+    <SidebarButton icon={UserGroupIcon} text={'Groups'}>
+      <ChevronDownIcon className=" mt-0.5 ml-2 h-5 w-5" aria-hidden="true" />
+    </SidebarButton>
+  )
+}
 export default function Sidebar(props: { className?: string }) {
   const { className } = props
   const router = useRouter()
