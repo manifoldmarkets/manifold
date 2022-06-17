@@ -15,12 +15,15 @@ export type User = {
 
   balance: number
   totalDeposits: number
-  totalPnLCached: {
+  portfolioHistory: PortfolioMetrics[]
+
+  profitCached: {
     daily: number
     weekly: number
     monthly: number
     allTime: number
   }
+
   creatorVolumeCached: {
     daily: number
     weekly: number
@@ -50,3 +53,10 @@ export type PrivateUser = {
 }
 
 export type notification_subscribe_types = 'all' | 'less' | 'none'
+
+export type PortfolioMetrics = {
+  investmentValue: number
+  balance: number
+  totalDeposits: number
+  timestamp: number
+}

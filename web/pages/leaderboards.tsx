@@ -16,9 +16,9 @@ import { Title } from 'web/components/title'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
-  return queryTopCreators('weekly')
+  return queryLeaderboardUsers('allTime')
 }
-const queryTopCreators = async (period: LeaderboardPeriod) => {
+const queryLeaderboardUsers = async (period: LeaderboardPeriod) => {
   const [topTraders, topCreators] = await Promise.all([
     getTopTraders(period).catch(() => {}),
     getTopCreators(period).catch(() => {}),
@@ -44,11 +44,11 @@ export default function Leaderboards(props: {
   const [topTradersState, setTopTraders] = useState(props.topTraders)
   const [topCreatorsState, setTopCreators] = useState(props.topCreators)
   const [isLoading, setLoading] = useState(false)
-  const [period, setPeriod] = useState<LeaderboardPeriod>('weekly')
+  const [period, setPeriod] = useState<LeaderboardPeriod>('allTime')
 
   useEffect(() => {
     setLoading(true)
-    queryTopCreators(period).then((res) => {
+    queryLeaderboardUsers(period).then((res) => {
       setTopTraders(res.props.topTraders as User[])
       setTopCreators(res.props.topCreators as User[])
       setLoading(false)
@@ -60,7 +60,7 @@ export default function Leaderboards(props: {
       <Title text={'Leaderboards'} className={'hidden md:block'} />
       <Col className="gap-4 text-center">
         <select
-          onChange={async (e) => {
+          onChange={(e) => {
             setPeriod(e.target.value as LeaderboardPeriod)
           }}
           value={period}
@@ -83,8 +83,7 @@ export default function Leaderboards(props: {
               columns={[
                 {
                   header: 'Total profit',
-                  renderCell: (user) =>
-                    formatMoney(user.totalPnLCached[period]),
+                  renderCell: (user) => formatMoney(user.profitCached[period]),
                 },
               ]}
             />

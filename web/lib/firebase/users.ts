@@ -32,7 +32,6 @@ import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
-import { Leaderboard } from 'web/components/leaderboard'
 
 export type { User }
 
@@ -184,7 +183,7 @@ export function listenForPrivateUsers(
 export function getTopTraders(period: LeaderboardPeriod) {
   const topTraders = query(
     collection(db, 'users'),
-    orderBy('totalPnLCached.' + period, 'desc'),
+    orderBy('profitCached.' + period, 'desc'),
     limit(20)
   )
 
