@@ -440,7 +440,7 @@ function AddContractButton(props: { group: Group; user: User }) {
       <Modal open={open} setOpen={setOpen}>
         <Col className={'max-h-[60vh] w-full gap-4 rounded-md bg-white p-8'}>
           <div className={'text-lg text-indigo-700'}>
-            Select a question to add to your group
+            Add a question to your group
           </div>
           <input
             type="text"
