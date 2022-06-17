@@ -41,7 +41,7 @@ export function Discussion(props: {
 
   useEffect(() => {
     scrollToBottomRef?.scrollIntoView()
-  }, [isSubmitting, scrollToBottomRef, replyToUsername])
+  }, [isSubmitting, scrollToBottomRef])
 
   useEffect(() => {
     const elementInUrl = router.asPath.split('#')[1]
@@ -75,7 +75,7 @@ export function Discussion(props: {
         }
       >
         {messages.map((message, i) => (
-          <GroupComment
+          <GroupMessage
             user={user}
             key={message.id}
             comment={message}
@@ -122,7 +122,7 @@ export function Discussion(props: {
   )
 }
 
-function GroupComment_(props: {
+function GroupMessage_(props: {
   user: User | null | undefined
   comment: Comment
   group: Group
@@ -181,4 +181,4 @@ function GroupComment_(props: {
     </Row>
   )
 }
-const GroupComment = memo(GroupComment_)
+const GroupMessage = memo(GroupMessage_)

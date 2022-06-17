@@ -1,5 +1,4 @@
 import { httpsCallable } from 'firebase/functions'
-import { Group } from 'common/group'
 import { Txn } from 'common/txn'
 import { User } from 'common/user'
 import { randomString } from 'common/util/random'

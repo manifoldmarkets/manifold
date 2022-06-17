@@ -2,7 +2,7 @@ import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { minBy, maxBy, groupBy, partition, sumBy, Dictionary } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
@@ -467,11 +467,13 @@ export function CommentInputTextArea(props: {
     enterToSubmit,
   } = props
 
+  const memoizedSetComment = useMemo(() => setComment, [setComment])
   useEffect(() => {
     if (!replyToUsername || !user || replyToUsername === user.username) return
     const replacement = `@${replyToUsername} `
-    setComment(replacement + commentText.replace(replacement, ''))
-  }, [user, replyToUsername])
+    memoizedSetComment(replacement + commentText.replace(replacement, ''))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, replyToUsername, memoizedSetComment])
   return (
     <>
       <Row className="gap-1.5 text-gray-700">

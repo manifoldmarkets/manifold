@@ -8,10 +8,12 @@ export function scoreCreators(contracts: Contract[]) {
   const creatorScore = mapValues(
     groupBy(contracts, ({ creatorId }) => creatorId),
     (contracts) =>
-      contracts.map((contract) => {
-        if (contract.mechanism === 'cpmm-1') return contract.totalLiquidity
-        return sum(Object.values(contract.pool))
-      })
+      sumBy(
+        contracts.map((contract) => {
+          if (contract.mechanism === 'cpmm-1') return contract.totalLiquidity
+          return Object.values(contract.pool)
+        })
+      )
   )
 
   return creatorScore
