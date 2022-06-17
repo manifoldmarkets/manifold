@@ -13,6 +13,7 @@ import {
   NumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
+import { Comment } from 'common/comment'
 import BetRow from '../bet-row'
 import { AnswersGraph } from '../answers/answers-graph'
 import { Contract } from 'common/contract'
@@ -24,6 +25,7 @@ import { NumericGraph } from './numeric-graph'
 export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
+  comments: Comment[]
   className?: string
 }) => {
   const { contract, bets, className } = props
