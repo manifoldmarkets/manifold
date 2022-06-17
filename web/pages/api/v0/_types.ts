@@ -43,7 +43,7 @@ export type ApiAnswer = Answer & {
 }
 
 export type FullMarket = LiteMarket & {
-  bets: Exclude<Bet, 'userId'>[]
+  bets: Bet[]
   comments: Comment[]
   answers?: ApiAnswer[]
 }

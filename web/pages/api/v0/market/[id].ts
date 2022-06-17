@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { listAllBets } from 'web/lib/firebase/bets'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
@@ -13,17 +13,11 @@ export default async function handler(
   const { id } = req.query
   const contractId = id as string
 
-  const [contract, allBets, comments] = await Promise.all([
+  const [contract, bets, comments] = await Promise.all([
     getContractFromId(contractId),
     listAllBets(contractId),
     listAllComments(contractId),
   ])
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const bets = allBets.map(({ userId, ...bet }) => bet) as Exclude<
-    Bet,
-    'userId'
-  >[]
 
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })
