@@ -8,9 +8,12 @@ import { ContractsGrid } from './contract/contracts-list'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { withTracking } from 'web/lib/service/analytics'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export function LandingPagePanel(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
+
+  useTracking('view landing page')
 
   return (
     <>

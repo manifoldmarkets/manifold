@@ -13,6 +13,7 @@ import {
 } from '../../common/new-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { redeemShares } from './redeem-shares'
+import { log } from './utils'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -33,9 +34,11 @@ const numericSchema = z.object({
 })
 
 export const placebet = newEndpoint(['POST'], async (req, auth) => {
+  log('Inside endpoint handler.')
   const { amount, contractId } = validate(bodySchema, req.body)
 
   const result = await firestore.runTransaction(async (trans) => {
+    log('Inside main transaction.')
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const [contractSnap, userSnap] = await Promise.all([
@@ -44,6 +47,7 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
     ])
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
+    log('Loaded user and contract snapshots.')
 
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
@@ -82,6 +86,7 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
         throw new APIError(500, 'Contract has invalid type/mechanism.')
       }
     })()
+    log('Calculated new bet information.')
 
     if (
       mechanism == 'cpmm-1' &&
@@ -95,7 +100,9 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
     const newBalance = user.balance - amount - loanAmount
     const betDoc = contractDoc.collection('bets').doc()
     trans.create(betDoc, { id: betDoc.id, userId: user.id, ...newBet })
+    log('Created new bet document.')
     trans.update(userDoc, { balance: newBalance })
+    log('Updated user balance.')
     trans.update(
       contractDoc,
       removeUndefinedProps({
@@ -108,11 +115,14 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
         volume: volume + amount,
       })
     )
+    log('Updated contract properties.')
 
     return { betId: betDoc.id }
   })
 
+  log('Main transaction finished.')
   await redeemShares(auth.uid, contractId)
+  log('Share redemption transaction finished.')
   return result
 })
 

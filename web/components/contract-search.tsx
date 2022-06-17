@@ -131,7 +131,6 @@ export function ContractSearch(props: {
             input: '!pl-10 !input !input-bordered shadow-none w-[100px]',
             resetIcon: 'mt-2 hidden sm:flex',
           }}
-          onBlur={trackCallback('search')}
         />
         <select
           className="!select !select-bordered"

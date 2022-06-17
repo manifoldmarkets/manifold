@@ -47,7 +47,7 @@ function UsersTable() {
   return (
     <>
       <Grid
-        data={users}
+        data={fullUsers}
         columns={[
           {
             id: 'avatarUrl',
@@ -62,7 +62,10 @@ function UsersTable() {
               class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
               href="/${cell}">@${cell}</a>`),
           },
-          'Email',
+          {
+            id: 'email',
+            name: 'Email',
+          },
           {
             id: 'createdTime',
             name: 'Created Time',

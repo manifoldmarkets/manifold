@@ -75,7 +75,7 @@ const useContractPage = () => {
   const [contract, setContract] = useState<Contract | undefined>()
 
   useEffect(() => {
-    const onBack = () => {
+    const updateContract = () => {
       const path = location.pathname.split('/').slice(1)
       if (path[0] === 'home') setContract(undefined)
       else {
@@ -87,23 +87,24 @@ const useContractPage = () => {
         }
       }
     }
-    window.addEventListener('popstate', onBack)
 
-    // Hack. Listen to changes in href to clear contract on navigate home.
-    let href = document.location.href
-    const observer = new MutationObserver(function (_mutations) {
-      if (href != document.location.href) {
-        href = document.location.href
+    const { pushState, replaceState } = window.history
 
-        const path = location.pathname.split('/').slice(1)
-        if (path[0] === 'home') setContract(undefined)
-      }
-    })
-    observer.observe(document, { subtree: true, childList: true })
+    window.history.pushState = function () {
+      // eslint-disable-next-line prefer-rest-params
+      pushState.apply(history, arguments as any)
+      updateContract()
+    }
+
+    window.history.replaceState = function () {
+      // eslint-disable-next-line prefer-rest-params
+      replaceState.apply(history, arguments as any)
+      updateContract()
+    }
 
     return () => {
-      window.removeEventListener('popstate', onBack)
-      observer.disconnect()
+      window.history.pushState = pushState
+      window.history.replaceState = replaceState
     }
   }, [])
 
