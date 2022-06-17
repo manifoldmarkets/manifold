@@ -6,7 +6,7 @@ import { getOutcomeProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
 import { Contract, FreeResponseContract } from 'common/contract'
 import { User } from 'common/user'
-import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
+import { CommentTipMap } from 'web/hooks/use-tip-txns'
 
 export type ActivityItem =
   | DescriptionItem

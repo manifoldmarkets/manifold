@@ -13,7 +13,6 @@ import {
   NumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import { Comment } from 'common/comment'
 import BetRow from '../bet-row'
 import { AnswersGraph } from '../answers/answers-graph'
 import { Contract } from 'common/contract'
