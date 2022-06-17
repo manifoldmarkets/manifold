@@ -11,7 +11,7 @@ import {
   MAX_GROUP_NAME_LENGTH,
   MAX_ID_LENGTH,
 } from '../../common/group'
-import { newEndpoint, validate } from '../../functions/src/api'
+import { APIError, newEndpoint, validate } from '../../functions/src/api'
 import { z } from 'zod'
 
 const bodySchema = z.object({
@@ -26,11 +26,10 @@ export const creategroup = newEndpoint(['POST'], async (req, auth) => {
     bodySchema,
     req.body
   )
-  const userId = auth.uid
-  if (!userId) return { status: 'error', message: 'Not authorized' }
 
-  const creator = await getUser(userId)
-  if (!creator) return { status: 'error', message: 'User not found' }
+  const creator = await getUser(auth.uid)
+  if (!creator)
+    throw new APIError(400, 'No user exists with the authenticated user ID.')
 
   // Add creator id to member ids for convenience
   if (!memberIds.includes(creator.id)) memberIds.push(creator.id)
