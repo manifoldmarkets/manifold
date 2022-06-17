@@ -5,13 +5,7 @@ import { Comment } from 'common/comment'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { listAllBets } from 'web/lib/firebase/bets'
-import {
-  Contract,
-  listContracts,
-  listenForUserContracts,
-  setContract,
-  updateContract,
-} from 'web/lib/firebase/contracts'
+import { Contract, listenForUserContracts } from 'web/lib/firebase/contracts'
 import {
   groupPath,
   getGroupBySlug,
@@ -38,14 +32,11 @@ import { Tabs } from 'web/components/layout/tabs'
 import { ContractsGrid } from 'web/components/contract/contracts-list'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import React, { useEffect, useState } from 'react'
-import { Discussion } from 'web/components/groups/Discussion'
+import { Discussion } from 'web/components/groups/discussion'
 import { listenForCommentsOnGroup } from 'web/lib/firebase/comments'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
 import { PlusIcon } from '@heroicons/react/outline'
-import { ContractSearch } from 'web/components/contract-search'
-import { useContracts } from 'web/hooks/use-contracts'
-import { SearchBox } from 'react-instantsearch-hooks-web'
 import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 
 export const getStaticProps = fromPropz(getStaticPropz)
