@@ -67,9 +67,9 @@ export default function Groups(props: {
     return queryWords.every((word) => corpus.toLowerCase().includes(word))
   }
 
-  // List recently active groups first, then groups with the highest question count, then highest member count
+  // List groups with the highest question count, then highest member count
+  // TODO use find-active-contracts to sort by?
   const matches = sortBy(groups, [
-    (group) => -1 * group.mostRecentActivityTime,
     (group) => -1 * group.contractIds.length,
     (group) => -1 * group.memberIds.length,
   ]).filter(
@@ -150,7 +150,7 @@ export default function Groups(props: {
                             <Col className="gap-4">
                               {matchesOrderedByRecentActivity
                                 .filter((match) =>
-                                  match.memberIds.includes(user.id)
+                                  memberGroupIds.includes(match.id)
                                 )
                                 .map((group) => (
                                   <GroupCard

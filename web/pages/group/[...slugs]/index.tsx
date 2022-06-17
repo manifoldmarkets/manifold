@@ -27,7 +27,6 @@ import Custom404 from '../../404'
 import { SEO } from 'web/components/SEO'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { findActiveContracts } from 'web/components/feed/find-active-contracts'
 import { Tabs } from 'web/components/layout/tabs'
 import { ContractsGrid } from 'web/components/contract/contracts-list'
 import { CreateQuestionButton } from 'web/components/create-question-button'
@@ -49,13 +48,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     contracts.map((contract: Contract) => listAllBets(contract.id))
   )
 
-  let activeContracts = findActiveContracts(contracts, [], flatten(bets), {})
-  const [resolved, unresolved] = partition(
-    activeContracts,
-    ({ isResolved }) => isResolved
-  )
-  activeContracts = [...unresolved, ...resolved]
-
   const creatorScores = scoreCreators(contracts)
   const traderScores = scoreTraders(contracts, bets)
   const [topCreators, topTraders] = await Promise.all([
@@ -70,7 +62,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       group,
       creator,
       contracts,
-      activeContracts,
       traderScores,
       topTraders,
       creatorScores,
@@ -102,9 +93,6 @@ export default function GroupPage(props: {
   group: Group | null
   creator: User
   contracts: Contract[]
-  activeContracts: Contract[]
-  activeContractBets: Bet[][]
-  activeContractComments: Comment[][]
   traderScores: { [userId: string]: number }
   topTraders: User[]
   creatorScores: { [userId: string]: number }
@@ -114,9 +102,6 @@ export default function GroupPage(props: {
     group: null,
     creator: null,
     contracts: [],
-    activeContracts: [],
-    activeContractBets: [],
-    activeContractComments: [],
     traderScores: {},
     topTraders: [],
     creatorScores: {},
