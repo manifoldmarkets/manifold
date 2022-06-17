@@ -10,6 +10,7 @@ import { Spacer } from './layout/spacer'
 import { YesNoSelector } from './yes-no-selector'
 import {
   formatMoney,
+  formatMoneyWithDecimals,
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
@@ -347,7 +348,9 @@ function BuyPanel(props: {
             </div>
 
             {cpmmFees !== false && (
-              <InfoTooltip text={`Includes ${formatMoney(cpmmFees)} in fees`} />
+              <InfoTooltip
+                text={`Includes ${formatMoneyWithDecimals(cpmmFees)} in fees`}
+              />
             )}
 
             {dpmTooltip && <InfoTooltip text={dpmTooltip} />}
