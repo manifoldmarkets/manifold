@@ -187,9 +187,10 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
       <Row className="items-center justify-between gap-2">
         <span className="text-xl">{group.name}</span>
       </Row>
-      <div className="flex flex-col items-start justify-start gap-2 text-sm text-gray-500 sm:flex-row">
-        <div>{group.contractIds.length} questions</div>
+      <div className="flex flex-col items-start justify-start gap-2 text-sm text-gray-500 ">
         <Row>
+          {group.contractIds.length} questions
+          <div className={'mx-2'}>•</div>
           <div className="mr-1">Created by</div>
           <UserLink
             className="text-neutral"

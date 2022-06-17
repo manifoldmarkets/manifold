@@ -105,26 +105,21 @@ service cloud.firestore {
                                                                     .hasOnly(['isSeen', 'viewTime']);
     }
 
-    function messageMatchesUser(userId, message) {
-      // it's a bad look if someone can impersonate other ids/names/avatars so check everything
-      let user = get(/databases/$(database)/documents/users/$(userId));
-      return message.userId == userId
-        && message.userName == user.data.name
-        && message.userUsername == user.data.username
-        && message.userAvatarUrl == user.data.avatarUrl;
-    }
-
-    match /groups/{groupId}/messages/{messageId} {
-      allow read;
-      allow create: if request.auth != null && messageMatchesUser(request.auth.uid, request.resource.data);
-    }
-
     match /groups/{groupId} {
-          allow read;
-          allow update: if request.auth.uid in resource.data.memberIds
-            && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['name', 'about','contractIds', 'memberIds', 'anyoneCanJoin' ]);
-          allow delete: if request.auth.uid == resource.data.creatorId;
-        }
+      allow read;
+      allow update: if request.auth.uid in resource.data.memberIds
+                       && request.resource.data.diff(resource.data).affectedKeys()
+                                                                    .hasOnly(['name', 'about', 'contractIds', 'memberIds', 'anyoneCanJoin' ]);
+      allow delete: if request.auth.uid == resource.data.creatorId;
+
+      function isMember() {
+        return request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+        //alternative: exists(/databases/$(database)/documents/groups/$(groupId)/users/$(request.auth.uid));
+      }
+      match /comments/{commentId} {
+        allow read;
+        allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isMember();
+      }
+    }
   }
 }
