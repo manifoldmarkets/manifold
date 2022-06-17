@@ -6,6 +6,7 @@ import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 import {
   Group,
+  GroupUser,
   MAX_ABOUT_LENGTH,
   MAX_GROUP_NAME_LENGTH,
   MAX_ID_LENGTH,
@@ -63,6 +64,21 @@ export const creategroup = newEndpoint(['POST'], async (req, auth) => {
   }
 
   await groupRef.create(group)
+
+  await Promise.all(
+    memberIds.map(async (memberId) => {
+      const member = await getUser(memberId)
+      if (!member) return
+      const groupUser: GroupUser = {
+        id: member.id,
+        username: member.username,
+        name: member.name,
+        avatarUrl: member.avatarUrl,
+        role: 'member',
+      }
+      await groupRef.collection('users').doc(memberId).set(groupUser)
+    })
+  )
 
   return { status: 'success', group: group }
 })

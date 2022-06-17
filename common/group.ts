@@ -19,3 +19,11 @@ export type GroupDetails = {
   groupSlug: string
   groupName: string
 }
+
+export type GroupUser = {
+  id: string // user id
+  username: string
+  name: string
+  avatarUrl?: string
+  role: 'member' | 'creator' | 'admin' | 'follower'
+}

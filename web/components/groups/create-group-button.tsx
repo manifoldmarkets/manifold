@@ -57,7 +57,7 @@ export function CreateGroupButton(props: {
       name: groupName,
       about: 'nada',
       memberIds: memberUsers.map((user) => user.id),
-      anyoneCanJoin: true,
+      anyoneCanJoin: false,
     }
     const result = await createGroup(newGroup).catch((e) => {
       setErrorText(e.message)
