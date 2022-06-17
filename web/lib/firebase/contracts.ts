@@ -28,7 +28,7 @@ import { MAX_FEED_CONTRACTS } from 'common/recommended-contracts'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
-export type { Contract, FreeResponseContract }
+export type { Contract }
 
 export function contractPath(contract: Contract) {
   return `/${contract.creatorUsername}/${contract.slug}`
