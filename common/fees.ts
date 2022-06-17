@@ -1,6 +1,6 @@
-export const PLATFORM_FEE = 0.01
-export const CREATOR_FEE = 0.06
-export const LIQUIDITY_FEE = 0.06
+export const PLATFORM_FEE = 0
+export const CREATOR_FEE = 0.1
+export const LIQUIDITY_FEE = 0
 
 export const DPM_PLATFORM_FEE = 0.01
 export const DPM_CREATOR_FEE = 0.04

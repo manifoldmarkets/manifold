@@ -22,6 +22,7 @@ import {
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
+import { withTracking } from 'web/lib/service/analytics'
 
 export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
   const { contract } = props
@@ -143,7 +144,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
                 isSubmitting && 'loading'
               )}
               disabled={!canSubmit}
-              onClick={submitAnswer}
+              onClick={withTracking(submitAnswer, 'submit answer')}
             >
               Submit answer & buy
             </button>
@@ -151,7 +152,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
             text && (
               <button
                 className="btn self-end whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-                onClick={firebaseLogin}
+                onClick={withTracking(firebaseLogin, 'answer panel sign in')}
               >
                 Sign in
               </button>

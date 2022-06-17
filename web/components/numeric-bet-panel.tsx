@@ -19,6 +19,7 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import { SignUpPrompt } from './sign-up-prompt'
+import { track } from 'web/lib/service/analytics'
 
 export function NumericBetPanel(props: {
   contract: NumericContract
@@ -53,7 +54,6 @@ function NumericBuyPanel(props: {
 
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
 
-  const [valueError, setValueError] = useState<string | undefined>()
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -97,6 +97,15 @@ function NumericBuyPanel(props: {
         }
         setIsSubmitting(false)
       })
+
+    track('bet', {
+      location: 'numeric panel',
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount: betAmount,
+      value,
+    })
   }
 
   const betDisabled = isSubmitting || !betAmount || !bucketChoice || error

@@ -354,10 +354,11 @@ Requires no authorization.
 - Response type: A `FullMarket`
 
   ```tsx
-  // A complete market, along with bets and comments
+  // A complete market, along with bets, comments, and answers (for free response markets)
   type FullMarket = LiteMarket & {
     bets: Bet[]
     comments: Comment[]
+    answers?: Answer[]
   }
 
   type Bet = {
@@ -449,7 +450,7 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
                  "question":"Is there life on Mars?", \
                  "description":"I'm not going to type some long ass example description.", \
                  "closeTime":1700000000000, \
-                 initialProb:25}'
+                 "initialProb":25}'
 ```
 
 ## Changelog

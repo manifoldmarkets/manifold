@@ -498,6 +498,24 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
       Our Goal
       To serve 1.8 million crisis contacts annually, by the end of our 25th year, while continuing to innovate on our core services.`,
   },
+  {
+    name: 'ACLU',
+    website: 'https://www.aclu.org/',
+    photo: 'https://i.imgur.com/nbSYuDC.png',
+    preview:
+      'The ACLU works in the courts, legislatures, and communities to defend and preserve the individual rights and liberties guaranteed to all people in this country by the Constitution and laws of the United States.',
+    description: `
+    THREE THINGS TO KNOW ABOUT THE ACLU
+•	We protect American values. In many ways, the ACLU is the nation's most conservative organization. Our job is to conserve America's original civic values - the Constitution and the Bill of Rights - and defend the rights of every man, woman and child in this country.
+•	We're not anti-anything. The only things we fight are attempts to take away or limit your civil liberties, like your right to practice any religion you want (or none at all); or to decide in private whether or not to have a child; or to speak out - for or against - anything at all; or to be treated with equality and fairness, no matter who you are.
+•	We're there for you. Rich or poor, straight or gay, black or white or brown, urban or rural, pious or atheist, American-born or foreign-born, able-bodied or living with a disability. Every person in this country should have the same basic rights. And since our founding in 1920, we've been working hard to make sure no one takes them away.
+
+The American Civil Liberties Union is our nation's guardian of liberty, working daily in courts, legislatures and communities to defend and preserve the individual rights and liberties that the Constitution and laws of the United States guarantee everyone in this country.
+
+"So long as we have enough people in this country willing to fight for their rights, we'll be called a democracy," ACLU Founder Roger Baldwin said.
+
+The U.S. Constitution and the Bill of Rights trumpet our aspirations for the kind of society that we want to be. But for much of our history, our nation failed to fulfill the promise of liberty for whole groups of people.`,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {

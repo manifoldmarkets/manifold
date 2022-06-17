@@ -11,6 +11,8 @@ import { useUserLiquidity } from 'web/hooks/use-liquidity'
 import { Tabs } from './layout/tabs'
 import { NoLabel, YesLabel } from './outcome-label'
 import { Col } from './layout/col'
+import { InfoTooltip } from './info-tooltip'
+import { track } from 'web/lib/service/analytics'
 
 export function LiquidityPanel(props: { contract: CPMMContract }) {
   const { contract } = props
@@ -29,13 +31,13 @@ export function LiquidityPanel(props: { contract: CPMMContract }) {
     <Tabs
       tabs={[
         {
-          title: 'Add liquidity',
+          title: 'Subsidize',
           content: <AddLiquidityPanel contract={contract} />,
         },
         ...(showWithdrawal
           ? [
               {
-                title: 'Withdraw liquidity',
+                title: 'Withdraw',
                 content: (
                   <WithdrawLiquidityPanel
                     contract={contract}
@@ -45,6 +47,10 @@ export function LiquidityPanel(props: { contract: CPMMContract }) {
               },
             ]
           : []),
+        {
+          title: 'Pool',
+          content: <ViewLiquidityPanel contract={contract} />,
+        },
       ]}
     />
   )
@@ -52,7 +58,7 @@ export function LiquidityPanel(props: { contract: CPMMContract }) {
 
 function AddLiquidityPanel(props: { contract: CPMMContract }) {
   const { contract } = props
-  const { id: contractId } = contract
+  const { id: contractId, slug } = contract
 
   const user = useUser()
 
@@ -93,13 +99,16 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
           setError('Server error')
         }
       })
-      .catch((e) => setError('Server error'))
+      .catch((_) => setError('Server error'))
+
+    track('add liquidity', { amount, contractId, slug })
   }
 
   return (
     <>
-      <div className="mb-2 text-gray-500">
-        Subsidize this market by adding liquidity for traders.
+      <div className="align-center mb-4 text-gray-500">
+        Subsidize this market by adding M$ to the liquidity pool.{' '}
+        <InfoTooltip text="The greater the M$ subsidy, the greater the incentive for traders to participate, the more accurate the market will be." />
       </div>
 
       <Row>
@@ -128,6 +137,27 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
   )
 }
 
+function ViewLiquidityPanel(props: { contract: CPMMContract }) {
+  const { contract } = props
+  const { pool } = contract
+  const { YES: yesShares, NO: noShares } = pool
+
+  return (
+    <Col className="mb-4">
+      <div className="mb-4 text-gray-500">
+        The liquidity pool for this market currently contains:
+      </div>
+      <span>
+        {yesShares.toFixed(2)} <YesLabel /> shares
+      </span>
+
+      <span>
+        {noShares.toFixed(2)} <NoLabel /> shares
+      </span>
+    </Col>
+  )
+}
+
 function WithdrawLiquidityPanel(props: {
   contract: CPMMContract
   lpShares: { YES: number; NO: number }
@@ -135,7 +165,7 @@ function WithdrawLiquidityPanel(props: {
   const { contract, lpShares } = props
   const { YES: yesShares, NO: noShares } = lpShares
 
-  const [error, setError] = useState<string | undefined>(undefined)
+  const [_error, setError] = useState<string | undefined>(undefined)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -144,12 +174,14 @@ function WithdrawLiquidityPanel(props: {
     setIsSuccess(false)
 
     withdrawLiquidity({ contractId: contract.id })
-      .then((r) => {
+      .then((_) => {
         setIsSuccess(true)
         setError(undefined)
         setIsLoading(false)
       })
-      .catch((e) => setError('Server error'))
+      .catch((_) => setError('Server error'))
+
+    track('withdraw liquidity')
   }
 
   if (isSuccess)

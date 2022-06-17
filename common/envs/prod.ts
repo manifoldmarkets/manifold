@@ -8,6 +8,7 @@ export type EnvConfig = {
   domain: string
   firebaseConfig: FirebaseConfig
   functionEndpoints: Record<V2CloudFunction, string>
+  amplitudeApiKey?: string
 
   // Access controls
   adminEmails: string[]
@@ -34,6 +35,8 @@ type FirebaseConfig = {
 
 export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
+  amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
+
   firebaseConfig: {
     apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
     authDomain: 'mantic-markets.firebaseapp.com',

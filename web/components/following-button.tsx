@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { PencilIcon } from '@heroicons/react/outline'
+
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
@@ -10,6 +11,7 @@ import { Modal } from './layout/modal'
 import { Tabs } from './layout/tabs'
 import { useDiscoverUsers } from 'web/hooks/use-users'
 import { TextButton } from './text-button'
+import { track } from 'web/lib/service/analytics'
 
 export function FollowingButton(props: { user: User }) {
   const { user } = props
@@ -48,7 +50,10 @@ export function EditFollowingButton(props: { user: User; className?: string }) {
         className,
         'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-700'
       )}
-      onClick={() => setIsOpen(true)}
+      onClick={() => {
+        setIsOpen(true)
+        track('edit following button')
+      }}
     >
       <PencilIcon className="inline h-4 w-4" />
       Following

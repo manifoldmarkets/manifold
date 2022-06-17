@@ -24,6 +24,7 @@ import { OUTCOME_TO_COLOR } from '../outcome-label'
 import { useSaveShares } from '../use-save-shares'
 import { sellShares } from 'web/lib/firebase/api-call'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
+import { track } from 'web/lib/service/analytics'
 
 const BET_SIZE = 10
 
@@ -121,6 +122,12 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       success: message,
       error: (err) => `${err.message}`,
     })
+
+    track('quick bet', {
+      slug: contract.slug,
+      direction,
+      contractId: contract.id,
+    })
   }
 
   function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
@@ -140,7 +147,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
     }
   }
 
-  const textColor = `text-${getColor(contract, previewProb)}`
+  const textColor = `text-${getColor(contract)}`
 
   return (
     <Col
@@ -223,7 +230,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
 
 export function ProbBar(props: { contract: Contract; previewProb?: number }) {
   const { contract, previewProb } = props
-  const color = getColor(contract, previewProb)
+  const color = getColor(contract)
   const prob = previewProb ?? getProb(contract)
   return (
     <>
@@ -257,7 +264,7 @@ function QuickOutcomeView(props: {
   // If there's a preview prob, display that instead of the current prob
   const override =
     previewProb === undefined ? undefined : formatPercent(previewProb)
-  const textColor = `text-${getColor(contract, previewProb)}`
+  const textColor = `text-${getColor(contract)}`
 
   let display: string | undefined
   switch (outcomeType) {
@@ -306,7 +313,7 @@ function getNumericScale(contract: NumericContract) {
   return (ev - min) / (max - min)
 }
 
-export function getColor(contract: Contract, previewProb?: number) {
+export function getColor(contract: Contract) {
   // TODO: Try injecting a gradient here
   // return 'primary'
   const { resolution } = contract
