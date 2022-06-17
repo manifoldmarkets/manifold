@@ -242,13 +242,11 @@ export const createNotification = async (
     })
   }
 
-  const notifyUsersAddedToGroup = async (
-    userToReasonTexts: user_to_reason_texts
+  const notifyUserAddedToGroup = async (
+    userToReasonTexts: user_to_reason_texts,
+    relatedUserId: string
   ) => {
-    if (
-      relatedUserId &&
-      shouldGetNotification(relatedUserId, userToReasonTexts)
-    )
+    if (shouldGetNotification(relatedUserId, userToReasonTexts))
       userToReasonTexts[relatedUserId] = {
         reason: 'added_you_to_group',
       }
@@ -291,7 +289,7 @@ export const createNotification = async (
       await notifyFollowedUser(userToReasonTexts, relatedUserId)
     } else if (sourceType === 'group' && relatedUserId) {
       if (sourceUpdateType === 'created')
-        await notifyUsersAddedToGroup(userToReasonTexts)
+        await notifyUserAddedToGroup(userToReasonTexts, relatedUserId)
     }
     return userToReasonTexts
   }

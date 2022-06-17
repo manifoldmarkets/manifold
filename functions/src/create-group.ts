@@ -58,6 +58,7 @@ export const creategroup = newEndpoint(['POST'], async (req, auth) => {
     about,
     createdTime: Date.now(),
     mostRecentActivityTime: Date.now(),
+    // TODO: allow users to add contract ids on group creation
     contractIds: [],
     anyoneCanJoin,
     memberIds,
