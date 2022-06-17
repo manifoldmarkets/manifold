@@ -2,11 +2,8 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
 import { listAllComments } from 'web/lib/firebase/comments'
-import {
-  getContractFromSlug,
-  FreeResponseContract,
-} from 'web/lib/firebase/contracts'
-import { FullMarket, ApiError, toLiteMarket } from '../_types'
+import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { FullMarket, ApiError, toFullMarket } from '../_types'
 
 export default async function handler(
   req: NextApiRequest,
@@ -27,8 +24,6 @@ export default async function handler(
     listAllComments(contract.id),
   ])
 
-  const answers = (contract as FreeResponseContract).answers
-
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const bets = allBets.map(({ userId, ...bet }) => bet) as Exclude<
     Bet,
@@ -37,10 +32,5 @@ export default async function handler(
 
   // Cache on Vercel edge servers for 2min
   res.setHeader('Cache-Control', 'max-age=0, s-maxage=120')
-  return res.status(200).json({
-    ...toLiteMarket(contract),
-    bets,
-    comments,
-    answers,
-  })
+  return res.status(200).json(toFullMarket(contract, comments, bets))
 }
