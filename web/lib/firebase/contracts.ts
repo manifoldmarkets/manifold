@@ -18,7 +18,7 @@ import { range, sortBy, sum } from 'lodash'
 
 import { app } from './init'
 import { getValues, listenForValue, listenForValues } from './utils'
-import { BinaryContract, Contract, FreeResponseContract } from 'common/contract'
+import { BinaryContract, Contract } from 'common/contract'
 import { getDpmProbability } from 'common/calculate-dpm'
 import { createRNG, shuffle } from 'common/util/random'
 import { getCpmmProbability } from 'common/calculate-cpmm'
