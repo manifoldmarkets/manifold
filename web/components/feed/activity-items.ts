@@ -76,6 +76,7 @@ function getAnswerAndCommentInputGroups(
   contract: FreeResponseContract,
   bets: Bet[],
   comments: Comment[],
+  tips: CommentTipMap,
   user: User | undefined | null
 ) {
   let outcomes = uniq(bets.map((bet) => bet.outcome))
@@ -96,6 +97,7 @@ function getAnswerAndCommentInputGroups(
         user,
         answer,
         comments,
+        tips,
         bets,
       }
     })
@@ -197,6 +199,7 @@ export function getSpecificContractActivityItems(
           contract as FreeResponseContract,
           bets,
           comments,
+          tips,
           user
         )
       )
