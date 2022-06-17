@@ -67,9 +67,9 @@ export default function Groups(props: {
     return queryWords.every((word) => corpus.toLowerCase().includes(word))
   }
 
-  // List member groups first, then groups with the highest question count, then highest member count
+  // List recently active groups first, then groups with the highest question count, then highest member count
   const matches = sortBy(groups, [
-    (group) => !memberGroupIds.includes(group.id),
+    (group) => -1 * group.mostRecentActivityTime,
     (group) => -1 * group.contractIds.length,
     (group) => -1 * group.memberIds.length,
   ]).filter(
