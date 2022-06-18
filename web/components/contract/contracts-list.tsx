@@ -1,25 +1,35 @@
-import _ from 'lodash'
-
 import { Contract } from '../../lib/firebase/contracts'
 import { User } from '../../lib/firebase/users'
 import { Col } from '../layout/col'
 import { SiteLink } from '../site-link'
 import { ContractCard } from './contract-card'
 import { ContractSearch } from '../contract-search'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { useEffect, useState } from 'react'
 
 export function ContractsGrid(props: {
   contracts: Contract[]
   loadMore: () => void
   hasMore: boolean
   showCloseTime?: boolean
+  onContractClick?: (contract: Contract) => void
 }) {
-  const { contracts, showCloseTime, hasMore, loadMore } = props
+  const { contracts, showCloseTime, hasMore, loadMore, onContractClick } = props
+
+  const [elem, setElem] = useState<HTMLElement | null>(null)
+  const isBottomVisible = useIsVisible(elem)
+
+  useEffect(() => {
+    if (isBottomVisible && hasMore) {
+      loadMore()
+    }
+  }, [isBottomVisible, hasMore, loadMore])
 
   if (contracts.length === 0) {
     return (
       <p className="mx-2 text-gray-500">
         No markets found. Why not{' '}
-        <SiteLink href="/home" className="font-bold text-gray-700">
+        <SiteLink href="/create" className="font-bold text-gray-700">
           create one?
         </SiteLink>
       </p>
@@ -28,23 +38,19 @@ export function ContractsGrid(props: {
 
   return (
     <Col className="gap-8">
-      <ul className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
+      <ul className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
         {contracts.map((contract) => (
           <ContractCard
             contract={contract}
             key={contract.id}
             showCloseTime={showCloseTime}
+            onClick={
+              onContractClick ? () => onContractClick(contract) : undefined
+            }
           />
         ))}
       </ul>
-      {hasMore && (
-        <button
-          className="btn btn-primary self-center normal-case"
-          onClick={loadMore}
-        >
-          Show more
-        </button>
-      )}
+      <div ref={setElem} className="relative -top-96 h-1" />
     </Col>
   )
 }
@@ -55,13 +61,14 @@ export function CreatorContractsList(props: { creator: User }) {
   return (
     <ContractSearch
       querySortOptions={{
-        filter: {
-          creatorId: creator.id,
-        },
         defaultSort: 'newest',
         defaultFilter: 'all',
         shouldLoadFromStorage: false,
       }}
+      additionalFilter={{
+        creatorId: creator.id,
+      }}
+      showCategorySelector={false}
     />
   )
 }

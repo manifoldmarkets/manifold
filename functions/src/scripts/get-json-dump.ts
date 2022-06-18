@@ -1,14 +1,13 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
 import * as fs from 'fs'
 
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { Bet } from '../../../common/bet'
+import { Contract } from '../../../common/contract'
 import { getValues } from '../utils'
-import { Comment } from 'common/comment'
+import { Comment } from '../../../common/comment'
 
 const firestore = admin.firestore()
 

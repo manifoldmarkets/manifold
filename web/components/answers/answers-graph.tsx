@@ -1,26 +1,23 @@
 import { DatumValue } from '@nivo/core'
 import { ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
-import _ from 'lodash'
+import { groupBy, sortBy, sumBy } from 'lodash'
 import { memo } from 'react'
 
 import { Bet } from 'common/bet'
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { FreeResponseContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
-import { useBets } from 'web/hooks/use-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
 const NUM_LINES = 6
 
 export const AnswersGraph = memo(function AnswersGraph(props: {
-  contract: FullContract<DPM, FreeResponse>
+  contract: FreeResponseContract
   bets: Bet[]
   height?: number
 }) {
-  const { contract, height } = props
+  const { contract, bets, height } = props
   const { createdTime, resolutionTime, closeTime, answers } = contract
-
-  const bets = useBets(contract.id) ?? props.bets
 
   const { probsByOutcome, sortedOutcomes } = computeProbsByOutcome(
     bets,
@@ -41,14 +38,10 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
   const isLargeWidth = !width || width > 800
   const labelLength = isLargeWidth ? 50 : 20
 
-  const endTime =
-    resolutionTime || isClosed
-      ? latestTime.valueOf()
-      : // Add a fake datapoint in future so the line continues horizontally
-        // to the right.
-        latestTime.add(1, 'month').valueOf()
+  // Add a fake datapoint so the line continues to the right
+  const endTime = latestTime.valueOf()
 
-  const times = _.sortBy([
+  const times = sortBy([
     createdTime,
     ...bets.map((bet) => bet.createdTime),
     endTime,
@@ -111,11 +104,12 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
         }}
         colors={{ scheme: 'pastel1' }}
         pointSize={0}
+        curve="stepAfter"
         enableSlices="x"
         enableGridX={!!width && width >= 800}
         enableArea
         areaOpacity={1}
-        margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+        margin={{ top: 20, right: 20, bottom: 25, left: 40 }}
         legends={[
           {
             anchor: 'top-left',
@@ -161,13 +155,10 @@ function formatTime(time: number, includeTime: boolean) {
   return dayjs(time).format('MMM D')
 }
 
-const computeProbsByOutcome = (
-  bets: Bet[],
-  contract: FullContract<DPM, FreeResponse>
-) => {
+const computeProbsByOutcome = (bets: Bet[], contract: FreeResponseContract) => {
   const { totalBets } = contract
 
-  const betsByOutcome = _.groupBy(bets, (bet) => bet.outcome)
+  const betsByOutcome = groupBy(bets, (bet) => bet.outcome)
   const outcomes = Object.keys(betsByOutcome).filter((outcome) => {
     const maxProb = Math.max(
       ...betsByOutcome[outcome].map((bet) => bet.probAfter)
@@ -175,15 +166,15 @@ const computeProbsByOutcome = (
     return outcome !== '0' && maxProb > 0.02 && totalBets[outcome] > 0.000000001
   })
 
-  const trackedOutcomes = _.sortBy(
+  const trackedOutcomes = sortBy(
     outcomes,
     (outcome) => -1 * getOutcomeProbability(contract, outcome)
   ).slice(0, NUM_LINES)
 
-  const probsByOutcome = _.fromPairs(
+  const probsByOutcome = Object.fromEntries(
     trackedOutcomes.map((outcome) => [outcome, [] as number[]])
   )
-  const sharesByOutcome = _.fromPairs(
+  const sharesByOutcome = Object.fromEntries(
     Object.keys(betsByOutcome).map((outcome) => [outcome, 0])
   )
 
@@ -191,7 +182,7 @@ const computeProbsByOutcome = (
     const { outcome, shares } = bet
     sharesByOutcome[outcome] += shares
 
-    const sharesSquared = _.sumBy(
+    const sharesSquared = sumBy(
       Object.values(sharesByOutcome).map((shares) => shares ** 2)
     )
 

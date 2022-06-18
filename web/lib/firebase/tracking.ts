@@ -1,5 +1,4 @@
 import { doc, collection, setDoc } from 'firebase/firestore'
-import _ from 'lodash'
 
 import { db } from './init'
 import { ClickEvent, LatencyEvent, View } from 'common/tracking'

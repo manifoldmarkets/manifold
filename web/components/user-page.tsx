@@ -1,5 +1,9 @@
 import clsx from 'clsx'
-import { User } from 'web/lib/firebase/users'
+import { uniq } from 'lodash'
+import { LinkIcon } from '@heroicons/react/solid'
+import { PencilIcon } from '@heroicons/react/outline'
+
+import { follow, unfollow, User } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
 import { Page } from './page'
@@ -9,9 +13,7 @@ import { Col } from './layout/col'
 import { Linkify } from './linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
-import { LinkIcon } from '@heroicons/react/solid'
 import { genHash } from 'common/util/random'
-import { PencilIcon } from '@heroicons/react/outline'
 import { Tabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
 import { useEffect, useState } from 'react'
@@ -19,8 +21,13 @@ import { Comment, getUsersComments } from 'web/lib/firebase/comments'
 import { Contract } from 'common/contract'
 import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
 import { LoadingIndicator } from './loading-indicator'
-import { useRouter } from 'next/router'
-import _ from 'lodash'
+import { BetsList } from './bets-list'
+import { Bet } from 'common/bet'
+import { getUserBets } from 'web/lib/firebase/bets'
+import { FollowersButton, FollowingButton } from './following-button'
+import { AlertBox } from './alert-box'
+import { useFollows } from 'web/hooks/use-follows'
+import { FollowButton } from './follow-button'
 
 export function UserLink(props: {
   name: string
@@ -31,19 +38,24 @@ export function UserLink(props: {
   const { name, username, showUsername, className } = props
 
   return (
-    <SiteLink href={`/${username}`} className={clsx('z-10', className)}>
+    <SiteLink
+      href={`/${username}`}
+      className={clsx('z-10 truncate', className)}
+    >
       {name}
       {showUsername && ` (@${username})`}
     </SiteLink>
   )
 }
 
+export const TAB_IDS = ['markets', 'comments', 'bets']
+const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
+
 export function UserPage(props: {
   user: User
   currentUser?: User
-  defaultTabTitle?: string
+  defaultTabTitle?: 'markets' | 'comments' | 'bets'
 }) {
-  const router = useRouter()
   const { user, currentUser, defaultTabTitle } = props
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
@@ -51,6 +63,7 @@ export function UserPage(props: {
   const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
     'loading'
   )
+  const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
@@ -59,10 +72,11 @@ export function UserPage(props: {
     if (!user) return
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
+    getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
   }, [user])
 
   useEffect(() => {
-    const uniqueContractIds = _.uniq(
+    const uniqueContractIds = uniq(
       usersComments.map((comment) => comment.contractId)
     )
     Promise.all(
@@ -80,8 +94,20 @@ export function UserPage(props: {
     })
   }, [usersComments])
 
+  const yourFollows = useFollows(currentUser?.id)
+  const isFollowing = yourFollows?.includes(user.id)
+
+  const onFollow = () => {
+    if (!currentUser) return
+    follow(currentUser.id, user.id)
+  }
+  const onUnfollow = () => {
+    if (!currentUser) return
+    unfollow(currentUser.id, user.id)
+  }
+
   return (
-    <Page>
+    <Page key={user.id}>
       <SEO
         title={`${user.name} (@${user.username})`}
         description={user.bio ?? ''}
@@ -107,6 +133,13 @@ export function UserPage(props: {
 
         {/* Top right buttons (e.g. edit, follow) */}
         <div className="absolute right-0 top-0 mt-4 mr-4">
+          {!isCurrentUser && (
+            <FollowButton
+              isFollowing={isFollowing}
+              onFollow={onFollow}
+              onUnfollow={onUnfollow}
+            />
+          )}
           {isCurrentUser && (
             <SiteLink className="btn" href="/profile">
               <PencilIcon className="h-5 w-5" />{' '}
@@ -121,9 +154,10 @@ export function UserPage(props: {
         <span className="text-2xl font-bold">{user.name}</span>
         <span className="text-gray-500">@{user.username}</span>
 
+        <Spacer h={4} />
+
         {user.bio && (
           <>
-            <Spacer h={4} />
             <div>
               <Linkify text={user.bio}></Linkify>
             </div>
@@ -131,7 +165,12 @@ export function UserPage(props: {
           </>
         )}
 
-        <Col className="sm:flex-row sm:gap-4">
+        <Col className="gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <Row className="gap-4">
+            <FollowingButton user={user} />
+            <FollowersButton user={user} />
+          </Row>
+
           {user.website && (
             <SiteLink
               href={
@@ -187,17 +226,14 @@ export function UserPage(props: {
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
             className={'pb-2 pt-1 '}
-            defaultIndex={defaultTabTitle === 'Comments' ? 1 : 0}
-            onClick={(tabName) =>
-              router.push(
-                {
-                  pathname: `/${user.username}`,
-                  query: { tab: tabName },
-                },
-                undefined,
-                { shallow: true }
-              )
-            }
+            defaultIndex={TAB_IDS.indexOf(defaultTabTitle || 'markets')}
+            onClick={(tabName) => {
+              const tabId = tabName.toLowerCase()
+              const subpath = tabId === 'markets' ? '' : '/' + tabId
+              // BUG: if you start on `/Bob/bets`, then click on Markets, use-query-and-sort-params
+              // rewrites the url incorrectly to `/Bob/bets` instead of `/Bob`
+              window.history.replaceState('', '', `/${user.username}${subpath}`)
+            }}
             tabs={[
               {
                 title: 'Markets',
@@ -218,6 +254,37 @@ export function UserPage(props: {
                 ),
                 tabIcon: (
                   <div className="px-0.5 font-bold">{usersComments.length}</div>
+                ),
+              },
+              {
+                title: 'Bets',
+                content: (
+                  <div>
+                    {isCurrentUser && (
+                      <AlertBox
+                        title="Bets after 2022-06-01 are publicly visible by default."
+                        text="Note that all historical bets are also publicly accessible through the API.
+                      See: https://manifold.markets/Austin/will-all-bets-on-manifold-be-public"
+                      />
+                    )}
+                    <BetsList
+                      user={user}
+                      hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
+                    />
+                    {!isCurrentUser && (
+                      <>
+                        <Spacer h={4} />
+                        <AlertBox
+                          title="Bets before 2022-06-01 are hidden by default."
+                          text="Note that all historical bets are also publicly accessible through the API.
+                        See: https://manifold.markets/Austin/will-all-bets-on-manifold-be-public"
+                        />
+                      </>
+                    )}
+                  </div>
+                ),
+                tabIcon: (
+                  <div className="px-0.5 font-bold">{usersBets.length}</div>
                 ),
               },
             ]}

@@ -1,12 +1,11 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { FreeResponseContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { createAnswer } from 'web/lib/firebase/api-call'
+import { createAnswer } from 'web/lib/firebase/fn-call'
 import { Row } from '../layout/row'
 import {
   formatMoney,
@@ -23,10 +22,9 @@ import {
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
+import { withTracking } from 'web/lib/service/analytics'
 
-export function CreateAnswerPanel(props: {
-  contract: FullContract<DPM, FreeResponse>
-}) {
+export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
   const { contract } = props
   const user = useUser()
   const [text, setText] = useState('')
@@ -146,7 +144,7 @@ export function CreateAnswerPanel(props: {
                 isSubmitting && 'loading'
               )}
               disabled={!canSubmit}
-              onClick={submitAnswer}
+              onClick={withTracking(submitAnswer, 'submit answer')}
             >
               Submit answer & buy
             </button>
@@ -154,7 +152,7 @@ export function CreateAnswerPanel(props: {
             text && (
               <button
                 className="btn self-end whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-                onClick={firebaseLogin}
+                onClick={withTracking(firebaseLogin, 'answer panel sign in')}
               >
                 Sign in
               </button>

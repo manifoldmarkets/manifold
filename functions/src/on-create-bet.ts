@@ -1,9 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
 
-import { getContract } from './utils'
-import { Bet } from 'common/bet'
+import { Bet } from '../../common/bet'
 
 const firestore = admin.firestore()
 
@@ -13,16 +11,11 @@ export const onCreateBet = functions.firestore
     const { contractId } = context.params as {
       contractId: string
     }
-
-    const contract = await getContract(contractId)
-    if (!contract)
-      throw new Error('Could not find contract corresponding with bet')
-
     const bet = change.data() as Bet
     const lastBetTime = bet.createdTime
 
     await firestore
       .collection('contracts')
-      .doc(contract.id)
+      .doc(contractId)
       .update({ lastBetTime, lastUpdatedTime: Date.now() })
   })

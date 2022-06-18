@@ -29,4 +29,10 @@ export type Bet = {
   createdTime: number
 }
 
+export type NumericBet = Bet & {
+  value: number
+  allOutcomeShares: { [outcome: string]: number }
+  allBetAmounts: { [outcome: string]: number }
+}
+
 export const MAX_LOAN_PER_CONTRACT = 20

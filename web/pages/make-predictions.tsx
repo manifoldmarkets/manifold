@@ -5,7 +5,7 @@ import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
 import { getProbability } from 'common/calculate'
-import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import { BinaryContract } from 'common/contract'
 import { parseWordsAsTags } from 'common/util/parse'
 import { BuyAmountInput } from 'web/components/amount-input'
 import { InfoTooltip } from 'web/components/info-tooltip'
@@ -16,7 +16,7 @@ import { Linkify } from 'web/components/linkify'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { useUser } from 'web/hooks/use-user'
-import { createContract } from 'web/lib/firebase/api-call'
+import { createMarket } from 'web/lib/firebase/api-call'
 import { contractPath } from 'web/lib/firebase/contracts'
 
 type Prediction = {
@@ -26,7 +26,7 @@ type Prediction = {
   createdUrl?: string
 }
 
-function toPrediction(contract: FullContract<DPM | CPMM, Binary>): Prediction {
+function toPrediction(contract: BinaryContract): Prediction {
   const startProb = getProbability(contract)
   return {
     question: contract.question,
@@ -102,9 +102,7 @@ export default function MakePredictions() {
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [createdContracts, setCreatedContracts] = useState<
-    FullContract<DPM | CPMM, Binary>[]
-  >([])
+  const [createdContracts, setCreatedContracts] = useState<BinaryContract[]>([])
 
   const [ante, setAnte] = useState<number | undefined>(100)
   const [anteError, setAnteError] = useState<string | undefined>()
@@ -140,7 +138,7 @@ ${TEST_VALUE}
     })
   }
 
-  async function createContracts() {
+  async function createMarkets() {
     if (!user) {
       // TODO: Convey error with snackbar/toast
       console.error('You need to be signed in!')
@@ -148,14 +146,14 @@ ${TEST_VALUE}
     }
     setIsSubmitting(true)
     for (const prediction of predictions) {
-      const contract = await createContract({
+      const contract = (await createMarket({
         question: prediction.question,
         description: prediction.description,
         initialProb: prediction.initialProb,
         ante,
         closeTime,
         tags: parseWordsAsTags(tags),
-      }).then((r) => (r.data as any).contract)
+      })) as BinaryContract
 
       setCreatedContracts((prev) => [...prev, contract])
     }
@@ -237,7 +235,7 @@ ${TEST_VALUE}
           <label className="label mb-1 gap-2">
             <span>Market ante</span>
             <InfoTooltip
-              text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability. 
+              text={`Subsidize your market to encourage trading. Ante bets are set to match your initial probability.
               You earn ${0.01 * 100}% of trading volume.`}
             />
           </label>
@@ -272,7 +270,7 @@ ${TEST_VALUE}
             disabled={predictions.length === 0 || isSubmitting}
             onClick={(e) => {
               e.preventDefault()
-              createContracts()
+              createMarkets()
             }}
           >
             Create all
@@ -291,14 +289,4 @@ ${TEST_VALUE}
       )}
     </Page>
   )
-}
-
-// Given a date string like '2022-04-02',
-// return the time just before midnight on that date (in the user's local time), as millis since epoch
-function dateToMillis(date: string) {
-  return dayjs(date)
-    .set('hour', 23)
-    .set('minute', 59)
-    .set('second', 59)
-    .valueOf()
 }

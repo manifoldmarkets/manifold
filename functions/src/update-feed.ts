@@ -1,11 +1,11 @@
-import * as _ from 'lodash'
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { flatten, shuffle, sortBy, uniq, zip, zipObject } from 'lodash'
 
 import { getValue, getValues } from './utils'
-import { Contract } from 'common/contract'
-import { logInterpolation } from 'common/util/math'
-import { DAY_MS } from 'common/util/time'
+import { Contract } from '../../common/contract'
+import { logInterpolation } from '../../common/util/math'
+import { DAY_MS } from '../../common/util/time'
 import {
   getProbability,
   getOutcomeProbability,
@@ -15,7 +15,7 @@ import { User } from '../../common/user'
 import {
   getContractScore,
   MAX_FEED_CONTRACTS,
-} from 'common/recommended-contracts'
+} from '../../common/recommended-contracts'
 import { callCloudFunction } from './call-cloud-function'
 import {
   getFeedContracts,
@@ -26,18 +26,25 @@ import { CATEGORY_LIST } from '../../common/categories'
 
 const firestore = admin.firestore()
 
+const BATCH_SIZE = 30
+const MAX_BATCHES = 50
+
+const getUserBatches = async () => {
+  const users = shuffle(await getValues<User>(firestore.collection('users')))
+  const userBatches: User[][] = []
+  for (let i = 0; i < users.length; i += BATCH_SIZE) {
+    userBatches.push(users.slice(i, i + BATCH_SIZE))
+  }
+
+  console.log('updating feed batches', MAX_BATCHES, 'of', userBatches.length)
+
+  return userBatches.slice(0, MAX_BATCHES)
+}
+
 export const updateFeed = functions.pubsub
   .schedule('every 60 minutes')
   .onRun(async () => {
-    const users = await getValues<User>(firestore.collection('users'))
-
-    const batchSize = 100
-    let userBatches: User[][] = []
-    for (let i = 0; i < users.length; i += batchSize) {
-      userBatches.push(users.slice(i, i + batchSize))
-    }
-
-    console.log('updating feed batch')
+    const userBatches = await getUserBatches()
 
     await Promise.all(
       userBatches.map((users) =>
@@ -60,25 +67,20 @@ export const updateFeedBatch = functions.https.onCall(
   async (data: { users: User[] }) => {
     const { users } = data
     const contracts = await getFeedContracts()
-
+    const feeds = await getNewFeeds(users, contracts)
     await Promise.all(
-      users.map(async (user) => {
-        const feed = await computeFeed(user, contracts)
-        await getUserCacheCollection(user).doc('feed').set({ feed })
-      })
+      zip(users, feeds).map(([user, feed]) =>
+        /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+        getUserCacheCollection(user!).doc('feed').set({ feed })
+      )
     )
   }
 )
+
 export const updateCategoryFeed = functions.https.onCall(
   async (data: { category: string }) => {
     const { category } = data
-    const users = await getValues<User>(firestore.collection('users'))
-
-    const batchSize = 100
-    const userBatches: User[][] = []
-    for (let i = 0; i < users.length; i += batchSize) {
-      userBatches.push(users.slice(i, i + batchSize))
-    }
+    const userBatches = await getUserBatches()
 
     await Promise.all(
       userBatches.map(async (users) => {
@@ -95,15 +97,27 @@ export const updateCategoryFeedBatch = functions.https.onCall(
   async (data: { users: User[]; category: string }) => {
     const { users, category } = data
     const contracts = await getTaggedContracts(category)
-
+    const feeds = await getNewFeeds(users, contracts)
     await Promise.all(
-      users.map(async (user) => {
-        const feed = await computeFeed(user, contracts)
-        await getUserCacheCollection(user).doc(`feed-${category}`).set({ feed })
-      })
+      zip(users, feeds).map(([user, feed]) =>
+        /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+        getUserCacheCollection(user!).doc(`feed-${category}`).set({ feed })
+      )
     )
   }
 )
+
+const getNewFeeds = async (users: User[], contracts: Contract[]) => {
+  const feeds = await Promise.all(users.map((u) => computeFeed(u, contracts)))
+  const contractIds = uniq(flatten(feeds).map((c) => c.id))
+  const data = await Promise.all(contractIds.map(getRecentBetsAndComments))
+  const dataByContractId = zipObject(contractIds, data)
+  return feeds.map((feed) =>
+    feed.map((contract) => {
+      return { contract, ...dataByContractId[contract.id] }
+    })
+  )
+}
 
 const getUserCacheCollection = (user: User) =>
   firestore.collection(`private-users/${user.id}/cache`)
@@ -127,21 +141,14 @@ export const computeFeed = async (user: User, contracts: Contract[]) => {
     return [contract, score] as [Contract, number]
   })
 
-  const sortedContracts = _.sortBy(
+  const sortedContracts = sortBy(
     scoredContracts,
     ([_, score]) => score
   ).reverse()
 
   // console.log(sortedContracts.map(([c, score]) => c.question + ': ' + score))
 
-  const feedContracts = sortedContracts
-    .slice(0, MAX_FEED_CONTRACTS)
-    .map(([c]) => c)
-
-  const feed = await Promise.all(
-    feedContracts.map((contract) => getRecentBetsAndComments(contract))
-  )
-  return feed
+  return sortedContracts.slice(0, MAX_FEED_CONTRACTS).map(([c]) => c)
 }
 
 function scoreContract(
@@ -196,18 +203,18 @@ function getActivityScore(contract: Contract, viewTime: number | undefined) {
   return isNew ? newMappedScore : mappedScore
 }
 
-function getLastViewedScore(viewTime: number | undefined) {
-  if (viewTime === undefined) {
-    return 1
-  }
+// function getLastViewedScore(viewTime: number | undefined) {
+//   if (viewTime === undefined) {
+//     return 1
+//   }
 
-  const daysAgo = (Date.now() - viewTime) / DAY_MS
+//   const daysAgo = (Date.now() - viewTime) / DAY_MS
 
-  if (daysAgo < 0.5) {
-    const frac = logInterpolation(0, 0.5, daysAgo)
-    return 0.5 + 0.25 * frac
-  }
+//   if (daysAgo < 0.5) {
+//     const frac = logInterpolation(0, 0.5, daysAgo)
+//     return 0.5 + 0.25 * frac
+//   }
 
-  const frac = logInterpolation(0.5, 14, daysAgo)
-  return 0.75 + 0.25 * frac
-}
+//   const frac = logInterpolation(0.5, 14, daysAgo)
+//   return 0.75 + 0.25 * frac
+// }

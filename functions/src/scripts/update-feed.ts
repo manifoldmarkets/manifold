@@ -1,13 +1,12 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
 
 import { getValues } from '../utils'
-import { User } from 'common/user'
-import { batchedWaitAll } from 'common/util/promise'
-import { Contract } from 'common/contract'
+import { User } from '../../../common/user'
+import { batchedWaitAll } from '../../../common/util/promise'
+import { Contract } from '../../../common/contract'
 import { updateWordScores } from '../update-recommendations'
 import { computeFeed } from '../update-feed'
 import { getFeedContracts, getTaggedContracts } from '../get-feed-data'

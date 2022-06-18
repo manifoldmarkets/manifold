@@ -2,26 +2,25 @@ import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 
 import { Col } from './layout/col'
-import { Title } from './title'
 import { User } from 'web/lib/firebase/users'
 import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
-import { resolveMarket } from 'web/lib/firebase/api-call'
+import { resolveMarket } from 'web/lib/firebase/fn-call'
 import { ProbabilitySelector } from './probability-selector'
 import { DPM_CREATOR_FEE } from 'common/fees'
 import { getProbability } from 'common/calculate'
-import { Binary, CPMM, DPM, FullContract } from 'common/contract'
+import { BinaryContract, resolution } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 
 export function ResolutionPanel(props: {
   creator: User
-  contract: FullContract<DPM | CPMM, Binary>
+  contract: BinaryContract
   className?: string
 }) {
   useEffect(() => {
     // warm up cloud function
-    resolveMarket({} as any).catch()
+    resolveMarket({} as any).catch(() => {})
   }, [])
 
   const { contract, className } = props
@@ -31,9 +30,7 @@ export function ResolutionPanel(props: {
       ? `${DPM_CREATOR_FEE * 100}% of trader profits`
       : `${formatMoney(contract.collectedFees.creatorFee)} in fees`
 
-  const [outcome, setOutcome] = useState<
-    'YES' | 'NO' | 'MKT' | 'CANCEL' | undefined
-  >()
+  const [outcome, setOutcome] = useState<resolution | undefined>()
 
   const [prob, setProb] = useState(getProbability(contract) * 100)
 

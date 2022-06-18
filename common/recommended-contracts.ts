@@ -1,4 +1,4 @@
-import * as _ from 'lodash'
+import { union, sum, sumBy, sortBy, groupBy, mapValues } from 'lodash'
 import { Bet } from './bet'
 import { Contract } from './contract'
 import { ClickEvent } from './tracking'
@@ -21,13 +21,13 @@ export const getRecommendedContracts = (
 
   const yourWordFrequency = contractsToWordFrequency(yourContracts)
   const otherWordFrequency = contractsToWordFrequency(notYourContracts)
-  const words = _.union(
+  const words = union(
     Object.keys(yourWordFrequency),
     Object.keys(otherWordFrequency)
   )
 
-  const yourWeightedFrequency = _.fromPairs(
-    _.map(words, (word) => {
+  const yourWeightedFrequency = Object.fromEntries(
+    words.map((word) => {
       const [yourFreq, otherFreq] = [
         yourWordFrequency[word] ?? 0,
         otherWordFrequency[word] ?? 0,
@@ -47,7 +47,7 @@ export const getRecommendedContracts = (
   const scoredContracts = contracts.map((contract) => {
     const wordFrequency = contractToWordFrequency(contract)
 
-    const score = _.sumBy(Object.keys(wordFrequency), (word) => {
+    const score = sumBy(Object.keys(wordFrequency), (word) => {
       const wordFreq = wordFrequency[word] ?? 0
       const weight = yourWeightedFrequency[word] ?? 0
       return wordFreq * weight
@@ -59,7 +59,7 @@ export const getRecommendedContracts = (
     }
   })
 
-  return _.sortBy(scoredContracts, (scored) => -scored.score).map(
+  return sortBy(scoredContracts, (scored) => -scored.score).map(
     (scored) => scored.contract
   )
 }
@@ -87,8 +87,8 @@ const getWordsCount = (text: string) => {
 }
 
 const toFrequency = (counts: { [word: string]: number }) => {
-  const total = _.sum(Object.values(counts))
-  return _.mapValues(counts, (count) => count / total)
+  const total = sum(Object.values(counts))
+  return mapValues(counts, (count) => count / total)
 }
 
 const contractToWordFrequency = (contract: Contract) =>
@@ -108,8 +108,8 @@ export const getWordScores = (
   clicks: ClickEvent[],
   bets: Bet[]
 ) => {
-  const contractClicks = _.groupBy(clicks, (click) => click.contractId)
-  const contractBets = _.groupBy(bets, (bet) => bet.contractId)
+  const contractClicks = groupBy(clicks, (click) => click.contractId)
+  const contractBets = groupBy(bets, (bet) => bet.contractId)
 
   const yourContracts = contracts.filter(
     (c) =>
@@ -117,25 +117,22 @@ export const getWordScores = (
   )
   const yourTfIdf = calculateContractTfIdf(yourContracts)
 
-  const contractWordScores = _.mapValues(
-    yourTfIdf,
-    (wordsTfIdf, contractId) => {
-      const viewCount = contractViewCounts[contractId] ?? 0
-      const clickCount = contractClicks[contractId]?.length ?? 0
-      const betCount = contractBets[contractId]?.length ?? 0
+  const contractWordScores = mapValues(yourTfIdf, (wordsTfIdf, contractId) => {
+    const viewCount = contractViewCounts[contractId] ?? 0
+    const clickCount = contractClicks[contractId]?.length ?? 0
+    const betCount = contractBets[contractId]?.length ?? 0
 
-      const factor =
-        -1 * Math.log(viewCount + 1) +
-        10 * Math.log(betCount + clickCount / 4 + 1)
+    const factor =
+      -1 * Math.log(viewCount + 1) +
+      10 * Math.log(betCount + clickCount / 4 + 1)
 
-      return _.mapValues(wordsTfIdf, (tfIdf) => tfIdf * factor)
-    }
-  )
+    return mapValues(wordsTfIdf, (tfIdf) => tfIdf * factor)
+  })
 
   const wordScores = Object.values(contractWordScores).reduce(addObjects, {})
   const minScore = Math.min(...Object.values(wordScores))
   const maxScore = Math.max(...Object.values(wordScores))
-  const normalizedWordScores = _.mapValues(
+  const normalizedWordScores = mapValues(
     wordScores,
     (score) => (score - minScore) / (maxScore - minScore)
   )
@@ -156,7 +153,7 @@ export function getContractScore(
   if (Object.keys(wordScores).length === 0) return 1
 
   const wordFrequency = contractToWordFrequency(contract)
-  const score = _.sumBy(Object.keys(wordFrequency), (word) => {
+  const score = sumBy(Object.keys(wordFrequency), (word) => {
     const wordFreq = wordFrequency[word] ?? 0
     const weight = wordScores[word] ?? 0
     return wordFreq * weight
@@ -178,11 +175,13 @@ function calculateContractTfIdf(contracts: Contract[]) {
     }
   }
 
-  const wordIdf = _.mapValues(wordsCount, (count) =>
+  const wordIdf = mapValues(wordsCount, (count) =>
     Math.log(contracts.length / count)
   )
-  const contractWordsTfIdf = _.map(contractFreq, (wordFreq) =>
-    _.mapValues(wordFreq, (freq, word) => freq * wordIdf[word])
+  const contractWordsTfIdf = contractFreq.map((wordFreq) =>
+    mapValues(wordFreq, (freq, word) => freq * wordIdf[word])
   )
-  return _.fromPairs(contracts.map((c, i) => [c.id, contractWordsTfIdf[i]]))
+  return Object.fromEntries(
+    contracts.map((c, i) => [c.id, contractWordsTfIdf[i]])
+  )
 }

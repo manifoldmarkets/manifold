@@ -1,17 +1,19 @@
 import { Bet } from 'common/bet'
-import { Contract, DPM, FreeResponse, FullContract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { AnswersGraph } from 'web/components/answers/answers-graph'
+import BetRow from 'web/components/bet-row'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
+  NumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
 import { ContractDetails } from 'web/components/contract/contract-details'
 import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
+import { NumericGraph } from 'web/components/contract/numeric-graph'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
@@ -74,7 +76,7 @@ export default function ContractEmbedPage(props: {
 
 function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
-  const { question, resolution, outcomeType } = contract
+  const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
 
@@ -92,13 +94,8 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   return (
     <Col className="w-full flex-1 bg-white">
       <div className="relative flex flex-col pt-2" ref={setElem}>
-        <SiteLink
-          className="absolute top-0 left-0 z-20 h-full w-full"
-          href={href}
-        />
-
         <div className="px-3 text-xl text-indigo-700 md:text-2xl">
-          <Linkify text={question} />
+          <SiteLink href={href}>{question}</SiteLink>
         </div>
 
         <Spacer h={3} />
@@ -108,16 +105,27 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
             contract={contract}
             bets={bets}
             isCreator={false}
-            hideShareButtons
+            disabled
           />
 
-          {isBinary && <BinaryResolutionOrChance contract={contract} />}
+          {isBinary && (
+            <Row className="items-center gap-4">
+              {/* this fails typechecking, but it doesn't explode because we will
+              never */}
+              <BetRow contract={contract as any} betPanelClassName="scale-75" />
+              <BinaryResolutionOrChance contract={contract} />
+            </Row>
+          )}
 
-          {outcomeType === 'FREE_RESPONSE' && resolution && (
+          {outcomeType === 'FREE_RESPONSE' && (
             <FreeResponseResolutionOrChance
               contract={contract}
               truncate="long"
             />
+          )}
+
+          {outcomeType === 'NUMERIC' && (
+            <NumericResolutionOrExpectation contract={contract} />
           )}
         </Row>
 
@@ -125,18 +133,20 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
       </div>
 
       <div className="mx-1" style={{ paddingBottom }}>
-        {isBinary ? (
+        {isBinary && (
           <ContractProbGraph
             contract={contract}
             bets={bets}
             height={graphHeight}
           />
-        ) : (
-          <AnswersGraph
-            contract={contract as FullContract<DPM, FreeResponse>}
-            bets={bets}
-            height={graphHeight}
-          />
+        )}
+
+        {outcomeType === 'FREE_RESPONSE' && (
+          <AnswersGraph contract={contract} bets={bets} height={graphHeight} />
+        )}
+
+        {outcomeType === 'NUMERIC' && (
+          <NumericGraph contract={contract} height={graphHeight} />
         )}
       </div>
     </Col>

@@ -1,7 +1,40 @@
 import * as admin from 'firebase-admin'
 
-import { Contract } from 'common/contract'
-import { PrivateUser, User } from 'common/user'
+import { chunk } from 'lodash'
+import { Contract } from '../../common/contract'
+import { PrivateUser, User } from '../../common/user'
+
+export const log = (...args: unknown[]) => {
+  console.log(`[${new Date().toISOString()}]`, ...args)
+}
+
+export const logMemory = () => {
+  const used = process.memoryUsage()
+  for (const [k, v] of Object.entries(used)) {
+    log(`${k} ${Math.round((v / 1024 / 1024) * 100) / 100} MB`)
+  }
+}
+
+type UpdateSpec = {
+  doc: admin.firestore.DocumentReference
+  fields: { [k: string]: unknown }
+}
+
+export const writeUpdatesAsync = async (
+  db: admin.firestore.Firestore,
+  updates: UpdateSpec[],
+  batchSize = 500 // 500 = Firestore batch limit
+) => {
+  const chunks = chunk(updates, batchSize)
+  for (let i = 0; i < chunks.length; i++) {
+    log(`${i * batchSize}/${updates.length} updates written...`)
+    const batch = db.batch()
+    for (const { doc, fields } of chunks[i]) {
+      batch.update(doc, fields)
+    }
+    await batch.commit()
+  }
+}
 
 export const isProd =
   admin.instanceId().app.options.projectId === 'mantic-markets'

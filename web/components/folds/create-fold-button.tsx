@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { PlusCircleIcon } from '@heroicons/react/solid'
 import { parseWordsAsTags } from 'common/util/parse'
-import { createFold } from 'web/lib/firebase/api-call'
+import { createFold } from 'web/lib/firebase/fn-call'
 import { foldPath } from 'web/lib/firebase/folds'
 import { toCamelCase } from 'common/util/format'
 import { ConfirmationButton } from '../confirmation-button'
@@ -48,7 +48,6 @@ export function CreateFoldButton() {
 
   return (
     <ConfirmationButton
-      id="create-fold"
       openModalBtn={{
         label: 'New',
         icon: <PlusCircleIcon className="mr-2 h-5 w-5" />,

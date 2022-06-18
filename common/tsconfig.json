@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": "../",
+    "moduleResolution": "node",
+    "noImplicitReturns": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2017"
+  },
+  "include": ["**/*.ts"]
+}

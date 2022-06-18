@@ -1,36 +1,24 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import Router, { useRouter } from 'next/router'
-import _ from 'lodash'
+import { PlusSmIcon } from '@heroicons/react/solid'
 
 import { Page } from 'web/components/page'
-import { ActivityFeed } from 'web/components/feed/activity-feed'
-import FeedCreate from 'web/components/feed-create'
-import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import { LoadingIndicator } from 'web/components/loading-indicator'
-import { useAlgoFeed } from 'web/hooks/use-algo-feed'
+import { ContractSearch } from 'web/components/contract-search'
+import { Contract } from 'common/contract'
 import { ContractPageContent } from './[username]/[contractSlug]'
-import { CategorySelector } from '../components/feed/category-selector'
+import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { useTracking } from 'web/hooks/use-tracking'
+import { track } from 'web/lib/service/analytics'
 
 const Home = () => {
   const user = useUser()
-
-  const feed = useAlgoFeed(user)
+  const [contract, setContract] = useContractPage()
 
   const router = useRouter()
-  const { u: username, s: slug } = router.query
-  const contract = feed?.find(
-    ({ contract }) => contract.slug === slug
-  )?.contract
 
-  useEffect(() => {
-    // If the page initially loads with query params, redirect to the contract page.
-    if (router.isReady && slug && username) {
-      Router.replace(`/${username}/${slug}`)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.isReady])
+  useTracking('view home')
 
   if (user === null) {
     Router.replace('/')
@@ -39,29 +27,32 @@ const Home = () => {
 
   return (
     <>
-      <Page assertUser="signed-in" suspend={!!contract}>
-        <Col className="items-center">
-          <Col className="w-full max-w-[700px]">
-            <FeedCreate user={user ?? undefined} />
-            <Spacer h={2} />
-
-            <CategorySelector user={user} />
-
-            <Spacer h={1} />
-
-            {feed ? (
-              <ActivityFeed
-                feed={feed}
-                mode="only-recent"
-                getContractPath={(c) =>
-                  `home?u=${c.creatorUsername}&s=${c.slug}`
-                }
-              />
-            ) : (
-              <LoadingIndicator className="mt-4" />
-            )}
-          </Col>
+      <Page suspend={!!contract}>
+        <Col className="mx-auto w-full p-2">
+          <ContractSearch
+            querySortOptions={{
+              shouldLoadFromStorage: true,
+              defaultSort: '24-hour-vol',
+            }}
+            showCategorySelector
+            onContractClick={(c) => {
+              // Show contract without navigating to contract page.
+              setContract(c)
+              // Update the url without switching pages in Nextjs.
+              history.pushState(null, '', `/${c.creatorUsername}/${c.slug}`)
+            }}
+          />
         </Col>
+        <button
+          type="button"
+          className="fixed bottom-[70px] right-3 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-3 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
+          onClick={() => {
+            router.push('/create')
+            track('mobile create button')
+          }}
+        >
+          <PlusSmIcon className="h-8 w-8" aria-hidden="true" />
+        </button>
       </Page>
 
       {contract && (
@@ -71,11 +62,57 @@ const Home = () => {
           slug={contract.slug}
           bets={[]}
           comments={[]}
-          backToHome={router.back}
+          backToHome={() => {
+            history.back()
+          }}
         />
       )}
     </>
   )
+}
+
+const useContractPage = () => {
+  const [contract, setContract] = useState<Contract | undefined>()
+
+  useEffect(() => {
+    const updateContract = () => {
+      const path = location.pathname.split('/').slice(1)
+      if (path[0] === 'home') setContract(undefined)
+      else {
+        const [username, contractSlug] = path
+        if (!username || !contractSlug) setContract(undefined)
+        else {
+          // Show contract if route is to a contract: '/[username]/[contractSlug]'.
+          getContractFromSlug(contractSlug).then(setContract)
+        }
+      }
+    }
+
+    const { pushState, replaceState } = window.history
+
+    window.history.pushState = function () {
+      // eslint-disable-next-line prefer-rest-params
+      pushState.apply(history, arguments as any)
+      updateContract()
+    }
+
+    window.history.replaceState = function () {
+      // eslint-disable-next-line prefer-rest-params
+      replaceState.apply(history, arguments as any)
+      updateContract()
+    }
+
+    return () => {
+      window.history.pushState = pushState
+      window.history.replaceState = replaceState
+    }
+  }, [])
+
+  useEffect(() => {
+    if (contract) window.scrollTo(0, 0)
+  }, [contract])
+
+  return [contract, setContract] as const
 }
 
 export default Home

@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { groupBy, mapValues, maxBy, sortBy } from 'lodash'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Comment } from 'web/lib/firebase/comments'
 import { Bet } from 'common/bet'
@@ -44,10 +44,10 @@ export function findActiveContracts(
   }
 
   // Add contracts by last bet time.
-  const contractBets = _.groupBy(recentBets, (bet) => bet.contractId)
-  const contractMostRecentBet = _.mapValues(
+  const contractBets = groupBy(recentBets, (bet) => bet.contractId)
+  const contractMostRecentBet = mapValues(
     contractBets,
-    (bets) => _.maxBy(bets, (bet) => bet.createdTime) as Bet
+    (bets) => maxBy(bets, (bet) => bet.createdTime) as Bet
   )
   for (const bet of Object.values(contractMostRecentBet)) {
     const contract = contractsById.get(bet.contractId)
@@ -60,21 +60,21 @@ export function findActiveContracts(
       !contract.isResolved &&
       (contract.closeTime ?? Infinity) > Date.now()
   )
-  activeContracts = _.sortBy(
+  activeContracts = sortBy(
     activeContracts,
     (c) => -(idToActivityTime.get(c.id) ?? 0)
   )
 
-  const contractComments = _.groupBy(
+  const contractComments = groupBy(
     recentComments,
     (comment) => comment.contractId
   )
-  const contractMostRecentComment = _.mapValues(
+  const contractMostRecentComment = mapValues(
     contractComments,
-    (comments) => _.maxBy(comments, (c) => c.createdTime) as Comment
+    (comments) => maxBy(comments, (c) => c.createdTime) as Comment
   )
 
-  const prioritizedContracts = _.sortBy(activeContracts, (c) => {
+  const prioritizedContracts = sortBy(activeContracts, (c) => {
     const seenTime = seenContracts[c.id]
     if (!seenTime) {
       return 0

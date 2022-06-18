@@ -12,6 +12,10 @@ export function formatMoney(amount: number) {
   return ENV_CONFIG.moneyMoniker + formatter.format(newAmount).replace('$', '')
 }
 
+export function formatMoneyWithDecimals(amount: number) {
+  return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
+}
+
 export function formatWithCommas(amount: number) {
   return formatter.format(Math.floor(amount)).replace('$', '')
 }
@@ -27,6 +31,20 @@ export function formatPercent(zeroToOne: number) {
   // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
   const decimalPlaces = zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
   return (zeroToOne * 100).toFixed(decimalPlaces) + '%'
+}
+
+// Eg 1234567.89 => 1.23M; 5678 => 5.68K
+export function formatLargeNumber(num: number, sigfigs = 2): string {
+  const absNum = Math.abs(num)
+  if (absNum < 1000) {
+    return '' + Number(num.toPrecision(sigfigs))
+  }
+
+  const suffix = ['', 'K', 'M', 'B', 'T', 'Q']
+  const suffixIdx = Math.floor(Math.log10(absNum) / 3)
+  const suffixStr = suffix[suffixIdx]
+  const numStr = (num / Math.pow(10, 3 * suffixIdx)).toPrecision(sigfigs)
+  return `${Number(numStr)}${suffixStr}`
 }
 
 export function toCamelCase(words: string) {

@@ -5,6 +5,8 @@ import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { TagsList } from './tags-list'
+import { MAX_TAG_LENGTH } from 'common/contract'
+import { track } from 'web/lib/service/analytics'
 
 export function TagsInput(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -23,6 +25,7 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
     })
     setIsSubmitting(false)
     setTagText('')
+    track('save tags')
   }
 
   return (
@@ -36,6 +39,7 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
           className="input input-sm input-bordered resize-none"
           disabled={isSubmitting}
           value={tagText}
+          maxLength={MAX_TAG_LENGTH}
           onChange={(e) => setTagText(e.target.value || '')}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

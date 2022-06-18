@@ -1,10 +1,9 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { PrivateUser, STARTING_BALANCE, User } from 'common/user'
+import { PrivateUser, STARTING_BALANCE, User } from '../../../common/user'
 
 const firestore = admin.firestore()
 
@@ -12,7 +11,7 @@ async function main() {
   const snap = await firestore.collection('users').get()
   const users = snap.docs.map((d) => d.data() as User)
 
-  for (let user of users) {
+  for (const user of users) {
     const fbUser = await admin.auth().getUser(user.id)
     const email = fbUser.email
     const { username } = user

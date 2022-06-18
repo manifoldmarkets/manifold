@@ -1,21 +1,24 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { uniq } from 'lodash'
 
 import { getContract, getUser, getValues } from './utils'
-import { Comment } from 'common/comment'
+import { Comment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
-import { Bet } from 'common/bet'
-import { Answer } from 'common/answer'
+import { Bet } from '../../common/bet'
+import { Answer } from '../../common/answer'
+import { createNotification } from './create-notification'
 
 const firestore = admin.firestore()
 
-export const onCreateComment = functions.firestore
-  .document('contracts/{contractId}/comments/{commentId}')
+export const onCreateComment = functions
+  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .firestore.document('contracts/{contractId}/comments/{commentId}')
   .onCreate(async (change, context) => {
     const { contractId } = context.params as {
       contractId: string
     }
+    const { eventId } = context
 
     const contract = await getContract(contractId)
     if (!contract)
@@ -25,7 +28,7 @@ export const onCreateComment = functions.firestore
     const lastCommentTime = comment.createdTime
 
     const commentCreator = await getUser(comment.userId)
-    if (!commentCreator) throw new Error('Could not find contract creator')
+    if (!commentCreator) throw new Error('Could not find comment creator')
 
     await firestore
       .collection('contracts')
@@ -34,7 +37,14 @@ export const onCreateComment = functions.firestore
 
     let bet: Bet | undefined
     let answer: Answer | undefined
-    if (comment.betId) {
+    if (comment.answerOutcome) {
+      answer =
+        contract.outcomeType === 'FREE_RESPONSE' && contract.answers
+          ? contract.answers?.find(
+              (answer) => answer.id === comment.answerOutcome
+            )
+          : undefined
+    } else if (comment.betId) {
       const betSnapshot = await firestore
         .collection('contracts')
         .doc(contractId)
@@ -52,8 +62,29 @@ export const onCreateComment = functions.firestore
     const comments = await getValues<Comment>(
       firestore.collection('contracts').doc(contractId).collection('comments')
     )
+    const relatedSourceType = comment.replyToCommentId
+      ? 'comment'
+      : comment.answerOutcome
+      ? 'answer'
+      : undefined
 
-    const recipientUserIds = _.uniq([
+    const relatedUser = comment.replyToCommentId
+      ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
+      : answer?.userId
+
+    await createNotification(
+      comment.id,
+      'comment',
+      'created',
+      commentCreator,
+      eventId,
+      comment.text,
+      contract,
+      relatedSourceType,
+      relatedUser
+    )
+
+    const recipientUserIds = uniq([
       contract.creatorId,
       ...comments.map((comment) => comment.userId),
     ]).filter((id) => id !== comment.userId)
@@ -66,7 +97,8 @@ export const onCreateComment = functions.firestore
           contract,
           comment,
           bet,
-          answer
+          answer?.text,
+          answer?.id
         )
       )
     )

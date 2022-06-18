@@ -1,14 +1,18 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import _ from 'lodash'
+import { uniqBy } from 'lodash'
 import { useState } from 'react'
 import { Bet } from 'common/bet'
 
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
-import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
-import { AddLiquidityPanel } from '../add-liquidity-panel'
+import {
+  contractPath,
+  contractPool,
+  getBinaryProbPercent,
+} from 'web/lib/firebase/contracts'
+import { LiquidityPanel } from '../liquidity-panel'
 import { CopyLinkButton } from '../copy-link-button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -17,6 +21,7 @@ import { ShareEmbedButton } from '../share-embed-button'
 import { TagsInput } from '../tags-input'
 import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
+import { InfoTooltip } from '../info-tooltip'
 
 export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
@@ -25,8 +30,20 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
 
-  const { createdTime, closeTime, resolutionTime } = contract
-  const tradersCount = _.uniqBy(bets, 'userId').length
+  const { createdTime, closeTime, resolutionTime, mechanism, outcomeType } =
+    contract
+
+  const tradersCount = uniqBy(
+    bets.filter((bet) => !bet.isAnte),
+    'userId'
+  ).length
+
+  const typeDisplay =
+    outcomeType === 'BINARY'
+      ? 'YES / NO'
+      : outcomeType === 'FREE_RESPONSE'
+      ? 'Free response'
+      : 'Numeric'
 
   return (
     <>
@@ -49,18 +66,44 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <div>Share</div>
 
           <Row className="justify-start gap-4">
-            <CopyLinkButton contract={contract} />
+            <CopyLinkButton
+              contract={contract}
+              toastClassName={'sm:-left-10 -left-4 min-w-[250%]'}
+            />
             <TweetButton
               className="self-start"
               tweetText={getTweetText(contract, false)}
             />
-            <ShareEmbedButton contract={contract} />
+            <ShareEmbedButton contract={contract} toastClassName={'-left-20'} />
           </Row>
           <div />
 
           <div>Stats</div>
+
           <table className="table-compact table-zebra table w-full text-gray-500">
             <tbody>
+              <tr>
+                <td>Type</td>
+                <td>{typeDisplay}</td>
+              </tr>
+
+              <tr>
+                <td>Payout</td>
+                <td>
+                  {mechanism === 'cpmm-1' ? (
+                    <>
+                      Fixed{' '}
+                      <InfoTooltip text="Each YES share is worth M$1 if YES wins." />
+                    </>
+                  ) : (
+                    <div>
+                      Parimutuel{' '}
+                      <InfoTooltip text="Each share is a fraction of the pool. " />
+                    </div>
+                  )}
+                </td>
+              </tr>
+
               <tr>
                 <td>Market created</td>
                 <td>{formatTime(createdTime)}</td>
@@ -87,7 +130,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
 
               <tr>
                 <td>Creator earnings</td>
-                <td>{formatMoney(contract.collectedFees?.creatorFee ?? 0)}</td>
+                <td>{formatMoney(contract.collectedFees.creatorFee)}</td>
               </tr>
 
               <tr>
@@ -95,19 +138,12 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
                 <td>{tradersCount}</td>
               </tr>
 
-              {contract.mechanism === 'cpmm-1' && (
-                <tr>
-                  <td>Liquidity</td>
-                  <td>{formatMoney(contract.totalLiquidity)}</td>
-                </tr>
-              )}
-
-              {contract.mechanism === 'dpm-2' && (
-                <tr>
-                  <td>Pool</td>
-                  <td>{formatMoney(_.sum(Object.values(contract.pool)))}</td>
-                </tr>
-              )}
+              <tr>
+                <td>
+                  {mechanism === 'cpmm-1' ? 'Liquidity pool' : 'Betting pool'}
+                </td>
+                <td>{contractPool(contract)}</td>
+              </tr>
             </tbody>
           </table>
 
@@ -115,14 +151,9 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <TagsInput contract={contract} />
           <div />
 
-          {contract.mechanism === 'cpmm-1' &&
-            !contract.resolution &&
-            (!closeTime || closeTime > Date.now()) && (
-              <>
-                <div className="">Add liquidity</div>
-                <AddLiquidityPanel contract={contract} />
-              </>
-            )}
+          {contract.mechanism === 'cpmm-1' && !contract.resolution && (
+            <LiquidityPanel contract={contract} />
+          )}
         </Col>
       </Modal>
     </>

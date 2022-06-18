@@ -1,13 +1,13 @@
-import * as _ from 'lodash'
+import { groupBy, sumBy, mapValues, partition } from 'lodash'
 
 import { Bet } from './bet'
-import { Binary, Contract, FullContract } from './contract'
+import { Contract } from './contract'
 import { getPayouts } from './payouts'
 
-export function scoreCreators(contracts: Contract[], bets: Bet[][]) {
-  const creatorScore = _.mapValues(
-    _.groupBy(contracts, ({ creatorId }) => creatorId),
-    (contracts) => _.sumBy(contracts, ({ pool }) => pool.YES + pool.NO)
+export function scoreCreators(contracts: Contract[]) {
+  const creatorScore = mapValues(
+    groupBy(contracts, ({ creatorId }) => creatorId),
+    (contracts) => sumBy(contracts, ({ pool }) => pool.YES + pool.NO)
   )
 
   return creatorScore
@@ -24,23 +24,24 @@ export function scoreTraders(contracts: Contract[], bets: Bet[][]) {
   return userScores
 }
 
-export function scoreUsersByContract(
-  contract: FullContract<any, Binary>,
-  bets: Bet[]
-) {
-  const { resolution, resolutionProbability } = contract
+export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
+  const { resolution } = contract
+  const resolutionProb =
+    contract.outcomeType == 'BINARY'
+      ? contract.resolutionProbability
+      : undefined
 
-  const [closedBets, openBets] = _.partition(
+  const [closedBets, openBets] = partition(
     bets,
     (bet) => bet.isSold || bet.sale
   )
   const { payouts: resolvePayouts } = getPayouts(
-    resolution,
+    resolution as string,
     {},
     contract,
     openBets,
     [],
-    resolutionProbability
+    resolutionProb
   )
 
   const salePayouts = closedBets.map((bet) => {
@@ -58,9 +59,9 @@ export function scoreUsersByContract(
 
   const netPayouts = [...resolvePayouts, ...salePayouts, ...investments]
 
-  const userScore = _.mapValues(
-    _.groupBy(netPayouts, (payout) => payout.userId),
-    (payouts) => _.sumBy(payouts, ({ payout }) => payout)
+  const userScore = mapValues(
+    groupBy(netPayouts, (payout) => payout.userId),
+    (payouts) => sumBy(payouts, ({ payout }) => payout)
   )
 
   return userScore

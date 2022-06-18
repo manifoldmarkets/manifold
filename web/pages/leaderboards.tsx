@@ -1,17 +1,16 @@
-import _ from 'lodash'
-
 import { Col } from 'web/components/layout/col'
 import { Leaderboard } from 'web/components/leaderboard'
 import { Page } from 'web/components/page'
 import { getTopCreators, getTopTraders, User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
   const [topTraders, topCreators] = await Promise.all([
-    getTopTraders().catch((_) => {}),
-    getTopCreators().catch((_) => {}),
+    getTopTraders().catch(() => {}),
+    getTopCreators().catch(() => {}),
   ])
 
   return {
@@ -34,9 +33,11 @@ export default function Leaderboards(props: {
   }
   const { topTraders, topCreators } = props
 
+  useTracking('view leaderboards')
+
   return (
-    <Page margin>
-      <Col className="items-center gap-10 lg:flex-row">
+    <Page>
+      <Col className="mx-4 items-center gap-10 lg:mx-0 lg:flex-row">
         <Leaderboard
           title="🏅 Top bettors"
           users={topTraders}
@@ -52,7 +53,7 @@ export default function Leaderboards(props: {
           users={topCreators}
           columns={[
             {
-              header: 'Market volume',
+              header: 'Total bet',
               renderCell: (user) => formatMoney(user.creatorVolumeCached),
             },
           ]}

@@ -6,17 +6,19 @@ import { Title } from '../../components/title'
 export default function TagPage() {
   const router = useRouter()
   const { tag } = router.query as { tag: string }
+  if (!router.isReady) return <div />
 
-  // TODO: Fix error: The provided `href` (/tag/[tag]?s=newest) value is missing query values (tag)
   return (
     <Page>
       <Title text={`#${tag}`} />
       <ContractSearch
         querySortOptions={{
-          filter: { tag },
           defaultSort: 'newest',
-          shouldLoadFromStorage: false,
+          defaultFilter: 'all',
+          shouldLoadFromStorage: true,
         }}
+        additionalFilter={{ tag }}
+        showCategorySelector={false}
       />
     </Page>
   )

@@ -1,26 +1,26 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sortBy } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Bet } from 'common/bet'
-import { getDpmProbability } from 'common/calculate-dpm'
-import { Binary, Contract, DPM, FullContract } from 'common/contract'
+import { Bet } from '../../../common/bet'
+import { getDpmProbability } from '../../../common/calculate-dpm'
+import { DPMBinaryContract } from '../../../common/contract'
 
 type DocRef = admin.firestore.DocumentReference
 const firestore = admin.firestore()
 
 async function migrateContract(
   contractRef: DocRef,
-  contract: FullContract<DPM, Binary>
+  contract: DPMBinaryContract
 ) {
   const bets = await contractRef
     .collection('bets')
     .get()
     .then((snap) => snap.docs.map((bet) => bet.data() as Bet))
 
-  const lastBet = _.sortBy(bets, (bet) => -bet.createdTime)[0]
+  const lastBet = sortBy(bets, (bet) => -bet.createdTime)[0]
   if (lastBet) {
     const probAfter = getDpmProbability(contract.totalShares)
 
@@ -34,9 +34,7 @@ async function migrateContract(
 
 async function migrateContracts() {
   const snapshot = await firestore.collection('contracts').get()
-  const contracts = snapshot.docs.map(
-    (doc) => doc.data() as FullContract<DPM, Binary>
-  )
+  const contracts = snapshot.docs.map((doc) => doc.data() as DPMBinaryContract)
 
   console.log('Loaded contracts', contracts.length)
 

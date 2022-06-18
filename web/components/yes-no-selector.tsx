@@ -1,8 +1,9 @@
 import clsx from 'clsx'
-import React from 'react'
+import React, { ReactNode } from 'react'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
+import { resolution } from 'common/contract'
 
 export function YesNoSelector(props: {
   selected?: 'YES' | 'NO'
@@ -65,8 +66,8 @@ export function YesNoSelector(props: {
 }
 
 export function YesNoCancelSelector(props: {
-  selected: 'YES' | 'NO' | 'MKT' | 'CANCEL' | undefined
-  onSelect: (selected: 'YES' | 'NO' | 'MKT' | 'CANCEL') => void
+  selected: resolution | undefined
+  onSelect: (selected: resolution) => void
   className?: string
   btnClassName?: string
 }) {
@@ -167,7 +168,7 @@ export function FundsSelector(props: {
       {fundAmounts.map((amount) => (
         <Button
           key={amount}
-          color={selected === amount ? 'green' : 'gray'}
+          color={selected === amount ? 'indigo' : 'gray'}
           onClick={() => onSelect(amount as any)}
           className={btnClassName}
         >
@@ -195,11 +196,42 @@ export function BuyButton(props: { className?: string; onClick?: () => void }) {
   )
 }
 
+export function NumberCancelSelector(props: {
+  selected: 'NUMBER' | 'CANCEL' | undefined
+  onSelect: (selected: 'NUMBER' | 'CANCEL') => void
+  className?: string
+  btnClassName?: string
+}) {
+  const { selected, onSelect, className } = props
+
+  const btnClassName = clsx('px-6 flex-1', props.btnClassName)
+
+  return (
+    <Col className={clsx('gap-2', className)}>
+      <Button
+        color={selected === 'NUMBER' ? 'green' : 'gray'}
+        onClick={() => onSelect('NUMBER')}
+        className={clsx('whitespace-nowrap', btnClassName)}
+      >
+        Choose value
+      </Button>
+
+      <Button
+        color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+        onClick={() => onSelect('CANCEL')}
+        className={clsx(btnClassName, '')}
+      >
+        N/A
+      </Button>
+    </Col>
+  )
+}
+
 function Button(props: {
   className?: string
   onClick?: () => void
-  color: 'green' | 'red' | 'blue' | 'yellow' | 'gray'
-  children?: any
+  color: 'green' | 'red' | 'blue' | 'indigo' | 'yellow' | 'gray'
+  children?: ReactNode
 }) {
   const { className, onClick, children, color } = props
 
@@ -212,6 +244,7 @@ function Button(props: {
         color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
         color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
+        color === 'indigo' && 'bg-indigo-500 text-white hover:bg-indigo-600',
         color === 'gray' && 'bg-gray-200 text-gray-700 hover:bg-gray-300',
         className
       )}

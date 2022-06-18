@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import _ from 'lodash'
+import { uniq, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
@@ -39,14 +39,25 @@ import {
 } from 'common/calculate'
 import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
 import { trackLatency } from 'web/lib/firebase/tracking'
+import { NumericContract } from 'common/contract'
+import { useUser } from 'web/hooks/use-user'
+import { SellSharesModal } from './sell-modal'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
-type BetFilter = 'open' | 'closed' | 'resolved' | 'all'
+type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
 
-export function BetsList(props: { user: User }) {
-  const { user } = props
-  const bets = useUserBets(user.id)
+export function BetsList(props: { user: User; hideBetsBefore?: number }) {
+  const { user, hideBetsBefore } = props
 
+  const signedInUser = useUser()
+  const isYourBets = user.id === signedInUser?.id
+
+  const allBets = useUserBets(user.id, { includeRedemptions: true })
+  // Hide bets before 06-01-2022 if this isn't your own profile
+  // NOTE: This means public profits also begin on 06-01-2022 as well.
+  const bets = allBets?.filter(
+    (bet) => bet.createdTime >= (hideBetsBefore ?? 0)
+  )
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   const [sort, setSort] = useState<BetSort>('newest')
@@ -54,7 +65,7 @@ export function BetsList(props: { user: User }) {
 
   useEffect(() => {
     if (bets) {
-      const contractIds = _.uniq(bets.map((bet) => bet.contractId))
+      const contractIds = uniq(bets.map((bet) => bet.contractId))
 
       let disposed = false
       Promise.all(contractIds.map((id) => getContractFromId(id))).then(
@@ -67,7 +78,8 @@ export function BetsList(props: { user: User }) {
         disposed = true
       }
     }
-  }, [bets])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allBets, hideBetsBefore])
 
   const getTime = useTimeSinceFirstRender()
   useEffect(() => {
@@ -81,13 +93,13 @@ export function BetsList(props: { user: User }) {
     return <LoadingIndicator />
   }
 
-  if (bets.length === 0) return <NoBets />
+  if (bets.length === 0) return <NoBets user={user} />
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
-  const contractBets = _.groupBy(bets, 'contractId')
-  const contractsById = _.fromPairs(contracts.map((c) => [c.id, c]))
+  const contractBets = groupBy(bets, 'contractId')
+  const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
 
-  const contractsMetrics = _.mapValues(contractBets, (bets, contractId) => {
+  const contractsMetrics = mapValues(contractBets, (bets, contractId) => {
     const contract = contractsById[contractId]
     if (!contract) return getContractBetNullMetrics()
     return getContractBetMetrics(contract, bets)
@@ -99,6 +111,7 @@ export function BetsList(props: { user: User }) {
       !FILTERS.resolved(c) && (c.closeTime ?? Infinity) < Date.now(),
     open: (c) => !(FILTERS.closed(c) || FILTERS.resolved(c)),
     all: () => true,
+    sold: () => true,
   }
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => contractsMetrics[c.id].profit,
@@ -110,31 +123,34 @@ export function BetsList(props: { user: User }) {
       (filter === 'open' ? -1 : 1) *
       (c.resolutionTime ?? c.closeTime ?? Infinity),
   }
-  const displayedContracts = _.sortBy(contracts, SORTS[sort])
+  const displayedContracts = sortBy(contracts, SORTS[sort])
     .reverse()
     .filter(FILTERS[filter])
     .filter((c) => {
-      if (sort === 'profit') return true
+      if (filter === 'all') return true
 
-      // Filter out contracts where you don't have shares anymore.
-      const metrics = contractsMetrics[c.id]
-      return metrics.payout > 0
+      const { totalShares } = contractsMetrics[c.id]
+      const hasSoldAll = Object.values(totalShares).every(
+        (shares) => shares === 0
+      )
+
+      if (filter === 'sold') return hasSoldAll
+      return !hasSoldAll
     })
 
-  const [settled, unsettled] = _.partition(
-    contracts,
-    (c) => c.isResolved || contractsMetrics[c.id].invested === 0
+  const unsettled = contracts.filter(
+    (c) => !c.isResolved && contractsMetrics[c.id].invested !== 0
   )
 
-  const currentInvested = _.sumBy(
+  const currentInvested = sumBy(
     unsettled,
     (c) => contractsMetrics[c.id].invested
   )
-  const currentBetsValue = _.sumBy(
+  const currentBetsValue = sumBy(
     unsettled,
     (c) => contractsMetrics[c.id].payout
   )
-  const currentNetInvestment = _.sumBy(
+  const currentNetInvestment = sumBy(
     unsettled,
     (c) => contractsMetrics[c.id].netPayout
   )
@@ -173,6 +189,7 @@ export function BetsList(props: { user: User }) {
             onChange={(e) => setFilter(e.target.value as BetFilter)}
           >
             <option value="open">Open</option>
+            <option value="sold">Sold</option>
             <option value="closed">Closed</option>
             <option value="resolved">Resolved</option>
             <option value="all">All</option>
@@ -193,14 +210,15 @@ export function BetsList(props: { user: User }) {
 
       <Col className="mt-6 divide-y">
         {displayedContracts.length === 0 ? (
-          <NoBets />
+          <NoBets user={user} />
         ) : (
           displayedContracts.map((contract) => (
-            <MyContractBets
+            <ContractBets
               key={contract.id}
               contract={contract}
               bets={contractBets[contract.id] ?? []}
               metric={sort === 'profit' ? 'profit' : 'value'}
+              isYourBets={isYourBets}
             />
           ))
         )}
@@ -209,31 +227,40 @@ export function BetsList(props: { user: User }) {
   )
 }
 
-const NoBets = () => {
+const NoBets = ({ user }: { user: User }) => {
+  const me = useUser()
   return (
     <div className="mx-4 text-gray-500">
-      You have not made any bets yet.{' '}
-      <SiteLink href="/home" className="underline">
-        Find a prediction market!
-      </SiteLink>
+      {user.id === me?.id ? (
+        <>
+          You have not made any bets yet.{' '}
+          <SiteLink href="/home" className="underline">
+            Find a prediction market!
+          </SiteLink>
+        </>
+      ) : (
+        <>{user.name} has not made any public bets yet.</>
+      )}
     </div>
   )
 }
 
-function MyContractBets(props: {
+function ContractBets(props: {
   contract: Contract
   bets: Bet[]
   metric: 'profit' | 'value'
+  isYourBets: boolean
 }) {
-  const { bets, contract, metric } = props
+  const { bets, contract, metric, isYourBets } = props
   const { resolution, outcomeType } = contract
+
+  const resolutionValue = (contract as NumericContract).resolutionValue
 
   const [collapsed, setCollapsed] = useState(true)
 
   const isBinary = outcomeType === 'BINARY'
-  const probPercent = getBinaryProbPercent(contract)
 
-  const { payout, profit, profitPercent, invested } = getContractBetMetrics(
+  const { payout, profit, profitPercent } = getContractBetMetrics(
     contract,
     bets
   )
@@ -241,12 +268,14 @@ function MyContractBets(props: {
     <div
       tabIndex={0}
       className={clsx(
-        'collapse collapse-arrow relative cursor-pointer bg-white p-4 pr-6',
+        'collapse collapse-arrow relative bg-white p-4 pr-6',
         collapsed ? 'collapse-close' : 'collapse-open pb-2'
       )}
-      onClick={() => setCollapsed((collapsed) => !collapsed)}
     >
-      <Row className="flex-wrap gap-2">
+      <Row
+        className="cursor-pointer flex-wrap gap-2"
+        onClick={() => setCollapsed((collapsed) => !collapsed)}
+      >
         <Col className="flex-[2] gap-1">
           <Row className="mr-2 max-w-lg">
             <Link href={contractPath(contract)}>
@@ -266,23 +295,27 @@ function MyContractBets(props: {
           </Row>
 
           <Row className="flex-1 items-center gap-2 text-sm text-gray-500">
-            {(isBinary || resolution) && (
+            {resolution ? (
               <>
-                {resolution ? (
-                  <div>
-                    Resolved{' '}
-                    <OutcomeLabel
-                      outcome={resolution}
-                      contract={contract}
-                      truncate="short"
-                    />
-                  </div>
-                ) : (
-                  <div className="text-primary text-lg">{probPercent}</div>
-                )}
+                <div>
+                  Resolved{' '}
+                  <OutcomeLabel
+                    outcome={resolution}
+                    value={resolutionValue}
+                    contract={contract}
+                    truncate="short"
+                  />
+                </div>
                 <div>•</div>
               </>
-            )}
+            ) : isBinary ? (
+              <>
+                <div className="text-primary text-lg">
+                  {getBinaryProbPercent(contract)}
+                </div>
+                <div>•</div>
+              </>
+            ) : null}
             <UserLink
               name={contract.creatorName}
               username={contract.creatorUsername}
@@ -308,45 +341,56 @@ function MyContractBets(props: {
       >
         <Spacer h={8} />
 
-        <MyBetsSummary
+        <BetsSummary
           className="mr-5 flex-1 sm:mr-8"
           contract={contract}
           bets={bets}
+          isYourBets={isYourBets}
         />
 
         <Spacer h={8} />
 
-        <ContractBetsTable contract={contract} bets={bets} />
+        <ContractBetsTable
+          contract={contract}
+          bets={bets}
+          isYourBets={isYourBets}
+        />
       </div>
     </div>
   )
 }
 
-export function MyBetsSummary(props: {
+export function BetsSummary(props: {
   contract: Contract
   bets: Bet[]
+  isYourBets: boolean
   className?: string
 }) {
-  const { bets, contract, className } = props
+  const { contract, isYourBets, className } = props
   const { resolution, outcomeType, mechanism } = contract
   const isBinary = outcomeType === 'BINARY'
   const isCpmm = mechanism === 'cpmm-1'
 
-  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-  const yesWinnings = _.sumBy(excludeSales, (bet) =>
+  const bets = props.bets.filter((b) => !b.isAnte)
+
+  const excludeSalesAndAntes = bets.filter(
+    (b) => !b.isAnte && !b.isSold && !b.sale
+  )
+  const yesWinnings = sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'YES')
   )
-  const noWinnings = _.sumBy(excludeSales, (bet) =>
+  const noWinnings = sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
-  const { invested, profitPercent, payout, profit } = getContractBetMetrics(
-    contract,
-    bets
-  )
+  const { invested, profitPercent, payout, profit, totalShares } =
+    getContractBetMetrics(contract, bets)
+
+  const [showSellModal, setShowSellModal] = useState(false)
+  const user = useUser()
 
   return (
     <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>
-      <Row className="gap-4 sm:gap-6">
+      <Row className="flex-wrap gap-4 sm:gap-6">
         {!isCpmm && (
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">
@@ -398,6 +442,31 @@ export function MyBetsSummary(props: {
           <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
           <div className="whitespace-nowrap">
             {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
+            {isYourBets &&
+              isCpmm &&
+              isBinary &&
+              !resolution &&
+              invested > 0 &&
+              user && (
+                <>
+                  <button
+                    className="btn btn-sm ml-2"
+                    onClick={() => setShowSellModal(true)}
+                  >
+                    Sell
+                  </button>
+                  {showSellModal && (
+                    <SellSharesModal
+                      contract={contract}
+                      user={user}
+                      userBets={bets}
+                      shares={totalShares.YES || totalShares.NO}
+                      sharesOutcome={totalShares.YES ? 'YES' : 'NO'}
+                      setOpen={setShowSellModal}
+                    />
+                  )}
+                </>
+              )}
           </div>
         </Col>
       </Row>
@@ -408,31 +477,36 @@ export function MyBetsSummary(props: {
 export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
+  isYourBets: boolean
   className?: string
 }) {
-  const { contract, bets, className } = props
+  const { contract, className, isYourBets } = props
 
-  const [sales, buys] = _.partition(bets, (bet) => bet.sale)
+  const bets = sortBy(
+    props.bets.filter((b) => !b.isAnte),
+    (bet) => bet.createdTime
+  ).reverse()
 
-  const salesDict = _.fromPairs(
+  const [sales, buys] = partition(bets, (bet) => bet.sale)
+
+  const salesDict = Object.fromEntries(
     sales.map((sale) => [sale.sale?.betId ?? '', sale])
   )
 
-  const [redemptions, normalBets] = _.partition(
+  const [redemptions, normalBets] = partition(
     contract.mechanism === 'cpmm-1' ? bets : buys,
     (b) => b.isRedemption
   )
-  const amountRedeemed = Math.floor(
-    -0.5 * _.sumBy(redemptions, (b) => b.shares)
-  )
+  const amountRedeemed = Math.floor(-0.5 * sumBy(redemptions, (b) => b.shares))
 
-  const amountLoaned = _.sumBy(
+  const amountLoaned = sumBy(
     bets.filter((bet) => !bet.isSold && !bet.sale),
     (bet) => bet.loanAmount ?? 0
   )
 
-  const { isResolved, mechanism } = contract
+  const { isResolved, mechanism, outcomeType } = contract
   const isCPMM = mechanism === 'cpmm-1'
+  const isNumeric = outcomeType === 'NUMERIC'
 
   return (
     <div className={clsx('overflow-x-auto', className)}>
@@ -462,7 +536,9 @@ export function ContractBetsTable(props: {
             {isCPMM && <th>Type</th>}
             <th>Outcome</th>
             <th>Amount</th>
-            {!isCPMM && <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>}
+            {!isCPMM && !isNumeric && (
+              <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
+            )}
             {!isCPMM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
             <th>Probability</th>
@@ -476,6 +552,7 @@ export function ContractBetsTable(props: {
               bet={bet}
               saleBet={salesDict[bet.id]}
               contract={contract}
+              isYourBet={isYourBets}
             />
           ))}
         </tbody>
@@ -484,8 +561,13 @@ export function ContractBetsTable(props: {
   )
 }
 
-function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
-  const { bet, saleBet, contract } = props
+function BetRow(props: {
+  bet: Bet
+  contract: Contract
+  saleBet?: Bet
+  isYourBet: boolean
+}) {
+  const { bet, saleBet, contract, isYourBet } = props
   const {
     amount,
     outcome,
@@ -497,11 +579,12 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
     isAnte,
   } = bet
 
-  const { isResolved, closeTime, mechanism } = contract
+  const { isResolved, closeTime, mechanism, outcomeType } = contract
 
   const isClosed = closeTime && Date.now() > closeTime
 
   const isCPMM = mechanism === 'cpmm-1'
+  const isNumeric = outcomeType === 'NUMERIC'
 
   const saleAmount = saleBet?.sale?.amount
 
@@ -518,31 +601,36 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   )
 
   const payoutIfChosenDisplay =
-    bet.outcome === '0' && bet.isAnte
+    bet.isAnte && outcomeType === 'FREE_RESPONSE' && bet.outcome === '0'
       ? 'N/A'
       : formatMoney(calculatePayout(contract, bet, bet.outcome))
 
   return (
     <tr>
       <td className="text-neutral">
-        {!isCPMM && !isResolved && !isClosed && !isSold && !isAnte && (
-          <SellButton contract={contract} bet={bet} />
-        )}
+        {isYourBet &&
+          !isCPMM &&
+          !isResolved &&
+          !isClosed &&
+          !isSold &&
+          !isAnte &&
+          !isNumeric && <SellButton contract={contract} bet={bet} />}
       </td>
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
-        {outcome === '0' ? (
+        {bet.isAnte ? (
           'ANTE'
         ) : (
           <OutcomeLabel
             outcome={outcome}
+            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />
         )}
       </td>
       <td>{formatMoney(Math.abs(amount))}</td>
-      {!isCPMM && <td>{saleDisplay}</td>}
+      {!isCPMM && !isNumeric && <td>{saleDisplay}</td>}
       {!isCPMM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>{formatWithCommas(Math.abs(shares))}</td>
       <td>
@@ -553,13 +641,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   )
 }
 
-const warmUpSellBet = _.throttle(() => sellBet({}).catch(), 5000 /* ms */)
-
 function SellButton(props: { contract: Contract; bet: Bet }) {
-  useEffect(() => {
-    warmUpSellBet()
-  }, [])
-
   const { contract, bet } = props
   const { outcome, shares, loanAmount } = bet
 
@@ -577,7 +659,6 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
 
   return (
     <ConfirmationButton
-      id={`sell-${bet.id}`}
       openModalBtn={{
         className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
         label: 'Sell',

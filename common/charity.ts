@@ -47,14 +47,76 @@ export const charities: Charity[] = [
     website: 'https://funds.effectivealtruism.org/funds/far-future',
     photo: 'https://i.imgur.com/C2qka9g.png',
     preview:
-      'Positively influence the long-term trajectory of civilization by making grants that address global catastrophic risks.',
-    description: `The Fund has a broad remit to make grants that promote, implement and advocate for longtermist ideas. Many of our grants aim to address potential risks from advanced artificial intelligence and to build infrastructure and advocate for longtermist projects. However, we welcome applications related to long-term institutional reform or other global catastrophic risks (e.g., pandemics or nuclear conflict).
+      'The Long-Term Future Fund aims to improve the long-term trajectory of civilization by making grants that address global catastrophic risks.',
+    description: `The Long-Term Future Fund aims to positively influence the long-term trajectory of civilization by making grants that address global catastrophic risks, especially potential risks from advanced artificial intelligence and pandemics. In addition, we seek to promote, implement, and advocate for longtermist ideas, and to otherwise increase the likelihood that future generations will flourish.
+    
+    The Fund has a broad remit to make grants that promote, implement and advocate for longtermist ideas. Many of our grants aim to address potential risks from advanced artificial intelligence and to build infrastructure and advocate for longtermist projects. However, we welcome applications related to long-term institutional reform or other global catastrophic risks (e.g., pandemics or nuclear conflict).
     
     We intend to support:
     - Projects that directly contribute to reducing existential risks through technical research, policy analysis, advocacy, and/or demonstration projects
     - Training for researchers or practitioners who work to mitigate existential risks, or help with relevant recruitment efforts, or infrastructure for people working on longtermist projects
     - Promoting long-term thinking`,
     tags: ['Featured'] as CharityTag[],
+  },
+  {
+    name: 'New Science',
+    website: 'https://newscience.org/',
+    photo: 'https://i.imgur.com/C7PoR4q.png',
+    preview:
+      'Facilitating scientific breakthroughs by empowering the next generation of scientists and building the 21st century institutions of basic science.',
+    description: `As its first major project, in the summer of 2022, New Science will run an in-person research fellowship in Boston for young life scientists, during which they will independently explore an ambitious high-risk scientific idea they couldn’t work on otherwise and start building the foundations for a bigger research project, while having much more freedom than they could expect in their normal research environment but also much more support from us. This is inspired by Cold Spring Harbor Laboratory, which started as a place where leading molecular biologists came for the summer to hang out and work on random projects together, and which eventually housed 8 Nobel Prize winners.
+
+    As its second major project, in the fall of 2022, New Science will run an in-person 12-month-long fellowship for young scientists starting to directly attack the biggest structural issues of the established institutions of science. We will double down on things that worked well during the summer fellowship, while extending the fellowship to one year, thus allowing researchers to make much more progress and will strive to provide them as much scientific leverage as possible.
+    
+    In several years, New Science will start funding entire labs outside of academia and then will be creating an entire network of scientific organizations, while supporting the broader scientific ecosystem that will constitute the 21st century institutions of basic science.`,
+    tags: ['Featured'] as CharityTag[],
+  },
+  {
+    name: 'Global Health and Development Fund',
+    website: 'https://funds.effectivealtruism.org/funds/global-development',
+    photo: 'https://i.imgur.com/C2qka9g.png',
+    preview:
+      "The Global Health and Development Fund aims to improve people's lives, typically in the poorest regions of the world where the need for healthcare and economic empowerment is greatest.",
+    description: `The Global Health and Development Fund recommends grants with the aim of improving people's lives, typically in the poorest regions of the world where the need for healthcare and economic empowerment is greatest. This will be achieved primarily by supporting projects that:
+    
+    - Directly provide healthcare, or preventive measures that will improve health, well-being, or life expectancy
+    - Directly provide services that raise incomes or otherwise improve economic conditions
+    - Provide assistance to governments in the design and implementation of effective policies
+    
+    In addition, the Global Health and Development Fund has a broad remit, and may fund other activities whose ultimate purpose is to serve people living in the poorest regions of the world, for example by raising additional funds (e.g. One for the World) or by exploring novel financing arrangements (e.g. Instiglio).
+    
+    The Fund manager recommends grants to GiveWell top charities as a baseline, but will recommend higher-risk grants they believe to be more effective (in expectation) than GiveWell top charities. As such, the fund makes grants with a variety of different risk profiles.`,
+  },
+  {
+    name: 'Animal Welfare Fund',
+    website: 'https://funds.effectivealtruism.org/funds/animal-welfare',
+    photo: 'https://i.imgur.com/C2qka9g.png',
+    preview:
+      'The Animal Welfare Fund aims to effectively improve the well-being of nonhuman animals.',
+    description: `The Animal Welfare Fund aims to effectively improve the well-being of nonhuman animals, by making grants that focus on one or more of the following:
+
+    - Relatively neglected geographic regions or groups of animals
+    - Promising research into animal advocacy or animal well-being
+    - Activities that could make it easier to help animals in the future
+    - Otherwise best-in-class opportunities
+    
+    The Fund focuses on projects that primarily address farmed animals, as well as projects that could affect other large populations of nonhuman animals. Some examples of projects that the Fund could support:
+    
+    - Supporting farmed animal advocacy in Asia
+    - Researching ways to improve the welfare of farmed fish
+    - Promoting alternative proteins in order to reduce demand for animal products
+    - Advocating against the use of some cruel practice within the industrial agriculture system
+    - Growing the field of welfare biology in order to improve our understanding of different ways to address wild animal suffering`,
+  },
+  {
+    name: 'Effective Altruism Infrastructure Fund',
+    website: 'https://funds.effectivealtruism.org/funds/ea-community',
+    photo: 'https://i.imgur.com/C2qka9g.png',
+    preview:
+      'The Effective Altruism Infrastructure Fund aims to increase the impact of projects that use the principles of effective altruism.',
+    description: `The Effective Altruism Infrastructure Fund (EA Infrastructure Fund) recommends grants that aim to improve the work of projects using principles of effective altruism, by increasing their access to talent, capital, and knowledge.
+    
+    The EA Infrastructure Fund has historically attempted to make strategic grants to incubate and grow projects that attempt to use reason and evidence to do as much good as possible. These include meta-charities that fundraise for highly effective charities doing direct work on important problems, research organizations that improve our understanding of how to do good more effectively, and projects that promote principles of effective altruism in contexts like academia.`,
   },
   {
     name: 'Nonlinear',
@@ -103,6 +165,32 @@ export const charities: Charity[] = [
     - Which funding gaps we expect to be filled and unfilled
     - Each charity’s plans for additional funding
     - The cost-effectiveness of each funding gap`,
+  },
+  {
+    name: "Founder's Pledge Climate Change Fund",
+    website: 'https://founderspledge.com/funds/climate-change-fund',
+    photo: 'https://i.imgur.com/ZAhzHu4.png',
+    preview:
+      'The Climate Change Fund aims to sustainably reach net-zero emissions globally, while still allowing growth to free millions from energy poverty.',
+    description: `The Climate Change Fund aims to sustainably reach net-zero emissions globally.
+    
+    Current levels of emissions are contributing to millions of deaths annually from air pollution and causing irrevocable damage to our planet. In addition, millions worldwide do not have access to modern energy technology, severely hampering development goals.
+    
+    This Fund is committed to finding and funding sustainable solutions to the emissions crisis that still allow growth, freeing millions from the prison of energy poverty.
+    
+    The Fund is a philanthropic co-funding vehicle that does not provide investment returns.`,
+  },
+  {
+    name: "Founder's Pledge Patient Philanthropy Fund",
+    website: 'https://founderspledge.com/funds/patient-philanthropy-fund',
+    photo: 'https://i.imgur.com/ZAhzHu4.png',
+    preview:
+      'The Patient Philanthropy Project aims to safeguard and benefit the long-term future of humanity',
+    description: `The Patient Philanthropy Project focuses on how we can collectively grow our resources to support the long-term flourishing of humanity. It addresses a crucial gap: as a society, we spend much too little on safeguarding and benefiting future generations. In fact, we spend more money on ice cream each year than we do on preventing our own extinction. However, people in the future - who do not have a voice in their future survival or environment - matter. Lots of them may yet come into existence and we have the ability to positively affect their lives now, if only by making sure we avoid major catastrophes that could destroy our common future.
+    
+    Housed within the Project is the Patient Philanthropy Fund, a philanthropic co-funding vehicle which invests to give and ensures capital is at the ready when extraordinary opportunities to safeguard and improve the long-term future arise.
+    
+    The Fund’s patient approach means that we aim to identify the point in time when the highest-impact opportunities are available, which may be years, decades, or even centuries ahead.`,
   },
   {
     name: 'ARC',
@@ -392,6 +480,41 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     preview: 'Feeding everyone no matter what.',
     description:
       'The mission of the Alliance to Feed the Earth in Disasters is to help create resilience to global food shocks. We seek to identify various resilient food solutions and to help governments implement these solutions, to increase the chances that people have enough to eat in the event of a global catastrophe. We focus on events that could deplete food supplies or access to 5% of the global population or more.Our ultimate goal is to feed everyone, no matter what. An important aspect of this goal is that we need to establish equitable solutions so that all people can access the nutrition they need, regardless of wealth or location.ALLFED is inspired by effective altruism, using reason and evidence to identify how to do the most good. Our solutions are backed by science and research, and we also identify the most cost-effective solutions, to be able to provide more nutrition in catastrophes.',
+  },
+  {
+    name: 'The Trevor Project',
+    website: 'https://www.thetrevorproject.org/',
+    photo: 'https://i.imgur.com/QN4mVNn.jpeg',
+    preview:
+      'The Trevor Project is the world’s largest suicide prevention and crisis intervention organization for LGBTQ (lesbian, gay, bisexual, transgender, queer, and questioning) young people.',
+    description: `Two decades ago, we responded to a health crisis. Now we’re building a safer, more-inclusive world. LGBTQ young people are four times more likely to attempt suicide, and suicide remains the second leading cause of death among all young people in the U.S.
+
+      Our Mission
+      To end suicide among lesbian, gay, bisexual, transgender, queer & questioning young people.
+      
+      Our Vision
+      A world where all LGBTQ young people see a bright future for themselves.
+      
+      Our Goal
+      To serve 1.8 million crisis contacts annually, by the end of our 25th year, while continuing to innovate on our core services.`,
+  },
+  {
+    name: 'ACLU',
+    website: 'https://www.aclu.org/',
+    photo: 'https://i.imgur.com/nbSYuDC.png',
+    preview:
+      'The ACLU works in the courts, legislatures, and communities to defend and preserve the individual rights and liberties guaranteed to all people in this country by the Constitution and laws of the United States.',
+    description: `
+    THREE THINGS TO KNOW ABOUT THE ACLU
+•	We protect American values. In many ways, the ACLU is the nation's most conservative organization. Our job is to conserve America's original civic values - the Constitution and the Bill of Rights - and defend the rights of every man, woman and child in this country.
+•	We're not anti-anything. The only things we fight are attempts to take away or limit your civil liberties, like your right to practice any religion you want (or none at all); or to decide in private whether or not to have a child; or to speak out - for or against - anything at all; or to be treated with equality and fairness, no matter who you are.
+•	We're there for you. Rich or poor, straight or gay, black or white or brown, urban or rural, pious or atheist, American-born or foreign-born, able-bodied or living with a disability. Every person in this country should have the same basic rights. And since our founding in 1920, we've been working hard to make sure no one takes them away.
+
+The American Civil Liberties Union is our nation's guardian of liberty, working daily in courts, legislatures and communities to defend and preserve the individual rights and liberties that the Constitution and laws of the United States guarantee everyone in this country.
+
+"So long as we have enough people in this country willing to fight for their rights, we'll be called a democracy," ACLU Founder Roger Baldwin said.
+
+The U.S. Constitution and the Bill of Rights trumpet our aspirations for the kind of society that we want to be. But for much of our history, our nation failed to fulfill the promise of liberty for whole groups of people.`,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')

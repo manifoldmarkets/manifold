@@ -1,7 +1,8 @@
-import { ResponsiveLine } from '@nivo/line'
+import { Point, ResponsiveLine } from '@nivo/line'
 import dayjs from 'dayjs'
-import _ from 'lodash'
+import { zip } from 'lodash'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { Col } from '../layout/col'
 
 export function DailyCountChart(props: {
   startDate: number
@@ -15,7 +16,7 @@ export function DailyCountChart(props: {
     dayjs(startDate).add(i, 'day').toDate()
   )
 
-  const points = _.zip(dates, dailyCounts).map(([date, betCount]) => ({
+  const points = zip(dates, dailyCounts).map(([date, betCount]) => ({
     x: date,
     y: betCount,
   }))
@@ -46,6 +47,10 @@ export function DailyCountChart(props: {
         enableGridX={!!width && width >= 800}
         enableArea
         margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+        sliceTooltip={({ slice }) => {
+          const point = slice.points[0]
+          return <Tooltip point={point} />
+        }}
       />
     </div>
   )
@@ -63,7 +68,7 @@ export function DailyPercentChart(props: {
     dayjs(startDate).add(i, 'day').toDate()
   )
 
-  const points = _.zip(dates, dailyPercent).map(([date, betCount]) => ({
+  const points = zip(dates, dailyPercent).map(([date, betCount]) => ({
     x: date,
     y: betCount,
   }))
@@ -97,7 +102,28 @@ export function DailyPercentChart(props: {
         enableGridX={!!width && width >= 800}
         enableArea
         margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+        sliceTooltip={({ slice }) => {
+          const point = slice.points[0]
+          return <Tooltip point={point} />
+        }}
       />
     </div>
+  )
+}
+
+function Tooltip(props: { point: Point }) {
+  const { point } = props
+  return (
+    <Col className="border border-gray-300 bg-white py-2 px-3">
+      <div
+        className="pb-1"
+        style={{
+          color: point.serieColor,
+        }}
+      >
+        <strong>{point.serieId}</strong> {point.data.yFormatted}
+      </div>
+      <div>{dayjs(point.data.x).format('MMM DD')}</div>
+    </Col>
   )
 }

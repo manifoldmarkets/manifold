@@ -1,11 +1,11 @@
-import { Txn } from 'common/txn'
+import { DonationTxn } from 'common/txn'
 import { Avatar } from '../avatar'
 import { useUserById } from 'web/hooks/use-users'
 import { UserLink } from '../user-page'
 import { manaToUSD } from '../../../common/util/format'
 import { RelativeTimestamp } from '../relative-timestamp'
 
-export function Donation(props: { txn: Txn }) {
+export function Donation(props: { txn: DonationTxn }) {
   const { txn } = props
   const user = useUserById(txn.fromId)
 
@@ -16,7 +16,7 @@ export function Donation(props: { txn: Txn }) {
   return (
     <div className="mb-2 flow-root pr-2 md:pr-0">
       <div className="relative flex items-center space-x-3">
-        <Avatar username={user.name} avatarUrl={user.avatarUrl} size="sm" />
+        <Avatar username={user.username} avatarUrl={user.avatarUrl} size="sm" />
         <div className="min-w-0 flex-1">
           <p className="mt-0.5 text-sm text-gray-500">
             <UserLink

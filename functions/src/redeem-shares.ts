@@ -1,12 +1,12 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { partition, sumBy } from 'lodash'
 
-import { Bet } from 'common/bet'
-import { getProbability } from 'common/calculate'
+import { Bet } from '../../common/bet'
+import { getProbability } from '../../common/calculate'
 
-import { Binary, CPMM, FullContract } from 'common/contract'
-import { noFees } from 'common/fees'
-import { User } from 'common/user'
+import { Contract } from '../../common/contract'
+import { noFees } from '../../common/fees'
+import { User } from '../../common/user'
 
 export const redeemShares = async (userId: string, contractId: string) => {
   return await firestore.runTransaction(async (transaction) => {
@@ -15,7 +15,7 @@ export const redeemShares = async (userId: string, contractId: string) => {
     if (!contractSnap.exists)
       return { status: 'error', message: 'Invalid contract' }
 
-    const contract = contractSnap.data() as FullContract<CPMM, Binary>
+    const contract = contractSnap.data() as Contract
     if (contract.outcomeType !== 'BINARY' || contract.mechanism !== 'cpmm-1')
       return { status: 'success' }
 
@@ -25,14 +25,14 @@ export const redeemShares = async (userId: string, contractId: string) => {
         .where('userId', '==', userId)
     )
     const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
-    const [yesBets, noBets] = _.partition(bets, (b) => b.outcome === 'YES')
-    const yesShares = _.sumBy(yesBets, (b) => b.shares)
-    const noShares = _.sumBy(noBets, (b) => b.shares)
+    const [yesBets, noBets] = partition(bets, (b) => b.outcome === 'YES')
+    const yesShares = sumBy(yesBets, (b) => b.shares)
+    const noShares = sumBy(noBets, (b) => b.shares)
 
     const amount = Math.min(yesShares, noShares)
     if (amount <= 0) return
 
-    const prevLoanAmount = _.sumBy(bets, (bet) => bet.loanAmount ?? 0)
+    const prevLoanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
     const loanPaid = Math.min(prevLoanAmount, amount)
     const netAmount = amount - loanPaid
 

@@ -1,14 +1,16 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sortBy, sumBy } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Binary, Contract, DPM, FullContract } from 'common/contract'
-import { Bet } from 'common/bet'
-import { calculateDpmShares, getDpmProbability } from 'common/calculate-dpm'
-import { getSellBetInfo } from 'common/sell-bet'
-import { User } from 'common/user'
+import { Contract, DPMBinaryContract } from '../../../common/contract'
+import { Bet } from '../../../common/bet'
+import {
+  calculateDpmShares,
+  getDpmProbability,
+} from '../../../common/calculate-dpm'
+import { getSellBetInfo } from '../../../common/sell-bet'
 
 type DocRef = admin.firestore.DocumentReference
 
@@ -29,10 +31,10 @@ async function recalculateContract(
 
   await firestore.runTransaction(async (transaction) => {
     const contractDoc = await transaction.get(contractRef)
-    const contract = contractDoc.data() as FullContract<DPM, Binary>
+    const contract = contractDoc.data() as DPMBinaryContract
 
     const betDocs = await transaction.get(contractRef.collection('bets'))
-    const bets = _.sortBy(
+    const bets = sortBy(
       betDocs.docs.map((d) => d.data() as Bet),
       (b) => b.createdTime
     )
@@ -40,8 +42,8 @@ async function recalculateContract(
     const phantomAnte = startPool.YES + startPool.NO
 
     const leftovers =
-      _.sumBy(bets, (b) => b.amount) -
-      _.sumBy(bets, (b) => {
+      sumBy(bets, (b) => b.amount) -
+      sumBy(bets, (b) => {
         if (!b.sale) return b.amount
         const soldBet = bets.find((bet) => bet.id === b.sale?.betId)
         return soldBet?.amount || 0
@@ -97,12 +99,10 @@ async function recalculateContract(
 
     console.log('start', { pool, totalBets, totalShares })
 
-    for (let bet of bets) {
+    for (const bet of bets) {
       if (bet.sale) {
         const soldBet = bets.find((b) => b.id === bet.sale?.betId)
         if (!soldBet) throw new Error('invalid sold bet' + bet.sale.betId)
-
-        const fakeUser = { id: soldBet.userId, balance: 0 } as User
 
         const fakeContract: Contract = {
           ...contract,
@@ -113,11 +113,14 @@ async function recalculateContract(
         }
 
         const { newBet, newPool, newTotalShares, newTotalBets } =
-          getSellBetInfo(fakeUser, soldBet, fakeContract, bet.id)
+          getSellBetInfo(soldBet, fakeContract)
 
+        const betDoc = betsRef.doc(bet.id)
+        const userId = soldBet.userId
         newBet.createdTime = bet.createdTime
         console.log('sale bet', newBet)
-        if (isCommit) transaction.update(betsRef.doc(bet.id), newBet)
+        if (isCommit)
+          transaction.update(betDoc, { id: bet.id, userId, ...newBet })
 
         pool = newPool
         totalShares = newTotalShares

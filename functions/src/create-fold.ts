@@ -1,12 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
 
 import { getUser } from './utils'
-import { Contract } from 'common/contract'
-import { slugify } from 'common/util/slugify'
-import { randomString } from 'common/util/random'
-import { Fold } from 'common/fold'
+import { Contract } from '../../common/contract'
+import { slugify } from '../../common/util/slugify'
+import { randomString } from '../../common/util/random'
+import { Fold } from '../../common/fold'
 
 export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
   async (
@@ -23,18 +22,19 @@ export const createFold = functions.runWith({ minInstances: 1 }).https.onCall(
     const creator = await getUser(userId)
     if (!creator) return { status: 'error', message: 'User not found' }
 
-    let { name, about, tags } = data
+    let { name, about } = data
 
     if (!name || typeof name !== 'string')
       return { status: 'error', message: 'Name must be a non-empty string' }
-
     name = name.trim().slice(0, 140)
 
     if (typeof about !== 'string')
       return { status: 'error', message: 'About must be a string' }
     about = about.trim().slice(0, 140)
 
-    if (!_.isArray(tags))
+    const { tags } = data
+
+    if (!Array.isArray(tags))
       return { status: 'error', message: 'Tags must be an array of strings' }
 
     console.log(

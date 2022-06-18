@@ -1,16 +1,16 @@
-import { PHANTOM_ANTE } from './antes'
+import { range } from 'lodash'
 import {
   Binary,
   Contract,
   CPMM,
   DPM,
   FreeResponse,
+  Numeric,
   outcomeType,
 } from './contract'
 import { User } from './user'
 import { parseTags } from './util/parse'
 import { removeUndefinedProps } from './util/object'
-import { calcDpmInitialPool } from './calculate-dpm'
 
 export function getNewContract(
   id: string,
@@ -23,7 +23,11 @@ export function getNewContract(
   ante: number,
   closeTime: number,
   extraTags: string[],
-  manaLimitPerUser: number
+
+  // used for numeric markets
+  bucketCount: number,
+  min: number,
+  max: number
 ) {
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
@@ -33,9 +37,9 @@ export function getNewContract(
   const propsByOutcomeType =
     outcomeType === 'BINARY'
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
+      : outcomeType === 'NUMERIC'
+      ? getNumericProps(ante, bucketCount, min, max)
       : getFreeAnswerProps(ante)
-
-  const volume = outcomeType === 'BINARY' ? 0 : ante
 
   const contract: Contract = removeUndefinedProps({
     id,
@@ -56,7 +60,7 @@ export function getNewContract(
     createdTime: Date.now(),
     closeTime,
 
-    volume,
+    volume: 0,
     volume24Hours: 0,
     volume7Days: 0,
 
@@ -65,12 +69,14 @@ export function getNewContract(
       liquidityFee: 0,
       platformFee: 0,
     },
-    manaLimitPerUser,
   })
 
   return contract as Contract
 }
 
+/*
+import { PHANTOM_ANTE } from './antes'
+import { calcDpmInitialPool } from './calculate-dpm'
 const getBinaryDpmProps = (initialProb: number, ante: number) => {
   const { sharesYes, sharesNo, poolYes, poolNo, phantomYes, phantomNo } =
     calcDpmInitialPool(initialProb, ante, PHANTOM_ANTE)
@@ -87,6 +93,7 @@ const getBinaryDpmProps = (initialProb: number, ante: number) => {
 
   return system
 }
+*/
 
 const getBinaryCpmmProps = (initialProb: number, ante: number) => {
   const pool = { YES: ante, NO: ante }
@@ -117,10 +124,33 @@ const getFreeAnswerProps = (ante: number) => {
   return system
 }
 
-const getMultiProps = (
-  outcomes: string[],
-  initialProbs: number[],
-  ante: number
+const getNumericProps = (
+  ante: number,
+  bucketCount: number,
+  min: number,
+  max: number
 ) => {
-  // Not implemented.
+  const buckets = range(0, bucketCount).map((i) => i.toString())
+
+  const betAnte = ante / bucketCount
+  const pool = Object.fromEntries(buckets.map((answer) => [answer, betAnte]))
+  const totalBets = pool
+
+  const betShares = Math.sqrt(ante ** 2 / bucketCount)
+  const totalShares = Object.fromEntries(
+    buckets.map((answer) => [answer, betShares])
+  )
+
+  const system: DPM & Numeric = {
+    mechanism: 'dpm-2',
+    outcomeType: 'NUMERIC',
+    pool,
+    totalBets,
+    totalShares,
+    bucketCount,
+    min,
+    max,
+  }
+
+  return system
 }

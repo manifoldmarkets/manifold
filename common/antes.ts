@@ -1,6 +1,12 @@
-import { Bet } from './bet'
-import { getDpmProbability } from './calculate-dpm'
-import { Binary, CPMM, DPM, FreeResponse, FullContract } from './contract'
+import { range } from 'lodash'
+import { Bet, NumericBet } from './bet'
+import { getDpmProbability, getValueFromBucket } from './calculate-dpm'
+import {
+  CPMMBinaryContract,
+  DPMBinaryContract,
+  FreeResponseContract,
+  NumericContract,
+} from './contract'
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
@@ -15,7 +21,7 @@ export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @Ma
 
 export function getCpmmInitialLiquidity(
   providerId: string,
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMBinaryContract,
   anteId: string,
   amount: number
 ) {
@@ -39,7 +45,7 @@ export function getCpmmInitialLiquidity(
 
 export function getAnteBets(
   creator: User,
-  contract: FullContract<DPM, Binary>,
+  contract: DPMBinaryContract,
   yesAnteId: string,
   noAnteId: string
 ) {
@@ -80,8 +86,8 @@ export function getAnteBets(
 }
 
 export function getFreeAnswerAnte(
-  creator: User,
-  contract: FullContract<DPM, FreeResponse>,
+  anteBettorId: string,
+  contract: FreeResponseContract,
   anteBetId: string
 ) {
   const { totalBets, totalShares } = contract
@@ -92,13 +98,52 @@ export function getFreeAnswerAnte(
 
   const anteBet: Bet = {
     id: anteBetId,
-    userId: creator.id,
+    userId: anteBettorId,
     contractId: contract.id,
     amount,
     shares,
     outcome: '0',
     probBefore: 0,
     probAfter: 1,
+    createdTime,
+    isAnte: true,
+    fees: noFees,
+  }
+
+  return anteBet
+}
+
+export function getNumericAnte(
+  anteBettorId: string,
+  contract: NumericContract,
+  ante: number,
+  newBetId: string
+) {
+  const { bucketCount, createdTime } = contract
+
+  const betAnte = ante / bucketCount
+  const betShares = Math.sqrt(ante ** 2 / bucketCount)
+
+  const allOutcomeShares = Object.fromEntries(
+    range(0, bucketCount).map((_, i) => [i, betShares])
+  )
+
+  const allBetAmounts = Object.fromEntries(
+    range(0, bucketCount).map((_, i) => [i, betAnte])
+  )
+
+  const anteBet: NumericBet = {
+    id: newBetId,
+    userId: anteBettorId,
+    contractId: contract.id,
+    amount: ante,
+    allBetAmounts,
+    outcome: '0',
+    value: getValueFromBucket('0', contract),
+    shares: betShares,
+    allOutcomeShares,
+    probBefore: 0,
+    probAfter: 1 / bucketCount,
     createdTime,
     isAnte: true,
     fees: noFees,

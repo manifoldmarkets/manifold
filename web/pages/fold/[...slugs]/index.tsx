@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { flatten, take, partition, sortBy } from 'lodash'
 
 import { Fold } from 'common/fold'
 import { Comment } from 'common/comment'
@@ -27,10 +27,8 @@ import { EditFoldButton } from 'web/components/folds/edit-fold-button'
 import Custom404 from '../../404'
 import { FollowFoldButton } from 'web/components/folds/follow-fold-button'
 import { SEO } from 'web/components/SEO'
-import { useTaggedContracts } from 'web/hooks/use-contracts'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { filterDefined } from 'common/util/array'
 import { findActiveContracts } from 'web/components/feed/find-active-contracts'
 import { Tabs } from 'web/components/layout/tabs'
 
@@ -47,14 +45,14 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     contracts.map((contract) => listAllBets(contract.id))
   )
 
-  let activeContracts = findActiveContracts(contracts, [], _.flatten(bets), {})
-  const [resolved, unresolved] = _.partition(
+  let activeContracts = findActiveContracts(contracts, [], flatten(bets), {})
+  const [resolved, unresolved] = partition(
     activeContracts,
     ({ isResolved }) => isResolved
   )
   activeContracts = [...unresolved, ...resolved]
 
-  const creatorScores = scoreCreators(contracts, bets)
+  const creatorScores = scoreCreators(contracts)
   const traderScores = scoreTraders(contracts, bets)
   const [topCreators, topTraders] = await Promise.all([
     toTopUsers(creatorScores),
@@ -80,8 +78,8 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 }
 
 async function toTopUsers(userScores: { [userId: string]: number }) {
-  const topUserPairs = _.take(
-    _.sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
+  const topUserPairs = take(
+    sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
     10
   ).filter(([_, score]) => score >= 0.5)
 
@@ -132,15 +130,6 @@ export default function FoldPage(props: {
 
   const user = useUser()
   const isCurator = user && fold && user.id === fold.curatorId
-
-  const taggedContracts = useTaggedContracts(fold?.tags) ?? props.contracts
-  const contractsMap = _.fromPairs(
-    taggedContracts.map((contract) => [contract.id, contract])
-  )
-
-  const contracts = filterDefined(
-    props.contracts.map((contract) => contractsMap[contract.id])
-  )
 
   if (fold === null || !foldSubpages.includes(page) || slugs[2]) {
     return <Custom404 />

@@ -1,4 +1,4 @@
-import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
+import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
@@ -6,23 +6,24 @@ import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
 import clsx from 'clsx'
+
 import {
   FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
+  NumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import { Comment } from 'common/comment'
 import BetRow from '../bet-row'
 import { AnswersGraph } from '../answers/answers-graph'
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { ShareMarket } from '../share-market'
+import { NumericGraph } from './numeric-graph'
 
 export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
-  comments: Comment[]
   className?: string
 }) => {
   const { contract, bets, className } = props
@@ -47,6 +48,13 @@ export const ContractOverview = (props: {
               large
             />
           )}
+
+          {outcomeType === 'NUMERIC' && (
+            <NumericResolutionOrExpectation
+              contract={contract}
+              className="hidden items-end xl:flex"
+            />
+          )}
         </Row>
 
         {isBinary ? (
@@ -65,28 +73,26 @@ export const ContractOverview = (props: {
           )
         )}
 
+        {outcomeType === 'NUMERIC' && (
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <NumericResolutionOrExpectation contract={contract} />
+          </Row>
+        )}
+
         <ContractDetails
           contract={contract}
           bets={bets}
           isCreator={isCreator}
         />
       </Col>
-
       <Spacer h={4} />
-
-      {isBinary ? (
-        <ContractProbGraph contract={contract} bets={bets} />
-      ) : (
-        <AnswersGraph
-          contract={contract as FullContract<DPM, FreeResponse>}
-          bets={bets}
-        />
+      {isBinary && <ContractProbGraph contract={contract} bets={bets} />}{' '}
+      {outcomeType === 'FREE_RESPONSE' && (
+        <AnswersGraph contract={contract} bets={bets} />
       )}
-
+      {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
       {(contract.description || isCreator) && <Spacer h={6} />}
-
       {isCreator && <ShareMarket className="px-2" contract={contract} />}
-
       <ContractDescription
         className="px-2"
         contract={contract}

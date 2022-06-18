@@ -1,13 +1,12 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from 'common/answer'
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { FreeResponseContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { placeBet } from 'web/lib/firebase/api-call'
+import { APIError, placeBet } from 'web/lib/firebase/api-call'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import {
@@ -23,12 +22,13 @@ import {
   calculateDpmPayoutAfterCorrectBet,
   getDpmOutcomeProbabilityAfterBet,
 } from 'common/calculate-dpm'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
+import { track } from 'web/lib/service/analytics'
+import { SignUpPrompt } from '../sign-up-prompt'
 
 export function AnswerBetPanel(props: {
   answer: Answer
-  contract: FullContract<DPM, FreeResponse>
+  contract: FreeResponseContract
   closePanel: () => void
   className?: string
   isModal?: boolean
@@ -53,22 +53,35 @@ export function AnswerBetPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    const result = await placeBet({
+    placeBet({
       amount: betAmount,
       outcome: answerId,
       contractId: contract.id,
-    }).then((r) => r.data as any)
+    })
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        setBetAmount(undefined)
+        props.closePanel()
+      })
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.toString())
+        } else {
+          console.error(e)
+          setError('Error placing bet')
+        }
+        setIsSubmitting(false)
+      })
 
-    console.log('placed bet. Result:', result)
-
-    if (result?.status === 'success') {
-      setIsSubmitting(false)
-      setBetAmount(undefined)
-      props.closePanel()
-    } else {
-      setError(result?.message || 'Error placing bet')
-      setIsSubmitting(false)
-    }
+    track('bet', {
+      location: 'answer panel',
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount: betAmount,
+      outcome: answerId,
+    })
   }
 
   const betDisabled = isSubmitting || !betAmount || error
@@ -170,12 +183,7 @@ export function AnswerBetPanel(props: {
           {isSubmitting ? 'Submitting...' : 'Submit trade'}
         </button>
       ) : (
-        <button
-          className="btn self-stretch whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
-          onClick={firebaseLogin}
-        >
-          Sign up to bet!
-        </button>
+        <SignUpPrompt />
       )}
     </Col>
   )

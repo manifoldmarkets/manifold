@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { isEqual } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import {
   Contract,
@@ -80,14 +80,14 @@ export const useUpdatedContracts = (contracts: Contract[] | undefined) => {
   useEffect(() => {
     if (contracts === undefined) return
 
-    contractDict.current = _.fromPairs(contracts.map((c) => [c.id, c]))
+    contractDict.current = Object.fromEntries(contracts.map((c) => [c.id, c]))
 
     const disposes = contracts.map((contract) => {
       const { id } = contract
 
       return listenForContract(id, (contract) => {
         const curr = contractDict.current[id]
-        if (!_.isEqual(curr, contract)) {
+        if (!isEqual(curr, contract)) {
           contractDict.current[id] = contract as Contract
           triggerUpdate((n) => n + 1)
         }

@@ -1,8 +1,7 @@
 import clsx from 'clsx'
-import _ from 'lodash'
 
 import { Answer } from 'common/answer'
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { FreeResponseContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../avatar'
@@ -14,7 +13,7 @@ import { Linkify } from '../linkify'
 
 export function AnswerItem(props: {
   answer: Answer
-  contract: FullContract<DPM, FreeResponse>
+  contract: FreeResponseContract
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined
   totalChosenProb?: number
@@ -47,7 +46,7 @@ export function AnswerItem(props: {
         wasResolvedTo
           ? resolution === 'MKT'
             ? 'mb-2 bg-blue-50'
-            : 'mb-8 bg-green-50'
+            : 'mb-10 bg-green-50'
           : chosenProb === undefined
           ? 'bg-gray-50'
           : showChoice === 'radio'

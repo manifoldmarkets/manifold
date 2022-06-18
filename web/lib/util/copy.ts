@@ -21,7 +21,7 @@ export function copyToClipboard(text: string) {
     document.queryCommandSupported('copy')
   ) {
     console.log('copy 3')
-    var textarea = document.createElement('textarea')
+    const textarea = document.createElement('textarea')
     textarea.textContent = text
     textarea.style.position = 'fixed' // Prevent scrolling to bottom of page in Microsoft Edge.
     document.body.appendChild(textarea)

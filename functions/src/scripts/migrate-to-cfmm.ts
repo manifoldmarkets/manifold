@@ -1,16 +1,22 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sortBy } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Binary, Contract, CPMM, DPM, FullContract } from 'common/contract'
-import { Bet } from 'common/bet'
-import { calculateDpmPayout, getDpmProbability } from 'common/calculate-dpm'
-import { User } from 'common/user'
-import { getCpmmInitialLiquidity } from 'common/antes'
-import { noFees } from 'common/fees'
-import { addObjects } from 'common/util/object'
+import {
+  Contract,
+  DPMBinaryContract,
+  CPMMBinaryContract,
+} from '../../../common/contract'
+import { Bet } from '../../../common/bet'
+import {
+  calculateDpmPayout,
+  getDpmProbability,
+} from '../../../common/calculate-dpm'
+import { getCpmmInitialLiquidity } from '../../../common/antes'
+import { noFees } from '../../../common/fees'
+import { addObjects } from '../../../common/util/object'
 
 type DocRef = admin.firestore.DocumentReference
 
@@ -19,7 +25,7 @@ const firestore = admin.firestore()
 async function recalculateContract(contractRef: DocRef, isCommit = false) {
   await firestore.runTransaction(async (transaction) => {
     const contractDoc = await transaction.get(contractRef)
-    const contract = contractDoc.data() as FullContract<DPM, Binary>
+    const contract = contractDoc.data() as DPMBinaryContract
 
     if (!contract?.slug) {
       console.log('missing slug; id=', contractRef.id)
@@ -39,7 +45,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
 
     const betsRef = contractRef.collection('bets')
     const betDocs = await transaction.get(betsRef)
-    const bets = _.sortBy(
+    const bets = sortBy(
       betDocs.docs.map((d) => d.data() as Bet),
       (b) => b.createdTime
     )
@@ -51,7 +57,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
         : 0
     }
 
-    for (let bet of bets) {
+    for (const bet of bets) {
       const shares = bet.sale
         ? getSoldBetPayout(bet)
         : bet.isSold
@@ -101,7 +107,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
       {
         ...contract,
         ...contractUpdate,
-      } as FullContract<CPMM, Binary>,
+      } as CPMMBinaryContract,
       liquidityDocRef.id,
       ante
     )
@@ -133,7 +139,7 @@ async function main() {
             !snap.empty ? [firestore.doc(`contracts/${snap.docs[0].id}`)] : []
           )
 
-  for (let contractRef of contractRefs) {
+  for (const contractRef of contractRefs) {
     await recalculateContract(contractRef, isCommit).catch((e) =>
       console.log('error: ', e, 'id=', contractRef.id)
     )

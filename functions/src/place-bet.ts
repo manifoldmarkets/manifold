@@ -1,159 +1,129 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { z } from 'zod'
 
-import { Contract } from 'common/contract'
-import { User } from 'common/user'
+import { APIError, newEndpoint, validate } from './api'
+import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
+import { User } from '../../common/user'
 import {
+  BetInfo,
   getNewBinaryCpmmBetInfo,
   getNewBinaryDpmBetInfo,
   getNewMultiBetInfo,
-} from 'common/new-bet'
-import { addObjects, removeUndefinedProps } from 'common/util/object'
-import { Bet } from 'common/bet'
+  getNumericBetsInfo,
+} from '../../common/new-bet'
+import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { redeemShares } from './redeem-shares'
-import { Fees } from 'common/fees'
-import { hasUserHitManaLimit } from 'common/calculate'
+import { log } from './utils'
 
-export const placeBet = functions.runWith({ minInstances: 1 }).https.onCall(
-  async (
-    data: {
-      amount: number
-      outcome: string
-      contractId: string
-    },
-    context
-  ) => {
-    const userId = context?.auth?.uid
-    if (!userId) return { status: 'error', message: 'Not authorized' }
+const bodySchema = z.object({
+  contractId: z.string(),
+  amount: z.number().gte(1),
+})
 
-    const { amount, outcome, contractId } = data
+const binarySchema = z.object({
+  outcome: z.enum(['YES', 'NO']),
+})
 
-    if (amount <= 0 || isNaN(amount) || !isFinite(amount))
-      return { status: 'error', message: 'Invalid amount' }
+const freeResponseSchema = z.object({
+  outcome: z.string(),
+})
 
-    if (outcome !== 'YES' && outcome !== 'NO' && isNaN(+outcome))
-      return { status: 'error', message: 'Invalid outcome' }
+const numericSchema = z.object({
+  outcome: z.string(),
+  value: z.number(),
+})
 
-    // run as transaction to prevent race conditions
-    return await firestore
-      .runTransaction(async (transaction) => {
-        const userDoc = firestore.doc(`users/${userId}`)
-        const userSnap = await transaction.get(userDoc)
-        if (!userSnap.exists)
-          return { status: 'error', message: 'User not found' }
-        const user = userSnap.data() as User
+export const placebet = newEndpoint(['POST'], async (req, auth) => {
+  log('Inside endpoint handler.')
+  const { amount, contractId } = validate(bodySchema, req.body)
 
-        const contractDoc = firestore.doc(`contracts/${contractId}`)
-        const contractSnap = await transaction.get(contractDoc)
-        if (!contractSnap.exists)
-          return { status: 'error', message: 'Invalid contract' }
-        const contract = contractSnap.data() as Contract
+  const result = await firestore.runTransaction(async (trans) => {
+    log('Inside main transaction.')
+    const contractDoc = firestore.doc(`contracts/${contractId}`)
+    const userDoc = firestore.doc(`users/${auth.uid}`)
+    const [contractSnap, userSnap] = await Promise.all([
+      trans.get(contractDoc),
+      trans.get(userDoc),
+    ])
+    if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
+    if (!userSnap.exists) throw new APIError(400, 'User not found.')
+    log('Loaded user and contract snapshots.')
 
-        const { closeTime, outcomeType, mechanism, collectedFees, volume } =
-          contract
-        if (closeTime && Date.now() > closeTime)
-          return { status: 'error', message: 'Trading is closed' }
+    const contract = contractSnap.data() as Contract
+    const user = userSnap.data() as User
+    if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
 
-        const yourBetsSnap = await transaction.get(
-          contractDoc.collection('bets').where('userId', '==', userId)
-        )
-        const yourBets = yourBetsSnap.docs.map((doc) => doc.data() as Bet)
+    const loanAmount = 0
+    const { closeTime, outcomeType, mechanism, collectedFees, volume } =
+      contract
+    if (closeTime && Date.now() > closeTime)
+      throw new APIError(400, 'Trading is closed.')
 
-        const loanAmount = 0 // getLoanAmount(yourBets, amount)
-        if (user.balance < amount)
-          return { status: 'error', message: 'Insufficient balance' }
+    const {
+      newBet,
+      newPool,
+      newTotalShares,
+      newTotalBets,
+      newTotalLiquidity,
+      newP,
+    } = await (async (): Promise<BetInfo> => {
+      if (outcomeType == 'BINARY' && mechanism == 'dpm-2') {
+        const { outcome } = validate(binarySchema, req.body)
+        return getNewBinaryDpmBetInfo(outcome, amount, contract, loanAmount)
+      } else if (outcomeType == 'BINARY' && mechanism == 'cpmm-1') {
+        const { outcome } = validate(binarySchema, req.body)
+        return getNewBinaryCpmmBetInfo(outcome, amount, contract, loanAmount)
+      } else if (outcomeType == 'FREE_RESPONSE' && mechanism == 'dpm-2') {
+        const { outcome } = validate(freeResponseSchema, req.body)
+        const answerDoc = contractDoc.collection('answers').doc(outcome)
+        const answerSnap = await trans.get(answerDoc)
+        if (!answerSnap.exists) throw new APIError(400, 'Invalid answer')
+        return getNewMultiBetInfo(outcome, amount, contract, loanAmount)
+      } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
+        const { outcome, value } = validate(numericSchema, req.body)
+        return getNumericBetsInfo(value, outcome, amount, contract)
+      } else {
+        throw new APIError(500, 'Contract has invalid type/mechanism.')
+      }
+    })()
+    log('Calculated new bet information.')
 
-        if (outcomeType === 'FREE_RESPONSE') {
-          const answerSnap = await transaction.get(
-            contractDoc.collection('answers').doc(outcome)
-          )
-          if (!answerSnap.exists)
-            return { status: 'error', message: 'Invalid contract' }
+    if (
+      mechanism == 'cpmm-1' &&
+      (!newP ||
+        !isFinite(newP) ||
+        Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
+    ) {
+      throw new APIError(400, 'Bet too large for current liquidity pool.')
+    }
 
-          const { status, message } = hasUserHitManaLimit(
-            contract,
-            yourBets,
-            amount
-          )
-          if (status === 'error') return { status, message: message }
-        }
-
-        const newBetDoc = firestore
-          .collection(`contracts/${contractId}/bets`)
-          .doc()
-
-        const {
-          newBet,
-          newPool,
-          newTotalShares,
-          newTotalBets,
-          newBalance,
-          newTotalLiquidity,
-          fees,
-          newP,
-        } =
-          outcomeType === 'BINARY'
-            ? mechanism === 'dpm-2'
-              ? getNewBinaryDpmBetInfo(
-                  user,
-                  outcome as 'YES' | 'NO',
-                  amount,
-                  contract,
-                  loanAmount,
-                  newBetDoc.id
-                )
-              : (getNewBinaryCpmmBetInfo(
-                  user,
-                  outcome as 'YES' | 'NO',
-                  amount,
-                  contract,
-                  loanAmount,
-                  newBetDoc.id
-                ) as any)
-            : getNewMultiBetInfo(
-                user,
-                outcome,
-                amount,
-                contract as any,
-                loanAmount,
-                newBetDoc.id
-              )
-
-        if (newP !== undefined && !isFinite(newP)) {
-          return {
-            status: 'error',
-            message: 'Trade rejected due to overflow error.',
-          }
-        }
-
-        transaction.create(newBetDoc, newBet)
-
-        transaction.update(
-          contractDoc,
-          removeUndefinedProps({
-            pool: newPool,
-            p: newP,
-            totalShares: newTotalShares,
-            totalBets: newTotalBets,
-            totalLiquidity: newTotalLiquidity,
-            collectedFees: addObjects<Fees>(fees ?? {}, collectedFees ?? {}),
-            volume: volume + Math.abs(amount),
-          })
-        )
-
-        if (!isFinite(newBalance)) {
-          throw new Error('Invalid user balance for ' + user.username)
-        }
-
-        transaction.update(userDoc, { balance: newBalance })
-
-        return { status: 'success', betId: newBetDoc.id }
+    const newBalance = user.balance - amount - loanAmount
+    const betDoc = contractDoc.collection('bets').doc()
+    trans.create(betDoc, { id: betDoc.id, userId: user.id, ...newBet })
+    log('Created new bet document.')
+    trans.update(userDoc, { balance: newBalance })
+    log('Updated user balance.')
+    trans.update(
+      contractDoc,
+      removeUndefinedProps({
+        pool: newPool,
+        p: newP,
+        totalShares: newTotalShares,
+        totalBets: newTotalBets,
+        totalLiquidity: newTotalLiquidity,
+        collectedFees: addObjects(newBet.fees, collectedFees),
+        volume: volume + amount,
       })
-      .then(async (result) => {
-        await redeemShares(userId, contractId)
-        return result
-      })
-  }
-)
+    )
+    log('Updated contract properties.')
+
+    return { betId: betDoc.id }
+  })
+
+  log('Main transaction finished.')
+  await redeemShares(auth.uid, contractId)
+  log('Share redemption transaction finished.')
+  return result
+})
 
 const firestore = admin.firestore()

@@ -1,195 +1,177 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { z } from 'zod'
 
-import { chargeUser, getUser } from './utils'
 import {
-  Binary,
+  CPMMBinaryContract,
   Contract,
-  CPMM,
-  DPM,
-  FreeResponse,
-  FullContract,
+  FreeResponseContract,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
-  outcomeType,
-} from 'common/contract'
-import { slugify } from 'common/util/slugify'
-import { randomString } from 'common/util/random'
-import { getNewContract } from 'common/new-contract'
+  NumericContract,
+  OUTCOME_TYPES,
+} from '../../common/contract'
+import { slugify } from '../../common/util/slugify'
+import { randomString } from '../../common/util/random'
+
+import { chargeUser } from './utils'
+import { APIError, newEndpoint, validate, zTimestamp } from './api'
+
 import {
   FIXED_ANTE,
-  getAnteBets,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
+  getNumericAnte,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-  MINIMUM_ANTE,
-} from 'common/antes'
-import { getNoneAnswer } from 'common/answer'
+} from '../../common/antes'
+import { getNoneAnswer } from '../../common/answer'
+import { getNewContract } from '../../common/new-contract'
+import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
+import { User } from '../../common/user'
 
-export const createContract = functions
-  .runWith({ minInstances: 1 })
-  .https.onCall(
-    async (
-      data: {
-        question: string
-        outcomeType: outcomeType
-        description: string
-        initialProb: number
-        ante: number
-        closeTime: number
-        tags?: string[]
-        manaLimitPerUser?: number
-      },
-      context
-    ) => {
-      const userId = context?.auth?.uid
-      if (!userId) return { status: 'error', message: 'Not authorized' }
+const bodySchema = z.object({
+  question: z.string().min(1).max(MAX_QUESTION_LENGTH),
+  description: z.string().max(MAX_DESCRIPTION_LENGTH),
+  tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
+  closeTime: zTimestamp().refine(
+    (date) => date.getTime() > new Date().getTime(),
+    'Close time must be in the future.'
+  ),
+  outcomeType: z.enum(OUTCOME_TYPES),
+})
 
-      const creator = await getUser(userId)
-      if (!creator) return { status: 'error', message: 'User not found' }
+const binarySchema = z.object({
+  initialProb: z.number().min(1).max(99),
+})
 
-      let {
-        question,
-        description,
-        initialProb,
-        closeTime,
-        tags,
-        manaLimitPerUser,
-      } = data
+const numericSchema = z.object({
+  min: z.number(),
+  max: z.number(),
+})
 
-      if (!question || typeof question != 'string')
-        return { status: 'error', message: 'Missing or invalid question field' }
-      question = question.slice(0, MAX_QUESTION_LENGTH)
-
-      if (typeof description !== 'string')
-        return { status: 'error', message: 'Invalid description field' }
-      description = description.slice(0, MAX_DESCRIPTION_LENGTH)
-
-      if (tags !== undefined && !_.isArray(tags))
-        return { status: 'error', message: 'Invalid tags field' }
-      tags = tags?.map((tag) => tag.toString().slice(0, MAX_TAG_LENGTH))
-
-      let outcomeType = data.outcomeType ?? 'BINARY'
-      if (!['BINARY', 'MULTI', 'FREE_RESPONSE'].includes(outcomeType))
-        return { status: 'error', message: 'Invalid outcomeType' }
-
-      if (
-        outcomeType === 'BINARY' &&
-        (!initialProb || initialProb < 1 || initialProb > 99)
-      )
-        return { status: 'error', message: 'Invalid initial probability' }
-
-      // uses utc time on server:
-      const today = new Date().setHours(0, 0, 0, 0)
-      const userContractsCreatedTodaySnapshot = await firestore
-        .collection(`contracts`)
-        .where('creatorId', '==', userId)
-        .where('createdTime', '>=', today)
-        .get()
-      const isFree = userContractsCreatedTodaySnapshot.size === 0
-
-      const ante = FIXED_ANTE // data.ante
-
-      if (
-        ante === undefined ||
-        ante < MINIMUM_ANTE ||
-        (ante > creator.balance && !isFree) ||
-        isNaN(ante) ||
-        !isFinite(ante)
-      )
-        return { status: 'error', message: 'Invalid ante' }
-
-      console.log(
-        'creating contract for',
-        creator.username,
-        'on',
-        question,
-        'ante:',
-        ante || 0
-      )
-
-      const slug = await getSlug(question)
-
-      const contractRef = firestore.collection('contracts').doc()
-
-      const contract = getNewContract(
-        contractRef.id,
-        slug,
-        creator,
-        question,
-        outcomeType,
-        description,
-        initialProb,
-        ante,
-        closeTime,
-        tags ?? [],
-        manaLimitPerUser ?? 0
-      )
-
-      if (!isFree && ante) await chargeUser(creator.id, ante, true)
-
-      await contractRef.create(contract)
-
-      if (ante) {
-        if (outcomeType === 'BINARY' && contract.mechanism === 'dpm-2') {
-          const yesBetDoc = firestore
-            .collection(`contracts/${contract.id}/bets`)
-            .doc()
-
-          const noBetDoc = firestore
-            .collection(`contracts/${contract.id}/bets`)
-            .doc()
-
-          const { yesBet, noBet } = getAnteBets(
-            creator,
-            contract as FullContract<DPM, Binary>,
-            yesBetDoc.id,
-            noBetDoc.id
-          )
-
-          await yesBetDoc.set(yesBet)
-          await noBetDoc.set(noBet)
-        } else if (outcomeType === 'BINARY') {
-          const liquidityDoc = firestore
-            .collection(`contracts/${contract.id}/liquidity`)
-            .doc()
-
-          const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : creator.id
-
-          const lp = getCpmmInitialLiquidity(
-            providerId,
-            contract as FullContract<CPMM, Binary>,
-            liquidityDoc.id,
-            ante
-          )
-
-          await liquidityDoc.set(lp)
-        } else if (outcomeType === 'FREE_RESPONSE') {
-          const noneAnswerDoc = firestore
-            .collection(`contracts/${contract.id}/answers`)
-            .doc('0')
-
-          const noneAnswer = getNoneAnswer(contract.id, creator)
-          await noneAnswerDoc.set(noneAnswer)
-
-          const anteBetDoc = firestore
-            .collection(`contracts/${contract.id}/bets`)
-            .doc()
-
-          const anteBet = getFreeAnswerAnte(
-            creator,
-            contract as FullContract<DPM, FreeResponse>,
-            anteBetDoc.id
-          )
-          await anteBetDoc.set(anteBet)
-        }
-      }
-
-      return { status: 'success', contract }
-    }
+export const createmarket = newEndpoint(['POST'], async (req, auth) => {
+  const { question, description, tags, closeTime, outcomeType } = validate(
+    bodySchema,
+    req.body
   )
+
+  let min, max, initialProb
+  if (outcomeType === 'NUMERIC') {
+    ;({ min, max } = validate(numericSchema, req.body))
+    if (max - min <= 0.01) throw new APIError(400, 'Invalid range.')
+  }
+  if (outcomeType === 'BINARY') {
+    ;({ initialProb } = validate(binarySchema, req.body))
+  }
+
+  // Uses utc time on server:
+  const today = new Date()
+  let freeMarketResetTime = new Date().setUTCHours(16, 0, 0, 0)
+  if (today.getTime() < freeMarketResetTime) {
+    freeMarketResetTime = freeMarketResetTime - 24 * 60 * 60 * 1000
+  }
+
+  const userDoc = await firestore.collection('users').doc(auth.uid).get()
+  if (!userDoc.exists) {
+    throw new APIError(400, 'No user exists with the authenticated user ID.')
+  }
+  const user = userDoc.data() as User
+
+  const userContractsCreatedTodaySnapshot = await firestore
+    .collection(`contracts`)
+    .where('creatorId', '==', auth.uid)
+    .where('createdTime', '>=', freeMarketResetTime)
+    .get()
+  console.log('free market reset time: ', freeMarketResetTime)
+  const isFree = userContractsCreatedTodaySnapshot.size === 0
+
+  const ante = FIXED_ANTE
+
+  // TODO: this is broken because it's not in a transaction
+  if (ante > user.balance && !isFree)
+    throw new APIError(400, `Balance must be at least ${ante}.`)
+
+  console.log(
+    'creating contract for',
+    user.username,
+    'on',
+    question,
+    'ante:',
+    ante || 0
+  )
+
+  const slug = await getSlug(question)
+  const contractRef = firestore.collection('contracts').doc()
+  const contract = getNewContract(
+    contractRef.id,
+    slug,
+    user,
+    question,
+    outcomeType,
+    description,
+    initialProb ?? 0,
+    ante,
+    closeTime.getTime(),
+    tags ?? [],
+    NUMERIC_BUCKET_COUNT,
+    min ?? 0,
+    max ?? 0
+  )
+
+  if (!isFree && ante) await chargeUser(user.id, ante, true)
+
+  await contractRef.create(contract)
+
+  const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : user.id
+
+  if (outcomeType === 'BINARY') {
+    const liquidityDoc = firestore
+      .collection(`contracts/${contract.id}/liquidity`)
+      .doc()
+
+    const lp = getCpmmInitialLiquidity(
+      providerId,
+      contract as CPMMBinaryContract,
+      liquidityDoc.id,
+      ante
+    )
+
+    await liquidityDoc.set(lp)
+  } else if (outcomeType === 'FREE_RESPONSE') {
+    const noneAnswerDoc = firestore
+      .collection(`contracts/${contract.id}/answers`)
+      .doc('0')
+
+    const noneAnswer = getNoneAnswer(contract.id, user)
+    await noneAnswerDoc.set(noneAnswer)
+
+    const anteBetDoc = firestore
+      .collection(`contracts/${contract.id}/bets`)
+      .doc()
+
+    const anteBet = getFreeAnswerAnte(
+      providerId,
+      contract as FreeResponseContract,
+      anteBetDoc.id
+    )
+    await anteBetDoc.set(anteBet)
+  } else if (outcomeType === 'NUMERIC') {
+    const anteBetDoc = firestore
+      .collection(`contracts/${contract.id}/bets`)
+      .doc()
+
+    const anteBet = getNumericAnte(
+      providerId,
+      contract as NumericContract,
+      ante,
+      anteBetDoc.id
+    )
+
+    await anteBetDoc.set(anteBet)
+  }
+
+  return contract
+})
 
 const getSlug = async (question: string) => {
   const proposedSlug = slugify(question)

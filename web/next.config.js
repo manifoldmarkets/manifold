@@ -6,6 +6,18 @@ module.exports = {
   experimental: {
     externalDir: true,
     optimizeCss: true,
+    modularizeImports: {
+      '@heroicons/react/solid/?(((\\w*)?/?)*)': {
+        transform: '@heroicons/react/solid/{{ matches.[1] }}/{{member}}',
+      },
+      '@heroicons/react/outline/?(((\\w*)?/?)*)': {
+        transform: '@heroicons/react/outline/{{ matches.[1] }}/{{member}}',
+      },
+
+      lodash: {
+        transform: 'lodash/{{member}}',
+      },
+    },
   },
   images: {
     domains: ['lh3.googleusercontent.com', 'i.imgur.com'],
@@ -21,6 +33,11 @@ module.exports = {
         source: '/api/v0',
         destination: API_DOCS_URL,
         permanent: false,
+      },
+      {
+        source: '/analytics',
+        destination: '/stats',
+        permanent: true,
       },
     ]
   },

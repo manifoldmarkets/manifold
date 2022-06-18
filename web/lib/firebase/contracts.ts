@@ -12,12 +12,13 @@ import {
   getDoc,
   updateDoc,
   limit,
+  startAfter,
 } from 'firebase/firestore'
-import _ from 'lodash'
+import { range, sortBy, sum } from 'lodash'
 
 import { app } from './init'
 import { getValues, listenForValue, listenForValues } from './utils'
-import { Binary, Contract, FullContract } from 'common/contract'
+import { BinaryContract, Contract } from 'common/contract'
 import { getDpmProbability } from 'common/calculate-dpm'
 import { createRNG, shuffle } from 'common/util/random'
 import { getCpmmProbability } from 'common/calculate-cpmm'
@@ -55,18 +56,26 @@ export function contractMetrics(contract: Contract) {
   return { volumeLabel, createdDate, resolvedDate }
 }
 
-export function getBinaryProb(contract: FullContract<any, Binary>) {
-  const { totalShares, pool, p, resolutionProbability, mechanism } = contract
+export function contractPool(contract: Contract) {
+  return contract.mechanism === 'cpmm-1'
+    ? formatMoney(contract.totalLiquidity)
+    : contract.mechanism === 'dpm-2'
+    ? formatMoney(sum(Object.values(contract.pool)))
+    : 'Empty pool'
+}
+
+export function getBinaryProb(contract: BinaryContract) {
+  const { pool, resolutionProbability, mechanism } = contract
 
   return (
     resolutionProbability ??
     (mechanism === 'cpmm-1'
-      ? getCpmmProbability(pool, p)
-      : getDpmProbability(totalShares))
+      ? getCpmmProbability(pool, contract.p)
+      : getDpmProbability(contract.totalShares))
   )
 }
 
-export function getBinaryProbPercent(contract: FullContract<any, Binary>) {
+export function getBinaryProbPercent(contract: BinaryContract) {
   return formatPercent(getBinaryProb(contract))
 }
 
@@ -137,8 +146,15 @@ export async function listTaggedContractsCaseInsensitive(
   return snapshot.docs.map((doc) => doc.data() as Contract)
 }
 
-export async function listAllContracts(): Promise<Contract[]> {
-  const q = query(contractCollection, orderBy('createdTime', 'desc'))
+export async function listAllContracts(
+  n: number,
+  before?: string
+): Promise<Contract[]> {
+  let q = query(contractCollection, orderBy('createdTime', 'desc'), limit(n))
+  if (before != null) {
+    const snap = await getDoc(doc(db, 'contracts', before))
+    q = query(q, startAfter(snap))
+  }
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => doc.data() as Contract)
 }
@@ -225,7 +241,7 @@ export function listenForHotContracts(
   setHotContracts: (contracts: Contract[]) => void
 ) {
   return listenForValues<Contract>(hotContractsQuery, (contracts) => {
-    const hotContracts = _.sortBy(
+    const hotContracts = sortBy(
       chooseRandomSubset(contracts, 4),
       (contract) => contract.volume24Hours
     )
@@ -235,7 +251,7 @@ export function listenForHotContracts(
 
 export async function getHotContracts() {
   const contracts = await getValues<Contract>(hotContractsQuery)
-  return _.sortBy(
+  return sortBy(
     chooseRandomSubset(contracts, 10),
     (contract) => -1 * contract.volume24Hours
   )
@@ -245,7 +261,7 @@ export async function getContractsBySlugs(slugs: string[]) {
   const q = query(contractCollection, where('slug', 'in', slugs))
   const snapshot = await getDocs(q)
   const contracts = snapshot.docs.map((doc) => doc.data() as Contract)
-  return _.sortBy(contracts, (contract) => -1 * contract.volume24Hours)
+  return sortBy(contracts, (contract) => -1 * contract.volume24Hours)
 }
 
 const topWeeklyQuery = query(
@@ -269,7 +285,7 @@ const closingSoonQuery = query(
 
 export async function getClosingSoonContracts() {
   const contracts = await getValues<Contract>(closingSoonQuery)
-  return _.sortBy(
+  return sortBy(
     chooseRandomSubset(contracts, 2),
     (contract) => contract.closeTime
   )
@@ -295,7 +311,7 @@ export async function getDailyContracts(
   )
   const contracts = await getValues<Contract>(query)
 
-  const contractsByDay = _.range(0, numberOfDays).map(() => [] as Contract[])
+  const contractsByDay = range(0, numberOfDays).map(() => [] as Contract[])
   for (const contract of contracts) {
     const dayIndex = Math.floor((contract.createdTime - startTime) / DAY_IN_MS)
     contractsByDay[dayIndex].push(contract)

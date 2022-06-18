@@ -1,14 +1,13 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
 
 import { getValue, getValues } from './utils'
-import { Contract } from 'common/contract'
-import { Bet } from 'common/bet'
-import { User } from 'common/user'
-import { ClickEvent } from 'common/tracking'
-import { getWordScores } from 'common/recommended-contracts'
-import { batchedWaitAll } from 'common/util/promise'
+import { Contract } from '../../common/contract'
+import { Bet } from '../../common/bet'
+import { User } from '../../common/user'
+import { ClickEvent } from '../../common/tracking'
+import { getWordScores } from '../../common/recommended-contracts'
+import { batchedWaitAll } from '../../common/util/promise'
 import { callCloudFunction } from './call-cloud-function'
 
 const firestore = admin.firestore()

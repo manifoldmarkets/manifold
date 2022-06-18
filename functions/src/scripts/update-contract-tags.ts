@@ -1,11 +1,11 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { uniq } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Contract } from 'common/contract'
-import { parseTags } from 'common/util/parse'
+import { Contract } from '../../../common/contract'
+import { parseTags } from '../../../common/util/parse'
 import { getValues } from '../utils'
 
 async function updateContractTags() {
@@ -19,7 +19,7 @@ async function updateContractTags() {
   for (const contract of contracts) {
     const contractRef = firestore.doc(`contracts/${contract.id}`)
 
-    const tags = _.uniq([
+    const tags = uniq([
       ...parseTags(contract.question + contract.description),
       ...(contract.tags ?? []),
     ])

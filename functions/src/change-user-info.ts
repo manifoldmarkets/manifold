@@ -2,12 +2,15 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { getUser } from './utils'
-import { Contract } from 'common/contract'
-import { Comment } from 'common/comment'
-import { User } from 'common/user'
-import { cleanUsername, cleanDisplayName } from 'common/util/clean-username'
-import { removeUndefinedProps } from 'common/util/object'
-import { Answer } from 'common/answer'
+import { Contract } from '../../common/contract'
+import { Comment } from '../../common/comment'
+import { User } from '../../common/user'
+import {
+  cleanUsername,
+  cleanDisplayName,
+} from '../../common/util/clean-username'
+import { removeUndefinedProps } from '../../common/util/object'
+import { Answer } from '../../common/answer'
 
 export const changeUserInfo = functions
   .runWith({ minInstances: 1 })
@@ -64,7 +67,7 @@ export const changeUser = async (
     }
 
     if (update.name) {
-      update.name = cleanDisplayName(update.name);
+      update.name = cleanDisplayName(update.name)
     }
 
     const userRef = firestore.collection('users').doc(user.id)

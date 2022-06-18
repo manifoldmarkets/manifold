@@ -1,7 +1,7 @@
-import _ from 'lodash'
-import { useLayoutEffect, useState } from 'react'
+import { sortBy, partition, sum, uniq } from 'lodash'
+import { useEffect, useState } from 'react'
 
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { FreeResponseContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
@@ -11,20 +11,26 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
-import { FeedItems } from '../feed/feed-items'
 import { ActivityItem } from '../feed/activity-items'
 import { User } from 'common/user'
 import { getOutcomeProbability } from 'common/calculate'
 import { Answer } from 'common/answer'
+import clsx from 'clsx'
+import { formatPercent } from 'common/util/format'
+import { Modal } from 'web/components/layout/modal'
+import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
+import { Row } from 'web/components/layout/row'
+import { Avatar } from 'web/components/avatar'
+import { UserLink } from 'web/components/user-page'
+import { Linkify } from 'web/components/linkify'
+import { BuyButton } from 'web/components/yes-no-selector'
 
-export function AnswersPanel(props: {
-  contract: FullContract<DPM, FreeResponse>
-}) {
+export function AnswersPanel(props: { contract: FreeResponseContract }) {
   const { contract } = props
   const { creatorId, resolution, resolutions, totalBets } = contract
 
   const answers = useAnswers(contract.id) ?? contract.answers
-  const [winningAnswers, losingAnswers] = _.partition(
+  const [winningAnswers, losingAnswers] = partition(
     answers.filter(
       (answer) => answer.id !== '0' && totalBets[answer.id] > 0.000000001
     ),
@@ -32,10 +38,10 @@ export function AnswersPanel(props: {
       answer.id === resolution || (resolutions && resolutions[answer.id])
   )
   const sortedAnswers = [
-    ..._.sortBy(winningAnswers, (answer) =>
+    ...sortBy(winningAnswers, (answer) =>
       resolutions ? -1 * resolutions[answer.id] : 0
     ),
-    ..._.sortBy(
+    ...sortBy(
       resolution ? [] : losingAnswers,
       (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
     ),
@@ -50,7 +56,7 @@ export function AnswersPanel(props: {
     [answerId: string]: number
   }>({})
 
-  const chosenTotal = _.sum(Object.values(chosenAnswers))
+  const chosenTotal = sum(Object.values(chosenAnswers))
 
   const answerItems = getAnswerItems(
     contract,
@@ -79,7 +85,7 @@ export function AnswersPanel(props: {
     })
   }
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     setChosenAnswers({})
   }, [resolveOption])
 
@@ -108,12 +114,17 @@ export function AnswersPanel(props: {
         ))}
 
       {!resolveOption && (
-        <FeedItems
-          contract={contract}
-          items={answerItems}
-          className={'pr-2 md:pr-0'}
-          betRowClassName={''}
-        />
+        <div className={clsx('flow-root pr-2 md:pr-0')}>
+          <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
+            {answerItems.map((item) => (
+              <div key={item.id} className={'relative pb-2'}>
+                <div className="relative flex items-start space-x-3">
+                  <OpenAnswer {...item} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {answers.length <= 1 && (
@@ -141,14 +152,12 @@ export function AnswersPanel(props: {
 }
 
 function getAnswerItems(
-  contract: FullContract<DPM, FreeResponse>,
+  contract: FreeResponseContract,
   answers: Answer[],
   user: User | undefined | null
 ) {
-  let outcomes = _.uniq(
-    answers.map((answer) => answer.number.toString())
-  ).filter((outcome) => getOutcomeProbability(contract, outcome) > 0.0001)
-  outcomes = _.sortBy(outcomes, (outcome) =>
+  let outcomes = uniq(answers.map((answer) => answer.number.toString()))
+  outcomes = sortBy(outcomes, (outcome) =>
     getOutcomeProbability(contract, outcome)
   ).reverse()
 
@@ -166,4 +175,73 @@ function getAnswerItems(
       }
     })
     .filter((group) => group.answer)
+}
+
+function OpenAnswer(props: {
+  contract: FreeResponseContract
+  answer: Answer
+  items: ActivityItem[]
+  type: string
+}) {
+  const { answer, contract } = props
+  const { username, avatarUrl, name, text } = answer
+  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
+  const probPercent = formatPercent(prob)
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Col className={'border-base-200 bg-base-200 flex-1 rounded-md px-2'}>
+      <Modal open={open} setOpen={setOpen}>
+        <AnswerBetPanel
+          answer={answer}
+          contract={contract}
+          closePanel={() => setOpen(false)}
+          className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
+          isModal={true}
+        />
+      </Modal>
+
+      <div
+        className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 bg-opacity-10"
+        style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
+      />
+
+      <Row className="my-4 gap-3">
+        <div className="px-1">
+          <Avatar username={username} avatarUrl={avatarUrl} />
+        </div>
+        <Col className="min-w-0 flex-1 lg:gap-1">
+          <div className="text-sm text-gray-500">
+            <UserLink username={username} name={name} /> answered
+          </div>
+
+          <Col className="align-items justify-between gap-4 sm:flex-row">
+            <span className="whitespace-pre-line text-lg">
+              <Linkify text={text} />
+            </span>
+
+            <Row className="items-center justify-center gap-4">
+              <div className={'align-items flex w-full justify-end gap-4 '}>
+                <span
+                  className={clsx(
+                    'text-2xl',
+                    tradingAllowed(contract) ? 'text-primary' : 'text-gray-500'
+                  )}
+                >
+                  {probPercent}
+                </span>
+                <BuyButton
+                  className={clsx(
+                    'btn-sm flex-initial !px-6 sm:flex',
+                    tradingAllowed(contract) ? '' : '!hidden'
+                  )}
+                  onClick={() => setOpen(true)}
+                />
+              </div>
+            </Row>
+          </Col>
+        </Col>
+      </Row>
+    </Col>
+  )
 }

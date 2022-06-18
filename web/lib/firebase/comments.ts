@@ -7,13 +7,14 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore'
-import _ from 'lodash'
+import { range } from 'lodash'
 
 import { getValues, listenForValues } from './utils'
 import { db } from './init'
 import { User } from 'common/user'
 import { Comment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
+import { track } from '@amplitude/analytics-browser'
 
 export type { Comment }
 
@@ -41,6 +42,12 @@ export async function createComment(
     userAvatarUrl: commenter.avatarUrl,
     betId: betId,
     answerOutcome: answerOutcome,
+    replyToCommentId: replyToCommentId,
+  })
+  track('comment', {
+    contractId,
+    commentId: ref.id,
+    betId: betId,
     replyToCommentId: replyToCommentId,
   })
   return await setDoc(ref, comment)
@@ -117,7 +124,7 @@ export async function getDailyComments(
   )
   const comments = await getValues<Comment>(query)
 
-  const commentsByDay = _.range(0, numberOfDays).map(() => [] as Comment[])
+  const commentsByDay = range(0, numberOfDays).map(() => [] as Comment[])
   for (const comment of comments) {
     const dayIndex = Math.floor((comment.createdTime - startTime) / DAY_IN_MS)
     commentsByDay[dayIndex].push(comment)

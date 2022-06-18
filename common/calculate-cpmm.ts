@@ -1,6 +1,6 @@
-import * as _ from 'lodash'
+import { sum, groupBy, mapValues, sumBy, partition } from 'lodash'
 
-import { Binary, CPMM, FullContract } from './contract'
+import { CPMMContract } from './contract'
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, noFees, PLATFORM_FEE } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { addObjects } from './util/object'
@@ -14,7 +14,7 @@ export function getCpmmProbability(
 }
 
 export function getCpmmProbabilityAfterBetBeforeFees(
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   outcome: string,
   bet: number
 ) {
@@ -31,7 +31,7 @@ export function getCpmmProbabilityAfterBetBeforeFees(
 }
 
 export function getCpmmOutcomeProbabilityAfterBet(
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   outcome: string,
   bet: number
 ) {
@@ -59,7 +59,7 @@ function calculateCpmmShares(
 }
 
 export function getCpmmLiquidityFee(
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   bet: number,
   outcome: string
 ) {
@@ -78,7 +78,7 @@ export function getCpmmLiquidityFee(
 }
 
 export function calculateCpmmSharesAfterFee(
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   bet: number,
   outcome: string
 ) {
@@ -89,7 +89,7 @@ export function calculateCpmmSharesAfterFee(
 }
 
 export function calculateCpmmPurchase(
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   bet: number,
   outcome: string
 ) {
@@ -133,7 +133,7 @@ function sellSharesK(
 }
 
 function calculateCpmmShareValue(
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   shares: number,
   outcome: 'YES' | 'NO'
 ) {
@@ -168,7 +168,7 @@ function calculateCpmmShareValue(
 }
 
 export function calculateCpmmSale(
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   shares: number,
   outcome: string
 ) {
@@ -222,7 +222,7 @@ export function calculateCpmmSale(
 }
 
 export function getCpmmProbabilityAfterSale(
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   shares: number,
   outcome: 'YES' | 'NO'
 ) {
@@ -260,52 +260,46 @@ export function addCpmmLiquidity(
   return { newPool, liquidity, newP }
 }
 
+const calculateLiquidityDelta = (p: number) => (l: LiquidityProvision) => {
+  const oldLiquidity = getCpmmLiquidity(l.pool, p)
+
+  const newPool = addObjects(l.pool, { YES: l.amount, NO: l.amount })
+  const newLiquidity = getCpmmLiquidity(newPool, p)
+
+  const liquidity = newLiquidity - oldLiquidity
+  return liquidity
+}
+
 export function getCpmmLiquidityPoolWeights(
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   liquidities: LiquidityProvision[]
 ) {
-  const { p } = contract
+  const [antes, nonAntes] = partition(liquidities, (l) => !!l.isAnte)
 
-  const liquidityShares = liquidities.map((l) => {
-    const oldLiquidity = getCpmmLiquidity(l.pool, p)
+  const calcLiqudity = calculateLiquidityDelta(contract.p)
+  const liquidityShares = nonAntes.map(calcLiqudity)
 
-    const newPool = addObjects(l.pool, { YES: l.amount, NO: l.amount })
-    const newLiquidity = getCpmmLiquidity(newPool, p)
-
-    const liquidity = newLiquidity - oldLiquidity
-    return liquidity
-  })
-
-  const shareSum = _.sum(liquidityShares)
+  const shareSum = sum(liquidityShares) + sum(antes.map(calcLiqudity))
 
   const weights = liquidityShares.map((s, i) => ({
     weight: s / shareSum,
-    providerId: liquidities[i].userId,
+    providerId: nonAntes[i].userId,
   }))
 
-  const userWeights = _.groupBy(weights, (w) => w.providerId)
-  const totalUserWeights = _.mapValues(userWeights, (userWeight) =>
-    _.sumBy(userWeight, (w) => w.weight)
+  const userWeights = groupBy(weights, (w) => w.providerId)
+  const totalUserWeights = mapValues(userWeights, (userWeight) =>
+    sumBy(userWeight, (w) => w.weight)
   )
   return totalUserWeights
 }
 
-// export function removeCpmmLiquidity(
-//   contract: FullContract<CPMM, Binary>,
-//   liquidity: number
-// ) {
-//   const { YES, NO } = contract.pool
-//   const poolLiquidity = getCpmmLiquidity({ YES, NO })
-//   const p = getCpmmProbability({ YES, NO }, contract.p)
+export function getUserLiquidityShares(
+  userId: string,
+  contract: CPMMContract,
+  liquidities: LiquidityProvision[]
+) {
+  const weights = getCpmmLiquidityPoolWeights(contract, liquidities)
+  const userWeight = weights[userId] ?? 0
 
-//   const f = liquidity / poolLiquidity
-//   const [payoutYes, payoutNo] = [f * YES, f * NO]
-
-//   const betAmount = Math.abs(payoutYes - payoutNo)
-//   const betOutcome = p >= 0.5 ? 'NO' : 'YES' // opposite side as adding liquidity
-//   const payout = Math.min(payoutYes, payoutNo)
-
-//   const newPool = { YES: YES - payoutYes, NO: NO - payoutNo }
-
-//   return { newPool, payout, betAmount, betOutcome }
-// }
+  return mapValues(contract.pool, (shares) => userWeight * shares)
+}

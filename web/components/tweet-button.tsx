@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { trackCallback } from 'web/lib/service/analytics'
 
 export function TweetButton(props: { className?: string; tweetText: string }) {
   const { tweetText, className } = props
@@ -12,6 +13,7 @@ export function TweetButton(props: { className?: string; tweetText: string }) {
         color: '#1da1f2',
       }}
       href={getTweetHref(tweetText)}
+      onClick={trackCallback('share tweet')}
       target="_blank"
     >
       <img className="mr-2" src={'/twitter-logo.svg'} width={15} height={15} />

@@ -1,11 +1,11 @@
 import * as admin from 'firebase-admin'
-import * as _ from 'lodash'
+import { sumBy } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { Bet } from '../../../common/bet'
+import { Contract } from '../../../common/contract'
 
 type DocRef = admin.firestore.DocumentReference
 
@@ -18,15 +18,15 @@ async function migrateBet(contractRef: DocRef, bet: Bet) {
   await contractRef.collection('bets').doc(id).update({ shares })
 }
 
-async function migrateContract(contractRef: DocRef, contract: Contract) {
+async function migrateContract(contractRef: DocRef) {
   const bets = await contractRef
     .collection('bets')
     .get()
     .then((snap) => snap.docs.map((bet) => bet.data() as Bet))
 
   const totalShares = {
-    YES: _.sumBy(bets, (bet) => (bet.outcome === 'YES' ? bet.shares : 0)),
-    NO: _.sumBy(bets, (bet) => (bet.outcome === 'NO' ? bet.shares : 0)),
+    YES: sumBy(bets, (bet) => (bet.outcome === 'YES' ? bet.shares : 0)),
+    NO: sumBy(bets, (bet) => (bet.outcome === 'NO' ? bet.shares : 0)),
   }
 
   await contractRef.update({ totalShares })
@@ -48,7 +48,7 @@ async function migrateContracts() {
     console.log('contract', contract.question, 'bets', bets.length)
 
     for (const bet of bets) await migrateBet(contractRef, bet)
-    await migrateContract(contractRef, contract)
+    await migrateContract(contractRef)
   }
 }
 

@@ -1,11 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract } from 'common/contract'
-import { User } from 'common/user'
-import { removeUndefinedProps } from 'common/util/object'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
+import { removeUndefinedProps } from '../../common/util/object'
 import { redeemShares } from './redeem-shares'
-import { getNewLiquidityProvision } from 'common/add-liquidity'
+import { getNewLiquidityProvision } from '../../common/add-liquidity'
 
 export const addLiquidity = functions.runWith({ minInstances: 1 }).https.onCall(
   async (

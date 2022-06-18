@@ -1,31 +1,38 @@
 import clsx from 'clsx'
+import { ReactNode } from 'react'
 import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
+import { getValueFromBucket } from 'common/calculate-dpm'
 import {
-  Binary,
+  BinaryContract,
   Contract,
-  CPMM,
-  DPM,
-  FreeResponse,
   FreeResponseContract,
-  FullContract,
+  resolution,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
 
 export function OutcomeLabel(props: {
   contract: Contract
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT' | string
+  outcome: resolution | string
   truncate: 'short' | 'long' | 'none'
+  value?: number
 }) {
-  const { outcome, contract, truncate } = props
+  const { outcome, contract, truncate, value } = props
 
   if (contract.outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
 
+  if (contract.outcomeType === 'NUMERIC')
+    return (
+      <span className="text-blue-500">
+        {value ?? getValueFromBucket(outcome, contract)}
+      </span>
+    )
+
   return (
     <FreeResponseOutcomeLabel
-      contract={contract as FullContract<DPM, FreeResponse>}
+      contract={contract}
       resolution={outcome}
       truncate={truncate}
       answerClassName={'font-bold text-base-400'}
@@ -33,9 +40,7 @@ export function OutcomeLabel(props: {
   )
 }
 
-export function BinaryOutcomeLabel(props: {
-  outcome: 'YES' | 'NO' | 'CANCEL' | 'MKT'
-}) {
+export function BinaryOutcomeLabel(props: { outcome: resolution }) {
   const { outcome } = props
 
   if (outcome === 'YES') return <YesLabel />
@@ -45,8 +50,8 @@ export function BinaryOutcomeLabel(props: {
 }
 
 export function BinaryContractOutcomeLabel(props: {
-  contract: FullContract<DPM | CPMM, Binary>
-  resolution: 'YES' | 'NO' | 'CANCEL' | 'MKT'
+  contract: BinaryContract
+  resolution: resolution
 }) {
   const { contract, resolution } = props
 
@@ -69,8 +74,7 @@ export function FreeResponseOutcomeLabel(props: {
   if (resolution === 'CANCEL') return <CancelLabel />
   if (resolution === 'MKT') return <MultiLabel />
 
-  const { answers } = contract
-  const chosen = answers?.find((answer) => answer.id === resolution)
+  const chosen = contract.answers.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
     <FreeResponseAnswerToolTip text={chosen.text}>
@@ -81,6 +85,13 @@ export function FreeResponseOutcomeLabel(props: {
       />
     </FreeResponseAnswerToolTip>
   )
+}
+
+export const OUTCOME_TO_COLOR = {
+  YES: 'primary',
+  NO: 'red-400',
+  CANCEL: 'yellow-400',
+  MKT: 'blue-400',
 }
 
 export function YesLabel() {
@@ -100,7 +111,7 @@ export function ProbLabel() {
 }
 
 export function MultiLabel() {
-  return <span className="text-blue-400">MULTI</span>
+  return <span className="text-blue-400">MANY</span>
 }
 
 export function ProbPercentLabel(props: { prob: number }) {
@@ -139,7 +150,7 @@ export function AnswerLabel(props: {
 
 function FreeResponseAnswerToolTip(props: {
   text: string
-  children?: React.ReactNode
+  children?: ReactNode
 }) {
   const { text } = props
   return (

@@ -1,9 +1,9 @@
-import * as _ from 'lodash'
+import { sum } from 'lodash'
 
 import { Bet } from './bet'
 import { getProbability } from './calculate'
 import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
-import { Binary, CPMM, FixedPayouts, FullContract } from './contract'
+import { CPMMContract } from './contract'
 import { noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
@@ -30,7 +30,7 @@ export const getFixedCancelPayouts = (
 
 export const getStandardFixedPayouts = (
   outcome: string,
-  contract: FullContract<FixedPayouts, Binary>,
+  contract: CPMMContract,
   bets: Bet[],
   liquidities: LiquidityProvision[]
 ) => {
@@ -50,7 +50,7 @@ export const getStandardFixedPayouts = (
     'pool',
     contract.pool[outcome],
     'payouts',
-    _.sum(payouts),
+    sum(payouts),
     'creator fee',
     creatorPayout
   )
@@ -65,7 +65,7 @@ export const getStandardFixedPayouts = (
 }
 
 export const getLiquidityPoolPayouts = (
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   outcome: string,
   liquidities: LiquidityProvision[]
 ) => {
@@ -81,7 +81,7 @@ export const getLiquidityPoolPayouts = (
 }
 
 export const getMktFixedPayouts = (
-  contract: FullContract<FixedPayouts, Binary>,
+  contract: CPMMContract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
   resolutionProbability?: number
@@ -105,7 +105,7 @@ export const getMktFixedPayouts = (
     'pool',
     p * contract.pool.YES + (1 - p) * contract.pool.NO,
     'payouts',
-    _.sum(payouts),
+    sum(payouts),
     'creator fee',
     creatorPayout
   )
@@ -116,7 +116,7 @@ export const getMktFixedPayouts = (
 }
 
 export const getLiquidityPoolProbPayouts = (
-  contract: FullContract<CPMM, Binary>,
+  contract: CPMMContract,
   p: number,
   liquidities: LiquidityProvision[]
 ) => {

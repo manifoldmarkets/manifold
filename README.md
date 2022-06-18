@@ -31,7 +31,7 @@ Operations with complicated contracts (e.g. buying shares) are provided in a sep
 
 - `og-image/`: The OpenGraph image generator; creates the preview images shown on Twitter/social media.
 
-Also: Our docs are currently in [a separate repo](https://github.com/manifoldmarkets/docs). TODO: move them into this monorepo.
+- `docs/`: Manifold's public documentation that lives at https://docs.manifold.markets.
 
 ## Contributing
 

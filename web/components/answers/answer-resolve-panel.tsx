@@ -1,17 +1,17 @@
 import clsx from 'clsx'
-import _ from 'lodash'
+import { sum, mapValues } from 'lodash'
 import { useState } from 'react'
 
-import { DPM, FreeResponse, FullContract } from 'common/contract'
+import { Contract, FreeResponse } from 'common/contract'
 import { Col } from '../layout/col'
-import { resolveMarket } from 'web/lib/firebase/api-call'
+import { resolveMarket } from 'web/lib/firebase/fn-call'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../yes-no-selector'
 import { ResolveConfirmationButton } from '../confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
 
 export function AnswerResolvePanel(props: {
-  contract: FullContract<DPM, FreeResponse>
+  contract: Contract & FreeResponse
   resolveOption: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   setResolveOption: (
     option: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
@@ -30,8 +30,8 @@ export function AnswerResolvePanel(props: {
 
     setIsSubmitting(true)
 
-    const totalProb = _.sum(Object.values(chosenAnswers))
-    const normalizedProbs = _.mapValues(
+    const totalProb = sum(Object.values(chosenAnswers))
+    const normalizedProbs = mapValues(
       chosenAnswers,
       (prob) => (100 * prob) / totalProb
     )
