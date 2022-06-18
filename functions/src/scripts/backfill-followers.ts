@@ -11,7 +11,7 @@ const firestore = admin.firestore()
 
 async function backfillFollowers() {
   console.log('Backfilling user follower counts')
-  let followerCounts: { [userId: string]: number } = {}
+  const followerCounts: { [userId: string]: number } = {}
   const users = await getValues<User>(firestore.collection('users'))
 
   console.log(`Loaded ${users.length} users. Calculating follower counts...`)
