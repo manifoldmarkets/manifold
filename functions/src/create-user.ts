@@ -2,7 +2,6 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import {
-  PortfolioMetrics,
   PrivateUser,
   STARTING_BALANCE,
   SUS_STARTING_BALANCE,
@@ -70,7 +69,6 @@ export const createUser = functions
       createdTime: Date.now(),
       profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
       creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-      portfolioHistory: [] as PortfolioMetrics[],
     }
 
     await firestore.collection('users').doc(userId).create(user)

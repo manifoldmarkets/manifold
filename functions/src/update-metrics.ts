@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, sum, sumBy } from 'lodash'
-import { getValues, log, logMemory, writeUpdatesAsync } from './utils'
+import { groupBy, isEmpty, sum, sumBy } from 'lodash'
+import { getValues, log, logMemory, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
@@ -37,10 +37,15 @@ const computeTotalPool = (userContracts: Contract[], startTime = 0) => {
 }
 
 export const updateMetricsCore = async () => {
-  const [users, contracts, bets] = await Promise.all([
+  const [users, contracts, bets, allPortfolioHistories] = await Promise.all([
     getValues<User>(firestore.collection('users')),
     getValues<Contract>(firestore.collection('contracts')),
     getValues<Bet>(firestore.collectionGroup('bets')),
+    getValues<PortfolioMetrics>(
+      firestore
+        .collectionGroup('portfolioHistory')
+        .where('timestamp', '>', Date.now() - 31 * DAY_MS) // so it includes just over a month ago
+    ),
   ])
   log(
     `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
@@ -59,7 +64,7 @@ export const updateMetricsCore = async () => {
       },
     }
   })
-  await writeUpdatesAsync(firestore, contractUpdates)
+  await writeAsync(firestore, contractUpdates)
   log(`Updated metrics for ${contracts.length} contracts.`)
 
   const contractsById = Object.fromEntries(
@@ -67,8 +72,10 @@ export const updateMetricsCore = async () => {
   )
   const contractsByUser = groupBy(contracts, (contract) => contract.creatorId)
   const betsByUser = groupBy(bets, (bet) => bet.userId)
+  const portfolioHistoryByUser = groupBy(allPortfolioHistories, (p) => p.userId)
   const userUpdates = users.map((user) => {
     const currentBets = betsByUser[user.id] ?? []
+    const portfolioHistory = portfolioHistoryByUser[user.id] ?? []
     const userContracts = contractsByUser[user.id] ?? []
     const newCreatorVolume = calculateCreatorVolume(userContracts)
     const newPortfolio = calculateNewPortfolioMetrics(
@@ -76,8 +83,6 @@ export const updateMetricsCore = async () => {
       contractsById,
       currentBets
     )
-
-    const portfolioHistory = user.portfolioHistory ?? []
     const lastPortfolio = last(portfolioHistory)
     const didProfitChange =
       lastPortfolio === undefined ||
@@ -91,20 +96,42 @@ export const updateMetricsCore = async () => {
       didProfitChange
     )
 
-    const fieldsToUpdate = {
-      creatorVolumeCached: newCreatorVolume,
-      ...(didProfitChange && {
-        portfolioHistory: admin.firestore.FieldValue.arrayUnion(newPortfolio),
-        profitCached: newProfit,
-      }),
-    }
-
     return {
-      doc: firestore.collection('users').doc(user.id),
-      fields: fieldsToUpdate,
+      fieldUpdates: {
+        doc: firestore.collection('users').doc(user.id),
+        fields: {
+          creatorVolumeCached: newCreatorVolume,
+          ...(didProfitChange && {
+            profitCached: newProfit,
+          }),
+        },
+      },
+
+      subcollectionUpdates: {
+        doc: firestore
+          .collection('users')
+          .doc(user.id)
+          .collection('portfolioHistory')
+          .doc(),
+        fields: {
+          ...(didProfitChange && {
+            ...newPortfolio,
+          }),
+        },
+      },
     }
   })
-  await writeUpdatesAsync(firestore, userUpdates)
+  await writeAsync(
+    firestore,
+    userUpdates.map((u) => u.fieldUpdates)
+  )
+  await writeAsync(
+    firestore,
+    userUpdates
+      .filter((u) => !isEmpty(u.subcollectionUpdates.fields))
+      .map((u) => u.subcollectionUpdates),
+    'set'
+  )
   log(`Updated metrics for ${users.length} users.`)
 }
 
@@ -171,6 +198,7 @@ const calculateNewPortfolioMetrics = (
     balance: user.balance,
     totalDeposits: user.totalDeposits,
     timestamp: Date.now(),
+    userId: user.id,
   }
   return newPortfolio
 }

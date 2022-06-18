@@ -20,9 +20,10 @@ type UpdateSpec = {
   fields: { [k: string]: unknown }
 }
 
-export const writeUpdatesAsync = async (
+export const writeAsync = async (
   db: admin.firestore.Firestore,
   updates: UpdateSpec[],
+  operationType: 'update' | 'set' = 'update',
   batchSize = 500 // 500 = Firestore batch limit
 ) => {
   const chunks = chunk(updates, batchSize)
@@ -30,7 +31,11 @@ export const writeUpdatesAsync = async (
     log(`${i * batchSize}/${updates.length} updates written...`)
     const batch = db.batch()
     for (const { doc, fields } of chunks[i]) {
-      batch.update(doc, fields)
+      if (operationType === 'update') {
+        batch.update(doc, fields)
+      } else {
+        batch.set(doc, fields)
+      }
     }
     await batch.commit()
   }

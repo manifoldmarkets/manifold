@@ -15,7 +15,6 @@ export type User = {
 
   balance: number
   totalDeposits: number
-  portfolioHistory: PortfolioMetrics[]
 
   profitCached: {
     daily: number
@@ -59,4 +58,5 @@ export type PortfolioMetrics = {
   balance: number
   totalDeposits: number
   timestamp: number
+  userId: string
 }
