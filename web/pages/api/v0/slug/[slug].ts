@@ -24,7 +24,6 @@ export default async function handler(
     listAllComments(contract.id),
   ])
 
-  // Cache on Vercel edge servers for 2min
-  res.setHeader('Cache-Control', 'max-age=0, s-maxage=120')
+  res.setHeader('Cache-Control', 'max-age=0')
   return res.status(200).json(toFullMarket(contract, comments, bets))
 }
