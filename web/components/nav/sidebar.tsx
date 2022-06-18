@@ -105,8 +105,8 @@ const signedOutMobileNavigation = [
     href: 'https://twitter.com/ManifoldMarkets',
     icon: IconFromUrl('/twitter-logo.svg'),
   },
-  { 
-    name: 'Statistics', 
+  {
+    name: 'Statistics',
     href: '/stats',
     icon: PresentationChartBarIcon,
   },
