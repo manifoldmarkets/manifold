@@ -11,8 +11,8 @@ import { formatMoney } from 'common/util/format'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { useEffect, useState } from 'react'
 import { LoadingIndicator } from 'web/components/loading-indicator'
-import { Spacer } from 'web/components/layout/spacer'
 import { Title } from 'web/components/title'
+import { Tabs } from 'web/components/layout/tabs'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -55,38 +55,27 @@ export default function Leaderboards(props: {
     })
   }, [period])
 
-  return (
-    <Page margin>
-      <Title text={'Leaderboards'} className={'hidden md:block'} />
-      <Col className="gap-4 text-center">
-        <select
-          onChange={(e) => {
-            setPeriod(e.target.value as LeaderboardPeriod)
-          }}
-          value={period}
-          className="!select !select-bordered max-w-xs"
-        >
-          <option value="allTime">All Time</option>
-          <option value="monthly">Monthly</option>
-          <option value="weekly">Weekly</option>
-          <option value="daily">Daily</option>
-        </select>
-      </Col>
-      <Spacer h={4} />
-
+  const LeaderboardWithPeriod = (period: LeaderboardPeriod) => {
+    return (
       <Col className="items-center gap-10 lg:flex-row">
         {!isLoading ? (
           <>
-            <Leaderboard
-              title="🏅 Top bettors"
-              users={topTradersState}
-              columns={[
-                {
-                  header: 'Total profit',
-                  renderCell: (user) => formatMoney(user.profitCached[period]),
-                },
-              ]}
-            />
+            {period === 'allTime' ? ( //TODO: show other periods once they're available
+              <Leaderboard
+                title="🏅 Top bettors"
+                users={topTradersState}
+                columns={[
+                  {
+                    header: 'Total profit',
+                    renderCell: (user) =>
+                      formatMoney(user.profitCached[period]),
+                  },
+                ]}
+              />
+            ) : (
+              <></>
+            )}
+
             <Leaderboard
               title="🏅 Top creators"
               users={topCreatorsState}
@@ -103,6 +92,37 @@ export default function Leaderboards(props: {
           <LoadingIndicator spinnerClassName={'border-gray-500'} />
         )}
       </Col>
+    )
+  }
+
+  return (
+    <Page margin>
+      <Title text={'Leaderboards'} className={'hidden md:block'} />
+      <Tabs
+        defaultIndex={0}
+        onClick={(title, index) => {
+          const period = ['allTime', 'monthly', 'weekly', 'daily'][index]
+          setPeriod(period as LeaderboardPeriod)
+        }}
+        tabs={[
+          {
+            title: 'All Time',
+            content: LeaderboardWithPeriod('allTime'),
+          },
+          {
+            title: 'Monthly',
+            content: LeaderboardWithPeriod('monthly'),
+          },
+          {
+            title: 'Weekly',
+            content: LeaderboardWithPeriod('weekly'),
+          },
+          {
+            title: 'Daily',
+            content: LeaderboardWithPeriod('daily'),
+          },
+        ]}
+      />
     </Page>
   )
 }
