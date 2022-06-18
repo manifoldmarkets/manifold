@@ -5,7 +5,7 @@ import { PROD_CONFIG } from '../../common/envs/prod'
 
 import { isProd } from './utils'
 
-const key = isProd ? PROD_CONFIG.amplitudeApiKey : DEV_CONFIG.amplitudeApiKey
+const key = isProd() ? PROD_CONFIG.amplitudeApiKey : DEV_CONFIG.amplitudeApiKey
 
 const amp = Amplitude.init(key ?? '')
 

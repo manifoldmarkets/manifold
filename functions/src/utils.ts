@@ -15,7 +15,7 @@ export const logMemory = () => {
   }
 }
 
-type UpdateSpec = {
+export type UpdateSpec = {
   doc: admin.firestore.DocumentReference
   fields: { [k: string]: unknown }
 }
@@ -36,8 +36,9 @@ export const writeUpdatesAsync = async (
   }
 }
 
-export const isProd =
-  admin.instanceId().app.options.projectId === 'mantic-markets'
+export const isProd = () => {
+  return admin.instanceId().app.options.projectId === 'mantic-markets'
+}
 
 export const getDoc = async <T>(collection: string, doc: string) => {
   const snap = await admin.firestore().collection(collection).doc(doc).get()
