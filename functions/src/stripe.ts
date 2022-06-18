@@ -28,7 +28,7 @@ const initStripe = () => {
 }
 
 // manage at https://dashboard.stripe.com/test/products?active=true
-const manticDollarStripePrice = isProd
+const manticDollarStripePrice = isProd()
   ? {
       500: 'price_1KFQXcGdoFKoCJW770gTNBrm',
       1000: 'price_1KFQp1GdoFKoCJW7Iu0dsF65',

@@ -15,7 +15,7 @@ export const logMemory = () => {
   }
 }
 
-type UpdateSpec = {
+export type UpdateSpec = {
   doc: admin.firestore.DocumentReference
   fields: { [k: string]: unknown }
 }
@@ -36,8 +36,9 @@ export const writeUpdatesAsync = async (
   }
 }
 
-export const isProd =
-  admin.instanceId().app.options.projectId === 'mantic-markets'
+export const isProd = () => {
+  return admin.instanceId().app.options.projectId === 'mantic-markets'
+}
 
 export const getDoc = async <T>(collection: string, doc: string) => {
   const snap = await admin.firestore().collection(collection).doc(doc).get()
@@ -69,6 +70,7 @@ export const getPrivateUser = (userId: string) => {
 }
 
 export const getUserByUsername = async (username: string) => {
+  const firestore = admin.firestore()
   const snap = await firestore
     .collection('users')
     .where('username', '==', username)
@@ -77,13 +79,12 @@ export const getUserByUsername = async (username: string) => {
   return snap.empty ? undefined : (snap.docs[0].data() as User)
 }
 
-const firestore = admin.firestore()
-
 const updateUserBalance = (
   userId: string,
   delta: number,
   isDeposit = false
 ) => {
+  const firestore = admin.firestore()
   return firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${userId}`)
     const userSnap = await transaction.get(userDoc)
