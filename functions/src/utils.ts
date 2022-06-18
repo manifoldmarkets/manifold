@@ -70,6 +70,7 @@ export const getPrivateUser = (userId: string) => {
 }
 
 export const getUserByUsername = async (username: string) => {
+  const firestore = admin.firestore()
   const snap = await firestore
     .collection('users')
     .where('username', '==', username)
@@ -78,13 +79,12 @@ export const getUserByUsername = async (username: string) => {
   return snap.empty ? undefined : (snap.docs[0].data() as User)
 }
 
-const firestore = admin.firestore()
-
 const updateUserBalance = (
   userId: string,
   delta: number,
   isDeposit = false
 ) => {
+  const firestore = admin.firestore()
   return firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${userId}`)
     const userSnap = await transaction.get(userDoc)
