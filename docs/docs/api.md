@@ -103,6 +103,7 @@ Requires no authorization.
     isResolved: boolean
     resolutionTime?: number
     resolution?: string
+    resolutionProbability?: number  // Used for BINARY markets resolved to MKT
   }
   ```
 
