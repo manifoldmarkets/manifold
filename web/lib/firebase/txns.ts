@@ -1,4 +1,4 @@
-import { DonationTxn, TipTxn } from 'common/txn'
+import { Txn, DonationTxn, TipTxn } from 'common/txn'
 import { collection, orderBy, query, where } from 'firebase/firestore'
 import { db } from './init'
 import { getValues, listenForValues } from './utils'
