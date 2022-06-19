@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { Claim, Manalink } from 'common/manalink'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -243,7 +244,11 @@ function LinkTableRow(props: { link: Manalink }) {
   const [expanded, setExpanded] = useState(false)
   return (
     <>
-      <LinkSummaryRow link={link} onClick={() => setExpanded((exp) => !exp)} />
+      <LinkSummaryRow
+        link={link}
+        expanded={expanded}
+        onToggle={() => setExpanded((exp) => !exp)}
+      />
       {expanded && (
         <tr>
           <td className="bg-gray-100 p-3" colSpan={5}>
@@ -255,14 +260,25 @@ function LinkTableRow(props: { link: Manalink }) {
   )
 }
 
-function LinkSummaryRow(props: { link: Manalink; onClick: () => void }) {
-  const { link, onClick } = props
+function LinkSummaryRow(props: {
+  link: Manalink
+  expanded: boolean
+  onToggle: () => void
+}) {
+  const { link, expanded, onToggle } = props
   return (
     <tr
-      onClick={onClick}
       className="whitespace-nowrap text-sm text-gray-500 hover:cursor-pointer hover:bg-sky-50"
       key={link.slug}
     >
+      <td className="py-4 pl-5" onClick={onToggle}>
+        {expanded ? (
+          <ChevronUpIcon className="h-5 w-5" />
+        ) : (
+          <ChevronDownIcon className="h-5 w-5" />
+        )}
+      </td>
+
       <td className="px-5 py-4 font-medium text-gray-900">
         {formatMoney(link.amount)}
       </td>
@@ -282,6 +298,7 @@ function LinksTable(props: { links: Manalink[] }) {
     <table className="w-full divide-y divide-gray-300 rounded-lg border border-gray-200">
       <thead className="bg-gray-50 text-left text-sm font-semibold text-gray-900">
         <tr>
+          <th></th>
           <th className="px-5 py-3.5">Amount</th>
           <th className="px-5 py-3.5">Link</th>
           <th className="px-5 py-3.5">Uses</th>
