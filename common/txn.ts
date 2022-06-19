@@ -1,34 +1,31 @@
 // A txn (pronounced "texan") respresents a payment between two ids on Manifold
 // Shortened from "transaction" to distinguish from Firebase transactions (and save chars)
-export type Txn = {
+export type AnyTxnType = Donation | Tip
+
+export type Txn<T extends AnyTxnType = AnyTxnType> = {
   id: string
   createdTime: number
 
   fromId: string
-  fromType: SourceType
-
   toId: string
-  toType: SourceType
 
   amount: number
   token: 'M$' // | 'USD' | MarketOutcome
 
-  category: 'CHARITY' | 'TIP' // | 'BET'
   // Any extra data
   data?: { [key: string]: any }
+
   // Human-readable description
   description?: string
-}
+} & T
 
-export type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
-
-export type DonationTxn = Omit<Txn, 'data'> & {
+export type Donation = {
   fromType: 'USER'
   toType: 'CHARITY'
   category: 'CHARITY'
 }
 
-export type TipTxn = Txn & {
+export type Tip = {
   fromType: 'USER'
   toType: 'USER'
   category: 'TIP'
@@ -37,3 +34,6 @@ export type TipTxn = Txn & {
     commentId: string
   }
 }
+
+export type DonationTxn = Txn & Donation
+export type TipTxn = Txn & Tip

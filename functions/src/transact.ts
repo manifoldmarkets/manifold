@@ -69,7 +69,7 @@ export const transact = functions
 
       const newTxnDoc = firestore.collection(`txns/`).doc()
 
-      const txn: Txn = removeUndefinedProps({
+      const txn = removeUndefinedProps({
         id: newTxnDoc.id,
         createdTime: Date.now(),
 
