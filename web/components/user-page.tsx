@@ -260,13 +260,6 @@ export function UserPage(props: {
                 title: 'Bets',
                 content: (
                   <div>
-                    {isCurrentUser && (
-                      <AlertBox
-                        title="Bets after 2022-06-01 are publicly visible by default."
-                        text="Note that all historical bets are also publicly accessible through the API.
-                      See: https://manifold.markets/Austin/will-all-bets-on-manifold-be-public"
-                      />
-                    )}
                     <BetsList
                       user={user}
                       hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
