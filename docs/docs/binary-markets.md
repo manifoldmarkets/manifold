@@ -22,8 +22,8 @@ return M$100 if YES is chosen.
 - When the market is resolved, you will be paid out according to your shares. If you own 100 YES shares, if the event resolves YES, you will earn M$100. (If the event resolves NO, you will earn M$0).
 - The creator of each market is responsible for resolving each market. They can resolve to YES, NO, or MKT.
   - Resolving to MKT allows the creator to choose a percentage. The payout for any YES share is multiplied by this percentage, and vice versa for NO.
-    - For example, if a market resolves to MKT at 30%, if you have 100 shares of YES you will receive `M$100 _ 30% = M$30`.
-    - In the same situation as above, if you have 100 shares of NO you will receive `M$100 _ (100% - 30%) = M$70`.
+    - For example, if a market resolves to MKT at 30%, if you have 100 shares of YES you will receive `M$100 * 30% = M$30`.
+    - In the same situation as above, if you have 100 shares of NO you will receive `M$100 * (100% - 30%) = M$70`.
     - Note that even in this instance, 1 YES share plus 1 NO share still equals M$1.
   - Creators can also resolve N/A to cancel all transactions and reverse all transactions made on the market - this includes profits from selling shares.
 
@@ -42,10 +42,10 @@ return M$100 if YES is chosen.
 - Manifold's automated market automatically adjusts the market probability after each trade and determines how many shares a user will get for their bet.
 - You can sell back your shares for cash. If you sell YES shares, the market probability will go down. If you sell NO shares, the probability will go up.
 - Manifold charges fees on each trade. They are automatically calculated and baked into the number of shares you receive when you place a bet.
-  - Our CPMM fee schedule is currently: `10% _ (1 - post-bet probability) _ bet amount`
+  - Our CPMM fee schedule is currently: `10% * (1 - post-bet probability) * bet amount`
     - The post-bet probability is what the market probability would be after your bet if there were no fees.
     - Example:
-      - If you bet M$100 on NO and the resulting probability without fees would be 10%, then you pay `M$100 _ 10% _ 10% = M$1.0`.
+      - If you bet M$100 on NO and the resulting probability without fees would be 10%, then you pay `M$100 * 10% * 10% = M$1.0`.
       - If you bet M$100 on YES and the resulting probability without fees would be 50%, then you pay `M$100 * 10% * 50% = M$5.0`.
     - 100% of this fee is used to provide a commission to the market creator, which is paid out after the market is resolved.
   - No fees are levied on sales.
