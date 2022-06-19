@@ -7,18 +7,17 @@ import { Title } from 'web/components/title'
 import { claimManalink } from 'web/lib/firebase/fn-call'
 import { useManalink } from 'web/lib/firebase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'
+import { useUser } from 'web/hooks/use-user'
 import { useUserById } from 'web/hooks/use-users'
-import { useWindowSize } from 'web/hooks/use-window-size'
-import Confetti from 'react-confetti'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 export default function ClaimPage() {
+  const user = useUser()
   const router = useRouter()
   const { slug } = router.query as { slug: string }
   const manalink = useManalink(slug)
   const [claiming, setClaiming] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
-  const [showConfetti, setShowConfetti] = useState(false)
-  const { width, height } = useWindowSize()
 
   const fromUser = useUserById(manalink?.fromId)
   if (!manalink) {
@@ -33,14 +32,6 @@ export default function ClaimPage() {
         description="Send mana to anyone via link!"
         url="/send"
       />
-      {showConfetti && (
-        <Confetti
-          width={width ? width : 500}
-          height={height ? height : 500}
-          recycle={false}
-          numberOfPieces={300}
-        />
-      )}
       <div className="mx-auto max-w-xl">
         <Title text={`Claim ${manalink.amount} mana`} />
         <ManalinkCard
@@ -50,12 +41,17 @@ export default function ClaimPage() {
           onClaim={async () => {
             setClaiming(true)
             try {
+              if (user == null) {
+                await firebaseLogin()
+              }
               const result = await claimManalink(manalink.slug)
+              console.log(result)
               if (result.data.status == 'error') {
                 throw new Error(result.data.message)
               }
-              setShowConfetti(true)
+              router.push('/account?claimed-mana=yes')
             } catch (e) {
+              console.log(e)
               const message =
                 e && e instanceof Object ? e.toString() : 'An error occurred.'
               setError(message)

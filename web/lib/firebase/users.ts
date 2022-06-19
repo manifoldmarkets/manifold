@@ -126,7 +126,7 @@ export function listenForLogin(onUser: (user: User | null) => void) {
 
 export async function firebaseLogin() {
   const provider = new GoogleAuthProvider()
-  signInWithPopup(auth, provider)
+  return signInWithPopup(auth, provider)
 }
 
 export async function firebaseLogout() {

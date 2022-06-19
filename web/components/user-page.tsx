@@ -1,7 +1,10 @@
 import clsx from 'clsx'
 import { uniq } from 'lodash'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
 import { PencilIcon } from '@heroicons/react/outline'
+import Confetti from 'react-confetti'
 
 import { follow, unfollow, User } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
@@ -16,7 +19,7 @@ import { Row } from './layout/row'
 import { genHash } from 'common/util/random'
 import { Tabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
-import { useEffect, useState } from 'react'
+import { useWindowSize } from 'web/hooks/use-window-size'
 import { Comment, getUsersComments } from 'web/lib/firebase/comments'
 import { Contract } from 'common/contract'
 import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
@@ -57,6 +60,7 @@ export function UserPage(props: {
   defaultTabTitle?: 'markets' | 'comments' | 'bets'
 }) {
   const { user, currentUser, defaultTabTitle } = props
+  const router = useRouter()
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [usersComments, setUsersComments] = useState<Comment[]>([] as Comment[])
@@ -67,6 +71,13 @@ export function UserPage(props: {
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
+  const [showConfetti, setShowConfetti] = useState(false)
+  const { width, height } = useWindowSize()
+
+  useEffect(() => {
+    const claimedMana = router.query['claimed-mana'] === 'yes'
+    setShowConfetti(claimedMana)
+  }, [router])
 
   useEffect(() => {
     if (!user) return
@@ -113,7 +124,14 @@ export function UserPage(props: {
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
-
+      {showConfetti && (
+        <Confetti
+          width={width ? width : 500}
+          height={height ? height : 500}
+          recycle={false}
+          numberOfPieces={300}
+        />
+      )}
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
         className="h-32 w-full bg-cover bg-center sm:h-40"
