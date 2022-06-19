@@ -55,4 +55,4 @@ To the moon 🚀
 - **Create innovative answers**
   Certain free response markets provide room for creativity! The answers themselves can often affect the outcome based on how compelling they are.
 
-More questions? Check out **[this community-driven FAQ](https://outsidetheasylum.blog/manifold-markets-faq/)**!
+More questions? Check out **[this community-driven FAQ](https://docs.manifold.markets/faq)**!

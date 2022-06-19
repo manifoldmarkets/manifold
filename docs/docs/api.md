@@ -56,24 +56,33 @@ Requires no authorization.
   ```json
   [
     {
-      "id":"FKtYX3t8ZfIp5gytJWAI",
-      "creatorUsername":"JamesGrugett",
-      "creatorName":"James Grugett",
-      "createdTime":1645139406452,
-      "closeTime":1647406740000,
-      "question":"What will be the best assessment of the Free response feature on March 15th?",
-      "description":"Hey guys, let's try this out!\nWe will see how people use the new Free response market type over the next month. Then I will pick the answer that I think best describes the consensus view of this feature on March 15th. Cheers.",
+      "id":"EvIhzcJXwhL0HavaszD7",
+      "creatorUsername":"Austin",
+      "creatorName":"Austin",
+      "createdTime":1653850472294,
+      "creatorAvatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GiZyl1lBehuBMGyJYJhZd-N-mstaUtgE4xdI22lLw=s96-c",
+      "closeTime":1653893940000,
+      "question":"Will I write a new blog post today?",
+      "description":"I'm supposed to, or else Beeminder charges me $90.\nTentative topic ideas:\n- \"Manifold funding, a history\"\n- \"Markets and bounties allow trades through time\"\n- \"equity vs money vs time\"\n\nClose date updated to 2022-05-29 11:59 pm",
       "tags":[
-        "ManifoldMarkets"
-      ],
-      "url":"https://manifold.markets/JamesGrugett/what-will-be-the-best-assessment-of",
-      "pool":null,
-      "probability":0,
-      "volume7Days":100,
-      "volume24Hours":100,
-      "isResolved":false,
-      ...
-    }
+        "personal",
+        "commitments"
+        ],
+      "url":"https://manifold.markets/Austin/will-i-write-a-new-blog-post-today",
+      "pool":146.73022894879944,
+      "probability":0.8958175225896258,
+      "p":0.08281474972181882,
+      "totalLiquidity":102.65696071594805,
+      "outcomeType":"BINARY",
+      "mechanism":"cpmm-1",
+      "volume":241,
+      "volume7Days":0,
+      "volume24Hours":0,
+      "isResolved":true,
+      "resolution":"YES",
+      "resolutionTime":1653924077078
+    },
+    ...
   ```
 - Response type: Array of `LiteMarket`
 
@@ -86,20 +95,35 @@ Requires no authorization.
     // Attributes about the creator
     creatorUsername: string
     creatorName: string
-    createdTime: number
+    createdTime: number // milliseconds since epoch
     creatorAvatarUrl?: string
 
     // Market attributes. All times are in milliseconds since epoch
     closeTime?: number // Min of creator's chosen date, and resolutionTime
     question: string
     description: string
+
+    // A list of tags on each market. Any user can add tags to any market.
+    // This list also includes the predefined categories shown as filters on the home page.
     tags: string[]
+    
+    // Note: This url always points to https://manifold.markets, regardless of what instance the api is running on.
+    // This url includes the creator's username, but this doesn't need to be correct when constructing valid URLs.
+    //   i.e. https://manifold.markets/Austin/test-market is the same as https://manifold.markets/foo/test-market
     url: string
+
+    outcomeType: string // BINARY, FREE_RESPONSE, or NUMERIC
+    mechanism: string // dpm-2 or cpmm-1
 
     pool: number
     probability: number
+    p?: number // probability constant in y^p * n^(1-p) = k
+    totalLiquidity?: number
+
+    volume: number
     volume7Days: number
     volume24Hours: number
+
     isResolved: boolean
     resolutionTime?: number
     resolution?: string
@@ -108,7 +132,7 @@ Requires no authorization.
 
 ### `GET /v0/market/[marketId]`
 
-Gets information about a single market by ID.
+Gets information about a single market by ID. Includes comments, bets, and answers.
 
 Requires no authorization.
 
@@ -122,227 +146,202 @@ Requires no authorization.
 
   ```json
   {
-    "id": "3zspH9sSzMlbFQLn9GKR",
-    "creatorUsername": "Austin",
-    "creatorName": "Austin Chen",
-    "createdTime": 1644103005345,
-    "closeTime": 1667894340000,
-    "question": "Will Carrick Flynn win the general election for Oregon's 6th District?",
-    "description": "The Effective Altruism movement usually stays out of politics, but here is a recent, highly-upvoted endorsement of donating to Carrick Flynn as a high-impact area: https://forum.effectivealtruism.org/posts/Qi9nnrmjwNbBqWbNT/the-best-usd5-800-i-ve-ever-donated-to-pandemic-prevention\nFurther reading: https://ballotpedia.org/Oregon%27s_6th_Congressional_District_election,_2022\n\n#EffectiveAltruism #Politics",
-    "tags": ["EffectiveAltruism", "Politics"],
-    "url": "https://manifold.markets/Austin/will-carrick-flynn-win-the-general",
-    "pool": 400.0916328426886,
-    "probability": 0.34455568984059187,
-    "volume7Days": 326.9083671573114,
-    "volume24Hours": 0,
-    "isResolved": false,
-    "bets": [
+    "id":"lEoqtnDgJzft6apSKzYK",
+    "creatorUsername":"Angela",
+    "creatorName":"Angela",
+    "createdTime":1655258914863,
+    "creatorAvatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
+    "closeTime":1655265001448,
+    "question":"What is good?",
+    "description":"Resolves proportionally to the answer(s) which I find most compelling. (Obviously I’ll refrain from giving my own answers)\n\n(Please have at it with philosophy, ethics, etc etc)\n\n\nContract resolved automatically.",
+    "tags":[],
+    "url":"https://manifold.markets/Angela/what-is-good",
+    "pool":null,
+    "outcomeType":"FREE_RESPONSE",
+    "mechanism":"dpm-2",
+    "volume":112,
+    "volume7Days":212,
+    "volume24Hours":0,
+    "isResolved":true,
+    "resolution":"MKT",
+    "resolutionTime":1655265001448,
+    "answers":[
       {
-        "createdTime": 1644103005345,
-        "isAnte": true,
-        "shares": 83.66600265340756,
-        "userId": "igi2zGXsfxYPgB0DJTXVJVmwCOr2",
-        "amount": 70,
-        "probAfter": 0.3,
-        "probBefore": 0.3,
-        "id": "E1MjiVYBM0GkqRXhv5cR",
-        "outcome": "NO",
-        "contractId": "3zspH9sSzMlbFQLn9GKR"
+        "createdTime":1655258941573,
+       "avatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
+       "id":"1",
+        "username":"Angela",
+       "number":1,
+       "name":"Angela",
+       "contractId":"lEoqtnDgJzft6apSKzYK",
+        "text":"ANTE",
+        "userId":"qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
+        "probability":0.66749733001068
       },
       {
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "probAfter": 0.3,
-        "shares": 54.77225575051661,
-        "userId": "igi2zGXsfxYPgB0DJTXVJVmwCOr2",
-        "isAnte": true,
-        "createdTime": 1644103005345,
-        "id": "jn3iIGwD5f0vxOHxo62o",
-        "amount": 30,
-        "probBefore": 0.3,
-        "outcome": "YES"
+        "name":"Isaac King",
+        "username":"IsaacKing",
+        "text":"This answer",
+        "userId":"y1hb6k7txdZPV5mgyxPFApZ7nQl2",
+        "id":"2",
+        "number":2,
+        "avatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GhNVriOvxK2VUAmE-jvYZwC-XIymatzVirT0Bqb2g=s96-c",
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "createdTime":1655261198074,
+        "probability":0.008922214311142757
       },
       {
-        "shares": 11.832723364874056,
-        "probAfter": 0.272108843537415,
-        "userId": "PkBnU8cAZiOLa0fjxiUzMKsFMYZ2",
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "outcome": "NO",
-        "amount": 10,
-        "id": "f6sHBab6lbGw9PsnVXdc",
-        "probBefore": 0.3,
-        "createdTime": 1644203305863
+        "createdTime":1655263226587,
+        "userId":"jbgplxty4kUKIa1MmgZk22byJq03",
+        "id":"3",
+        "avatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FMartin%2Fgiphy.gif?alt=media&token=422ef610-553f-47e3-bf6f-c0c5cc16c70a",
+        "text":"Toyota Camry",
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "name":"Undox",
+        "username":"Undox",
+        "number":3,
+        "probability":0.008966714133143469
       },
       {
-        "userId": "BTksWMdCeHfDitWVaAZdjLSdu3o1",
-        "amount": 10,
-        "id": "Vfui2KOQwy7gkRPP7xc6",
-        "shares": 18.12694184700382,
-        "outcome": "YES",
-        "createdTime": 1644212358699,
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "probBefore": 0.272108843537415,
-        "probAfter": 0.3367768595041322
-      },
-      {
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "probAfter": 0.3659259259259259,
-        "userId": "BTksWMdCeHfDitWVaAZdjLSdu3o1",
-        "probBefore": 0.3367768595041322,
-        "amount": 5,
-        "outcome": "YES",
-        "createdTime": 1644433184238,
-        "id": "eGI1VwAWF822LkcmOUot",
-        "shares": 8.435122540124937
-      },
-      {
-        "userId": "NHA7Gv9nNpb7b60GpLD3oFkBvPa2",
-        "shares": 59.79133423528123,
-        "amount": 50,
-        "probAfter": 0.24495867768595042,
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "createdTime": 1644693685223,
-        "probBefore": 0.3659259259259259,
-        "id": "fbU0DbmDWMnubggpQotw",
-        "outcome": "NO"
-      },
-      {
-        "amount": 25,
-        "userId": "iXw2OSyhs0c4QW2fAfK3yqmaYDv1",
-        "probAfter": 0.20583333333333328,
-        "outcome": "NO",
-        "shares": 28.3920247989266,
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "createdTime": 1644695698202,
-        "id": "k9hyljJD3MMXK2OYxTsR",
-        "probBefore": 0.24495867768595042
-      },
-      {
-        "createdTime": 1644716782308,
-        "shares": 11.17480183821209,
-        "probBefore": 0.20583333333333328,
-        "userId": "clvYFhVDzccYu20OUc5NBKJyDxj2",
-        "probAfter": 0.1927679500520291,
-        "id": "yYkZ4JpLgZHrRQUugpCD",
-        "outcome": "NO",
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "amount": 10
-      },
-      {
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "outcome": "YES",
-        "amount": 30,
-        "id": "IU2Hb1DesgKIN140BkhE",
-        "shares": 58.893424111838016,
-        "createdTime": 1644736846538,
-        "probBefore": 0.1927679500520291,
-        "userId": "BTksWMdCeHfDitWVaAZdjLSdu3o1",
-        "probAfter": 0.3289359861591695
-      },
-      {
-        "isSold": true,
-        "userId": "5zeWhzi9nlNNf5C9TVjshAN7QOd2",
-        "createdTime": 1644751343436,
-        "outcome": "NO",
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "amount": 25,
-        "probBefore": 0.3289359861591695,
-        "id": "fkCxVH7THaDbEhyJjXVk",
-        "probAfter": 0.2854194032651529,
-        "shares": 30.022082866721178
-      },
-      {
-        "probAfter": 0.2838618650900295,
-        "id": "Ao05LRRMXVWw8d7LtwhL",
-        "outcome": "NO",
-        "probBefore": 0.2854194032651529,
-        "shares": 1.1823269994736165,
-        "userId": "pUF3dMs9oLNpgU2LYtFmodaoDow1",
-        "amount": 1,
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "createdTime": 1644768321860
-      },
-      {
-        "id": "LJ8H8DTuK7CH9vN3u0Sd",
-        "createdTime": 1644771352663,
-        "shares": 113.5114039238785,
-        "probAfter": 0.17510453314667793,
-        "outcome": "NO",
-        "amount": 100,
-        "probBefore": 0.2838618650900295,
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "userId": "ebX5nzwrs8V0M5UynWvbtcj7KAI2"
-      },
-      {
-        "outcome": "YES",
-        "amount": 20,
-        "probBefore": 0.17510453314667793,
-        "id": "TECEF9I5FqTqt6uTIsJX",
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "createdTime": 1644805061501,
-        "shares": 43.88281646028875,
-        "userId": "lHxg3179e4amWm5LJhJoJrcWK482",
-        "probAfter": 0.24160019644701852
-      },
-      {
-        "amount": -25.908367157311375,
-        "id": "G3u2EzETWOyrGo15wtiQ",
-        "outcome": "NO",
-        "createdTime": 1644847494264,
-        "sale": {
-          "betId": "fkCxVH7THaDbEhyJjXVk",
-          "amount": 25.862948799445807
-        },
-        "probAfter": 0.26957595409437557,
-        "shares": -30.022082866721178,
-        "probBefore": 0.24160019644701852,
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "userId": "5zeWhzi9nlNNf5C9TVjshAN7QOd2"
-      },
-      {
-        "createdTime": 1644853733891,
-        "userId": "lbTXACtCnIacKDloKfXxYkDn0zM2",
-        "amount": 10,
-        "id": "z443uCkbYRLZW9QdXu1u",
-        "probAfter": 0.25822886066938844,
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "outcome": "NO",
-        "shares": 11.655141043149968,
-        "probBefore": 0.26957595409437557
-      },
-      {
-        "userId": "BTksWMdCeHfDitWVaAZdjLSdu3o1",
-        "amount": 15,
-        "shares": 28.311399392675895,
-        "id": "axoryV664uzHZ0jzWSXR",
-        "outcome": "YES",
-        "probBefore": 0.25822886066938844,
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "createdTime": 1644863335939,
-        "probAfter": 0.3033936853512369
-      },
-      {
-        "createdTime": 1644987330420,
-        "id": "jHAYDdZRkDw3lFoDXdmm",
-        "shares": 26.353902809992064,
-        "userId": "BTksWMdCeHfDitWVaAZdjLSdu3o1",
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "probAfter": 0.34455568984059187,
-        "probBefore": 0.3033936853512369,
-        "amount": 15,
-        "outcome": "YES"
+        "number":4,
+        "name":"James Grugett",
+        "userId":"5LZ4LgYuySdL1huCWe7bti02ghx2",
+        "text":"Utility (Defined by your personal utility function.)",
+        "createdTime":1655264793224,
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "username":"JamesGrugett",
+        "id":"4",
+        "avatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GjC83uMe-fEfzd6QvxiK6ZqZdlMytuHxevgMYIkpAI=s96-c",
+        "probability":0.09211463154147384
       }
     ],
-    "comments": [
+    "comments":[
       {
-        "contractId": "3zspH9sSzMlbFQLn9GKR",
-        "userUsername": "Celer",
-        "userAvatarUrl": "https://lh3.googleusercontent.com/a/AATXAJwp0vAolZgOmT7GbzFq7mOf8lr0BFEB_LqWWfZk=s96-c",
-        "userId": "NHA7Gv9nNpb7b60GpLD3oFkBvPa2",
-        "text": "It's a D+3 district, and the person we're pushing is functionally an outsider. I maxed my donation, but 25%, what I bought down to, implying even odds on both the general and the primary, seems if anything optimistic.",
-        "createdTime": 1644693740967,
-        "id": "fbU0DbmDWMnubggpQotw",
-        "betId": "fbU0DbmDWMnubggpQotw",
-        "userName": "Celer"
+        "id":"ZdHIyfQazHyl8nI0ENS7",
+        "userId":"qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
+        "createdTime":1655265807433,
+        "text":"ok what\ni did not resolve this intentionally",
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "userName":"Angela",
+        "userAvatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
+        "userUsername":"Angela"
+      },
+      {
+        "userName":"James Grugett",
+        "userUsername":"JamesGrugett",
+        "id":"F7fvHGhTiFal8uTsUc9P",
+        "userAvatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GjC83uMe-fEfzd6QvxiK6ZqZdlMytuHxevgMYIkpAI=s96-c","replyToCommentId":"ZdHIyfQazHyl8nI0ENS7",
+        "text":"@Angela Sorry! There was an error that automatically resolved several markets that were created in the last few hours.",
+        "createdTime":1655266286514,
+        "userId":"5LZ4LgYuySdL1huCWe7bti02ghx2",
+        "contractId":"lEoqtnDgJzft6apSKzYK"
+      },
+      {
+        "userId":"qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "id":"PIHhXy5hLHSgW8uoUD0Q",
+        "userName":"Angela",
+        "text":"lmk if anyone lost manna from this situation and i'll try to fix it",
+        "userUsername":"Angela",
+        "createdTime":1655277581308,
+        "userAvatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476"
+      },{
+        "userAvatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
+        "userName":"Angela",
+        "text":"from my end it looks like no one did",
+        "replyToCommentId":"PIHhXy5hLHSgW8uoUD0Q",
+        "createdTime":1655287149528,
+        "userUsername":"Angela",
+        "id":"5slnWEQWwm6dHjDi6oiH",
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "userId":"qe2QqIlOkeWsbljfeF3MsxpSJ9i2"
+      }
+    ],
+    "bets":[
+      {
+        "outcome":"0",
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "fees":{
+          "liquidityFee":0,
+          "creatorFee":0,
+          "platformFee":0
+        },
+        "isAnte":true,
+        "shares":100,
+        "probAfter":1,
+        "amount":100,
+        "userId":"IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
+        "createdTime":1655258914863,
+        "probBefore":0,
+        "id":"2jNZqnwoEQL7WDTTAWDP"
+      },
+      {
+        "shares":173.20508075688772,
+        "fees":{
+          "platformFee":0,
+          "liquidityFee":0,
+          "creatorFee":0
+        },
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "probBefore":0,
+        "createdTime":1655258941573,
+        "loanAmount":0,
+        "userId":"qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
+        "amount":100,
+        "outcome":"1",
+        "probAfter":0.75,
+        "id":"xuc3JoiNkE8lXPh15mUb"
+      },
+      {
+        "userId":"y1hb6k7txdZPV5mgyxPFApZ7nQl2",
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "loanAmount":0,
+        "probAfter":0.009925496893641248,
+        "id":"8TBlzPtOdO0q5BgSyRbi",
+        "createdTime":1655261198074,
+        "shares":20.024984394500787,
+        "amount":1,
+        "outcome":"2",
+        "probBefore":0,
+        "fees":{
+          "liquidityFee":0,
+          "creatorFee":0,
+          "platformFee":0
+        }
+      },
+      {
+        "probAfter":0.00987648269777473,
+        "outcome":"3",
+        "id":"9vdwes6s9QxbYZUBhHs4",
+        "createdTime":1655263226587,
+        "shares":20.074859899884732,
+        "amount":1,
+        "loanAmount":0,
+        "fees":{
+          "liquidityFee":0,
+          "platformFee":0,
+          "creatorFee":0
+        },
+        "userId":"jbgplxty4kUKIa1MmgZk22byJq03",
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "probBefore":0
+      },
+      {
+        "createdTime":1655264793224,
+        "fees":{
+          "creatorFee":0,
+          "liquidityFee":0,
+          "platformFee":0
+        },
+        "probAfter":0.09211463154147384,
+        "amount":10,
+        "id":"BehiSGgk1wAkIWz1a8L4",
+        "userId":"5LZ4LgYuySdL1huCWe7bti02ghx2",
+        "contractId":"lEoqtnDgJzft6apSKzYK",
+        "loanAmount":0,
+        "probBefore":0,
+        "outcome":"4",
+        "shares":64.34283176858165
       }
     ]
   }
