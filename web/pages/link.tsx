@@ -38,6 +38,11 @@ export default function LinkPage() {
   })
   const links = useUserManalinks(user?.id ?? '')
   const manalinkTxns = useManalinkTxns(user?.id ?? '')
+  const outstandingLinks = links.filter(
+    (l) =>
+      (l.maxUses == null || l.claimedUserIds.length < l.maxUses) &&
+      (l.expiresTime == null || l.expiresTime > Date.now())
+  )
 
   if (user == null) {
     return null
@@ -50,125 +55,126 @@ export default function LinkPage() {
         description="Send mana to anyone via link!"
         url="/send"
       />
-
-      <Title text="Create a manalink" />
-      <p>
-        You can use manalinks to send mana to other people, even if they
-        don&apos;t yet have a Manifold account.
-      </p>
-      <form
-        className="my-5"
-        onSubmit={async (e) => {
-          e.preventDefault()
-          await createManalink({
-            fromId: user.id,
-            amount: newManalink.amount,
-            expiresTime: newManalink.expiresTime,
-            maxUses: newManalink.maxUses,
-            message: newManalink.message,
-          })
-        }}
-      >
-        <div className="flex flex-row flex-wrap gap-x-5 gap-y-2">
-          <div className="form-control flex-auto">
-            <label className="label">Amount</label>
-            <input
-              className="input"
-              type="number"
-              value={newManalink.amount}
+      <Col className="w-full px-8">
+        <Title text="Create a manalink" />
+        <p>
+          You can use manalinks to send mana to other people, even if they
+          don&apos;t yet have a Manifold account.
+        </p>
+        <form
+          className="my-5"
+          onSubmit={async (e) => {
+            e.preventDefault()
+            await createManalink({
+              fromId: user.id,
+              amount: newManalink.amount,
+              expiresTime: newManalink.expiresTime,
+              maxUses: newManalink.maxUses,
+              message: newManalink.message,
+            })
+          }}
+        >
+          <div className="flex flex-row flex-wrap gap-x-5 gap-y-2">
+            <div className="form-control flex-auto">
+              <label className="label">Amount</label>
+              <input
+                className="input"
+                type="number"
+                value={newManalink.amount}
+                onChange={(e) =>
+                  setNewManalink((m) => {
+                    return { ...m, amount: parseInt(e.target.value) }
+                  })
+                }
+              ></input>
+            </div>
+            <div className="form-control flex-auto">
+              <label className="label">Uses</label>
+              <input
+                className="input"
+                type="number"
+                value={newManalink.maxUses ?? ''}
+                onChange={(e) =>
+                  setNewManalink((m) => {
+                    return { ...m, maxUses: parseInt(e.target.value) }
+                  })
+                }
+              ></input>
+            </div>
+            <div className="form-control flex-auto">
+              <label className="label">Expires at</label>
+              <input
+                value={
+                  newManalink.expiresTime != null
+                    ? dayjs(newManalink.expiresTime).format('YYYY-MM-DDTHH:mm')
+                    : ''
+                }
+                className="input"
+                type="datetime-local"
+                onChange={(e) => {
+                  setNewManalink((m) => {
+                    console.log(e.target.value)
+                    console.log(
+                      dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
+                    )
+                    return {
+                      ...m,
+                      expiresTime: e.target.value
+                        ? dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
+                        : null,
+                    }
+                  })
+                }}
+              ></input>
+            </div>
+          </div>
+          <div className="form-control w-full">
+            <label className="label">Message</label>
+            <Textarea
+              placeholder={`From ${user.name}`}
+              className="input input-bordered resize-none"
+              autoFocus
+              value={newManalink.message}
               onChange={(e) =>
                 setNewManalink((m) => {
-                  return { ...m, amount: parseInt(e.target.value) }
+                  return { ...m, message: e.target.value }
                 })
               }
-            ></input>
+            />
           </div>
-          <div className="form-control flex-auto">
-            <label className="label">Uses</label>
-            <input
-              className="input"
-              type="number"
-              value={newManalink.maxUses ?? ''}
-              onChange={(e) =>
-                setNewManalink((m) => {
-                  return { ...m, maxUses: parseInt(e.target.value) }
-                })
-              }
-            ></input>
-          </div>
-          <div className="form-control flex-auto">
-            <label className="label">Expires at</label>
-            <input
-              value={
-                newManalink.expiresTime != null
-                  ? dayjs(newManalink.expiresTime).format('YYYY-MM-DDTHH:mm')
-                  : ''
-              }
-              className="input"
-              type="datetime-local"
-              onChange={(e) => {
-                setNewManalink((m) => {
-                  console.log(e.target.value)
-                  console.log(
-                    dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
-                  )
-                  return {
-                    ...m,
-                    expiresTime: e.target.value
-                      ? dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
-                      : null,
-                  }
-                })
-              }}
-            ></input>
-          </div>
-        </div>
-        <div className="form-control w-full">
-          <label className="label">Message</label>
-          <Textarea
-            placeholder={`From ${user.name}`}
-            className="input input-bordered resize-none"
-            autoFocus
-            value={newManalink.message}
-            onChange={(e) =>
-              setNewManalink((m) => {
-                return { ...m, message: e.target.value }
-              })
-            }
-          />
-        </div>
-        <input
-          type="submit"
-          className="btn mt-5 max-w-xs"
-          value="Create"
-        ></input>
-      </form>
+          <input
+            type="submit"
+            className="btn mt-5 max-w-xs"
+            value="Create"
+          ></input>
+        </form>
 
-      <Title text="Preview" />
-      <p>This is what the person you send the link to will see:</p>
-      <ManalinkCard
-        className="my-5"
-        defaultMessage={`From ${user.name}`}
-        info={newManalink}
-        isClaiming={false}
-      />
-      <Title text="Your links" />
-      {links.length > 0 ? (
-        <LinksTable links={links} />
-      ) : (
-        <p>You haven&apos;t yet created any manalinks.</p>
-      )}
+        <Title text="Preview" />
+        <p>This is what the person you send the link to will see:</p>
+        <ManalinkCard
+          className="my-5"
+          defaultMessage={`From ${user.name}`}
+          info={newManalink}
+          isClaiming={false}
+        />
+        <Title text="Your outstanding links" />
+        {links.length > 0 ? (
+          <LinksTable links={outstandingLinks} />
+        ) : (
+          <p>You don&apos;t currently have any outstanding manalinks.</p>
+        )}
 
-      {manalinkTxns.length > 0 && (
-        <Col className="mt-12">
-          <h1 className="mb-4 text-xl font-semibold text-gray-900">
-            Claimed links
-          </h1>
-          {manalinkTxns.map((txn) => (
-            <ClaimDescription txn={txn} key={txn.id} />
-          ))}
-        </Col>
-      )}
+        {manalinkTxns.length > 0 && (
+          <Col className="mt-12">
+            <h1 className="mb-4 text-xl font-semibold text-gray-900">
+              Claimed links
+            </h1>
+            {manalinkTxns.map((txn) => (
+              <ClaimDescription txn={txn} key={txn.id} />
+            ))}
+          </Col>
+        )}
+      </Col>
     </Page>
   )
 }
