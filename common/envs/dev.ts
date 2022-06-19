@@ -12,4 +12,11 @@ export const DEV_CONFIG: EnvConfig = {
     appId: '1:134303100058:web:27f9ea8b83347251f80323',
     measurementId: 'G-YJC9E37P37',
   },
+  functionEndpoints: {
+    placebet: 'https://placebet-w3txbmd3ba-uc.a.run.app',
+    sellshares: 'https://sellshares-w3txbmd3ba-uc.a.run.app',
+    sellbet: 'https://sellbet-w3txbmd3ba-uc.a.run.app',
+    createmarket: 'https://createmarket-w3txbmd3ba-uc.a.run.app',
+  },
+  amplitudeApiKey: 'fd8cbfd964b9a205b8678a39faae71b3',
 }

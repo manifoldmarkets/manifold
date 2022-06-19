@@ -1,18 +1,20 @@
 import * as admin from 'firebase-admin'
-import * as functions from 'firebase-functions'
-import * as Cors from 'cors'
+import { logger } from 'firebase-functions/v2'
+import { HttpsOptions, onRequest, Request } from 'firebase-functions/v2/https'
+import { log } from './utils'
 import { z } from 'zod'
 
-import { User, PrivateUser } from '../../common/user'
+import { PrivateUser } from '../../common/user'
 import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
 } from '../../common/envs/constants'
 
 type Output = Record<string, unknown>
-type Request = functions.https.Request
-type Response = functions.Response
-type AuthedUser = [User, PrivateUser]
+type AuthedUser = {
+  uid: string
+  creds: JwtCredentials | (KeyCredentials & { privateUser: PrivateUser })
+}
 type Handler = (req: Request, user: AuthedUser) => Promise<Output>
 type JwtCredentials = { kind: 'jwt'; data: admin.auth.DecodedIdToken }
 type KeyCredentials = { kind: 'key'; data: string }
@@ -27,8 +29,13 @@ export class APIError {
     this.msg = msg
     this.details = details
   }
-  toJson() {}
 }
+
+const auth = admin.auth()
+const firestore = admin.firestore()
+const privateUsers = firestore.collection(
+  'private-users'
+) as admin.firestore.CollectionReference<PrivateUser>
 
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
   const authHeader = req.get('Authorization')
@@ -44,11 +51,10 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
   switch (scheme) {
     case 'Bearer':
       try {
-        const jwt = await admin.auth().verifyIdToken(payload)
-        return { kind: 'jwt', data: jwt }
+        return { kind: 'jwt', data: await auth.verifyIdToken(payload) }
       } catch (err) {
         // This is somewhat suspicious, so get it into the firebase console
-        functions.logger.error('Error verifying Firebase JWT: ', err)
+        logger.error('Error verifying Firebase JWT: ', err)
         throw new APIError(403, 'Error validating token.')
       }
     case 'Key':
@@ -59,25 +65,12 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
 }
 
 export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
-  const firestore = admin.firestore()
-  const users = firestore.collection('users')
-  const privateUsers = firestore.collection('private-users')
   switch (creds.kind) {
     case 'jwt': {
-      const { user_id } = creds.data
-      if (typeof user_id !== 'string') {
+      if (typeof creds.data.user_id !== 'string') {
         throw new APIError(403, 'JWT must contain Manifold user ID.')
       }
-      const [userSnap, privateUserSnap] = await Promise.all([
-        users.doc(user_id).get(),
-        privateUsers.doc(user_id).get(),
-      ])
-      if (!userSnap.exists || !privateUserSnap.exists) {
-        throw new APIError(403, 'No user exists with the provided ID.')
-      }
-      const user = userSnap.data() as User
-      const privateUser = privateUserSnap.data() as PrivateUser
-      return [user, privateUser]
+      return { uid: creds.data.user_id, creds }
     }
     case 'key': {
       const key = creds.data
@@ -85,33 +78,12 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
       if (privateUserQ.empty) {
         throw new APIError(403, `No private user exists with API key ${key}.`)
       }
-      const privateUserSnap = privateUserQ.docs[0]
-      const userSnap = await users.doc(privateUserSnap.id).get()
-      if (!userSnap.exists) {
-        throw new APIError(403, `No user exists with ID ${privateUserSnap.id}.`)
-      }
-      const user = userSnap.data() as User
-      const privateUser = privateUserSnap.data() as PrivateUser
-      return [user, privateUser]
+      const privateUser = privateUserQ.docs[0].data()
+      return { uid: privateUser.id, creds: { privateUser, ...creds } }
     }
     default:
       throw new APIError(500, 'Invalid credential type.')
   }
-}
-
-export const applyCors = (
-  req: Request,
-  res: Response,
-  params: Cors.CorsOptions
-) => {
-  return new Promise((resolve, reject) => {
-    Cors(params)(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result)
-      }
-      return resolve(result)
-    })
-  })
 }
 
 export const zTimestamp = () => {
@@ -135,18 +107,21 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
   }
 }
 
+const DEFAULT_OPTS: HttpsOptions = {
+  minInstances: 1,
+  cors: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
+}
+
 export const newEndpoint = (methods: [string], fn: Handler) =>
-  functions.runWith({ minInstances: 1 }).https.onRequest(async (req, res) => {
-    await applyCors(req, res, {
-      origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
-      methods: methods,
-    })
+  onRequest(DEFAULT_OPTS, async (req, res) => {
+    log('Request processing started.')
     try {
       if (!methods.includes(req.method)) {
         const allowed = methods.join(', ')
         throw new APIError(405, `This endpoint supports only ${allowed}.`)
       }
       const authedUser = await lookupUser(await parseCredentials(req))
+      log('User credentials processed.')
       res.status(200).json(await fn(req, authedUser))
     } catch (e) {
       if (e instanceof APIError) {
@@ -156,7 +131,7 @@ export const newEndpoint = (methods: [string], fn: Handler) =>
         }
         res.status(e.code).json(output)
       } else {
-        functions.logger.error(e)
+        logger.error(e)
         res.status(500).json({ message: 'An unknown error occurred.' })
       }
     }

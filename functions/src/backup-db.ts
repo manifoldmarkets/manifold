@@ -24,9 +24,12 @@ const bucket = 'gs://manifold-firestore-backup'
 
 export const backupDb = functions.pubsub
   .schedule('every 24 hours')
-  .onRun((context) => {
+  .onRun((_context) => {
     const projectId = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT
-    const databaseName = client.databasePath(projectId!, '(default)')
+    if (projectId == null) {
+      throw new Error('No project ID environment variable set.')
+    }
+    const databaseName = client.databasePath(projectId, '(default)')
 
     return client
       .exportDocuments({

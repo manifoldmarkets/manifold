@@ -3,7 +3,7 @@ import { Comment } from 'common/comment'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
-import { minBy, maxBy, groupBy, partition, sumBy } from 'lodash'
+import { minBy, maxBy, groupBy, partition, sumBy, Dictionary } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -24,17 +24,28 @@ import { Col } from 'web/components/layout/col'
 import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
+import { track } from 'web/lib/service/analytics'
+import { Tipper } from '../tipper'
+import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 
 export function FeedCommentThread(props: {
   contract: Contract
   comments: Comment[]
+  tips: CommentTipMap
   parentComment: Comment
   bets: Bet[]
   truncate?: boolean
   smallAvatar?: boolean
 }) {
-  const { contract, comments, bets, truncate, smallAvatar, parentComment } =
-    props
+  const {
+    contract,
+    comments,
+    bets,
+    tips,
+    truncate,
+    smallAvatar,
+    parentComment,
+  } = props
   const [showReply, setShowReply] = useState(false)
   const [replyToUsername, setReplyToUsername] = useState('')
   const betsByUserId = groupBy(bets, (bet) => bet.userId)
@@ -54,15 +65,80 @@ export function FeedCommentThread(props: {
     if (showReply && inputRef) inputRef.focus()
   }, [inputRef, showReply])
   return (
-    <div className={'flex-col pr-1'}>
+    <div className={'w-full flex-col pr-1'}>
+      <span
+        className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+        aria-hidden="true"
+      />
+      <CommentRepliesList
+        contract={contract}
+        commentsList={commentsList}
+        betsByUserId={betsByUserId}
+        tips={tips}
+        smallAvatar={smallAvatar}
+        truncate={truncate}
+        bets={bets}
+        scrollAndOpenReplyInput={scrollAndOpenReplyInput}
+      />
+      {showReply && (
+        <div className={'-pb-2 ml-6 flex flex-col pt-5'}>
+          <span
+            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            aria-hidden="true"
+          />
+          <CommentInput
+            contract={contract}
+            betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
+            commentsByCurrentUser={comments.filter(
+              (c) => c.userId === user?.id
+            )}
+            parentCommentId={parentComment.id}
+            replyToUsername={replyToUsername}
+            parentAnswerOutcome={comments[0].answerOutcome}
+            setRef={setInputRef}
+            onSubmitComment={() => setShowReply(false)}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function CommentRepliesList(props: {
+  contract: Contract
+  commentsList: Comment[]
+  betsByUserId: Dictionary<Bet[]>
+  tips: CommentTipMap
+  scrollAndOpenReplyInput: (comment: Comment) => void
+  bets: Bet[]
+  treatFirstIndexEqually?: boolean
+  smallAvatar?: boolean
+  truncate?: boolean
+}) {
+  const {
+    contract,
+    commentsList,
+    betsByUserId,
+    tips,
+    truncate,
+    smallAvatar,
+    bets,
+    scrollAndOpenReplyInput,
+    treatFirstIndexEqually,
+  } = props
+  return (
+    <>
       {commentsList.map((comment, commentIdx) => (
         <div
           key={comment.id}
           id={comment.id}
-          className={clsx('relative', commentIdx === 0 ? '' : 'mt-3 ml-6')}
+          className={clsx(
+            'relative',
+            !treatFirstIndexEqually && commentIdx === 0 ? '' : 'mt-3 ml-6'
+          )}
         >
           {/*draw a gray line from the comment to the left:*/}
-          {commentIdx != 0 && (
+          {(treatFirstIndexEqually || commentIdx != 0) && (
             <span
               className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
               aria-hidden="true"
@@ -71,6 +147,7 @@ export function FeedCommentThread(props: {
           <FeedComment
             contract={contract}
             comment={comment}
+            tips={tips[comment.id]}
             betsBySameUser={betsByUserId[comment.userId] ?? []}
             onReplyClick={scrollAndOpenReplyInput}
             probAtCreatedTime={
@@ -87,30 +164,14 @@ export function FeedCommentThread(props: {
           />
         </div>
       ))}
-      {showReply && (
-        <div className={'-pb-2 ml-6 flex flex-col pt-5'}>
-          <span
-            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
-            aria-hidden="true"
-          />
-          <CommentInput
-            contract={contract}
-            betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
-            commentsByCurrentUser={comments}
-            parentComment={parentComment}
-            replyToUsername={replyToUsername}
-            answerOutcome={comments[0].answerOutcome}
-            setRef={setInputRef}
-          />
-        </div>
-      )}
-    </div>
+    </>
   )
 }
 
 export function FeedComment(props: {
   contract: Contract
   comment: Comment
+  tips: CommentTips
   betsBySameUser: Bet[]
   probAtCreatedTime?: number
   truncate?: boolean
@@ -120,6 +181,7 @@ export function FeedComment(props: {
   const {
     contract,
     comment,
+    tips,
     betsBySameUser,
     probAtCreatedTime,
     truncate,
@@ -200,7 +262,8 @@ export function FeedComment(props: {
             )}
           </>
           <CopyLinkDateTimeComponent
-            contract={contract}
+            contractCreatorUsername={contract.creatorUsername}
+            contractSlug={contract.slug}
             createdTime={createdTime}
             elementId={comment.id}
           />
@@ -210,14 +273,17 @@ export function FeedComment(props: {
           moreHref={contractPath(contract)}
           shouldTruncate={truncate}
         />
-        {onReplyClick && (
-          <button
-            className={'text-xs font-bold text-gray-500 hover:underline'}
-            onClick={() => onReplyClick(comment)}
-          >
-            Reply
-          </button>
-        )}
+        <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
+          <Tipper comment={comment} tips={tips ?? {}} />
+          {onReplyClick && (
+            <button
+              className="font-bold hover:underline"
+              onClick={() => onReplyClick(comment)}
+            >
+              Reply
+            </button>
+          )}
+        </Row>
       </div>
     </Row>
   )
@@ -229,7 +295,13 @@ export function getMostRecentCommentableBet(
   user?: User | null,
   answerOutcome?: string
 ) {
-  return betsByCurrentUser
+  let sortedBetsByCurrentUser = betsByCurrentUser.sort(
+    (a, b) => b.createdTime - a.createdTime
+  )
+  if (answerOutcome) {
+    sortedBetsByCurrentUser = sortedBetsByCurrentUser.slice(0, 1)
+  }
+  return sortedBetsByCurrentUser
     .filter((bet) => {
       if (
         canCommentOnBet(bet, user) &&
@@ -238,12 +310,10 @@ export function getMostRecentCommentableBet(
         )
       ) {
         if (!answerOutcome) return true
-        // If we're in free response, don't allow commenting on ante bet
         return answerOutcome === bet.outcome
       }
       return false
     })
-    .sort((b1, b2) => b1.createdTime - b2.createdTime)
     .pop()
 }
 
@@ -266,32 +336,33 @@ export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
   commentsByCurrentUser: Comment[]
-  // Tie a comment to an free response answer outcome
-  answerOutcome?: string
-  // Tie a comment to another comment
-  parentComment?: Comment
   replyToUsername?: string
   setRef?: (ref: HTMLTextAreaElement) => void
+  // Reply to a free response answer
+  parentAnswerOutcome?: string
+  // Reply to another comment
+  parentCommentId?: string
+  onSubmitComment?: () => void
 }) {
   const {
     contract,
     betsByCurrentUser,
     commentsByCurrentUser,
-    answerOutcome,
-    parentComment,
+    parentAnswerOutcome,
+    parentCommentId,
     replyToUsername,
+    onSubmitComment,
     setRef,
   } = props
   const user = useUser()
   const [comment, setComment] = useState('')
-  const [focused, setFocused] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const mostRecentCommentableBet = getMostRecentCommentableBet(
     betsByCurrentUser,
     commentsByCurrentUser,
     user,
-    answerOutcome
+    parentAnswerOutcome
   )
   const { id } = mostRecentCommentableBet || { id: undefined }
 
@@ -303,6 +374,7 @@ export function CommentInput(props: {
 
   async function submitComment(betId: string | undefined) {
     if (!user) {
+      track('sign in to comment')
       return await firebaseLogin()
     }
     if (!comment || isSubmitting) return
@@ -312,11 +384,11 @@ export function CommentInput(props: {
       comment,
       user,
       betId,
-      answerOutcome,
-      parentComment?.id
+      parentAnswerOutcome,
+      parentCommentId
     )
+    onSubmitComment?.()
     setComment('')
-    setFocused(false)
     setIsSubmitting(false)
   }
 
@@ -325,8 +397,6 @@ export function CommentInput(props: {
     Date.now(),
     betsByCurrentUser
   )
-
-  const shouldCollapseAfterClickOutside = false
 
   const isNumeric = contract.outcomeType === 'NUMERIC'
 
@@ -373,97 +443,67 @@ export function CommentInput(props: {
                 )}
             </div>
 
-            <Row className="grid grid-cols-8 gap-1.5 text-gray-700">
-              <Col
+            <Row className="gap-1.5 text-gray-700">
+              <Textarea
+                ref={setRef}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
                 className={clsx(
-                  'col-span-8 sm:col-span-6',
-                  !user && 'col-span-8'
+                  'textarea textarea-bordered w-full resize-none'
                 )}
-              >
-                <Textarea
-                  ref={setRef}
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className={clsx('textarea textarea-bordered resize-none')}
-                  placeholder={
-                    parentComment || answerOutcome
-                      ? 'Write a reply... '
-                      : 'Write a comment...'
+                // Make room for floating submit button.
+                style={{ paddingRight: 48 }}
+                placeholder={
+                  parentCommentId || parentAnswerOutcome
+                    ? 'Write a reply... '
+                    : 'Write a comment...'
+                }
+                autoFocus={false}
+                maxLength={MAX_COMMENT_LENGTH}
+                disabled={isSubmitting}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault()
+                    submitComment(id)
+                    e.currentTarget.blur()
                   }
-                  autoFocus={focused}
-                  rows={focused ? 3 : 1}
-                  onFocus={() => setFocused(true)}
-                  onBlur={() =>
-                    shouldCollapseAfterClickOutside && setFocused(false)
-                  }
-                  maxLength={MAX_COMMENT_LENGTH}
-                  disabled={isSubmitting}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                      e.preventDefault()
-                      submitComment(id)
-                      e.currentTarget.blur()
-                    }
-                  }}
-                />
-              </Col>
-              {!user && (
-                <Col
-                  className={clsx(
-                    'col-span-8 sm:col-span-2',
-                    focused ? 'justify-end' : 'justify-center'
-                  )}
-                >
-                  <button
-                    className={
-                      'btn btn-outline btn-sm text-transform: capitalize'
-                    }
-                    onClick={() => submitComment(id)}
-                  >
-                    Sign in to Comment
-                  </button>
-                </Col>
-              )}
+                }}
+              />
 
-              <Col
-                className={clsx(
-                  'col-span-1 sm:col-span-2',
-                  focused ? 'justify-end' : 'justify-center'
-                )}
-              >
+              <Col className={clsx('justify-end')}>
                 {user && !isSubmitting && (
                   <button
                     className={clsx(
-                      'btn btn-ghost btn-sm block flex flex-row capitalize',
-                      'absolute bottom-4 right-1 col-span-1',
-                      parentComment ? ' bottom-6 right-2.5' : '',
-                      'sm:relative sm:bottom-0 sm:right-0 sm:col-span-2',
-                      focused && comment
-                        ? 'sm:btn-outline'
-                        : 'pointer-events-none text-gray-500'
+                      'btn btn-ghost btn-sm absolute right-2 flex-row pl-2 capitalize',
+                      parentCommentId || parentAnswerOutcome
+                        ? ' bottom-4'
+                        : ' bottom-2',
+                      !comment && 'pointer-events-none text-gray-500'
                     )}
                     onClick={() => {
-                      if (!focused) return
-                      else {
-                        submitComment(id)
-                      }
+                      submitComment(id)
                     }}
                   >
-                    <span className={'hidden sm:block'}>
-                      {parentComment || answerOutcome ? 'Reply' : 'Comment'}
-                    </span>
-                    {focused && (
-                      <PaperAirplaneIcon
-                        className={'m-0 min-w-[22px] rotate-90 p-0 sm:hidden'}
-                        height={25}
-                      />
-                    )}
+                    <PaperAirplaneIcon
+                      className={'m-0 min-w-[22px] rotate-90 p-0 '}
+                      height={25}
+                    />
                   </button>
                 )}
                 {isSubmitting && (
                   <LoadingIndicator spinnerClassName={'border-gray-500'} />
                 )}
               </Col>
+            </Row>
+            <Row>
+              {!user && (
+                <button
+                  className={'btn btn-outline btn-sm mt-2 normal-case'}
+                  onClick={() => submitComment(id)}
+                >
+                  Sign in to comment
+                </button>
+              )}
             </Row>
           </div>
         </div>

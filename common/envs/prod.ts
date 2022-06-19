@@ -1,6 +1,14 @@
+export type V2CloudFunction =
+  | 'placebet'
+  | 'sellbet'
+  | 'sellshares'
+  | 'createmarket'
+
 export type EnvConfig = {
   domain: string
   firebaseConfig: FirebaseConfig
+  functionEndpoints: Record<V2CloudFunction, string>
+  amplitudeApiKey?: string
 
   // Access controls
   adminEmails: string[]
@@ -27,6 +35,8 @@ type FirebaseConfig = {
 
 export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
+  amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
+
   firebaseConfig: {
     apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
     authDomain: 'mantic-markets.firebaseapp.com',
@@ -36,6 +46,12 @@ export const PROD_CONFIG: EnvConfig = {
     messagingSenderId: '128925704902',
     appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
     measurementId: 'G-SSFK1Q138D',
+  },
+  functionEndpoints: {
+    placebet: 'https://placebet-nggbo3neva-uc.a.run.app',
+    sellshares: 'https://sellshares-nggbo3neva-uc.a.run.app',
+    sellbet: 'https://sellbet-nggbo3neva-uc.a.run.app',
+    createmarket: 'https://createmarket-nggbo3neva-uc.a.run.app',
   },
   adminEmails: [
     'akrolsmir@gmail.com', // Austin

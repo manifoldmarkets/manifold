@@ -6,7 +6,7 @@ import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
 import { useUser } from 'web/hooks/use-user'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
-import { createContract } from 'web/lib/firebase/api-call'
+import { createMarket } from 'web/lib/firebase/api-call'
 import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
@@ -21,14 +21,19 @@ import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-t
 import { removeUndefinedProps } from 'common/util/object'
 import { CATEGORIES } from 'common/categories'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
+import { track } from 'web/lib/service/analytics'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
 
+  useTracking('view create page')
+
   return (
     <Page>
       <div className="mx-auto w-full max-w-2xl">
-        <div className="rounded-lg  px-6 py-4">
+        <div className="rounded-lg px-6 py-4 sm:py-0">
           <form>
             <div className="form-control w-full">
               <label className="label">
@@ -47,6 +52,7 @@ export default function Create() {
               />
             </div>
           </form>
+          <Spacer h={6} />
           <NewContract question={question} />
         </div>
       </div>
@@ -55,20 +61,16 @@ export default function Create() {
 }
 
 // Allow user to create a new contract
-export function NewContract(props: { question: string; tag?: string }) {
-  const { question, tag } = props
+export function NewContract(props: { question: string }) {
+  const { question } = props
   const creator = useUser()
 
   useEffect(() => {
     if (creator === null) router.push('/')
   }, [creator])
 
-  useEffect(() => {
-    createContract({}).catch(() => {}) // warm up function
-  }, [])
-
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
-  const [initialProb, setInitialProb] = useState(50)
+  const [initialProb] = useState(50)
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
   const [description, setDescription] = useState('')
@@ -77,9 +79,12 @@ export function NewContract(props: { question: string; tag?: string }) {
   // const [tagText, setTagText] = useState<string>(tag ?? '')
   // const tags = parseWordsAsTags(tagText)
 
-  const [ante, setAnte] = useState(FIXED_ANTE)
+  const [ante, _setAnte] = useState(FIXED_ANTE)
 
   const mustWaitForDailyFreeMarketStatus = useHasCreatedContractToday(creator)
+  const isFree =
+    mustWaitForDailyFreeMarketStatus != 'loading' &&
+    !mustWaitForDailyFreeMarketStatus
 
   // useEffect(() => {
   //   if (ante === null && creator) {
@@ -93,7 +98,6 @@ export function NewContract(props: { question: string; tag?: string }) {
   const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
   const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
   const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
-  const [probErrorText, setProbErrorText] = useState('')
   const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -107,6 +111,9 @@ export function NewContract(props: { question: string; tag?: string }) {
   const max = maxString ? parseFloat(maxString) : undefined
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
+
+  const hasUnsavedChanges = !isSubmitting && Boolean(question || description)
+  useWarnUnsavedChanges(hasUnsavedChanges)
 
   const isValid =
     (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&
@@ -140,7 +147,7 @@ export function NewContract(props: { question: string; tag?: string }) {
     setIsSubmitting(true)
 
     try {
-      const result = await createContract(
+      const result = await createMarket(
         removeUndefinedProps({
           question,
           outcomeType,
@@ -153,6 +160,14 @@ export function NewContract(props: { question: string; tag?: string }) {
           max,
         })
       )
+
+      track('create market', {
+        slug: result.slug,
+        initialProb,
+        category,
+        isFree,
+      })
+
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.log('error creating contract', e)
@@ -168,8 +183,8 @@ export function NewContract(props: { question: string; tag?: string }) {
 
   return (
     <div>
-      <label className="label mt-1">
-        <span className="mt-1">Answer type</span>
+      <label className="label">
+        <span className="mb-1">Answer type</span>
       </label>
       <ChoicesToggleGroup
         currentChoice={outcomeType}
@@ -189,60 +204,12 @@ export function NewContract(props: { question: string; tag?: string }) {
         className={'col-span-4'}
       />
       {marketInfoText && (
-        <div className="mt-2 ml-1 text-sm text-indigo-700">
+        <div className="mt-3 ml-1 text-sm text-indigo-700">
           {marketInfoText}
         </div>
       )}
-      <Spacer h={4} />
 
-      {outcomeType === 'BINARY' && (
-        <div className="form-control">
-          <Row className="label justify-start">
-            <span className="mb-1">How likely is it to happen?</span>
-          </Row>
-          <Row className={'justify-start'}>
-            <ChoicesToggleGroup
-              currentChoice={initialProb}
-              setChoice={(option) => {
-                setProbErrorText('')
-                setInitialProb(option as number)
-              }}
-              choicesMap={{
-                Unlikely: 25,
-                'Not Sure': 50,
-                Likely: 75,
-              }}
-              isSubmitting={isSubmitting}
-              className={'col-span-4 sm:col-span-3'}
-            >
-              <Row className={'col-span-3 items-center justify-start'}>
-                <input
-                  type="number"
-                  value={initialProb}
-                  className={
-                    'input-bordered input-md max-w-[100px] rounded-md border-gray-300 pr-2 text-lg'
-                  }
-                  min={5}
-                  max={95}
-                  disabled={isSubmitting}
-                  onChange={(e) => {
-                    // show error if prob is less than 5 or greater than 95:
-                    const prob = parseInt(e.target.value)
-                    setInitialProb(prob)
-                    if (prob < 5 || prob > 95)
-                      setProbErrorText('Probability must be between 5% and 95%')
-                    else setProbErrorText('')
-                  }}
-                />
-                <span className={'ml-1'}>%</span>
-              </Row>
-            </ChoicesToggleGroup>
-          </Row>
-          {probErrorText && (
-            <div className="text-error mt-2 ml-1 text-sm">{probErrorText}</div>
-          )}
-        </div>
-      )}
+      <Spacer h={6} />
 
       {outcomeType === 'NUMERIC' && (
         <div className="form-control items-start">
@@ -278,27 +245,6 @@ export function NewContract(props: { question: string; tag?: string }) {
         </div>
       )}
 
-      <Spacer h={4} />
-
-      <div className="form-control mb-1 items-start">
-        <label className="label mb-1 gap-2">
-          <span className="mb-1">Description</span>
-          <InfoTooltip text="Optional. Describe how you will resolve this question." />
-        </label>
-        <Textarea
-          className="textarea textarea-bordered w-full resize-none"
-          rows={3}
-          maxLength={MAX_DESCRIPTION_LENGTH}
-          placeholder={descriptionPlaceholder}
-          value={description}
-          disabled={isSubmitting}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => setDescription(e.target.value || '')}
-        />
-      </div>
-
-      <Spacer h={4} />
-
       <div className="form-control max-w-sm items-start">
         <label className="label gap-2">
           <span className="mb-1">Category</span>
@@ -318,11 +264,11 @@ export function NewContract(props: { question: string; tag?: string }) {
         </select>
       </div>
 
-      <Spacer h={4} />
+      <Spacer h={6} />
 
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
-          <span>Question closes in:</span>
+          <span>Question closes in</span>
           <InfoTooltip text="Betting will be halted after this time (local timezone)." />
         </label>
         <Row className={'w-full items-center gap-2'}>
@@ -365,65 +311,72 @@ export function NewContract(props: { question: string; tag?: string }) {
         </Row>
       </div>
 
-      <Spacer h={4} />
+      <Spacer h={6} />
 
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
-          <span>Cost</span>
-          {mustWaitForDailyFreeMarketStatus != 'loading' &&
-            mustWaitForDailyFreeMarketStatus && (
-              <InfoTooltip
-                text={`Cost to create your question. This amount is used to subsidize betting.`}
-              />
-            )}
+          <span className="mb-1">Description</span>
+          <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
-        {mustWaitForDailyFreeMarketStatus != 'loading' &&
-        !mustWaitForDailyFreeMarketStatus ? (
-          <div className="label-text text-primary pl-1">
-            <span className={'label-text text-neutral line-through '}>
-              {formatMoney(ante)}
-            </span>{' '}
-            FREE
-          </div>
-        ) : (
-          mustWaitForDailyFreeMarketStatus != 'loading' && (
-            <div className="label-text text-neutral pl-1">
-              {formatMoney(ante)}
-            </div>
-          )
-        )}
-        {mustWaitForDailyFreeMarketStatus != 'loading' &&
-          mustWaitForDailyFreeMarketStatus &&
-          ante > balance && (
-            <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-              <span className="mr-2 text-red-500">Insufficient balance</span>
-              <button
-                className="btn btn-xs btn-primary"
-                onClick={() => (window.location.href = '/add-funds')}
-              >
-                Add funds
-              </button>
-            </div>
-          )}
-
-        {/* <BuyAmountInput
-          amount={ante ?? undefined}
-          minimumAmount={MINIMUM_ANTE}
-          onChange={setAnte}
-          error={anteError}
-          setError={setAnteError}
+        <Textarea
+          className="textarea textarea-bordered w-full resize-none"
+          rows={3}
+          maxLength={MAX_DESCRIPTION_LENGTH}
+          placeholder={descriptionPlaceholder}
+          value={description}
           disabled={isSubmitting}
-          contractIdForLoan={undefined}
-        /> */}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => setDescription(e.target.value || '')}
+        />
       </div>
 
-      <Spacer h={4} />
+      <Spacer h={6} />
 
-      <div className="my-4 flex justify-end">
+      <Row className="items-end justify-between">
+        <div className="form-control mb-1 items-start">
+          <label className="label mb-1 gap-2">
+            <span>Cost</span>
+            {mustWaitForDailyFreeMarketStatus != 'loading' &&
+              mustWaitForDailyFreeMarketStatus && (
+                <InfoTooltip
+                  text={`Cost to create your question. This amount is used to subsidize betting.`}
+                />
+              )}
+          </label>
+          {mustWaitForDailyFreeMarketStatus != 'loading' &&
+          !mustWaitForDailyFreeMarketStatus ? (
+            <div className="label-text text-primary pl-1">
+              <span className={'label-text text-neutral line-through '}>
+                {formatMoney(ante)}
+              </span>{' '}
+              FREE
+            </div>
+          ) : (
+            mustWaitForDailyFreeMarketStatus != 'loading' && (
+              <div className="label-text text-neutral pl-1">
+                {formatMoney(ante)}
+              </div>
+            )
+          )}
+          {mustWaitForDailyFreeMarketStatus != 'loading' &&
+            mustWaitForDailyFreeMarketStatus &&
+            ante > balance && (
+              <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+                <span className="mr-2 text-red-500">Insufficient balance</span>
+                <button
+                  className="btn btn-xs btn-primary"
+                  onClick={() => (window.location.href = '/add-funds')}
+                >
+                  Get M$
+                </button>
+              </div>
+            )}
+        </div>
+
         <button
           type="submit"
           className={clsx(
-            'btn btn-primary capitalize',
+            'btn btn-primary normal-case',
             isSubmitting && 'loading disabled'
           )}
           disabled={isSubmitting || !isValid}
@@ -434,7 +387,7 @@ export function NewContract(props: { question: string; tag?: string }) {
         >
           {isSubmitting ? 'Creating...' : 'Create question'}
         </button>
-      </div>
+      </Row>
     </div>
   )
 }

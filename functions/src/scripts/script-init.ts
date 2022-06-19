@@ -64,6 +64,7 @@ export const initAdmin = (env?: string) => {
     return
   }
   console.log(`Initializing connection to ${env} Firebase...`)
+  /* eslint-disable-next-line @typescript-eslint/no-var-requires */
   const serviceAccount = require(keyPath)
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),

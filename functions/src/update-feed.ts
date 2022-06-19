@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { shuffle, sortBy } from 'lodash'
+import { flatten, shuffle, sortBy, uniq, zip, zipObject } from 'lodash'
 
 import { getValue, getValues } from './utils'
 import { Contract } from '../../common/contract'
@@ -31,7 +31,7 @@ const MAX_BATCHES = 50
 
 const getUserBatches = async () => {
   const users = shuffle(await getValues<User>(firestore.collection('users')))
-  let userBatches: User[][] = []
+  const userBatches: User[][] = []
   for (let i = 0; i < users.length; i += BATCH_SIZE) {
     userBatches.push(users.slice(i, i + BATCH_SIZE))
   }
@@ -67,15 +67,16 @@ export const updateFeedBatch = functions.https.onCall(
   async (data: { users: User[] }) => {
     const { users } = data
     const contracts = await getFeedContracts()
-
+    const feeds = await getNewFeeds(users, contracts)
     await Promise.all(
-      users.map(async (user) => {
-        const feed = await computeFeed(user, contracts)
-        await getUserCacheCollection(user).doc('feed').set({ feed })
-      })
+      zip(users, feeds).map(([user, feed]) =>
+        /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+        getUserCacheCollection(user!).doc('feed').set({ feed })
+      )
     )
   }
 )
+
 export const updateCategoryFeed = functions.https.onCall(
   async (data: { category: string }) => {
     const { category } = data
@@ -96,15 +97,27 @@ export const updateCategoryFeedBatch = functions.https.onCall(
   async (data: { users: User[]; category: string }) => {
     const { users, category } = data
     const contracts = await getTaggedContracts(category)
-
+    const feeds = await getNewFeeds(users, contracts)
     await Promise.all(
-      users.map(async (user) => {
-        const feed = await computeFeed(user, contracts)
-        await getUserCacheCollection(user).doc(`feed-${category}`).set({ feed })
-      })
+      zip(users, feeds).map(([user, feed]) =>
+        /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+        getUserCacheCollection(user!).doc(`feed-${category}`).set({ feed })
+      )
     )
   }
 )
+
+const getNewFeeds = async (users: User[], contracts: Contract[]) => {
+  const feeds = await Promise.all(users.map((u) => computeFeed(u, contracts)))
+  const contractIds = uniq(flatten(feeds).map((c) => c.id))
+  const data = await Promise.all(contractIds.map(getRecentBetsAndComments))
+  const dataByContractId = zipObject(contractIds, data)
+  return feeds.map((feed) =>
+    feed.map((contract) => {
+      return { contract, ...dataByContractId[contract.id] }
+    })
+  )
+}
 
 const getUserCacheCollection = (user: User) =>
   firestore.collection(`private-users/${user.id}/cache`)
@@ -135,14 +148,7 @@ export const computeFeed = async (user: User, contracts: Contract[]) => {
 
   // console.log(sortedContracts.map(([c, score]) => c.question + ': ' + score))
 
-  const feedContracts = sortedContracts
-    .slice(0, MAX_FEED_CONTRACTS)
-    .map(([c]) => c)
-
-  const feed = await Promise.all(
-    feedContracts.map((contract) => getRecentBetsAndComments(contract))
-  )
-  return feed
+  return sortedContracts.slice(0, MAX_FEED_CONTRACTS).map(([c]) => c)
 }
 
 function scoreContract(
@@ -197,18 +203,18 @@ function getActivityScore(contract: Contract, viewTime: number | undefined) {
   return isNew ? newMappedScore : mappedScore
 }
 
-function getLastViewedScore(viewTime: number | undefined) {
-  if (viewTime === undefined) {
-    return 1
-  }
+// function getLastViewedScore(viewTime: number | undefined) {
+//   if (viewTime === undefined) {
+//     return 1
+//   }
 
-  const daysAgo = (Date.now() - viewTime) / DAY_MS
+//   const daysAgo = (Date.now() - viewTime) / DAY_MS
 
-  if (daysAgo < 0.5) {
-    const frac = logInterpolation(0, 0.5, daysAgo)
-    return 0.5 + 0.25 * frac
-  }
+//   if (daysAgo < 0.5) {
+//     const frac = logInterpolation(0, 0.5, daysAgo)
+//     return 0.5 + 0.25 * frac
+//   }
 
-  const frac = logInterpolation(0.5, 14, daysAgo)
-  return 0.75 + 0.25 * frac
-}
+//   const frac = logInterpolation(0.5, 14, daysAgo)
+//   return 0.75 + 0.25 * frac
+// }

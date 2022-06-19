@@ -1,8 +1,8 @@
-import clsx from 'clsx'
 import { Fold } from 'common/fold'
 import { useFollowedFoldIds } from 'web/hooks/use-fold'
 import { useUser } from 'web/hooks/use-user'
 import { followFold, unfollowFold } from 'web/lib/firebase/folds'
+import { FollowButton } from '../follow-button'
 
 export function FollowFoldButton(props: { fold: Fold; className?: string }) {
   const { fold, className } = props
@@ -10,7 +10,7 @@ export function FollowFoldButton(props: { fold: Fold; className?: string }) {
   const user = useUser()
 
   const followedFoldIds = useFollowedFoldIds(user)
-  const following = followedFoldIds
+  const isFollowing = followedFoldIds
     ? followedFoldIds.includes(fold.id)
     : undefined
 
@@ -22,27 +22,12 @@ export function FollowFoldButton(props: { fold: Fold; className?: string }) {
     if (user) unfollowFold(fold, user)
   }
 
-  if (!user || following === undefined)
-    return (
-      <button className={clsx('btn btn-sm invisible', className)}>
-        Follow
-      </button>
-    )
-
-  if (following) {
-    return (
-      <button
-        className={clsx('btn btn-outline btn-sm', className)}
-        onClick={onUnfollow}
-      >
-        Following
-      </button>
-    )
-  }
-
   return (
-    <button className={clsx('btn btn-sm', className)} onClick={onFollow}>
-      Follow
-    </button>
+    <FollowButton
+      isFollowing={isFollowing}
+      onFollow={onFollow}
+      onUnfollow={onUnfollow}
+      className={className}
+    />
   )
 }

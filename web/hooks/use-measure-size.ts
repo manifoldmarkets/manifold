@@ -16,7 +16,7 @@ export function useListenElemSize<T extends HTMLElement>(
   debounceMs: number | undefined = undefined
 ) {
   const handleResize = useMemo(() => {
-    let updateSize = () => {
+    const updateSize = () => {
       if (elemRef.current) callback(getSize(elemRef.current))
     }
 
@@ -25,7 +25,7 @@ export function useListenElemSize<T extends HTMLElement>(
       : updateSize
   }, [callback, elemRef, debounceMs])
 
-  let elem = elemRef.current
+  const elem = elemRef.current
 
   useLayoutEffect(() => {
     if (!elemRef.current) return

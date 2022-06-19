@@ -1,7 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { FIREBASE_CONFIG } from 'common/envs/constants'
 import { promisify } from 'util'
 import { pipeline } from 'stream'
+import { getFunctionUrl } from 'web/lib/firebase/api-call'
+import { V2CloudFunction } from 'common/envs/prod'
 import fetch, { Headers, Response } from 'node-fetch'
 
 function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
@@ -32,16 +33,17 @@ function getProxiedResponseHeaders(res: Response, whitelist: string[]) {
   return result
 }
 
-export const fetchBackend = (req: NextApiRequest, endpoint: string) => {
-  const { projectId, region } = FIREBASE_CONFIG
-  const url = `https://${region}-${projectId}.cloudfunctions.net/${endpoint}`
+export const fetchBackend = (req: NextApiRequest, name: V2CloudFunction) => {
+  const url = getFunctionUrl(name)
   const headers = getProxiedRequestHeaders(req, [
     'Authorization',
     'Content-Length',
     'Content-Type',
     'Origin',
   ])
-  return fetch(url, { headers, method: req.method, body: req })
+  const hasBody = req.method != 'HEAD' && req.method != 'GET'
+  const opts = { headers, method: req.method, body: hasBody ? req : undefined }
+  return fetch(url, opts)
 }
 
 export const forwardResponse = async (

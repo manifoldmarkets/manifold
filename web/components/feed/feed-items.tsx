@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import {
   BanIcon,
   CheckIcon,
-  DotsVerticalIcon,
   LockClosedIcon,
   XIcon,
 } from '@heroicons/react/solid'
@@ -31,11 +30,10 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { FeedAnswerCommentGroup } from 'web/components/feed/feed-answer-comment-group'
 import {
   FeedCommentThread,
-  FeedComment,
   CommentInput,
   TruncatedComment,
 } from 'web/components/feed/feed-comments'
-import { FeedBet, FeedBetGroup } from 'web/components/feed/feed-bets'
+import { FeedBet } from 'web/components/feed/feed-bets'
 import { NumericContract } from 'common/contract'
 
 export function FeedItems(props: {
@@ -83,12 +81,8 @@ export function FeedItem(props: { item: ActivityItem }) {
       return <FeedQuestion {...item} />
     case 'description':
       return <FeedDescription {...item} />
-    case 'comment':
-      return <FeedComment {...item} />
     case 'bet':
       return <FeedBet {...item} />
-    case 'betgroup':
-      return <FeedBetGroup {...item} />
     case 'answergroup':
       return <FeedAnswerCommentGroup {...item} />
     case 'close':
@@ -115,10 +109,11 @@ export function FeedQuestion(props: {
     outcomeType,
     volume,
     createdTime,
+    isResolved,
   } = contract
   const { volumeLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
-  const isNew = createdTime > Date.now() - DAY_MS
+  const isNew = createdTime > Date.now() - DAY_MS && !isResolved
 
   return (
     <div className={'flex gap-2'}>
@@ -271,33 +266,6 @@ function FeedClose(props: { contract: Contract }) {
           <RelativeTimestamp time={contract.closeTime || 0} />
         </div>
       </div>
-    </>
-  )
-}
-
-// TODO: Should highlight the entire Feed segment
-function FeedExpand(props: { setExpanded: (expanded: boolean) => void }) {
-  const { setExpanded } = props
-  return (
-    <>
-      <button onClick={() => setExpanded(true)}>
-        <div className="relative px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300">
-            <DotsVerticalIcon
-              className="h-5 w-5 text-gray-500"
-              aria-hidden="true"
-            />
-          </div>
-        </div>
-      </button>
-
-      <button onClick={() => setExpanded(true)}>
-        <div className="min-w-0 flex-1 py-1.5">
-          <div className="text-sm text-gray-500 hover:text-gray-700">
-            <span>Show all activity</span>
-          </div>
-        </div>
-      </button>
     </>
   )
 }

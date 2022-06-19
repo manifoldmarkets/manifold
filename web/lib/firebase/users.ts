@@ -10,6 +10,9 @@ import {
   getDocs,
   orderBy,
   updateDoc,
+  deleteDoc,
+  collectionGroup,
+  onSnapshot,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -28,14 +31,17 @@ import { DAY_MS } from 'common/util/time'
 import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
+import { filterDefined } from 'common/util/array'
 
 export type { User }
 
 const db = getFirestore(app)
 export const auth = getAuth(app)
 
+export const userDocRef = (userId: string) => doc(db, 'users', userId)
+
 export async function getUser(userId: string) {
-  const docSnap = await getDoc(doc(db, 'users', userId))
+  const docSnap = await getDoc(userDocRef(userId))
   return docSnap.data() as User
 }
 
@@ -238,4 +244,47 @@ export async function getCategoryFeeds(userId: string) {
   )
   const feeds = feedData.map((data) => data?.feed ?? [])
   return Object.fromEntries(zip(CATEGORY_LIST, feeds) as [string, feed][])
+}
+
+export async function follow(userId: string, followedUserId: string) {
+  const followDoc = doc(db, 'users', userId, 'follows', followedUserId)
+  await setDoc(followDoc, {
+    userId: followedUserId,
+    timestamp: Date.now(),
+  })
+}
+
+export async function unfollow(userId: string, unfollowedUserId: string) {
+  const followDoc = doc(db, 'users', userId, 'follows', unfollowedUserId)
+  await deleteDoc(followDoc)
+}
+
+export function listenForFollows(
+  userId: string,
+  setFollowIds: (followIds: string[]) => void
+) {
+  const follows = collection(db, 'users', userId, 'follows')
+  return listenForValues<{ userId: string }>(follows, (docs) =>
+    setFollowIds(docs.map(({ userId }) => userId))
+  )
+}
+
+export function listenForFollowers(
+  userId: string,
+  setFollowerIds: (followerIds: string[]) => void
+) {
+  const followersQuery = query(
+    collectionGroup(db, 'follows'),
+    where('userId', '==', userId)
+  )
+  return onSnapshot(
+    followersQuery,
+    { includeMetadataChanges: true },
+    (snapshot) => {
+      if (snapshot.metadata.fromCache) return
+
+      const values = snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
+      setFollowerIds(filterDefined(values))
+    }
+  )
 }

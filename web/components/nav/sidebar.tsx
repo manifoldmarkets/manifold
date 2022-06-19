@@ -1,21 +1,18 @@
 import {
   HomeIcon,
-  CakeIcon,
   SearchIcon,
   BookOpenIcon,
   DotsHorizontalIcon,
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
-  ChatAltIcon,
   SparklesIcon,
   NewspaperIcon,
+  TrendingUpIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useFollowedFolds } from 'web/hooks/use-fold'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
@@ -29,6 +26,7 @@ import { Row } from '../layout/row'
 import NotificationsIcon from 'web/components/notifications-icon'
 import React, { useEffect, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { trackCallback, withTracking } from 'web/lib/service/analytics'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
@@ -51,7 +49,7 @@ function getNavigation(username: string) {
       icon: NotificationsIcon,
     },
 
-    { name: 'Charity', href: '/charity', icon: HeartIcon },
+    { name: 'Get M$', href: '/add-funds', icon: CashIcon },
   ]
 }
 
@@ -63,18 +61,19 @@ function getMoreNavigation(user?: User | null) {
   if (!user) {
     return [
       { name: 'Leaderboards', href: '/leaderboards' },
+      { name: 'Charity', href: '/charity' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
       { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
     ]
   }
 
   return [
-    { name: 'Add funds', href: '/add-funds' },
     { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Charity', href: '/charity' },
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
-    { name: 'About', href: 'https://docs.manifold.markets' },
+    { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
   ]
 }
@@ -83,12 +82,16 @@ const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
+  {
+    name: 'About',
+    href: 'https://docs.manifold.markets/$how-to',
+    icon: BookOpenIcon,
+  },
 ]
 
 const signedOutMobileNavigation = [
   { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
+  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
   { name: 'Blog', href: 'https://news.manifold.markets', icon: NewspaperIcon },
   {
     name: 'Discord',
@@ -100,11 +103,15 @@ const signedOutMobileNavigation = [
     href: 'https://twitter.com/ManifoldMarkets',
     icon: IconFromUrl('/twitter-logo.svg'),
   },
-  { name: 'About', href: 'https://docs.manifold.markets', icon: BookOpenIcon },
+  {
+    name: 'About',
+    href: 'https://docs.manifold.markets/$how-to',
+    icon: BookOpenIcon,
+  },
 ]
 
 const mobileNavigation = [
-  { name: 'Add funds', href: '/add-funds', icon: CashIcon },
+  { name: 'Get M$', href: '/add-funds', icon: CashIcon },
   ...signedOutMobileNavigation,
 ]
 
@@ -119,6 +126,7 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
   return (
     <Link href={item.href} key={item.name}>
       <a
+        onClick={trackCallback('sidebar: ' + item.name)}
         className={clsx(
           item.href == currentPage
             ? 'bg-gray-200 text-gray-900'
@@ -165,23 +173,20 @@ export default function Sidebar(props: { className?: string }) {
       const now = new Date().getTime()
       const timeUntil = nextUtcResetTime - now
       const hoursUntil = timeUntil / 1000 / 60 / 60
-      const minutesUntil = Math.floor((hoursUntil * 60) % 60)
-      const secondsUntil = Math.floor((hoursUntil * 60 * 60) % 60)
-      const hoursUntilFloor = Math.floor(hoursUntil)
+      const minutesUntil = (hoursUntil * 60) % 60
+      const secondsUntil = Math.round((hoursUntil * 60 * 60) % 60)
       const timeString =
-        minutesUntil < 1
+        hoursUntil < 1 && minutesUntil < 1
           ? `${secondsUntil}s`
-          : hoursUntilFloor < 1
-          ? `${minutesUntil}m`
-          : `${hoursUntilFloor}h`
+          : hoursUntil < 1
+          ? `${Math.round(minutesUntil)}m`
+          : `${Math.floor(hoursUntil)}h`
       setCountdown(timeString)
     }, 1000)
     return () => clearInterval(interval)
   }, [])
 
   const user = useUser()
-  let folds = useFollowedFolds(user) || []
-  folds = sortBy(folds, 'followCount').reverse()
   const mustWaitForFreeMarketStatus = useHasCreatedContractToday(user)
   const navigationOptions =
     user === null
@@ -213,7 +218,11 @@ export default function Sidebar(props: { className?: string }) {
         {user && (
           <MenuButton
             menuItems={[
-              { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
+              {
+                name: 'Sign out',
+                href: '#',
+                onClick: withTracking(firebaseLogout, 'sign out'),
+              },
             ]}
             buttonContent={<MoreButton />}
           />
@@ -234,14 +243,17 @@ export default function Sidebar(props: { className?: string }) {
       <div className={'aligncenter flex justify-center'}>
         {user ? (
           <Link href={'/create'} passHref>
-            <button className={clsx(gradient, buttonStyle)}>
+            <button
+              className={clsx(gradient, buttonStyle)}
+              onClick={trackCallback('create question button')}
+            >
               Create a question
             </button>
           </Link>
         ) : (
           <button
-            onClick={firebaseLogin}
-            className={clsx(gradient, buttonStyle)}
+            onClick={withTracking(firebaseLogin, 'sign in')}
+            className="btn btn-outline btn-sm mx-auto mt-4 -ml-1 w-full rounded-md normal-case"
           >
             Sign in
           </button>

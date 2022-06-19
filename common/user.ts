@@ -36,4 +36,7 @@ export type PrivateUser = {
   initialDeviceToken?: string
   initialIpAddress?: string
   apiKey?: string
+  notificationPreferences?: notification_subscribe_types
 }
+
+export type notification_subscribe_types = 'all' | 'less' | 'none'

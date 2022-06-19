@@ -10,6 +10,7 @@ import { Spacer } from './layout/spacer'
 import { YesNoSelector } from './yes-no-selector'
 import {
   formatMoney,
+  formatMoneyWithDecimals,
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
@@ -17,7 +18,7 @@ import { Title } from './title'
 import { User } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api-call'
-import { sellShares } from 'web/lib/firebase/fn-call'
+import { sellShares } from 'web/lib/firebase/api-call'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel } from './outcome-label'
@@ -37,6 +38,8 @@ import {
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
 import { SignUpPrompt } from './sign-up-prompt'
+import { isIOS } from 'web/lib/util/device'
+import { track } from 'web/lib/service/analytics'
 
 export function BetPanel(props: {
   contract: BinaryContract
@@ -203,12 +206,10 @@ function BuyPanel(props: {
   const [inputRef, focusAmountInput] = useFocus()
 
   useEffect(() => {
-    // warm up cloud function
-    placeBet({}).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    if (selected) focusAmountInput()
+    if (selected) {
+      if (isIOS()) window.scrollTo(0, window.scrollY + 200)
+      focusAmountInput()
+    }
   }, [selected, focusAmountInput])
 
   function onBetChoice(choice: 'YES' | 'NO') {
@@ -252,6 +253,15 @@ function BuyPanel(props: {
         }
         setIsSubmitting(false)
       })
+
+    track('bet', {
+      location: 'bet panel',
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount: betAmount,
+      outcome: betChoice,
+    })
   }
 
   const betDisabled = isSubmitting || !betAmount || error
@@ -338,7 +348,9 @@ function BuyPanel(props: {
             </div>
 
             {cpmmFees !== false && (
-              <InfoTooltip text={`Includes ${formatMoney(cpmmFees)} in fees`} />
+              <InfoTooltip
+                text={`Includes ${formatMoneyWithDecimals(cpmmFees)} in fees`}
+              />
             )}
 
             {dpmTooltip && <InfoTooltip text={dpmTooltip} />}
@@ -403,23 +415,35 @@ export function SellPanel(props: {
     // Sell all shares if remaining shares would be < 1
     const sellAmount = amount === Math.floor(shares) ? shares : amount
 
-    const result = await sellShares({
+    await sellShares({
       shares: sellAmount,
       outcome: sharesOutcome,
       contractId: contract.id,
-    }).then((r) => r.data)
+    })
+      .then((r) => {
+        console.log('Sold shares. Result:', r)
+        setIsSubmitting(false)
+        setWasSubmitted(true)
+        setAmount(undefined)
+        if (onSellSuccess) onSellSuccess()
+      })
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.toString())
+        } else {
+          console.error(e)
+          setError('Error selling')
+        }
+        setIsSubmitting(false)
+      })
 
-    console.log('Sold shares. Result:', result)
-
-    if (result?.status === 'success') {
-      setIsSubmitting(false)
-      setWasSubmitted(true)
-      setAmount(undefined)
-      if (onSellSuccess) onSellSuccess()
-    } else {
-      setError(result?.message || 'Error selling')
-      setIsSubmitting(false)
-    }
+    track('sell shares', {
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      shares: sellAmount,
+      outcome: sharesOutcome,
+    })
   }
 
   const initialProb = getProbability(contract)

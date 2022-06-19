@@ -15,11 +15,11 @@ export function Tabs(props: {
   tabs: Tab[]
   defaultIndex?: number
   className?: string
-  onClick?: (tabName: string) => void
+  onClick?: (tabTitle: string, index: number) => void
 }) {
   const { tabs, defaultIndex, className, onClick } = props
   const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
-  const activeTab = tabs[activeIndex]
+  const activeTab = tabs[activeIndex] as Tab | undefined // can be undefined in weird case
 
   return (
     <div>
@@ -34,7 +34,7 @@ export function Tabs(props: {
                     e.preventDefault()
                   }
                   setActiveIndex(i)
-                  onClick?.(tab.title)
+                  onClick?.(tab.title, i)
                 }}
                 className={clsx(
                   activeIndex === i
@@ -55,7 +55,7 @@ export function Tabs(props: {
         </nav>
       </div>
 
-      <div className="mt-4">{activeTab.content}</div>
+      <div className="mt-4">{activeTab?.content}</div>
     </div>
   )
 }

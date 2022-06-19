@@ -57,7 +57,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
         : 0
     }
 
-    for (let bet of bets) {
+    for (const bet of bets) {
       const shares = bet.sale
         ? getSoldBetPayout(bet)
         : bet.isSold
@@ -139,7 +139,7 @@ async function main() {
             !snap.empty ? [firestore.doc(`contracts/${snap.docs[0].id}`)] : []
           )
 
-  for (let contractRef of contractRefs) {
+  for (const contractRef of contractRefs) {
     await recalculateContract(contractRef, isCommit).catch((e) =>
       console.log('error: ', e, 'id=', contractRef.id)
     )

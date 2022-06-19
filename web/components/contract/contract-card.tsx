@@ -22,14 +22,17 @@ import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { QuickBet, ProbBar, getColor } from './quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
+import { track } from '@amplitude/analytics-browser'
+import { trackCallback } from 'web/lib/service/analytics'
 
 export function ContractCard(props: {
   contract: Contract
   showHotVolume?: boolean
   showCloseTime?: boolean
   className?: string
+  onClick?: () => void
 }) {
-  const { showHotVolume, showCloseTime, className } = props
+  const { showHotVolume, showCloseTime, className, onClick } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
   const { resolution } = contract
@@ -61,9 +64,33 @@ export function ContractCard(props: {
                 'peer absolute -left-6 -top-4 -bottom-4 right-0 z-10'
               )}
             >
-              <Link href={contractPath(contract)}>
-                <a className="absolute top-0 left-0 right-0 bottom-0" />
-              </Link>
+              {onClick ? (
+                <a
+                  className="absolute top-0 left-0 right-0 bottom-0"
+                  href={contractPath(contract)}
+                  onClick={(e) => {
+                    // Let the browser handle the link click (opens in new tab).
+                    if (e.ctrlKey || e.metaKey) return
+
+                    e.preventDefault()
+                    track('click market card', {
+                      slug: contract.slug,
+                      contractId: contract.id,
+                    })
+                    onClick()
+                  }}
+                />
+              ) : (
+                <Link href={contractPath(contract)}>
+                  <a
+                    onClick={trackCallback('click market card', {
+                      slug: contract.slug,
+                      contractId: contract.id,
+                    })}
+                    className="absolute top-0 left-0 right-0 bottom-0"
+                  />
+                </Link>
+              )}
             </div>
             <AvatarDetails contract={contract} />
             <p

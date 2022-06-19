@@ -24,6 +24,10 @@ service cloud.firestore {
       allow write: if request.auth.uid == userId;
     }
 
+    match /{somePath=**}/follows/{followUserId} {
+      allow read;
+    }
+
     match /private-users/{userId} {
       allow read: if resource.data.id == request.auth.uid || isAdmin();
       allow update: if (resource.data.id == request.auth.uid || isAdmin())
@@ -58,6 +62,10 @@ service cloud.firestore {
     }
 
     match /{somePath=**}/bets/{betId} {
+      allow read;
+    }
+
+    match /{somePath=**}/liquidity/{liquidityId} {
       allow read;
     }
 

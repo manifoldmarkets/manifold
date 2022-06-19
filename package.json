@@ -7,7 +7,9 @@
     "functions",
     "web"
   ],
-  "scripts": {},
+  "scripts": {
+    "verify": "(cd web && npx prettier --check .; yarn lint --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit); (cd common && npx eslint . --max-warnings 0); (cd functions && npx eslint . --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit)"
+  },
   "dependencies": {},
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "5.25.0",

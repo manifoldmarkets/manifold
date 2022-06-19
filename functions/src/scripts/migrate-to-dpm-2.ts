@@ -11,7 +11,6 @@ import {
   getDpmProbability,
 } from '../../../common/calculate-dpm'
 import { getSellBetInfo } from '../../../common/sell-bet'
-import { User } from '../../../common/user'
 
 type DocRef = admin.firestore.DocumentReference
 
@@ -100,12 +99,10 @@ async function recalculateContract(
 
     console.log('start', { pool, totalBets, totalShares })
 
-    for (let bet of bets) {
+    for (const bet of bets) {
       if (bet.sale) {
         const soldBet = bets.find((b) => b.id === bet.sale?.betId)
         if (!soldBet) throw new Error('invalid sold bet' + bet.sale.betId)
-
-        const fakeUser = { id: soldBet.userId, balance: 0 } as User
 
         const fakeContract: Contract = {
           ...contract,
@@ -116,11 +113,14 @@ async function recalculateContract(
         }
 
         const { newBet, newPool, newTotalShares, newTotalBets } =
-          getSellBetInfo(fakeUser, soldBet, fakeContract, bet.id)
+          getSellBetInfo(soldBet, fakeContract)
 
+        const betDoc = betsRef.doc(bet.id)
+        const userId = soldBet.userId
         newBet.createdTime = bet.createdTime
         console.log('sale bet', newBet)
-        if (isCommit) transaction.update(betsRef.doc(bet.id), newBet)
+        if (isCommit)
+          transaction.update(betDoc, { id: bet.id, userId, ...newBet })
 
         pool = newPool
         totalShares = newTotalShares

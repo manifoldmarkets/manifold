@@ -10,6 +10,11 @@ import { safeLocalStorage } from '../util/local'
 export const cloudFunction = <RequestData, ResponseData>(name: string) =>
   httpsCallable<RequestData, ResponseData>(functions, name)
 
+export const withdrawLiquidity = cloudFunction<
+  { contractId: string },
+  { status: 'error' | 'success'; userShares: { [outcome: string]: number } }
+>('withdrawLiquidity')
+
 export const createFold = cloudFunction<
   { name: string; about: string; tags: string[] },
   { status: 'error' | 'success'; message?: string; fold?: Fold }
@@ -19,13 +24,6 @@ export const transact = cloudFunction<
   Omit<Txn, 'id' | 'createdTime'>,
   { status: 'error' | 'success'; message?: string; txn?: Txn }
 >('transact')
-
-export const sellBet = cloudFunction('sellBet')
-
-export const sellShares = cloudFunction<
-  { contractId: string; shares: number; outcome: 'YES' | 'NO' },
-  { status: 'error' | 'success'; message?: string }
->('sellShares')
 
 export const createAnswer = cloudFunction<
   { contractId: string; text: string; amount: number },

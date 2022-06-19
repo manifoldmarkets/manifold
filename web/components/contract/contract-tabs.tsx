@@ -2,25 +2,23 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { Comment } from 'web/lib/firebase/comments'
 import { User } from 'common/user'
-import { useBets } from 'web/hooks/use-bets'
 import { ContractActivity } from '../feed/contract-activity'
 import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
+import { CommentTipMap } from 'web/hooks/use-tip-txns'
 
 export function ContractTabs(props: {
   contract: Contract
   user: User | null | undefined
   bets: Bet[]
   comments: Comment[]
+  tips: CommentTipMap
 }) {
-  const { contract, user, comments } = props
+  const { contract, user, bets, comments, tips } = props
   const { outcomeType } = contract
 
-  const bets = useBets(contract.id) ?? props.bets
-  // Decending creation time.
-  bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
   const userBets = user && bets.filter((bet) => bet.userId === user.id)
 
   const betActivity = (
@@ -28,6 +26,7 @@ export function ContractTabs(props: {
       contract={contract}
       bets={bets}
       comments={comments}
+      tips={tips}
       user={user}
       mode="bets"
       betRowClassName="!mt-0 xl:hidden"
@@ -40,6 +39,7 @@ export function ContractTabs(props: {
         contract={contract}
         bets={bets}
         comments={comments}
+        tips={tips}
         user={user}
         mode={
           contract.outcomeType === 'FREE_RESPONSE'
@@ -56,6 +56,7 @@ export function ContractTabs(props: {
             contract={contract}
             bets={bets}
             comments={comments}
+            tips={tips}
             user={user}
             mode={'comments'}
             betRowClassName="!mt-0 xl:hidden"

@@ -3,7 +3,7 @@ import Router from 'next/router'
 
 import { Contract, getContractsBySlugs } from 'web/lib/firebase/contracts'
 import { Page } from 'web/components/page'
-import { FeedPromo } from 'web/components/feed-create'
+import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
@@ -11,16 +11,16 @@ import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 export async function getStaticProps() {
   // These hardcoded markets will be shown in the frontpage for signed-out users:
   const hotContracts = await getContractsBySlugs([
-    'if-boris-johnson-is-leader-of-the-c',
-    'will-ethereum-merge-to-proofofstake',
+    'will-max-go-to-prom-with-a-girl',
+    'will-ethereum-switch-to-proof-of-st',
     'will-russia-control-the-majority-of',
     'will-elon-musk-buy-twitter-this-yea',
-    'will-an-ai-get-gold-on-any-internat',
-    'how-many-us-supreme-court-justices',
+    'will-trump-be-charged-by-the-grand',
+    'will-spacex-launch-a-starship-into',
     'who-will-win-the-nba-finals-champio',
-    'what-database-will-manifold-be-prim',
-    'will-the-supreme-court-leakers-iden',
-    'will-over-25-of-participants-in-the-163d54309e43',
+    'who-will-be-time-magazine-person-of',
+    'will-congress-hold-any-hearings-abo-e21f987033b3',
+    'will-at-least-10-world-cities-have',
   ])
 
   return {
@@ -40,13 +40,13 @@ const Home = (props: { hotContracts: Contract[] }) => {
   }
 
   return (
-    <Page assertUser="signed-out">
+    <Page>
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
         <ManifoldLogo />
       </div>
       <Col className="items-center">
         <Col className="max-w-3xl">
-          <FeedPromo hotContracts={hotContracts ?? []} />
+          <LandingPagePanel hotContracts={hotContracts ?? []} />
           {/* <p className="mt-6 text-gray-500">
             View{' '}
             <SiteLink href="/markets" className="font-bold text-gray-700">

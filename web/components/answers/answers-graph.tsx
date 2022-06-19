@@ -7,7 +7,6 @@ import { memo } from 'react'
 import { Bet } from 'common/bet'
 import { FreeResponseContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
-import { useBets } from 'web/hooks/use-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
 const NUM_LINES = 6
@@ -17,10 +16,8 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
   bets: Bet[]
   height?: number
 }) {
-  const { contract, height } = props
+  const { contract, bets, height } = props
   const { createdTime, resolutionTime, closeTime, answers } = contract
-
-  const bets = useBets(contract.id) ?? props.bets
 
   const { probsByOutcome, sortedOutcomes } = computeProbsByOutcome(
     bets,
@@ -41,12 +38,8 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
   const isLargeWidth = !width || width > 800
   const labelLength = isLargeWidth ? 50 : 20
 
-  const endTime =
-    resolutionTime || isClosed
-      ? latestTime.valueOf()
-      : // Add a fake datapoint in future so the line continues horizontally
-        // to the right.
-        latestTime.add(1, 'month').valueOf()
+  // Add a fake datapoint so the line continues to the right
+  const endTime = latestTime.valueOf()
 
   const times = sortBy([
     createdTime,
@@ -111,11 +104,12 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
         }}
         colors={{ scheme: 'pastel1' }}
         pointSize={0}
+        curve="stepAfter"
         enableSlices="x"
         enableGridX={!!width && width >= 800}
         enableArea
         areaOpacity={1}
-        margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+        margin={{ top: 20, right: 20, bottom: 25, left: 40 }}
         legends={[
           {
             anchor: 'top-left',

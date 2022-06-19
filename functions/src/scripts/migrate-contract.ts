@@ -18,7 +18,7 @@ async function migrateBet(contractRef: DocRef, bet: Bet) {
   await contractRef.collection('bets').doc(id).update({ shares })
 }
 
-async function migrateContract(contractRef: DocRef, contract: Contract) {
+async function migrateContract(contractRef: DocRef) {
   const bets = await contractRef
     .collection('bets')
     .get()
@@ -48,7 +48,7 @@ async function migrateContracts() {
     console.log('contract', contract.question, 'bets', bets.length)
 
     for (const bet of bets) await migrateBet(contractRef, bet)
-    await migrateContract(contractRef, contract)
+    await migrateContract(contractRef)
   }
 }
 

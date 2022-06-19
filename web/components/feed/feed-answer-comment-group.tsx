@@ -1,9 +1,6 @@
 import { Answer } from 'common/answer'
-import { ActivityItem } from 'web/components/feed/activity-items'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
-import { useUser } from 'web/hooks/use-user'
-import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { formatPercent } from 'common/util/format'
 import React, { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -16,53 +13,113 @@ import { Linkify } from 'web/components/linkify'
 import clsx from 'clsx'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { BuyButton } from 'web/components/yes-no-selector'
-import { FeedItem } from 'web/components/feed/feed-items'
 import {
   CommentInput,
+  CommentRepliesList,
   getMostRecentCommentableBet,
 } from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
+import { groupBy } from 'lodash'
+import { User } from 'common/user'
+import { useEvent } from 'web/hooks/use-event'
+import { getDpmOutcomeProbability } from 'common/calculate-dpm'
+import { CommentTipMap } from 'web/hooks/use-tip-txns'
 
 export function FeedAnswerCommentGroup(props: {
   contract: any
+  user: User | undefined | null
   answer: Answer
-  items: ActivityItem[]
-  type: string
-  betsByCurrentUser?: Bet[]
-  commentsByCurrentUser?: Comment[]
+  comments: Comment[]
+  tips: CommentTipMap
+  bets: Bet[]
 }) {
-  const { answer, items, contract, betsByCurrentUser, commentsByCurrentUser } =
-    props
+  const { answer, contract, comments, tips, bets, user } = props
   const { username, avatarUrl, name, text } = answer
-  const answerElementId = `answer-${answer.id}`
-  const user = useUser()
-  const mostRecentCommentableBet = getMostRecentCommentableBet(
-    betsByCurrentUser ?? [],
-    commentsByCurrentUser ?? [],
-    user,
-    answer.number + ''
-  )
-  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
-  const probPercent = formatPercent(prob)
+
+  const [replyToUsername, setReplyToUsername] = useState('')
   const [open, setOpen] = useState(false)
   const [showReply, setShowReply] = useState(false)
-  const isFreeResponseContractPage = !!commentsByCurrentUser
-  if (mostRecentCommentableBet && !showReply) setShowReplyAndFocus(true)
   const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
+  const [highlighted, setHighlighted] = useState(false)
+  const router = useRouter()
 
-  // If they've already opened the input box, focus it once again
-  function setShowReplyAndFocus(show: boolean) {
-    setShowReply(show)
-    inputRef?.focus()
-  }
+  const answerElementId = `answer-${answer.id}`
+  const betsByUserId = groupBy(bets, (bet) => bet.userId)
+  const commentsByUserId = groupBy(comments, (comment) => comment.userId)
+  const commentsList = comments.filter(
+    (comment) => comment.answerOutcome === answer.number.toString()
+  )
+  const thisAnswerProb = getDpmOutcomeProbability(
+    contract.totalShares,
+    answer.id
+  )
+  const probPercent = formatPercent(thisAnswerProb)
+  const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
+  const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
+  const isFreeResponseContractPage = !!commentsByCurrentUser
+  const mostRecentCommentableBet = getMostRecentCommentableBet(
+    betsByCurrentUser,
+    commentsByCurrentUser,
+    user,
+    answer.number.toString()
+  )
+  const [usersMostRecentBetTimeAtLoad, setUsersMostRecentBetTimeAtLoad] =
+    useState<number | undefined>(
+      !user ? undefined : mostRecentCommentableBet?.createdTime ?? 0
+    )
+
+  useEffect(() => {
+    if (user && usersMostRecentBetTimeAtLoad === undefined)
+      setUsersMostRecentBetTimeAtLoad(
+        mostRecentCommentableBet?.createdTime ?? 0
+      )
+  }, [
+    mostRecentCommentableBet?.createdTime,
+    user,
+    usersMostRecentBetTimeAtLoad,
+  ])
+
+  const scrollAndOpenReplyInput = useEvent(
+    (comment?: Comment, answer?: Answer) => {
+      setReplyToUsername(comment?.userUsername ?? answer?.username ?? '')
+      setShowReply(true)
+      inputRef?.focus()
+    }
+  )
+
+  useEffect(() => {
+    if (
+      mostRecentCommentableBet &&
+      usersMostRecentBetTimeAtLoad !== undefined &&
+      mostRecentCommentableBet.createdTime > usersMostRecentBetTimeAtLoad &&
+      !showReply
+    )
+      scrollAndOpenReplyInput(undefined, answer)
+  }, [
+    answer,
+    usersMostRecentBetTimeAtLoad,
+    mostRecentCommentableBet,
+    scrollAndOpenReplyInput,
+    showReply,
+  ])
+
+  useEffect(() => {
+    // Only show one comment input for a bet at a time
+    if (
+      betsByCurrentUser.length > 1 &&
+      betsByCurrentUser.sort((a, b) => b.createdTime - a.createdTime)[0]
+        ?.outcome !== answer.number.toString()
+    )
+      setShowReply(false)
+    // Even if we pass memoized bets this still runs on every render, which we don't want
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [betsByCurrentUser.length, user, answer.number])
 
   useEffect(() => {
     if (showReply && inputRef) inputRef.focus()
   }, [inputRef, showReply])
 
-  const [highlighted, setHighlighted] = useState(false)
-  const router = useRouter()
   useEffect(() => {
     if (router.asPath.endsWith(`#${answerElementId}`)) {
       setHighlighted(true)
@@ -70,7 +127,7 @@ export function FeedAnswerCommentGroup(props: {
   }, [answerElementId, router.asPath])
 
   return (
-    <Col className={'flex-1 gap-2'}>
+    <Col className={'relative flex-1 gap-2'} key={answer.id + 'comment'}>
       <Modal open={open} setOpen={setOpen}>
         <AnswerBetPanel
           answer={answer}
@@ -95,7 +152,8 @@ export function FeedAnswerCommentGroup(props: {
           <div className="text-sm text-gray-500">
             <UserLink username={username} name={name} /> answered
             <CopyLinkDateTimeComponent
-              contract={contract}
+              contractCreatorUsername={contract.creatorUsername}
+              contractSlug={contract.slug}
               createdTime={answer.createdTime}
               elementId={answerElementId}
             />
@@ -113,7 +171,7 @@ export function FeedAnswerCommentGroup(props: {
                     className={
                       'text-xs font-bold text-gray-500 hover:underline'
                     }
-                    onClick={() => setShowReplyAndFocus(true)}
+                    onClick={() => scrollAndOpenReplyInput(undefined, answer)}
                   >
                     Reply
                   </button>
@@ -143,7 +201,7 @@ export function FeedAnswerCommentGroup(props: {
             <div className={'justify-initial hidden sm:block'}>
               <button
                 className={'text-xs font-bold text-gray-500 hover:underline'}
-                onClick={() => setShowReplyAndFocus(true)}
+                onClick={() => scrollAndOpenReplyInput(undefined, answer)}
               >
                 Reply
               </button>
@@ -151,36 +209,32 @@ export function FeedAnswerCommentGroup(props: {
           )}
         </Col>
       </Row>
-
-      {items.map((item, index) => (
-        <div
-          key={item.id}
-          className={clsx(
-            'relative ml-8',
-            index !== items.length - 1 && 'pb-4'
-          )}
-        >
-          {index !== items.length - 1 ? (
-            <span
-              className="absolute top-5 left-5 -ml-px h-[calc(100%-1rem)] w-0.5 bg-gray-200"
-              aria-hidden="true"
-            />
-          ) : null}
-          <div className="relative flex items-start space-x-3">
-            <FeedItem item={item} />
-          </div>
-        </div>
-      ))}
+      <CommentRepliesList
+        contract={contract}
+        commentsList={commentsList}
+        betsByUserId={betsByUserId}
+        smallAvatar={true}
+        truncate={false}
+        bets={bets}
+        tips={tips}
+        scrollAndOpenReplyInput={scrollAndOpenReplyInput}
+        treatFirstIndexEqually={true}
+      />
 
       {showReply && (
-        <div className={'ml-8 pt-4'}>
+        <div className={'ml-6 pt-4'}>
+          <span
+            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            aria-hidden="true"
+          />
           <CommentInput
             contract={contract}
-            betsByCurrentUser={betsByCurrentUser ?? []}
-            commentsByCurrentUser={commentsByCurrentUser ?? []}
-            answerOutcome={answer.number + ''}
-            replyToUsername={answer.username}
+            betsByCurrentUser={betsByCurrentUser}
+            commentsByCurrentUser={commentsByCurrentUser}
+            parentAnswerOutcome={answer.number.toString()}
+            replyToUsername={replyToUsername}
             setRef={setInputRef}
+            onSubmitComment={() => setShowReply(false)}
           />
         </div>
       )}

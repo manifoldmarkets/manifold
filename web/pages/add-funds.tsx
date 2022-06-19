@@ -6,6 +6,8 @@ import { FundsSelector } from 'web/components/yes-no-selector'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Page } from 'web/components/page'
+import { useTracking } from 'web/hooks/use-tracking'
+import { trackCallback } from 'web/lib/service/analytics'
 
 export default function AddFundsPage() {
   const user = useUser()
@@ -14,9 +16,15 @@ export default function AddFundsPage() {
     2500
   )
 
+  useTracking('view add funds')
+
   return (
     <Page>
-      <SEO title="Add funds" description="Add funds" url="/add-funds" />
+      <SEO
+        title="Get Manifold Dollars"
+        description="Get Manifold Dollars"
+        url="/add-funds"
+      />
 
       <Col className="items-center">
         <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
@@ -29,8 +37,8 @@ export default function AddFundsPage() {
           />
 
           <div className="mb-6 text-gray-500">
-            Use Manifold Dollars to trade in your favorite markets. <br /> (Not
-            redeemable for cash.)
+            Purchase Manifold Dollars to trade in your favorite markets. <br />{' '}
+            (Not redeemable for cash.)
           </div>
 
           <div className="mb-2 text-sm text-gray-500">Amount</div>
@@ -54,7 +62,8 @@ export default function AddFundsPage() {
           >
             <button
               type="submit"
-              className="btn btn-primary w-full bg-gradient-to-r from-teal-500 to-green-500 font-medium hover:from-teal-600 hover:to-green-600"
+              className="btn btn-primary w-full bg-gradient-to-r from-indigo-500 to-blue-500 font-medium hover:from-indigo-600 hover:to-blue-600"
+              onClick={trackCallback('checkout', { amount: amountSelected })}
             >
               Checkout
             </button>

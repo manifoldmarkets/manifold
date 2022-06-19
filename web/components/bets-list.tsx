@@ -1,13 +1,5 @@
 import Link from 'next/link'
-import {
-  uniq,
-  groupBy,
-  mapValues,
-  sortBy,
-  partition,
-  sumBy,
-  throttle,
-} from 'lodash'
+import { uniq, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
@@ -30,7 +22,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
-import { sellBet } from 'web/lib/firebase/fn-call'
+import { sellBet } from 'web/lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from 'common/util/array'
@@ -101,7 +93,7 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
     return <LoadingIndicator />
   }
 
-  if (bets.length === 0) return <NoBets />
+  if (bets.length === 0) return <NoBets user={user} />
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
   const contractBets = groupBy(bets, 'contractId')
@@ -146,9 +138,8 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
       return !hasSoldAll
     })
 
-  const [settled, unsettled] = partition(
-    contracts,
-    (c) => c.isResolved || contractsMetrics[c.id].invested === 0
+  const unsettled = contracts.filter(
+    (c) => !c.isResolved && contractsMetrics[c.id].invested !== 0
   )
 
   const currentInvested = sumBy(
@@ -219,7 +210,7 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
 
       <Col className="mt-6 divide-y">
         {displayedContracts.length === 0 ? (
-          <NoBets />
+          <NoBets user={user} />
         ) : (
           displayedContracts.map((contract) => (
             <ContractBets
@@ -236,13 +227,20 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
   )
 }
 
-const NoBets = () => {
+const NoBets = ({ user }: { user: User }) => {
+  const me = useUser()
   return (
     <div className="mx-4 text-gray-500">
-      You have not made any bets yet.{' '}
-      <SiteLink href="/home" className="underline">
-        Find a prediction market!
-      </SiteLink>
+      {user.id === me?.id ? (
+        <>
+          You have not made any bets yet.{' '}
+          <SiteLink href="/home" className="underline">
+            Find a prediction market!
+          </SiteLink>
+        </>
+      ) : (
+        <>{user.name} has not made any public bets yet.</>
+      )}
     </div>
   )
 }
@@ -262,7 +260,7 @@ function ContractBets(props: {
 
   const isBinary = outcomeType === 'BINARY'
 
-  const { payout, profit, profitPercent, invested } = getContractBetMetrics(
+  const { payout, profit, profitPercent } = getContractBetMetrics(
     contract,
     bets
   )
@@ -484,7 +482,10 @@ export function ContractBetsTable(props: {
 }) {
   const { contract, className, isYourBets } = props
 
-  const bets = props.bets.filter((b) => !b.isAnte)
+  const bets = sortBy(
+    props.bets.filter((b) => !b.isAnte),
+    (bet) => bet.createdTime
+  ).reverse()
 
   const [sales, buys] = partition(bets, (bet) => bet.sale)
 
@@ -640,13 +641,7 @@ function BetRow(props: {
   )
 }
 
-const warmUpSellBet = throttle(() => sellBet({}).catch(() => {}), 5000 /* ms */)
-
 function SellButton(props: { contract: Contract; bet: Bet }) {
-  useEffect(() => {
-    warmUpSellBet()
-  }, [])
-
   const { contract, bet } = props
   const { outcome, shares, loanAmount } = bet
 
@@ -664,7 +659,6 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
 
   return (
     <ConfirmationButton
-      id={`sell-${bet.id}`}
       openModalBtn={{
         className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
         label: 'Sell',

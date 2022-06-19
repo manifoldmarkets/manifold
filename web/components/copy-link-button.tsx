@@ -2,11 +2,13 @@ import React, { Fragment } from 'react'
 import { LinkIcon } from '@heroicons/react/outline'
 import { Menu, Transition } from '@headlessui/react'
 import clsx from 'clsx'
+
 import { Contract } from 'common/contract'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ToastClipboard } from 'web/components/toast-clipboard'
+import { track } from 'web/lib/service/analytics'
 
 function copyContractUrl(contract: Contract) {
   copyToClipboard(`https://${ENV_CONFIG.domain}${contractPath(contract)}`)
@@ -23,7 +25,10 @@ export function CopyLinkButton(props: {
     <Menu
       as="div"
       className="relative z-10 flex-shrink-0"
-      onMouseUp={() => copyContractUrl(contract)}
+      onMouseUp={() => {
+        copyContractUrl(contract)
+        track('copy share link')
+      }}
     >
       <Menu.Button
         className={clsx(
