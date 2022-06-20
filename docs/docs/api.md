@@ -50,7 +50,7 @@ Requires no authorization.
 
 - Example request
   ```
-  http://manifold.markets/api/v0/markets?limit=1
+  https://manifold.markets/api/v0/markets?limit=1
   ```
 - Example response
   ```json

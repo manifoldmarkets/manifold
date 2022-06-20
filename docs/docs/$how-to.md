@@ -8,7 +8,7 @@ Mana (M$) is our virtual play currency that cannot be converted to real money.
 
 - **Its Value**
 
-  You can redeem your Mana and we will [donate to a charity](http://manifold.markets/charity) on your behalf. Redeeming and purchasing Mana occurs at a rate of M$100 to $1. You will be able to redeem it for merch and other cool items soon too!
+  You can redeem your Mana and we will [donate to a charity](https://manifold.markets/charity) on your behalf. Redeeming and purchasing Mana occurs at a rate of M$100 to $1. You will be able to redeem it for merch and other cool items soon too!
 
 - **It sets us apart**
 
