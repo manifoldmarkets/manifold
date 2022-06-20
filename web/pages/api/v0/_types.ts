@@ -4,7 +4,6 @@ import { getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
-import { getPoolValue } from 'web/lib/firebase/contracts'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -94,7 +93,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     pool,
     probability,
     p,
-    totalLiquidity: getPoolValue(contract),
+    totalLiquidity,
     outcomeType,
     mechanism,
     volume,
