@@ -243,7 +243,7 @@ export default function Sidebar(props: { className?: string }) {
         {user && (
           <MenuButton
             buttonContent={<GroupsButton />}
-            menuItems={[{ name: 'All', href: '/groups' }, ...memberItems]}
+            menuItems={[{ name: 'Explore', href: '/groups' }, ...memberItems]}
             className={'relative z-50 flex-shrink-0'}
           />
         )}
@@ -281,7 +281,10 @@ export default function Sidebar(props: { className?: string }) {
                 <MenuButton
                   key={'groupsdropdown'}
                   buttonContent={<GroupsButton />}
-                  menuItems={[{ name: 'All', href: '/groups' }, ...memberItems]}
+                  menuItems={[
+                    { name: 'Explore', href: '/groups' },
+                    ...memberItems,
+                  ]}
                   className={'relative z-50 flex-shrink-0'}
                 />
               )}

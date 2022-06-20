@@ -30,13 +30,13 @@ export function CreateGroupButton(props: {
   const router = useRouter()
 
   function updateMemberUsers(users: User[]) {
-    setDefaultName(
-      `${user.name.split(' ')[0]}${
-        users.length > 0
-          ? ', ' + users.map((user) => user.name.split(' ')[0]).join(', ')
-          : ''
-      }'s group`
-    )
+    const usersFirstNames = users.map((user) => user.name.split(' ')[0])
+    const postFix =
+      usersFirstNames.length > 3 ? ` & ${usersFirstNames.length - 3} more` : ''
+    const newName = `${user.name.split(' ')[0]}${
+      users.length > 0 ? ', ' + usersFirstNames.slice(0, 3).join(', ') : ''
+    }${postFix}'s group`
+    setDefaultName(newName)
     setMemberUsers(users)
   }
 
