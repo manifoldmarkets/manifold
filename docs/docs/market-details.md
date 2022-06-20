@@ -24,6 +24,8 @@ for the pool to be sorted into.
 - The market creator is responsible for resolving each market in a timely manner. All fees earned as a commission will be paid out after resolution.
 - Creators can also resolve N/A to cancel all transactions and reverse all transactions made on the market - this includes profits from selling shares.
 
+# Binary Markets
+
 ## Binary Markets: Overview
 
 - Binary markets are structured around a question with a binary outcome, such as:
@@ -60,7 +62,9 @@ for the pool to be sorted into.
   - Adding liquidity provides you with a number of YES and NO shares, which can be withdrawn from the same interface. 
   - These shares resolve to M$ like normal when the market resolves, which will return you some amount of your investment. It is often wise to inject liquidity if you believe the current probability is very close to the real probability.
 
-# Free-Response Markets: Overview
+# Free-Response Markets
+
+## Free-Response Markets: Overview
 
 - Free-response markets are structured around a question with a multiple outcomes, such as:
   - [Which team will win the NBA Finals 2022?](https://manifold.markets/howtodowtle/which-team-will-win-the-nba-finals)
@@ -71,7 +75,7 @@ for the pool to be sorted into.
   - [What will inflation be in March?](https://manifold.markets/ManifoldMarkets/what-will-inflation-be-in-march)
   - [How many Manifold team members in the Bahamas will test positive for COVID?](https://manifold.markets/Sinclair/how-many-manifold-team-members-in-t)
 
-# Free-Response Markets: Betting & Payouts
+## Free-Response Markets: Betting & Payouts
 
 - Markets are structured around a list of answers, any of which can be bet on.
 - Anyone can add answers to a market as long as they stake some amount of M$ on it. Traders can place a bet on any answer and receive shares in the outcome in return.
@@ -84,7 +88,7 @@ for the pool to be sorted into.
     - If the creator resolves 50% to answer #1 and 50% to answer #2, you will receive `(M$500 * 50%) * (100 / 500) = M$50`.
     - Note that your payout is dependent on the total number of shares, and thus may decrease if more people buy shares in that answer.
 
-## Fees
+# Fees
 
 - Manifold charges fees on each trade. They are automatically calculated and baked into the number of shares you receive when you place a bet.
   - Our CPMM fee schedule is currently: `10% * (1 - post-bet probability) * bet amount`
