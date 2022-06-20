@@ -25,7 +25,7 @@ export type LiteMarket = {
   outcomeType: string
   mechanism: string
 
-  pool: number
+  pool: Record<string, number>
   probability?: number
   p?: number
   totalLiquidity?: number
