@@ -4,6 +4,7 @@ import { getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
+import { getPoolValue } from 'web/lib/firebase/contracts'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -90,10 +91,10 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     description,
     tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
-    pool: pool.YES + pool.NO,
+    pool,
     probability,
     p,
-    totalLiquidity,
+    totalLiquidity: getPoolValue(contract),
     outcomeType,
     mechanism,
     volume,

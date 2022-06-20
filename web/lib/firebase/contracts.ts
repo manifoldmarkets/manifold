@@ -64,6 +64,14 @@ export function contractPool(contract: Contract) {
     : 'Empty pool'
 }
 
+export function getPoolValue(contract: Contract) {
+  return contract.mechanism === 'cpmm-1'
+    ? contract.totalLiquidity
+    : contract.mechanism === 'dpm-2'
+    ? sum(Object.values(contract.pool))
+    : 0
+}
+
 export function getBinaryProb(contract: BinaryContract) {
   const { pool, resolutionProbability, mechanism } = contract
 
