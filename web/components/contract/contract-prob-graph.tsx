@@ -52,7 +52,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
     ? times[0]
     : hoursAgo.toDate()
 
-  const lessThanAWeek = dayjs(startDate).add(1, 'week').isAfter(latestTime)
+  const lessThanAWeek = dayjs(startDate).add(8, 'day').isAfter(latestTime)
 
   return (
     <div
@@ -73,7 +73,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
           min: startDate,
           max: latestTime.toDate(),
         }}
-        xFormat={(d) => formatTooltipTime(+d.valueOf())}
+        xFormat={(d) => formatTooltipTime(+d.valueOf(), lessThanAWeek)}
         axisBottom={{
           tickValues: numXTickValues,
           format: (time) => formatTime(+time, lessThanAWeek),
@@ -99,9 +99,7 @@ const SliceTooltip = ({ slice }: SliceTooltipProps) => {
     <BasicTooltip
       id={slice.points.map((point) => [
         <span key="date">
-          <strong>{point.data[`yFormatted`]}</strong>
-          <br></br>
-          {point.data['xFormatted']}
+          <strong>{point.data[`yFormatted`]}</strong> {point.data['xFormatted']}
         </span>,
       ])}
     />
@@ -112,19 +110,17 @@ function formatPercent(y: DatumValue) {
   return `${Math.round(+y.toString())}%`
 }
 
-function formatTooltipTime(time: number) {
+function formatTooltipTime(time: number, includeTime: boolean) {
   const d = dayjs(time)
+  if (includeTime) {
+    if (d.isSame(Date.now(), 'day')) return d.format('[Today], ha')
 
-  if (d.add(1, 'minute').isAfter(Date.now())) return 'Now'
+    if (d.add(1, 'day').isSame(Date.now(), 'day'))
+      return d.format('[Yesterday], ha')
 
-  if (d.isSame(Date.now(), 'day') || d.add(2, 'hour').isAfter(Date.now()))
-    return dayjs(time).format('h:mma')
-
-  if (d.add(36, 'hour').isAfter(Date.now())) return d.format('MMM D ha')
-
-  if (d.isSame(Date.now(), 'year')) return dayjs(time).format('MMM D')
-
-  return dayjs(time).format('MMM D, YYYY')
+    return dayjs(time).format('MMM D, ha')
+  }
+  return dayjs(time).format('MMM D')
 }
 
 function formatTime(time: number, includeTime: boolean) {
