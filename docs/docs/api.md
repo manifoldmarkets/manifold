@@ -96,7 +96,8 @@ Requires no authorization.
     tags: string[]
     url: string
 
-    pool: number
+    pool: { outcome: number } // For binary markets, the number of shares in the liquidity pool. For free response markets, the amount of mana invested in each answer
+    totalLiquidyt?: number // Binary markets only, the amount of mana deposited into the liquidity pool
     probability: number
     volume7Days: number
     volume24Hours: number
