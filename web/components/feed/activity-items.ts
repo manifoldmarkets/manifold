@@ -155,7 +155,7 @@ export function getSpecificContractActivityItems(
       items.push(
         ...bets.map((bet) => ({
           type: 'bet' as const,
-          id: bet.id,
+          id: bet.id + '-' + bet.isSold,
           bet,
           contract,
           hideOutcome: false,
