@@ -56,7 +56,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
         <div className="h-full rounded-md bg-white p-8">
           <div className="form-control w-full">
             <label className="label">
-              <span className="mb-1">Community name</span>
+              <span className="mb-1">Group name</span>
             </label>
 
             <input

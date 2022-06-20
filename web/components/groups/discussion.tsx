@@ -97,27 +97,29 @@ export function Discussion(props: {
           </div>
         )}
       </Col>
-      <div className=" flex w-full justify-start gap-2 p-2">
-        <div className="mt-1">
-          <Avatar
-            username={user?.username}
-            avatarUrl={user?.avatarUrl}
-            size={'sm'}
-          />
+      {user && group.memberIds.includes(user.id) && (
+        <div className=" flex w-full justify-start gap-2 p-2">
+          <div className="mt-1">
+            <Avatar
+              username={user?.username}
+              avatarUrl={user?.avatarUrl}
+              size={'sm'}
+            />
+          </div>
+          <div className={'flex-1'}>
+            <CommentInputTextArea
+              commentText={messageText}
+              setComment={setMessageText}
+              isReply={false}
+              user={user}
+              replyToUsername={replyToUsername}
+              submitComment={submitComment}
+              isSubmitting={isSubmitting}
+              enterToSubmit={true}
+            />
+          </div>
         </div>
-        <div className={'flex-1'}>
-          <CommentInputTextArea
-            commentText={messageText}
-            setComment={setMessageText}
-            isReply={false}
-            user={user}
-            replyToUsername={replyToUsername}
-            submitComment={submitComment}
-            isSubmitting={isSubmitting}
-            enterToSubmit={true}
-          />
-        </div>
-      </div>
+      )}
     </Col>
   )
 }

@@ -180,7 +180,10 @@ export default function GroupPage(props: {
 
       <div className="px-3 lg:px-1">
         <Row className={' items-center justify-between gap-4 '}>
-          <Title className={'line-clamp-2'} text={group.name} />
+          <div className={'mb-1'}>
+            <Title className={'line-clamp-2'} text={group.name} />
+            <span className={'text-gray-700'}>{group.about}</span>
+          </div>
           {isMember && (
             <CreateQuestionButton
               user={user}
