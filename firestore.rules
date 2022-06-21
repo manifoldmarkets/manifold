@@ -116,8 +116,8 @@ service cloud.firestore {
 
       function isMember() {
         return request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
-        //alternative: exists(/databases/$(database)/documents/groups/$(groupId)/users/$(request.auth.uid));
       }
+
       match /comments/{commentId} {
         allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isMember();
       }

@@ -28,6 +28,7 @@ import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
 import { track } from 'web/lib/service/analytics'
+import { useEvent } from 'web/hooks/use-event'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -467,7 +468,7 @@ export function CommentInputTextArea(props: {
     enterToSubmit,
   } = props
 
-  const memoizedSetComment = useMemo(() => setComment, [setComment])
+  const memoizedSetComment = useEvent(setComment)
   useEffect(() => {
     if (!replyToUsername || !user || replyToUsername === user.username) return
     const replacement = `@${replyToUsername} `
