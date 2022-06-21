@@ -8,9 +8,10 @@ import {
 } from 'firebase/firestore'
 import { sortBy } from 'lodash'
 import { Group } from 'common/group'
-import { Contract, contractCollection } from './contracts'
+import { getContractFromId } from './contracts'
 import { db } from './init'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
+import { filterDefined } from 'common/util/array'
 
 const groupCollection = collection(db, 'groups')
 
@@ -51,16 +52,16 @@ export async function getGroupBySlug(slug: string) {
 export async function getGroupContracts(group: Group) {
   const { contractIds } = group
 
-  const [includedContracts] = await Promise.all([
-    // TODO: if contractIds.length > 10, execute multiple parallel queries
-    contractIds.length > 0
-      ? getValues<Contract>(
-          query(contractCollection, where('id', 'in', contractIds))
-        )
-      : [],
-  ])
+  const contracts =
+    filterDefined(
+      await Promise.all(
+        contractIds.map(async (contractId) => {
+          return await getContractFromId(contractId)
+        })
+      )
+    ) ?? []
 
-  return [...includedContracts]
+  return [...contracts]
 }
 
 export function listenForGroup(
