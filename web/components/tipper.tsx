@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { CommentTips } from 'web/hooks/use-tip-txns'
 import { useUser } from 'web/hooks/use-user'
 import { transact } from 'web/lib/firebase/fn-call'
+import { track } from 'web/lib/service/analytics'
 import { Row } from './layout/row'
 import { Tooltip } from './tooltip'
 
@@ -63,6 +64,14 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
           commentId: comment.id,
         },
         description: `${user.name} tipped M$ ${change} to ${comment.userName} for a comment`,
+      })
+
+      track('send comment tip', {
+        contractId: comment.contractId,
+        commentId: comment.id,
+        amount: change,
+        fromId: user.id,
+        toId: comment.userId,
       })
     }, 1500)
   )
