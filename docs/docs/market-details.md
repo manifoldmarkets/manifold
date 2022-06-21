@@ -56,6 +56,7 @@ for the pool to be sorted into.
 ## Binary Markets: Liquidity
 
 - The liquidity in a market is the amount of capital available for traders to trade against. The more liquidity, the greater incentive there is for traders to bet, and the more accurate the market should be.
+- When a market is created, the creation fee (also called the ante or subsidy) is used to fill the liquiity pool. This happens whether the creation fee is paid by the user or by Manifold for the daily free market.
 - Behind the scenes, when a bet is placed the CPMM mechanism does [a bunch of math](http://bit.ly/maniswap). The end result is that for each M$1 bet, 1 YES share and 1 NO share is created. Some amount of shares are then given to the user who made the bet, and the rest are stored in the liquidity pool.
  Due to this mechansim, the number of YES shares in the whole market always equals the number of NO shares.
 - You can manually add liquidity to any market to increase the incentives for traders to participate. You can think of added liquidity as a subsidy for getting your question answered. You can do this by opening up the market info popup window located in the (...) section of the header on the market page.
@@ -79,6 +80,9 @@ for the pool to be sorted into.
 ## Free-Response Markets: Betting & Payouts
 
 - Markets are structured around a list of answers, any of which can be bet on.
+- When a Free Response market is created, the market creation fee goes into a hidden answer called the Ante and gets paid to the winner(s), to subsidize the market and create an incentive to bet. This happens whether the creation fee is paid by the user or by Manifold for the daily free market.
+  - This hidden answer is why a market's probabilities will not add up to 100%. 
+  - If you want to further subsidize a market, it's customary to create an ANTE answer and put money in that.
 - Anyone can add answers to a market as long as they stake some amount of M$ on it. Traders can place a bet on any answer and receive shares in the outcome in return.
 - When a user places a bet, their M$ goes into the market's pool and they receive a certain amount of shares of the selected answer.
 - When the market is resolved, you will be paid out according to your shares. If the creator resolves to answer #1, the entire pool is divided up amongst the users who bet on answer #1 proportional to their shares.
@@ -102,5 +106,5 @@ for the pool to be sorted into.
   - Our DPM fee schedule is currently: `5% * (1 - post-bet probability) * bet amount`
     - Note that all free-response markets use this fee schedule. The calculation for this is the same as above.
     - 4% is used to provide a commission to the market creator, which is paid out after the market is resolved. 1% is "burnt" to prevent inflation.
-  - No fees are levied on sales.
+  - No fees are levied on sales. If you have existing shares in a binary market and buy shares on the opposite side, that is equivalent to selling your shares and you do not pay fees.
 
