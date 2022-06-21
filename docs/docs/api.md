@@ -115,7 +115,7 @@ Requires no authorization.
     outcomeType: string // BINARY, FREE_RESPONSE, or NUMERIC
     mechanism: string // dpm-2 or cpmm-1
 
-    pool: number
+    pool: number // sum of YES and NO shares in liquidity pool for CPMM, null for DPM
     probability: number
     p?: number // probability constant in y^p * n^(1-p) = k
     totalLiquidity?: number
