@@ -47,7 +47,7 @@ export const transact = functions
       }
       const fromUser = fromSnap.data() as User
 
-      if (fromUser.balance < amount) {
+      if (amount > 0 && fromUser.balance < amount) {
         return {
           status: 'error',
           message: `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance} `,
@@ -61,6 +61,15 @@ export const transact = functions
           return { status: 'error', message: 'User not found' }
         }
         const toUser = toSnap.data() as User
+        if (amount < 0 && toUser.balance < -amount) {
+          return {
+            status: 'error',
+            message: `Insufficient balance: ${
+              toUser.username
+            } needed ${-amount} but only had ${toUser.balance} `,
+          }
+        }
+
         transaction.update(toDoc, {
           balance: toUser.balance + amount,
           totalDeposits: toUser.totalDeposits + amount,
