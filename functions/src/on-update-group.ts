@@ -16,5 +16,5 @@ export const onUpdateGroup = functions.firestore
     await firestore
       .collection('groups')
       .doc(group.id)
-      .update({ mostRecentActivityTime: new Date().getTime() })
+      .update({ mostRecentActivityTime: Date.now() })
   })

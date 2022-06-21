@@ -45,13 +45,13 @@ export function ContractCard(props: {
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 
   const showQuickBet =
+    user &&
+    !marketClosed &&
     !(
-      !user ||
-      marketClosed ||
-      (outcomeType === 'FREE_RESPONSE' &&
-        getTopAnswer(contract) === undefined) ||
-      outcomeType === 'NUMERIC'
-    ) && !hideQuickBet
+      outcomeType === 'FREE_RESPONSE' && getTopAnswer(contract) === undefined
+    ) &&
+    outcomeType !== 'NUMERIC' &&
+    !hideQuickBet
 
   return (
     <div>
