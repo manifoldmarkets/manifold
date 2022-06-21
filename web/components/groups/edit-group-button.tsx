@@ -93,6 +93,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
             </label>
             <FilterSelectUsers
               setSelectedUsers={setAddMemberUsers}
+              selectedUsers={addMemberUsers}
               ignoreUserIds={memberIds}
             />
           </div>

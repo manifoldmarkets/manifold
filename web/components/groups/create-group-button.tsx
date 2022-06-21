@@ -116,6 +116,7 @@ export function CreateGroupButton(props: {
           </label>
           <FilterSelectUsers
             setSelectedUsers={updateMemberUsers}
+            selectedUsers={memberUsers}
             ignoreUserIds={[user.id]}
           />
         </div>

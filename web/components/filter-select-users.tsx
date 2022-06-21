@@ -9,17 +9,13 @@ import { Row } from 'web/components/layout/row'
 
 export function FilterSelectUsers(props: {
   setSelectedUsers: (users: User[]) => void
+  selectedUsers: User[]
   ignoreUserIds: string[]
 }) {
-  const { ignoreUserIds } = props
+  const { ignoreUserIds, selectedUsers, setSelectedUsers } = props
   const users = useUsers()
   const [query, setQuery] = useState('')
-  const [selectedUsers, setSelectedUsers] = useState<User[]>([])
 
-  function updateSelectedUsers(users: User[]) {
-    setSelectedUsers(users)
-    props.setSelectedUsers(users)
-  }
   const filteredUsers =
     query === ''
       ? users
@@ -81,7 +77,7 @@ export function FilterSelectUsers(props: {
                         )}
                         onClick={() => {
                           setQuery('')
-                          updateSelectedUsers([...selectedUsers, user])
+                          setSelectedUsers([...selectedUsers, user])
                         }}
                       >
                         <Avatar
