@@ -5,6 +5,7 @@ import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -186,7 +187,7 @@ export function toLiteUser(user: User): LiteUser {
     createdTime,
     name,
     username,
-    url: `https://manifold.markets/${username}`,
+    url: `https://${ENV_CONFIG.domain}/${username}`,
     avatarUrl,
     bio,
     bannerUrl,
