@@ -218,17 +218,10 @@ export default function Sidebar(props: { className?: string }) {
   const mobileNavigationOptions = !user
     ? signedOutMobileNavigation
     : signedInMobileNavigation
-  const memberGroups = useMemberGroups(user)
-  const [memberItems, setMemberItems] = useState<MenuItem[]>([])
-  useEffect(() => {
-    if (memberGroups)
-      setMemberItems(
-        memberGroups.map((group: Group) => ({
-          name: group.name,
-          href: groupPath(group.slug),
-        }))
-      )
-  }, [memberGroups])
+  const memberItems = (useMemberGroups(user) ?? []).map((group: Group) => ({
+    name: group.name,
+    href: groupPath(group.slug),
+  }))
 
   return (
     <nav aria-label="Sidebar" className={className}>
