@@ -1,4 +1,4 @@
-import { take, sortBy, debounce } from 'lodash'
+import { take, sortBy, debounce, set } from 'lodash'
 
 import { Group } from 'common/group'
 import { Comment } from 'common/comment'
@@ -38,6 +38,8 @@ import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
 import { PlusIcon } from '@heroicons/react/outline'
 import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
+import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
+import { toast } from 'react-hot-toast'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -137,7 +139,12 @@ export default function GroupPage(props: {
 
   const rightSidebar = (
     <Col className="mt-6 hidden xl:block">
-      <GroupOverview group={group} creator={creator} isCreator={!!isCreator} />
+      <GroupOverview
+        group={group}
+        creator={creator}
+        isCreator={!!isCreator}
+        user={user}
+      />
       <YourPerformance
         traderScores={traderScores}
         creatorScores={creatorScores}
@@ -192,6 +199,9 @@ export default function GroupPage(props: {
               query={`?groupId=${group.id}`}
             />
           )}
+          {!isMember && group.anyoneCanJoin && (
+            <JoinGroupButton group={group} user={user} />
+          )}
         </Row>
       </div>
 
@@ -240,6 +250,7 @@ export default function GroupPage(props: {
                     group={group}
                     creator={creator}
                     isCreator={!!isCreator}
+                    user={user}
                   />
                   <YourPerformance
                     traderScores={traderScores}
@@ -261,10 +272,25 @@ export default function GroupPage(props: {
 function GroupOverview(props: {
   group: Group
   creator: User
+  user: User | null | undefined
   isCreator: boolean
 }) {
-  const { group, creator, isCreator } = props
+  const { group, creator, isCreator, user } = props
   const { about } = group
+  const anyoneCanJoinChoices: { [key: string]: string } = {
+    Private: 'false',
+    Public: 'true',
+  }
+  const [anyoneCanJoin, setAnyoneCanJoin] = useState(group.anyoneCanJoin)
+  function updateAnyoneCanJoin(newVal: boolean) {
+    if (group.anyoneCanJoin == newVal || !isCreator) return
+    setAnyoneCanJoin(newVal)
+    toast.promise(updateGroup(group, { ...group, anyoneCanJoin: newVal }), {
+      loading: 'Updating group...',
+      success: 'Updated group!',
+      error: "Couldn't update group",
+    })
+  }
 
   return (
     <Col>
@@ -282,6 +308,24 @@ function GroupOverview(props: {
           />
         </Row>
         <GroupMembersList group={group} />
+        <Row className={'items-center gap-1'}>
+          <span className={'text-gray-500'}>Membership</span>
+          {user && user.id === creator.id ? (
+            <ChoicesToggleGroup
+              currentChoice={anyoneCanJoin.toString()}
+              choicesMap={anyoneCanJoinChoices}
+              setChoice={(choice) =>
+                updateAnyoneCanJoin(choice.toString() === 'true')
+              }
+              toggleClassName={'h-10'}
+              className={'ml-2'}
+            />
+          ) : (
+            <span className={'text-gray-700'}>
+              {anyoneCanJoin ? 'Public' : 'Private'}
+            </span>
+          )}
+        </Row>
         {about && (
           <>
             <Spacer h={2} />
@@ -389,7 +433,7 @@ function GroupLeaderboards(props: {
         users={topCreators}
         columns={[
           {
-            header: 'Market pool',
+            header: 'Market volume',
             renderCell: (user) =>
               formatMoney(topCreatorScores[topCreators.indexOf(user)]),
           },
@@ -481,5 +525,34 @@ function AddContractButton(props: { group: Group; user: User }) {
         </button>
       </Row>
     </>
+  )
+}
+
+function JoinGroupButton(props: {
+  group: Group
+  user: User | null | undefined
+}) {
+  const { group, user } = props
+  function joinGroup() {
+    if (user && !group.memberIds.includes(user.id)) {
+      toast.promise(
+        updateGroup(group, {
+          ...group,
+          memberIds: [...group.memberIds, user.id],
+        }),
+        {
+          loading: 'Joining group...',
+          success: 'Joined group!',
+          error: "Couldn't join group",
+        }
+      )
+    }
+  }
+  return (
+    <div>
+      <button onClick={joinGroup} className={'btn-md btn-outline btn '}>
+        Join Group
+      </button>
+    </div>
   )
 }

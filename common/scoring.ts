@@ -10,8 +10,7 @@ export function scoreCreators(contracts: Contract[]) {
     (contracts) =>
       sumBy(
         contracts.map((contract) => {
-          if (contract.mechanism === 'cpmm-1') return contract.totalLiquidity
-          return Object.values(contract.pool)
+          return contract.volume
         })
       )
   )
