@@ -55,10 +55,10 @@ for the pool to be sorted into.
 
 ## Binary Markets: Liquidity
 
-- The liquidity in a market is the amount of capital available for traders to trade against.
-- The more liquidity, the greater incentive there is for traders to bet, the more accurate the market will be.
-- You can add liquidity to a market you are interested in to increase the incentives for traders to participate. You can think of added liquidity as a subsidy for getting your question answered.
-- You can add liquidity to any market by opening up the market info popup window located in the (...) section of the header on the market page.
+- The liquidity in a market is the amount of capital available for traders to trade against. The more liquidity, the greater incentive there is for traders to bet, and the more accurate the market should be.
+- Behind the scenes, when a bet is placed the CPMM mechanism does [a bunch of math](http://bit.ly/maniswap). The end result is that for each M$1 bet, 1 YES share and 1 NO share is created. Some amount of shares are then given to the user who made the bet, and the rest are stored in the liquidity pool.
+ Due to this mechansim, the number of YES shares in the whole market always equals the number of NO shares.
+- You can manually add liquidity to any market to increase the incentives for traders to participate. You can think of added liquidity as a subsidy for getting your question answered. You can do this by opening up the market info popup window located in the (...) section of the header on the market page.
   - Adding liquidity provides you with a number of YES and NO shares, which can be withdrawn from the same interface. 
   - These shares resolve to M$ like normal when the market resolves, which will return you some amount of your investment. It is often wise to inject liquidity if you believe the current probability is very close to the real probability.
 
