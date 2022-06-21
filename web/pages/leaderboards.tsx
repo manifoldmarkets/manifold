@@ -36,8 +36,8 @@ export default function Leaderboards(props: {
   useTracking('view leaderboards')
 
   return (
-    <Page margin>
-      <Col className="items-center gap-10 lg:flex-row">
+    <Page>
+      <Col className="mx-4 items-center gap-10 lg:mx-0 lg:flex-row">
         <Leaderboard
           title="🏅 Top bettors"
           users={topTraders}

@@ -15,6 +15,9 @@ import {
 } from '../../common/util/clean-username'
 import { sendWelcomeEmail } from './emails'
 import { isWhitelisted } from '../../common/envs/constants'
+import { DEFAULT_CATEGORIES } from '../../common/categories'
+
+import { track } from './analytics'
 
 export const createUser = functions
   .runWith({ minInstances: 1, secrets: ['MAILGUN_KEY'] })
@@ -69,6 +72,7 @@ export const createUser = functions
       createdTime: Date.now(),
       totalPnLCached: 0,
       creatorVolumeCached: 0,
+      followedCategories: DEFAULT_CATEGORIES,
     }
 
     await firestore.collection('users').doc(userId).create(user)
@@ -85,6 +89,8 @@ export const createUser = functions
     await firestore.collection('private-users').doc(userId).create(privateUser)
 
     await sendWelcomeEmail(user, privateUser)
+
+    await track(userId, 'create user', { username }, { ip: ipAddress })
 
     return { status: 'success', user }
   })

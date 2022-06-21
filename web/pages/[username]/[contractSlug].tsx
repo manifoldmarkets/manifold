@@ -42,6 +42,7 @@ import { useBets } from 'web/hooks/use-bets'
 import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
+import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -120,6 +121,8 @@ export function ContractPageContent(
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
+  const tips = useTipTxns(contract.id)
+
   const user = useUser()
   const { width, height } = useWindowSize()
 
@@ -196,11 +199,7 @@ export function ContractPageContent(
           </button>
         )}
 
-        <ContractOverview
-          contract={contract}
-          bets={bets}
-          comments={comments ?? []}
-        />
+        <ContractOverview contract={contract} bets={bets} />
         {isNumeric && (
           <AlertBox
             title="Warning"
@@ -228,6 +227,7 @@ export function ContractPageContent(
                 contract={contract}
                 bets={bets}
                 comments={comments}
+                tips={tips}
               />
             </div>
             <Spacer h={12} />
@@ -238,6 +238,7 @@ export function ContractPageContent(
           contract={contract}
           user={user}
           bets={bets}
+          tips={tips}
           comments={comments}
         />
       </Col>
@@ -294,8 +295,9 @@ function ContractTopTrades(props: {
   contract: Contract
   bets: Bet[]
   comments: Comment[]
+  tips: CommentTipMap
 }) {
-  const { contract, bets, comments } = props
+  const { contract, bets, comments, tips } = props
   const commentsById = keyBy(comments, 'id')
   const betsById = keyBy(bets, 'id')
 
@@ -332,6 +334,7 @@ function ContractTopTrades(props: {
             <FeedComment
               contract={contract}
               comment={commentsById[topCommentId]}
+              tips={tips[topCommentId]}
               betsBySameUser={[betsById[topCommentId]]}
               truncate={false}
               smallAvatar={false}

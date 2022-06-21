@@ -11,6 +11,7 @@ import { Spacer } from './layout/spacer'
 import { YesNoSelector } from './yes-no-selector'
 import {
   formatMoney,
+  formatMoneyWithDecimals,
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
@@ -356,7 +357,9 @@ function BuyPanel(props: {
             <div>
               Payout if <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
             </div>
-            <InfoTooltip text={`Includes ${formatMoney(cpmmFees)} in fees`} />
+            <InfoTooltip
+              text={`Includes ${formatMoneyWithDecimals(cpmmFees)} in fees`}
+            />
           </Row>
           <div>
             <span className="mr-2 whitespace-nowrap">

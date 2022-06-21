@@ -41,7 +41,9 @@ export const fetchBackend = (req: NextApiRequest, name: V2CloudFunction) => {
     'Content-Type',
     'Origin',
   ])
-  return fetch(url, { headers, method: req.method, body: req })
+  const hasBody = req.method != 'HEAD' && req.method != 'GET'
+  const opts = { headers, method: req.method, body: hasBody ? req : undefined }
+  return fetch(url, opts)
 }
 
 export const forwardResponse = async (

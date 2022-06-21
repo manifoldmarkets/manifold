@@ -33,14 +33,15 @@ Uniswap's CPMM and a suggestion from Manifold user Pepe.
       - If you bet M$100 on NO and the resulting probability without fees would be 10%, then you pay M$100 _ 13% _ 10% = M$1.3.
       - If you bet M$100 on YES and the resulting probability without fees would be 90%, then you pay `M$100 * 13% * 10% = M$1.3`.
     - The fees are used to provide a commission to the market creator and to subsidize trading within the market.
+    - 6% goes to the market creator, 6% to liquidity providers, and 1% is burnt to prevent inflation
     - The market creator’s commission is paid out only after the market is resolved.
   - No fees are levied on sales.
 
 # Market creation
 
 - Users can create a market on any question they want.
-- When you create a market, you must choose an initial probability and a close date (after which trading will halt).
-- You must also pay a M$ 50 market creation fee, which is used to subsidize trading on your market.
+- When you create a market, you must choose a close date (after which trading will halt).
+- You must also pay a M$100 market creation fee, which is used to subsidize trading on your market.
 - You will earn a commission on all bets placed in your market.
 - You are responsible for resolving your market in a timely manner. All the fees you earned as a commission will be paid out after resolution.
 

@@ -7,6 +7,6 @@ export const cleanUsername = (name: string, maxLength = 25) => {
     .substring(0, maxLength)
 }
 
-export const cleanDisplayName = (displayName: string, maxLength = 25) => {
+export const cleanDisplayName = (displayName: string, maxLength = 30) => {
   return displayName.replace(/\s+/g, ' ').substring(0, maxLength).trim()
 }

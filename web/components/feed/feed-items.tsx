@@ -112,10 +112,11 @@ export function FeedQuestion(props: {
     outcomeType,
     volume,
     createdTime,
+    isResolved,
   } = contract
   const { volumeLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
-  const isNew = createdTime > Date.now() - DAY_MS
+  const isNew = createdTime > Date.now() - DAY_MS && !isResolved
 
   return (
     <div className={'flex gap-2'}>
