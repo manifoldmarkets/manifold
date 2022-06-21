@@ -15,6 +15,8 @@ import {
 } from '../../common/util/clean-username'
 import { sendWelcomeEmail } from './emails'
 import { isWhitelisted } from '../../common/envs/constants'
+import { DEFAULT_CATEGORIES } from '../../common/categories'
+
 import { track } from './analytics'
 
 export const createUser = functions
@@ -70,6 +72,7 @@ export const createUser = functions
       createdTime: Date.now(),
       totalPnLCached: 0,
       creatorVolumeCached: 0,
+      followedCategories: DEFAULT_CATEGORIES,
     }
 
     await firestore.collection('users').doc(userId).create(user)
