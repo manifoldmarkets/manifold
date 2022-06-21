@@ -94,7 +94,6 @@ export function CreateGroupButton(props: {
           isSubmitting ? 'loading btn-disabled' : ' btn-primary'
         ),
       }}
-      onSubmit={() => {}}
       onSubmitWithSuccess={onSubmit}
       onOpenChanged={(isOpen) => {
         onOpenStateChange?.(isOpen)

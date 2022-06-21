@@ -159,7 +159,7 @@ export default function GroupPage(props: {
               .slice(0, 3)}
             hasMore={false}
             loadMore={() => {}}
-            className={'grid w-full grid-cols-1 gap-4'}
+            overrideGridClassName={'grid w-full grid-cols-1 gap-4'}
           />
         </div>
       )}
@@ -504,7 +504,7 @@ function AddContractButton(props: { group: Group; user: User }) {
                 onContractClick={(contract) => {
                   addContractToGroup(contract)
                 }}
-                className={'flex grid-cols-1 flex-col gap-3 p-1'}
+                overrideGridClassName={'flex grid-cols-1 flex-col gap-3 p-1'}
                 hideQuickBet={true}
               />
             ) : (

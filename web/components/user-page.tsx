@@ -28,9 +28,7 @@ import { FollowersButton, FollowingButton } from './following-button'
 import { AlertBox } from './alert-box'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
-import { GroupCard } from 'web/pages/groups'
 import { useRouter } from 'next/router'
-import { useMemberGroups } from 'web/hooks/use-group'
 
 export function UserLink(props: {
   name: string
@@ -67,7 +65,6 @@ export function UserPage(props: {
     'loading'
   )
   const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
-  const usersGroups = useMemberGroups(user)
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
@@ -297,19 +294,6 @@ export function UserPage(props: {
                 ),
                 tabIcon: (
                   <div className="px-0.5 font-bold">{usersBets.length}</div>
-                ),
-              },
-              {
-                title: 'Groups',
-                content: (
-                  <Col className={'gap-3'}>
-                    {usersGroups?.map((group) => (
-                      <GroupCard group={group} key={group.id} creator={user} />
-                    ))}
-                  </Col>
-                ),
-                tabIcon: (
-                  <div className="px-0.5 font-bold">{usersGroups?.length}</div>
                 ),
               },
             ]}

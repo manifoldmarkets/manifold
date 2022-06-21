@@ -14,7 +14,7 @@ export function ContractsGrid(props: {
   hasMore: boolean
   showCloseTime?: boolean
   onContractClick?: (contract: Contract) => void
-  className?: string
+  overrideGridClassName?: string
   hideQuickBet?: boolean
 }) {
   const {
@@ -23,7 +23,7 @@ export function ContractsGrid(props: {
     hasMore,
     loadMore,
     onContractClick,
-    className,
+    overrideGridClassName,
     hideQuickBet,
   } = props
 
@@ -51,7 +51,9 @@ export function ContractsGrid(props: {
     <Col className="gap-8">
       <ul
         className={clsx(
-          className ? className : 'grid w-full grid-cols-1 gap-4 md:grid-cols-2'
+          overrideGridClassName
+            ? overrideGridClassName
+            : 'grid w-full grid-cols-1 gap-4 md:grid-cols-2'
         )}
       >
         {contracts.map((contract) => (

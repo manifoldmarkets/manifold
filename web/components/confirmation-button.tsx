@@ -18,8 +18,8 @@ export function ConfirmationButton(props: {
     label?: string
     className?: string
   }
-  onSubmit: () => void
   children: ReactNode
+  onSubmit?: () => void
   onOpenChanged?: (isOpen: boolean) => void
   onSubmitWithSuccess?: () => Promise<boolean>
 }) {

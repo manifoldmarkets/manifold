@@ -29,15 +29,15 @@ export function Discussion(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollToBottomRef, setScrollToBottomRef] =
     useState<HTMLDivElement | null>(null)
-  const [scrollToCommentId, setScrollToCommentId] = useState('')
-  const [scrollToCommentRef, setScrollToCommentRef] =
+  const [scrollToMessageId, setScrollToMessageId] = useState('')
+  const [scrollToMessageRef, setScrollToMessageRef] =
     useState<HTMLDivElement | null>(null)
   const [replyToUsername, setReplyToUsername] = useState('')
   const router = useRouter()
 
   useEffect(() => {
-    scrollToCommentRef?.scrollIntoView()
-  }, [scrollToCommentRef])
+    scrollToMessageRef?.scrollIntoView()
+  }, [scrollToMessageRef])
 
   useEffect(() => {
     scrollToBottomRef?.scrollIntoView()
@@ -46,7 +46,7 @@ export function Discussion(props: {
   useEffect(() => {
     const elementInUrl = router.asPath.split('#')[1]
     if (messages.map((m) => m.id).includes(elementInUrl)) {
-      setScrollToCommentId(elementInUrl)
+      setScrollToMessageId(elementInUrl)
     }
   }, [messages, router.asPath])
 
@@ -54,7 +54,7 @@ export function Discussion(props: {
     setReplyToUsername(comment.userUsername)
   }
 
-  async function submitComment() {
+  async function submitMessage() {
     if (!user) {
       track('sign in to comment')
       return await firebaseLogin()
@@ -81,10 +81,10 @@ export function Discussion(props: {
             comment={message}
             group={group}
             onReplyClick={onReplyClick}
-            highlight={message.id === scrollToCommentId}
+            highlight={message.id === scrollToMessageId}
             setRef={
-              scrollToCommentId === message.id
-                ? setScrollToCommentRef
+              scrollToMessageId === message.id
+                ? setScrollToMessageRef
                 : i === messages.length - 1
                 ? setScrollToBottomRef
                 : undefined
@@ -113,7 +113,7 @@ export function Discussion(props: {
               isReply={false}
               user={user}
               replyToUsername={replyToUsername}
-              submitComment={submitComment}
+              submitComment={submitMessage}
               isSubmitting={isSubmitting}
               enterToSubmit={true}
             />
@@ -124,7 +124,7 @@ export function Discussion(props: {
   )
 }
 
-function GroupMessage_(props: {
+const GroupMessage = memo(function GroupMessage_(props: {
   user: User | null | undefined
   comment: Comment
   group: Group
@@ -182,5 +182,4 @@ function GroupMessage_(props: {
       </div>
     </Row>
   )
-}
-const GroupMessage = memo(GroupMessage_)
+})
