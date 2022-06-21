@@ -23,7 +23,7 @@ import { ENV } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { EditCategoriesButton } from './feed/category-selector'
-import { CATEGORIES } from 'common/categories'
+import { CATEGORIES, category } from 'common/categories'
 import { Tabs } from './layout/tabs'
 import { EditFollowingButton } from './following-button'
 import { track } from '@amplitude/analytics-browser'
@@ -264,7 +264,7 @@ function CategoryFollowSelector(props: {
   if (followedCategories.length) {
     const categoriesLabel = followedCategories
       .slice(0, 3)
-      .map((cat) => CATEGORIES[cat])
+      .map((cat) => CATEGORIES[cat as category])
       .join(', ')
     const andMoreLabel =
       followedCategories.length > 3
