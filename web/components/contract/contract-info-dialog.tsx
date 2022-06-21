@@ -21,6 +21,7 @@ import { ShareEmbedButton } from '../share-embed-button'
 import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
 import { InfoTooltip } from '../info-tooltip'
+import { TagsInput } from 'web/components/tags-input'
 
 export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
@@ -146,8 +147,9 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
             </tbody>
           </table>
 
-          {/*TODO: allow users to add current markets to a group?*/}
-
+          <div>Tags</div>
+          <TagsInput contract={contract} />
+          <div />
           {contract.mechanism === 'cpmm-1' && !contract.resolution && (
             <LiquidityPanel contract={contract} />
           )}
