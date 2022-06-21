@@ -367,9 +367,10 @@ export function BetsSummary(props: {
   className?: string
 }) {
   const { contract, isYourBets, className } = props
-  const { resolution, outcomeType, mechanism } = contract
+  const { resolution, closeTime, outcomeType, mechanism } = contract
   const isBinary = outcomeType === 'BINARY'
   const isCpmm = mechanism === 'cpmm-1'
+  const isClosed = closeTime && Date.now() > closeTime
 
   const bets = props.bets.filter((b) => !b.isAnte)
 
@@ -445,6 +446,7 @@ export function BetsSummary(props: {
             {isYourBets &&
               isCpmm &&
               isBinary &&
+              !isClosed &&
               !resolution &&
               invested > 0 &&
               user && (
