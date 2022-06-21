@@ -34,15 +34,9 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
       : resolutionTime ?? Date.now()
   )
 
-  if (resolutionTime || isClosed) {
-    times.push(latestTime.toDate())
-    probs.push(probs[probs.length - 1])
-  } else {
-    // Add a fake datapoint in future so the line continues horizontally
-    // to the right.
-    times.push(latestTime.add(1, 'month').toDate())
-    probs.push(probs[probs.length - 1])
-  }
+  // Add a fake datapoint so the line continues to the right
+  times.push(latestTime.toDate())
+  probs.push(probs[probs.length - 1])
 
   const points = probs.map((prob, i) => ({ x: times[i], y: prob * 100 }))
   const data = [{ id: 'Yes', data: points, color: '#11b981' }]
@@ -61,7 +55,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
 
   return (
     <div
-      className="w-full overflow-hidden"
+      className="w-full overflow-visible"
       style={{ height: height ?? (!width || width >= 800 ? 350 : 250) }}
     >
       <ResponsiveLine
@@ -84,13 +78,14 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
           format: (time) => formatTime(+time, lessThanAWeek),
         }}
         colors={{ datum: 'color' }}
-        pointSize={bets.length > 100 ? 0 : 10}
+        curve="stepAfter"
+        pointSize={0}
         pointBorderWidth={1}
         pointBorderColor="#fff"
         enableSlices="x"
         enableGridX={!!width && width >= 800}
         enableArea
-        margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
+        margin={{ top: 20, right: 20, bottom: 25, left: 40 }}
         animate={false}
       />
     </div>

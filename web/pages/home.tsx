@@ -9,12 +9,16 @@ import { ContractSearch } from 'web/components/contract-search'
 import { Contract } from 'common/contract'
 import { ContractPageContent } from './[username]/[contractSlug]'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { useTracking } from 'web/hooks/use-tracking'
+import { track } from 'web/lib/service/analytics'
 
 const Home = () => {
   const user = useUser()
   const [contract, setContract] = useContractPage()
 
   const router = useRouter()
+
+  useTracking('view home')
 
   if (user === null) {
     Router.replace('/')
@@ -42,7 +46,10 @@ const Home = () => {
         <button
           type="button"
           className="fixed bottom-[70px] right-3 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-3 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
-          onClick={() => router.push('/create')}
+          onClick={() => {
+            router.push('/create')
+            track('mobile create button')
+          }}
         >
           <PlusSmIcon className="h-8 w-8" aria-hidden="true" />
         </button>
@@ -68,7 +75,7 @@ const useContractPage = () => {
   const [contract, setContract] = useState<Contract | undefined>()
 
   useEffect(() => {
-    const onBack = () => {
+    const updateContract = () => {
       const path = location.pathname.split('/').slice(1)
       if (path[0] === 'home') setContract(undefined)
       else {
@@ -80,23 +87,24 @@ const useContractPage = () => {
         }
       }
     }
-    window.addEventListener('popstate', onBack)
 
-    // Hack. Listen to changes in href to clear contract on navigate home.
-    let href = document.location.href
-    const observer = new MutationObserver(function (_mutations) {
-      if (href != document.location.href) {
-        href = document.location.href
+    const { pushState, replaceState } = window.history
 
-        const path = location.pathname.split('/').slice(1)
-        if (path[0] === 'home') setContract(undefined)
-      }
-    })
-    observer.observe(document, { subtree: true, childList: true })
+    window.history.pushState = function () {
+      // eslint-disable-next-line prefer-rest-params
+      pushState.apply(history, arguments as any)
+      updateContract()
+    }
+
+    window.history.replaceState = function () {
+      // eslint-disable-next-line prefer-rest-params
+      replaceState.apply(history, arguments as any)
+      updateContract()
+    }
 
     return () => {
-      window.removeEventListener('popstate', onBack)
-      observer.disconnect()
+      window.history.pushState = pushState
+      window.history.replaceState = replaceState
     }
   }, [])
 

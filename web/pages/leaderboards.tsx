@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Title } from 'web/components/title'
 import { Tabs } from 'web/components/layout/tabs'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
@@ -94,6 +95,7 @@ export default function Leaderboards(props: {
       </Col>
     )
   }
+  useTracking('view leaderboards')
 
   return (
     <Page margin>

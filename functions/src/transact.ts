@@ -11,7 +11,17 @@ export const transact = functions
     const userId = context?.auth?.uid
     if (!userId) return { status: 'error', message: 'Not authorized' }
 
-    const { amount, fromType, fromId, toId, toType, description } = data
+    const {
+      amount,
+      fromType,
+      fromId,
+      toId,
+      toType,
+      category,
+      token,
+      data: innerData,
+      description,
+    } = data
 
     if (fromType !== 'USER')
       return {
@@ -25,7 +35,7 @@ export const transact = functions
         message: 'Must be authenticated with userId equal to specified fromId.',
       }
 
-    if (amount <= 0 || isNaN(amount) || !isFinite(amount))
+    if (isNaN(amount) || !isFinite(amount))
       return { status: 'error', message: 'Invalid amount' }
 
     // Run as transaction to prevent race conditions.
@@ -37,7 +47,7 @@ export const transact = functions
       }
       const fromUser = fromSnap.data() as User
 
-      if (fromUser.balance < amount) {
+      if (amount > 0 && fromUser.balance < amount) {
         return {
           status: 'error',
           message: `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance} `,
@@ -51,6 +61,15 @@ export const transact = functions
           return { status: 'error', message: 'User not found' }
         }
         const toUser = toSnap.data() as User
+        if (amount < 0 && toUser.balance < -amount) {
+          return {
+            status: 'error',
+            message: `Insufficient balance: ${
+              toUser.username
+            } needed ${-amount} but only had ${toUser.balance} `,
+          }
+        }
+
         transaction.update(toDoc, {
           balance: toUser.balance + amount,
           totalDeposits: toUser.totalDeposits + amount,
@@ -69,9 +88,10 @@ export const transact = functions
         toType,
 
         amount,
-        // TODO: Unhardcode once we have non-donation txns
-        token: 'M$',
-        category: 'CHARITY',
+        category,
+        data: innerData,
+        token,
+
         description,
       })
 

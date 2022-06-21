@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { useFollows } from 'web/hooks/use-follows'
 import { useUser } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
+import { withTracking } from 'web/lib/service/analytics'
 
 export function FollowButton(props: {
   isFollowing: boolean | undefined
@@ -34,7 +35,7 @@ export function FollowButton(props: {
           small && smallStyle,
           className
         )}
-        onClick={onUnfollow}
+        onClick={withTracking(onUnfollow, 'unfollow')}
       >
         Following
       </button>
@@ -44,7 +45,7 @@ export function FollowButton(props: {
   return (
     <button
       className={clsx('btn btn-sm', small && smallStyle, className)}
-      onClick={onFollow}
+      onClick={withTracking(onFollow, 'follow')}
     >
       Follow
     </button>

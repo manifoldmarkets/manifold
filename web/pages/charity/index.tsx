@@ -19,6 +19,7 @@ import { getAllCharityTxns } from 'web/lib/firebase/txns'
 import { manaToUSD } from 'common/util/format'
 import { quadraticMatches } from 'common/quadratic-funding'
 import { Txn } from 'common/txn'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export async function getStaticProps() {
   const txns = await getAllCharityTxns()
@@ -94,6 +95,8 @@ export default function Charity(props: {
       ),
     [charities, query]
   )
+
+  useTracking('view charity')
 
   return (
     <Page>

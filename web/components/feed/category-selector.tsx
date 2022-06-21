@@ -3,12 +3,13 @@ import { PencilIcon } from '@heroicons/react/outline'
 import { union, difference } from 'lodash'
 
 import { Row } from '../layout/row'
-import { CATEGORIES, CATEGORY_LIST } from '../../../common/categories'
+import { CATEGORIES, category, CATEGORY_LIST } from '../../../common/categories'
 import { Modal } from '../layout/modal'
 import { Col } from '../layout/col'
 import { useState } from 'react'
 import { updateUser, User } from 'web/lib/firebase/users'
 import { Checkbox } from '../checkbox'
+import { track } from 'web/lib/service/analytics'
 
 export function CategorySelector(props: {
   category: string
@@ -46,7 +47,7 @@ export function CategorySelector(props: {
       {CATEGORY_LIST.map((cat) => (
         <CategoryButton
           key={cat}
-          category={CATEGORIES[cat].split(' ')[0]}
+          category={CATEGORIES[cat as category].split(' ')[0]}
           isFollowed={cat === category}
           toggle={() => {
             setCategory(cat)
@@ -93,7 +94,10 @@ export function EditCategoriesButton(props: {
         className,
         'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-700'
       )}
-      onClick={() => setIsOpen(true)}
+      onClick={() => {
+        setIsOpen(true)
+        track('edit categories button')
+      }}
     >
       <PencilIcon className="inline h-4 w-4" />
       Categories
@@ -145,7 +149,7 @@ function CategorySelectorModal(props: {
             <Checkbox
               className="col-span-1"
               key={cat}
-              label={CATEGORIES[cat].split(' ')[0]}
+              label={CATEGORIES[cat as category].split(' ')[0]}
               checked={followedCategories.includes(cat)}
               toggle={(checked) => {
                 updateUser(user.id, {

@@ -50,7 +50,7 @@ Requires no authorization.
 
 - Example request
   ```
-  http://manifold.markets/api/v0/markets?limit=1
+  https://manifold.markets/api/v0/markets?limit=1
   ```
 - Example response
   ```json
@@ -354,10 +354,11 @@ Requires no authorization.
 - Response type: A `FullMarket`
 
   ```tsx
-  // A complete market, along with bets and comments
+  // A complete market, along with bets, comments, and answers (for free response markets)
   type FullMarket = LiteMarket & {
     bets: Bet[]
     comments: Comment[]
+    answers?: Answer[]
   }
 
   type Bet = {

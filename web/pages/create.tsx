@@ -22,9 +22,13 @@ import { removeUndefinedProps } from 'common/util/object'
 import { CATEGORIES } from 'common/categories'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { track } from 'web/lib/service/analytics'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
+
+  useTracking('view create page')
 
   return (
     <Page>
@@ -107,6 +111,9 @@ export function NewContract(props: { question: string }) {
   const max = maxString ? parseFloat(maxString) : undefined
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
+
+  const hasUnsavedChanges = !isSubmitting && Boolean(question || description)
+  useWarnUnsavedChanges(hasUnsavedChanges)
 
   const isValid =
     (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&

@@ -1,14 +1,15 @@
 import {
   HomeIcon,
-  CakeIcon,
   SearchIcon,
   BookOpenIcon,
   DotsHorizontalIcon,
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
+  PresentationChartBarIcon,
   SparklesIcon,
   NewspaperIcon,
+  TrendingUpIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -26,6 +27,7 @@ import { Row } from '../layout/row'
 import NotificationsIcon from 'web/components/notifications-icon'
 import React, { useEffect, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { trackCallback, withTracking } from 'web/lib/service/analytics'
 
 // Create an icon from the url of an image
 function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
@@ -72,6 +74,7 @@ function getMoreNavigation(user?: User | null) {
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
+    { name: 'Statistics', href: '/stats' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
   ]
@@ -90,7 +93,7 @@ const signedOutNavigation = [
 
 const signedOutMobileNavigation = [
   { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
+  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
   { name: 'Blog', href: 'https://news.manifold.markets', icon: NewspaperIcon },
   {
     name: 'Discord',
@@ -101,6 +104,11 @@ const signedOutMobileNavigation = [
     name: 'Twitter',
     href: 'https://twitter.com/ManifoldMarkets',
     icon: IconFromUrl('/twitter-logo.svg'),
+  },
+  {
+    name: 'Statistics',
+    href: '/stats',
+    icon: PresentationChartBarIcon,
   },
   {
     name: 'About',
@@ -125,6 +133,7 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
   return (
     <Link href={item.href} key={item.name}>
       <a
+        onClick={trackCallback('sidebar: ' + item.name)}
         className={clsx(
           item.href == currentPage
             ? 'bg-gray-200 text-gray-900'
@@ -216,7 +225,11 @@ export default function Sidebar(props: { className?: string }) {
         {user && (
           <MenuButton
             menuItems={[
-              { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
+              {
+                name: 'Sign out',
+                href: '#',
+                onClick: withTracking(firebaseLogout, 'sign out'),
+              },
             ]}
             buttonContent={<MoreButton />}
           />
@@ -237,14 +250,17 @@ export default function Sidebar(props: { className?: string }) {
       <div className={'aligncenter flex justify-center'}>
         {user ? (
           <Link href={'/create'} passHref>
-            <button className={clsx(gradient, buttonStyle)}>
+            <button
+              className={clsx(gradient, buttonStyle)}
+              onClick={trackCallback('create question button')}
+            >
               Create a question
             </button>
           </Link>
         ) : (
           <button
-            onClick={firebaseLogin}
-            className={clsx(gradient, buttonStyle)}
+            onClick={withTracking(firebaseLogin, 'sign in')}
+            className="btn btn-outline btn-sm mx-auto mt-4 -ml-1 w-full rounded-md normal-case"
           >
             Sign in
           </button>

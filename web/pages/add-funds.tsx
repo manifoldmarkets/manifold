@@ -6,6 +6,8 @@ import { FundsSelector } from 'web/components/yes-no-selector'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Page } from 'web/components/page'
+import { useTracking } from 'web/hooks/use-tracking'
+import { trackCallback } from 'web/lib/service/analytics'
 
 export default function AddFundsPage() {
   const user = useUser()
@@ -13,6 +15,8 @@ export default function AddFundsPage() {
   const [amountSelected, setAmountSelected] = useState<1000 | 2500 | 10000>(
     2500
   )
+
+  useTracking('view add funds')
 
   return (
     <Page>
@@ -59,6 +63,7 @@ export default function AddFundsPage() {
             <button
               type="submit"
               className="btn btn-primary w-full bg-gradient-to-r from-indigo-500 to-blue-500 font-medium hover:from-indigo-600 hover:to-blue-600"
+              onClick={trackCallback('checkout', { amount: amountSelected })}
             >
               Checkout
             </button>
