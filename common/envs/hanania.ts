@@ -13,11 +13,11 @@ export const HANANIA_CONFIG: EnvConfig = {
   },
   // TODO replace
   functionEndpoints: {
-    placebet: 'https://placebet-txwwmth7kq-uc.a.run.app',
-    sellshares: 'https://sellshares-txwwmth7kq-uc.a.run.app',
-    sellbet: 'https://sellbet-txwwmth7kq-uc.a.run.app',
-    createmarket: 'https://createmarket-txwwmth7kq-uc.a.run.app',
-    creategroup: 'https://creategroup-w3txbmd3ba-uc.a.run.app',
+    placebet: 'https://placebet-45jazbrfja-uc.a.run.app',
+    sellshares: 'https://sellshares-45jazbrfja-uc.a.run.app',
+    sellbet: 'https://sellbet-45jazbrfja-uc.a.run.app',
+    createmarket: 'https://createmarket-45jazbrfja-uc.a.run.app',
+    creategroup: 'https://creategroup-45jazbrfja-uc.a.run.app',
   },
   adminEmails: [...PROD_CONFIG.adminEmails],
   whitelistEmail: '',
