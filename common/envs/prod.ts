@@ -20,14 +20,14 @@ export type EnvConfig = {
   moneyMoniker: string // e.g. 'M$'
   faviconPath?: string // Should be a file in /public
   navbarLogoPath?: string
-  newQuestionPlaceholders: string[]
+  newQuestionPlaceholders?: string[] // TODO remove
 }
 
 type FirebaseConfig = {
   apiKey: string
   authDomain: string
   projectId: string
-  region: string
+  region?: string // TODO remove
   storageBucket: string
   messagingSenderId: string
   appId: string
