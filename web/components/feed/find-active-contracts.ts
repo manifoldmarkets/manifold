@@ -39,8 +39,10 @@ export function findActiveContracts(
 
   // Add every contract that had a recent comment, too
   for (const comment of recentComments) {
-    const contract = contractsById.get(comment.contractId)
-    if (contract) record(contract.id, comment.createdTime)
+    if (comment.contractId) {
+      const contract = contractsById.get(comment.contractId)
+      if (contract) record(contract.id, comment.createdTime)
+    }
   }
 
   // Add contracts by last bet time.

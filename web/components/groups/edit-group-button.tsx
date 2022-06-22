@@ -1,71 +1,66 @@
 import { useState } from 'react'
-import { isEqual } from 'lodash'
 import clsx from 'clsx'
 import { PencilIcon } from '@heroicons/react/outline'
 
-import { Fold } from 'common/fold'
-import { parseWordsAsTags } from 'common/util/parse'
-import { deleteFold, updateFold } from 'web/lib/firebase/folds'
-import { toCamelCase } from 'common/util/format'
+import { Group } from 'common/group'
+import { deleteGroup, updateGroup } from 'web/lib/firebase/groups'
 import { Spacer } from '../layout/spacer'
-import { TagsList } from '../tags-list'
 import { useRouter } from 'next/router'
+import { Modal } from 'web/components/layout/modal'
+import { FilterSelectUsers } from 'web/components/filter-select-users'
+import { User } from 'common/user'
 
-export function EditFoldButton(props: { fold: Fold; className?: string }) {
-  const { fold, className } = props
+export function EditGroupButton(props: { group: Group; className?: string }) {
+  const { group, className } = props
+  const { memberIds } = group
   const router = useRouter()
 
-  const [name, setName] = useState(fold.name)
-  const [about, setAbout] = useState(fold.about ?? '')
-
-  const initialOtherTags =
-    fold?.tags.filter((tag) => tag !== toCamelCase(name)).join(', ') ?? ''
-
-  const [otherTags, setOtherTags] = useState(initialOtherTags)
+  const [name, setName] = useState(group.name)
+  const [about, setAbout] = useState(group.about ?? '')
+  const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [addMemberUsers, setAddMemberUsers] = useState<User[]>([])
 
-  const tags = parseWordsAsTags(toCamelCase(name) + ' ' + otherTags)
-  const lowercaseTags = tags.map((tag) => tag.toLowerCase())
+  function updateOpen(newOpen: boolean) {
+    setAddMemberUsers([])
+    setOpen(newOpen)
+  }
 
   const saveDisabled =
-    name === fold.name &&
-    isEqual(tags, fold.tags) &&
-    about === (fold.about ?? '')
+    name === group.name && about === group.about && addMemberUsers.length === 0
 
   const onSubmit = async () => {
     setIsSubmitting(true)
 
-    await updateFold(fold, {
+    await updateGroup(group, {
       name,
       about,
-      tags,
-      lowercaseTags,
+      memberIds: [...memberIds, ...addMemberUsers.map((user) => user.id)],
     })
 
     setIsSubmitting(false)
+    updateOpen(false)
   }
 
   return (
-    <div className={clsx('p-1', className)}>
-      <label
-        htmlFor="edit"
+    <div className={clsx('flex p-1', className)}>
+      <div
         className={clsx(
-          'modal-button cursor-pointer whitespace-nowrap text-sm text-gray-700'
+          'btn-ghost cursor-pointer whitespace-nowrap rounded-full text-sm text-white'
         )}
+        onClick={() => updateOpen(!open)}
       >
         <PencilIcon className="inline h-4 w-4" /> Edit
-      </label>
-      <input type="checkbox" id="edit" className="modal-toggle" />
-
-      <div className="modal">
-        <div className="modal-box">
+      </div>
+      <Modal open={open} setOpen={updateOpen}>
+        <div className="h-full rounded-md bg-white p-8">
           <div className="form-control w-full">
             <label className="label">
-              <span className="mb-1">Community name</span>
+              <span className="mb-1">Group name</span>
             </label>
 
             <input
-              placeholder="Your fold name"
+              placeholder="Your group name"
               className="input input-bordered resize-none"
               disabled={isSubmitting}
               value={name}
@@ -94,29 +89,23 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
 
           <div className="form-control w-full">
             <label className="label">
-              <span className="mb-1">Tags</span>
+              <span className="mb-0">Add members</span>
             </label>
-
-            <input
-              placeholder="Politics, Economics, Rationality"
-              className="input input-bordered resize-none"
-              disabled={isSubmitting}
-              value={otherTags}
-              onChange={(e) => setOtherTags(e.target.value || '')}
+            <FilterSelectUsers
+              setSelectedUsers={setAddMemberUsers}
+              selectedUsers={addMemberUsers}
+              ignoreUserIds={memberIds}
             />
           </div>
-
-          <Spacer h={4} />
-          <TagsList tags={tags} noLink noLabel />
-          <Spacer h={4} />
 
           <div className="modal-action">
             <label
               htmlFor="edit"
               onClick={() => {
-                if (confirm('Are you sure you want to delete this fold?')) {
-                  deleteFold(fold)
-                  router.replace('/folds')
+                if (confirm('Are you sure you want to delete this group?')) {
+                  deleteGroup(group)
+                  updateOpen(false)
+                  router.replace('/groups')
                 }
               }}
               className={clsx(
@@ -125,7 +114,11 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
             >
               Delete
             </label>
-            <label htmlFor="edit" className={clsx('btn')}>
+            <label
+              htmlFor="edit"
+              className={'btn'}
+              onClick={() => updateOpen(false)}
+            >
               Cancel
             </label>
             <label
@@ -141,7 +134,7 @@ export function EditFoldButton(props: { fold: Fold; className?: string }) {
             </label>
           </div>
         </div>
-      </div>
+      </Modal>
     </div>
   )
 }

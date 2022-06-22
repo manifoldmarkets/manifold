@@ -5,6 +5,7 @@ import {
   getTopCreators,
   getTopTraders,
   LeaderboardPeriod,
+  getTopFollowed,
   User,
 } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
@@ -20,14 +21,16 @@ export async function getStaticPropz() {
   return queryLeaderboardUsers('allTime')
 }
 const queryLeaderboardUsers = async (period: LeaderboardPeriod) => {
-  const [topTraders, topCreators] = await Promise.all([
+  const [topTraders, topCreators, topFollowed] = await Promise.all([
     getTopTraders(period).catch(() => {}),
     getTopCreators(period).catch(() => {}),
+    getTopFollowed().catch(() => {}),
   ])
   return {
     props: {
       topTraders,
       topCreators,
+      topFollowed,
     },
     revalidate: 60, // regenerate after a minute
   }
@@ -36,12 +39,14 @@ const queryLeaderboardUsers = async (period: LeaderboardPeriod) => {
 export default function Leaderboards(props: {
   topTraders: User[]
   topCreators: User[]
+  topFollowed: User[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     topTraders: [],
     topCreators: [],
+    topFollowed: [],
   }
-
+  const { topFollowed } = props
   const [topTradersState, setTopTraders] = useState(props.topTraders)
   const [topCreatorsState, setTopCreators] = useState(props.topCreators)
   const [isLoading, setLoading] = useState(false)
@@ -58,41 +63,59 @@ export default function Leaderboards(props: {
 
   const LeaderboardWithPeriod = (period: LeaderboardPeriod) => {
     return (
-      <Col className="mx-4 items-center gap-10 lg:flex-row">
-        {!isLoading ? (
-          <>
-            {period === 'allTime' ? ( //TODO: show other periods once they're available
+      <>
+        <Col className="mx-4 items-center gap-10 lg:flex-row">
+          {!isLoading ? (
+            <>
+              {period === 'allTime' ? ( //TODO: show other periods once they're available
+                <Leaderboard
+                  title="🏅 Top bettors"
+                  users={topTradersState}
+                  columns={[
+                    {
+                      header: 'Total profit',
+                      renderCell: (user) =>
+                        formatMoney(user.profitCached[period]),
+                    },
+                  ]}
+                />
+              ) : (
+                <></>
+              )}
+
               <Leaderboard
-                title="🏅 Top bettors"
-                users={topTradersState}
+                title="🏅 Top creators"
+                users={topCreatorsState}
                 columns={[
                   {
-                    header: 'Total profit',
+                    header: 'Total bet',
                     renderCell: (user) =>
-                      formatMoney(user.profitCached[period]),
+                      formatMoney(user.creatorVolumeCached[period]),
                   },
                 ]}
               />
-            ) : (
-              <></>
-            )}
-
+            </>
+          ) : (
+            <LoadingIndicator spinnerClassName={'border-gray-500'} />
+          )}
+        </Col>
+        {period === 'allTime' ? (
+          <Col className="mx-4 my-10 w-1/2 items-center gap-10 lg:mx-0 lg:flex-row">
             <Leaderboard
-              title="🏅 Top creators"
-              users={topCreatorsState}
+              title="👀 Most followed"
+              users={topFollowed}
               columns={[
                 {
-                  header: 'Total bet',
-                  renderCell: (user) =>
-                    formatMoney(user.creatorVolumeCached[period]),
+                  header: 'Number of followers',
+                  renderCell: (user) => user.followerCountCached,
                 },
               ]}
             />
-          </>
+          </Col>
         ) : (
-          <LoadingIndicator spinnerClassName={'border-gray-500'} />
+          <></>
         )}
-      </Col>
+      </>
     )
   }
   useTracking('view leaderboards')

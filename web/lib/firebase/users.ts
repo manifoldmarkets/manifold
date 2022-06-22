@@ -199,6 +199,17 @@ export function getTopCreators(period: LeaderboardPeriod) {
   return getValues(topCreators)
 }
 
+export async function getTopFollowed() {
+  const users = await getValues<User>(topFollowedQuery)
+  return users.slice(0, 20)
+}
+
+const topFollowedQuery = query(
+  collection(db, 'users'),
+  orderBy('followerCountCached', 'desc'),
+  limit(20)
+)
+
 export function getUsers() {
   return getValues<User>(collection(db, 'users'))
 }

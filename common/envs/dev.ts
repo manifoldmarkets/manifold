@@ -17,6 +17,7 @@ export const DEV_CONFIG: EnvConfig = {
     sellshares: 'https://sellshares-w3txbmd3ba-uc.a.run.app',
     sellbet: 'https://sellbet-w3txbmd3ba-uc.a.run.app',
     createmarket: 'https://createmarket-w3txbmd3ba-uc.a.run.app',
+    creategroup: 'https://creategroup-w3txbmd3ba-uc.a.run.app',
   },
   amplitudeApiKey: 'fd8cbfd964b9a205b8678a39faae71b3',
 }

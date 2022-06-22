@@ -43,6 +43,7 @@ import { getContractFromId } from 'web/lib/firebase/contracts'
 import { CheckIcon, XIcon } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
 import { formatMoney } from 'common/util/format'
+import { groupPath } from 'web/lib/firebase/groups'
 
 export default function Notifications() {
   const user = useUser()
@@ -530,6 +531,8 @@ function NotificationItem(props: {
     sourceContractTitle,
     sourceContractCreatorUsername,
     sourceContractSlug,
+    sourceSlug,
+    sourceTitle,
   } = notification
 
   const [defaultNotificationText, setDefaultNotificationText] =
@@ -595,6 +598,7 @@ function NotificationItem(props: {
 
   function getSourceUrl() {
     if (sourceType === 'follow') return `/${sourceUserUsername}`
+    if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
     if (sourceContractCreatorUsername && sourceContractSlug)
       return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
         sourceId ?? ''
@@ -722,13 +726,15 @@ function NotificationItem(props: {
                       href={
                         sourceContractCreatorUsername
                           ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
+                          : sourceType === 'group' && sourceSlug
+                          ? `${groupPath(sourceSlug)}`
                           : `/${contract?.creatorUsername}/${contract?.slug}`
                       }
                       className={
                         'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2'
                       }
                     >
-                      {contract?.question || sourceContractTitle}
+                      {contract?.question || sourceContractTitle || sourceTitle}
                     </a>
                   </div>
                 )}
@@ -736,8 +742,8 @@ function NotificationItem(props: {
             </div>
             {sourceId && sourceContractSlug && sourceContractCreatorUsername ? (
               <CopyLinkDateTimeComponent
-                contractCreatorUsername={sourceContractCreatorUsername}
-                contractSlug={sourceContractSlug}
+                prefix={sourceContractCreatorUsername}
+                slug={sourceContractSlug}
                 createdTime={createdTime}
                 elementId={getSourceIdForLinkComponent(sourceId)}
                 className={'-mx-1 inline-flex sm:inline-block'}
@@ -876,6 +882,9 @@ function getReasonForShowingNotification(
       break
     case 'liquidity':
       reasonText = 'added liquidity to your question'
+      break
+    case 'group':
+      reasonText = 'added you to the group'
       break
     default:
       reasonText = ''

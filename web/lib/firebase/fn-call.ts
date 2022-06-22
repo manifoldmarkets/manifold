@@ -1,5 +1,4 @@
 import { httpsCallable } from 'firebase/functions'
-import { Fold } from 'common/fold'
 import { Txn } from 'common/txn'
 import { User } from 'common/user'
 import { randomString } from 'common/util/random'
@@ -14,11 +13,6 @@ export const withdrawLiquidity = cloudFunction<
   { contractId: string },
   { status: 'error' | 'success'; userShares: { [outcome: string]: number } }
 >('withdrawLiquidity')
-
-export const createFold = cloudFunction<
-  { name: string; about: string; tags: string[] },
-  { status: 'error' | 'success'; message?: string; fold?: Fold }
->('createFold')
 
 export const transact = cloudFunction<
   Omit<Txn, 'id' | 'createdTime'>,

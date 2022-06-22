@@ -1,4 +1,4 @@
-import router from 'next/router'
+import router, { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
@@ -19,16 +19,22 @@ import {
 import { formatMoney } from 'common/util/format'
 import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from 'common/util/object'
-import { CATEGORIES } from 'common/categories'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { track } from 'web/lib/service/analytics'
+import { getGroup, updateGroup } from 'web/lib/firebase/groups'
+import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
+import { track } from 'web/lib/service/analytics'
+import { GroupSelector } from 'web/components/groups/group-selector'
+import { CATEGORIES } from 'common/categories'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
-
+  // get query params:
+  const router = useRouter()
+  const { groupId } = router.query as { groupId: string }
   useTracking('view create page')
+  if (!router.isReady) return <div />
 
   return (
     <Page>
@@ -53,7 +59,7 @@ export default function Create() {
             </div>
           </form>
           <Spacer h={6} />
-          <NewContract question={question} />
+          <NewContract question={question} groupId={groupId} />
         </div>
       </div>
     </Page>
@@ -61,8 +67,8 @@ export default function Create() {
 }
 
 // Allow user to create a new contract
-export function NewContract(props: { question: string }) {
-  const { question } = props
+export function NewContract(props: { question: string; groupId?: string }) {
+  const { question, groupId } = props
   const creator = useUser()
 
   useEffect(() => {
@@ -74,11 +80,17 @@ export function NewContract(props: { question: string }) {
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
   const [description, setDescription] = useState('')
-
-  const [category, setCategory] = useState<string>('')
   // const [tagText, setTagText] = useState<string>(tag ?? '')
   // const tags = parseWordsAsTags(tagText)
-
+  useEffect(() => {
+    if (groupId && creator)
+      getGroup(groupId).then((group) => {
+        if (group && group.memberIds.includes(creator.id)) {
+          setSelectedGroup(group)
+          setShowGroupSelector(false)
+        }
+      })
+  }, [creator, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
   const mustWaitForDailyFreeMarketStatus = useHasCreatedContractToday(creator)
@@ -100,6 +112,11 @@ export function NewContract(props: { question: string }) {
   const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
   const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(
+    undefined
+  )
+  const [showGroupSelector, setShowGroupSelector] = useState(true)
+  const [category, setCategory] = useState<string>('')
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -145,7 +162,7 @@ export function NewContract(props: { question: string }) {
     if (!creator || !isValid) return
 
     setIsSubmitting(true)
-
+    // TODO: add contract id to the group contractIds
     try {
       const result = await createMarket(
         removeUndefinedProps({
@@ -155,18 +172,22 @@ export function NewContract(props: { question: string }) {
           initialProb,
           ante,
           closeTime,
-          tags: category ? [category] : undefined,
           min,
           max,
+          groupId: selectedGroup?.id,
         })
       )
-
       track('create market', {
         slug: result.slug,
         initialProb,
-        category,
+        selectedGroup: selectedGroup?.id,
         isFree,
       })
+      if (result && selectedGroup) {
+        await updateGroup(selectedGroup, {
+          contractIds: [...selectedGroup.contractIds, result.id],
+        })
+      }
 
       await router.push(contractPath(result as Contract))
     } catch (e) {
@@ -245,23 +266,35 @@ export function NewContract(props: { question: string }) {
         </div>
       )}
 
-      <div className="form-control max-w-sm items-start">
+      <div className="form-control max-w-[265px] items-start">
         <label className="label gap-2">
           <span className="mb-1">Category</span>
         </label>
 
         <select
-          className="select select-bordered w-full max-w-xs"
+          className={clsx(
+            'select select-bordered w-full text-sm',
+            category === '' ? 'font-normal text-gray-500' : ''
+          )}
           value={category}
           onChange={(e) => setCategory(e.currentTarget.value ?? '')}
         >
-          <option value={''}>(none)</option>
+          <option value={''}>None</option>
           {Object.entries(CATEGORIES).map(([id, name]) => (
             <option key={id} value={id}>
               {name}
             </option>
           ))}
         </select>
+      </div>
+
+      <div className={'mt-2'}>
+        <GroupSelector
+          selectedGroup={selectedGroup}
+          setSelectedGroup={setSelectedGroup}
+          creator={creator}
+          showSelector={showGroupSelector}
+        />
       </div>
 
       <Spacer h={6} />
