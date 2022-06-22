@@ -6,6 +6,7 @@ import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
 import { User } from '../../common/user'
 import {
   BetInfo,
+  getBinaryCpmmLimitBetInfo,
   getNewBinaryCpmmBetInfo,
   getNewBinaryDpmBetInfo,
   getNewMultiBetInfo,
@@ -14,6 +15,8 @@ import {
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { redeemShares } from './redeem-shares'
 import { log } from './utils'
+import { LimitBet } from 'common/bet'
+import { Query } from 'firebase-admin/firestore'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -72,7 +75,31 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
         const { outcome } = validate(binarySchema, req.body)
         return getNewBinaryDpmBetInfo(outcome, amount, contract, loanAmount)
       } else if (outcomeType == 'BINARY' && mechanism == 'cpmm-1') {
-        const { outcome } = validate(binarySchema, req.body)
+        const { outcome, limitProb } = validate(binarySchema, req.body)
+        const unfilledBetsQuery = contractDoc
+          .collection('bets')
+          .where('outcome', '==', outcome === 'YES' ? 'NO' : 'YES')
+          .where('isFilled', '==', false)
+          .where('isCancelled', '==', false)
+          .where('limitProb', outcome === 'YES' ? '<=' : '>=', limitProb)
+          .orderBy('createdTime', 'desc')
+          .orderBy(
+            'limitProb',
+            outcome === 'YES' ? 'asc' : 'desc'
+          ) as Query<LimitBet>
+
+        const unfilledBetsSnap = await trans.get(unfilledBetsQuery)
+        const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
+
+        if (limitProb !== undefined) {
+          return getBinaryCpmmLimitBetInfo(
+            outcome,
+            amount,
+            contract,
+            limitProb,
+            unfilledBets
+          )
+        }
         return getNewBinaryCpmmBetInfo(outcome, amount, contract, loanAmount)
       } else if (outcomeType == 'FREE_RESPONSE' && mechanism == 'dpm-2') {
         const { outcome } = validate(freeResponseSchema, req.body)

@@ -115,6 +115,53 @@ export function calculateCpmmPurchase(
   return { shares, newPool, newP, fees }
 }
 
+export function calculateCpmmAmount(
+  contract: CPMMContract,
+  prob: number,
+  outcome: 'YES' | 'NO'
+) {
+  if (outcome === 'NO') prob = 1 - prob
+
+  // First, find an upper bound that leads to a more extreme probability than prob.
+  let maxGuess = 10
+  let newProb = 0
+  do {
+    maxGuess *= 10
+    newProb = getCpmmOutcomeProbabilityAfterBet(contract, outcome, maxGuess)
+  } while (newProb < prob)
+
+  // Then, binary search for the amount that gets closest to prob.
+  const amount = binarySearch(0, maxGuess, (amount) => {
+    const newProb = getCpmmOutcomeProbabilityAfterBet(contract, outcome, amount)
+    return newProb - prob
+  })
+
+  return amount
+}
+
+function binarySearch(
+  min: number,
+  max: number,
+  comparator: (x: number) => number
+) {
+  let mid = 0
+  while (true) {
+    mid = min + (max - min) / 2
+
+    // Break once we've reached max precision.
+    if (mid === min || mid === max) break
+
+    const comparison = comparator(mid)
+    if (comparison === 0) break
+    else if (comparison > 0) {
+      max = mid
+    } else {
+      min = mid
+    }
+  }
+  return mid
+}
+
 function computeK(y: number, n: number, p: number) {
   return y ** p * n ** (1 - p)
 }

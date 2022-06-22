@@ -35,6 +35,7 @@ import {
   calculateCpmmSale,
   getCpmmProbability,
   getCpmmLiquidityFee,
+  calculateCpmmAmount,
 } from 'common/calculate-cpmm'
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
@@ -42,6 +43,7 @@ import { SignUpPrompt } from './sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
 import { ProbabilityInput } from './probability-input'
 import { track } from 'web/lib/service/analytics'
+import { removeUndefinedProps } from 'common/util/object'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract
@@ -211,7 +213,7 @@ function BuyPanel(props: {
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
-  const [betProb, setBetProb] = useState<number | undefined>(
+  const [limitProb, setLimitProb] = useState<number | undefined>(
     Math.round(100 * initialProb)
   )
   const [error, setError] = useState<string | undefined>()
@@ -219,6 +221,14 @@ function BuyPanel(props: {
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const [inputRef, focusAmountInput] = useFocus()
+
+  const amountToGoToProb = calculateCpmmAmount(
+    contract,
+    (limitProb ?? initialProb * 100) / 100,
+    betChoice ?? 'YES'
+  )
+
+  console.log('limitProb', limitProb, 'amountToGoToProb', amountToGoToProb)
 
   useEffect(() => {
     if (selected) {
@@ -243,15 +253,22 @@ function BuyPanel(props: {
 
   async function submitBet() {
     if (!user || !betAmount) return
+    if (isLimitOrder && limitProb === undefined) return
+
+    const limitProbScaled =
+      isLimitOrder && limitProb !== undefined ? limitProb / 100 : undefined
 
     setError(undefined)
     setIsSubmitting(true)
 
-    placeBet({
-      amount: betAmount,
-      outcome: betChoice,
-      contractId: contract.id,
-    })
+    placeBet(
+      removeUndefinedProps({
+        amount: betAmount,
+        outcome: betChoice,
+        contractId: contract.id,
+        limitProb: limitProbScaled,
+      })
+    )
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
@@ -281,12 +298,11 @@ function BuyPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const outcomeProb = getOutcomeProbabilityAfterBet(
+  const resultProb = getOutcomeProbabilityAfterBet(
     contract,
     betChoice || 'YES',
     betAmount ?? 0
   )
-  const resultProb = betChoice === 'NO' ? 1 - outcomeProb : outcomeProb
 
   const shares = calculateShares(contract, betAmount ?? 0, betChoice || 'YES')
 
@@ -332,8 +348,8 @@ function BuyPanel(props: {
           </div>
           <ProbabilityInput
             inputClassName="w-full max-w-none"
-            prob={betProb}
-            onChange={setBetProb}
+            prob={limitProb}
+            onChange={setLimitProb}
             error={error}
             setError={setError}
             disabled={isSubmitting}

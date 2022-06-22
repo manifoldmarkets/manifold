@@ -1,6 +1,6 @@
 import { sumBy } from 'lodash'
 
-import { Bet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
+import { Bet, LimitBet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
 import {
   calculateDpmShares,
   getDpmProbability,
@@ -8,7 +8,11 @@ import {
   getNumericBets,
   calculateNumericDpmShares,
 } from './calculate-dpm'
-import { calculateCpmmPurchase, getCpmmProbability } from './calculate-cpmm'
+import {
+  calculateCpmmAmount,
+  calculateCpmmPurchase,
+  getCpmmProbability,
+} from './calculate-cpmm'
 import {
   CPMMBinaryContract,
   DPMBinaryContract,
@@ -18,6 +22,7 @@ import {
 import { noFees } from './fees'
 import { addObjects } from './util/object'
 import { NUMERIC_FIXED_VAR } from './numeric-constants'
+import { getProbability } from './calculate'
 
 export type CandidateBet<T extends Bet> = Omit<T, 'id' | 'userId'>
 export type BetInfo = {
@@ -27,6 +32,89 @@ export type BetInfo = {
   newTotalBets?: { [outcome: string]: number }
   newTotalLiquidity?: number
   newP?: number
+}
+
+const computeFill = (
+  betId: string,
+  betAmount: number,
+  contract: CPMMBinaryContract,
+  limitProb: number,
+  matched: LimitBet
+) => {
+  const prob = getProbability(contract)
+  if (Math.min(prob, matched.limitProb) > limitProb) return undefined
+
+  if (prob < matched.limitProb) {
+    const limit = Math.min(matched.limitProb, limitProb)
+    const amount = calculateCpmmAmount(contract, limit, 'YES')
+
+    // Fill from pool.
+    const { shares, newPool, newP, fees } = calculateCpmmPurchase(
+      contract,
+      amount,
+      'YES'
+    )
+    return {
+      maker: {
+        matchedBetId: 'POOL',
+        newPool,
+        newP,
+        fees,
+      },
+      taker: {
+        matchedBetId: 'POOL',
+        shares,
+        amount,
+      },
+    }
+  } else {
+    // Fill from bet.
+    const amount = Math.min(betAmount, matched.amount)
+    const shares = (matched.shares * amount) / matched.amount
+    const maker = {
+      matchedBetId: betId,
+      amount,
+      shares,
+    }
+    const taker = {
+      matchedBetId: matched.id,
+      amount,
+      shares,
+    }
+    return { maker, taker }
+  }
+}
+
+export const getBinaryCpmmLimitBetInfo = (
+  outcome: 'YES',
+  betAmount: number,
+  contract: CPMMBinaryContract,
+  limitProb: number,
+  unfilledBets: LimitBet[], // Sorted by limitProb, createdTime
+  betId: string
+) => {
+  const fills: LimitBet['fills'] = []
+
+  for (const bet of unfilledBets) {
+    const { maker, taker } = computeFill(
+      betId,
+      betAmount,
+      contract,
+      limitProb,
+      bet
+    )
+
+    if (maker.matchedBetId === 'POOL') {
+      
+    } else {
+      fills.push(maker)
+    }
+    fills.push(taker)
+
+    betAmount -= taker.amount
+
+    if (betAmount < 0.00000000001) break
+  }
 }
 
 export const getNewBinaryCpmmBetInfo = (

@@ -1,3 +1,4 @@
+import { Truthy } from 'lodash'
 import { Fees } from './fees'
 
 export type Bet = {
@@ -27,10 +28,6 @@ export type Bet = {
   isLiquidityProvision?: boolean
   isRedemption?: boolean
 
-  // For limit orders.
-  limitProb?: number // [0, 1]. Bet to this probability.
-  isFilled?: boolean // Whether all of the bet amount has been filled.
-  isCancelled?: boolean // Whether to prevent any further fills.
   // A record of each transaction that partially (or fully) fills the bet amount.
   // I.e. A limit order could be filled by partially matching with several bets.
   // Non-limit orders can also be filled by matching with multiple limit orders.
@@ -45,6 +42,14 @@ export type NumericBet = Bet & {
   value: number
   allOutcomeShares: { [outcome: string]: number }
   allBetAmounts: { [outcome: string]: number }
+}
+
+// Binary market limit order.
+export type LimitBet = Bet & {
+  limitProb: number // [0, 1]. Bet to this probability.
+  isFilled: boolean // Whether all of the bet amount has been filled.
+  isCancelled: boolean // Whether to prevent any further fills.
+  fills: Truthy<Bet['fills']>
 }
 
 export const MAX_LOAN_PER_CONTRACT = 20
