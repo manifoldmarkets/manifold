@@ -129,7 +129,7 @@ export const resolveMarket = functions
       const openBets = bets.filter((b) => !b.isSold && !b.sale)
       const loanPayouts = getLoanPayouts(openBets)
 
-      if (!isProd)
+      if (!isProd())
         console.log(
           'payouts:',
           payouts,

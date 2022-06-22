@@ -129,13 +129,10 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
     .filter((c) => {
       if (filter === 'all') return true
 
-      const { totalShares } = contractsMetrics[c.id]
-      const hasSoldAll = Object.values(totalShares).every(
-        (shares) => shares === 0
-      )
+      const { hasShares } = contractsMetrics[c.id]
 
-      if (filter === 'sold') return hasSoldAll
-      return !hasSoldAll
+      if (filter === 'sold') return !hasShares
+      return hasShares
     })
 
   const unsettled = contracts.filter(
@@ -367,11 +364,13 @@ export function BetsSummary(props: {
   className?: string
 }) {
   const { contract, isYourBets, className } = props
-  const { resolution, outcomeType, mechanism } = contract
+  const { resolution, closeTime, outcomeType, mechanism } = contract
   const isBinary = outcomeType === 'BINARY'
   const isCpmm = mechanism === 'cpmm-1'
+  const isClosed = closeTime && Date.now() > closeTime
 
   const bets = props.bets.filter((b) => !b.isAnte)
+  const { hasShares } = getContractBetMetrics(contract, bets)
 
   const excludeSalesAndAntes = bets.filter(
     (b) => !b.isAnte && !b.isSold && !b.sale
@@ -445,8 +444,9 @@ export function BetsSummary(props: {
             {isYourBets &&
               isCpmm &&
               isBinary &&
+              !isClosed &&
               !resolution &&
-              invested > 0 &&
+              hasShares &&
               user && (
                 <>
                   <button

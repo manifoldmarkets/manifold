@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { CATEGORIES } from '../../common/categories'
+import { CATEGORIES, category } from '../../common/categories'
 import { Col } from './layout/col'
 
 import { Row } from './layout/row'
@@ -7,7 +7,7 @@ import { SiteLink } from './site-link'
 
 function Hashtag(props: { tag: string; noLink?: boolean }) {
   const { tag, noLink } = props
-  const category = CATEGORIES[tag.replace('#', '').toLowerCase()]
+  const category = CATEGORIES[tag.replace('#', '').toLowerCase() as category]
 
   const body = (
     <div className={clsx('', !noLink && 'cursor-pointer')}>

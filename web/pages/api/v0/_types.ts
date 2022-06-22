@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { Answer } from 'common/answer'
-import { getProbability } from 'common/calculate'
+import { getOutcomeProbability, getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
@@ -38,10 +38,14 @@ export type LiteMarket = {
   resolutionTime?: number
 }
 
+export type ApiAnswer = Answer & {
+  probability?: number
+}
+
 export type FullMarket = LiteMarket & {
-  bets: Exclude<Bet, 'userId'>[]
+  bets: Bet[]
   comments: Comment[]
-  answers?: Answer[]
+  answers?: ApiAnswer[]
 }
 
 export type ApiError = {
@@ -103,4 +107,36 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolution,
     resolutionTime,
   })
+}
+
+export function toFullMarket(
+  contract: Contract,
+  comments: Comment[],
+  bets: Bet[]
+): FullMarket {
+  const liteMarket = toLiteMarket(contract)
+  const answers =
+    contract.outcomeType === 'FREE_RESPONSE'
+      ? contract.answers.map((answer) =>
+          augmentAnswerWithProbability(contract, answer)
+        )
+      : undefined
+
+  return {
+    ...liteMarket,
+    answers,
+    comments,
+    bets,
+  }
+}
+
+function augmentAnswerWithProbability(
+  contract: Contract,
+  answer: Answer
+): ApiAnswer {
+  const probability = getOutcomeProbability(contract, answer.id)
+  return {
+    ...answer,
+    probability,
+  }
 }

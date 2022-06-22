@@ -1,14 +1,15 @@
 import {
   HomeIcon,
-  CakeIcon,
   SearchIcon,
   BookOpenIcon,
   DotsHorizontalIcon,
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
+  PresentationChartBarIcon,
   SparklesIcon,
   NewspaperIcon,
+  TrendingUpIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -73,6 +74,7 @@ function getMoreNavigation(user?: User | null) {
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
+    { name: 'Statistics', href: '/stats' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
   ]
@@ -91,7 +93,7 @@ const signedOutNavigation = [
 
 const signedOutMobileNavigation = [
   { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
+  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
   { name: 'Blog', href: 'https://news.manifold.markets', icon: NewspaperIcon },
   {
     name: 'Discord',
@@ -102,6 +104,11 @@ const signedOutMobileNavigation = [
     name: 'Twitter',
     href: 'https://twitter.com/ManifoldMarkets',
     icon: IconFromUrl('/twitter-logo.svg'),
+  },
+  {
+    name: 'Statistics',
+    href: '/stats',
+    icon: PresentationChartBarIcon,
   },
   {
     name: 'About',

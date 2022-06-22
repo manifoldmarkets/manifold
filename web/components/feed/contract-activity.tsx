@@ -7,18 +7,20 @@ import { getSpecificContractActivityItems } from './activity-items'
 import { FeedItems } from './feed-items'
 import { User } from 'common/user'
 import { useContractWithPreload } from 'web/hooks/use-contract'
+import { CommentTipMap } from 'web/hooks/use-tip-txns'
 
 export function ContractActivity(props: {
   contract: Contract
   bets: Bet[]
   comments: Comment[]
+  tips: CommentTipMap
   user: User | null | undefined
   mode: 'comments' | 'bets' | 'free-response-comment-answer-groups'
   contractPath?: string
   className?: string
   betRowClassName?: string
 }) {
-  const { user, mode, className, betRowClassName } = props
+  const { user, mode, tips, className, betRowClassName } = props
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
 
@@ -31,6 +33,7 @@ export function ContractActivity(props: {
     contract,
     bets,
     comments,
+    tips,
     user,
     { mode }
   )
