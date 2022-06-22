@@ -3,7 +3,7 @@ import { collection, orderBy, query, where } from 'firebase/firestore'
 import { db } from './init'
 import { getValues, listenForValues } from './utils'
 import { useState, useEffect } from 'react'
-import { sortBy } from 'lodash'
+import { orderBy as _orderBy } from 'lodash'
 
 const txnCollection = collection(db, 'txns')
 
@@ -65,5 +65,5 @@ export function useManalinkTxns(userId: string) {
     listenForValues(toQuery, setToTxns)
   }, [userId])
 
-  return sortBy([...fromTxns, ...toTxns], 'createdTime').reverse()
+  return _orderBy([...fromTxns, ...toTxns], ['createdTime'], ['desc'])
 }

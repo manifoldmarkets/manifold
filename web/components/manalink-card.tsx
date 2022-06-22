@@ -32,7 +32,7 @@ export function ManalinkCard(props: {
         <div>
           {maxUses != null
             ? `${maxUses - uses}/${maxUses} uses left`
-            : `Infinite use`}
+            : `Unlimited use`}
         </div>
         <div>
           {expiresTime != null

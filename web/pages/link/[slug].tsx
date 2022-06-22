@@ -1,7 +1,5 @@
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
 import { claimManalink } from 'web/lib/firebase/fn-call'
@@ -45,7 +43,6 @@ export default function ClaimPage() {
                 await firebaseLogin()
               }
               const result = await claimManalink(manalink.slug)
-              console.log(result)
               if (result.data.status == 'error') {
                 throw new Error(result.data.message)
               }

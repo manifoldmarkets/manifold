@@ -1,6 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
-import { useRouter, NextRouter } from 'next/router'
+import { useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { Claim, Manalink } from 'common/manalink'
 import { formatMoney } from 'common/util/format'
@@ -174,10 +173,6 @@ function CreateManalinkForm(props: {
               type="datetime-local"
               onChange={(e) => {
                 setNewManalink((m) => {
-                  console.log(e.target.value)
-                  console.log(
-                    dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
-                  )
                   return {
                     ...m,
                     expiresTime: e.target.value

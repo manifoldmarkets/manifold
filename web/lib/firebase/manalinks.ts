@@ -10,7 +10,6 @@ import { doc } from 'firebase/firestore'
 import { Manalink } from '../../../common/manalink'
 import { db } from './init'
 import { customAlphabet } from 'nanoid'
-import { Txn } from '../../../common/txn'
 import { listenForValues } from './utils'
 import { useEffect, useState } from 'react'
 
