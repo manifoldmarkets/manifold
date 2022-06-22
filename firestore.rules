@@ -59,6 +59,9 @@ service cloud.firestore {
                                                                  .hasOnly(['description', 'closeTime'])
                        && resource.data.creatorId == request.auth.uid;
       allow update: if isAdmin();
+          match /comments/{commentId} {
+            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data);
+          }
     }
 
     match /{somePath=**}/bets/{betId} {
@@ -80,20 +83,12 @@ service cloud.firestore {
 
     match /{somePath=**}/comments/{commentId} {
       allow read;
-      allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data);
     }
 
     match /{somePath=**}/answers/{answerId} {
       allow read;
     }
 
-    match /folds/{foldId} {
-      allow read;
-      allow update: if request.auth.uid == resource.data.curatorId
-        && request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['name', 'about', 'tags', 'lowercaseTags']);
-      allow delete: if request.auth.uid == resource.data.curatorId;
-    }
 
     match /{somePath=**}/followers/{userId} {
       allow read;
@@ -110,6 +105,22 @@ service cloud.firestore {
       allow update: if resource.data.userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
                                                                     .hasOnly(['isSeen', 'viewTime']);
+    }
+
+    match /groups/{groupId} {
+      allow read;
+      allow update: if request.auth.uid in resource.data.memberIds
+                       && request.resource.data.diff(resource.data).affectedKeys()
+                                                                    .hasOnly(['name', 'about', 'contractIds', 'memberIds', 'anyoneCanJoin' ]);
+      allow delete: if request.auth.uid == resource.data.creatorId;
+
+      function isMember() {
+        return request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+      }
+
+      match /comments/{commentId} {
+        allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isMember();
+      }
     }
   }
 }

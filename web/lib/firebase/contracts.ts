@@ -166,6 +166,18 @@ export function listenForContracts(
   return listenForValues<Contract>(q, setContracts)
 }
 
+export function listenForUserContracts(
+  creatorId: string,
+  setContracts: (contracts: Contract[]) => void
+) {
+  const q = query(
+    contractCollection,
+    where('creatorId', '==', creatorId),
+    orderBy('createdTime', 'desc')
+  )
+  return listenForValues<Contract>(q, setContracts)
+}
+
 const activeContractsQuery = query(
   contractCollection,
   where('isResolved', '==', false),

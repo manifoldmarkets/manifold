@@ -9,26 +9,20 @@ import { LinkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 
 export function CopyLinkDateTimeComponent(props: {
-  contractCreatorUsername: string
-  contractSlug: string
+  prefix: string
+  slug: string
   createdTime: number
   elementId: string
   className?: string
 }) {
-  const {
-    contractCreatorUsername,
-    contractSlug,
-    elementId,
-    createdTime,
-    className,
-  } = props
+  const { prefix, slug, elementId, createdTime, className } = props
   const [showToast, setShowToast] = useState(false)
 
   function copyLinkToComment(
     event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
   ) {
     event.preventDefault()
-    const elementLocation = `https://${ENV_CONFIG.domain}/${contractCreatorUsername}/${contractSlug}#${elementId}`
+    const elementLocation = `https://${ENV_CONFIG.domain}/${prefix}/${slug}#${elementId}`
 
     copyToClipboard(elementLocation)
     setShowToast(true)
@@ -37,10 +31,7 @@ export function CopyLinkDateTimeComponent(props: {
   return (
     <div className={clsx('inline', className)}>
       <DateTimeTooltip time={createdTime}>
-        <Link
-          href={`/${contractCreatorUsername}/${contractSlug}#${elementId}`}
-          passHref={true}
-        >
+        <Link href={`/${prefix}/${slug}#${elementId}`} passHref={true}>
           <a
             onClick={(event) => copyLinkToComment(event)}
             className={'mx-1 cursor-pointer'}

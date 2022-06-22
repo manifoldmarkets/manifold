@@ -18,6 +18,7 @@ export const THEOREMONE_CONFIG: EnvConfig = {
     sellshares: 'https://sellshares-nggbo3neva-uc.a.run.app',
     sellbet: 'https://sellbet-nggbo3neva-uc.a.run.app',
     createmarket: 'https://createmarket-nggbo3neva-uc.a.run.app',
+    creategroup: 'https://creategroup-nggbo3neva-uc.a.run.app',
   },
   adminEmails: [...PROD_CONFIG.adminEmails, 'david.glidden@theoremone.co'],
   whitelistEmail: '@theoremone.co',
