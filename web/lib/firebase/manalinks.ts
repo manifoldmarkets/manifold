@@ -31,8 +31,7 @@ export async function createManalink(data: {
   )
   const slug = nanoid()
 
-  if (amount <= 0 || isNaN(amount) || !isFinite(amount))
-    return { status: 'error', message: 'Invalid amount' }
+  if (amount <= 0 || isNaN(amount) || !isFinite(amount)) return null
 
   const manalink: Manalink = {
     slug,
@@ -49,6 +48,7 @@ export async function createManalink(data: {
 
   const ref = doc(db, 'manalinks', slug)
   await setDoc(ref, manalink)
+  return slug
 }
 
 const manalinkCol = collection(db, 'manalinks')

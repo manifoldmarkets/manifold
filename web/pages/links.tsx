@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import clsx from 'clsx'
+import { useEffect, useState } from 'react'
+import { useRouter, NextRouter } from 'next/router'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { Claim, Manalink } from 'common/manalink'
 import { formatMoney } from 'common/util/format'
@@ -9,7 +11,6 @@ import { Title } from 'web/components/title'
 import { useUser } from 'web/hooks/use-user'
 import { createManalink, useUserManalinks } from 'web/lib/firebase/manalinks'
 import { fromNow } from 'web/lib/util/time'
-import { useManalinkTxns } from 'web/lib/firebase/txns'
 import { useUserById } from 'web/hooks/use-users'
 import { ManalinkTxn } from 'common/txn'
 import { User } from 'common/user'
@@ -29,12 +30,21 @@ function getLinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
 }
 
-const TAB_IDS = ['create', 'outstanding', 'claimed']
+// TODO: incredibly gross, but the tab component is wrongly designed and
+// keeps the tab state inside of itself, so this seems like the only
+// way we can tell it to switch tabs from outside after initial render.
+function setTabIndex(tabIndex: number) {
+  const tabHref = document.getElementById(`tab-${tabIndex}`)
+  if (tabHref) {
+    tabHref.click()
+  }
+}
 
 export default function LinkPage() {
   const user = useUser()
   const links = useUserManalinks(user?.id ?? '')
-  const manalinkTxns = useManalinkTxns(user?.id ?? '')
+  // const manalinkTxns = useManalinkTxns(user?.id ?? '')
+  const [highlightedSlug, setHighlightedSlug] = useState('')
   const outstandingLinks = links.filter(
     (l) =>
       (l.maxUses == null || l.claimedUserIds.length < l.maxUses) &&
@@ -48,33 +58,49 @@ export default function LinkPage() {
   return (
     <Page>
       <SEO
-        title="Create a manalink"
+        title="Manalinks"
         description="Send mana to anyone via link!"
         url="/send"
       />
       <Col className="w-full px-8">
-        <Title text="Create a manalink" />
+        <Title text="Manalinks" />
         <Tabs
           className={'pb-2 pt-1 '}
           defaultIndex={0}
-          onClick={(tabName) => {
-            const tabId = tabName.toLowerCase()
-            const subpath = tabId === 'create' ? '' : '/' + tabId
-            window.history.replaceState('', '', `/links${subpath}`)
-          }}
           tabs={[
             {
-              title: 'Create',
-              content: <CreateManalinkForm user={user} />,
+              title: 'Create a link',
+              content: (
+                <CreateManalinkForm
+                  user={user}
+                  onCreate={async (newManalink) => {
+                    const slug = await createManalink({
+                      fromId: user.id,
+                      amount: newManalink.amount,
+                      expiresTime: newManalink.expiresTime,
+                      maxUses: newManalink.maxUses,
+                      message: newManalink.message,
+                    })
+                    setTabIndex(1)
+                    setHighlightedSlug(slug || '')
+                  }}
+                />
+              ),
             },
             {
-              title: 'Outstanding',
-              content: <LinksTable links={outstandingLinks} />,
+              title: 'Outstanding links',
+              content: (
+                <LinksTable
+                  links={outstandingLinks}
+                  highlightedSlug={highlightedSlug}
+                />
+              ),
             },
-            {
-              title: 'Claimed',
-              content: <ClaimsList txns={manalinkTxns} />,
-            },
+            // TODO: we have no use case for this atm and it's also really inefficient
+            // {
+            //   title: 'Claimed',
+            //   content: <ClaimsList txns={manalinkTxns} />,
+            // },
           ]}
         />
       </Col>
@@ -82,8 +108,12 @@ export default function LinkPage() {
   )
 }
 
-function CreateManalinkForm(props: { user: User }) {
-  const { user } = props
+function CreateManalinkForm(props: {
+  user: User
+  onCreate: (m: ManalinkInfo) => Promise<void>
+}) {
+  const { user, onCreate } = props
+  const [isCreating, setIsCreating] = useState(false)
   const [newManalink, setNewManalink] = useState<ManalinkInfo>({
     expiresTime: null,
     amount: 100,
@@ -99,15 +129,10 @@ function CreateManalinkForm(props: { user: User }) {
       </p>
       <form
         className="my-5"
-        onSubmit={async (e) => {
+        onSubmit={(e) => {
           e.preventDefault()
-          await createManalink({
-            fromId: user.id,
-            amount: newManalink.amount,
-            expiresTime: newManalink.expiresTime,
-            maxUses: newManalink.maxUses,
-            message: newManalink.message,
-          })
+          setIsCreating(true)
+          onCreate(newManalink).finally(() => setIsCreating(false))
         }}
       >
         <div className="flex flex-row flex-wrap gap-x-5 gap-y-2">
@@ -178,11 +203,12 @@ function CreateManalinkForm(props: { user: User }) {
             }
           />
         </div>
-        <input
+        <button
           type="submit"
-          className="btn mt-5 max-w-xs"
-          value="Create"
-        ></input>
+          className={clsx('btn mt-5', isCreating ? 'loading disabled' : '')}
+        >
+          {isCreating ? '' : 'Create'}
+        </button>
       </form>
 
       <Title text="Preview" />
@@ -249,7 +275,7 @@ function ClaimTableRow(props: { claim: Claim }) {
   const { claim } = props
   const who = useUserById(claim.toId)
   return (
-    <tr className="text-sm text-gray-500">
+    <tr>
       <td className="px-5 py-2">{who?.name || 'Loading...'}</td>
       <td className="px-5 py-2">{`${new Date(
         claim.claimedTime
@@ -268,22 +294,29 @@ function LinkDetailsTable(props: { link: Manalink }) {
           <th className="px-5 py-2">Time</th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-gray-200 bg-white">
-        {link.claims.map((claim) => (
-          <ClaimTableRow claim={claim} />
-        ))}
+      <tbody className="divide-y divide-gray-200 bg-white text-sm text-gray-500">
+        {link.claims.length ? (
+          link.claims.map((claim) => <ClaimTableRow claim={claim} />)
+        ) : (
+          <tr>
+            <td className="px-5 py-2" colSpan={2}>
+              No claims yet.
+            </td>
+          </tr>
+        )}
       </tbody>
     </table>
   )
 }
 
-function LinkTableRow(props: { link: Manalink }) {
-  const { link } = props
+function LinkTableRow(props: { link: Manalink; highlight: boolean }) {
+  const { link, highlight } = props
   const [expanded, setExpanded] = useState(false)
   return (
     <>
       <LinkSummaryRow
         link={link}
+        highlight={highlight}
         expanded={expanded}
         onToggle={() => setExpanded((exp) => !exp)}
       />
@@ -300,15 +333,17 @@ function LinkTableRow(props: { link: Manalink }) {
 
 function LinkSummaryRow(props: {
   link: Manalink
+  highlight: boolean
   expanded: boolean
   onToggle: () => void
 }) {
-  const { link, expanded, onToggle } = props
+  const { link, highlight, expanded, onToggle } = props
+  const className = clsx(
+    'whitespace-nowrap text-sm hover:cursor-pointer',
+    highlight ? 'bg-primary' : 'text-gray-500 hover:bg-sky-50 bg-white'
+  )
   return (
-    <tr
-      className="whitespace-nowrap text-sm text-gray-500 hover:cursor-pointer hover:bg-sky-50"
-      key={link.slug}
-    >
+    <tr id={link.slug} key={link.slug} className={className}>
       <td className="py-4 pl-5" onClick={onToggle}>
         {expanded ? (
           <ChevronUpIcon className="h-5 w-5" />
@@ -330,8 +365,8 @@ function LinkSummaryRow(props: {
   )
 }
 
-function LinksTable(props: { links: Manalink[] }) {
-  const { links } = props
+function LinksTable(props: { links: Manalink[]; highlightedSlug?: string }) {
+  const { links, highlightedSlug } = props
   return links.length == 0 ? (
     <p>You don&apos;t currently have any outstanding manalinks.</p>
   ) : (
@@ -348,7 +383,7 @@ function LinksTable(props: { links: Manalink[] }) {
       </thead>
       <tbody className="divide-y divide-gray-200 bg-white">
         {links.map((link) => (
-          <LinkTableRow link={link} />
+          <LinkTableRow link={link} highlight={link.slug === highlightedSlug} />
         ))}
       </tbody>
     </table>
