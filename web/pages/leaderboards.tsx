@@ -106,7 +106,7 @@ export default function Leaderboards(props: {
               users={topFollowed}
               columns={[
                 {
-                  header: 'Number of followers',
+                  header: 'Total followers',
                   renderCell: (user) => user.followerCountCached,
                 },
               ]}
