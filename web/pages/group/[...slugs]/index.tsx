@@ -342,22 +342,22 @@ function GroupOverview(props: {
 export function GroupMembersList(props: { group: Group }) {
   const { group } = props
   const members = useMembers(group)
+  const maxMambersToShow = 5
   if (group.memberIds.length === 1) return <div />
   return (
     <div>
       <div>
-        <div className="flex flex-wrap gap-1 text-gray-500">
-          Other members
-          {members.slice(0, members.length).map((member, i) => (
+        <div className="text-neutral flex flex-wrap gap-1">
+          <span className={'text-gray-500'}>Other members</span>
+          {members.slice(0, maxMambersToShow).map((member, i) => (
             <div key={member.id} className={'flex-shrink'}>
-              <UserLink
-                className="text-neutral "
-                name={member.name}
-                username={member.username}
-              />
+              <UserLink name={member.name} username={member.username} />
               {members.length > 1 && i !== members.length - 1 && <span>,</span>}
             </div>
           ))}
+          {members.length > maxMambersToShow && (
+            <span> & {members.length - maxMambersToShow} more</span>
+          )}
         </div>
       </div>
     </div>
@@ -471,7 +471,6 @@ function AddContractButton(props: { group: Group; user: User }) {
     setOpen(false)
   }
 
-  // List groups with the highest question count, then highest member count
   // TODO use find-active-contracts to sort by?
   const matches = sortBy(contracts, [
     (contract) => -1 * contract.createdTime,
