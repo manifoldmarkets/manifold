@@ -26,6 +26,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
+import { CATEGORIES } from 'common/categories'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -115,6 +116,7 @@ export function NewContract(props: { question: string; groupId?: string }) {
     undefined
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
+  const [category, setCategory] = useState<string>('')
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -264,12 +266,36 @@ export function NewContract(props: { question: string; groupId?: string }) {
         </div>
       )}
 
-      <GroupSelector
-        selectedGroup={selectedGroup}
-        setSelectedGroup={setSelectedGroup}
-        creator={creator}
-        showSelector={showGroupSelector}
-      />
+      <div className="form-control max-w-[265px] items-start">
+        <label className="label gap-2">
+          <span className="mb-1">Category</span>
+        </label>
+
+        <select
+          className={clsx(
+            'select select-bordered w-full text-sm',
+            category === '' ? 'font-normal text-gray-500' : ''
+          )}
+          value={category}
+          onChange={(e) => setCategory(e.currentTarget.value ?? '')}
+        >
+          <option value={''}>None</option>
+          {Object.entries(CATEGORIES).map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className={'mt-2'}>
+        <GroupSelector
+          selectedGroup={selectedGroup}
+          setSelectedGroup={setSelectedGroup}
+          creator={creator}
+          showSelector={showGroupSelector}
+        />
+      </div>
 
       <Spacer h={6} />
 
