@@ -29,7 +29,9 @@ export const createNotification = async (
   sourceText: string,
   sourceContract?: Contract,
   relatedSourceType?: notification_source_types,
-  relatedUserId?: string
+  relatedUserId?: string,
+  sourceSlug?: string,
+  sourceTitle?: string
 ) => {
   const shouldGetNotification = (
     userId: string,
@@ -63,10 +65,12 @@ export const createNotification = async (
           sourceUserUsername: sourceUser.username,
           sourceUserAvatarUrl: sourceUser.avatarUrl,
           sourceText,
-          sourceContractTitle: sourceContract?.question,
           sourceContractCreatorUsername: sourceContract?.creatorUsername,
+          // TODO: move away from sourceContractTitle to sourceTitle
+          sourceContractTitle: sourceContract?.question,
           sourceContractSlug: sourceContract?.slug,
-          sourceContractTags: sourceContract?.tags,
+          sourceSlug: sourceSlug ? sourceSlug : sourceContract?.slug,
+          sourceTitle: sourceTitle ? sourceTitle : sourceContract?.question,
         }
         await notificationRef.set(removeUndefinedProps(notification))
       })
@@ -238,6 +242,16 @@ export const createNotification = async (
     })
   }
 
+  const notifyUserAddedToGroup = async (
+    userToReasonTexts: user_to_reason_texts,
+    relatedUserId: string
+  ) => {
+    if (shouldGetNotification(relatedUserId, userToReasonTexts))
+      userToReasonTexts[relatedUserId] = {
+        reason: 'added_you_to_group',
+      }
+  }
+
   const getUsersToNotify = async () => {
     const userToReasonTexts: user_to_reason_texts = {}
     // The following functions modify the userToReasonTexts object in place.
@@ -273,6 +287,9 @@ export const createNotification = async (
       }
     } else if (sourceType === 'follow' && relatedUserId) {
       await notifyFollowedUser(userToReasonTexts, relatedUserId)
+    } else if (sourceType === 'group' && relatedUserId) {
+      if (sourceUpdateType === 'created')
+        await notifyUserAddedToGroup(userToReasonTexts, relatedUserId)
     }
     return userToReasonTexts
   }

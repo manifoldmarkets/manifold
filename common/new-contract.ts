@@ -11,6 +11,7 @@ import {
 import { User } from './user'
 import { parseTags } from './util/parse'
 import { removeUndefinedProps } from './util/object'
+import { GroupDetails } from 'common/group'
 
 export function getNewContract(
   id: string,
@@ -27,7 +28,8 @@ export function getNewContract(
   // used for numeric markets
   bucketCount: number,
   min: number,
-  max: number
+  max: number,
+  groupDetails?: GroupDetails
 ) {
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
@@ -69,6 +71,7 @@ export function getNewContract(
       liquidityFee: 0,
       platformFee: 0,
     },
+    groupDetails: groupDetails ? [groupDetails] : undefined,
   })
 
   return contract as Contract

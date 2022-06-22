@@ -1,5 +1,6 @@
 import { Answer } from './answer'
 import { Fees } from './fees'
+import { GroupDetails } from 'common/group'
 
 export type AnyMechanism = DPM | CPMM
 export type AnyOutcomeType = Binary | FreeResponse | Numeric
@@ -23,6 +24,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   tags: string[]
   lowercaseTags: string[]
   visibility: 'public' | 'unlisted'
+
+  groupDetails?: GroupDetails[] // Starting with one group per contract
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime?: number // Updated on new bet or comment

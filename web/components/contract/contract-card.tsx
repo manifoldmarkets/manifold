@@ -31,8 +31,10 @@ export function ContractCard(props: {
   showCloseTime?: boolean
   className?: string
   onClick?: () => void
+  hideQuickBet?: boolean
 }) {
-  const { showHotVolume, showCloseTime, className, onClick } = props
+  const { showHotVolume, showCloseTime, className, onClick, hideQuickBet } =
+    props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
   const { resolution } = contract
@@ -42,12 +44,14 @@ export function ContractCard(props: {
   const marketClosed =
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 
-  const showQuickBet = !(
-    !user ||
-    marketClosed ||
-    (outcomeType === 'FREE_RESPONSE' && getTopAnswer(contract) === undefined) ||
-    outcomeType === 'NUMERIC'
-  )
+  const showQuickBet =
+    user &&
+    !marketClosed &&
+    !(
+      outcomeType === 'FREE_RESPONSE' && getTopAnswer(contract) === undefined
+    ) &&
+    outcomeType !== 'NUMERIC' &&
+    !hideQuickBet
 
   return (
     <div>

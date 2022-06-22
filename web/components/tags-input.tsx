@@ -6,7 +6,6 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { TagsList } from './tags-list'
 import { MAX_TAG_LENGTH } from 'common/contract'
-import { track } from 'web/lib/service/analytics'
 
 export function TagsInput(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -25,7 +24,6 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
     })
     setIsSubmitting(false)
     setTagText('')
-    track('save tags')
   }
 
   return (
@@ -54,26 +52,4 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
       </Row>
     </Col>
   )
-}
-
-export function RevealableTagsInput(props: {
-  contract: Contract
-  className?: string
-}) {
-  const { contract, className } = props
-  const [hidden, setHidden] = useState(true)
-
-  if (hidden)
-    return (
-      <div
-        className={clsx(
-          'cursor-pointer text-gray-500 hover:underline hover:decoration-indigo-400 hover:decoration-2',
-          className
-        )}
-        onClick={() => setHidden((hidden) => !hidden)}
-      >
-        Show tags
-      </div>
-    )
-  return <TagsInput className={clsx('pt-2', className)} contract={contract} />
 }

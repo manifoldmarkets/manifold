@@ -76,6 +76,7 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
     ? new Date(contract.createdTime)
     : hoursAgo.toDate()
 
+  const multiYear = !dayjs(startDate).isSame(latestTime, 'year')
   const lessThanAWeek = dayjs(startDate).add(1, 'week').isAfter(latestTime)
 
   return (
@@ -97,10 +98,12 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
           min: startDate,
           max: latestTime.toDate(),
         }}
-        xFormat={(d) => formatTime(+d.valueOf(), lessThanAWeek)}
+        xFormat={(d) =>
+          formatTime(+d.valueOf(), multiYear, lessThanAWeek, lessThanAWeek)
+        }
         axisBottom={{
           tickValues: numXTickValues,
-          format: (time) => formatTime(+time, lessThanAWeek),
+          format: (time) => formatTime(+time, multiYear, lessThanAWeek, false),
         }}
         colors={{ scheme: 'pastel1' }}
         pointSize={0}
@@ -145,14 +148,34 @@ function formatPercent(y: DatumValue) {
   return `${Math.round(+y.toString())}%`
 }
 
-function formatTime(time: number, includeTime: boolean) {
+function formatTime(
+  time: number,
+  includeYear: boolean,
+  includeHour: boolean,
+  includeMinute: boolean
+) {
   const d = dayjs(time)
 
-  if (d.isSame(Date.now(), 'day')) return d.format('ha')
+  if (d.add(1, 'minute').isAfter(Date.now())) return 'Now'
 
-  if (includeTime) return dayjs(time).format('MMM D, ha')
+  let format: string
+  if (d.isSame(Date.now(), 'day')) {
+    format = '[Today]'
+  } else if (d.add(1, 'day').isSame(Date.now(), 'day')) {
+    format = '[Yesterday]'
+  } else {
+    format = 'MMM D'
+  }
 
-  return dayjs(time).format('MMM D')
+  if (includeMinute) {
+    format += ', h:mma'
+  } else if (includeHour) {
+    format += ', ha'
+  } else if (includeYear) {
+    format += ', YYYY'
+  }
+
+  return d.format(format)
 }
 
 const computeProbsByOutcome = (bets: Bet[], contract: FreeResponseContract) => {

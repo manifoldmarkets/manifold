@@ -30,6 +30,8 @@ export type User = {
     allTime: number
   }
 
+  followerCountCached: number
+
   followedCategories?: string[]
 }
 
