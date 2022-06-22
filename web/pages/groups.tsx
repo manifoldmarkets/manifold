@@ -100,39 +100,14 @@ export default function Groups(props: {
             </Row>
 
             <div className="mb-6 text-gray-500">
-              Groups enable users to curate, discuss, and rank in a subset of
-              questions added solely by its members. Start a group today!
+              Discuss and compete on questions with a group of friends.
             </div>
 
             <Tabs
               tabs={[
-                {
-                  title: 'All',
-                  content: (
-                    <Col>
-                      <input
-                        type="text"
-                        onChange={(e) => debouncedQuery(e.target.value)}
-                        placeholder="Search groups"
-                        className="input input-bordered mb-4 w-full"
-                      />
-
-                      <Col className="gap-4">
-                        {matches.map((group) => (
-                          <GroupCard
-                            key={group.id}
-                            group={group}
-                            creator={creatorsDict[group.creatorId]}
-                          />
-                        ))}
-                      </Col>
-                    </Col>
-                  ),
-                },
-              ]
-                .concat(
-                  user
-                    ? {
+                ...(user
+                  ? [
+                      {
                         title: 'My Groups',
                         content: (
                           <Col>
@@ -158,10 +133,33 @@ export default function Groups(props: {
                             </Col>
                           </Col>
                         ),
-                      }
-                    : []
-                )
-                .reverse()}
+                      },
+                    ]
+                  : []),
+                {
+                  title: 'All',
+                  content: (
+                    <Col>
+                      <input
+                        type="text"
+                        onChange={(e) => debouncedQuery(e.target.value)}
+                        placeholder="Search groups"
+                        className="input input-bordered mb-4 w-full"
+                      />
+
+                      <Col className="gap-4">
+                        {matches.map((group) => (
+                          <GroupCard
+                            key={group.id}
+                            group={group}
+                            creator={creatorsDict[group.creatorId]}
+                          />
+                        ))}
+                      </Col>
+                    </Col>
+                  ),
+                },
+              ]}
             />
           </Col>
         </Col>
