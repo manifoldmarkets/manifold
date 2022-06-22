@@ -7,7 +7,12 @@ import { getPayouts } from './payouts'
 export function scoreCreators(contracts: Contract[]) {
   const creatorScore = mapValues(
     groupBy(contracts, ({ creatorId }) => creatorId),
-    (contracts) => sumBy(contracts, ({ pool }) => pool.YES + pool.NO)
+    (contracts) =>
+      sumBy(
+        contracts.map((contract) => {
+          return contract.volume
+        })
+      )
   )
 
   return creatorScore

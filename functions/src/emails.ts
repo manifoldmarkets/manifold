@@ -275,8 +275,8 @@ export const sendNewCommentEmail = async (
     )}`
   }
 
-  const subject = `Comment on ${question}`
-  const from = `${commentorName} <info@manifold.markets>`
+  const subject = `Comment from ${commentorName} on ${question}`
+  const from = `${commentorName} on Manifold <no-reply@manifold.markets>`
 
   if (contract.outcomeType === 'FREE_RESPONSE' && answerId && answerText) {
     const answerNumber = `#${answerId}`

@@ -4,7 +4,7 @@
 import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 import { cleanDisplayName } from '../../../common/util/clean-username'
-import { log, writeUpdatesAsync, UpdateSpec } from '../utils'
+import { log, writeAsync, UpdateSpec } from '../utils'
 initAdmin()
 const firestore = admin.firestore()
 
@@ -20,7 +20,7 @@ if (require.main === module) {
       return acc
     }, [] as UpdateSpec[])
     log(`Found ${updates.length} users to update:`, updates)
-    await writeUpdatesAsync(firestore, updates)
+    await writeAsync(firestore, updates)
     log(`Updated all users.`)
   })
 }

@@ -6,6 +6,7 @@ import { ContractCard } from './contract-card'
 import { ContractSearch } from '../contract-search'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useEffect, useState } from 'react'
+import clsx from 'clsx'
 
 export function ContractsGrid(props: {
   contracts: Contract[]
@@ -13,8 +14,18 @@ export function ContractsGrid(props: {
   hasMore: boolean
   showCloseTime?: boolean
   onContractClick?: (contract: Contract) => void
+  overrideGridClassName?: string
+  hideQuickBet?: boolean
 }) {
-  const { contracts, showCloseTime, hasMore, loadMore, onContractClick } = props
+  const {
+    contracts,
+    showCloseTime,
+    hasMore,
+    loadMore,
+    onContractClick,
+    overrideGridClassName,
+    hideQuickBet,
+  } = props
 
   const [elem, setElem] = useState<HTMLElement | null>(null)
   const isBottomVisible = useIsVisible(elem)
@@ -38,7 +49,13 @@ export function ContractsGrid(props: {
 
   return (
     <Col className="gap-8">
-      <ul className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
+      <ul
+        className={clsx(
+          overrideGridClassName
+            ? overrideGridClassName
+            : 'grid w-full grid-cols-1 gap-4 md:grid-cols-2'
+        )}
+      >
         {contracts.map((contract) => (
           <ContractCard
             contract={contract}
@@ -47,6 +64,7 @@ export function ContractsGrid(props: {
             onClick={
               onContractClick ? () => onContractClick(contract) : undefined
             }
+            hideQuickBet={hideQuickBet}
           />
         ))}
       </ul>

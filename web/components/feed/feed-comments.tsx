@@ -15,7 +15,10 @@ import { OutcomeLabel } from 'web/components/outcome-label'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { createComment, MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
+import {
+  createCommentOnContract,
+  MAX_COMMENT_LENGTH,
+} from 'web/lib/firebase/comments'
 import Textarea from 'react-expanding-textarea'
 import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
@@ -25,6 +28,7 @@ import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
 import { track } from 'web/lib/service/analytics'
+import { useEvent } from 'web/hooks/use-event'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 
@@ -96,7 +100,10 @@ export function FeedCommentThread(props: {
             replyToUsername={replyToUsername}
             parentAnswerOutcome={comments[0].answerOutcome}
             setRef={setInputRef}
-            onSubmitComment={() => setShowReply(false)}
+            onSubmitComment={() => {
+              setShowReply(false)
+              setReplyToUsername('')
+            }}
           />
         </div>
       )}
@@ -262,8 +269,8 @@ export function FeedComment(props: {
             )}
           </>
           <CopyLinkDateTimeComponent
-            contractCreatorUsername={contract.creatorUsername}
-            contractSlug={contract.slug}
+            prefix={contract.creatorUsername}
+            slug={contract.slug}
             createdTime={createdTime}
             elementId={comment.id}
           />
@@ -332,6 +339,7 @@ function CommentStatus(props: {
   )
 }
 
+//TODO: move commentinput and comment input text area into their own files
 export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
@@ -366,12 +374,6 @@ export function CommentInput(props: {
   )
   const { id } = mostRecentCommentableBet || { id: undefined }
 
-  useEffect(() => {
-    if (!replyToUsername || !user || replyToUsername === user.username) return
-    const replacement = `@${replyToUsername} `
-    setComment((comment) => replacement + comment.replace(replacement, ''))
-  }, [user, replyToUsername])
-
   async function submitComment(betId: string | undefined) {
     if (!user) {
       track('sign in to comment')
@@ -379,7 +381,7 @@ export function CommentInput(props: {
     }
     if (!comment || isSubmitting) return
     setIsSubmitting(true)
-    await createComment(
+    await createCommentOnContract(
       contract.id,
       comment,
       user,
@@ -403,7 +405,7 @@ export function CommentInput(props: {
   return (
     <>
       <Row className={'mb-2 gap-1 sm:gap-2'}>
-        <div className={''}>
+        <div className={'mt-2'}>
           <Avatar
             avatarUrl={user?.avatarUrl}
             username={user?.username}
@@ -442,71 +444,120 @@ export function CommentInput(props: {
                   </>
                 )}
             </div>
-
-            <Row className="gap-1.5 text-gray-700">
-              <Textarea
-                ref={setRef}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className={clsx(
-                  'textarea textarea-bordered w-full resize-none'
-                )}
-                // Make room for floating submit button.
-                style={{ paddingRight: 48 }}
-                placeholder={
-                  parentCommentId || parentAnswerOutcome
-                    ? 'Write a reply... '
-                    : 'Write a comment...'
-                }
-                autoFocus={false}
-                maxLength={MAX_COMMENT_LENGTH}
-                disabled={isSubmitting}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault()
-                    submitComment(id)
-                    e.currentTarget.blur()
-                  }
-                }}
-              />
-
-              <Col className={clsx('justify-end')}>
-                {user && !isSubmitting && (
-                  <button
-                    className={clsx(
-                      'btn btn-ghost btn-sm absolute right-2 flex-row pl-2 capitalize',
-                      parentCommentId || parentAnswerOutcome
-                        ? ' bottom-4'
-                        : ' bottom-2',
-                      !comment && 'pointer-events-none text-gray-500'
-                    )}
-                    onClick={() => {
-                      submitComment(id)
-                    }}
-                  >
-                    <PaperAirplaneIcon
-                      className={'m-0 min-w-[22px] rotate-90 p-0 '}
-                      height={25}
-                    />
-                  </button>
-                )}
-                {isSubmitting && (
-                  <LoadingIndicator spinnerClassName={'border-gray-500'} />
-                )}
-              </Col>
-            </Row>
-            <Row>
-              {!user && (
-                <button
-                  className={'btn btn-outline btn-sm mt-2 normal-case'}
-                  onClick={() => submitComment(id)}
-                >
-                  Sign in to comment
-                </button>
-              )}
-            </Row>
+            <CommentInputTextArea
+              commentText={comment}
+              setComment={setComment}
+              isReply={!!parentCommentId || !!parentAnswerOutcome}
+              replyToUsername={replyToUsername ?? ''}
+              user={user}
+              submitComment={submitComment}
+              isSubmitting={isSubmitting}
+              setRef={setRef}
+              presetId={id}
+            />
           </div>
         </div>
+      </Row>
+    </>
+  )
+}
+
+export function CommentInputTextArea(props: {
+  user: User | undefined | null
+  isReply: boolean
+  replyToUsername: string
+  commentText: string
+  setComment: (text: string) => void
+  submitComment: (id?: string) => void
+  isSubmitting: boolean
+  setRef?: (ref: HTMLTextAreaElement) => void
+  presetId?: string
+  enterToSubmit?: boolean
+}) {
+  const {
+    isReply,
+    setRef,
+    user,
+    commentText,
+    setComment,
+    submitComment,
+    presetId,
+    isSubmitting,
+    replyToUsername,
+    enterToSubmit,
+  } = props
+
+  const memoizedSetComment = useEvent(setComment)
+  useEffect(() => {
+    if (!replyToUsername || !user || replyToUsername === user.username) return
+    const replacement = `@${replyToUsername} `
+    memoizedSetComment(replacement + commentText.replace(replacement, ''))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, replyToUsername, memoizedSetComment])
+  return (
+    <>
+      <Row className="gap-1.5 text-gray-700">
+        <Textarea
+          ref={setRef}
+          value={commentText}
+          onChange={(e) => setComment(e.target.value)}
+          className={clsx('textarea textarea-bordered w-full resize-none')}
+          // Make room for floating submit button.
+          style={{ paddingRight: 48 }}
+          placeholder={
+            isReply
+              ? 'Write a reply... '
+              : enterToSubmit
+              ? 'Send a message'
+              : 'Write a comment...'
+          }
+          autoFocus={false}
+          maxLength={MAX_COMMENT_LENGTH}
+          disabled={isSubmitting}
+          onKeyDown={(e) => {
+            if (
+              (enterToSubmit && e.key === 'Enter' && !e.shiftKey) ||
+              (e.key === 'Enter' && (e.ctrlKey || e.metaKey))
+            ) {
+              e.preventDefault()
+              submitComment(presetId)
+              e.currentTarget.blur()
+            }
+          }}
+        />
+
+        <Col className={clsx('relative justify-end')}>
+          {user && !isSubmitting && (
+            <button
+              className={clsx(
+                'btn btn-ghost btn-sm absolute right-2 flex-row pl-2 capitalize',
+                isReply ? ' bottom-4' : ' bottom-2',
+                !commentText && 'pointer-events-none text-gray-500'
+              )}
+              onClick={() => {
+                submitComment(presetId)
+              }}
+            >
+              <PaperAirplaneIcon
+                className={'m-0 min-w-[22px] rotate-90 p-0 '}
+                height={25}
+              />
+            </button>
+          )}
+          {isSubmitting && (
+            <LoadingIndicator spinnerClassName={'border-gray-500'} />
+          )}
+        </Col>
+      </Row>
+      <Row>
+        {!user && (
+          <button
+            className={'btn btn-outline btn-sm mt-2 normal-case'}
+            onClick={() => submitComment(presetId)}
+          >
+            Sign in to comment
+          </button>
+        )}
       </Row>
     </>
   )
