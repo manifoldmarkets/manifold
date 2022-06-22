@@ -1,9 +1,13 @@
 import { sum, groupBy, mapValues, sumBy, partition } from 'lodash'
 
-import { CPMMContract } from './contract'
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, noFees, PLATFORM_FEE } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { addObjects } from './util/object'
+
+export type CpmmState = {
+  pool: { [outcome: string]: number }
+  p: number
+}
 
 export function getCpmmProbability(
   pool: { [outcome: string]: number },
@@ -14,11 +18,11 @@ export function getCpmmProbability(
 }
 
 export function getCpmmProbabilityAfterBetBeforeFees(
-  contract: CPMMContract,
+  state: CpmmState,
   outcome: string,
   bet: number
 ) {
-  const { pool, p } = contract
+  const { pool, p } = state
   const shares = calculateCpmmShares(pool, p, bet, outcome)
   const { YES: y, NO: n } = pool
 
@@ -31,12 +35,12 @@ export function getCpmmProbabilityAfterBetBeforeFees(
 }
 
 export function getCpmmOutcomeProbabilityAfterBet(
-  contract: CPMMContract,
+  state: CpmmState,
   outcome: string,
   bet: number
 ) {
-  const { newPool } = calculateCpmmPurchase(contract, bet, outcome)
-  const p = getCpmmProbability(newPool, contract.p)
+  const { newPool } = calculateCpmmPurchase(state, bet, outcome)
+  const p = getCpmmProbability(newPool, state.p)
   return outcome === 'NO' ? 1 - p : p
 }
 
@@ -59,11 +63,11 @@ function calculateCpmmShares(
 }
 
 export function getCpmmLiquidityFee(
-  contract: CPMMContract,
+  state: CpmmState,
   bet: number,
   outcome: string
 ) {
-  const prob = getCpmmProbabilityAfterBetBeforeFees(contract, outcome, bet)
+  const prob = getCpmmProbabilityAfterBetBeforeFees(state, outcome, bet)
   const betP = outcome === 'YES' ? 1 - prob : prob
 
   const liquidityFee = LIQUIDITY_FEE * betP * bet
@@ -78,23 +82,23 @@ export function getCpmmLiquidityFee(
 }
 
 export function calculateCpmmSharesAfterFee(
-  contract: CPMMContract,
+  state: CpmmState,
   bet: number,
   outcome: string
 ) {
-  const { pool, p } = contract
-  const { remainingBet } = getCpmmLiquidityFee(contract, bet, outcome)
+  const { pool, p } = state
+  const { remainingBet } = getCpmmLiquidityFee(state, bet, outcome)
 
   return calculateCpmmShares(pool, p, remainingBet, outcome)
 }
 
 export function calculateCpmmPurchase(
-  contract: CPMMContract,
+  state: CpmmState,
   bet: number,
   outcome: string
 ) {
-  const { pool, p } = contract
-  const { remainingBet, fees } = getCpmmLiquidityFee(contract, bet, outcome)
+  const { pool, p } = state
+  const { remainingBet, fees } = getCpmmLiquidityFee(state, bet, outcome)
   // const remainingBet = bet
   // const fees = noFees
 
@@ -116,7 +120,7 @@ export function calculateCpmmPurchase(
 }
 
 export function calculateCpmmAmount(
-  contract: CPMMContract,
+  state: CpmmState,
   prob: number,
   outcome: 'YES' | 'NO'
 ) {
@@ -127,12 +131,12 @@ export function calculateCpmmAmount(
   let newProb = 0
   do {
     maxGuess *= 10
-    newProb = getCpmmOutcomeProbabilityAfterBet(contract, outcome, maxGuess)
+    newProb = getCpmmOutcomeProbabilityAfterBet(state, outcome, maxGuess)
   } while (newProb < prob)
 
   // Then, binary search for the amount that gets closest to prob.
   const amount = binarySearch(0, maxGuess, (amount) => {
-    const newProb = getCpmmOutcomeProbabilityAfterBet(contract, outcome, amount)
+    const newProb = getCpmmOutcomeProbabilityAfterBet(state, outcome, amount)
     return newProb - prob
   })
 
@@ -180,11 +184,11 @@ function sellSharesK(
 }
 
 function calculateCpmmShareValue(
-  contract: CPMMContract,
+  state: CpmmState,
   shares: number,
   outcome: 'YES' | 'NO'
 ) {
-  const { pool, p } = contract
+  const { pool, p } = state
 
   // Find bet amount that preserves k after selling shares.
   const k = computeK(pool.YES, pool.NO, p)
@@ -215,7 +219,7 @@ function calculateCpmmShareValue(
 }
 
 export function calculateCpmmSale(
-  contract: CPMMContract,
+  state: CpmmState,
   shares: number,
   outcome: string
 ) {
@@ -224,7 +228,7 @@ export function calculateCpmmSale(
   }
 
   const saleValue = calculateCpmmShareValue(
-    contract,
+    state,
     shares,
     outcome as 'YES' | 'NO'
   )
@@ -237,7 +241,7 @@ export function calculateCpmmSale(
   //   outcome === 'YES' ? 'NO' : 'YES'
   // )
 
-  const { pool } = contract
+  const { pool } = state
   const { YES: y, NO: n } = pool
 
   const { liquidityFee: fee } = fees
@@ -263,18 +267,18 @@ export function calculateCpmmSale(
 
   const postBetPool = { YES: newY, NO: newN }
 
-  const { newPool, newP } = addCpmmLiquidity(postBetPool, contract.p, fee)
+  const { newPool, newP } = addCpmmLiquidity(postBetPool, state.p, fee)
 
   return { saleValue, newPool, newP, fees }
 }
 
 export function getCpmmProbabilityAfterSale(
-  contract: CPMMContract,
+  state: CpmmState,
   shares: number,
   outcome: 'YES' | 'NO'
 ) {
-  const { newPool } = calculateCpmmSale(contract, shares, outcome)
-  return getCpmmProbability(newPool, contract.p)
+  const { newPool } = calculateCpmmSale(state, shares, outcome)
+  return getCpmmProbability(newPool, state.p)
 }
 
 export function getCpmmLiquidity(
@@ -318,12 +322,12 @@ const calculateLiquidityDelta = (p: number) => (l: LiquidityProvision) => {
 }
 
 export function getCpmmLiquidityPoolWeights(
-  contract: CPMMContract,
+  state: CpmmState,
   liquidities: LiquidityProvision[]
 ) {
   const [antes, nonAntes] = partition(liquidities, (l) => !!l.isAnte)
 
-  const calcLiqudity = calculateLiquidityDelta(contract.p)
+  const calcLiqudity = calculateLiquidityDelta(state.p)
   const liquidityShares = nonAntes.map(calcLiqudity)
 
   const shareSum = sum(liquidityShares) + sum(antes.map(calcLiqudity))
@@ -342,11 +346,11 @@ export function getCpmmLiquidityPoolWeights(
 
 export function getUserLiquidityShares(
   userId: string,
-  contract: CPMMContract,
+  state: CpmmState,
   liquidities: LiquidityProvision[]
 ) {
-  const weights = getCpmmLiquidityPoolWeights(contract, liquidities)
+  const weights = getCpmmLiquidityPoolWeights(state, liquidities)
   const userWeight = weights[userId] ?? 0
 
-  return mapValues(contract.pool, (shares) => userWeight * shares)
+  return mapValues(state.pool, (shares) => userWeight * shares)
 }
