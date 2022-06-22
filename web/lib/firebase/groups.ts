@@ -1,9 +1,7 @@
 import {
   collection,
-  collectionGroup,
   deleteDoc,
   doc,
-  orderBy,
   query,
   updateDoc,
   where,
