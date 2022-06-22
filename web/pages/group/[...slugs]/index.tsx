@@ -278,8 +278,8 @@ function GroupOverview(props: {
   const { group, creator, isCreator, user } = props
   const { about } = group
   const anyoneCanJoinChoices: { [key: string]: string } = {
-    Private: 'false',
-    Public: 'true',
+    Closed: 'false',
+    Open: 'true',
   }
   const [anyoneCanJoin, setAnyoneCanJoin] = useState(group.anyoneCanJoin)
   function updateAnyoneCanJoin(newVal: boolean) {
@@ -322,7 +322,7 @@ function GroupOverview(props: {
             />
           ) : (
             <span className={'text-gray-700'}>
-              {anyoneCanJoin ? 'Public' : 'Private'}
+              {anyoneCanJoin ? 'Open' : 'Closed'}
             </span>
           )}
         </Row>
@@ -515,7 +515,7 @@ function AddContractButton(props: { group: Group; user: User }) {
       <Row className={'items-center justify-center'}>
         <button
           className={
-            'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-500'
+            'btn btn-sm btn-outline cursor-pointer gap-2 whitespace-nowrap text-sm normal-case'
           }
           onClick={() => setOpen(true)}
         >
