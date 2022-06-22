@@ -36,6 +36,7 @@ export type LiteMarket = {
   isResolved: boolean
   resolution?: string
   resolutionTime?: number
+  resolutionProbability?: number
 }
 
 export type ApiAnswer = Answer & {
@@ -73,6 +74,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     isResolved,
     resolution,
     resolutionTime,
+    resolutionProbability,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -106,6 +108,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     isResolved,
     resolution,
     resolutionTime,
+    resolutionProbability,
   })
 }
 
