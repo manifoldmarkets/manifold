@@ -28,6 +28,7 @@ import { UserFollowButton } from '../follow-button'
 import { groupPath } from 'web/lib/firebase/groups'
 import { SiteLink } from 'web/components/site-link'
 import { DAY_MS } from 'common/util/time'
+import { useGroupsWithContract } from 'web/hooks/use-group'
 
 export function MiscDetails(props: {
   contract: Contract
@@ -110,10 +111,10 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const { closeTime, creatorName, creatorUsername, creatorId, groupDetails } =
-    contract
+  const { closeTime, creatorName, creatorUsername, creatorId } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
-
+  // Find a group that this contract id is in
+  const groups = useGroupsWithContract(contract.id)
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
       <Row className="items-center gap-2">
@@ -134,11 +135,12 @@ export function ContractDetails(props: {
         )}
         {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
-      {groupDetails && (
+      {/*// TODO: we can add contracts to multiple groups but only show the first it was added to*/}
+      {groups && groups.length > 0 && (
         <Row className={'line-clamp-1 mt-1 max-w-[200px]'}>
-          <SiteLink href={`${groupPath(groupDetails[0].groupSlug)}`}>
+          <SiteLink href={`${groupPath(groups[0].slug)}`}>
             <UserGroupIcon className="mx-1 mb-1 inline h-5 w-5" />
-            <span>{groupDetails[0].groupName}</span>
+            <span>{groups[0].name}</span>
           </SiteLink>
         </Row>
       )}

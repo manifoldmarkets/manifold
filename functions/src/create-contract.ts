@@ -77,19 +77,6 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
   }
   const user = userDoc.data() as User
 
-  let group = null
-  if (groupId) {
-    const groupDoc = await firestore.collection('groups').doc(groupId).get()
-    if (!groupDoc.exists) {
-      throw new APIError(400, 'No group exists with the given group ID.')
-    }
-
-    group = groupDoc.data() as Group
-    if (!group.memberIds.includes(user.id)) {
-      throw new APIError(400, 'User is not a member of the group.')
-    }
-  }
-
   const userContractsCreatedTodaySnapshot = await firestore
     .collection(`contracts`)
     .where('creatorId', '==', auth.uid)
@@ -104,6 +91,30 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
   if (ante > user.balance && !isFree)
     throw new APIError(400, `Balance must be at least ${ante}.`)
 
+  const slug = await getSlug(question)
+  const contractRef = firestore.collection('contracts').doc()
+
+  let group = null
+  if (groupId) {
+    const groupDocRef = await firestore.collection('groups').doc(groupId)
+    const groupDoc = await groupDocRef.get()
+    if (!groupDoc.exists) {
+      throw new APIError(400, 'No group exists with the given group ID.')
+    }
+
+    group = groupDoc.data() as Group
+    if (!group.memberIds.includes(user.id)) {
+      throw new APIError(
+        400,
+        'User must be a member of the group to add markets to it.'
+      )
+    }
+    if (!group.contractIds.includes(contractRef.id))
+      await groupDocRef.update({
+        contractIds: [...group.contractIds, contractRef.id],
+      })
+  }
+
   console.log(
     'creating contract for',
     user.username,
@@ -113,8 +124,6 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     ante || 0
   )
 
-  const slug = await getSlug(question)
-  const contractRef = firestore.collection('contracts').doc()
   const contract = getNewContract(
     contractRef.id,
     slug,
@@ -128,14 +137,7 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     tags ?? [],
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
-    max ?? 0,
-    group
-      ? {
-          groupId: group.id,
-          groupName: group.name,
-          groupSlug: group.slug,
-        }
-      : undefined
+    max ?? 0
   )
 
   if (!isFree && ante) await chargeUser(user.id, ante, true)

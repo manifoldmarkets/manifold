@@ -1,7 +1,9 @@
 import {
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
+  orderBy,
   query,
   updateDoc,
   where,
@@ -81,4 +83,16 @@ export function listenForMemberGroups(
     const sorted = sortBy(groups, [(group) => -group.mostRecentActivityTime])
     setGroups(sorted)
   })
+}
+
+export async function getGroupsWithContractId(
+  contractId: string,
+  setGroups: (groups: Group[]) => void
+) {
+  const q = query(
+    groupCollection,
+    where('contractIds', 'array-contains', contractId)
+  )
+  const groups = await getValues<Group>(q)
+  setGroups(groups)
 }
