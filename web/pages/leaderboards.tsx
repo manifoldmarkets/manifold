@@ -100,7 +100,7 @@ export default function Leaderboards(props: {
           )}
         </Col>
         {period === 'allTime' ? (
-          <Col className="mx-4 my-10 w-1/2 items-center gap-10 lg:mx-0 lg:flex-row">
+          <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-1/2 lg:flex-row">
             <Leaderboard
               title="👀 Most followed"
               users={topFollowed}
