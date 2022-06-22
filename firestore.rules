@@ -18,6 +18,10 @@ service cloud.firestore {
                        && request.resource.data.diff(resource.data).affectedKeys()
                                                                     .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories']);
     }
+    
+  	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
+      allow read;
+    }
 
     match /users/{userId}/follows/{followUserId} {
       allow read;
