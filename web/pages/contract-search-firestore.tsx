@@ -9,7 +9,7 @@ import {
   useInitialQueryAndSort,
 } from 'web/hooks/use-sort-and-query-params'
 
-export function ContractSearchFirestore(props: {
+export default function ContractSearchFirestore(props: {
   querySortOptions?: {
     defaultSort: Sort
     shouldLoadFromStorage?: boolean

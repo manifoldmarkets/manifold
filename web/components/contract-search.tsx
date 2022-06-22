@@ -28,7 +28,7 @@ import { Tabs } from './layout/tabs'
 import { EditFollowingButton } from './following-button'
 import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
-import { ContractSearchFirestore } from 'web/pages/contract-search-firestore'
+import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
