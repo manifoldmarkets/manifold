@@ -17,13 +17,12 @@ async function backfillFollowers() {
   console.log(`Loaded ${users.length} users. Calculating follower counts...`)
   for (const [idx, user] of users.entries()) {
     console.log(`Querying user ${user.id} (${idx + 1}/${users.length})`)
-    const followsSnaps = await getValues<Follow>(
+    const follows = await getValues<Follow>(
       firestore.collection('users').doc(user.id).collection('follows')
     )
 
-    for (const followSnap of followsSnaps) {
-      followerCounts[followSnap.userId] =
-        (followerCounts[followSnap.userId] || 0) + 1
+    for (const follow of follows) {
+      followerCounts[follow.userId] = (followerCounts[follow.userId] || 0) + 1
     }
   }
 
