@@ -101,7 +101,7 @@ _🌿 Announced on 2022-05-02_
 
 **[Isaac King](https://manifold.markets/IsaacKing): M$5,000**
 
-- For [compiling an FAQ](https://outsidetheasylum.blog/manifold-markets-faq/) that answers a variety of questions that new users commonly face, and also inspiring us to move to [this open-source docs platform](http://docs.manifold.markets/).
+- For [compiling an FAQ](https://outsidetheasylum.blog/manifold-markets-faq/) that answers a variety of questions that new users commonly face, and also inspiring us to move to [this open-source docs platform](https://docs.manifold.markets/).
 
 **[Blazer](https://manifold.markets/BlazingDarkness/was-it-an-unpleasant-surprise-when): M$2,500**
 

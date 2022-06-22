@@ -23,7 +23,7 @@ Yes! There is substantial evidence that play-money prediction markets provide re
 
 Our overall design also ensures that good forecasting will come out on top in the long term. In the competitive environment of the marketplace, bettors that are correct more often will gain influence, leading to better-calibrated forecasts over time.
 
-Since our launch, we've seen hundreds of users trade each day, on over a thousand different markets! You can track the popularity of our platform at **[http://manifold.markets/analytics](http://manifold.markets/analytics)**.
+Since our launch, we've seen hundreds of users trade each day, on over a thousand different markets! You can track the popularity of our platform at **[https://manifold.markets/stats](https://manifold.markets/stats)**.
 
 ### **Why is this important?**
 
@@ -53,7 +53,7 @@ Manifold Markets is currently a team of three:
 - Stephen Grugett
 - Austin Chen
 
-We've previously launched consumer-facing startups (**[Throne](https://throne.live/)**, **[One Word](http://oneword.games/platform)**), and worked at top tech and trading firms (Google, Susquehanna).
+We've previously launched consumer-facing startups (**[Throne](https://throne.live/)**, **[One Word](https://oneword.games/platform)**), and worked at top tech and trading firms (Google, Susquehanna).
 
 ## **Talk to us!**
 
