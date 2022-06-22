@@ -44,7 +44,7 @@ export default function LinkPage() {
   const links = useUserManalinks(user?.id ?? '')
   // const manalinkTxns = useManalinkTxns(user?.id ?? '')
   const [highlightedSlug, setHighlightedSlug] = useState('')
-  const outstandingLinks = links.filter(
+  const unclaimedLinks = links.filter(
     (l) =>
       (l.maxUses == null || l.claimedUserIds.length < l.maxUses) &&
       (l.expiresTime == null || l.expiresTime > Date.now())
@@ -87,10 +87,10 @@ export default function LinkPage() {
               ),
             },
             {
-              title: 'Outstanding links',
+              title: 'Unclaimed links',
               content: (
                 <LinksTable
-                  links={outstandingLinks}
+                  links={unclaimedLinks}
                   highlightedSlug={highlightedSlug}
                 />
               ),
@@ -285,7 +285,7 @@ function LinkDetailsTable(props: { link: Manalink }) {
     <table className="w-full divide-y divide-gray-300 border border-gray-400">
       <thead className="bg-gray-50 text-left text-sm font-semibold text-gray-900">
         <tr>
-          <th className="px-5 py-2">Claimant</th>
+          <th className="px-5 py-2">Claimed by</th>
           <th className="px-5 py-2">Time</th>
         </tr>
       </thead>
