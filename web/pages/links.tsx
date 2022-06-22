@@ -117,7 +117,7 @@ function CreateManalinkForm(props: {
   const [newManalink, setNewManalink] = useState<ManalinkInfo>({
     expiresTime: null,
     amount: 100,
-    maxUses: 5,
+    maxUses: 1,
     uses: 0,
     message: '',
   })
