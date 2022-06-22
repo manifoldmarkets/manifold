@@ -1,3 +1,5 @@
+import { difference } from 'lodash'
+
 export const CATEGORIES = {
   politics: 'Politics',
   technology: 'Technology',
@@ -12,10 +14,19 @@ export const CATEGORIES = {
   crypto: 'Crypto',
   gaming: 'Gaming',
   fun: 'Fun',
-} as { [category: string]: string }
+}
+
+export type category = keyof typeof CATEGORIES
 
 export const TO_CATEGORY = Object.fromEntries(
   Object.entries(CATEGORIES).map(([k, v]) => [v, k])
 )
 
 export const CATEGORY_LIST = Object.keys(CATEGORIES)
+
+export const EXCLUDED_CATEGORIES: category[] = ['fun', 'manifold', 'personal']
+
+export const DEFAULT_CATEGORIES = difference(
+  CATEGORY_LIST,
+  EXCLUDED_CATEGORIES
+)

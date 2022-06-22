@@ -71,7 +71,7 @@ export async function runTxn(
   }
 
   const newTxnDoc = firestore.collection(`txns/`).doc()
-  const txn: Txn = { id: newTxnDoc.id, createdTime: Date.now(), ...data }
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...data }
   fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
   fbTransaction.update(fromDoc, {
     balance: fromUser.balance - amount,
