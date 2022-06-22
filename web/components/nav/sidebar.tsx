@@ -47,7 +47,7 @@ function getNavigation(username: string) {
     { name: 'Home', href: '/home', icon: HomeIcon },
     {
       name: 'Portfolio',
-      href: `/${username}/bets`,
+      href: `/${username}?tab=bets`,
       icon: PresentationChartLineIcon,
     },
     {
