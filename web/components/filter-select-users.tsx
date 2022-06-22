@@ -6,6 +6,7 @@ import clsx from 'clsx'
 import { Menu, Transition } from '@headlessui/react'
 import { Avatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
+import { debounce } from 'lodash'
 
 export function FilterSelectUsers(props: {
   setSelectedUsers: (users: User[]) => void
@@ -26,6 +27,8 @@ export function FilterSelectUsers(props: {
             user.name.toLowerCase().includes(query.toLowerCase())
           )
         })
+  const debouncedQuery = debounce(setQuery, 50)
+
   return (
     <div>
       <div className="relative mt-1 rounded-md">
@@ -37,7 +40,7 @@ export function FilterSelectUsers(props: {
           name="user name"
           id="user name"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => debouncedQuery(e.target.value)}
           className="input input-bordered block w-full pl-10 focus:border-gray-300 "
           placeholder="Austin Chen"
         />
