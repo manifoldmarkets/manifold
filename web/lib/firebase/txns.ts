@@ -1,4 +1,4 @@
-import { Txn, DonationTxn, TipTxn } from 'common/txn'
+import { ManalinkTxn, DonationTxn, TipTxn } from 'common/txn'
 import { collection, orderBy, query, where } from 'firebase/firestore'
 import { db } from './init'
 import { getValues, listenForValues } from './utils'
@@ -44,8 +44,8 @@ export function listenForTipTxns(
 
 // Find all manalink Txns that are from or to this user
 export function useManalinkTxns(userId: string) {
-  const [fromTxns, setFromTxns] = useState<Txn[]>([])
-  const [toTxns, setToTxns] = useState<Txn[]>([])
+  const [fromTxns, setFromTxns] = useState<ManalinkTxn[]>([])
+  const [toTxns, setToTxns] = useState<ManalinkTxn[]>([])
 
   useEffect(() => {
     // TODO: Need to instantiate these indexes too
