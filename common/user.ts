@@ -18,6 +18,8 @@ export type User = {
   totalPnLCached: number
   creatorVolumeCached: number
 
+  followerCountCached: number
+
   followedCategories?: string[]
 }
 

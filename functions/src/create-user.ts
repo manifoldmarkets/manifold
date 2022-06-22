@@ -72,6 +72,7 @@ export const createUser = functions
       createdTime: Date.now(),
       totalPnLCached: 0,
       creatorVolumeCached: 0,
+      followerCountCached: 0,
       followedCategories: DEFAULT_CATEGORIES,
     }
 
