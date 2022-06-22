@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import {
+  getGroupsWithContractId,
   listenForGroup,
   listenForGroups,
   listenForMemberGroups,
@@ -75,4 +76,14 @@ export function useMembers(group: Group) {
       })
   }, [group])
   return members
+}
+
+export const useGroupsWithContract = (contractId: string | undefined) => {
+  const [groups, setGroups] = useState<Group[] | null | undefined>()
+
+  useEffect(() => {
+    if (contractId) getGroupsWithContractId(contractId, setGroups)
+  }, [contractId])
+
+  return groups
 }
