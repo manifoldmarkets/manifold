@@ -92,12 +92,12 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
         const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
 
         if (limitProb !== undefined) {
-          return getBinaryCpmmLimitBetInfo(
+           getBinaryCpmmLimitBetInfo(
             outcome,
             amount,
             contract,
             limitProb,
-            unfilledBets
+            unfilledBets,
           )
         }
         return getNewBinaryCpmmBetInfo(outcome, amount, contract, loanAmount)

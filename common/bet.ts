@@ -32,7 +32,9 @@ export type Bet = {
   // I.e. A limit order could be filled by partially matching with several bets.
   // Non-limit orders can also be filled by matching with multiple limit orders.
   fills?: {
-    matchedBetId: string
+    // The id the bet matched against, or null if the bet was matched by
+    // the pool.
+    matchedBetId: string | null
     amount: number
     shares: number
   }[]
