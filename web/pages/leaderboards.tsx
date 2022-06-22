@@ -58,7 +58,7 @@ export default function Leaderboards(props: {
 
   const LeaderboardWithPeriod = (period: LeaderboardPeriod) => {
     return (
-      <Col className="items-center gap-10 lg:flex-row">
+      <Col className="mx-4 items-center gap-10 lg:flex-row">
         {!isLoading ? (
           <>
             {period === 'allTime' ? ( //TODO: show other periods once they're available
@@ -98,7 +98,7 @@ export default function Leaderboards(props: {
   useTracking('view leaderboards')
 
   return (
-    <Page margin>
+    <Page>
       <Title text={'Leaderboards'} className={'hidden md:block'} />
       <Tabs
         defaultIndex={0}
