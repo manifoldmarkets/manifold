@@ -6,6 +6,7 @@ import {
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
+  PresentationChartBarIcon,
   SparklesIcon,
   NewspaperIcon,
   UserGroupIcon,
@@ -79,6 +80,7 @@ function getMoreNavigation(user?: User | null) {
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
+    { name: 'Statistics', href: '/stats' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
   ]
@@ -108,6 +110,11 @@ const signedOutMobileNavigation = [
     name: 'Twitter',
     href: 'https://twitter.com/ManifoldMarkets',
     icon: IconFromUrl('/twitter-logo.svg'),
+  },
+  {
+    name: 'Statistics',
+    href: '/stats',
+    icon: PresentationChartBarIcon,
   },
   {
     name: 'About',

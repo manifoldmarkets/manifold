@@ -6,6 +6,7 @@ import { getOutcomeProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
 import { Contract, FreeResponseContract } from 'common/contract'
 import { User } from 'common/user'
+import { CommentTipMap } from 'web/hooks/use-tip-txns'
 
 export type ActivityItem =
   | DescriptionItem
@@ -50,6 +51,7 @@ export type CommentThreadItem = BaseActivityItem & {
   type: 'commentThread'
   parentComment: Comment
   comments: Comment[]
+  tips: CommentTipMap
   bets: Bet[]
 }
 
@@ -58,6 +60,7 @@ export type AnswerGroupItem = BaseActivityItem & {
   user: User | undefined | null
   answer: Answer
   comments: Comment[]
+  tips: CommentTipMap
   bets: Bet[]
 }
 
@@ -73,6 +76,7 @@ function getAnswerAndCommentInputGroups(
   contract: FreeResponseContract,
   bets: Bet[],
   comments: Comment[],
+  tips: CommentTipMap,
   user: User | undefined | null
 ) {
   let outcomes = uniq(bets.map((bet) => bet.outcome))
@@ -93,6 +97,7 @@ function getAnswerAndCommentInputGroups(
         user,
         answer,
         comments,
+        tips,
         bets,
       }
     })
@@ -103,6 +108,7 @@ function getAnswerAndCommentInputGroups(
 function getCommentThreads(
   bets: Bet[],
   comments: Comment[],
+  tips: CommentTipMap,
   contract: Contract
 ) {
   const parentComments = comments.filter((comment) => !comment.replyToCommentId)
@@ -114,6 +120,7 @@ function getCommentThreads(
     comments: comments,
     parentComment: comment,
     bets: bets,
+    tips,
   }))
 
   return items
@@ -132,6 +139,7 @@ export function getSpecificContractActivityItems(
   contract: Contract,
   bets: Bet[],
   comments: Comment[],
+  tips: CommentTipMap,
   user: User | null | undefined,
   options: {
     mode: 'comments' | 'bets' | 'free-response-comment-answer-groups'
@@ -147,7 +155,7 @@ export function getSpecificContractActivityItems(
       items.push(
         ...bets.map((bet) => ({
           type: 'bet' as const,
-          id: bet.id,
+          id: bet.id + '-' + bet.isSold,
           bet,
           contract,
           hideOutcome: false,
@@ -167,6 +175,7 @@ export function getSpecificContractActivityItems(
         ...getCommentThreads(
           nonFreeResponseBets,
           nonFreeResponseComments,
+          tips,
           contract
         )
       )
@@ -190,6 +199,7 @@ export function getSpecificContractActivityItems(
           contract as FreeResponseContract,
           bets,
           comments,
+          tips,
           user
         )
       )
