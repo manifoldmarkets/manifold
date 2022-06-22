@@ -446,8 +446,7 @@ Requires no authorization.
     twitterHandle?: string
     discordHandle?: string
 
-    // Note: the following are fully rederivable from the transaction history.
-    // They are here for convenience only and may be removed in the future.
+    // Note: the following are here for convenience only and may be removed in the future.
     balance: number
     totalDeposits: number
     totalPnLCached: number
