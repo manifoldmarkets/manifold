@@ -1,4 +1,4 @@
-import { take, sortBy, debounce, set } from 'lodash'
+import { take, sortBy, debounce } from 'lodash'
 
 import { Group } from 'common/group'
 import { Comment } from 'common/comment'

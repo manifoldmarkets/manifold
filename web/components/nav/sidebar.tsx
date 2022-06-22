@@ -19,7 +19,7 @@ import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
-import { MenuButton, MenuItem } from './menu'
+import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import {
   getUtcFreeMarketResetTime,
