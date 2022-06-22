@@ -4,10 +4,12 @@ import { V2CloudFunction } from 'common/envs/prod'
 
 export class APIError extends Error {
   code: number
-  constructor(code: number, message: string) {
+  details?: string
+  constructor(code: number, message: string, details?: string) {
     super(message)
     this.code = code
     this.name = 'APIError'
+    this.details = details
   }
 }
 
@@ -28,7 +30,7 @@ export async function call(url: string, method: string, params: any) {
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
     if (!resp.ok) {
-      throw new APIError(resp.status, json?.message)
+      throw new APIError(resp.status, json?.message, json?.details)
     }
     return json
   })
@@ -57,4 +59,8 @@ export function sellShares(params: any) {
 
 export function sellBet(params: any) {
   return call(getFunctionUrl('sellbet'), 'POST', params)
+}
+
+export function createGroup(params: any) {
+  return call(getFunctionUrl('creategroup'), 'POST', params)
 }

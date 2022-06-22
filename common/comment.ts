@@ -2,7 +2,8 @@
 // They're uniquely identified by the pair contractId/betId.
 export type Comment = {
   id: string
-  contractId: string
+  contractId?: string
+  groupId?: string
   betId?: string
   answerOutcome?: string
   replyToCommentId?: string
