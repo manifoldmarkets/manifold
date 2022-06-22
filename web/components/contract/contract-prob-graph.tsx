@@ -1,5 +1,6 @@
 import { DatumValue } from '@nivo/core'
-import { ResponsiveLine } from '@nivo/line'
+import { ResponsiveLine, SliceTooltipProps } from '@nivo/line'
+import { BasicTooltip } from '@nivo/tooltip'
 import dayjs from 'dayjs'
 import { memo } from 'react'
 import { Bet } from 'common/bet'
@@ -38,9 +39,6 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   times.push(latestTime.toDate())
   probs.push(probs[probs.length - 1])
 
-  const points = probs.map((prob, i) => ({ x: times[i], y: prob * 100 }))
-  const data = [{ id: 'Yes', data: points, color: '#11b981' }]
-
   const yTickValues = [0, 25, 50, 75, 100]
 
   const { width } = useWindowSize()
@@ -51,7 +49,36 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
     ? times[0]
     : hoursAgo.toDate()
 
-  const lessThanAWeek = dayjs(startDate).add(1, 'week').isAfter(latestTime)
+  // Minimum number of points for the graph to have. For smooth tooltip movement
+  // On first load, width is undefined, skip adding extra points to let page load faster
+  // This fn runs again once DOM is finished loading
+  const totalPoints = width ? (width > 800 ? 300 : 50) : 1
+
+  const timeStep: number = latestTime.diff(startDate, 'ms') / totalPoints
+  const points: { x: Date; y: number }[] = []
+  for (let i = 0; i < times.length; i++) {
+    points[points.length] = { x: times[i], y: probs[i] * 100 }
+    const numPoints: number = Math.floor(
+      dayjs(times[i + 1]).diff(dayjs(times[i]), 'ms') / timeStep
+    )
+    if (numPoints > 1) {
+      const thisTimeStep: number =
+        dayjs(times[i + 1]).diff(dayjs(times[i]), 'ms') / numPoints
+      for (let n = 1; n < numPoints; n++) {
+        points[points.length] = {
+          x: dayjs(times[i])
+            .add(thisTimeStep * n, 'ms')
+            .toDate(),
+          y: probs[i] * 100,
+        }
+      }
+    }
+  }
+
+  const data = [{ id: 'Yes', data: points, color: '#11b981' }]
+
+  const multiYear = !dayjs(startDate).isSame(latestTime, 'year')
+  const lessThanAWeek = dayjs(startDate).add(8, 'day').isAfter(latestTime)
 
   return (
     <div
@@ -72,14 +99,16 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
           min: startDate,
           max: latestTime.toDate(),
         }}
-        xFormat={(d) => formatTime(+d.valueOf(), lessThanAWeek)}
+        xFormat={(d) =>
+          formatTime(+d.valueOf(), multiYear, lessThanAWeek, lessThanAWeek)
+        }
         axisBottom={{
           tickValues: numXTickValues,
-          format: (time) => formatTime(+time, lessThanAWeek),
+          format: (time) => formatTime(+time, multiYear, lessThanAWeek, false),
         }}
         colors={{ datum: 'color' }}
         curve="stepAfter"
-        pointSize={0}
+        enablePoints={false}
         pointBorderWidth={1}
         pointBorderColor="#fff"
         enableSlices="x"
@@ -87,21 +116,54 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
         enableArea
         margin={{ top: 20, right: 20, bottom: 25, left: 40 }}
         animate={false}
+        sliceTooltip={SliceTooltip}
       />
     </div>
   )
 })
 
+const SliceTooltip = ({ slice }: SliceTooltipProps) => {
+  return (
+    <BasicTooltip
+      id={slice.points.map((point) => [
+        <span key="date">
+          <strong>{point.data[`yFormatted`]}</strong> {point.data['xFormatted']}
+        </span>,
+      ])}
+    />
+  )
+}
+
 function formatPercent(y: DatumValue) {
   return `${Math.round(+y.toString())}%`
 }
 
-function formatTime(time: number, includeTime: boolean) {
+function formatTime(
+  time: number,
+  includeYear: boolean,
+  includeHour: boolean,
+  includeMinute: boolean
+) {
   const d = dayjs(time)
 
-  if (d.isSame(Date.now(), 'day')) return d.format('ha')
+  if (d.add(1, 'minute').isAfter(Date.now())) return 'Now'
 
-  if (includeTime) return dayjs(time).format('MMM D, ha')
+  let format: string
+  if (d.isSame(Date.now(), 'day')) {
+    format = '[Today]'
+  } else if (d.add(1, 'day').isSame(Date.now(), 'day')) {
+    format = '[Yesterday]'
+  } else {
+    format = 'MMM D'
+  }
 
-  return dayjs(time).format('MMM D')
+  if (includeMinute) {
+    format += ', h:mma'
+  } else if (includeHour) {
+    format += ', ha'
+  } else if (includeYear) {
+    format += ', YYYY'
+  }
+
+  return d.format(format)
 }
