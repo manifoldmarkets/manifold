@@ -11,7 +11,9 @@ import { createManalink, useUserManalinks } from 'web/lib/firebase/manalinks'
 import { fromNow } from 'web/lib/util/time'
 import { useManalinkTxns } from 'web/lib/firebase/txns'
 import { useUserById } from 'web/hooks/use-users'
-import { Txn } from 'common/txn'
+import { ManalinkTxn } from 'common/txn'
+import { User } from 'common/user'
+import { Tabs } from 'web/components/layout/tabs'
 import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
@@ -27,15 +29,10 @@ function getLinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
 }
 
+const TAB_IDS = ['create', 'outstanding', 'claimed']
+
 export default function LinkPage() {
   const user = useUser()
-  const [newManalink, setNewManalink] = useState<ManalinkInfo>({
-    expiresTime: null,
-    amount: 100,
-    maxUses: 5,
-    uses: 0,
-    message: '',
-  })
   const links = useUserManalinks(user?.id ?? '')
   const manalinkTxns = useManalinkTxns(user?.id ?? '')
   const outstandingLinks = links.filter(
@@ -57,129 +54,164 @@ export default function LinkPage() {
       />
       <Col className="w-full px-8">
         <Title text="Create a manalink" />
-        <p>
-          You can use manalinks to send mana to other people, even if they
-          don&apos;t yet have a Manifold account.
-        </p>
-        <form
-          className="my-5"
-          onSubmit={async (e) => {
-            e.preventDefault()
-            await createManalink({
-              fromId: user.id,
-              amount: newManalink.amount,
-              expiresTime: newManalink.expiresTime,
-              maxUses: newManalink.maxUses,
-              message: newManalink.message,
-            })
+        <Tabs
+          className={'pb-2 pt-1 '}
+          defaultIndex={0}
+          onClick={(tabName) => {
+            const tabId = tabName.toLowerCase()
+            const subpath = tabId === 'create' ? '' : '/' + tabId
+            window.history.replaceState('', '', `/links${subpath}`)
           }}
-        >
-          <div className="flex flex-row flex-wrap gap-x-5 gap-y-2">
-            <div className="form-control flex-auto">
-              <label className="label">Amount</label>
-              <input
-                className="input"
-                type="number"
-                value={newManalink.amount}
-                onChange={(e) =>
-                  setNewManalink((m) => {
-                    return { ...m, amount: parseInt(e.target.value) }
-                  })
-                }
-              ></input>
-            </div>
-            <div className="form-control flex-auto">
-              <label className="label">Uses</label>
-              <input
-                className="input"
-                type="number"
-                value={newManalink.maxUses ?? ''}
-                onChange={(e) =>
-                  setNewManalink((m) => {
-                    return { ...m, maxUses: parseInt(e.target.value) }
-                  })
-                }
-              ></input>
-            </div>
-            <div className="form-control flex-auto">
-              <label className="label">Expires at</label>
-              <input
-                value={
-                  newManalink.expiresTime != null
-                    ? dayjs(newManalink.expiresTime).format('YYYY-MM-DDTHH:mm')
-                    : ''
-                }
-                className="input"
-                type="datetime-local"
-                onChange={(e) => {
-                  setNewManalink((m) => {
-                    console.log(e.target.value)
-                    console.log(
-                      dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
-                    )
-                    return {
-                      ...m,
-                      expiresTime: e.target.value
-                        ? dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
-                        : null,
-                    }
-                  })
-                }}
-              ></input>
-            </div>
-          </div>
-          <div className="form-control w-full">
-            <label className="label">Message</label>
-            <Textarea
-              placeholder={`From ${user.name}`}
-              className="input input-bordered resize-none"
-              autoFocus
-              value={newManalink.message}
-              onChange={(e) =>
-                setNewManalink((m) => {
-                  return { ...m, message: e.target.value }
-                })
-              }
-            />
-          </div>
-          <input
-            type="submit"
-            className="btn mt-5 max-w-xs"
-            value="Create"
-          ></input>
-        </form>
-
-        <Title text="Preview" />
-        <p>This is what the person you send the link to will see:</p>
-        <ManalinkCard
-          className="my-5"
-          defaultMessage={`From ${user.name}`}
-          info={newManalink}
-          isClaiming={false}
+          tabs={[
+            {
+              title: 'Create',
+              content: <CreateManalinkForm user={user} />,
+            },
+            {
+              title: 'Outstanding',
+              content: <LinksTable links={outstandingLinks} />,
+            },
+            {
+              title: 'Claimed',
+              content: <ClaimsList txns={manalinkTxns} />,
+            },
+          ]}
         />
-        <Title text="Your outstanding links" />
-        {links.length > 0 ? (
-          <LinksTable links={outstandingLinks} />
-        ) : (
-          <p>You don&apos;t currently have any outstanding manalinks.</p>
-        )}
-
-        {manalinkTxns.length > 0 && (
-          <Col className="mt-12">
-            <h1 className="mb-4 text-xl font-semibold text-gray-900">
-              Claimed links
-            </h1>
-            {manalinkTxns.map((txn) => (
-              <ClaimDescription txn={txn} key={txn.id} />
-            ))}
-          </Col>
-        )}
       </Col>
     </Page>
   )
 }
 
-export function ClaimDescription(props: { txn: Txn }) {
+function CreateManalinkForm(props: { user: User }) {
+  const { user } = props
+  const [newManalink, setNewManalink] = useState<ManalinkInfo>({
+    expiresTime: null,
+    amount: 100,
+    maxUses: 5,
+    uses: 0,
+    message: '',
+  })
+  return (
+    <>
+      <p>
+        You can use manalinks to send mana to other people, even if they
+        don&apos;t yet have a Manifold account.
+      </p>
+      <form
+        className="my-5"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          await createManalink({
+            fromId: user.id,
+            amount: newManalink.amount,
+            expiresTime: newManalink.expiresTime,
+            maxUses: newManalink.maxUses,
+            message: newManalink.message,
+          })
+        }}
+      >
+        <div className="flex flex-row flex-wrap gap-x-5 gap-y-2">
+          <div className="form-control flex-auto">
+            <label className="label">Amount</label>
+            <input
+              className="input"
+              type="number"
+              value={newManalink.amount}
+              onChange={(e) =>
+                setNewManalink((m) => {
+                  return { ...m, amount: parseInt(e.target.value) }
+                })
+              }
+            ></input>
+          </div>
+          <div className="form-control flex-auto">
+            <label className="label">Uses</label>
+            <input
+              className="input"
+              type="number"
+              value={newManalink.maxUses ?? ''}
+              onChange={(e) =>
+                setNewManalink((m) => {
+                  return { ...m, maxUses: parseInt(e.target.value) }
+                })
+              }
+            ></input>
+          </div>
+          <div className="form-control flex-auto">
+            <label className="label">Expires at</label>
+            <input
+              value={
+                newManalink.expiresTime != null
+                  ? dayjs(newManalink.expiresTime).format('YYYY-MM-DDTHH:mm')
+                  : ''
+              }
+              className="input"
+              type="datetime-local"
+              onChange={(e) => {
+                setNewManalink((m) => {
+                  console.log(e.target.value)
+                  console.log(
+                    dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
+                  )
+                  return {
+                    ...m,
+                    expiresTime: e.target.value
+                      ? dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
+                      : null,
+                  }
+                })
+              }}
+            ></input>
+          </div>
+        </div>
+        <div className="form-control w-full">
+          <label className="label">Message</label>
+          <Textarea
+            placeholder={`From ${user.name}`}
+            className="input input-bordered resize-none"
+            autoFocus
+            value={newManalink.message}
+            onChange={(e) =>
+              setNewManalink((m) => {
+                return { ...m, message: e.target.value }
+              })
+            }
+          />
+        </div>
+        <input
+          type="submit"
+          className="btn mt-5 max-w-xs"
+          value="Create"
+        ></input>
+      </form>
+
+      <Title text="Preview" />
+      <p>This is what the person you send the link to will see:</p>
+      <ManalinkCard
+        className="my-5"
+        defaultMessage={`From ${user.name}`}
+        info={newManalink}
+        isClaiming={false}
+      />
+    </>
+  )
+}
+
+export function ClaimsList(props: { txns: ManalinkTxn[] }) {
+  const { txns } = props
+  return (
+    <>
+      <h1 className="mb-4 text-xl font-semibold text-gray-900">
+        Claimed links
+      </h1>
+      {txns.map((txn) => (
+        <ClaimDescription txn={txn} key={txn.id} />
+      ))}
+    </>
+  )
+}
+
+export function ClaimDescription(props: { txn: ManalinkTxn }) {
   const { txn } = props
   const from = useUserById(txn.fromId)
   const to = useUserById(txn.toId)
@@ -300,7 +332,9 @@ function LinkSummaryRow(props: {
 
 function LinksTable(props: { links: Manalink[] }) {
   const { links } = props
-  return (
+  return links.length == 0 ? (
+    <p>You don&apos;t currently have any outstanding manalinks.</p>
+  ) : (
     <table className="w-full divide-y divide-gray-300 rounded-lg border border-gray-200">
       <thead className="bg-gray-50 text-left text-sm font-semibold text-gray-900">
         <tr>
