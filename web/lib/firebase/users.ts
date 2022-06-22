@@ -35,6 +35,8 @@ import { filterDefined } from 'common/util/array'
 
 export type { User }
 
+export type LeaderboardPeriod = 'daily' | 'weekly' | 'monthly' | 'allTime'
+
 const db = getFirestore(app)
 export const auth = getAuth(app)
 
@@ -178,26 +180,35 @@ export function listenForPrivateUsers(
   listenForValues(q, setUsers)
 }
 
-const topTradersQuery = query(
-  collection(db, 'users'),
-  orderBy('totalPnLCached', 'desc'),
-  limit(21)
-)
+export function getTopTraders(period: LeaderboardPeriod) {
+  const topTraders = query(
+    collection(db, 'users'),
+    orderBy('profitCached.' + period, 'desc'),
+    limit(20)
+  )
 
-export async function getTopTraders() {
-  const users = await getValues<User>(topTradersQuery)
+  return getValues(topTraders)
+}
+
+export function getTopCreators(period: LeaderboardPeriod) {
+  const topCreators = query(
+    collection(db, 'users'),
+    orderBy('creatorVolumeCached.' + period, 'desc'),
+    limit(20)
+  )
+  return getValues(topCreators)
+}
+
+export async function getTopFollowed() {
+  const users = await getValues<User>(topFollowedQuery)
   return users.slice(0, 20)
 }
 
-const topCreatorsQuery = query(
+const topFollowedQuery = query(
   collection(db, 'users'),
-  orderBy('creatorVolumeCached', 'desc'),
+  orderBy('followerCountCached', 'desc'),
   limit(20)
 )
-
-export function getTopCreators() {
-  return getValues<User>(topCreatorsQuery)
-}
 
 export function getUsers() {
   return getValues<User>(collection(db, 'users'))
