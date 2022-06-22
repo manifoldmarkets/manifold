@@ -52,7 +52,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   // Minimum number of points for the graph to have. For smooth tooltip movement
   // On first load, width is undefined, skip adding extra points to let page load faster
   // This fn runs again once DOM is finished loading
-  const totalPoints = width ? Math.floor(width / 2) : 1
+  const totalPoints = width ? (width > 800 ? 300 : 50) : 1
 
   const timeStep: number = latestTime.diff(startDate, 'ms') / totalPoints
   const points: { x: Date; y: number }[] = []
