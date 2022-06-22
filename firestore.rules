@@ -107,20 +107,25 @@ service cloud.firestore {
                                                                     .hasOnly(['isSeen', 'viewTime']);
     }
 
-    match /groups/{groupId} {
-      allow read;
-      allow update: if request.auth.uid in resource.data.memberIds
-                       && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['name', 'about', 'contractIds', 'memberIds', 'anyoneCanJoin' ]);
-      allow delete: if request.auth.uid == resource.data.creatorId;
+     match /groups/{groupId} {
+          allow read;
+          allow update: if request.auth.uid == resource.data.creatorId
+                           && request.resource.data.diff(resource.data)
+                           .affectedKeys()
+                           .hasOnly(['name', 'about', 'contractIds', 'memberIds', 'anyoneCanJoin' ]);
+         allow update: if (request.auth.uid in resource.data.memberIds  || resource.data.anyoneCanJoin)
+                           && request.resource.data.diff(resource.data)
+                           .affectedKeys()
+                           .hasOnly([ 'contractIds', 'memberIds' ]);
+          allow delete: if request.auth.uid == resource.data.creatorId;
 
-      function isMember() {
-        return request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
-      }
-
-      match /comments/{commentId} {
-        allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isMember();
-      }
-    }
+          function isMember() {
+            return request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+          }
+          match /comments/{commentId} {
+          	allow read;
+            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isMember();
+          }
+        }
   }
 }
