@@ -48,20 +48,20 @@ export function GroupSelector(props: {
     )
   }
   return (
-    <div className="form-control items-start">
+    <div className="form-control items-start text-sm">
       <Combobox
         as="div"
         value={selectedGroup}
         onChange={setSelectedGroup}
         nullable={true}
       >
-        <Combobox.Label className="label justify-start gap-2">
+        <Combobox.Label className="label justify-start gap-2 text-base">
           Add to Group
-          <InfoTooltip text="Question will be displayed alongside the other questions in the group and winnings will contribute to the group's leaderboard." />
+          <InfoTooltip text="Question will be displayed alongside the other questions in the group." />
         </Combobox.Label>
         <div className="relative mt-2">
           <Combobox.Input
-            className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+            className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 "
             onChange={(event) => setQuery(event.target.value)}
             displayValue={(group: Group) => group && group.name}
           />
@@ -74,7 +74,7 @@ export function GroupSelector(props: {
 
           <Combobox.Options
             static={isCreatingNewGroup}
-            className="absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+            className="absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
           >
             {filteredGroups.map((group: Group) => (
               <Combobox.Option
@@ -116,7 +116,7 @@ export function GroupSelector(props: {
               user={creator}
               onOpenStateChange={setIsCreatingNewGroup}
               className={
-                'w-full justify-start rounded-none border-0 bg-white pl-2 text-base font-normal text-gray-900 hover:bg-indigo-500 hover:text-white'
+                'w-full justify-start rounded-none border-0 bg-white pl-2 font-normal text-gray-900 hover:bg-indigo-500 hover:text-white'
               }
               label={'Create a new Group'}
               goToGroupOnSubmit={false}
