@@ -28,6 +28,7 @@ import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
+import { Group, MAX_ID_LENGTH } from '../../common/group'
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -38,6 +39,7 @@ const bodySchema = z.object({
     'Close time must be in the future.'
   ),
   outcomeType: z.enum(OUTCOME_TYPES),
+  groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
 })
 
 const binarySchema = z.object({
@@ -50,10 +52,8 @@ const numericSchema = z.object({
 })
 
 export const createmarket = newEndpoint(['POST'], async (req, auth) => {
-  const { question, description, tags, closeTime, outcomeType } = validate(
-    bodySchema,
-    req.body
-  )
+  const { question, description, tags, closeTime, outcomeType, groupId } =
+    validate(bodySchema, req.body)
 
   let min, max, initialProb
   if (outcomeType === 'NUMERIC') {
@@ -91,6 +91,30 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
   if (ante > user.balance && !isFree)
     throw new APIError(400, `Balance must be at least ${ante}.`)
 
+  const slug = await getSlug(question)
+  const contractRef = firestore.collection('contracts').doc()
+
+  let group = null
+  if (groupId) {
+    const groupDocRef = await firestore.collection('groups').doc(groupId)
+    const groupDoc = await groupDocRef.get()
+    if (!groupDoc.exists) {
+      throw new APIError(400, 'No group exists with the given group ID.')
+    }
+
+    group = groupDoc.data() as Group
+    if (!group.memberIds.includes(user.id)) {
+      throw new APIError(
+        400,
+        'User must be a member of the group to add markets to it.'
+      )
+    }
+    if (!group.contractIds.includes(contractRef.id))
+      await groupDocRef.update({
+        contractIds: [...group.contractIds, contractRef.id],
+      })
+  }
+
   console.log(
     'creating contract for',
     user.username,
@@ -100,8 +124,6 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     ante || 0
   )
 
-  const slug = await getSlug(question)
-  const contractRef = firestore.collection('contracts').doc()
   const contract = getNewContract(
     contractRef.id,
     slug,

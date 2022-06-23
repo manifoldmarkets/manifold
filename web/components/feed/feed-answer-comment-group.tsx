@@ -24,15 +24,17 @@ import { groupBy } from 'lodash'
 import { User } from 'common/user'
 import { useEvent } from 'web/hooks/use-event'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
+import { CommentTipMap } from 'web/hooks/use-tip-txns'
 
 export function FeedAnswerCommentGroup(props: {
   contract: any
   user: User | undefined | null
   answer: Answer
   comments: Comment[]
+  tips: CommentTipMap
   bets: Bet[]
 }) {
-  const { answer, contract, comments, bets, user } = props
+  const { answer, contract, comments, tips, bets, user } = props
   const { username, avatarUrl, name, text } = answer
 
   const [replyToUsername, setReplyToUsername] = useState('')
@@ -150,8 +152,8 @@ export function FeedAnswerCommentGroup(props: {
           <div className="text-sm text-gray-500">
             <UserLink username={username} name={name} /> answered
             <CopyLinkDateTimeComponent
-              contractCreatorUsername={contract.creatorUsername}
-              contractSlug={contract.slug}
+              prefix={contract.creatorUsername}
+              slug={contract.slug}
               createdTime={answer.createdTime}
               elementId={answerElementId}
             />
@@ -214,6 +216,7 @@ export function FeedAnswerCommentGroup(props: {
         smallAvatar={true}
         truncate={false}
         bets={bets}
+        tips={tips}
         scrollAndOpenReplyInput={scrollAndOpenReplyInput}
         treatFirstIndexEqually={true}
       />
@@ -231,7 +234,10 @@ export function FeedAnswerCommentGroup(props: {
             parentAnswerOutcome={answer.number.toString()}
             replyToUsername={replyToUsername}
             setRef={setInputRef}
-            onSubmitComment={() => setShowReply(false)}
+            onSubmitComment={() => {
+              setShowReply(false)
+              setReplyToUsername('')
+            }}
           />
         </div>
       )}

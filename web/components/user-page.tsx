@@ -25,9 +25,9 @@ import { BetsList } from './bets-list'
 import { Bet } from 'common/bet'
 import { getUserBets } from 'web/lib/firebase/bets'
 import { FollowersButton, FollowingButton } from './following-button'
-import { AlertBox } from './alert-box'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
+import { useRouter } from 'next/router'
 
 export function UserLink(props: {
   name: string
@@ -48,13 +48,13 @@ export function UserLink(props: {
   )
 }
 
-export const TAB_IDS = ['markets', 'comments', 'bets']
+export const TAB_IDS = ['markets', 'comments', 'bets', 'groups']
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 
 export function UserPage(props: {
   user: User
   currentUser?: User
-  defaultTabTitle?: 'markets' | 'comments' | 'bets'
+  defaultTabTitle?: string | undefined
 }) {
   const { user, currentUser, defaultTabTitle } = props
   const isCurrentUser = user.id === currentUser?.id
@@ -67,6 +67,7 @@ export function UserPage(props: {
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
+  const router = useRouter()
 
   useEffect(() => {
     if (!user) return
@@ -75,12 +76,15 @@ export function UserPage(props: {
     getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
   }, [user])
 
+  // TODO: display comments on groups
   useEffect(() => {
     const uniqueContractIds = uniq(
       usersComments.map((comment) => comment.contractId)
     )
     Promise.all(
-      uniqueContractIds.map((contractId) => getContractFromId(contractId))
+      uniqueContractIds.map(
+        (contractId) => contractId && getContractFromId(contractId)
+      )
     ).then((contracts) => {
       const commentsByContract = new Map<Contract, Comment[]>()
       contracts.forEach((contract) => {
@@ -226,13 +230,17 @@ export function UserPage(props: {
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
             className={'pb-2 pt-1 '}
-            defaultIndex={TAB_IDS.indexOf(defaultTabTitle || 'markets')}
+            defaultIndex={
+              defaultTabTitle ? TAB_IDS.indexOf(defaultTabTitle) : 0
+            }
             onClick={(tabName) => {
               const tabId = tabName.toLowerCase()
-              const subpath = tabId === 'markets' ? '' : '/' + tabId
+              const subpath = tabId === 'markets' ? '' : '?tab=' + tabId
               // BUG: if you start on `/Bob/bets`, then click on Markets, use-query-and-sort-params
               // rewrites the url incorrectly to `/Bob/bets` instead of `/Bob`
-              window.history.replaceState('', '', `/${user.username}${subpath}`)
+              router.push(`/${user.username}${subpath}`, undefined, {
+                shallow: true,
+              })
             }}
             tabs={[
               {
@@ -260,27 +268,10 @@ export function UserPage(props: {
                 title: 'Bets',
                 content: (
                   <div>
-                    {isCurrentUser && (
-                      <AlertBox
-                        title="Bets after 2022-06-01 are publicly visible by default."
-                        text="Note that all historical bets are also publicly accessible through the API.
-                      See: https://manifold.markets/Austin/will-all-bets-on-manifold-be-public"
-                      />
-                    )}
                     <BetsList
                       user={user}
                       hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
                     />
-                    {!isCurrentUser && (
-                      <>
-                        <Spacer h={4} />
-                        <AlertBox
-                          title="Bets before 2022-06-01 are hidden by default."
-                          text="Note that all historical bets are also publicly accessible through the API.
-                        See: https://manifold.markets/Austin/will-all-bets-on-manifold-be-public"
-                        />
-                      </>
-                    )}
                   </div>
                 ),
                 tabIcon: (

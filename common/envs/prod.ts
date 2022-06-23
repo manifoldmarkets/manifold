@@ -3,6 +3,7 @@ export type V2CloudFunction =
   | 'sellbet'
   | 'sellshares'
   | 'createmarket'
+  | 'creategroup'
 
 export type EnvConfig = {
   domain: string
@@ -52,6 +53,7 @@ export const PROD_CONFIG: EnvConfig = {
     sellshares: 'https://sellshares-nggbo3neva-uc.a.run.app',
     sellbet: 'https://sellbet-nggbo3neva-uc.a.run.app',
     createmarket: 'https://createmarket-nggbo3neva-uc.a.run.app',
+    creategroup: 'https://creategroup-nggbo3neva-uc.a.run.app',
   },
   adminEmails: [
     'akrolsmir@gmail.com', // Austin

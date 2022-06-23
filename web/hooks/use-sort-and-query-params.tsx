@@ -15,6 +15,11 @@ export type Sort =
   | 'resolve-date'
   | 'last-updated'
 
+export function checkAgainstQuery(query: string, corpus: string) {
+  const queryWords = query.toLowerCase().split(' ')
+  return queryWords.every((word) => corpus.toLowerCase().includes(word))
+}
+
 export function useInitialQueryAndSort(options?: {
   defaultSort: Sort
   shouldLoadFromStorage?: boolean

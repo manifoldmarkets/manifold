@@ -3,7 +3,7 @@ import { PencilIcon } from '@heroicons/react/outline'
 import { union, difference } from 'lodash'
 
 import { Row } from '../layout/row'
-import { CATEGORIES, CATEGORY_LIST } from '../../../common/categories'
+import { CATEGORIES, category, CATEGORY_LIST } from '../../../common/categories'
 import { Modal } from '../layout/modal'
 import { Col } from '../layout/col'
 import { useState } from 'react'
@@ -47,7 +47,7 @@ export function CategorySelector(props: {
       {CATEGORY_LIST.map((cat) => (
         <CategoryButton
           key={cat}
-          category={CATEGORIES[cat].split(' ')[0]}
+          category={CATEGORIES[cat as category].split(' ')[0]}
           isFollowed={cat === category}
           toggle={() => {
             setCategory(cat)
@@ -149,7 +149,7 @@ function CategorySelectorModal(props: {
             <Checkbox
               className="col-span-1"
               key={cat}
-              label={CATEGORIES[cat].split(' ')[0]}
+              label={CATEGORIES[cat as category].split(' ')[0]}
               checked={followedCategories.includes(cat)}
               toggle={(checked) => {
                 updateUser(user.id, {

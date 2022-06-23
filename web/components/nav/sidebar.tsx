@@ -1,6 +1,5 @@
 import {
   HomeIcon,
-  CakeIcon,
   SearchIcon,
   BookOpenIcon,
   DotsHorizontalIcon,
@@ -8,13 +7,15 @@ import {
   HeartIcon,
   PresentationChartLineIcon,
   SparklesIcon,
-  NewspaperIcon,
+  UserGroupIcon,
+  ChevronDownIcon,
+  TrendingUpIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogin, firebaseLogout, User } from 'web/lib/firebase/users'
+import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
@@ -26,21 +27,18 @@ import { Row } from '../layout/row'
 import NotificationsIcon from 'web/components/notifications-icon'
 import React, { useEffect, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { CreateQuestionButton } from 'web/components/create-question-button'
+import { useMemberGroups } from 'web/hooks/use-group'
+import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
-
-// Create an icon from the url of an image
-function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
-  return function Icon(props) {
-    return <img src={url} className={clsx(props.className, 'h-6 w-6')} />
-  }
-}
+import { Group } from 'common/group'
 
 function getNavigation(username: string) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
     {
       name: 'Portfolio',
-      href: `/${username}/bets`,
+      href: `/${username}?tab=bets`,
       icon: PresentationChartLineIcon,
     },
     {
@@ -49,7 +47,9 @@ function getNavigation(username: string) {
       icon: NotificationsIcon,
     },
 
-    { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+    ...(IS_PRIVATE_MANIFOLD
+      ? []
+      : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ]
 }
 
@@ -62,6 +62,7 @@ function getMoreNavigation(user?: User | null) {
     return [
       { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Charity', href: '/charity' },
+      { name: 'Blog', href: 'https://news.manifold.markets' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
       { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
     ]
@@ -73,8 +74,13 @@ function getMoreNavigation(user?: User | null) {
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
+    { name: 'Statistics', href: '/stats' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
-    { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
+    {
+      name: 'Sign out',
+      href: '#',
+      onClick: withTracking(firebaseLogout, 'sign out'),
+    },
   ]
 }
 
@@ -91,18 +97,7 @@ const signedOutNavigation = [
 
 const signedOutMobileNavigation = [
   { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'Leaderboards', href: '/leaderboards', icon: CakeIcon },
-  { name: 'Blog', href: 'https://news.manifold.markets', icon: NewspaperIcon },
-  {
-    name: 'Discord',
-    href: 'https://discord.gg/eHQBNBqXuh',
-    icon: IconFromUrl('/discord-logo.svg'),
-  },
-  {
-    name: 'Twitter',
-    href: 'https://twitter.com/ManifoldMarkets',
-    icon: IconFromUrl('/twitter-logo.svg'),
-  },
+  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
   {
     name: 'About',
     href: 'https://docs.manifold.markets/$how-to',
@@ -110,8 +105,10 @@ const signedOutMobileNavigation = [
   },
 ]
 
-const mobileNavigation = [
-  { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+const signedInMobileNavigation = [
+  ...(IS_PRIVATE_MANIFOLD
+    ? []
+    : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ...signedOutMobileNavigation,
 ]
 
@@ -150,15 +147,33 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
   )
 }
 
-function MoreButton() {
+function SidebarButton(props: {
+  text: string
+  icon: React.ComponentType<{ className?: string }>
+  children?: React.ReactNode
+}) {
+  const { text, children } = props
   return (
     <a className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:cursor-pointer hover:bg-gray-100">
-      <DotsHorizontalIcon
+      <props.icon
         className="-ml-1 mr-3 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
         aria-hidden="true"
       />
-      <span className="truncate">More</span>
+      <span className="truncate">{text}</span>
+      {children}
     </a>
+  )
+}
+
+function MoreButton() {
+  return <SidebarButton text={'More'} icon={DotsHorizontalIcon} />
+}
+
+function GroupsButton() {
+  return (
+    <SidebarButton icon={UserGroupIcon} text={'Groups'}>
+      <ChevronDownIcon className=" mt-0.5 ml-2 h-5 w-5" aria-hidden="true" />
+    </SidebarButton>
   )
 }
 
@@ -188,18 +203,16 @@ export default function Sidebar(props: { className?: string }) {
 
   const user = useUser()
   const mustWaitForFreeMarketStatus = useHasCreatedContractToday(user)
-  const navigationOptions =
-    user === null
-      ? signedOutNavigation
-      : getNavigation(user?.username || 'error')
-  const mobileNavigationOptions =
-    user === null ? signedOutMobileNavigation : mobileNavigation
-
-  const gradient =
-    'from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700'
-
-  const buttonStyle =
-    'border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r py-2.5 text-base font-semibold text-white shadow-sm lg:-ml-0'
+  const navigationOptions = !user
+    ? signedOutNavigation
+    : getNavigation(user?.username || 'error')
+  const mobileNavigationOptions = !user
+    ? signedOutMobileNavigation
+    : signedInMobileNavigation
+  const memberItems = (useMemberGroups(user) ?? []).map((group: Group) => ({
+    name: group.name,
+    href: groupPath(group.slug),
+  }))
 
   return (
     <nav aria-label="Sidebar" className={className}>
@@ -210,14 +223,45 @@ export default function Sidebar(props: { className?: string }) {
         </div>
       )}
 
+      {/* Mobile navigation */}
       <div className="space-y-1 lg:hidden">
+        {user && (
+          <MenuButton
+            buttonContent={<GroupsButton />}
+            menuItems={[{ name: 'Explore', href: '/groups' }, ...memberItems]}
+            className={'relative z-50 flex-shrink-0'}
+          />
+        )}
         {mobileNavigationOptions.map((item) => (
-          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
+          <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
+        {!user && (
+          <SidebarItem
+            key={'Groups'}
+            item={{ name: 'Groups', href: '/groups', icon: UserGroupIcon }}
+            currentPage={currentPage}
+          />
+        )}
 
         {user && (
           <MenuButton
             menuItems={[
+              {
+                name: 'Blog',
+                href: 'https://news.manifold.markets',
+              },
+              {
+                name: 'Discord',
+                href: 'https://discord.gg/eHQBNBqXuh',
+              },
+              {
+                name: 'Twitter',
+                href: 'https://twitter.com/ManifoldMarkets',
+              },
+              {
+                name: 'Statistics',
+                href: '/stats',
+              },
               {
                 name: 'Sign out',
                 href: '#',
@@ -229,36 +273,39 @@ export default function Sidebar(props: { className?: string }) {
         )}
       </div>
 
+      {/* Desktop navigation */}
       <div className="hidden space-y-1 lg:block">
-        {navigationOptions.map((item) => (
-          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
-        ))}
+        {navigationOptions.map((item) =>
+          item.name === 'Notifications' ? (
+            <div key={item.href}>
+              <SidebarItem item={item} currentPage={currentPage} />
+              {user && (
+                <MenuButton
+                  key={'groupsdropdown'}
+                  buttonContent={<GroupsButton />}
+                  menuItems={[
+                    { name: 'Explore', href: '/groups' },
+                    ...memberItems,
+                  ]}
+                  className={'relative z-50 flex-shrink-0'}
+                />
+              )}
+            </div>
+          ) : (
+            <SidebarItem
+              key={item.href}
+              item={item}
+              currentPage={currentPage}
+            />
+          )
+        )}
 
         <MenuButton
           menuItems={getMoreNavigation(user)}
           buttonContent={<MoreButton />}
         />
       </div>
-
-      <div className={'aligncenter flex justify-center'}>
-        {user ? (
-          <Link href={'/create'} passHref>
-            <button
-              className={clsx(gradient, buttonStyle)}
-              onClick={trackCallback('create question button')}
-            >
-              Create a question
-            </button>
-          </Link>
-        ) : (
-          <button
-            onClick={withTracking(firebaseLogin, 'sign in')}
-            className="btn btn-outline btn-sm mx-auto mt-4 -ml-1 w-full rounded-md normal-case"
-          >
-            Sign in
-          </button>
-        )}
-      </div>
+      <CreateQuestionButton user={user} />
 
       {user &&
       mustWaitForFreeMarketStatus != 'loading' &&

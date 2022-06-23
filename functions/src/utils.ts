@@ -15,14 +15,15 @@ export const logMemory = () => {
   }
 }
 
-type UpdateSpec = {
+export type UpdateSpec = {
   doc: admin.firestore.DocumentReference
   fields: { [k: string]: unknown }
 }
 
-export const writeUpdatesAsync = async (
+export const writeAsync = async (
   db: admin.firestore.Firestore,
   updates: UpdateSpec[],
+  operationType: 'update' | 'set' = 'update',
   batchSize = 500 // 500 = Firestore batch limit
 ) => {
   const chunks = chunk(updates, batchSize)
@@ -30,14 +31,19 @@ export const writeUpdatesAsync = async (
     log(`${i * batchSize}/${updates.length} updates written...`)
     const batch = db.batch()
     for (const { doc, fields } of chunks[i]) {
-      batch.update(doc, fields)
+      if (operationType === 'update') {
+        batch.update(doc, fields)
+      } else {
+        batch.set(doc, fields)
+      }
     }
     await batch.commit()
   }
 }
 
-export const isProd =
-  admin.instanceId().app.options.projectId === 'mantic-markets'
+export const isProd = () => {
+  return admin.instanceId().app.options.projectId === 'mantic-markets'
+}
 
 export const getDoc = async <T>(collection: string, doc: string) => {
   const snap = await admin.firestore().collection(collection).doc(doc).get()
@@ -69,6 +75,7 @@ export const getPrivateUser = (userId: string) => {
 }
 
 export const getUserByUsername = async (username: string) => {
+  const firestore = admin.firestore()
   const snap = await firestore
     .collection('users')
     .where('username', '==', username)
@@ -77,13 +84,12 @@ export const getUserByUsername = async (username: string) => {
   return snap.empty ? undefined : (snap.docs[0].data() as User)
 }
 
-const firestore = admin.firestore()
-
 const updateUserBalance = (
   userId: string,
   delta: number,
   isDeposit = false
 ) => {
+  const firestore = admin.firestore()
   return firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${userId}`)
     const userSnap = await transaction.get(userDoc)

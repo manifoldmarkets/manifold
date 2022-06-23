@@ -142,6 +142,10 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const profit = payout + saleValue + redeemed - totalInvested
   const profitPercent = (profit / totalInvested) * 100
 
+  const hasShares = Object.values(totalShares).some(
+    (shares) => shares > 0
+  )
+
   return {
     invested: Math.max(0, currentInvested),
     payout,
@@ -149,6 +153,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     profit,
     profitPercent,
     totalShares,
+    hasShares,
   }
 }
 
@@ -160,6 +165,7 @@ export function getContractBetNullMetrics() {
     profit: 0,
     profitPercent: 0,
     totalShares: {} as { [outcome: string]: number },
+    hasShares: false,
   }
 }
 

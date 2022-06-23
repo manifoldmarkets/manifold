@@ -18,10 +18,10 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { ShareEmbedButton } from '../share-embed-button'
-import { TagsInput } from '../tags-input'
 import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
 import { InfoTooltip } from '../info-tooltip'
+import { TagsInput } from 'web/components/tags-input'
 
 export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
@@ -150,7 +150,6 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <div>Tags</div>
           <TagsInput contract={contract} />
           <div />
-
           {contract.mechanism === 'cpmm-1' && !contract.resolution && (
             <LiquidityPanel contract={contract} />
           )}

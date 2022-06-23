@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Comment,
-  listenForComments,
+  listenForCommentsOnContract,
   listenForRecentComments,
 } from 'web/lib/firebase/comments'
 
@@ -9,7 +9,7 @@ export const useComments = (contractId: string) => {
   const [comments, setComments] = useState<Comment[] | undefined>()
 
   useEffect(() => {
-    if (contractId) return listenForComments(contractId, setComments)
+    if (contractId) return listenForCommentsOnContract(contractId, setComments)
   }, [contractId])
 
   return comments

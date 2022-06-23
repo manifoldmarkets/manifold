@@ -1,12 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { listAllBets } from 'web/lib/firebase/bets'
 import { listAllComments } from 'web/lib/firebase/comments'
-import {
-  getContractFromId,
-  FreeResponseContract,
-} from 'web/lib/firebase/contracts'
+import { getContractFromId } from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { FullMarket, ApiError, toLiteMarket } from '../_types'
+import { FullMarket, ApiError, toFullMarket } from '../_types'
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,31 +13,17 @@ export default async function handler(
   const { id } = req.query
   const contractId = id as string
 
-  const [contract, allBets, comments] = await Promise.all([
+  const [contract, bets, comments] = await Promise.all([
     getContractFromId(contractId),
     listAllBets(contractId),
     listAllComments(contractId),
   ])
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const bets = allBets.map(({ userId, ...bet }) => bet) as Exclude<
-    Bet,
-    'userId'
-  >[]
-
-  const answers = (contract as FreeResponseContract).answers
 
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })
     return
   }
 
-  // Cache on Vercel edge servers for 2min
-  res.setHeader('Cache-Control', 'max-age=0, s-maxage=120')
-  return res.status(200).json({
-    ...toLiteMarket(contract),
-    bets,
-    comments,
-    answers,
-  })
+  res.setHeader('Cache-Control', 'max-age=0')
+  return res.status(200).json(toFullMarket(contract, comments, bets))
 }
