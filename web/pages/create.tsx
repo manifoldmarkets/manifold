@@ -167,6 +167,7 @@ export function NewContract(props: { question: string; groupId?: string }) {
           min,
           max,
           groupId: selectedGroup?.id,
+          tags: category ? [category] : undefined,
         })
       )
       track('create market', {
