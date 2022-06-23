@@ -6,7 +6,6 @@ import {
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
-  SparklesIcon,
   UserGroupIcon,
   ChevronDownIcon,
   TrendingUpIcon,
@@ -19,13 +18,8 @@ import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
-import {
-  getUtcFreeMarketResetTime,
-  useHasCreatedContractToday,
-} from 'web/hooks/use-has-created-contract-today'
-import { Row } from '../layout/row'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
