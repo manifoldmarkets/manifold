@@ -1,6 +1,5 @@
 import { auth } from './users'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { V2CloudFunction } from 'common/envs/prod'
 
 export class APIError extends Error {
   code: number
@@ -41,8 +40,9 @@ export async function call(url: string, method: string, params: any) {
 // app just hit the cloud functions directly -- there's no difference and it's
 // one less hop
 
-export function getFunctionUrl(name: V2CloudFunction) {
-  return ENV_CONFIG.functionEndpoints[name]
+export function getFunctionUrl(name: string) {
+  const { cloudRunId, cloudRunRegion } = ENV_CONFIG
+  return `https://${name}-${cloudRunId}-${cloudRunRegion}.a.run.app`
 }
 
 export function createMarket(params: any) {
