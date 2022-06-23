@@ -81,7 +81,7 @@ function getMoreNavigation(user?: User | null) {
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
     { name: 'Statistics', href: '/stats' },
-    { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
+    { name: 'How to', href: '/how-to' },
     { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
   ]
 }
@@ -91,8 +91,8 @@ const signedOutNavigation = [
   { name: 'Explore', href: '/markets', icon: SearchIcon },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'How to',
+    href: '/how-to',
     icon: BookOpenIcon,
   },
 ]
@@ -117,8 +117,8 @@ const signedOutMobileNavigation = [
     icon: PresentationChartBarIcon,
   },
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'How to',
+    href: '/how-to',
     icon: BookOpenIcon,
   },
 ]
