@@ -22,7 +22,6 @@ import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getNumericAnte,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
@@ -64,31 +63,16 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     ;({ initialProb } = validate(binarySchema, req.body))
   }
 
-  // Uses utc time on server:
-  const today = new Date()
-  let freeMarketResetTime = new Date().setUTCHours(16, 0, 0, 0)
-  if (today.getTime() < freeMarketResetTime) {
-    freeMarketResetTime = freeMarketResetTime - 24 * 60 * 60 * 1000
-  }
-
   const userDoc = await firestore.collection('users').doc(auth.uid).get()
   if (!userDoc.exists) {
     throw new APIError(400, 'No user exists with the authenticated user ID.')
   }
   const user = userDoc.data() as User
 
-  const userContractsCreatedTodaySnapshot = await firestore
-    .collection(`contracts`)
-    .where('creatorId', '==', auth.uid)
-    .where('createdTime', '>=', freeMarketResetTime)
-    .get()
-  console.log('free market reset time: ', freeMarketResetTime)
-  const isFree = userContractsCreatedTodaySnapshot.size === 0
-
   const ante = FIXED_ANTE
 
   // TODO: this is broken because it's not in a transaction
-  if (ante > user.balance && !isFree)
+  if (ante > user.balance)
     throw new APIError(400, `Balance must be at least ${ante}.`)
 
   const slug = await getSlug(question)
@@ -140,11 +124,11 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     max ?? 0
   )
 
-  if (!isFree && ante) await chargeUser(user.id, ante, true)
+  if (ante) await chargeUser(user.id, ante, true)
 
   await contractRef.create(contract)
 
-  const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : user.id
+  const providerId = user.id
 
   if (outcomeType === 'BINARY') {
     const liquidityDoc = firestore
