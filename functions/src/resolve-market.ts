@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { difference, uniq, mapValues, groupBy, sumBy, update } from 'lodash'
+import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
 
 import { Contract, RESOLUTIONS } from '../../common/contract'
 import { User } from '../../common/user'
