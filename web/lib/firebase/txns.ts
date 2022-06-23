@@ -1,7 +1,9 @@
-import { DonationTxn, TipTxn } from 'common/txn'
+import { ManalinkTxn, DonationTxn, TipTxn } from 'common/txn'
 import { collection, orderBy, query, where } from 'firebase/firestore'
 import { db } from './init'
 import { getValues, listenForValues } from './utils'
+import { useState, useEffect } from 'react'
+import { orderBy as _orderBy } from 'lodash'
 
 const txnCollection = collection(db, 'txns')
 
@@ -38,4 +40,30 @@ export function listenForTipTxns(
   setTxns: (txns: TipTxn[]) => void
 ) {
   return listenForValues<TipTxn>(getTipsQuery(contractId), setTxns)
+}
+
+// Find all manalink Txns that are from or to this user
+export function useManalinkTxns(userId: string) {
+  const [fromTxns, setFromTxns] = useState<ManalinkTxn[]>([])
+  const [toTxns, setToTxns] = useState<ManalinkTxn[]>([])
+
+  useEffect(() => {
+    // TODO: Need to instantiate these indexes too
+    const fromQuery = query(
+      txnCollection,
+      where('fromId', '==', userId),
+      where('category', '==', 'MANALINK'),
+      orderBy('createdTime', 'desc')
+    )
+    const toQuery = query(
+      txnCollection,
+      where('toId', '==', userId),
+      where('category', '==', 'MANALINK'),
+      orderBy('createdTime', 'desc')
+    )
+    listenForValues(fromQuery, setFromTxns)
+    listenForValues(toQuery, setToTxns)
+  }, [userId])
+
+  return _orderBy([...fromTxns, ...toTxns], ['createdTime'], ['desc'])
 }
