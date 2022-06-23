@@ -5,6 +5,7 @@ import { PlusSmIcon } from '@heroicons/react/solid'
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
+import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
 import { ContractSearch } from 'web/components/contract-search'
 import { Contract } from 'common/contract'
 import { ContractPageContent } from './[username]/[contractSlug]'
@@ -17,7 +18,6 @@ const Home = () => {
   const [contract, setContract] = useContractPage()
 
   const router = useRouter()
-
   useTracking('view home')
 
   if (user === null) {
@@ -32,7 +32,7 @@ const Home = () => {
           <ContractSearch
             querySortOptions={{
               shouldLoadFromStorage: true,
-              defaultSort: '24-hour-vol',
+              defaultSort: getSavedSort() ?? '24-hour-vol',
             }}
             showCategorySelector
             onContractClick={(c) => {
