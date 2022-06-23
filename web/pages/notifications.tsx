@@ -25,7 +25,6 @@ import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { listenForPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import clsx from 'clsx'
-import { UsersIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
 import {
