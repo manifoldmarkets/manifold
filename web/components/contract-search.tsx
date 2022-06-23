@@ -116,8 +116,8 @@ export function ContractSearch(props: {
     showCategorySelector,
     mode,
     Object.values(additionalFilter ?? {}).join(','),
-    followedCategories?.join(','),
-    follows?.join(','),
+    (followedCategories ?? []).join(','),
+    (follows ?? []).join(','),
   ])
 
   const indexName = `${indexPrefix}contracts-${sort}`
