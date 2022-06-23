@@ -30,14 +30,23 @@ import { SiteLink } from 'web/components/site-link'
 import { DAY_MS } from 'common/util/time'
 import { useGroupsWithContract } from 'web/hooks/use-group'
 
+export type ShowTime = 'resolve-date' | 'close-date'
+
 export function MiscDetails(props: {
   contract: Contract
   showHotVolume?: boolean
-  showCloseTime?: boolean
+  showTime?: ShowTime
 }) {
-  const { contract, showHotVolume, showCloseTime } = props
-  const { volume, volume24Hours, closeTime, tags, isResolved, createdTime } =
-    contract
+  const { contract, showHotVolume, showTime } = props
+  const {
+    volume,
+    volume24Hours,
+    closeTime,
+    tags,
+    isResolved,
+    createdTime,
+    resolutionTime,
+  } = contract
   // Show at most one category that this contract is tagged by
   const categories = CATEGORY_LIST.filter((category) =>
     tags.map((t) => t.toLowerCase()).includes(category)
@@ -50,11 +59,17 @@ export function MiscDetails(props: {
         <Row className="gap-0.5">
           <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
         </Row>
-      ) : showCloseTime ? (
+      ) : showTime === 'close-date' ? (
         <Row className="gap-0.5">
           <ClockIcon className="h-5 w-5" />
           {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
           {fromNow(closeTime || 0)}
+        </Row>
+      ) : showTime === 'resolve-date' && resolutionTime !== undefined ? (
+        <Row className="gap-0.5">
+          <ClockIcon className="h-5 w-5" />
+          {'Resolved '}
+          {fromNow(resolutionTime || 0)}
         </Row>
       ) : volume > 0 || !isNew ? (
         <Row>{contractPool(contract)} pool</Row>
@@ -88,9 +103,9 @@ export function AvatarDetails(props: { contract: Contract }) {
 export function AbbrContractDetails(props: {
   contract: Contract
   showHotVolume?: boolean
-  showCloseTime?: boolean
+  showTime?: ShowTime
 }) {
-  const { contract, showHotVolume, showCloseTime } = props
+  const { contract, showHotVolume, showTime } = props
   return (
     <Row className="items-center justify-between">
       <AvatarDetails contract={contract} />
@@ -98,7 +113,7 @@ export function AbbrContractDetails(props: {
       <MiscDetails
         contract={contract}
         showHotVolume={showHotVolume}
-        showCloseTime={showCloseTime}
+        showTime={showTime}
       />
     </Row>
   )
