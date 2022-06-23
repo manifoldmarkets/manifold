@@ -530,8 +530,7 @@ export function CommentInputTextArea(props: {
           {user && !isSubmitting && (
             <button
               className={clsx(
-                'btn btn-ghost btn-sm absolute right-2 flex-row pl-2 capitalize',
-                isReply ? ' bottom-4' : ' bottom-2',
+                'btn btn-ghost btn-sm absolute right-2 bottom-2 flex-row pl-2 capitalize',
                 !commentText && 'pointer-events-none text-gray-500'
               )}
               onClick={() => {
