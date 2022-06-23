@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { Contract, FreeResponse } from 'common/contract'
 import { Col } from '../layout/col'
-import { resolveMarket } from 'web/lib/firebase/fn-call'
+import { APIError, resolveMarket } from 'web/lib/firebase/api-call'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../yes-no-selector'
 import { ResolveConfirmationButton } from '../confirmation-button'
@@ -48,13 +48,18 @@ export function AnswerResolvePanel(props: {
       contractId: contract.id,
     })
 
-    const result = await resolveMarket(resolutionProps).then((r) => r.data)
-
-    console.log('resolved', resolutionProps, 'result:', result)
-
-    if (result?.status !== 'success') {
-      setError(result?.message || 'Error resolving market')
+    try {
+      const result = await resolveMarket(resolutionProps)
+      console.log('resolved', resolutionProps, 'result:', result)
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.toString())
+      } else {
+        console.error(e)
+        setError('Error resolving market')
+      }
     }
+
     setResolveOption(undefined)
     setIsSubmitting(false)
   }
