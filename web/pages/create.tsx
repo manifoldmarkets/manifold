@@ -93,11 +93,6 @@ export function NewContract(props: { question: string; groupId?: string }) {
   }, [creator, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
-  const mustWaitForDailyFreeMarketStatus = useHasCreatedContractToday(creator)
-  const isFree =
-    mustWaitForDailyFreeMarketStatus != 'loading' &&
-    !mustWaitForDailyFreeMarketStatus
-
   // useEffect(() => {
   //   if (ante === null && creator) {
   //     const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
@@ -138,9 +133,7 @@ export function NewContract(props: { question: string; groupId?: string }) {
     ante !== undefined &&
     ante !== null &&
     ante >= MINIMUM_ANTE &&
-    (ante <= balance ||
-      (mustWaitForDailyFreeMarketStatus != 'loading' &&
-        !mustWaitForDailyFreeMarketStatus)) &&
+    ante <= balance &&
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now() &&
@@ -181,7 +174,7 @@ export function NewContract(props: { question: string; groupId?: string }) {
         slug: result.slug,
         initialProb,
         selectedGroup: selectedGroup?.id,
-        isFree,
+        isFree: false,
       })
       if (result && selectedGroup) {
         await updateGroup(selectedGroup, {
@@ -369,41 +362,26 @@ export function NewContract(props: { question: string; groupId?: string }) {
         <div className="form-control mb-1 items-start">
           <label className="label mb-1 gap-2">
             <span>Cost</span>
-            {mustWaitForDailyFreeMarketStatus != 'loading' &&
-              mustWaitForDailyFreeMarketStatus && (
-                <InfoTooltip
-                  text={`Cost to create your question. This amount is used to subsidize betting.`}
-                />
-              )}
+            <InfoTooltip
+              text={`Cost to create your question. This amount is used to subsidize betting.`}
+            />
           </label>
-          {mustWaitForDailyFreeMarketStatus != 'loading' &&
-          !mustWaitForDailyFreeMarketStatus ? (
-            <div className="label-text text-primary pl-1">
-              <span className={'label-text text-neutral line-through '}>
-                {formatMoney(ante)}
-              </span>{' '}
-              FREE
+
+          <div className="label-text text-neutral pl-1">
+            {formatMoney(ante)}
+          </div>
+
+          {ante > balance && (
+            <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+              <span className="mr-2 text-red-500">Insufficient balance</span>
+              <button
+                className="btn btn-xs btn-primary"
+                onClick={() => (window.location.href = '/add-funds')}
+              >
+                Get M$
+              </button>
             </div>
-          ) : (
-            mustWaitForDailyFreeMarketStatus != 'loading' && (
-              <div className="label-text text-neutral pl-1">
-                {formatMoney(ante)}
-              </div>
-            )
           )}
-          {mustWaitForDailyFreeMarketStatus != 'loading' &&
-            mustWaitForDailyFreeMarketStatus &&
-            ante > balance && (
-              <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-                <span className="mr-2 text-red-500">Insufficient balance</span>
-                <button
-                  className="btn btn-xs btn-primary"
-                  onClick={() => (window.location.href = '/add-funds')}
-                >
-                  Get M$
-                </button>
-              </div>
-            )}
         </div>
 
         <button

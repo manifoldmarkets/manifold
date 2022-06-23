@@ -181,28 +181,8 @@ export default function Sidebar(props: { className?: string }) {
   const { className } = props
   const router = useRouter()
   const currentPage = router.pathname
-  const [countdown, setCountdown] = useState('...')
-  useEffect(() => {
-    const nextUtcResetTime = getUtcFreeMarketResetTime({ previousTime: false })
-    const interval = setInterval(() => {
-      const now = new Date().getTime()
-      const timeUntil = nextUtcResetTime - now
-      const hoursUntil = timeUntil / 1000 / 60 / 60
-      const minutesUntil = (hoursUntil * 60) % 60
-      const secondsUntil = Math.round((hoursUntil * 60 * 60) % 60)
-      const timeString =
-        hoursUntil < 1 && minutesUntil < 1
-          ? `${secondsUntil}s`
-          : hoursUntil < 1
-          ? `${Math.round(minutesUntil)}m`
-          : `${Math.floor(hoursUntil)}h`
-      setCountdown(timeString)
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [])
 
   const user = useUser()
-  const mustWaitForFreeMarketStatus = useHasCreatedContractToday(user)
   const navigationOptions = !user
     ? signedOutNavigation
     : getNavigation(user?.username || 'error')
@@ -306,27 +286,6 @@ export default function Sidebar(props: { className?: string }) {
         />
       </div>
       <CreateQuestionButton user={user} />
-
-      {user &&
-      mustWaitForFreeMarketStatus != 'loading' &&
-      mustWaitForFreeMarketStatus ? (
-        <Row className="mt-2 justify-center">
-          <Row className="gap-1 text-sm text-gray-400">
-            Next free question in {countdown}
-          </Row>
-        </Row>
-      ) : (
-        user &&
-        mustWaitForFreeMarketStatus != 'loading' &&
-        !mustWaitForFreeMarketStatus && (
-          <Row className="mt-2 justify-center">
-            <Row className="gap-1 text-sm text-indigo-400">
-              Daily free question
-              <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
-            </Row>
-          </Row>
-        )
-      )}
     </nav>
   )
 }
