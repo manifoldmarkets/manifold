@@ -36,7 +36,6 @@ import { FollowersButton, FollowingButton } from './following-button'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
 import { PortfolioMetrics } from 'common/user'
-import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 
 export function UserLink(props: {
   name: string
@@ -74,9 +73,7 @@ export function UserPage(props: {
     'loading'
   )
   const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
-  const [usersPortfolioHistory, setUsersPortfolioHistory] = useState<
-    PortfolioMetrics[]
-  >([])
+  const [, setUsersPortfolioHistory] = useState<PortfolioMetrics[]>([])
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
@@ -296,13 +293,9 @@ export function UserPage(props: {
                 title: 'Bets',
                 content: (
                   <div>
-                    <Spacer h={2} />
-
-                    <PortfolioValueSection
-                      portfolioHistory={usersPortfolioHistory}
-                    />
-
-                    <Spacer h={2} />
+                    {
+                      // TODO: add portfolio-value-section here
+                    }
                     <BetsList
                       user={user}
                       hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
