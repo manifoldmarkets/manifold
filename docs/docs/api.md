@@ -106,7 +106,7 @@ Requires no authorization.
     // A list of tags on each market. Any user can add tags to any market.
     // This list also includes the predefined categories shown as filters on the home page.
     tags: string[]
-    
+
     // Note: This url always points to https://manifold.markets, regardless of what instance the api is running on.
     // This url includes the creator's username, but this doesn't need to be correct when constructing valid URLs.
     //   i.e. https://manifold.markets/Austin/test-market is the same as https://manifold.markets/foo/test-market
@@ -127,7 +127,7 @@ Requires no authorization.
     isResolved: boolean
     resolutionTime?: number
     resolution?: string
-    resolutionProbability?: number  // Used for BINARY markets resolved to MKT
+    resolutionProbability?: number // Used for BINARY markets resolved to MKT
   }
   ```
 
@@ -147,202 +147,204 @@ Requires no authorization.
 
   ```json
   {
-    "id":"lEoqtnDgJzft6apSKzYK",
-    "creatorUsername":"Angela",
-    "creatorName":"Angela",
-    "createdTime":1655258914863,
-    "creatorAvatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
-    "closeTime":1655265001448,
-    "question":"What is good?",
-    "description":"Resolves proportionally to the answer(s) which I find most compelling. (Obviously I’ll refrain from giving my own answers)\n\n(Please have at it with philosophy, ethics, etc etc)\n\n\nContract resolved automatically.",
-    "tags":[],
-    "url":"https://manifold.markets/Angela/what-is-good",
-    "pool":null,
-    "outcomeType":"FREE_RESPONSE",
-    "mechanism":"dpm-2",
-    "volume":112,
-    "volume7Days":212,
-    "volume24Hours":0,
-    "isResolved":true,
-    "resolution":"MKT",
-    "resolutionTime":1655265001448,
-    "answers":[
+    "id": "lEoqtnDgJzft6apSKzYK",
+    "creatorUsername": "Angela",
+    "creatorName": "Angela",
+    "createdTime": 1655258914863,
+    "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
+    "closeTime": 1655265001448,
+    "question": "What is good?",
+    "description": "Resolves proportionally to the answer(s) which I find most compelling. (Obviously I’ll refrain from giving my own answers)\n\n(Please have at it with philosophy, ethics, etc etc)\n\n\nContract resolved automatically.",
+    "tags": [],
+    "url": "https://manifold.markets/Angela/what-is-good",
+    "pool": null,
+    "outcomeType": "FREE_RESPONSE",
+    "mechanism": "dpm-2",
+    "volume": 112,
+    "volume7Days": 212,
+    "volume24Hours": 0,
+    "isResolved": true,
+    "resolution": "MKT",
+    "resolutionTime": 1655265001448,
+    "answers": [
       {
-        "createdTime":1655258941573,
-       "avatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
-       "id":"1",
-        "username":"Angela",
-       "number":1,
-       "name":"Angela",
-       "contractId":"lEoqtnDgJzft6apSKzYK",
-        "text":"ANTE",
-        "userId":"qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
-        "probability":0.66749733001068
+        "createdTime": 1655258941573,
+        "avatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
+        "id": "1",
+        "username": "Angela",
+        "number": 1,
+        "name": "Angela",
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "text": "ANTE",
+        "userId": "qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
+        "probability": 0.66749733001068
       },
       {
-        "name":"Isaac King",
-        "username":"IsaacKing",
-        "text":"This answer",
-        "userId":"y1hb6k7txdZPV5mgyxPFApZ7nQl2",
-        "id":"2",
-        "number":2,
-        "avatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GhNVriOvxK2VUAmE-jvYZwC-XIymatzVirT0Bqb2g=s96-c",
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "createdTime":1655261198074,
-        "probability":0.008922214311142757
+        "name": "Isaac King",
+        "username": "IsaacKing",
+        "text": "This answer",
+        "userId": "y1hb6k7txdZPV5mgyxPFApZ7nQl2",
+        "id": "2",
+        "number": 2,
+        "avatarUrl": "https://lh3.googleusercontent.com/a-/AOh14GhNVriOvxK2VUAmE-jvYZwC-XIymatzVirT0Bqb2g=s96-c",
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "createdTime": 1655261198074,
+        "probability": 0.008922214311142757
       },
       {
-        "createdTime":1655263226587,
-        "userId":"jbgplxty4kUKIa1MmgZk22byJq03",
-        "id":"3",
-        "avatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FMartin%2Fgiphy.gif?alt=media&token=422ef610-553f-47e3-bf6f-c0c5cc16c70a",
-        "text":"Toyota Camry",
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "name":"Undox",
-        "username":"Undox",
-        "number":3,
-        "probability":0.008966714133143469
+        "createdTime": 1655263226587,
+        "userId": "jbgplxty4kUKIa1MmgZk22byJq03",
+        "id": "3",
+        "avatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FMartin%2Fgiphy.gif?alt=media&token=422ef610-553f-47e3-bf6f-c0c5cc16c70a",
+        "text": "Toyota Camry",
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "name": "Undox",
+        "username": "Undox",
+        "number": 3,
+        "probability": 0.008966714133143469
       },
       {
-        "number":4,
-        "name":"James Grugett",
-        "userId":"5LZ4LgYuySdL1huCWe7bti02ghx2",
-        "text":"Utility (Defined by your personal utility function.)",
-        "createdTime":1655264793224,
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "username":"JamesGrugett",
-        "id":"4",
-        "avatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GjC83uMe-fEfzd6QvxiK6ZqZdlMytuHxevgMYIkpAI=s96-c",
-        "probability":0.09211463154147384
+        "number": 4,
+        "name": "James Grugett",
+        "userId": "5LZ4LgYuySdL1huCWe7bti02ghx2",
+        "text": "Utility (Defined by your personal utility function.)",
+        "createdTime": 1655264793224,
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "username": "JamesGrugett",
+        "id": "4",
+        "avatarUrl": "https://lh3.googleusercontent.com/a-/AOh14GjC83uMe-fEfzd6QvxiK6ZqZdlMytuHxevgMYIkpAI=s96-c",
+        "probability": 0.09211463154147384
       }
     ],
-    "comments":[
+    "comments": [
       {
-        "id":"ZdHIyfQazHyl8nI0ENS7",
-        "userId":"qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
-        "createdTime":1655265807433,
-        "text":"ok what\ni did not resolve this intentionally",
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "userName":"Angela",
-        "userAvatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
-        "userUsername":"Angela"
+        "id": "ZdHIyfQazHyl8nI0ENS7",
+        "userId": "qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
+        "createdTime": 1655265807433,
+        "text": "ok what\ni did not resolve this intentionally",
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "userName": "Angela",
+        "userAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
+        "userUsername": "Angela"
       },
       {
-        "userName":"James Grugett",
-        "userUsername":"JamesGrugett",
-        "id":"F7fvHGhTiFal8uTsUc9P",
-        "userAvatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GjC83uMe-fEfzd6QvxiK6ZqZdlMytuHxevgMYIkpAI=s96-c","replyToCommentId":"ZdHIyfQazHyl8nI0ENS7",
-        "text":"@Angela Sorry! There was an error that automatically resolved several markets that were created in the last few hours.",
-        "createdTime":1655266286514,
-        "userId":"5LZ4LgYuySdL1huCWe7bti02ghx2",
-        "contractId":"lEoqtnDgJzft6apSKzYK"
+        "userName": "James Grugett",
+        "userUsername": "JamesGrugett",
+        "id": "F7fvHGhTiFal8uTsUc9P",
+        "userAvatarUrl": "https://lh3.googleusercontent.com/a-/AOh14GjC83uMe-fEfzd6QvxiK6ZqZdlMytuHxevgMYIkpAI=s96-c",
+        "replyToCommentId": "ZdHIyfQazHyl8nI0ENS7",
+        "text": "@Angela Sorry! There was an error that automatically resolved several markets that were created in the last few hours.",
+        "createdTime": 1655266286514,
+        "userId": "5LZ4LgYuySdL1huCWe7bti02ghx2",
+        "contractId": "lEoqtnDgJzft6apSKzYK"
       },
       {
-        "userId":"qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "id":"PIHhXy5hLHSgW8uoUD0Q",
-        "userName":"Angela",
-        "text":"lmk if anyone lost manna from this situation and i'll try to fix it",
-        "userUsername":"Angela",
-        "createdTime":1655277581308,
-        "userAvatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476"
-      },{
-        "userAvatarUrl":"https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
-        "userName":"Angela",
-        "text":"from my end it looks like no one did",
-        "replyToCommentId":"PIHhXy5hLHSgW8uoUD0Q",
-        "createdTime":1655287149528,
-        "userUsername":"Angela",
-        "id":"5slnWEQWwm6dHjDi6oiH",
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "userId":"qe2QqIlOkeWsbljfeF3MsxpSJ9i2"
+        "userId": "qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "id": "PIHhXy5hLHSgW8uoUD0Q",
+        "userName": "Angela",
+        "text": "lmk if anyone lost manna from this situation and i'll try to fix it",
+        "userUsername": "Angela",
+        "createdTime": 1655277581308,
+        "userAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476"
+      },
+      {
+        "userAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
+        "userName": "Angela",
+        "text": "from my end it looks like no one did",
+        "replyToCommentId": "PIHhXy5hLHSgW8uoUD0Q",
+        "createdTime": 1655287149528,
+        "userUsername": "Angela",
+        "id": "5slnWEQWwm6dHjDi6oiH",
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "userId": "qe2QqIlOkeWsbljfeF3MsxpSJ9i2"
       }
     ],
-    "bets":[
+    "bets": [
       {
-        "outcome":"0",
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "fees":{
-          "liquidityFee":0,
-          "creatorFee":0,
-          "platformFee":0
+        "outcome": "0",
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "fees": {
+          "liquidityFee": 0,
+          "creatorFee": 0,
+          "platformFee": 0
         },
-        "isAnte":true,
-        "shares":100,
-        "probAfter":1,
-        "amount":100,
-        "userId":"IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
-        "createdTime":1655258914863,
-        "probBefore":0,
-        "id":"2jNZqnwoEQL7WDTTAWDP"
+        "isAnte": true,
+        "shares": 100,
+        "probAfter": 1,
+        "amount": 100,
+        "userId": "IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
+        "createdTime": 1655258914863,
+        "probBefore": 0,
+        "id": "2jNZqnwoEQL7WDTTAWDP"
       },
       {
-        "shares":173.20508075688772,
-        "fees":{
-          "platformFee":0,
-          "liquidityFee":0,
-          "creatorFee":0
+        "shares": 173.20508075688772,
+        "fees": {
+          "platformFee": 0,
+          "liquidityFee": 0,
+          "creatorFee": 0
         },
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "probBefore":0,
-        "createdTime":1655258941573,
-        "loanAmount":0,
-        "userId":"qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
-        "amount":100,
-        "outcome":"1",
-        "probAfter":0.75,
-        "id":"xuc3JoiNkE8lXPh15mUb"
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "probBefore": 0,
+        "createdTime": 1655258941573,
+        "loanAmount": 0,
+        "userId": "qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
+        "amount": 100,
+        "outcome": "1",
+        "probAfter": 0.75,
+        "id": "xuc3JoiNkE8lXPh15mUb"
       },
       {
-        "userId":"y1hb6k7txdZPV5mgyxPFApZ7nQl2",
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "loanAmount":0,
-        "probAfter":0.009925496893641248,
-        "id":"8TBlzPtOdO0q5BgSyRbi",
-        "createdTime":1655261198074,
-        "shares":20.024984394500787,
-        "amount":1,
-        "outcome":"2",
-        "probBefore":0,
-        "fees":{
-          "liquidityFee":0,
-          "creatorFee":0,
-          "platformFee":0
+        "userId": "y1hb6k7txdZPV5mgyxPFApZ7nQl2",
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "loanAmount": 0,
+        "probAfter": 0.009925496893641248,
+        "id": "8TBlzPtOdO0q5BgSyRbi",
+        "createdTime": 1655261198074,
+        "shares": 20.024984394500787,
+        "amount": 1,
+        "outcome": "2",
+        "probBefore": 0,
+        "fees": {
+          "liquidityFee": 0,
+          "creatorFee": 0,
+          "platformFee": 0
         }
       },
       {
-        "probAfter":0.00987648269777473,
-        "outcome":"3",
-        "id":"9vdwes6s9QxbYZUBhHs4",
-        "createdTime":1655263226587,
-        "shares":20.074859899884732,
-        "amount":1,
-        "loanAmount":0,
-        "fees":{
-          "liquidityFee":0,
-          "platformFee":0,
-          "creatorFee":0
+        "probAfter": 0.00987648269777473,
+        "outcome": "3",
+        "id": "9vdwes6s9QxbYZUBhHs4",
+        "createdTime": 1655263226587,
+        "shares": 20.074859899884732,
+        "amount": 1,
+        "loanAmount": 0,
+        "fees": {
+          "liquidityFee": 0,
+          "platformFee": 0,
+          "creatorFee": 0
         },
-        "userId":"jbgplxty4kUKIa1MmgZk22byJq03",
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "probBefore":0
+        "userId": "jbgplxty4kUKIa1MmgZk22byJq03",
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "probBefore": 0
       },
       {
-        "createdTime":1655264793224,
-        "fees":{
-          "creatorFee":0,
-          "liquidityFee":0,
-          "platformFee":0
+        "createdTime": 1655264793224,
+        "fees": {
+          "creatorFee": 0,
+          "liquidityFee": 0,
+          "platformFee": 0
         },
-        "probAfter":0.09211463154147384,
-        "amount":10,
-        "id":"BehiSGgk1wAkIWz1a8L4",
-        "userId":"5LZ4LgYuySdL1huCWe7bti02ghx2",
-        "contractId":"lEoqtnDgJzft6apSKzYK",
-        "loanAmount":0,
-        "probBefore":0,
-        "outcome":"4",
-        "shares":64.34283176858165
+        "probAfter": 0.09211463154147384,
+        "amount": 10,
+        "id": "BehiSGgk1wAkIWz1a8L4",
+        "userId": "5LZ4LgYuySdL1huCWe7bti02ghx2",
+        "contractId": "lEoqtnDgJzft6apSKzYK",
+        "loanAmount": 0,
+        "probBefore": 0,
+        "outcome": "4",
+        "shares": 64.34283176858165
       }
     ]
   }
