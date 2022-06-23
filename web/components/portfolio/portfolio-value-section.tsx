@@ -13,7 +13,7 @@ export const PortfolioValueSection = memo(
   }) {
     const { portfolioHistory } = props
     const lastPortfolioMetrics = last(portfolioHistory)
-    const [portfolioPeriod /*setPortfolioPeriod*/] = useState<Period>('allTime')
+    const [portfolioPeriod] = useState<Period>('allTime')
 
     if (portfolioHistory.length === 0 || !lastPortfolioMetrics) {
       return <div> No portfolio history data yet </div>
@@ -35,18 +35,6 @@ export const PortfolioValueSection = memo(
           </div>
           {
             //TODO: enable day/week/monthly as data becomes available
-            /*<div>
-          <select
-            className="select select-bordered self-start"
-            value={portfolioPeriod}
-            onChange={(e) => setPortfolioPeriod(e.target.value as Period)}
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="allTime">All time</option>
-          </select>
-              </div>*/
           }
         </Row>
         <PortfolioValueGraph

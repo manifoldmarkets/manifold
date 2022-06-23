@@ -76,7 +76,7 @@ export function UserPage(props: {
   const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
   const [usersPortfolioHistory, setUsersPortfolioHistory] = useState<
     PortfolioMetrics[]
-  >([] as PortfolioMetrics[])
+  >([])
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
