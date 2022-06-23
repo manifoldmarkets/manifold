@@ -238,12 +238,18 @@ export function ContractSearchInner(props: {
 
   if (isInitialLoad && contracts.length === 0) return <></>
 
+  const showTime = index.endsWith('close-date')
+    ? 'close-date'
+    : index.endsWith('resolve-date')
+    ? 'resolve-date'
+    : undefined
+
   return (
     <ContractsGrid
       contracts={contracts}
       loadMore={showMore}
       hasMore={!isLastPage}
-      showCloseTime={index.endsWith('close-date')}
+      showTime={showTime}
       onContractClick={onContractClick}
     />
   )

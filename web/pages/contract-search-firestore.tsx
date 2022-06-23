@@ -62,6 +62,12 @@ export default function ContractSearchFirestore(props: {
     matches = sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
   }
 
+  const showTime = ['close-date', 'closed'].includes(sort)
+    ? 'close-date'
+    : sort === 'resolve-date'
+    ? 'resolve-date'
+    : undefined
+
   return (
     <div>
       {/* Show a search input next to a sort dropdown */}
@@ -85,7 +91,6 @@ export default function ContractSearchFirestore(props: {
           <option value="close-date">Closing soon</option>
         </select>
       </div>
-
       {contracts === undefined ? (
         <LoadingIndicator />
       ) : (
@@ -93,7 +98,7 @@ export default function ContractSearchFirestore(props: {
           contracts={matches}
           loadMore={() => {}}
           hasMore={false}
-          showCloseTime={['close-date', 'closed'].includes(sort)}
+          showTime={showTime}
         />
       )}
     </div>
