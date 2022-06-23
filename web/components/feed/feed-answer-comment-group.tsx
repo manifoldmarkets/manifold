@@ -89,25 +89,10 @@ export function FeedAnswerCommentGroup(props: {
   )
 
   useEffect(() => {
-    if (
-      mostRecentCommentableBet &&
-      usersMostRecentBetTimeAtLoad !== undefined &&
-      mostRecentCommentableBet.createdTime > usersMostRecentBetTimeAtLoad &&
-      !showReply
-    )
-      scrollAndOpenReplyInput(undefined, answer)
-  }, [
-    answer,
-    usersMostRecentBetTimeAtLoad,
-    mostRecentCommentableBet,
-    scrollAndOpenReplyInput,
-    showReply,
-  ])
-
-  useEffect(() => {
     // Only show one comment input for a bet at a time
     if (
       betsByCurrentUser.length > 1 &&
+      inputRef?.textContent?.length === 0 &&
       betsByCurrentUser.sort((a, b) => b.createdTime - a.createdTime)[0]
         ?.outcome !== answer.number.toString()
     )
