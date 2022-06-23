@@ -6,7 +6,8 @@
   "recommendations": [
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
-    "toba.vsfire"
+    "toba.vsfire",
+    "bradlc.vscode-tailwindcss"
   ],
   // List of extensions recommended by VS Code that should not be recommended for users of this workspace.
   "unwantedRecommendations": []
