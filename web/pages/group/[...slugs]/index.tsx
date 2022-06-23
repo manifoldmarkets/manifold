@@ -14,7 +14,7 @@ import {
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
-import { getUser, User } from 'web/lib/firebase/users'
+import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
@@ -541,8 +541,11 @@ function JoinGroupButton(props: {
   }
   return (
     <div>
-      <button onClick={joinGroup} className={'btn-md btn-outline btn '}>
-        Join Group
+      <button
+        onClick={user ? joinGroup : firebaseLogin}
+        className={'btn-md btn-outline btn whitespace-nowrap normal-case'}
+      >
+        {user ? 'Join group' : 'Login to join group'}
       </button>
     </div>
   )
