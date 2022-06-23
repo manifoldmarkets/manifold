@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
+import { difference, uniq, mapValues, groupBy, sumBy, update } from 'lodash'
 
 import { Contract, RESOLUTIONS } from '../../common/contract'
 import { User } from '../../common/user'
@@ -15,12 +15,12 @@ import {
 } from '../../common/payouts'
 import { removeUndefinedProps } from '../../common/util/object'
 import { LiquidityProvision } from '../../common/liquidity-provision'
-import { newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './api'
 
 const bodySchema = z.object({
   outcome: z.enum(RESOLUTIONS),
-  value: z.number().optional(),
   contractId: z.string(),
+  value: z.number().optional(),
   probabilityInt: z.number().gte(0).lt(100).optional(),
   resolutions: z.map(z.string(), z.number()).optional(),
 })
@@ -31,50 +31,44 @@ export const resolvemarket = newEndpoint(['POST'], async (req, auth) => {
     req.body
   )
   const userId = auth.uid
-  if (!userId) return { status: 'error', message: 'Not authorized' }
+  if (!userId) throw new APIError(403, 'Not authorized')
 
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()
   if (!contractSnap.exists)
-    return { status: 'error', message: 'Invalid contract' }
+    throw new APIError(404, 'No contract exists with the provided ID')
   const contract = contractSnap.data() as Contract
   const { creatorId, outcomeType, closeTime } = contract
 
-  if (outcomeType === 'BINARY') {
-    if (!RESOLUTIONS.includes(outcome))
-      return { status: 'error', message: 'Invalid outcome' }
-  } else if (outcomeType === 'FREE_RESPONSE') {
+  if (outcomeType === 'FREE_RESPONSE') {
     if (
       isNaN(+outcome) &&
       !(outcome === 'MKT' && resolutions) &&
       outcome !== 'CANCEL'
     )
-      return { status: 'error', message: 'Invalid outcome' }
+      throw new APIError(400, 'Invalid free response outcome')
   } else if (outcomeType === 'NUMERIC') {
     if (isNaN(+outcome) && outcome !== 'CANCEL')
-      return { status: 'error', message: 'Invalid outcome' }
-  } else {
-    return { status: 'error', message: 'Invalid contract outcomeType' }
+      throw new APIError(400, 'Invalid numeric outcome')
   }
 
   if (value !== undefined && !isFinite(value))
-    return { status: 'error', message: 'Invalid value' }
+    throw new APIError(400, 'Invalid value')
 
   if (
     outcomeType === 'BINARY' &&
     probabilityInt !== undefined &&
     (probabilityInt < 0 || probabilityInt > 100 || !isFinite(probabilityInt))
   )
-    return { status: 'error', message: 'Invalid probability' }
+    throw new APIError(400, 'Invalid probability')
 
   if (creatorId !== userId)
-    return { status: 'error', message: 'User not creator of contract' }
+    throw new APIError(403, 'User is not creator of contract')
 
-  if (contract.resolution)
-    return { status: 'error', message: 'Contract already resolved' }
+  if (contract.resolution) throw new APIError(400, 'Contract already resolved')
 
   const creator = await getUser(creatorId)
-  if (!creator) return { status: 'error', message: 'Creator not found' }
+  if (!creator) throw new APIError(400, 'Creator not found')
 
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
@@ -140,7 +134,7 @@ export const resolvemarket = newEndpoint(['POST'], async (req, auth) => {
 
   await processPayouts(liquidityPayouts, true)
 
-  const result = await processPayouts([...payouts, ...loanPayouts])
+  await processPayouts([...payouts, ...loanPayouts])
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payouts)
 
@@ -155,7 +149,10 @@ export const resolvemarket = newEndpoint(['POST'], async (req, auth) => {
     Object.fromEntries(resolutions || [])
   )
 
-  return result
+  const updatedContractSnap = await contractDoc.get()
+  if (!updatedContractSnap)
+    throw new APIError(500, 'Updated contract does not exist')
+  return updatedContractSnap.data() as Contract
 })
 
 const processPayouts = async (payouts: Payout[], isDeposit = false) => {
