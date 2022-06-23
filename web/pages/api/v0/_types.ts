@@ -24,7 +24,7 @@ export type LiteMarket = {
   outcomeType: string
   mechanism: string
 
-  pool: number
+  pool: { [outcome: string]: number }
   probability?: number
   p?: number
   totalLiquidity?: number
@@ -96,7 +96,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     description,
     tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
-    pool: pool.YES + pool.NO,
+    pool,
     probability,
     p,
     totalLiquidity,

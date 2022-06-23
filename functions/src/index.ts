@@ -4,6 +4,7 @@ admin.initializeApp()
 
 // v1
 // export * from './keep-awake'
+export * from './claim-manalink'
 export * from './transact'
 export * from './resolve-market'
 export * from './stripe'
