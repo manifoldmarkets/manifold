@@ -115,10 +115,10 @@ Requires no authorization.
     outcomeType: string // BINARY, FREE_RESPONSE, or NUMERIC
     mechanism: string // dpm-2 or cpmm-1
 
-    pool: number // sum of YES and NO shares in liquidity pool for CPMM, null for DPM
     probability: number
-    p?: number // probability constant in y^p * n^(1-p) = k
-    totalLiquidity?: number
+    pool: { outcome: number } // For CPMM markets, the number of shares in the liquidity pool. For DPM markets, the amount of mana invested in each answer.
+    p?: number // CPMM markets only, probability constant in y^p * n^(1-p) = k
+    totalLiquidity?: number // CPMM markets only, the amount of mana deposited into the liquidity pool
 
     volume: number
     volume7Days: number
@@ -127,6 +127,7 @@ Requires no authorization.
     isResolved: boolean
     resolutionTime?: number
     resolution?: string
+    resolutionProbability?: number  // Used for BINARY markets resolved to MKT
   }
   ```
 

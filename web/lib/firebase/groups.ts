@@ -82,3 +82,15 @@ export function listenForMemberGroups(
     setGroups(sorted)
   })
 }
+
+export async function getGroupsWithContractId(
+  contractId: string,
+  setGroups: (groups: Group[]) => void
+) {
+  const q = query(
+    groupCollection,
+    where('contractIds', 'array-contains', contractId)
+  )
+  const groups = await getValues<Group>(q)
+  setGroups(groups)
+}

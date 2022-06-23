@@ -451,15 +451,7 @@ function AddContractButton(props: { group: Group; user: User }) {
 
   useEffect(() => {
     return listenForUserContracts(user.id, (contracts) => {
-      setContracts(
-        contracts.filter(
-          (c) =>
-            !group.contractIds.includes(c.id) &&
-            // TODO: It'll be easy to allow questions to be in multiple groups as long as we
-            // have the on-update-group function update the newly added contract's groupDetails (via contractIds)
-            !c.groupDetails
-        )
-      )
+      setContracts(contracts.filter((c) => !group.contractIds.includes(c.id)))
     })
   }, [group.contractIds, user.id])
 

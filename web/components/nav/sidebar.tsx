@@ -6,9 +6,7 @@ import {
   CashIcon,
   HeartIcon,
   PresentationChartLineIcon,
-  PresentationChartBarIcon,
   SparklesIcon,
-  NewspaperIcon,
   UserGroupIcon,
   ChevronDownIcon,
   TrendingUpIcon,
@@ -35,13 +33,6 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Group } from 'common/group'
 
-// Create an icon from the url of an image
-function IconFromUrl(url: string): React.ComponentType<{ className?: string }> {
-  return function Icon(props) {
-    return <img src={url} className={clsx(props.className, 'h-6 w-6')} />
-  }
-}
-
 function getNavigation(username: string) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
@@ -56,7 +47,9 @@ function getNavigation(username: string) {
       icon: NotificationsIcon,
     },
 
-    { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+    ...(IS_PRIVATE_MANIFOLD
+      ? []
+      : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ]
 }
 
@@ -69,6 +62,7 @@ function getMoreNavigation(user?: User | null) {
     return [
       { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Charity', href: '/charity' },
+      { name: 'Blog', href: 'https://news.manifold.markets' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
       { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
     ]
@@ -82,7 +76,11 @@ function getMoreNavigation(user?: User | null) {
     { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
     { name: 'Statistics', href: '/stats' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
-    { name: 'Sign out', href: '#', onClick: () => firebaseLogout() },
+    {
+      name: 'Sign out',
+      href: '#',
+      onClick: withTracking(firebaseLogout, 'sign out'),
+    },
   ]
 }
 
@@ -100,22 +98,6 @@ const signedOutNavigation = [
 const signedOutMobileNavigation = [
   { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
-  { name: 'Blog', href: 'https://news.manifold.markets', icon: NewspaperIcon },
-  {
-    name: 'Discord',
-    href: 'https://discord.gg/eHQBNBqXuh',
-    icon: IconFromUrl('/discord-logo.svg'),
-  },
-  {
-    name: 'Twitter',
-    href: 'https://twitter.com/ManifoldMarkets',
-    icon: IconFromUrl('/twitter-logo.svg'),
-  },
-  {
-    name: 'Statistics',
-    href: '/stats',
-    icon: PresentationChartBarIcon,
-  },
   {
     name: 'About',
     href: 'https://docs.manifold.markets/$how-to',
@@ -124,7 +106,9 @@ const signedOutMobileNavigation = [
 ]
 
 const signedInMobileNavigation = [
-  { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+  ...(IS_PRIVATE_MANIFOLD
+    ? []
+    : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ...signedOutMobileNavigation,
 ]
 
@@ -239,6 +223,7 @@ export default function Sidebar(props: { className?: string }) {
         </div>
       )}
 
+      {/* Mobile navigation */}
       <div className="space-y-1 lg:hidden">
         {user && (
           <MenuButton
@@ -262,6 +247,22 @@ export default function Sidebar(props: { className?: string }) {
           <MenuButton
             menuItems={[
               {
+                name: 'Blog',
+                href: 'https://news.manifold.markets',
+              },
+              {
+                name: 'Discord',
+                href: 'https://discord.gg/eHQBNBqXuh',
+              },
+              {
+                name: 'Twitter',
+                href: 'https://twitter.com/ManifoldMarkets',
+              },
+              {
+                name: 'Statistics',
+                href: '/stats',
+              },
+              {
                 name: 'Sign out',
                 href: '#',
                 onClick: withTracking(firebaseLogout, 'sign out'),
@@ -272,6 +273,7 @@ export default function Sidebar(props: { className?: string }) {
         )}
       </div>
 
+      {/* Desktop navigation */}
       <div className="hidden space-y-1 lg:block">
         {navigationOptions.map((item) =>
           item.name === 'Notifications' ? (

@@ -24,7 +24,7 @@ export type LiteMarket = {
   outcomeType: string
   mechanism: string
 
-  pool: number
+  pool: { [outcome: string]: number }
   probability?: number
   p?: number
   totalLiquidity?: number
@@ -36,6 +36,7 @@ export type LiteMarket = {
   isResolved: boolean
   resolution?: string
   resolutionTime?: number
+  resolutionProbability?: number
 }
 
 export type ApiAnswer = Answer & {
@@ -73,6 +74,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     isResolved,
     resolution,
     resolutionTime,
+    resolutionProbability,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -94,7 +96,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     description,
     tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
-    pool: pool.YES + pool.NO,
+    pool,
     probability,
     p,
     totalLiquidity,
@@ -106,6 +108,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     isResolved,
     resolution,
     resolutionTime,
+    resolutionProbability,
   })
 }
 
