@@ -104,6 +104,16 @@ service cloud.firestore {
       allow read;
     }
 
+    // Note: `resource` = existing doc, `request.resource` = incoming doc
+    match /manalinks/{slug} {
+      // Anyone can view any manalink
+      allow get;
+      // Only you can create a manalink with your fromId
+      allow create: if request.auth.uid == request.resource.data.fromId;
+      // Only you can list and change your own manalinks
+      allow list, update: if request.auth.uid == resource.data.fromId;
+    }
+
     match /users/{userId}/notifications/{notificationId} {
       allow read;
       allow update: if resource.data.userId == request.auth.uid

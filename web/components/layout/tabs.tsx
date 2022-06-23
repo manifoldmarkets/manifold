@@ -28,6 +28,7 @@ export function Tabs(props: {
           {tabs.map((tab, i) => (
             <Link href={tab.href ?? '#'} key={tab.title} shallow={!!tab.href}>
               <a
+                id={`tab-${i}`}
                 key={tab.title}
                 onClick={(e) => {
                   if (!tab.href) {
