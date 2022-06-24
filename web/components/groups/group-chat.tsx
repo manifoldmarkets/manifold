@@ -1,7 +1,7 @@
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
-import React, { useEffect, memo, useState } from 'react'
+import React, { useEffect, memo, useState, useMemo } from 'react'
 import { Avatar } from 'web/components/avatar'
 import { Group } from 'common/group'
 import { Comment, createCommentOnGroup } from 'web/lib/firebase/comments'
@@ -19,7 +19,7 @@ import { UserLink } from 'web/components/user-page'
 import { groupPath } from 'web/lib/firebase/groups'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 
-export function Discussion(props: {
+export function GroupChat(props: {
   messages: Comment[]
   user: User | null | undefined
   group: Group
@@ -34,7 +34,29 @@ export function Discussion(props: {
     useState<HTMLDivElement | null>(null)
   const [replyToUsername, setReplyToUsername] = useState('')
   const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
+  const [groupedMessages, setGroupedMessages] = useState<Comment[]>([])
   const router = useRouter()
+
+  useMemo(() => {
+    // Group messages with createdTime within 2 minutes of each other.
+    const tempMessages = []
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i]
+      if (i === 0) tempMessages.push({ ...message })
+      else {
+        const prevMessage = messages[i - 1]
+        const diff = message.createdTime - prevMessage.createdTime
+        const creatorsMatch = message.userId === prevMessage.userId
+        if (diff < 2 * 60 * 1000 && creatorsMatch) {
+          tempMessages[tempMessages.length - 1].text += `\n${message.text}`
+        } else {
+          tempMessages.push({ ...message })
+        }
+      }
+    }
+
+    setGroupedMessages(tempMessages)
+  }, [messages])
 
   useEffect(() => {
     scrollToMessageRef?.scrollIntoView()
@@ -78,7 +100,7 @@ export function Discussion(props: {
         }
         ref={setScrollToBottomRef}
       >
-        {messages.map((message) => (
+        {groupedMessages.map((message) => (
           <GroupMessage
             user={user}
             key={message.id}
@@ -142,8 +164,8 @@ const GroupMessage = memo(function GroupMessage_(props: {
     <Col
       ref={setRef}
       className={clsx(
-        isCreatorsComment ? 'mr-2 self-end' : ' ml-2',
-        'w-fit max-w-md gap-1 space-x-3 rounded-md bg-white p-2 p-2 px-4 text-sm text-gray-500 transition-all duration-1000',
+        isCreatorsComment ? 'mr-2 self-end' : '',
+        'w-fit max-w-sm gap-1 space-x-3 rounded-md bg-white p-1 text-sm text-gray-500 transition-colors duration-1000  sm:max-w-md sm:p-3 sm:leading-[1.3rem]',
         highlight ? `-m-1 bg-indigo-500/[0.2] p-2` : ''
       )}
     >
@@ -151,8 +173,8 @@ const GroupMessage = memo(function GroupMessage_(props: {
         {!isCreatorsComment && (
           <Col>
             <Avatar
-              className={'mx-2 ml-0'}
-              size={'sm'}
+              className={'mx-2 ml-2.5'}
+              size={'xs'}
               username={userUsername}
               avatarUrl={userAvatarUrl}
             />
@@ -161,7 +183,7 @@ const GroupMessage = memo(function GroupMessage_(props: {
         {!isCreatorsComment ? (
           <UserLink username={userUsername} name={userName} />
         ) : (
-          <span>{'You'}</span>
+          <span className={'ml-2.5'}>{'You'}</span>
         )}
         <CopyLinkDateTimeComponent
           prefix={'group'}
