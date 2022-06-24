@@ -1,7 +1,6 @@
 import { take, sortBy, debounce } from 'lodash'
 
 import { Group } from 'common/group'
-import { Comment } from 'common/comment'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { listAllBets } from 'web/lib/firebase/bets'
@@ -32,14 +31,14 @@ import { Tabs } from 'web/components/layout/tabs'
 import { ContractsGrid } from 'web/components/contract/contracts-list'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import React, { useEffect, useState } from 'react'
-import { Discussion } from 'web/components/groups/discussion'
-import { listenForCommentsOnGroup } from 'web/lib/firebase/comments'
+import { GroupChat } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
 import { PlusIcon } from '@heroicons/react/outline'
 import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
+import { useCommentsOnGroup } from 'web/hooks/use-comments'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -92,7 +91,7 @@ async function toTopUsers(userScores: { [userId: string]: number }) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const groupSubpages = [undefined, 'discussion', 'questions', 'details'] as const
+const groupSubpages = [undefined, 'chat', 'questions', 'details'] as const
 
 export default function GroupPage(props: {
   group: Group | null
@@ -115,14 +114,11 @@ export default function GroupPage(props: {
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
-  const page = (slugs?.[1] ?? 'discussion') as typeof groupSubpages[number]
+  const page = (slugs?.[1] ?? 'chat') as typeof groupSubpages[number]
 
   const group = useGroup(props.group?.id) ?? props.group
-  const [messages, setMessages] = useState<Comment[] | undefined>(undefined)
   const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
-  useEffect(() => {
-    if (group) listenForCommentsOnGroup(group.id, setMessages)
-  }, [group])
+  const messages = useCommentsOnGroup(group?.id)
 
   useEffect(() => {
     if (group)
@@ -189,7 +185,9 @@ export default function GroupPage(props: {
         <Row className={' items-center justify-between gap-4 '}>
           <div className={'mb-1'}>
             <Title className={'line-clamp-2'} text={group.name} />
-            <span className={'text-gray-700'}>{group.about}</span>
+            <span className={'hidden text-gray-700 sm:block'}>
+              {group.about}
+            </span>
           </div>
           {isMember && (
             <CreateQuestionButton
@@ -209,13 +207,13 @@ export default function GroupPage(props: {
         defaultIndex={page === 'details' ? 2 : page === 'questions' ? 1 : 0}
         tabs={[
           {
-            title: 'Discussion',
+            title: 'Chat',
             content: messages ? (
-              <Discussion messages={messages} user={user} group={group} />
+              <GroupChat messages={messages} user={user} group={group} />
             ) : (
               <LoadingIndicator />
             ),
-            href: groupPath(group.slug, 'discussion'),
+            href: groupPath(group.slug, 'chat'),
           },
           {
             title: 'Questions',
