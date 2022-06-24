@@ -16,7 +16,6 @@
     "jsx": "preserve",
     "incremental": true
   },
-
   "watchOptions": {
     "excludeDirectories": [".next"]
   },
