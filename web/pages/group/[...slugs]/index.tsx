@@ -17,7 +17,7 @@ import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import { useGroup, useMembers } from 'web/hooks/use-group'
+import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
 import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
@@ -39,12 +39,14 @@ import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
+import ShortToggle from 'web/components/widgets/short-toggle'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
   const group = await getGroupBySlug(slugs[0])
+  const members = group ? await listMembers(group) : []
   const creatorPromise = group ? getUser(group.creatorId) : null
 
   const contracts = group ? await getGroupContracts(group).catch((_) => []) : []
@@ -65,6 +67,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   return {
     props: {
       group,
+      members,
       creator,
       traderScores,
       topTraders,
@@ -95,6 +98,7 @@ const groupSubpages = [undefined, 'chat', 'questions', 'details'] as const
 
 export default function GroupPage(props: {
   group: Group | null
+  members: User[]
   creator: User
   traderScores: { [userId: string]: number }
   topTraders: User[]
@@ -103,14 +107,21 @@ export default function GroupPage(props: {
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
+    members: [],
     creator: null,
     traderScores: {},
     topTraders: [],
     creatorScores: {},
     topCreators: [],
   }
-  const { creator, traderScores, topTraders, creatorScores, topCreators } =
-    props
+  const {
+    creator,
+    members,
+    traderScores,
+    topTraders,
+    creatorScores,
+    topCreators,
+  } = props
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -175,15 +186,15 @@ export default function GroupPage(props: {
         user={user}
       />
       <Spacer h={8} />
-      <Col className="mt-4 gap-8 px-4 md:flex-row">
-        <GroupLeaderboards
-          traderScores={traderScores}
-          creatorScores={creatorScores}
-          topTraders={topTraders}
-          topCreators={topCreators}
-          user={user}
-        />
-      </Col>
+
+      <GroupLeaderboards
+        traderScores={traderScores}
+        creatorScores={creatorScores}
+        topTraders={topTraders}
+        topCreators={topCreators}
+        members={members}
+        user={user}
+      />
     </Col>
   )
   return (
@@ -312,7 +323,7 @@ function GroupOverview(props: {
   return (
     <Col>
       <Row className="items-center justify-end rounded-t bg-indigo-500 px-4 py-3 text-sm text-white">
-        <Row className="flex-1 justify-start">About group</Row>
+        <Row className="flex-1 justify-start">About {group.name}</Row>
         {isCreator && <EditGroupButton className={'ml-1'} group={group} />}
       </Row>
       <Col className="gap-2 rounded-b bg-white p-4">
@@ -324,7 +335,6 @@ function GroupOverview(props: {
             username={creator.username}
           />
         </Row>
-        <GroupMembersList group={group} />
         <Row className={'items-center gap-1'}>
           <span className={'text-gray-500'}>Membership</span>
           {user && user.id === creator.id ? (
@@ -343,14 +353,6 @@ function GroupOverview(props: {
             </span>
           )}
         </Row>
-        {about && (
-          <>
-            <Spacer h={2} />
-            <div className="text-gray-500">
-              <Linkify text={about} />
-            </div>
-          </>
-        )}
       </Col>
     </Col>
   )
@@ -381,46 +383,94 @@ export function GroupMembersList(props: { group: Group }) {
   )
 }
 
+function SortedLeaderboard(props: {
+  users: User[]
+  scoreFunction: (user: User) => number
+  title: string
+  header: string
+}) {
+  const { users, scoreFunction, title, header } = props
+  const sortedUsers = users.sort((a, b) => scoreFunction(b) - scoreFunction(a))
+  return (
+    <Leaderboard
+      className="max-w-xl"
+      users={sortedUsers}
+      title={title}
+      columns={[
+        { header, renderCell: (user) => formatMoney(scoreFunction(user)) },
+      ]}
+    />
+  )
+}
+
 function GroupLeaderboards(props: {
   traderScores: { [userId: string]: number }
   creatorScores: { [userId: string]: number }
   topTraders: User[]
   topCreators: User[]
+  members: User[]
   user: User | null | undefined
 }) {
-  const { traderScores, creatorScores, topTraders, topCreators } = props
+  const { traderScores, creatorScores, members, topTraders, topCreators } =
+    props
+  const [includeOutsiders, setIncludeOutsiders] = useState(false)
 
-  const topTraderScores = topTraders.map((user) => traderScores[user.id])
-  const topCreatorScores = topCreators.map((user) => creatorScores[user.id])
-
+  // Consider hiding M$0
   return (
-    <>
-      <Leaderboard
-        className="max-w-xl"
-        title="🏅 Top bettors"
-        users={topTraders}
-        columns={[
-          {
-            header: 'Profit',
-            renderCell: (user) =>
-              formatMoney(topTraderScores[topTraders.indexOf(user)]),
-          },
-        ]}
-      />
+    <Col>
+      <Row className="items-center justify-end gap-4 text-gray-500">
+        Include all users
+        <ShortToggle
+          enabled={includeOutsiders}
+          setEnabled={setIncludeOutsiders}
+        />
+      </Row>
 
-      <Leaderboard
-        className="max-w-xl"
-        title="🏅 Top creators"
-        users={topCreators}
-        columns={[
-          {
-            header: 'Market volume',
-            renderCell: (user) =>
-              formatMoney(topCreatorScores[topCreators.indexOf(user)]),
-          },
-        ]}
-      />
-    </>
+      <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
+        {!includeOutsiders ? (
+          <>
+            <SortedLeaderboard
+              users={members}
+              scoreFunction={(user) => traderScores[user.id] ?? 0}
+              title="🏅 Top bettors"
+              header="Profit"
+            />
+            <SortedLeaderboard
+              users={members}
+              scoreFunction={(user) => creatorScores[user.id] ?? 0}
+              title="🏅 Top creators"
+              header="Market volume"
+            />
+          </>
+        ) : (
+          <>
+            <Leaderboard
+              className="max-w-xl"
+              title="🏅 Top bettors"
+              users={topTraders}
+              columns={[
+                {
+                  header: 'Profit',
+                  renderCell: (user) => formatMoney(traderScores[user.id] ?? 0),
+                },
+              ]}
+            />
+            <Leaderboard
+              className="max-w-xl"
+              title="🏅 Top creators"
+              users={topCreators}
+              columns={[
+                {
+                  header: 'Market volume',
+                  renderCell: (user) =>
+                    formatMoney(creatorScores[user.id] ?? 0),
+                },
+              ]}
+            />
+          </>
+        )}
+      </div>
+    </Col>
   )
 }
 
