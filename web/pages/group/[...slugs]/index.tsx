@@ -94,7 +94,7 @@ async function toTopUsers(userScores: { [userId: string]: number }) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const groupSubpages = [undefined, 'chat', 'questions', 'details'] as const
+const groupSubpages = [undefined, 'chat', 'questions', 'about'] as const
 
 export default function GroupPage(props: {
   group: Group | null
@@ -177,7 +177,7 @@ export default function GroupPage(props: {
     </Col>
   )
 
-  const detailsTab = (
+  const aboutTab = (
     <Col>
       <GroupOverview
         group={group}
@@ -225,7 +225,7 @@ export default function GroupPage(props: {
       </Col>
 
       <Tabs
-        defaultIndex={page === 'details' ? 2 : page === 'questions' ? 1 : 0}
+        defaultIndex={page === 'about' ? 2 : page === 'questions' ? 1 : 0}
         tabs={[
           {
             title: 'Chat',
@@ -269,9 +269,9 @@ export default function GroupPage(props: {
             href: groupPath(group.slug, 'questions'),
           },
           {
-            title: 'Details',
-            content: detailsTab,
-            href: groupPath(group.slug, 'details'),
+            title: 'About',
+            content: aboutTab,
+            href: groupPath(group.slug, 'about'),
           },
         ]}
       />
