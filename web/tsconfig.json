@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "es5",
+    "composite": true,
     "baseUrl": "../",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
@@ -16,10 +17,15 @@
     "jsx": "preserve",
     "incremental": true
   },
+  "references": [
+    {
+      "path": "../common"
+    }
+  ],
 
   "watchOptions": {
     "excludeDirectories": [".next"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "../common/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
 }
