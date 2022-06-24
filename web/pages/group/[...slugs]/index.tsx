@@ -148,20 +148,11 @@ export default function GroupPage(props: {
 
   const rightSidebar = (
     <Col className="mt-6 hidden xl:block">
-      <GroupOverview
-        group={group}
-        creator={creator}
-        isCreator={!!isCreator}
-        user={user}
-      />
-      <YourPerformance
-        traderScores={traderScores}
-        creatorScores={creatorScores}
-        user={user}
-      />
+      <JoinOrCreateButton group={group} user={user} isMember={!!isMember} />
+      <Spacer h={6} />
       {contracts && (
         <div className={'mt-2'}>
-          <div className={'my-2 text-lg text-indigo-700'}>Recent Questions</div>
+          <div className={'my-2 text-gray-500'}>Recent Questions</div>
           <ContractsGrid
             contracts={contracts
               .sort((a, b) => b.createdTime - a.createdTime)
@@ -175,15 +166,24 @@ export default function GroupPage(props: {
     </Col>
   )
 
-  const leaderboardsTab = (
-    <Col className="mt-4 gap-8 px-4 md:flex-row">
-      <GroupLeaderboards
-        traderScores={traderScores}
-        creatorScores={creatorScores}
-        topTraders={topTraders}
-        topCreators={topCreators}
+  const detailsTab = (
+    <Col>
+      <GroupOverview
+        group={group}
+        creator={creator}
+        isCreator={!!isCreator}
         user={user}
       />
+      <Spacer h={8} />
+      <Col className="mt-4 gap-8 px-4 md:flex-row">
+        <GroupLeaderboards
+          traderScores={traderScores}
+          creatorScores={creatorScores}
+          topTraders={topTraders}
+          topCreators={topCreators}
+          user={user}
+        />
+      </Col>
     </Col>
   )
   return (
@@ -194,27 +194,24 @@ export default function GroupPage(props: {
         url={groupPath(group.slug)}
       />
 
-      <div className="px-3 lg:px-1">
-        <Row className={' items-center justify-between gap-4 '}>
+      <Col className="px-3 lg:px-1">
+        <Row className={'items-center justify-between gap-4'}>
           <div className={'mb-1'}>
             <Title className={'line-clamp-2'} text={group.name} />
-            <span className={'hidden text-gray-700 sm:block'}>
-              {group.about}
-            </span>
+            <Linkify text={group.about} />
           </div>
-          {isMember && (
-            <CreateQuestionButton
+          <div className="hidden sm:block xl:hidden">
+            <JoinOrCreateButton
+              group={group}
               user={user}
-              overrideText={'Add a new question'}
-              className={'w-48 flex-shrink-0'}
-              query={`?groupId=${group.id}`}
+              isMember={!!isMember}
             />
-          )}
-          {!isMember && group.anyoneCanJoin && (
-            <JoinGroupButton group={group} user={user} />
-          )}
+          </div>
         </Row>
-      </div>
+        <div className="block sm:hidden">
+          <JoinOrCreateButton group={group} user={user} isMember={!!isMember} />
+        </div>
+      </Col>
 
       <Tabs
         defaultIndex={page === 'details' ? 2 : page === 'questions' ? 1 : 0}
@@ -262,30 +259,31 @@ export default function GroupPage(props: {
           },
           {
             title: 'Details',
-            content: (
-              <>
-                <div className={'xl:hidden'}>
-                  <GroupOverview
-                    group={group}
-                    creator={creator}
-                    isCreator={!!isCreator}
-                    user={user}
-                  />
-                  <YourPerformance
-                    traderScores={traderScores}
-                    creatorScores={creatorScores}
-                    user={user}
-                  />
-                </div>
-                {leaderboardsTab}
-              </>
-            ),
+            content: detailsTab,
             href: groupPath(group.slug, 'details'),
           },
         ]}
       />
     </Page>
   )
+}
+
+function JoinOrCreateButton(props: {
+  group: Group
+  user: User | null | undefined
+  isMember: boolean
+}) {
+  const { group, user, isMember } = props
+  return isMember ? (
+    <CreateQuestionButton
+      user={user}
+      overrideText={'Add a new question'}
+      className={'w-48 flex-shrink-0'}
+      query={`?groupId=${group.id}`}
+    />
+  ) : group.anyoneCanJoin ? (
+    <JoinGroupButton group={group} user={user} />
+  ) : null
 }
 
 function GroupOverview(props: {
