@@ -14,9 +14,13 @@ export default function ContractSearchFirestore(props: {
     defaultSort: Sort
     shouldLoadFromStorage?: boolean
   }
+  additionalFilter?: {
+    creatorId?: string
+    tag?: string
+  }
 }) {
   const contracts = useContracts()
-  const { querySortOptions } = props
+  const { querySortOptions, additionalFilter } = props
 
   const { initialSort, initialQuery } = useInitialQueryAndSort(querySortOptions)
   const [sort, setSort] = useState(initialSort || 'newest')
@@ -60,6 +64,20 @@ export default function ContractSearchFirestore(props: {
     // Use lodash for stable sort, so previous sort breaks all ties.
     matches = sortBy(matches, ({ volume7Days }) => -1 * volume7Days)
     matches = sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
+  }
+
+  if (additionalFilter) {
+    const { creatorId, tag } = additionalFilter
+
+    if (creatorId) {
+      matches = matches.filter((c) => c.creatorId === creatorId)
+    }
+
+    if (tag) {
+      matches = matches.filter((c) =>
+        c.lowercaseTags.includes(tag.toLowerCase())
+      )
+    }
   }
 
   return (

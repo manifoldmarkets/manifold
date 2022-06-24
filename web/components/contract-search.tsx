@@ -123,7 +123,7 @@ export function ContractSearch(props: {
   const indexName = `${indexPrefix}contracts-${sort}`
 
   if (IS_PRIVATE_MANIFOLD) {
-    return <ContractSearchFirestore querySortOptions={querySortOptions} />
+    return <ContractSearchFirestore querySortOptions={querySortOptions} additionalFilter={additionalFilter} />
   }
 
   return (
