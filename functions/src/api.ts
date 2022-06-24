@@ -110,6 +110,7 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
 
 const DEFAULT_OPTS: HttpsOptions = {
   minInstances: 1,
+  concurrency: 100,
   memory: '2GiB',
   cpu: 1,
   cors: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
