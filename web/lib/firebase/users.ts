@@ -187,7 +187,7 @@ export function getTopTraders(period: LeaderboardPeriod) {
     limit(20)
   )
 
-  return getValues(topTraders)
+  return getValues<User>(topTraders)
 }
 
 export function getTopCreators(period: LeaderboardPeriod) {
@@ -196,7 +196,7 @@ export function getTopCreators(period: LeaderboardPeriod) {
     orderBy('creatorVolumeCached.' + period, 'desc'),
     limit(20)
   )
-  return getValues(topCreators)
+  return getValues<User>(topCreators)
 }
 
 export async function getTopFollowed() {

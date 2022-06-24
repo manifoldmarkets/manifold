@@ -30,6 +30,7 @@ import { getUserBets } from 'web/lib/firebase/bets'
 import { FollowersButton, FollowingButton } from './following-button'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
+import { BadgesDialog } from './badges/badges-dialog'
 
 export function UserLink(props: {
   name: string
@@ -169,9 +170,13 @@ export function UserPage(props: {
         </div>
       </div>
 
-      {/* Profile details: name, username, bio, and link to twitter/discord */}
-      <Col className="mx-4 -mt-6">
-        <span className="text-2xl font-bold">{user.name}</span>
+      <Col className="mx-4 -mt-8">
+        <Row className="space-x-2">
+          <Col className="justify-center">
+            <span className=" text-2xl font-bold">{user.name}</span>
+          </Col>
+          <BadgesDialog user={user} />
+        </Row>
         <span className="text-gray-500">@{user.username}</span>
 
         <Spacer h={4} />

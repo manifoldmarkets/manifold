@@ -133,6 +133,41 @@ export const updateMetricsCore = async () => {
     'set'
   )
   log(`Updated metrics for ${users.length} users.`)
+
+  const badgesUpdates = await userUpdatesWithBadges(users)
+  await writeAsync(firestore, badgesUpdates)
+}
+
+const userUpdatesWithBadges = async (users: User[]) => {
+  const [topTenTraders, topTenCreators] = await Promise.all([
+    getValues<User>(
+      firestore.collection('users').orderBy('profitCached', 'desc').limit(10)
+    ),
+    getValues<User>(
+      firestore
+        .collection('users')
+        .orderBy('creatorVolumeCached', 'desc')
+        .limit(10)
+    ),
+  ])
+
+  const userUpdatesWithBadges = users.map((user) => {
+    const newWeeklyTraderRank =
+      topTenTraders.findIndex((t) => t.id === user.id) + 1
+    const newWeeklyCreatorRank =
+      topTenCreators.findIndex((t) => t.id === user.id) + 1
+    return {
+      doc: firestore.collection('users').doc(user.id),
+      fields: {
+        badges: {
+          weeklyTraderRank: newWeeklyTraderRank,
+          weeklyCreatorRank: newWeeklyCreatorRank,
+        },
+      },
+    }
+  })
+
+  return userUpdatesWithBadges
 }
 
 const computeVolume = (contractBets: Bet[], since: number) => {

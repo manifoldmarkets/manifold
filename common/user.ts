@@ -33,6 +33,11 @@ export type User = {
   followerCountCached: number
 
   followedCategories?: string[]
+
+  badges: {
+    weeklyTraderRank: number // 1-10, 0 if no badge
+    weeklyCreatorRank: number
+  }
 }
 
 export const STARTING_BALANCE = 1000
