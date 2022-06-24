@@ -305,27 +305,31 @@ export default function Sidebar(props: { className?: string }) {
           buttonContent={<MoreButton />}
         />
       </div>
-      <CreateQuestionButton user={user} />
+      {user?.username === 'RichardHanania' && (
+        <div>
+          <CreateQuestionButton user={user} />
 
-      {user &&
-      mustWaitForFreeMarketStatus != 'loading' &&
-      mustWaitForFreeMarketStatus ? (
-        <Row className="mt-2 justify-center">
-          <Row className="gap-1 text-sm text-gray-400">
-            Next free question in {countdown}
-          </Row>
-        </Row>
-      ) : (
-        user &&
-        mustWaitForFreeMarketStatus != 'loading' &&
-        !mustWaitForFreeMarketStatus && (
-          <Row className="mt-2 justify-center">
-            <Row className="gap-1 text-sm text-indigo-400">
-              Daily free question
-              <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
+          {user &&
+          mustWaitForFreeMarketStatus != 'loading' &&
+          mustWaitForFreeMarketStatus ? (
+            <Row className="mt-2 justify-center">
+              <Row className="gap-1 text-sm text-gray-400">
+                Next free question in {countdown}
+              </Row>
             </Row>
-          </Row>
-        )
+          ) : (
+            user &&
+            mustWaitForFreeMarketStatus != 'loading' &&
+            !mustWaitForFreeMarketStatus && (
+              <Row className="mt-2 justify-center">
+                <Row className="gap-1 text-sm text-indigo-400">
+                  Daily free question
+                  <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
+                </Row>
+              </Row>
+            )
+          )}
+        </div>
       )}
     </nav>
   )

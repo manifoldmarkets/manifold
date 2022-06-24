@@ -191,7 +191,7 @@ export default function GroupPage(props: {
             <Title className={'line-clamp-2'} text={group.name} />
             <span className={'text-gray-700'}>{group.about}</span>
           </div>
-          {isMember && (
+          {isMember && user?.username === 'RichardHanania' && (
             <CreateQuestionButton
               user={user}
               overrideText={'Add a new question'}

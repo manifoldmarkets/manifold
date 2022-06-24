@@ -73,6 +73,7 @@ export function NewContract(props: { question: string; groupId?: string }) {
 
   useEffect(() => {
     if (creator === null) router.push('/')
+    if (creator && creator.username !== 'RichardHanania') router.push('/')
   }, [creator])
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
