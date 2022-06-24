@@ -7,6 +7,7 @@ import { Comment } from 'common/comment'
 import { Contract, FreeResponseContract } from 'common/contract'
 import { User } from 'common/user'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
+import { LiquidityProvision } from 'common/liquidity-provision'
 
 export type ActivityItem =
   | DescriptionItem
@@ -17,6 +18,7 @@ export type ActivityItem =
   | ResolveItem
   | CommentInputItem
   | CommentThreadItem
+  | LiquidityItem
 
 type BaseActivityItem = {
   id: string
@@ -70,6 +72,14 @@ export type CloseItem = BaseActivityItem & {
 
 export type ResolveItem = BaseActivityItem & {
   type: 'resolve'
+}
+
+export type LiquidityItem = BaseActivityItem & {
+  type: 'liquidity'
+  liquidity: LiquidityProvision
+  hideOutcome: boolean
+  smallAvatar: boolean
+  hideComment?: boolean
 }
 
 function getAnswerAndCommentInputGroups(
@@ -139,6 +149,7 @@ export function getSpecificContractActivityItems(
   contract: Contract,
   bets: Bet[],
   comments: Comment[],
+  liquidityProvisions: LiquidityProvision[],
   tips: CommentTipMap,
   user: User | null | undefined,
   options: {
@@ -146,7 +157,7 @@ export function getSpecificContractActivityItems(
   }
 ) {
   const { mode } = options
-  const items = [] as ActivityItem[]
+  let items = [] as ActivityItem[]
 
   switch (mode) {
     case 'bets':
@@ -162,6 +173,23 @@ export function getSpecificContractActivityItems(
           smallAvatar: false,
           hideComment: true,
         }))
+      )
+      items.push(
+        ...liquidityProvisions.map((liquidity) => ({
+          type: 'liquidity' as const,
+          id: liquidity.id,
+          contract,
+          liquidity,
+          hideOutcome: false,
+          smallAvatar: true,
+        }))
+      )
+      items = sortBy(items, (item) =>
+        item.type === 'bet'
+          ? item.bet.createdTime
+          : item.type === 'liquidity'
+          ? item.liquidity.createdTime
+          : undefined
       )
       break
 
