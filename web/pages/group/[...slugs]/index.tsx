@@ -381,42 +381,6 @@ export function GroupMembersList(props: { group: Group }) {
   )
 }
 
-function YourPerformance(props: {
-  traderScores: { [userId: string]: number }
-  creatorScores: { [userId: string]: number }
-
-  user: User | null | undefined
-}) {
-  const { traderScores, creatorScores, user } = props
-
-  const yourTraderScore = user ? traderScores[user.id] : undefined
-  const yourCreatorScore = user ? creatorScores[user.id] : undefined
-
-  return user ? (
-    <Col>
-      <div className="rounded bg-indigo-500 px-4 py-3 text-sm text-white">
-        Your performance
-      </div>
-      <div className="bg-white p-2">
-        <table className="table-compact table w-full text-gray-500">
-          <tbody>
-            <tr>
-              <td>Total profit</td>
-              <td>{formatMoney(yourTraderScore ?? 0)}</td>
-            </tr>
-            {yourCreatorScore && (
-              <tr>
-                <td>Total created pool</td>
-                <td>{formatMoney(yourCreatorScore)}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </Col>
-  ) : null
-}
-
 function GroupLeaderboards(props: {
   traderScores: { [userId: string]: number }
   creatorScores: { [userId: string]: number }
