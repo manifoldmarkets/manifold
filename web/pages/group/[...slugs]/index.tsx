@@ -118,7 +118,20 @@ export default function GroupPage(props: {
 
   const group = useGroup(props.group?.id) ?? props.group
   const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
+  const [query, setQuery] = useState('')
+
   const messages = useCommentsOnGroup(group?.id)
+  const debouncedQuery = debounce(setQuery, 50)
+  const filteredContracts =
+    query != '' && contracts
+      ? contracts.filter(
+          (c) =>
+            checkAgainstQuery(query, c.question) ||
+            checkAgainstQuery(query, c.description || '') ||
+            checkAgainstQuery(query, c.creatorName) ||
+            checkAgainstQuery(query, c.creatorUsername)
+        )
+      : []
 
   useEffect(() => {
     if (group)
@@ -218,14 +231,22 @@ export default function GroupPage(props: {
           {
             title: 'Questions',
             content: (
-              <div className={'mt-2'}>
+              <div className={'mt-2 px-1'}>
                 {contracts ? (
                   contracts.length > 0 ? (
-                    <ContractsGrid
-                      contracts={contracts}
-                      hasMore={false}
-                      loadMore={() => {}}
-                    />
+                    <>
+                      <input
+                        type="text"
+                        onChange={(e) => debouncedQuery(e.target.value)}
+                        placeholder="Search the group's questions"
+                        className="input input-bordered mb-4 w-full"
+                      />
+                      <ContractsGrid
+                        contracts={query != '' ? filteredContracts : contracts}
+                        hasMore={false}
+                        loadMore={() => {}}
+                      />
+                    </>
                   ) : (
                     <div className="p-2 text-gray-500">
                       No questions yet. 🦗... Why not add one?
