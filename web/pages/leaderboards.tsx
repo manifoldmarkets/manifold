@@ -67,7 +67,7 @@ export default function Leaderboards(props: {
         <Col className="mx-4 items-center gap-10 lg:flex-row">
           {!isLoading ? (
             <>
-              {period === 'allTime' ? ( //TODO: show other periods once they're available
+              {period === 'allTime' || period === 'daily' ? ( //TODO: show other periods once they're available
                 <Leaderboard
                   title="🏅 Top bettors"
                   users={topTradersState}
