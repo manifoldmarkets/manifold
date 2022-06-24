@@ -24,7 +24,7 @@ import {
 import { range, throttle, zip } from 'lodash'
 
 import { app } from './init'
-import { PrivateUser, User } from 'common/user'
+import { PortfolioMetrics, PrivateUser, User } from 'common/user'
 import { createUser } from './fn-call'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
 import { DAY_MS } from 'common/util/time'
@@ -35,7 +35,7 @@ import { filterDefined } from 'common/util/array'
 
 export type { User }
 
-export type LeaderboardPeriod = 'daily' | 'weekly' | 'monthly' | 'allTime'
+export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
 
 const db = getFirestore(app)
 export const auth = getAuth(app)
@@ -180,7 +180,7 @@ export function listenForPrivateUsers(
   listenForValues(q, setUsers)
 }
 
-export function getTopTraders(period: LeaderboardPeriod) {
+export function getTopTraders(period: Period) {
   const topTraders = query(
     collection(db, 'users'),
     orderBy('profitCached.' + period, 'desc'),
@@ -190,7 +190,7 @@ export function getTopTraders(period: LeaderboardPeriod) {
   return getValues(topTraders)
 }
 
-export function getTopCreators(period: LeaderboardPeriod) {
+export function getTopCreators(period: Period) {
   const topCreators = query(
     collection(db, 'users'),
     orderBy('creatorVolumeCached.' + period, 'desc'),
@@ -268,6 +268,16 @@ export async function follow(userId: string, followedUserId: string) {
 export async function unfollow(userId: string, unfollowedUserId: string) {
   const followDoc = doc(db, 'users', userId, 'follows', unfollowedUserId)
   await deleteDoc(followDoc)
+}
+
+export async function getPortfolioHistory(userId: string) {
+  return getValues<PortfolioMetrics>(
+    query(
+      collectionGroup(db, 'portfolioHistory'),
+      where('userId', '==', userId),
+      orderBy('timestamp', 'asc')
+    )
+  )
 }
 
 export function listenForFollows(

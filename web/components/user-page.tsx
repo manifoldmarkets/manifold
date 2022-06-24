@@ -6,7 +6,12 @@ import { LinkIcon } from '@heroicons/react/solid'
 import { PencilIcon } from '@heroicons/react/outline'
 import Confetti from 'react-confetti'
 
-import { follow, unfollow, User } from 'web/lib/firebase/users'
+import {
+  follow,
+  unfollow,
+  User,
+  getPortfolioHistory,
+} from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
 import { Page } from './page'
@@ -30,6 +35,7 @@ import { getUserBets } from 'web/lib/firebase/bets'
 import { FollowersButton, FollowingButton } from './following-button'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
+import { PortfolioMetrics } from 'common/user'
 
 export function UserLink(props: {
   name: string
@@ -67,6 +73,7 @@ export function UserPage(props: {
     'loading'
   )
   const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
+  const [, setUsersPortfolioHistory] = useState<PortfolioMetrics[]>([])
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
@@ -83,6 +90,7 @@ export function UserPage(props: {
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
     getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
+    getPortfolioHistory(user.id).then(setUsersPortfolioHistory)
   }, [user])
 
   // TODO: display comments on groups
@@ -243,6 +251,7 @@ export function UserPage(props: {
         </Col>
 
         <Spacer h={10} />
+
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
             className={'pb-2 pt-1 '}
@@ -284,6 +293,9 @@ export function UserPage(props: {
                 title: 'Bets',
                 content: (
                   <div>
+                    {
+                      // TODO: add portfolio-value-section here
+                    }
                     <BetsList
                       user={user}
                       hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
