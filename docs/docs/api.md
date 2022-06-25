@@ -398,6 +398,65 @@ Requires no authorization.
   ```
 - Response type: A `FullMarket` ; same as above.
 
+### `GET /v0/users`
+
+Lists all users.
+
+Requires no authorization.
+
+- Example request
+  ```
+  https://manifold.markets/api/v0/users
+  ```
+- Example response
+  ```json
+  [
+    {
+      "id":"igi2zGXsfxYPgB0DJTXVJVmwCOr2",
+      "createdTime":1639011767273,
+      "name":"Austin",
+      "username":"Austin",
+      "url":"https://manifold.markets/Austin",
+      "avatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GiZyl1lBehuBMGyJYJhZd-N-mstaUtgE4xdI22lLw=s96-c",
+      "bio":"I build Manifold! Always happy to chat; reach out on Discord or find a time on https://calendly.com/austinchen/manifold!",
+      "bannerUrl":"https://images.unsplash.com/photo-1501523460185-2aa5d2a0f981?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1531&q=80",
+      "website":"https://blog.austn.io",
+      "twitterHandle":"akrolsmir",
+      "discordHandle":"akrolsmir#4125",
+      "balance":9122.607163564959,
+      "totalDeposits":10339.004780544328,
+      "totalPnLCached":9376.601262721899,
+      "creatorVolumeCached":76078.46984199001
+    }
+  ```
+- Response type: Array of `LiteUser`
+
+  ```tsx
+  // Basic information about a user
+  type LiteUser = {
+    id: string // user's unique id
+    createdTime: number
+
+    name: string // display name, may contain spaces
+    username: string // username, used in urls
+    url: string // link to user's profile
+    avatarUrl?: string
+
+    bio?: string
+    bannerUrl?: string
+    website?: string
+    twitterHandle?: string
+    discordHandle?: string
+
+    // Note: the following are here for convenience only and may be removed in the future.
+    balance: number
+    totalDeposits: number
+    totalPnLCached: number
+    creatorVolumeCached: number
+  }
+  ```
+
+
 ### `POST /v0/bet`
 
 Places a new bet on behalf of the authorized user.

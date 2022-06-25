@@ -3,7 +3,9 @@ import { Answer } from 'common/answer'
 import { getOutcomeProbability, getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
+import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -142,4 +144,62 @@ function augmentAnswerWithProbability(
     ...answer,
     probability,
   }
+}
+
+export type LiteUser = {
+  id: string
+  createdTime: number
+
+  name: string
+  username: string
+  url: string
+  avatarUrl?: string
+
+  bio?: string
+  bannerUrl?: string
+  website?: string
+  twitterHandle?: string
+  discordHandle?: string
+
+  balance: number
+  totalDeposits: number
+  totalPnLCached: number
+  creatorVolumeCached: number
+}
+
+export function toLiteUser(user: User): LiteUser {
+  const {
+    id,
+    createdTime,
+    name,
+    username,
+    avatarUrl,
+    bio,
+    bannerUrl,
+    website,
+    twitterHandle,
+    discordHandle,
+    balance,
+    totalDeposits,
+    totalPnLCached,
+    creatorVolumeCached,
+  } = user
+
+  return removeUndefinedProps({
+    id,
+    createdTime,
+    name,
+    username,
+    url: `https://${ENV_CONFIG.domain}/${username}`,
+    avatarUrl,
+    bio,
+    bannerUrl,
+    website,
+    twitterHandle,
+    discordHandle,
+    balance,
+    totalDeposits,
+    totalPnLCached,
+    creatorVolumeCached,
+  })
 }
