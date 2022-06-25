@@ -41,7 +41,8 @@
     "react-expanding-textarea": "2.3.5",
     "react-hot-toast": "2.2.0",
     "react-instantsearch-hooks-web": "6.24.1",
-    "react-query": "3.39.0"
+    "react-query": "3.39.0",
+    "string-similarity": "^4.0.4"
   },
   "devDependencies": {
     "@tailwindcss/forms": "0.4.0",
@@ -50,6 +51,7 @@
     "@types/lodash": "4.14.178",
     "@types/node": "16.11.11",
     "@types/react": "17.0.43",
+    "@types/string-similarity": "^4.0.0",
     "autoprefixer": "10.2.6",
     "concurrently": "6.5.1",
     "critters": "0.0.16",
