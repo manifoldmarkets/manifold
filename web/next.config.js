@@ -2,7 +2,11 @@ const API_DOCS_URL = 'https://docs.manifold.markets/api'
 
 /** @type {import('next').NextConfig} */
 module.exports = {
+  staticPageGenerationTimeout: 600, // e.g. stats page
   reactStrictMode: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
     externalDir: true,
     optimizeCss: true,
@@ -33,6 +37,11 @@ module.exports = {
         source: '/api/v0',
         destination: API_DOCS_URL,
         permanent: false,
+      },
+      {
+        source: '/analytics',
+        destination: '/stats',
+        permanent: true,
       },
     ]
   },

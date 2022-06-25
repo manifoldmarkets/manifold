@@ -17,13 +17,14 @@ import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import NotificationsIcon from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
+import { trackCallback } from 'web/lib/service/analytics'
 
 function getNavigation(username: string) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
     {
       name: 'Portfolio',
-      href: `/${username}/bets`,
+      href: `/${username}?tab=bets`,
       icon: PresentationChartLineIcon,
     },
     {
@@ -106,6 +107,7 @@ function NavBarItem(props: { item: Item; currentPage: string }) {
           'block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700',
           currentPage === item.href && 'bg-gray-200 text-indigo-700'
         )}
+        onClick={trackCallback('navbar: ' + item.name)}
       >
         <item.icon className="my-1 mx-auto h-6 w-6" />
         {item.name}

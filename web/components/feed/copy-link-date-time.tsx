@@ -1,7 +1,5 @@
-import { Contract } from 'common/contract'
 import React, { useState } from 'react'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { DateTimeTooltip } from 'web/components/datetime-tooltip'
 import Link from 'next/link'
@@ -11,21 +9,20 @@ import { LinkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 
 export function CopyLinkDateTimeComponent(props: {
-  contract: Contract
+  prefix: string
+  slug: string
   createdTime: number
   elementId: string
   className?: string
 }) {
-  const { contract, elementId, createdTime, className } = props
+  const { prefix, slug, elementId, createdTime, className } = props
   const [showToast, setShowToast] = useState(false)
 
   function copyLinkToComment(
     event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
   ) {
     event.preventDefault()
-    const elementLocation = `https://${ENV_CONFIG.domain}${contractPath(
-      contract
-    )}#${elementId}`
+    const elementLocation = `https://${ENV_CONFIG.domain}/${prefix}/${slug}#${elementId}`
 
     copyToClipboard(elementLocation)
     setShowToast(true)
@@ -34,10 +31,7 @@ export function CopyLinkDateTimeComponent(props: {
   return (
     <div className={clsx('inline', className)}>
       <DateTimeTooltip time={createdTime}>
-        <Link
-          href={`/${contract.creatorUsername}/${contract.slug}#${elementId}`}
-          passHref={true}
-        >
+        <Link href={`/${prefix}/${slug}#${elementId}`} passHref={true}>
           <a
             onClick={(event) => copyLinkToComment(event)}
             className={'mx-1 cursor-pointer'}

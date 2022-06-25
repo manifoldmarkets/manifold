@@ -78,10 +78,10 @@ export const onCreateComment = functions
       'created',
       commentCreator,
       eventId,
+      comment.text,
       contract,
       relatedSourceType,
-      relatedUser,
-      comment.text
+      relatedUser
     )
 
     const recipientUserIds = uniq([

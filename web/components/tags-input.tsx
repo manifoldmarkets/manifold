@@ -53,25 +53,3 @@ export function TagsInput(props: { contract: Contract; className?: string }) {
     </Col>
   )
 }
-
-export function RevealableTagsInput(props: {
-  contract: Contract
-  className?: string
-}) {
-  const { contract, className } = props
-  const [hidden, setHidden] = useState(true)
-
-  if (hidden)
-    return (
-      <div
-        className={clsx(
-          'cursor-pointer text-gray-500 hover:underline hover:decoration-indigo-400 hover:decoration-2',
-          className
-        )}
-        onClick={() => setHidden((hidden) => !hidden)}
-      >
-        Show tags
-      </div>
-    )
-  return <TagsInput className={clsx('pt-2', className)} contract={contract} />
-}

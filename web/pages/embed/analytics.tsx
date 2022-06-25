@@ -5,7 +5,7 @@ import Analytics, {
   CustomAnalytics,
   FirebaseAnalytics,
   getStaticPropz,
-} from '../analytics'
+} from '../stats'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 

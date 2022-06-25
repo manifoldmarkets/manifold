@@ -1,10 +1,49 @@
 import * as admin from 'firebase-admin'
 
+import { chunk } from 'lodash'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 
-export const isProd =
-  admin.instanceId().app.options.projectId === 'mantic-markets'
+export const log = (...args: unknown[]) => {
+  console.log(`[${new Date().toISOString()}]`, ...args)
+}
+
+export const logMemory = () => {
+  const used = process.memoryUsage()
+  for (const [k, v] of Object.entries(used)) {
+    log(`${k} ${Math.round((v / 1024 / 1024) * 100) / 100} MB`)
+  }
+}
+
+export type UpdateSpec = {
+  doc: admin.firestore.DocumentReference
+  fields: { [k: string]: unknown }
+}
+
+export const writeAsync = async (
+  db: admin.firestore.Firestore,
+  updates: UpdateSpec[],
+  operationType: 'update' | 'set' = 'update',
+  batchSize = 500 // 500 = Firestore batch limit
+) => {
+  const chunks = chunk(updates, batchSize)
+  for (let i = 0; i < chunks.length; i++) {
+    log(`${i * batchSize}/${updates.length} updates written...`)
+    const batch = db.batch()
+    for (const { doc, fields } of chunks[i]) {
+      if (operationType === 'update') {
+        batch.update(doc, fields)
+      } else {
+        batch.set(doc, fields)
+      }
+    }
+    await batch.commit()
+  }
+}
+
+export const isProd = () => {
+  return admin.instanceId().app.options.projectId === 'mantic-markets'
+}
 
 export const getDoc = async <T>(collection: string, doc: string) => {
   const snap = await admin.firestore().collection(collection).doc(doc).get()
@@ -36,6 +75,7 @@ export const getPrivateUser = (userId: string) => {
 }
 
 export const getUserByUsername = async (username: string) => {
+  const firestore = admin.firestore()
   const snap = await firestore
     .collection('users')
     .where('username', '==', username)
@@ -44,13 +84,12 @@ export const getUserByUsername = async (username: string) => {
   return snap.empty ? undefined : (snap.docs[0].data() as User)
 }
 
-const firestore = admin.firestore()
-
 const updateUserBalance = (
   userId: string,
   delta: number,
   isDeposit = false
 ) => {
+  const firestore = admin.firestore()
   return firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${userId}`)
     const userSnap = await transaction.get(userDoc)

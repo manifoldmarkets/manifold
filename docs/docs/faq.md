@@ -4,7 +4,7 @@
 
 ### Do I have to pay real money in order to participate?
 
-Nope! Each account starts with a free M$ 1000. If you invest it wisely, you can increase your total without ever needing to put any real money into the site.
+Nope! Each account starts with a free M$1000. If you invest it wisely, you can increase your total without ever needing to put any real money into the site.
 
 ### What is the name for the currency Manifold uses, represented by M$?
 
@@ -14,9 +14,11 @@ Manifold Dollars, or mana for short.
 
 No. Gambling laws put many restrictions on real-money prediction markets, so Manifold uses play money instead.
 
+You can instead redeem your Mana and we will [donate to a charity](http://manifold.markets/charity) on your behalf. Redeeming and purchasing Mana occurs at a rate of M$100 to $1.
+
 ### How do the free response markets work?
 
-Any user can enter a response and bet on it, or they can bet on on other people's responses. The response probabilities are weighted proportionally to how many people have bet on them. The market creator's ante goes into a "none of the above" pseudo-option that can't be bet on and can't be chosen as a correct answer when the market is resolved. (This means that free response markets tend to lose their creator almost their entire ante, whereas normal markets only lose them a small fraction that's proportional to how well they chose their starting odds. It also means that if there are only a finite number of options that could win, traders can make guaranteed money by investing in them all equally.) See [here](https://manifoldmarkets.substack.com/p/above-the-fold-milestones-and-new) for more information.
+Any user can enter a response and bet on it, or they can bet on other people's responses. The response probabilities are weighted proportionally to how many people have bet on them. The market creator's ante goes into a "none of the above" pseudo-option that can't be bet on and can't be chosen as a correct answer when the market is resolved. (This means that free response markets tend to lose their creator almost their entire ante. It also means that if there are only a finite number of options that could win, traders can make guaranteed money by investing in them all equally.) See [here](https://manifoldmarkets.substack.com/p/above-the-fold-milestones-and-new) for more information.
 
 ### How accurate are the market probabilities?
 
@@ -35,9 +37,9 @@ No. See [here](https://manifold.markets/hamnox/will-manifold-markets-add-nongoo
 
 ## Placing and winning bets
 
-### The payout probabilities I'm shown sometimes aren't right. For example if a market is at 15% and I bet M$ 1 on "no", it tells me that I'll make a 42% profit if I win, but the listed payout is just M$ 1. What's going on?
+### The payout probabilities I'm shown sometimes aren't right. For example if a market is at 15% and I bet M$1 on "no", it tells me that I'll make a 42% profit if I win, but the listed payout is just M$1. What's going on?
 
-Payout amounts are visually rounded to the nearest M$ 1, and only integer amounts can be put into markets. Behind the scenes however, your balance does track fractional amounts, so you're making a M$ 0.42 profit on that bet. Once you win another M$ 0.08, that fractional M$ 0.5 will display as an extra M$ 1 in your account. (There's no way to view your exact balance, you can only see the rounded value.)
+Payout amounts are visually rounded to the nearest M$1, and only integer amounts can be put into markets. Behind the scenes however, your balance does track fractional amounts, so you're making a M$0.42 profit on that bet. Once you win another M$0.08, that fractional M$0.5 will display as an extra M$1 in your account. (There's no way to view your exact balance, you can only see the rounded value.)
 
 ### What are the rules about insider trading? (Using private information about a market to make a profit.)
 
@@ -45,7 +47,7 @@ It's not only allowed, but encouraged. The whole point of a prediction market is
 
 ### Can I see who is buying/selling in a market?
 
-Trading is anonymous by default. You'll only see their username if they leave a comment. As an exception, trading from the market's creator has their name attached.
+All trades before June 1, 2022 are anonymous by default. Trades after that date can be viewed in the Bets tab of any market, and also on that user's profile.
 
 ## Creating and resolving markets
 
@@ -63,11 +65,13 @@ A market being "closed" means that people can no longer place or sell bets, "loc
 
 ### What does "PROB" mean?
 
-Resolving a market as "PROB" means that it's resolved at a certain probability, chosen by the market creator. PROB 100% is the same as "yes", and PROB 0% is the same as "no". For example, if a market is resolved at PROB 75%, anyone who bought "yes" at less than 75% will (usually) make a profit, and anyone who bought "yes" at greater than 75% will (usually) take a loss. Vice versa for "no".
+Resolving a market as "PROB" means that it's resolved at a certain probability, chosen by the market creator. PROB 100% is the same as "yes", and PROB 0% is the same as "no". For example, if a market is resolved at PROB 75%, anyone who bought "yes" at less than 75% will (usually) make a profit, and anyone who bought "yes" at greater than 75% will (usually) take a loss. Vice versa for "no". This is also shown as "MKT" in the interface and API.
 
 ### What happens if a market creator resolves a market incorrectly, or doesn't resolve it at all?
 
 Nothing. The idea is for Manifold Markets to function with similar freedom and versatility to a Twitter poll, but with more accurate results due to the dynamics of prediction markets. Individual market resolution is not enforced by the site, so if you don't trust a certain user to judge their markets fairly, you probably shouldn't participate in their markets.
+
+That being said, manifold staff may manually send reminder emails to the creators of large markets if they have not been resolved in some time. There are also some projects in the works to enable automated market resolution after some time has passed.
 
 ### How do I tell if a certain market creator is trustworthy?
 
@@ -87,21 +91,23 @@ You'll get an automated email when they close. You can also go to your profile p
 
 ### When do market creators get their commission fees?
 
-When the creator resolves their market, they get the commission from all the trades that were exectuted in the market.
+When the creator resolves their market, they get the commission from all the trades that were executed in the market.
 
 ### How do I see markets that are currently open?
 
-You can see the top 99 markets in various categories [here](https://manifold.markets/markets).
+You can see the top markets in various categories [here](https://manifold.markets/markets).
 
 ### Can I bet in a market I created?
 
-Yes. However if you're doing things that the community would perceive as "shady", such as put all your money on the correct resolution immediately before closing the market, people may be more reluctant to participate in your markets in the future. Betting "normally" in your own market is fine though.
+Yes. However if you're doing things that the community would perceive as "shady", such as putting all your money on the correct resolution immediately before closing the market, people may be more reluctant to participate in your markets in the future. Betting "normally" in your own market is fine though.
 
 ## Miscellaneous
 
 ### How do I report bugs or ask for new features?
 
 Contact them via [email](mailto:info@manifold.markets), post in their [Discord](https://discord.gg/eHQBNBqXuh), or create a market about that bug/feature in order to draw more attention to it and get community input.
+
+If you don't mind putting in a little work, fork the code and open a [pull request](https://github.com/manifoldmarkets/manifold/pulls) on GitHub.
 
 ### How can I get notified of new developments?
 
@@ -113,7 +119,7 @@ No, but the website is designed responsively and looks great on mobile.
 
 ### Does Manifold have an API for programmers?
 
-Yep. Documentation is [here](https://www.notion.so/Manifold-Markets-API-5e7d0aef4dcf452bb04b319e178fabc5).
+Yep. Documentation is [here](https://docs.manifold.markets/api).
 
 ### If I have a question that isn't answered here, where can I ask it?
 

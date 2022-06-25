@@ -5,21 +5,16 @@ import Sidebar from './nav/sidebar'
 import { Toaster } from 'react-hot-toast'
 
 export function Page(props: {
-  margin?: boolean
-  assertUser?: 'signed-in' | 'signed-out'
   rightSidebar?: ReactNode
   suspend?: boolean
   children?: ReactNode
 }) {
-  const { margin, assertUser, children, rightSidebar, suspend } = props
+  const { children, rightSidebar, suspend } = props
 
   return (
     <>
       <div
-        className={clsx(
-          'mx-auto w-full pb-14 lg:grid lg:grid-cols-12 lg:gap-8 lg:pt-6 xl:max-w-7xl',
-          margin && 'px-4'
-        )}
+        className="mx-auto w-full pb-14 lg:grid lg:grid-cols-12 lg:gap-2 lg:pt-6 xl:max-w-7xl xl:gap-8"
         style={suspend ? visuallyHiddenStyle : undefined}
       >
         <Toaster />

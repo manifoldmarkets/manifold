@@ -19,12 +19,16 @@ import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
-import { ENV } from 'common/envs/constants'
+import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { EditCategoriesButton } from './feed/category-selector'
-import { CATEGORIES } from 'common/categories'
+import { CATEGORIES, category } from 'common/categories'
 import { Tabs } from './layout/tabs'
+import { EditFollowingButton } from './following-button'
+import { track } from '@amplitude/analytics-browser'
+import { trackCallback } from 'web/lib/service/analytics'
+import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -112,11 +116,20 @@ export function ContractSearch(props: {
     showCategorySelector,
     mode,
     Object.values(additionalFilter ?? {}).join(','),
-    followedCategories?.join(','),
-    follows?.join(','),
+    (followedCategories ?? []).join(','),
+    (follows ?? []).join(','),
   ])
 
   const indexName = `${indexPrefix}contracts-${sort}`
+
+  if (IS_PRIVATE_MANIFOLD) {
+    return (
+      <ContractSearchFirestore
+        querySortOptions={querySortOptions}
+        additionalFilter={additionalFilter}
+      />
+    )
+  }
 
   return (
     <InstantSearch searchClient={searchClient} indexName={indexName}>
@@ -133,6 +146,7 @@ export function ContractSearch(props: {
           className="!select !select-bordered"
           value={filter}
           onChange={(e) => setFilter(e.target.value as filter)}
+          onBlur={trackCallback('select search filter')}
         >
           <option value="open">Open</option>
           <option value="closed">Closed</option>
@@ -144,6 +158,7 @@ export function ContractSearch(props: {
           classNames={{
             select: '!select !select-bordered',
           }}
+          onBlur={trackCallback('select search sort')}
         />
         <Configure
           facetFilters={filters}
@@ -228,12 +243,18 @@ export function ContractSearchInner(props: {
 
   if (isInitialLoad && contracts.length === 0) return <></>
 
+  const showTime = index.endsWith('close-date')
+    ? 'close-date'
+    : index.endsWith('resolve-date')
+    ? 'resolve-date'
+    : undefined
+
   return (
     <ContractsGrid
       contracts={contracts}
       loadMore={showMore}
       hasMore={!isLastPage}
-      showCloseTime={index.endsWith('close-date')}
+      showTime={showTime}
       onContractClick={onContractClick}
     />
   )
@@ -249,16 +270,17 @@ function CategoryFollowSelector(props: {
 
   const user = useUser()
 
-  const categoriesLabel = `Categories ${
-    followedCategories.length ? followedCategories.length : '(All)'
-  }`
-
+  const categoriesTitle = `${
+    followedCategories?.length ? followedCategories.length : 'All'
+  } Categories`
   let categoriesDescription = `Showing all categories`
+
+  const followingTitle = `${follows?.length ? follows.length : 'All'} Following`
 
   if (followedCategories.length) {
     const categoriesLabel = followedCategories
       .slice(0, 3)
-      .map((cat) => CATEGORIES[cat])
+      .map((cat) => CATEGORIES[cat as category])
       .join(', ')
     const andMoreLabel =
       followedCategories.length > 3
@@ -267,14 +289,12 @@ function CategoryFollowSelector(props: {
     categoriesDescription = `Showing ${categoriesLabel}${andMoreLabel}`
   }
 
-  const followingLabel = `Following ${follows.length}`
-
   return (
     <Tabs
       defaultIndex={mode === 'categories' ? 0 : 1}
       tabs={[
         {
-          title: categoriesLabel,
+          title: categoriesTitle,
           content: user && (
             <Row className="items-center gap-1 text-gray-500">
               <div>{categoriesDescription}</div>
@@ -285,18 +305,22 @@ function CategoryFollowSelector(props: {
         ...(user
           ? [
               {
-                title: followingLabel,
-
+                title: followingTitle,
                 content: (
-                  <Row className="h-8 items-center gap-2 text-gray-500">
+                  <Row className="items-center gap-2 text-gray-500">
                     <div>Showing markets by users you are following.</div>
+                    <EditFollowingButton className="self-start" user={user} />
                   </Row>
                 ),
               },
             ]
           : []),
       ]}
-      onClick={(_, index) => setMode(index === 0 ? 'categories' : 'following')}
+      onClick={(_, index) => {
+        const mode = index === 0 ? 'categories' : 'following'
+        setMode(mode)
+        track(`click ${mode} tab`)
+      }}
     />
   )
 }

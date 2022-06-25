@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 
 import { getPrivateUser, getUser, isProd, payUser } from './utils'
 import { sendThankYouEmail } from './emails'
+import { track } from './analytics'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -27,7 +28,7 @@ const initStripe = () => {
 }
 
 // manage at https://dashboard.stripe.com/test/products?active=true
-const manticDollarStripePrice = isProd
+const manticDollarStripePrice = isProd()
   ? {
       500: 'price_1KFQXcGdoFKoCJW770gTNBrm',
       1000: 'price_1KFQp1GdoFKoCJW7Iu0dsF65',
@@ -90,7 +91,7 @@ export const createCheckoutSession = functions
 export const stripeWebhook = functions
   .runWith({
     minInstances: 1,
-    secrets: ['STRIPE_APIKEY', 'STRIPE_WEBHOOKSECRET'],
+    secrets: ['MAILGUN_KEY', 'STRIPE_APIKEY', 'STRIPE_WEBHOOKSECRET'],
   })
   .https.onRequest(async (req, res) => {
     const stripe = initStripe()
@@ -152,6 +153,13 @@ const issueMoneys = async (session: StripeSession) => {
   if (!privateUser) return
 
   await sendThankYouEmail(user, privateUser)
+
+  await track(
+    userId,
+    'M$ purchase',
+    { amount: payout, sessionId },
+    { revenue: payout / 100 }
+  )
 }
 
 const firestore = admin.firestore()

@@ -19,7 +19,7 @@ export function Tabs(props: {
 }) {
   const { tabs, defaultIndex, className, onClick } = props
   const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
-  const activeTab = tabs[activeIndex]
+  const activeTab = tabs[activeIndex] as Tab | undefined // can be undefined in weird case
 
   return (
     <div>
@@ -28,6 +28,7 @@ export function Tabs(props: {
           {tabs.map((tab, i) => (
             <Link href={tab.href ?? '#'} key={tab.title} shallow={!!tab.href}>
               <a
+                id={`tab-${i}`}
                 key={tab.title}
                 onClick={(e) => {
                   if (!tab.href) {
@@ -55,7 +56,7 @@ export function Tabs(props: {
         </nav>
       </div>
 
-      <div className="mt-4">{activeTab.content}</div>
+      <div className="mt-4">{activeTab?.content}</div>
     </div>
   )
 }

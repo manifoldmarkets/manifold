@@ -14,6 +14,14 @@ export type Notification = {
   sourceUserName?: string
   sourceUserUsername?: string
   sourceUserAvatarUrl?: string
+  sourceText?: string
+
+  sourceContractTitle?: string
+  sourceContractCreatorUsername?: string
+  sourceContractSlug?: string
+
+  sourceSlug?: string
+  sourceTitle?: string
 }
 export type notification_source_types =
   | 'contract'
@@ -24,6 +32,7 @@ export type notification_source_types =
   | 'follow'
   | 'tip'
   | 'admin_message'
+  | 'group'
 
 export type notification_source_update_types =
   | 'created'
@@ -42,3 +51,5 @@ export type notification_reason_types =
   | 'reply_to_users_answer'
   | 'reply_to_users_comment'
   | 'on_new_follow'
+  | 'you_follow_user'
+  | 'added_you_to_group'

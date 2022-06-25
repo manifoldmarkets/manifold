@@ -38,6 +38,10 @@ import { FeedComment } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { useBets } from 'web/hooks/use-bets'
+import { AlertBox } from 'web/components/alert-box'
+import { useTracking } from 'web/hooks/use-tracking'
+import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -84,41 +88,53 @@ export default function ContractPage(props: {
     bets: [],
     slug: '',
   }
-  return <ContractPageContent {...props} />
-}
-
-export function ContractPageContent(props: Parameters<typeof ContractPage>[0]) {
-  const { backToHome } = props
-
-  const user = useUser()
-  const { width, height } = useWindowSize()
-
-  const contract = useContractWithPreload(props.contract)
-  const { bets, comments } = props
-  const [showConfetti, setShowConfetti] = useState(false)
-
-  useEffect(() => {
-    const shouldSeeConfetti = !!(
-      user &&
-      contract &&
-      contract.creatorId === user.id &&
-      Date.now() - contract.createdTime < 10 * 1000
-    )
-    setShowConfetti(shouldSeeConfetti)
-  }, [contract, user])
 
   const inIframe = useIsIframe()
   if (inIframe) {
     return <ContractEmbedPage {...props} />
   }
 
-  // Sort for now to see if bug is fixed.
-  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-  bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
+  const { contract } = props
 
   if (!contract) {
     return <Custom404 />
   }
+
+  return <ContractPageContent {...{ ...props, contract }} />
+}
+
+export function ContractPageContent(
+  props: Parameters<typeof ContractPage>[0] & { contract: Contract }
+) {
+  const { backToHome, comments } = props
+
+  const contract = useContractWithPreload(props.contract) ?? props.contract
+
+  useTracking('view market', {
+    slug: contract.slug,
+    contractId: contract.id,
+    creatorId: contract.creatorId,
+  })
+
+  const bets = useBets(contract.id) ?? props.bets
+  // Sort for now to see if bug is fixed.
+  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+
+  const tips = useTipTxns(contract.id)
+
+  const user = useUser()
+  const { width, height } = useWindowSize()
+
+  const [showConfetti, setShowConfetti] = useState(false)
+
+  useEffect(() => {
+    const shouldSeeConfetti = !!(
+      user &&
+      contract.creatorId === user.id &&
+      Date.now() - contract.createdTime < 10 * 1000
+    )
+    setShowConfetti(shouldSeeConfetti)
+  }, [contract, user])
 
   const { creatorId, isResolved, question, outcomeType } = contract
 
@@ -179,11 +195,13 @@ export function ContractPageContent(props: Parameters<typeof ContractPage>[0]) {
           </button>
         )}
 
-        <ContractOverview
-          contract={contract}
-          bets={bets ?? []}
-          comments={comments ?? []}
-        />
+        <ContractOverview contract={contract} bets={bets} />
+        {isNumeric && (
+          <AlertBox
+            title="Warning"
+            text="Numeric markets were introduced as an experimental feature and are now deprecated."
+          />
+        )}
 
         {outcomeType === 'FREE_RESPONSE' && (
           <>
@@ -193,7 +211,7 @@ export function ContractPageContent(props: Parameters<typeof ContractPage>[0]) {
           </>
         )}
 
-        {isNumeric && (
+        {isNumeric && allowTrade && (
           <NumericBetPanel className="xl:hidden" contract={contract} />
         )}
 
@@ -205,6 +223,7 @@ export function ContractPageContent(props: Parameters<typeof ContractPage>[0]) {
                 contract={contract}
                 bets={bets}
                 comments={comments}
+                tips={tips}
               />
             </div>
             <Spacer h={12} />
@@ -215,6 +234,7 @@ export function ContractPageContent(props: Parameters<typeof ContractPage>[0]) {
           contract={contract}
           user={user}
           bets={bets}
+          tips={tips}
           comments={comments}
         />
       </Col>
@@ -228,7 +248,9 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
 
   const { userProfits, top5Ids } = useMemo(() => {
     // Create a map of userIds to total profits (including sales)
-    const betsByUser = groupBy(bets, 'userId')
+    const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
+    const betsByUser = groupBy(openBets, 'userId')
+
     const userProfits = mapValues(betsByUser, (bets) =>
       sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
     )
@@ -242,7 +264,6 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
   }, [contract, bets])
 
   useEffect(() => {
-    console.log('foo')
     if (top5Ids.length > 0) {
       listUsers(top5Ids).then((users) => {
         const sortedUsers = sortBy(users, (user) => -userProfits[user.id])
@@ -270,8 +291,9 @@ function ContractTopTrades(props: {
   contract: Contract
   bets: Bet[]
   comments: Comment[]
+  tips: CommentTipMap
 }) {
-  const { contract, bets, comments } = props
+  const { contract, bets, comments, tips } = props
   const commentsById = keyBy(comments, 'id')
   const betsById = keyBy(bets, 'id')
 
@@ -308,6 +330,7 @@ function ContractTopTrades(props: {
             <FeedComment
               contract={contract}
               comment={commentsById[topCommentId]}
+              tips={tips[topCommentId]}
               betsBySameUser={[betsById[topCommentId]]}
               truncate={false}
               smallAvatar={false}
@@ -331,7 +354,6 @@ function ContractTopTrades(props: {
               bet={betsById[topBetId]}
               hideOutcome={false}
               smallAvatar={false}
-              bettor={topBettor}
             />
           </div>
           <div className="mt-2 text-sm text-gray-500">

@@ -5,7 +5,6 @@ import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 
 export function ConfirmationButton(props: {
-  id: string
   openModalBtn: {
     label: string
     icon?: JSX.Element
@@ -19,40 +18,63 @@ export function ConfirmationButton(props: {
     label?: string
     className?: string
   }
-  onSubmit: () => void
   children: ReactNode
+  onSubmit?: () => void
+  onOpenChanged?: (isOpen: boolean) => void
+  onSubmitWithSuccess?: () => Promise<boolean>
 }) {
-  const { id, openModalBtn, cancelBtn, submitBtn, onSubmit, children } = props
+  const {
+    openModalBtn,
+    cancelBtn,
+    submitBtn,
+    onSubmit,
+    children,
+    onOpenChanged,
+    onSubmitWithSuccess,
+  } = props
 
   const [open, setOpen] = useState(false)
 
+  function updateOpen(newOpen: boolean) {
+    onOpenChanged?.(newOpen)
+    setOpen(newOpen)
+  }
+
   return (
     <>
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={updateOpen}>
         <Col className="gap-4 rounded-md bg-white px-8 py-6">
           {children}
           <Row className="gap-4">
-            <button
-              className={clsx('btn', cancelBtn?.className)}
-              onClick={() => setOpen(false)}
+            <div
+              className={clsx('btn normal-case', cancelBtn?.className)}
+              onClick={() => updateOpen(false)}
             >
               {cancelBtn?.label ?? 'Cancel'}
-            </button>
-            <button
-              className={clsx('btn', submitBtn?.className)}
-              onClick={onSubmit}
+            </div>
+            <div
+              className={clsx('btn normal-case', submitBtn?.className)}
+              onClick={
+                onSubmitWithSuccess
+                  ? () =>
+                      onSubmitWithSuccess().then((success) =>
+                        updateOpen(!success)
+                      )
+                  : onSubmit
+              }
             >
               {submitBtn?.label ?? 'Submit'}
-            </button>
+            </div>
           </Row>
         </Col>
       </Modal>
-      <button
-        className={clsx('btn', openModalBtn.className)}
-        onClick={() => setOpen(true)}
+      <div
+        className={clsx('btn normal-case', openModalBtn.className)}
+        onClick={() => updateOpen(true)}
       >
+        {openModalBtn.icon}
         {openModalBtn.label}
-      </button>
+      </div>
     </>
   )
 }
@@ -67,7 +89,6 @@ export function ResolveConfirmationButton(props: {
     props
   return (
     <ConfirmationButton
-      id="resolution-modal"
       openModalBtn={{
         className: clsx(
           'border-none self-start',

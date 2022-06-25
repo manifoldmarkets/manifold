@@ -11,6 +11,8 @@ import {
   orderBy,
   updateDoc,
   deleteDoc,
+  collectionGroup,
+  onSnapshot,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -22,21 +24,26 @@ import {
 import { range, throttle, zip } from 'lodash'
 
 import { app } from './init'
-import { PrivateUser, User } from 'common/user'
+import { PortfolioMetrics, PrivateUser, User } from 'common/user'
 import { createUser } from './fn-call'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
 import { DAY_MS } from 'common/util/time'
 import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
+import { filterDefined } from 'common/util/array'
 
 export type { User }
+
+export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
 
 const db = getFirestore(app)
 export const auth = getAuth(app)
 
+export const userDocRef = (userId: string) => doc(db, 'users', userId)
+
 export async function getUser(userId: string) {
-  const docSnap = await getDoc(doc(db, 'users', userId))
+  const docSnap = await getDoc(userDocRef(userId))
   return docSnap.data() as User
 }
 
@@ -121,7 +128,7 @@ export function listenForLogin(onUser: (user: User | null) => void) {
 
 export async function firebaseLogin() {
   const provider = new GoogleAuthProvider()
-  signInWithPopup(auth, provider)
+  return signInWithPopup(auth, provider)
 }
 
 export async function firebaseLogout() {
@@ -173,26 +180,35 @@ export function listenForPrivateUsers(
   listenForValues(q, setUsers)
 }
 
-const topTradersQuery = query(
-  collection(db, 'users'),
-  orderBy('totalPnLCached', 'desc'),
-  limit(21)
-)
+export function getTopTraders(period: Period) {
+  const topTraders = query(
+    collection(db, 'users'),
+    orderBy('profitCached.' + period, 'desc'),
+    limit(20)
+  )
 
-export async function getTopTraders() {
-  const users = await getValues<User>(topTradersQuery)
+  return getValues(topTraders)
+}
+
+export function getTopCreators(period: Period) {
+  const topCreators = query(
+    collection(db, 'users'),
+    orderBy('creatorVolumeCached.' + period, 'desc'),
+    limit(20)
+  )
+  return getValues(topCreators)
+}
+
+export async function getTopFollowed() {
+  const users = await getValues<User>(topFollowedQuery)
   return users.slice(0, 20)
 }
 
-const topCreatorsQuery = query(
+const topFollowedQuery = query(
   collection(db, 'users'),
-  orderBy('creatorVolumeCached', 'desc'),
+  orderBy('followerCountCached', 'desc'),
   limit(20)
 )
-
-export function getTopCreators() {
-  return getValues<User>(topCreatorsQuery)
-}
 
 export function getUsers() {
   return getValues<User>(collection(db, 'users'))
@@ -254,6 +270,16 @@ export async function unfollow(userId: string, unfollowedUserId: string) {
   await deleteDoc(followDoc)
 }
 
+export async function getPortfolioHistory(userId: string) {
+  return getValues<PortfolioMetrics>(
+    query(
+      collectionGroup(db, 'portfolioHistory'),
+      where('userId', '==', userId),
+      orderBy('timestamp', 'asc')
+    )
+  )
+}
+
 export function listenForFollows(
   userId: string,
   setFollowIds: (followIds: string[]) => void
@@ -261,5 +287,25 @@ export function listenForFollows(
   const follows = collection(db, 'users', userId, 'follows')
   return listenForValues<{ userId: string }>(follows, (docs) =>
     setFollowIds(docs.map(({ userId }) => userId))
+  )
+}
+
+export function listenForFollowers(
+  userId: string,
+  setFollowerIds: (followerIds: string[]) => void
+) {
+  const followersQuery = query(
+    collectionGroup(db, 'follows'),
+    where('userId', '==', userId)
+  )
+  return onSnapshot(
+    followersQuery,
+    { includeMetadataChanges: true },
+    (snapshot) => {
+      if (snapshot.metadata.fromCache) return
+
+      const values = snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
+      setFollowerIds(filterDefined(values))
+    }
   )
 }

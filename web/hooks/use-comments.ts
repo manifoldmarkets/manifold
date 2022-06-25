@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
   Comment,
-  listenForComments,
+  listenForCommentsOnContract,
+  listenForCommentsOnGroup,
   listenForRecentComments,
 } from 'web/lib/firebase/comments'
 
@@ -9,8 +10,17 @@ export const useComments = (contractId: string) => {
   const [comments, setComments] = useState<Comment[] | undefined>()
 
   useEffect(() => {
-    if (contractId) return listenForComments(contractId, setComments)
+    if (contractId) return listenForCommentsOnContract(contractId, setComments)
   }, [contractId])
+
+  return comments
+}
+export const useCommentsOnGroup = (groupId: string | undefined) => {
+  const [comments, setComments] = useState<Comment[] | undefined>()
+
+  useEffect(() => {
+    if (groupId) return listenForCommentsOnGroup(groupId, setComments)
+  }, [groupId])
 
   return comments
 }

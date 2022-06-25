@@ -1,27 +1,33 @@
+import dayjs from 'dayjs'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { User } from 'common/user'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/avatar'
+import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import clsx from 'clsx'
-import { UserIcon, UsersIcon } from '@heroicons/react/solid'
+import { UsersIcon } from '@heroicons/react/solid'
 import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import React, { Fragment } from 'react'
 import { uniqBy, partition, sumBy, groupBy } from 'lodash'
 import { JoinSpans } from 'web/components/join-spans'
+import { UserLink } from '../user-page'
 
 export function FeedBet(props: {
   contract: Contract
   bet: Bet
   hideOutcome: boolean
   smallAvatar: boolean
-  bettor?: User // If set: reveal bettor identity
 }) {
-  const { contract, bet, hideOutcome, smallAvatar, bettor } = props
-  const { userId } = bet
+  const { contract, bet, hideOutcome, smallAvatar } = props
+  const { userId, createdTime } = bet
+
+  const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const bettor = isBeforeJune2022 ? undefined : useUserById(userId)
+
   const user = useUser()
   const isSelf = user?.id === userId
 
@@ -44,9 +50,7 @@ export function FeedBet(props: {
           />
         ) : (
           <div className="relative px-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-              <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
-            </div>
+            <EmptyAvatar />
           </div>
         )}
         <div className={'min-w-0 flex-1 py-1.5'}>
@@ -78,8 +82,12 @@ export function BetStatusText(props: {
 
   return (
     <div className="text-sm text-gray-500">
-      <span>{isSelf ? 'You' : bettor ? bettor.name : 'A trader'}</span> {bought}{' '}
-      {money}
+      {bettor ? (
+        <UserLink name={bettor.name} username={bettor.username} />
+      ) : (
+        <span>{isSelf ? 'You' : 'A trader'}</span>
+      )}{' '}
+      {bought} {money}
       {!hideOutcome && (
         <>
           {' '}

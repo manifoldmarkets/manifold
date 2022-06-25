@@ -1,13 +1,5 @@
 import Link from 'next/link'
-import {
-  uniq,
-  groupBy,
-  mapValues,
-  sortBy,
-  partition,
-  sumBy,
-  throttle,
-} from 'lodash'
+import { uniq, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
@@ -30,7 +22,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
-import { sellBet } from 'web/lib/firebase/fn-call'
+import { sellBet } from 'web/lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
 import { filterDefined } from 'common/util/array'
@@ -137,18 +129,14 @@ export function BetsList(props: { user: User; hideBetsBefore?: number }) {
     .filter((c) => {
       if (filter === 'all') return true
 
-      const { totalShares } = contractsMetrics[c.id]
-      const hasSoldAll = Object.values(totalShares).every(
-        (shares) => shares === 0
-      )
+      const { hasShares } = contractsMetrics[c.id]
 
-      if (filter === 'sold') return hasSoldAll
-      return !hasSoldAll
+      if (filter === 'sold') return !hasShares
+      return hasShares
     })
 
-  const [settled, unsettled] = partition(
-    contracts,
-    (c) => c.isResolved || contractsMetrics[c.id].invested === 0
+  const unsettled = contracts.filter(
+    (c) => !c.isResolved && contractsMetrics[c.id].invested !== 0
   )
 
   const currentInvested = sumBy(
@@ -269,7 +257,7 @@ function ContractBets(props: {
 
   const isBinary = outcomeType === 'BINARY'
 
-  const { payout, profit, profitPercent, invested } = getContractBetMetrics(
+  const { payout, profit, profitPercent } = getContractBetMetrics(
     contract,
     bets
   )
@@ -376,11 +364,13 @@ export function BetsSummary(props: {
   className?: string
 }) {
   const { contract, isYourBets, className } = props
-  const { resolution, outcomeType, mechanism } = contract
+  const { resolution, closeTime, outcomeType, mechanism } = contract
   const isBinary = outcomeType === 'BINARY'
   const isCpmm = mechanism === 'cpmm-1'
+  const isClosed = closeTime && Date.now() > closeTime
 
   const bets = props.bets.filter((b) => !b.isAnte)
+  const { hasShares } = getContractBetMetrics(contract, bets)
 
   const excludeSalesAndAntes = bets.filter(
     (b) => !b.isAnte && !b.isSold && !b.sale
@@ -454,8 +444,9 @@ export function BetsSummary(props: {
             {isYourBets &&
               isCpmm &&
               isBinary &&
+              !isClosed &&
               !resolution &&
-              invested > 0 &&
+              hasShares &&
               user && (
                 <>
                   <button
@@ -491,7 +482,10 @@ export function ContractBetsTable(props: {
 }) {
   const { contract, className, isYourBets } = props
 
-  const bets = props.bets.filter((b) => !b.isAnte)
+  const bets = sortBy(
+    props.bets.filter((b) => !b.isAnte),
+    (bet) => bet.createdTime
+  ).reverse()
 
   const [sales, buys] = partition(bets, (bet) => bet.sale)
 
@@ -647,13 +641,7 @@ function BetRow(props: {
   )
 }
 
-const warmUpSellBet = throttle(() => sellBet({}).catch(() => {}), 5000 /* ms */)
-
 function SellButton(props: { contract: Contract; bet: Bet }) {
-  useEffect(() => {
-    warmUpSellBet()
-  }, [])
-
   const { contract, bet } = props
   const { outcome, shares, loanAmount } = bet
 
@@ -671,7 +659,6 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
 
   return (
     <ConfirmationButton
-      id={`sell-${bet.id}`}
       openModalBtn={{
         className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
         label: 'Sell',

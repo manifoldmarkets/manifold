@@ -22,11 +22,12 @@ import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getNumericAnte,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
+import { User } from '../../common/user'
+import { Group, MAX_ID_LENGTH } from '../../common/group'
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -37,6 +38,7 @@ const bodySchema = z.object({
     'Close time must be in the future.'
   ),
   outcomeType: z.enum(OUTCOME_TYPES),
+  groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
 })
 
 const binarySchema = z.object({
@@ -48,11 +50,9 @@ const numericSchema = z.object({
   max: z.number(),
 })
 
-export const createmarket = newEndpoint(['POST'], async (req, [user, _]) => {
-  const { question, description, tags, closeTime, outcomeType } = validate(
-    bodySchema,
-    req.body
-  )
+export const createmarket = newEndpoint(['POST'], async (req, auth) => {
+  const { question, description, tags, closeTime, outcomeType, groupId } =
+    validate(bodySchema, req.body)
 
   let min, max, initialProb
   if (outcomeType === 'NUMERIC') {
@@ -63,22 +63,41 @@ export const createmarket = newEndpoint(['POST'], async (req, [user, _]) => {
     ;({ initialProb } = validate(binarySchema, req.body))
   }
 
-  // Uses utc time on server:
-  const today = new Date()
-  let freeMarketResetTime = new Date().setUTCHours(16, 0, 0, 0)
-  if (today.getTime() < freeMarketResetTime) {
-    freeMarketResetTime = freeMarketResetTime - 24 * 60 * 60 * 1000
+  const userDoc = await firestore.collection('users').doc(auth.uid).get()
+  if (!userDoc.exists) {
+    throw new APIError(400, 'No user exists with the authenticated user ID.')
   }
-
-  const userContractsCreatedTodaySnapshot = await firestore
-    .collection(`contracts`)
-    .where('creatorId', '==', user.id)
-    .where('createdTime', '>=', freeMarketResetTime)
-    .get()
-  console.log('free market reset time: ', freeMarketResetTime)
-  const isFree = userContractsCreatedTodaySnapshot.size === 0
+  const user = userDoc.data() as User
 
   const ante = FIXED_ANTE
+
+  // TODO: this is broken because it's not in a transaction
+  if (ante > user.balance)
+    throw new APIError(400, `Balance must be at least ${ante}.`)
+
+  const slug = await getSlug(question)
+  const contractRef = firestore.collection('contracts').doc()
+
+  let group = null
+  if (groupId) {
+    const groupDocRef = await firestore.collection('groups').doc(groupId)
+    const groupDoc = await groupDocRef.get()
+    if (!groupDoc.exists) {
+      throw new APIError(400, 'No group exists with the given group ID.')
+    }
+
+    group = groupDoc.data() as Group
+    if (!group.memberIds.includes(user.id)) {
+      throw new APIError(
+        400,
+        'User must be a member of the group to add markets to it.'
+      )
+    }
+    if (!group.contractIds.includes(contractRef.id))
+      await groupDocRef.update({
+        contractIds: [...group.contractIds, contractRef.id],
+      })
+  }
 
   console.log(
     'creating contract for',
@@ -89,8 +108,6 @@ export const createmarket = newEndpoint(['POST'], async (req, [user, _]) => {
     ante || 0
   )
 
-  const slug = await getSlug(question)
-  const contractRef = firestore.collection('contracts').doc()
   const contract = getNewContract(
     contractRef.id,
     slug,
@@ -107,11 +124,11 @@ export const createmarket = newEndpoint(['POST'], async (req, [user, _]) => {
     max ?? 0
   )
 
-  if (!isFree && ante) await chargeUser(user.id, ante, true)
+  if (ante) await chargeUser(user.id, ante, true)
 
   await contractRef.create(contract)
 
-  const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : user.id
+  const providerId = user.id
 
   if (outcomeType === 'BINARY') {
     const liquidityDoc = firestore

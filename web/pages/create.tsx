@@ -1,4 +1,4 @@
-import router from 'next/router'
+import router, { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
@@ -17,13 +17,23 @@ import {
   outcomeType,
 } from 'common/contract'
 import { formatMoney } from 'common/util/format'
-import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from 'common/util/object'
-import { CATEGORIES } from 'common/categories'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
+import { getGroup, updateGroup } from 'web/lib/firebase/groups'
+import { Group } from 'common/group'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
+import { track } from 'web/lib/service/analytics'
+import { GroupSelector } from 'web/components/groups/group-selector'
+import { CATEGORIES } from 'common/categories'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
+  // get query params:
+  const router = useRouter()
+  const { groupId } = router.query as { groupId: string }
+  useTracking('view create page')
+  if (!router.isReady) return <div />
 
   return (
     <Page>
@@ -48,7 +58,7 @@ export default function Create() {
             </div>
           </form>
           <Spacer h={6} />
-          <NewContract question={question} />
+          <NewContract question={question} groupId={groupId} />
         </div>
       </div>
     </Page>
@@ -56,8 +66,8 @@ export default function Create() {
 }
 
 // Allow user to create a new contract
-export function NewContract(props: { question: string; tag?: string }) {
-  const { question, tag } = props
+export function NewContract(props: { question: string; groupId?: string }) {
+  const { question, groupId } = props
   const creator = useUser()
 
   useEffect(() => {
@@ -65,18 +75,22 @@ export function NewContract(props: { question: string; tag?: string }) {
   }, [creator])
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
-  const [initialProb, setInitialProb] = useState(50)
+  const [initialProb] = useState(50)
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
   const [description, setDescription] = useState('')
-
-  const [category, setCategory] = useState<string>('')
   // const [tagText, setTagText] = useState<string>(tag ?? '')
   // const tags = parseWordsAsTags(tagText)
-
-  const [ante, setAnte] = useState(FIXED_ANTE)
-
-  const mustWaitForDailyFreeMarketStatus = useHasCreatedContractToday(creator)
+  useEffect(() => {
+    if (groupId && creator)
+      getGroup(groupId).then((group) => {
+        if (group && group.memberIds.includes(creator.id)) {
+          setSelectedGroup(group)
+          setShowGroupSelector(false)
+        }
+      })
+  }, [creator, groupId])
+  const [ante, _setAnte] = useState(FIXED_ANTE)
 
   // useEffect(() => {
   //   if (ante === null && creator) {
@@ -90,9 +104,13 @@ export function NewContract(props: { question: string; tag?: string }) {
   const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
   const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
   const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
-  const [probErrorText, setProbErrorText] = useState('')
   const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(
+    undefined
+  )
+  const [showGroupSelector, setShowGroupSelector] = useState(true)
+  const [category, setCategory] = useState<string>('')
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -105,15 +123,16 @@ export function NewContract(props: { question: string; tag?: string }) {
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
+  const hasUnsavedChanges = !isSubmitting && Boolean(question || description)
+  useWarnUnsavedChanges(hasUnsavedChanges)
+
   const isValid =
     (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&
     question.length > 0 &&
     ante !== undefined &&
     ante !== null &&
     ante >= MINIMUM_ANTE &&
-    (ante <= balance ||
-      (mustWaitForDailyFreeMarketStatus != 'loading' &&
-        !mustWaitForDailyFreeMarketStatus)) &&
+    ante <= balance &&
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now() &&
@@ -135,7 +154,7 @@ export function NewContract(props: { question: string; tag?: string }) {
     if (!creator || !isValid) return
 
     setIsSubmitting(true)
-
+    // TODO: add contract id to the group contractIds
     try {
       const result = await createMarket(
         removeUndefinedProps({
@@ -145,11 +164,24 @@ export function NewContract(props: { question: string; tag?: string }) {
           initialProb,
           ante,
           closeTime,
-          tags: category ? [category] : undefined,
           min,
           max,
+          groupId: selectedGroup?.id,
+          tags: category ? [category] : undefined,
         })
       )
+      track('create market', {
+        slug: result.slug,
+        initialProb,
+        selectedGroup: selectedGroup?.id,
+        isFree: false,
+      })
+      if (result && selectedGroup) {
+        await updateGroup(selectedGroup, {
+          contractIds: [...selectedGroup.contractIds, result.id],
+        })
+      }
+
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.log('error creating contract', e)
@@ -193,56 +225,6 @@ export function NewContract(props: { question: string; tag?: string }) {
 
       <Spacer h={6} />
 
-      {outcomeType === 'BINARY' && (
-        <div className="form-control">
-          <Row className="label justify-start">
-            <span className="mb-1">How likely is it to happen?</span>
-          </Row>
-          <Row className={'justify-start'}>
-            <ChoicesToggleGroup
-              currentChoice={initialProb}
-              setChoice={(option) => {
-                setProbErrorText('')
-                setInitialProb(option as number)
-              }}
-              choicesMap={{
-                Unlikely: 25,
-                'Not Sure': 50,
-                Likely: 75,
-              }}
-              isSubmitting={isSubmitting}
-              className={'col-span-4 sm:col-span-3'}
-            >
-              <Row className={'col-span-3 items-center justify-start'}>
-                <input
-                  type="number"
-                  value={initialProb}
-                  className={
-                    'input-bordered input-md max-w-[100px] rounded-md border-gray-300 pr-2 text-lg'
-                  }
-                  min={5}
-                  max={95}
-                  disabled={isSubmitting}
-                  onChange={(e) => {
-                    // show error if prob is less than 5 or greater than 95:
-                    const prob = parseInt(e.target.value)
-                    setInitialProb(prob)
-                    if (prob < 5 || prob > 95)
-                      setProbErrorText('Probability must be between 5% and 95%')
-                    else setProbErrorText('')
-                  }}
-                />
-                <span className={'ml-1'}>%</span>
-              </Row>
-            </ChoicesToggleGroup>
-          </Row>
-          {probErrorText && (
-            <div className="text-error mt-2 ml-1 text-sm">{probErrorText}</div>
-          )}
-          <Spacer h={6} />
-        </div>
-      )}
-
       {outcomeType === 'NUMERIC' && (
         <div className="form-control items-start">
           <label className="label gap-2">
@@ -277,23 +259,35 @@ export function NewContract(props: { question: string; tag?: string }) {
         </div>
       )}
 
-      <div className="form-control max-w-sm items-start">
+      <div className="form-control max-w-[265px] items-start">
         <label className="label gap-2">
           <span className="mb-1">Category</span>
         </label>
 
         <select
-          className="select select-bordered w-full max-w-xs"
+          className={clsx(
+            'select select-bordered w-full text-sm',
+            category === '' ? 'font-normal text-gray-500' : ''
+          )}
           value={category}
           onChange={(e) => setCategory(e.currentTarget.value ?? '')}
         >
-          <option value={''}>(none)</option>
+          <option value={''}>None</option>
           {Object.entries(CATEGORIES).map(([id, name]) => (
             <option key={id} value={id}>
               {name}
             </option>
           ))}
         </select>
+      </div>
+
+      <div className={'mt-2'}>
+        <GroupSelector
+          selectedGroup={selectedGroup}
+          setSelectedGroup={setSelectedGroup}
+          creator={creator}
+          showSelector={showGroupSelector}
+        />
       </div>
 
       <Spacer h={6} />
@@ -368,41 +362,26 @@ export function NewContract(props: { question: string; tag?: string }) {
         <div className="form-control mb-1 items-start">
           <label className="label mb-1 gap-2">
             <span>Cost</span>
-            {mustWaitForDailyFreeMarketStatus != 'loading' &&
-              mustWaitForDailyFreeMarketStatus && (
-                <InfoTooltip
-                  text={`Cost to create your question. This amount is used to subsidize betting.`}
-                />
-              )}
+            <InfoTooltip
+              text={`Cost to create your question. This amount is used to subsidize betting.`}
+            />
           </label>
-          {mustWaitForDailyFreeMarketStatus != 'loading' &&
-          !mustWaitForDailyFreeMarketStatus ? (
-            <div className="label-text text-primary pl-1">
-              <span className={'label-text text-neutral line-through '}>
-                {formatMoney(ante)}
-              </span>{' '}
-              FREE
+
+          <div className="label-text text-neutral pl-1">
+            {formatMoney(ante)}
+          </div>
+
+          {ante > balance && (
+            <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+              <span className="mr-2 text-red-500">Insufficient balance</span>
+              <button
+                className="btn btn-xs btn-primary"
+                onClick={() => (window.location.href = '/add-funds')}
+              >
+                Get M$
+              </button>
             </div>
-          ) : (
-            mustWaitForDailyFreeMarketStatus != 'loading' && (
-              <div className="label-text text-neutral pl-1">
-                {formatMoney(ante)}
-              </div>
-            )
           )}
-          {mustWaitForDailyFreeMarketStatus != 'loading' &&
-            mustWaitForDailyFreeMarketStatus &&
-            ante > balance && (
-              <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-                <span className="mr-2 text-red-500">Insufficient balance</span>
-                <button
-                  className="btn btn-xs btn-primary"
-                  onClick={() => (window.location.href = '/add-funds')}
-                >
-                  Add funds
-                </button>
-              </div>
-            )}
         </div>
 
         <button

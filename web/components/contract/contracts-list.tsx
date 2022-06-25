@@ -3,18 +3,30 @@ import { User } from '../../lib/firebase/users'
 import { Col } from '../layout/col'
 import { SiteLink } from '../site-link'
 import { ContractCard } from './contract-card'
+import { ShowTime } from './contract-details'
 import { ContractSearch } from '../contract-search'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useEffect, useState } from 'react'
+import clsx from 'clsx'
 
 export function ContractsGrid(props: {
   contracts: Contract[]
   loadMore: () => void
   hasMore: boolean
-  showCloseTime?: boolean
+  showTime?: ShowTime
   onContractClick?: (contract: Contract) => void
+  overrideGridClassName?: string
+  hideQuickBet?: boolean
 }) {
-  const { contracts, showCloseTime, hasMore, loadMore, onContractClick } = props
+  const {
+    contracts,
+    showTime,
+    hasMore,
+    loadMore,
+    onContractClick,
+    overrideGridClassName,
+    hideQuickBet,
+  } = props
 
   const [elem, setElem] = useState<HTMLElement | null>(null)
   const isBottomVisible = useIsVisible(elem)
@@ -38,15 +50,22 @@ export function ContractsGrid(props: {
 
   return (
     <Col className="gap-8">
-      <ul className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
+      <ul
+        className={clsx(
+          overrideGridClassName
+            ? overrideGridClassName
+            : 'grid w-full grid-cols-1 gap-4 md:grid-cols-2'
+        )}
+      >
         {contracts.map((contract) => (
           <ContractCard
             contract={contract}
             key={contract.id}
-            showCloseTime={showCloseTime}
+            showTime={showTime}
             onClick={
               onContractClick ? () => onContractClick(contract) : undefined
             }
+            hideQuickBet={hideQuickBet}
           />
         ))}
       </ul>

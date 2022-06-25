@@ -1,7 +1,7 @@
 {
   "javascript.preferences.importModuleSpecifier": "shortest",
   "typescript.preferences.importModuleSpecifier": "shortest",
-  "files.eol": "\r\n",
+  "files.eol": "\n",
   "search.exclude": {
     "**/node_modules": true,
     "**/package-lock.json": true,

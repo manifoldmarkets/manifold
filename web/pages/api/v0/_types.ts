@@ -1,5 +1,6 @@
 import { Bet } from 'common/bet'
-import { getProbability } from 'common/calculate'
+import { Answer } from 'common/answer'
+import { getOutcomeProbability, getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
@@ -23,7 +24,7 @@ export type LiteMarket = {
   outcomeType: string
   mechanism: string
 
-  pool: number
+  pool: { [outcome: string]: number }
   probability?: number
   p?: number
   totalLiquidity?: number
@@ -35,11 +36,17 @@ export type LiteMarket = {
   isResolved: boolean
   resolution?: string
   resolutionTime?: number
+  resolutionProbability?: number
+}
+
+export type ApiAnswer = Answer & {
+  probability?: number
 }
 
 export type FullMarket = LiteMarket & {
-  bets: Exclude<Bet, 'userId'>[]
+  bets: Bet[]
   comments: Comment[]
+  answers?: ApiAnswer[]
 }
 
 export type ApiError = {
@@ -67,6 +74,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     isResolved,
     resolution,
     resolutionTime,
+    resolutionProbability,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -88,7 +96,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     description,
     tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
-    pool: pool.YES + pool.NO,
+    pool,
     probability,
     p,
     totalLiquidity,
@@ -100,5 +108,38 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     isResolved,
     resolution,
     resolutionTime,
+    resolutionProbability,
   })
+}
+
+export function toFullMarket(
+  contract: Contract,
+  comments: Comment[],
+  bets: Bet[]
+): FullMarket {
+  const liteMarket = toLiteMarket(contract)
+  const answers =
+    contract.outcomeType === 'FREE_RESPONSE'
+      ? contract.answers.map((answer) =>
+          augmentAnswerWithProbability(contract, answer)
+        )
+      : undefined
+
+  return {
+    ...liteMarket,
+    answers,
+    comments,
+    bets,
+  }
+}
+
+function augmentAnswerWithProbability(
+  contract: Contract,
+  answer: Answer
+): ApiAnswer {
+  const probability = getOutcomeProbability(contract, answer.id)
+  return {
+    ...answer,
+    probability,
+  }
 }

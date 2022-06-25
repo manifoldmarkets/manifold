@@ -2,6 +2,7 @@ import { defaults, debounce } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchBox } from 'react-instantsearch-hooks-web'
+import { track } from 'web/lib/service/analytics'
 
 const MARKETS_SORT = 'markets_sort'
 
@@ -13,6 +14,21 @@ export type Sort =
   | 'close-date'
   | 'resolve-date'
   | 'last-updated'
+
+export function checkAgainstQuery(query: string, corpus: string) {
+  const queryWords = query.toLowerCase().split(' ')
+  return queryWords.every((word) => corpus.toLowerCase().includes(word))
+}
+
+export function getSavedSort() {
+  // TODO: this obviously doesn't work with SSR, common sense would suggest
+  // that we should save things like this in cookies so the server has them
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(MARKETS_SORT) as Sort | null
+  } else {
+    return null
+  }
+}
 
 export function useInitialQueryAndSort(options?: {
   defaultSort: Sort
@@ -39,7 +55,7 @@ export function useInitialQueryAndSort(options?: {
 
       if (!sort && shouldLoadFromStorage) {
         console.log('ready loading from storage ', sort ?? defaultSort)
-        const localSort = localStorage.getItem(MARKETS_SORT) as Sort
+        const localSort = getSavedSort()
         if (localSort) {
           router.query.s = localSort
           // Use replace to not break navigating back.
@@ -86,6 +102,7 @@ export function useUpdateQueryAndSort(props: {
           delete router.query.q
         }
         router.push(router, undefined, { shallow: true })
+        track('search', { query })
       }, 500),
     [router]
   )

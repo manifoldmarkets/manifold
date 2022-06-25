@@ -59,6 +59,19 @@ export const charities: Charity[] = [
     tags: ['Featured'] as CharityTag[],
   },
   {
+    name: 'New Science',
+    website: 'https://newscience.org/',
+    photo: 'https://i.imgur.com/C7PoR4q.png',
+    preview:
+      'Facilitating scientific breakthroughs by empowering the next generation of scientists and building the 21st century institutions of basic science.',
+    description: `As its first major project, in the summer of 2022, New Science will run an in-person research fellowship in Boston for young life scientists, during which they will independently explore an ambitious high-risk scientific idea they couldn’t work on otherwise and start building the foundations for a bigger research project, while having much more freedom than they could expect in their normal research environment but also much more support from us. This is inspired by Cold Spring Harbor Laboratory, which started as a place where leading molecular biologists came for the summer to hang out and work on random projects together, and which eventually housed 8 Nobel Prize winners.
+
+    As its second major project, in the fall of 2022, New Science will run an in-person 12-month-long fellowship for young scientists starting to directly attack the biggest structural issues of the established institutions of science. We will double down on things that worked well during the summer fellowship, while extending the fellowship to one year, thus allowing researchers to make much more progress and will strive to provide them as much scientific leverage as possible.
+    
+    In several years, New Science will start funding entire labs outside of academia and then will be creating an entire network of scientific organizations, while supporting the broader scientific ecosystem that will constitute the 21st century institutions of basic science.`,
+    tags: ['Featured'] as CharityTag[],
+  },
+  {
     name: 'Global Health and Development Fund',
     website: 'https://funds.effectivealtruism.org/funds/global-development',
     photo: 'https://i.imgur.com/C2qka9g.png',
@@ -472,9 +485,9 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'The Trevor Project',
     website: 'https://www.thetrevorproject.org/',
     photo: 'https://i.imgur.com/QN4mVNn.jpeg',
-    preview: 'The Trevor Project is the world’s largest suicide prevention and crisis intervention organization for LGBTQ (lesbian, gay, bisexual, transgender, queer, and questioning) young people.',
-    description:
-      `Two decades ago, we responded to a health crisis. Now we’re building a safer, more-inclusive world. LGBTQ young people are four times more likely to attempt suicide, and suicide remains the second leading cause of death among all young people in the U.S.
+    preview:
+      'The Trevor Project is the world’s largest suicide prevention and crisis intervention organization for LGBTQ (lesbian, gay, bisexual, transgender, queer, and questioning) young people.',
+    description: `Two decades ago, we responded to a health crisis. Now we’re building a safer, more-inclusive world. LGBTQ young people are four times more likely to attempt suicide, and suicide remains the second leading cause of death among all young people in the U.S.
 
       Our Mission
       To end suicide among lesbian, gay, bisexual, transgender, queer & questioning young people.
@@ -484,6 +497,24 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
       
       Our Goal
       To serve 1.8 million crisis contacts annually, by the end of our 25th year, while continuing to innovate on our core services.`,
+  },
+  {
+    name: 'ACLU',
+    website: 'https://www.aclu.org/',
+    photo: 'https://i.imgur.com/nbSYuDC.png',
+    preview:
+      'The ACLU works in the courts, legislatures, and communities to defend and preserve the individual rights and liberties guaranteed to all people in this country by the Constitution and laws of the United States.',
+    description: `
+    THREE THINGS TO KNOW ABOUT THE ACLU
+•	We protect American values. In many ways, the ACLU is the nation's most conservative organization. Our job is to conserve America's original civic values - the Constitution and the Bill of Rights - and defend the rights of every man, woman and child in this country.
+•	We're not anti-anything. The only things we fight are attempts to take away or limit your civil liberties, like your right to practice any religion you want (or none at all); or to decide in private whether or not to have a child; or to speak out - for or against - anything at all; or to be treated with equality and fairness, no matter who you are.
+•	We're there for you. Rich or poor, straight or gay, black or white or brown, urban or rural, pious or atheist, American-born or foreign-born, able-bodied or living with a disability. Every person in this country should have the same basic rights. And since our founding in 1920, we've been working hard to make sure no one takes them away.
+
+The American Civil Liberties Union is our nation's guardian of liberty, working daily in courts, legislatures and communities to defend and preserve the individual rights and liberties that the Constitution and laws of the United States guarantee everyone in this country.
+
+"So long as we have enough people in this country willing to fight for their rights, we'll be called a democracy," ACLU Founder Roger Baldwin said.
+
+The U.S. Constitution and the Bill of Rights trumpet our aspirations for the kind of society that we want to be. But for much of our history, our nation failed to fulfill the promise of liberty for whole groups of people.`,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')

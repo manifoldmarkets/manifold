@@ -1,5 +1,17 @@
 import clsx from 'clsx'
-import { follow, unfollow, User } from 'web/lib/firebase/users'
+import { uniq } from 'lodash'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
+import { LinkIcon } from '@heroicons/react/solid'
+import { PencilIcon } from '@heroicons/react/outline'
+import Confetti from 'react-confetti'
+
+import {
+  follow,
+  unfollow,
+  User,
+  getPortfolioHistory,
+} from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
 import { Page } from './page'
@@ -9,12 +21,10 @@ import { Col } from './layout/col'
 import { Linkify } from './linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
-import { LinkIcon } from '@heroicons/react/solid'
 import { genHash } from 'common/util/random'
-import { PencilIcon } from '@heroicons/react/outline'
 import { Tabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
-import { useEffect, useState } from 'react'
+import { useWindowSize } from 'web/hooks/use-window-size'
 import { Comment, getUsersComments } from 'web/lib/firebase/comments'
 import { Contract } from 'common/contract'
 import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
@@ -22,7 +32,10 @@ import { LoadingIndicator } from './loading-indicator'
 import { BetsList } from './bets-list'
 import { Bet } from 'common/bet'
 import { getUserBets } from 'web/lib/firebase/bets'
-import { uniq } from 'lodash'
+import { FollowersButton, FollowingButton } from './following-button'
+import { useFollows } from 'web/hooks/use-follows'
+import { FollowButton } from './follow-button'
+import { PortfolioMetrics } from 'common/user'
 
 export function UserLink(props: {
   name: string
@@ -43,15 +56,16 @@ export function UserLink(props: {
   )
 }
 
-export const TAB_IDS = ['markets', 'comments', 'bets']
+export const TAB_IDS = ['markets', 'comments', 'bets', 'groups']
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 
 export function UserPage(props: {
   user: User
   currentUser?: User
-  defaultTabTitle?: 'markets' | 'comments' | 'bets'
+  defaultTabTitle?: string | undefined
 }) {
   const { user, currentUser, defaultTabTitle } = props
+  const router = useRouter()
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [usersComments, setUsersComments] = useState<Comment[]>([] as Comment[])
@@ -59,23 +73,35 @@ export function UserPage(props: {
     'loading'
   )
   const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
+  const [, setUsersPortfolioHistory] = useState<PortfolioMetrics[]>([])
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
+  const [showConfetti, setShowConfetti] = useState(false)
+  const { width, height } = useWindowSize()
+
+  useEffect(() => {
+    const claimedMana = router.query['claimed-mana'] === 'yes'
+    setShowConfetti(claimedMana)
+  }, [router])
 
   useEffect(() => {
     if (!user) return
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
     getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
+    getPortfolioHistory(user.id).then(setUsersPortfolioHistory)
   }, [user])
 
+  // TODO: display comments on groups
   useEffect(() => {
     const uniqueContractIds = uniq(
       usersComments.map((comment) => comment.contractId)
     )
     Promise.all(
-      uniqueContractIds.map((contractId) => getContractFromId(contractId))
+      uniqueContractIds.map(
+        (contractId) => contractId && getContractFromId(contractId)
+      )
     ).then((contracts) => {
       const commentsByContract = new Map<Contract, Comment[]>()
       contracts.forEach((contract) => {
@@ -102,13 +128,20 @@ export function UserPage(props: {
   }
 
   return (
-    <Page>
+    <Page key={user.id}>
       <SEO
         title={`${user.name} (@${user.username})`}
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
-
+      {showConfetti && (
+        <Confetti
+          width={width ? width : 500}
+          height={height ? height : 500}
+          recycle={false}
+          numberOfPieces={300}
+        />
+      )}
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
         className="h-32 w-full bg-cover bg-center sm:h-40"
@@ -149,9 +182,10 @@ export function UserPage(props: {
         <span className="text-2xl font-bold">{user.name}</span>
         <span className="text-gray-500">@{user.username}</span>
 
+        <Spacer h={4} />
+
         {user.bio && (
           <>
-            <Spacer h={4} />
             <div>
               <Linkify text={user.bio}></Linkify>
             </div>
@@ -159,7 +193,12 @@ export function UserPage(props: {
           </>
         )}
 
-        <Col className="sm:flex-row sm:gap-4">
+        <Col className="gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <Row className="gap-4">
+            <FollowingButton user={user} />
+            <FollowersButton user={user} />
+          </Row>
+
           {user.website && (
             <SiteLink
               href={
@@ -212,16 +251,21 @@ export function UserPage(props: {
         </Col>
 
         <Spacer h={10} />
+
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
             className={'pb-2 pt-1 '}
-            defaultIndex={TAB_IDS.indexOf(defaultTabTitle || 'markets')}
+            defaultIndex={
+              defaultTabTitle ? TAB_IDS.indexOf(defaultTabTitle) : 0
+            }
             onClick={(tabName) => {
               const tabId = tabName.toLowerCase()
-              const subpath = tabId === 'markets' ? '' : '/' + tabId
+              const subpath = tabId === 'markets' ? '' : '?tab=' + tabId
               // BUG: if you start on `/Bob/bets`, then click on Markets, use-query-and-sort-params
               // rewrites the url incorrectly to `/Bob/bets` instead of `/Bob`
-              window.history.replaceState('', '', `/${user.username}${subpath}`)
+              router.push(`/${user.username}${subpath}`, undefined, {
+                shallow: true,
+              })
             }}
             tabs={[
               {
@@ -249,27 +293,13 @@ export function UserPage(props: {
                 title: 'Bets',
                 content: (
                   <div>
-                    {isCurrentUser && (
-                      <AlertBox
-                        title="Bets after 2022-06-01 are publicly visible by default."
-                        text="Note that all historical bets are also publicly accessible through the API.
-                      See: https://manifold.markets/Austin/will-all-bets-on-manifold-be-public"
-                      />
-                    )}
+                    {
+                      // TODO: add portfolio-value-section here
+                    }
                     <BetsList
                       user={user}
                       hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
                     />
-                    {!isCurrentUser && (
-                      <>
-                        <Spacer h={4} />
-                        <AlertBox
-                          title="Bets before 2022-06-01 are hidden by default."
-                          text="Note that all historical bets are also publicly accessible through the API.
-                        See: https://manifold.markets/Austin/will-all-bets-on-manifold-be-public"
-                        />
-                      </>
-                    )}
                   </div>
                 ),
                 tabIcon: (
@@ -297,30 +327,4 @@ export function defaultBannerUrl(userId: string) {
     'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
   ]
   return defaultBanner[genHash(userId)() % defaultBanner.length]
-}
-
-import { ExclamationIcon } from '@heroicons/react/solid'
-import { FollowButton } from './follow-button'
-import { useFollows } from 'web/hooks/use-follows'
-
-function AlertBox(props: { title: string; text: string }) {
-  const { title, text } = props
-  return (
-    <div className="rounded-md bg-yellow-50 p-4">
-      <div className="flex">
-        <div className="flex-shrink-0">
-          <ExclamationIcon
-            className="h-5 w-5 text-yellow-400"
-            aria-hidden="true"
-          />
-        </div>
-        <div className="ml-3">
-          <h3 className="text-sm font-medium text-yellow-800">{title}</h3>
-          <div className="mt-2 text-sm text-yellow-700">
-            <Linkify text={text} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }

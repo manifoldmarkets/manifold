@@ -3,6 +3,7 @@ import {
   DatabaseIcon,
   PencilIcon,
   TrendingUpIcon,
+  UserGroupIcon,
 } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
@@ -23,18 +24,34 @@ import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
 import { CATEGORY_LIST } from 'common/categories'
 import { TagsList } from '../tags-list'
+import { UserFollowButton } from '../follow-button'
+import { groupPath } from 'web/lib/firebase/groups'
+import { SiteLink } from 'web/components/site-link'
+import { DAY_MS } from 'common/util/time'
+import { useGroupsWithContract } from 'web/hooks/use-group'
+
+export type ShowTime = 'resolve-date' | 'close-date'
 
 export function MiscDetails(props: {
   contract: Contract
   showHotVolume?: boolean
-  showCloseTime?: boolean
+  showTime?: ShowTime
 }) {
-  const { contract, showHotVolume, showCloseTime } = props
-  const { volume, volume24Hours, closeTime, tags } = contract
+  const { contract, showHotVolume, showTime } = props
+  const {
+    volume,
+    volume24Hours,
+    closeTime,
+    tags,
+    isResolved,
+    createdTime,
+    resolutionTime,
+  } = contract
   // Show at most one category that this contract is tagged by
   const categories = CATEGORY_LIST.filter((category) =>
     tags.map((t) => t.toLowerCase()).includes(category)
   ).slice(0, 1)
+  const isNew = createdTime > Date.now() - DAY_MS && !isResolved
 
   return (
     <Row className="items-center gap-3 text-sm text-gray-400">
@@ -42,13 +59,19 @@ export function MiscDetails(props: {
         <Row className="gap-0.5">
           <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
         </Row>
-      ) : showCloseTime ? (
+      ) : showTime === 'close-date' ? (
         <Row className="gap-0.5">
           <ClockIcon className="h-5 w-5" />
           {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
           {fromNow(closeTime || 0)}
         </Row>
-      ) : volume > 0 ? (
+      ) : showTime === 'resolve-date' && resolutionTime !== undefined ? (
+        <Row className="gap-0.5">
+          <ClockIcon className="h-5 w-5" />
+          {'Resolved '}
+          {fromNow(resolutionTime || 0)}
+        </Row>
+      ) : volume > 0 || !isNew ? (
         <Row>{contractPool(contract)} pool</Row>
       ) : (
         <NewContractBadge />
@@ -80,9 +103,9 @@ export function AvatarDetails(props: { contract: Contract }) {
 export function AbbrContractDetails(props: {
   contract: Contract
   showHotVolume?: boolean
-  showCloseTime?: boolean
+  showTime?: ShowTime
 }) {
-  const { contract, showHotVolume, showCloseTime } = props
+  const { contract, showHotVolume, showTime } = props
   return (
     <Row className="items-center justify-between">
       <AvatarDetails contract={contract} />
@@ -90,7 +113,7 @@ export function AbbrContractDetails(props: {
       <MiscDetails
         contract={contract}
         showHotVolume={showHotVolume}
-        showCloseTime={showCloseTime}
+        showTime={showTime}
       />
     </Row>
   )
@@ -103,9 +126,10 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const { closeTime, creatorName, creatorUsername } = contract
+  const { closeTime, creatorName, creatorUsername, creatorId } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
-
+  // Find a group that this contract id is in
+  const groups = useGroupsWithContract(contract.id)
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
       <Row className="items-center gap-2">
@@ -124,19 +148,24 @@ export function ContractDetails(props: {
             username={creatorUsername}
           />
         )}
+        {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
+      {/*// TODO: we can add contracts to multiple groups but only show the first it was added to*/}
+      {groups && groups.length > 0 && (
+        <Row className={'line-clamp-1 mt-1 max-w-[200px]'}>
+          <SiteLink href={`${groupPath(groups[0].slug)}`}>
+            <UserGroupIcon className="mx-1 mb-1 inline h-5 w-5" />
+            <span>{groups[0].name}</span>
+          </SiteLink>
+        </Row>
+      )}
 
       {(!!closeTime || !!resolvedDate) && (
         <Row className="items-center gap-1">
           <ClockIcon className="h-5 w-5" />
 
-          {/* <DateTimeTooltip text="Market created:" time={contract.createdTime}>
-            {createdDate}
-          </DateTimeTooltip> */}
-
           {resolvedDate && contract.resolutionTime ? (
             <>
-              {/* {' - '} */}
               <DateTimeTooltip
                 text="Market resolved:"
                 time={contract.resolutionTime}
@@ -148,7 +177,6 @@ export function ContractDetails(props: {
 
           {!resolvedDate && closeTime && (
             <>
-              {/* {' - '}{' '} */}
               <EditableCloseDate
                 closeTime={closeTime}
                 contract={contract}
