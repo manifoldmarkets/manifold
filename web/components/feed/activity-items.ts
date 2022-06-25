@@ -181,7 +181,7 @@ export function getSpecificContractActivityItems(
           contract,
           liquidity,
           hideOutcome: false,
-          smallAvatar: true,
+          smallAvatar: false,
         }))
       )
       items = sortBy(items, (item) =>
