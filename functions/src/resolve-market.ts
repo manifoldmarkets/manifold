@@ -39,7 +39,6 @@ const numericSchema = z.object({
 export const resolvemarket = newEndpoint(['POST'], async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
   const userId = auth.uid
-  if (!userId) throw new APIError(403, 'Not authorized')
 
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()
