@@ -64,13 +64,15 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
 
   const changeAnswer = (text: string) => {
     setText(text)
-    const answerAlreadyExists = answers.find(
+    const existingAnswer = answers.find(
       (a) => lowerCase(a.text) === lowerCase(text)
     )
 
-    if (answerAlreadyExists) {
+    if (existingAnswer) {
       setAnswerError(
-        answerAlreadyExists ? `An answer for "${text}" already exists` : ''
+        existingAnswer
+          ? `"${existingAnswer.text}" already exists as an answer`
+          : ''
       )
       return
     } else {
@@ -127,7 +129,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
           <AnswerError
             key={2}
             level="warning"
-            text={`Did you mean "${possibleDuplicateAnswer}"?`}
+            text={`Did you mean to bet on "${possibleDuplicateAnswer}"?`}
           />
         ) : undefined}
         <div />
@@ -214,11 +216,10 @@ type answerErrorLevel = 'warning' | 'error'
 const AnswerError = (props: { text: string; level: answerErrorLevel }) => {
   const { text, level } = props
   const colorClass =
-    level === 'error'
-      ? 'text-red-500'
-      : level === 'warning'
-      ? 'text-orange-500'
-      : ''
+    {
+      error: 'text-red-500',
+      warning: 'text-orange-500',
+    }[level] ?? ''
   return (
     <div
       className={`${colorClass} mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide`}
