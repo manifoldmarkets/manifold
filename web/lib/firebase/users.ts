@@ -214,30 +214,6 @@ export function getUsers() {
   return getValues<User>(collection(db, 'users'))
 }
 
-const getUsersQuery = (startTime: number, endTime: number) =>
-  query(
-    collection(db, 'users'),
-    where('createdTime', '>=', startTime),
-    where('createdTime', '<', endTime),
-    orderBy('createdTime', 'asc')
-  )
-
-export async function getDailyNewUsers(
-  startTime: number,
-  numberOfDays: number
-) {
-  const query = getUsersQuery(startTime, startTime + DAY_MS * numberOfDays)
-  const users = await getValues<User>(query)
-
-  const usersByDay = range(0, numberOfDays).map(() => [] as User[])
-  for (const user of users) {
-    const dayIndex = Math.floor((user.createdTime - startTime) / DAY_MS)
-    usersByDay[dayIndex].push(user)
-  }
-
-  return usersByDay
-}
-
 export async function getUserFeed(userId: string) {
   const feedDoc = doc(db, 'private-users', userId, 'cache', 'feed')
   const userFeed = await getValue<{

@@ -303,35 +303,6 @@ export async function getClosingSoonContracts() {
   )
 }
 
-const getContractsQuery = (startTime: number, endTime: number) =>
-  query(
-    collection(db, 'contracts'),
-    where('createdTime', '>=', startTime),
-    where('createdTime', '<', endTime),
-    orderBy('createdTime', 'asc')
-  )
-
-const DAY_IN_MS = 24 * 60 * 60 * 1000
-
-export async function getDailyContracts(
-  startTime: number,
-  numberOfDays: number
-) {
-  const query = getContractsQuery(
-    startTime,
-    startTime + DAY_IN_MS * numberOfDays
-  )
-  const contracts = await getValues<Contract>(query)
-
-  const contractsByDay = range(0, numberOfDays).map(() => [] as Contract[])
-  for (const contract of contracts) {
-    const dayIndex = Math.floor((contract.createdTime - startTime) / DAY_IN_MS)
-    contractsByDay[dayIndex].push(contract)
-  }
-
-  return contractsByDay
-}
-
 export async function getRecentBetsAndComments(contract: Contract) {
   const contractDoc = doc(db, 'contracts', contract.id)
 
