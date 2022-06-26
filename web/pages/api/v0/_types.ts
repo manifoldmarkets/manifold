@@ -163,8 +163,20 @@ export type LiteUser = {
 
   balance: number
   totalDeposits: number
-  totalPnLCached: number
-  creatorVolumeCached: number
+
+  profitCached: {
+    daily: number
+    weekly: number
+    monthly: number
+    allTime: number
+  }
+
+  creatorVolumeCached: {
+    daily: number
+    weekly: number
+    monthly: number
+    allTime: number
+  }
 }
 
 export function toLiteUser(user: User): LiteUser {
@@ -181,7 +193,7 @@ export function toLiteUser(user: User): LiteUser {
     discordHandle,
     balance,
     totalDeposits,
-    totalPnLCached,
+    profitCached,
     creatorVolumeCached,
   } = user
 
@@ -199,7 +211,7 @@ export function toLiteUser(user: User): LiteUser {
     discordHandle,
     balance,
     totalDeposits,
-    totalPnLCached,
+    profitCached,
     creatorVolumeCached,
   })
 }
