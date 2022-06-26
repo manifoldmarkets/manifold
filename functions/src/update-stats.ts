@@ -122,9 +122,6 @@ export const updateStatsCore = async () => {
       getDailyComments(startDate.valueOf(), numberOfDays),
       getDailyNewUsers(startDate.valueOf(), numberOfDays),
     ])
-  log(
-    `Fetched ${dailyBets.length} bets, ${dailyContracts.length} contracts, ${dailyComments.length} comments, and ${dailyNewUsers.length} users.`
-  )
   logMemory()
 
   const dailyBetCounts = dailyBets.map((bets) => bets.length)
@@ -140,6 +137,13 @@ export const updateStatsCore = async () => {
       const commentUserIds = (comments ?? []).map((comment) => comment.userId)
       return uniq([...creatorIds, ...betUserIds, ...commentUserIds])
     }
+  )
+  log(
+    `Fetched ${sum(dailyBetCounts)} bets, ${sum(
+      dailyContractCounts
+    )} contracts, ${sum(dailyComments)} comments, from ${sum(
+      dailyNewUsers
+    )} unique users.`
   )
 
   const dailyActiveUsers = dailyUserIds.map((userIds) => userIds.length)
