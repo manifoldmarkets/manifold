@@ -21,13 +21,12 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth'
-import { range, throttle, zip } from 'lodash'
+import { throttle, zip } from 'lodash'
 
 import { app } from './init'
 import { PortfolioMetrics, PrivateUser, User } from 'common/user'
 import { createUser } from './fn-call'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
-import { DAY_MS } from 'common/util/time'
 import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
@@ -212,30 +211,6 @@ const topFollowedQuery = query(
 
 export function getUsers() {
   return getValues<User>(collection(db, 'users'))
-}
-
-const getUsersQuery = (startTime: number, endTime: number) =>
-  query(
-    collection(db, 'users'),
-    where('createdTime', '>=', startTime),
-    where('createdTime', '<', endTime),
-    orderBy('createdTime', 'asc')
-  )
-
-export async function getDailyNewUsers(
-  startTime: number,
-  numberOfDays: number
-) {
-  const query = getUsersQuery(startTime, startTime + DAY_MS * numberOfDays)
-  const users = await getValues<User>(query)
-
-  const usersByDay = range(0, numberOfDays).map(() => [] as User[])
-  for (const user of users) {
-    const dayIndex = Math.floor((user.createdTime - startTime) / DAY_MS)
-    usersByDay[dayIndex].push(user)
-  }
-
-  return usersByDay
 }
 
 export async function getUserFeed(userId: string) {
