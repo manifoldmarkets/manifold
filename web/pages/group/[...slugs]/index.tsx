@@ -304,7 +304,6 @@ function GroupOverview(props: {
   isCreator: boolean
 }) {
   const { group, creator, isCreator, user } = props
-  const { about } = group
   const anyoneCanJoinChoices: { [key: string]: string } = {
     Closed: 'false',
     Open: 'true',
