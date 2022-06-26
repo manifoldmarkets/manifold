@@ -14,7 +14,7 @@ import {
   limit,
   startAfter,
 } from 'firebase/firestore'
-import { range, sortBy, sum } from 'lodash'
+import { sortBy, sum } from 'lodash'
 
 import { app } from './init'
 import { getValues, listenForValue, listenForValues } from './utils'

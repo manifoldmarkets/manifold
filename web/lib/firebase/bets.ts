@@ -5,7 +5,7 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore'
-import { range, uniq } from 'lodash'
+import { uniq } from 'lodash'
 
 import { db } from './init'
 import { Bet } from 'common/bet'

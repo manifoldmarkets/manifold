@@ -7,7 +7,6 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore'
-import { range } from 'lodash'
 
 import { getValues, listenForValues } from './utils'
 import { db } from './init'

@@ -12,8 +12,6 @@ import { average } from '../../common/util/math'
 const firestore = admin.firestore()
 
 const numberOfDays = 90
-const HOUR_IN_MS = 60 * 60 * 1000
-const DAY_IN_MS = 24 * HOUR_IN_MS
 
 const getBetsQuery = (startTime: number, endTime: number) =>
   firestore
@@ -23,12 +21,12 @@ const getBetsQuery = (startTime: number, endTime: number) =>
     .orderBy('createdTime', 'asc')
 
 export async function getDailyBets(startTime: number, numberOfDays: number) {
-  const query = getBetsQuery(startTime, startTime + DAY_IN_MS * numberOfDays)
+  const query = getBetsQuery(startTime, startTime + DAY_MS * numberOfDays)
   const bets = await getValues<Bet>(query)
 
   const betsByDay = range(0, numberOfDays).map(() => [] as Bet[])
   for (const bet of bets) {
-    const dayIndex = Math.floor((bet.createdTime - startTime) / DAY_IN_MS)
+    const dayIndex = Math.floor((bet.createdTime - startTime) / DAY_MS)
     betsByDay[dayIndex].push(bet)
   }
 
@@ -46,15 +44,12 @@ export async function getDailyComments(
   startTime: number,
   numberOfDays: number
 ) {
-  const query = getCommentsQuery(
-    startTime,
-    startTime + DAY_IN_MS * numberOfDays
-  )
+  const query = getCommentsQuery(startTime, startTime + DAY_MS * numberOfDays)
   const comments = await getValues<Comment>(query)
 
   const commentsByDay = range(0, numberOfDays).map(() => [] as Comment[])
   for (const comment of comments) {
-    const dayIndex = Math.floor((comment.createdTime - startTime) / DAY_IN_MS)
+    const dayIndex = Math.floor((comment.createdTime - startTime) / DAY_MS)
     commentsByDay[dayIndex].push(comment)
   }
 
@@ -72,15 +67,12 @@ export async function getDailyContracts(
   startTime: number,
   numberOfDays: number
 ) {
-  const query = getContractsQuery(
-    startTime,
-    startTime + DAY_IN_MS * numberOfDays
-  )
+  const query = getContractsQuery(startTime, startTime + DAY_MS * numberOfDays)
   const contracts = await getValues<Contract>(query)
 
   const contractsByDay = range(0, numberOfDays).map(() => [] as Contract[])
   for (const contract of contracts) {
-    const dayIndex = Math.floor((contract.createdTime - startTime) / DAY_IN_MS)
+    const dayIndex = Math.floor((contract.createdTime - startTime) / DAY_MS)
     contractsByDay[dayIndex].push(contract)
   }
 
@@ -112,7 +104,7 @@ export async function getDailyNewUsers(
 
 export const updateStatsCore = async () => {
   const today = Date.now()
-  const startDate = today - numberOfDays * DAY_IN_MS
+  const startDate = today - numberOfDays * DAY_MS
 
   log('Fetching data for stats update...')
   const [dailyBets, dailyContracts, dailyComments, dailyNewUsers] =
