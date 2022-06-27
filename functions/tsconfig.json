@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": "../",
+    "composite": true,
     "module": "commonjs",
     "noImplicitReturns": true,
     "outDir": "lib",
@@ -8,6 +9,11 @@
     "strict": true,
     "target": "es2017"
   },
+  "references": [
+    {
+      "path": "../common"
+    }
+  ],
   "compileOnSave": true,
-  "include": ["src", "../common/**/*.ts"]
+  "include": ["src"]
 }
