@@ -26,10 +26,15 @@ const binarySchema = z.object({
   probabilityInt: z.number().gte(0).lt(100).optional(),
 })
 
-const freeResponseSchema = z.object({
-  outcome: z.union([z.enum(['MKT', 'CANCEL']), z.string()]),
-  resolutions: z.map(z.string(), z.number()).optional(),
-})
+const freeResponseSchema = z.union([
+  z.object({
+    outcome: z.union([z.enum(['CANCEL']), z.number()]),
+  }),
+  z.object({
+    outcome: z.enum(['MKT']),
+    resolutions: z.map(z.string(), z.number()),
+  }),
+])
 
 const numericSchema = z.object({
   outcome: z.union([z.enum(['CANCEL']), z.string()]),
@@ -209,14 +214,16 @@ function getResolutionParams(outcomeType: string, body: string) {
       probabilityInt: undefined,
     }
   } else if (outcomeType === 'FREE_RESPONSE') {
-    const { outcome, resolutions } = validate(freeResponseSchema, body)
-    if (!(outcome === 'MKT' && resolutions))
-      throw new APIError(
-        400,
-        'Resolutions cannot be specified with MKT outcome'
-      )
+    const freeResponseParams = validate(freeResponseSchema, body)
+    const { outcome } = freeResponseParams
+    const resolutions =
+      'resolutions' in freeResponseParams
+        ? freeResponseParams.resolutions
+        : undefined
     return {
-      outcome,
+      // Free Response outcome IDs are numbers by convention,
+      // but treated as strings everywhere else.
+      outcome: outcome.toString(),
       resolutions,
       value: undefined,
       probabilityInt: undefined,
