@@ -199,6 +199,7 @@ export function ContractPageContent(
         )}
 
         <ContractOverview contract={contract} bets={bets} />
+
         {isNumeric && (
           <AlertBox
             title="Warning"

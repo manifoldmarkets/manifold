@@ -32,6 +32,7 @@ export const ContractOverview = (props: {
   const user = useUser()
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   return (
     <Col className={clsx('mb-6', className)}>
@@ -86,7 +87,9 @@ export const ContractOverview = (props: {
         />
       </Col>
       <Spacer h={4} />
-      {isBinary && <ContractProbGraph contract={contract} bets={bets} />}{' '}
+      {(isBinary || isPseudoNumeric) && (
+        <ContractProbGraph contract={contract} bets={bets} />
+      )}{' '}
       {outcomeType === 'FREE_RESPONSE' && (
         <AnswersGraph contract={contract} bets={bets} />
       )}

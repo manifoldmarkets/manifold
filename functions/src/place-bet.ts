@@ -70,7 +70,10 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
       if (outcomeType == 'BINARY' && mechanism == 'dpm-2') {
         const { outcome } = validate(binarySchema, req.body)
         return getNewBinaryDpmBetInfo(outcome, amount, contract, loanAmount)
-      } else if (outcomeType == 'BINARY' && mechanism == 'cpmm-1') {
+      } else if (
+        (outcomeType == 'BINARY' || outcomeType == 'PSEUDO_NUMERIC') &&
+        mechanism == 'cpmm-1'
+      ) {
         const { outcome } = validate(binarySchema, req.body)
         return getNewBinaryCpmmBetInfo(outcome, amount, contract, loanAmount)
       } else if (outcomeType == 'FREE_RESPONSE' && mechanism == 'dpm-2') {

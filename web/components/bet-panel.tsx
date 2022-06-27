@@ -3,7 +3,11 @@ import React, { useEffect, useState } from 'react'
 import { partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
-import { BinaryContract, CPMMBinaryContract } from 'common/contract'
+import {
+  BinaryContract,
+  CPMMBinaryContract,
+  PseudoNumericContract,
+} from 'common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
@@ -190,12 +194,13 @@ export function BetPanelSwitcher(props: {
 }
 
 function BuyPanel(props: {
-  contract: BinaryContract
+  contract: BinaryContract | PseudoNumericContract
   user: User | null | undefined
   selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
 }) {
   const { contract, user, selected, onBuySuccess } = props
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
@@ -302,6 +307,12 @@ function BuyPanel(props: {
               : 0)
         )} ${betChoice ?? 'YES'} shares`
       : undefined
+
+  const format = isPseudoNumeric
+    ? (p: number) =>
+        Math.round(p * (contract.max - contract.min) + contract.min).toString()
+    : (p: number) => formatPercent(p)
+
   return (
     <>
       <YesNoSelector
@@ -309,6 +320,7 @@ function BuyPanel(props: {
         btnClassName="flex-1"
         selected={betChoice}
         onSelect={(choice) => onBetChoice(choice)}
+        isPseudoNumeric={isPseudoNumeric}
       />
       <div className="my-3 text-left text-sm text-gray-500">Amount</div>
       <BuyAmountInput
@@ -323,11 +335,13 @@ function BuyPanel(props: {
 
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
-          <div className="text-gray-500">Probability</div>
+          <div className="text-gray-500">
+            {isPseudoNumeric ? 'Value' : 'Probability'}
+          </div>
           <div>
-            {formatPercent(initialProb)}
+            {format(initialProb)}
             <span className="mx-2">→</span>
-            {formatPercent(resultProb)}
+            {format(resultProb)}
           </div>
         </Row>
 
@@ -340,6 +354,8 @@ function BuyPanel(props: {
                   <br /> payout if{' '}
                   <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
                 </>
+              ) : isPseudoNumeric ? (
+                'Max payout'
               ) : (
                 <>
                   Payout if <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />

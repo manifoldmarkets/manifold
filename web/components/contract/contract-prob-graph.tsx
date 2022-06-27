@@ -5,11 +5,11 @@ import dayjs from 'dayjs'
 import { memo } from 'react'
 import { Bet } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
-import { BinaryContract } from 'common/contract'
+import { BinaryContract, PseudoNumericContract } from 'common/contract'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
 export const ContractProbGraph = memo(function ContractProbGraph(props: {
-  contract: BinaryContract
+  contract: BinaryContract | PseudoNumericContract
   bets: Bet[]
   height?: number
 }) {
@@ -24,7 +24,13 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
     contract.createdTime,
     ...bets.map((bet) => bet.createdTime),
   ].map((time) => new Date(time))
-  const probs = [startProb, ...bets.map((bet) => bet.probAfter)]
+
+  const f =
+    contract.outcomeType === 'PSEUDO_NUMERIC'
+      ? (p: number) => (p * (contract.max - contract.min) + contract.min) / 100
+      : (p: number) => p
+
+  const probs = [startProb, ...bets.map((bet) => bet.probAfter)].map(f)
 
   const isClosed = !!closeTime && Date.now() > closeTime
   const latestTime = dayjs(
@@ -39,7 +45,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   times.push(latestTime.toDate())
   probs.push(probs[probs.length - 1])
 
-  const yTickValues = [0, 25, 50, 75, 100]
+  const yTickValues = [0, 25, 50, 75, 100].map(f)
 
   const { width } = useWindowSize()
 
@@ -80,6 +86,9 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   const multiYear = !dayjs(startDate).isSame(latestTime, 'year')
   const lessThanAWeek = dayjs(startDate).add(8, 'day').isAfter(latestTime)
 
+  const formatter =
+    contract.outcomeType === 'BINARY' ? formatPercent : formatNumeric
+
   return (
     <div
       className="w-full overflow-visible"
@@ -88,11 +97,11 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
       <ResponsiveLine
         data={data}
         yScale={{ min: 0, max: 100, type: 'linear' }}
-        yFormat={formatPercent}
+        yFormat={formatter}
         gridYValues={yTickValues}
         axisLeft={{
           tickValues: yTickValues,
-          format: formatPercent,
+          format: formatter,
         }}
         xScale={{
           type: 'time',
@@ -136,6 +145,10 @@ const SliceTooltip = ({ slice }: SliceTooltipProps) => {
 
 function formatPercent(y: DatumValue) {
   return `${Math.round(+y.toString())}%`
+}
+
+function formatNumeric(y: DatumValue) {
+  return `${Math.round(+y.toString())}`
 }
 
 function formatTime(
