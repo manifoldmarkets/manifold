@@ -325,14 +325,6 @@ export function getColor(contract: Contract) {
     )
   }
 
-  if (contract.outcomeType === 'NUMERIC') {
-    return 'blue-400'
-  }
-
-  if (contract.outcomeType === 'FREE_RESPONSE') {
-    return 'blue-400'
-  }
-
   if ((contract.closeTime ?? Infinity) < Date.now()) {
     return 'gray-400'
   }
