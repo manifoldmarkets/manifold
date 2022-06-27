@@ -48,8 +48,8 @@ jobs:
       - name: Run Typescript checker on web client
         if: ${{ success() || failure() }}
         working-directory: web
-        run: tsc -b -v --pretty
+        run: tsc --pretty --project tsconfig.json --noEmit
       - name: Run Typescript checker on cloud functions
         if: ${{ success() || failure() }}
         working-directory: functions
-        run: tsc -b -v --pretty
+        run: tsc --pretty --project tsconfig.json --noEmit

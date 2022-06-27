@@ -1,8 +1,8 @@
 {
   "functions": {
-    "predeploy": "cd functions && yarn build",
+    "predeploy": "npm --prefix \"$RESOURCE_DIR\" run build",
     "runtime": "nodejs16",
-    "source": "functions/dist"
+    "source": "functions"
   },
   "firestore": {
     "rules": "firestore.rules",
