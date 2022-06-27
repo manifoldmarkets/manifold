@@ -15,7 +15,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogout, User } from 'web/lib/firebase/users'
+import { firebaseLogin, firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
@@ -48,16 +48,33 @@ function getNavigation(username: string) {
     },
 
     ...(IS_PRIVATE_MANIFOLD
-      ? []
+      ? [
+          {
+            name: 'Leaderboards',
+            href: '/leaderboards',
+            icon: TrendingUpIcon,
+          },
+        ]
       : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ]
 }
 
 function getMoreNavigation(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards' }]
+    return [
+      user
+        ? {
+            name: 'Sign out',
+            href: '#',
+            onClick: withTracking(firebaseLogout, 'sign out'),
+          }
+        : {
+            name: 'Sign in',
+            href: '#',
+            onClick: withTracking(firebaseLogin, 'sign in'),
+          },
+    ]
   }
-
   if (!user) {
     return [
       { name: 'Leaderboards', href: '/leaderboards' },
