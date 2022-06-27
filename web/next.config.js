@@ -24,6 +24,9 @@ module.exports = {
     },
   },
   images: {
+    // Setting to bypass build error for `next export`, see https://stackoverflow.com/a/70047180/1222351
+    loader: 'akamai',
+    path: '',
     domains: ['lh3.googleusercontent.com', 'i.imgur.com'],
   },
   async redirects() {
