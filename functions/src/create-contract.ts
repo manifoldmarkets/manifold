@@ -48,6 +48,7 @@ const binarySchema = z.object({
 const numericSchema = z.object({
   min: z.number(),
   max: z.number(),
+  initialValue: z.number(),
 })
 
 export const createmarket = newEndpoint(['POST'], async (req, auth) => {
@@ -55,9 +56,14 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     validate(bodySchema, req.body)
 
   let min, max, initialProb
-  if (outcomeType === 'NUMERIC') {
-    ;({ min, max } = validate(numericSchema, req.body))
-    if (max - min <= 0.01) throw new APIError(400, 'Invalid range.')
+
+  if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
+    let initialValue
+    ;({ min, max, initialValue } = validate(numericSchema, req.body))
+    if (max - min <= 0.01 || initialValue < min || initialValue > max)
+      throw new APIError(400, 'Invalid range.')
+
+    initialProb = (initialValue - min) / (max - min) * 100
   }
   if (outcomeType === 'BINARY') {
     ;({ initialProb } = validate(binarySchema, req.body))
@@ -130,7 +136,7 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
 
   const providerId = user.id
 
-  if (outcomeType === 'BINARY') {
+  if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)
       .doc()

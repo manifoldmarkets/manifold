@@ -142,7 +142,7 @@ export function ContractPageContent(
   const { creatorId, isResolved, question, outcomeType } = contract
 
   const isCreator = user?.id === creatorId
-  const isBinary = outcomeType === 'BINARY'
+  const isBinary = outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC'
   const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user

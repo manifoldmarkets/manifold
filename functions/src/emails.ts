@@ -88,7 +88,10 @@ const toDisplayResolution = (
   resolutionProbability?: number,
   resolutions?: { [outcome: string]: number }
 ) => {
-  if (contract.outcomeType === 'BINARY') {
+  if (
+    contract.outcomeType === 'BINARY' ||
+    contract.outcomeType === 'PSEUDO_NUMERIC'
+  ) {
     const prob = resolutionProbability ?? getProbability(contract)
 
     const display = {
