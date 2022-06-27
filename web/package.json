@@ -10,6 +10,7 @@
     "dev:emulate": "cross-env NEXT_PUBLIC_FIREBASE_EMULATE=TRUE yarn devdev",
     "ts": "tsc --noEmit --incremental --preserveWatchOutput --pretty",
     "build": "next build",
+    "export": "next export",
     "start": "next start",
     "lint": "next lint",
     "format": "npx prettier --write .",
@@ -18,6 +19,8 @@
   },
   "dependencies": {
     "@amplitude/analytics-browser": "0.4.1",
+    "@capacitor/android": "^3.6.0",
+    "@capacitor/core": "^3.6.0",
     "@headlessui/react": "1.6.1",
     "@heroicons/react": "1.0.5",
     "@nivo/core": "0.74.0",
@@ -45,6 +48,7 @@
     "string-similarity": "^4.0.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^3.6.0",
     "@tailwindcss/forms": "0.4.0",
     "@tailwindcss/line-clamp": "^0.3.1",
     "@tailwindcss/typography": "^0.5.1",
