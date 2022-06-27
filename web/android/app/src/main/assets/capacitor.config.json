@@ -1,0 +1,6 @@
+{
+	"appId": "markets.manifold",
+	"appName": "Manifold Markets",
+	"webDir": "out",
+	"bundledWebRuntime": false
+}
