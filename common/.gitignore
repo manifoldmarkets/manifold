@@ -1,5 +1,6 @@
 # Compiled JavaScript files
-lib/
+lib/**/*.js
+lib/**/*.js.map
 
 # TypeScript v1 declaration files
 typings/
