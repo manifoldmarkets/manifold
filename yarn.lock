@@ -1377,6 +1377,13 @@
   dependencies:
     tslib "^2.1.0"
 
+"@capacitor/core@next":
+  version "4.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@capacitor/core/-/core-4.0.0-beta.0.tgz#60661d3dc7c8c81dcc641335bf5910c09454b7a8"
+  integrity sha512-JNX8wMU5jtwJEywyzSXWhD7Eooh9aM7KS//cDMyFcSA/gk0yBfAXMsOkNx+UOghOXF3jbr1kdafy2ArBEwAIrw==
+  dependencies:
+    tslib "^2.1.0"
+
 "@colors/colors@1.5.0":
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/@colors/colors/-/colors-1.5.0.tgz#bb504579c1cae923e6576a4f5da43d25f97bdbd9"
@@ -4218,6 +4225,13 @@ caniuse-lite@^1.0.30001230, caniuse-lite@^1.0.30001283, caniuse-lite@^1.0.300013
   version "1.0.30001341"
   resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001341.tgz#59590c8ffa8b5939cf4161f00827b8873ad72498"
   integrity sha512-2SodVrFFtvGENGCv0ChVJIDQ0KPaS1cg7/qtfMaICgeMolDdo/Z2OD32F0Aq9yl6F4YFwGPBS5AaPqNYiW4PoA==
+
+capacitor-firebase-auth@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/capacitor-firebase-auth/-/capacitor-firebase-auth-3.0.0.tgz#6c3ecf1753606f065e7e75a45da6bbb8c808880e"
+  integrity sha512-90O9FJ/cuc3LvObDiI8Ycl0ZBCqMlAiDxCoxMEXC3mDJPi/yYd87VVB3FUb/LWYGXQV8/39jHvJhPzpJSRY7zA==
+  dependencies:
+    "@capacitor/core" next
 
 ccount@^1.0.0, ccount@^1.0.3:
   version "1.1.0"

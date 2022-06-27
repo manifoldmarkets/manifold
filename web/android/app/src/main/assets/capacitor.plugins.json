@@ -1,1 +1,6 @@
-[]
+[
+	{
+		"pkg": "capacitor-firebase-auth",
+		"classpath": "com.baumblatt.capacitor.firebase.auth.CapacitorFirebaseAuth"
+	}
+]

@@ -2,5 +2,24 @@
 	"appId": "markets.manifold",
 	"appName": "Manifold Markets",
 	"webDir": "out",
-	"bundledWebRuntime": false
+	"bundledWebRuntime": false,
+	"server": {
+		"allowNavigation": [
+			"oneword-cf74a.firebaseapp.com",
+			"accounts.google.com"
+		]
+	},
+	"plugins": {
+		"CapacitorFirebaseAuth": {
+			"providers": [
+				"google.com"
+			],
+			"languageCode": "en",
+			"permissions": {
+				"google": [
+					"profile"
+				]
+			}
+		}
+	}
 }

@@ -27,6 +27,7 @@
     "@nivo/line": "0.74.0",
     "@react-query-firebase/firestore": "0.4.2",
     "algoliasearch": "4.13.0",
+    "capacitor-firebase-auth": "^3.0.0",
     "clsx": "1.1.1",
     "cors": "2.8.5",
     "daisyui": "1.16.4",
