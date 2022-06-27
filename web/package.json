@@ -10,7 +10,7 @@
     "dev:emulate": "cross-env NEXT_PUBLIC_FIREBASE_EMULATE=TRUE yarn devdev",
     "ts": "tsc --noEmit --incremental --preserveWatchOutput --pretty",
     "build": "next build",
-    "export": "next export",
+    "export": "next build && next export",
     "start": "next start",
     "lint": "next lint",
     "format": "npx prettier --write .",

@@ -31,6 +31,8 @@ import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
+import { cfaSignIn } from 'capacitor-firebase-auth'
+import { Capacitor } from '@capacitor/core'
 
 export type { User }
 
@@ -126,8 +128,16 @@ export function listenForLogin(onUser: (user: User | null) => void) {
 }
 
 export async function firebaseLogin() {
-  const provider = new GoogleAuthProvider()
-  return signInWithPopup(auth, provider)
+  if (Capacitor.getPlatform() === 'android') {
+    // Seems broken, because we're on firebase v9 instead of v8...
+    console.log('firebaseLogin: android')
+    cfaSignIn('google.com').subscribe((u) => {
+      console.log('firebaseLogin:', u)
+    })
+  } else {
+    const provider = new GoogleAuthProvider()
+    return signInWithPopup(auth, provider)
+  }
 }
 
 export async function firebaseLogout() {
