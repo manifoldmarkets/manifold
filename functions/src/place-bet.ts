@@ -53,7 +53,6 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
 
-    const loanAmount = 0
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =
       contract
     if (closeTime && Date.now() > closeTime)
@@ -69,16 +68,16 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
     } = await (async (): Promise<BetInfo> => {
       if (outcomeType == 'BINARY' && mechanism == 'dpm-2') {
         const { outcome } = validate(binarySchema, req.body)
-        return getNewBinaryDpmBetInfo(outcome, amount, contract, loanAmount)
+        return getNewBinaryDpmBetInfo(outcome, amount, contract)
       } else if (outcomeType == 'BINARY' && mechanism == 'cpmm-1') {
         const { outcome } = validate(binarySchema, req.body)
-        return getNewBinaryCpmmBetInfo(outcome, amount, contract, loanAmount)
+        return getNewBinaryCpmmBetInfo(outcome, amount, contract)
       } else if (outcomeType == 'FREE_RESPONSE' && mechanism == 'dpm-2') {
         const { outcome } = validate(freeResponseSchema, req.body)
         const answerDoc = contractDoc.collection('answers').doc(outcome)
         const answerSnap = await trans.get(answerDoc)
         if (!answerSnap.exists) throw new APIError(400, 'Invalid answer')
-        return getNewMultiBetInfo(outcome, amount, contract, loanAmount)
+        return getNewMultiBetInfo(outcome, amount, contract)
       } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
         const { outcome, value } = validate(numericSchema, req.body)
         return getNumericBetsInfo(value, outcome, amount, contract)
@@ -97,7 +96,7 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
       throw new APIError(400, 'Bet too large for current liquidity pool.')
     }
 
-    const newBalance = user.balance - amount - loanAmount
+    const newBalance = user.balance - amount
     const betDoc = contractDoc.collection('bets').doc()
     trans.create(betDoc, { id: betDoc.id, userId: user.id, ...newBet })
     log('Created new bet document.')
