@@ -342,7 +342,7 @@ function BuyPanel(props: {
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
           <div className="text-gray-500">
-            {isPseudoNumeric ? 'Value' : 'Probability'}
+            {isPseudoNumeric ? 'Estimated value' : 'Probability'}
           </div>
           <div>
             {format(initialProb)}
