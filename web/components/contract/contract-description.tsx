@@ -5,12 +5,12 @@ import Textarea from 'react-expanding-textarea'
 import { CATEGORY_LIST } from '../../../common/categories'
 
 import { Contract } from 'common/contract'
-import { parseTags } from 'common/util/parse'
+import { parseTags, richTextToString } from 'common/util/parse'
 import { useAdmin } from 'web/hooks/use-admin'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
-import { Linkify } from '../linkify'
 import { TagsList } from '../tags-list'
+import { Content } from '../editor'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -23,7 +23,9 @@ export function ContractDescription(props: {
 
   // Append the new description (after a newline)
   async function saveDescription(newText: string) {
-    const newDescription = `${contract.description}\n\n${newText}`.trim()
+    // TODO: implement appending rich text description
+    const textDescription = richTextToString(contract.description)
+    const newDescription = `${textDescription}\n\n${newText}`.trim()
     const tags = parseTags(
       `${newDescription} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
     )
@@ -50,7 +52,7 @@ export function ContractDescription(props: {
         className
       )}
     >
-      <Linkify text={contract.description} />
+      <Content content={contract.description} />
 
       {categories.length > 0 && (
         <div className="mt-4">

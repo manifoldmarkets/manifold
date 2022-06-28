@@ -1,4 +1,6 @@
 import { MAX_TAG_LENGTH } from '../contract'
+import { generateText, JSONContent } from '@tiptap/core'
+import StarterKit from '@tiptap/starter-kit'
 
 export function parseTags(text: string) {
   const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
@@ -26,4 +28,8 @@ export function parseWordsAsTags(text: string) {
     .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`))
     .join(' ')
   return parseTags(taggedText)
+}
+
+export function richTextToString(text: JSONContent | string) {
+  return typeof text === 'string' ? text : generateText(text, [StarterKit])
 }

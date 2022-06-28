@@ -43,6 +43,7 @@ import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useLiquidity } from 'web/hooks/use-liquidity'
+import { richTextToString } from 'common/util/parse'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -181,7 +182,7 @@ export function ContractPageContent(
       {ogCardProps && (
         <SEO
           title={question}
-          description={ogCardProps.description}
+          description={richTextToString(ogCardProps.description)}
           url={`/${props.username}/${props.slug}`}
           ogCardProps={ogCardProps}
         />

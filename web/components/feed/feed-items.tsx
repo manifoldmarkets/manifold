@@ -31,7 +31,6 @@ import { FeedAnswerCommentGroup } from 'web/components/feed/feed-answer-comment-
 import {
   FeedCommentThread,
   CommentInput,
-  TruncatedComment,
 } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
 import { NumericContract } from 'common/contract'
@@ -101,10 +100,9 @@ export function FeedItem(props: { item: ActivityItem }) {
 
 export function FeedQuestion(props: {
   contract: Contract
-  showDescription: boolean
   contractPath?: string
 }) {
-  const { contract, showDescription } = props
+  const { contract } = props
   const {
     creatorName,
     creatorUsername,
@@ -160,13 +158,6 @@ export function FeedQuestion(props: {
             />
           )}
         </Col>
-        {showDescription && (
-          <TruncatedComment
-            comment={contract.description}
-            moreHref={contractPath(contract)}
-            shouldTruncate
-          />
-        )}
       </div>
     </div>
   )

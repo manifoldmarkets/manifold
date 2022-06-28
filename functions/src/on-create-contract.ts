@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions'
 import { getUser } from './utils'
 import { createNotification } from './create-notification'
 import { Contract } from '../../common/contract'
+import { richTextToString } from 'common/util/parse'
 
 export const onCreateContract = functions.firestore
   .document('contracts/{contractId}')
@@ -18,7 +19,7 @@ export const onCreateContract = functions.firestore
       'created',
       contractCreator,
       eventId,
-      contract.description,
+      richTextToString(contract.description),
       contract
     )
   })

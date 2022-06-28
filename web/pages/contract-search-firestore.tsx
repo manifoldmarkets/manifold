@@ -34,7 +34,6 @@ export default function ContractSearchFirestore(props: {
   let matches = (contracts ?? []).filter(
     (c) =>
       check(c.question) ||
-      check(c.description) ||
       check(c.creatorName) ||
       check(c.creatorUsername) ||
       check(c.lowercaseTags.map((tag) => `#${tag}`).join(' ')) ||

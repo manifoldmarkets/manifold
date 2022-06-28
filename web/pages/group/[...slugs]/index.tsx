@@ -138,7 +138,6 @@ export default function GroupPage(props: {
       ? contracts.filter(
           (c) =>
             checkAgainstQuery(query, c.question) ||
-            checkAgainstQuery(query, c.description || '') ||
             checkAgainstQuery(query, c.creatorName) ||
             checkAgainstQuery(query, c.creatorUsername)
         )
@@ -499,7 +498,6 @@ function AddContractButton(props: { group: Group; user: User }) {
   ]).filter(
     (c) =>
       checkAgainstQuery(query, c.question) ||
-      checkAgainstQuery(query, c.description) ||
       checkAgainstQuery(query, c.tags.flat().join(' '))
   )
   const debouncedQuery = debounce(setQuery, 50)

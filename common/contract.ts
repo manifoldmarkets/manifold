@@ -1,5 +1,6 @@
 import { Answer } from './answer'
 import { Fees } from './fees'
+import { JSONContent } from '@tiptap/core'
 
 export type AnyMechanism = DPM | CPMM
 export type AnyOutcomeType = Binary | FreeResponse | Numeric
@@ -19,7 +20,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   creatorAvatarUrl?: string
 
   question: string
-  description: string // More info about what the contract is about
+  description: string | JSONContent // More info about what the contract is about
   tags: string[]
   lowercaseTags: string[]
   visibility: 'public' | 'unlisted'
@@ -33,7 +34,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
   resolution?: string
-  resolutionProbability?: number,
+  resolutionProbability?: number
 
   closeEmailsSent?: number
 
