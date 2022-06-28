@@ -147,8 +147,7 @@ export const sendOneWeekBonusEmail = async (
   privateUser: PrivateUser
 ) => {
   if (
-    !privateUser ||
-    !privateUser.email ||
+    !privateUser?.email ||
     privateUser.unsubscribedFromGenericEmails
   )
     return
@@ -179,8 +178,7 @@ export const sendThankYouEmail = async (
   privateUser: PrivateUser
 ) => {
   if (
-    !privateUser ||
-    !privateUser.email ||
+    !privateUser?.email ||
     privateUser.unsubscribedFromGenericEmails
   )
     return
@@ -253,8 +251,7 @@ export const sendNewCommentEmail = async (
 ) => {
   const privateUser = await getPrivateUser(userId)
   if (
-    !privateUser ||
-    !privateUser.email ||
+    !privateUser?.email ||
     privateUser.unsubscribedFromCommentEmails
   )
     return
@@ -333,8 +330,7 @@ export const sendNewAnswerEmail = async (
 
   const privateUser = await getPrivateUser(userId)
   if (
-    !privateUser ||
-    !privateUser.email ||
+    !privateUser?.email ||
     privateUser.unsubscribedFromAnswerEmails
   )
     return
