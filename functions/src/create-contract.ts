@@ -5,7 +5,6 @@ import {
   CPMMBinaryContract,
   Contract,
   FreeResponseContract,
-  MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
   NumericContract,
@@ -28,10 +27,34 @@ import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, MAX_ID_LENGTH } from '../../common/group'
+import { JSONContent } from '@tiptap/core'
+
+const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
+  z.intersection(
+    z.record(z.any()),
+    z.object({
+      type: z.string().optional(),
+      attrs: z.record(z.any()).optional(),
+      content: z.array(descScehma).optional(),
+      marks: z
+        .array(
+          z.intersection(
+            z.record(z.any()),
+            z.object({
+              type: z.string(),
+              attrs: z.record(z.any()).optional(),
+            })
+          )
+        )
+        .optional(),
+      text: z.string().optional(),
+    })
+  )
+)
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
-  description: z.string().max(MAX_DESCRIPTION_LENGTH),
+  description: descScehma.optional(),
   tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
   closeTime: zTimestamp().refine(
     (date) => date.getTime() > new Date().getTime(),
@@ -114,7 +137,7 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     user,
     question,
     outcomeType,
-    description,
+    description ?? {},
     initialProb ?? 0,
     ante,
     closeTime.getTime(),

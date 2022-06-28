@@ -23,6 +23,8 @@
   "main": "functions/src/index.js",
   "dependencies": {
     "@amplitude/node": "1.10.0",
+    "@tiptap/core": "^2.0.0-beta.181",
+    "@tiptap/starter-kit": "^2.0.0-beta.190",
     "fetch": "1.1.0",
     "firebase-admin": "10.0.0",
     "firebase-functions": "3.21.2",
