@@ -17,7 +17,7 @@ const groupCollection = collection(db, 'groups')
 
 export function groupPath(
   groupSlug: string,
-  subpath?: 'edit' | 'questions' | 'details' | 'chat'
+  subpath?: 'edit' | 'questions' | 'about' | 'chat'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }

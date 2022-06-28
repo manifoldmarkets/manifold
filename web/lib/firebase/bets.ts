@@ -5,7 +5,7 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore'
-import { range, uniq } from 'lodash'
+import { uniq } from 'lodash'
 
 import { db } from './init'
 import { Bet } from 'common/bet'
@@ -135,25 +135,4 @@ export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
   }
 
   return bets?.filter((bet) => !bet.isAnte) ?? []
-}
-
-const getBetsQuery = (startTime: number, endTime: number) =>
-  query(
-    collectionGroup(db, 'bets'),
-    where('createdTime', '>=', startTime),
-    where('createdTime', '<', endTime),
-    orderBy('createdTime', 'asc')
-  )
-
-export async function getDailyBets(startTime: number, numberOfDays: number) {
-  const query = getBetsQuery(startTime, startTime + DAY_IN_MS * numberOfDays)
-  const bets = await getValues<Bet>(query)
-
-  const betsByDay = range(0, numberOfDays).map(() => [] as Bet[])
-  for (const bet of bets) {
-    const dayIndex = Math.floor((bet.createdTime - startTime) / DAY_IN_MS)
-    betsByDay[dayIndex].push(bet)
-  }
-
-  return betsByDay
 }

@@ -51,6 +51,7 @@ import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useRouter } from 'next/router'
 import dayjs from 'dayjs'
 import { addUserToGroupViaSlug, getGroup } from 'web/lib/firebase/groups'
+import { useLiquidity } from 'web/hooks/use-liquidity'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -126,6 +127,8 @@ export function ContractPageContent(
   })
 
   const bets = useBets(contract.id) ?? props.bets
+  const liquidityProvisions =
+    useLiquidity(contract.id)?.filter((l) => !l.isAnte && l.amount > 0) ?? []
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
@@ -250,6 +253,7 @@ export function ContractPageContent(
         <ContractTabs
           contract={contract}
           user={user}
+          liquidityProvisions={liquidityProvisions}
           bets={bets}
           tips={tips}
           comments={comments}
