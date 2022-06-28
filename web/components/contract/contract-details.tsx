@@ -29,6 +29,9 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { SiteLink } from 'web/components/site-link'
 import { DAY_MS } from 'common/util/time'
 import { useGroupsWithContract } from 'web/hooks/use-group'
+import { CopyLinkButton } from 'web/components/copy-link-button'
+import { ShareIconButton } from 'web/components/share-icon-button'
+import { useUser } from 'web/hooks/use-user'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -130,6 +133,7 @@ export function ContractDetails(props: {
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
   // Find a group that this contract id is in
   const groups = useGroupsWithContract(contract.id)
+  const user = useUser()
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
       <Row className="items-center gap-2">
@@ -192,6 +196,11 @@ export function ContractDetails(props: {
 
         <div className="whitespace-nowrap">{volumeLabel}</div>
       </Row>
+      <ShareIconButton
+        contract={contract}
+        toastClassName={'sm:-left-40 -left-24 min-w-[250%]'}
+        username={user?.username}
+      />
 
       {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
     </Row>

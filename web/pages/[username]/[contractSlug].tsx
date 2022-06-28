@@ -10,7 +10,13 @@ import { useUser } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
-import { listUsers, User } from 'web/lib/firebase/users'
+import {
+  getUserByUsername,
+  listUsers,
+  updateUser,
+  User,
+  writeReferralInfo,
+} from 'web/lib/firebase/users'
 import {
   Contract,
   getContractFromSlug,
@@ -42,6 +48,9 @@ import { useBets } from 'web/hooks/use-bets'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
+import { useRouter } from 'next/router'
+import dayjs from 'dayjs'
+import { addUserToGroupViaSlug, getGroup } from 'web/lib/firebase/groups'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -146,6 +155,14 @@ export function ContractPageContent(
   const hasSidePanel = (isBinary || isNumeric) && (allowTrade || allowResolve)
 
   const ogCardProps = getOpenGraphProps(contract)
+
+  const router = useRouter()
+  const { referrer, username } = router.query as {
+    username: string
+    referrer?: string
+  }
+  if (!user && router.isReady)
+    writeReferralInfo(username, contract.id, referrer)
 
   const rightSidebar = hasSidePanel ? (
     <Col className="gap-4">

@@ -32,6 +32,9 @@ import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
+import { addUserToGroupViaSlug } from 'web/lib/firebase/groups'
+import { removeUndefinedProps } from 'common/util/object'
+import dayjs from 'dayjs'
 
 export type { User }
 
@@ -88,11 +91,82 @@ export function listenForPrivateUser(
 }
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
+const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
+const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
+const CACHED_REFERRAL_GROUP_SLUG_KEY = 'CACHED_REFERRAL_GROUP_KEY'
 
 // used to avoid weird race condition
 let createUserPromise: Promise<User | null> | undefined = undefined
 
 const warmUpCreateUser = throttle(createUser, 5000 /* ms */)
+
+export function writeReferralInfo(
+  contractUsername: string,
+  contractId?: string,
+  referralUsername?: string,
+  groupSlug?: string
+) {
+  const local = safeLocalStorage()
+  const cachedReferralUser = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
+  // Write the first referral username we see.
+  if (!cachedReferralUser)
+    local?.setItem(
+      CACHED_REFERRAL_USERNAME_KEY,
+      referralUsername || contractUsername
+    )
+
+  // If an explicit referral query is passed, overwrite the cached referral username.
+  if (referralUsername)
+    local?.setItem(CACHED_REFERRAL_USERNAME_KEY, referralUsername)
+
+  // Always write the most recent explicit group invite query value
+  if (groupSlug) local?.setItem(CACHED_REFERRAL_GROUP_SLUG_KEY, groupSlug)
+
+  // Write the first contract id that we see.
+  const cachedReferralContract = local?.getItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
+  if (!cachedReferralContract && contractId)
+    local?.setItem(CACHED_REFERRAL_CONTRACT_ID_KEY, contractId)
+}
+
+async function setCachedReferralInfoForUser(user: User | null) {
+  if (!user || user.referredByUserId) return
+  // if the user wasn't created in the last minute, don't bother
+  const now = dayjs().utc()
+  const userCreatedTime = dayjs(user.createdTime)
+  if (now.diff(userCreatedTime, 'minute') > 1) return
+
+  const local = safeLocalStorage()
+  const cachedReferralUsername = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
+  const cachedReferralContractId = local?.getItem(
+    CACHED_REFERRAL_CONTRACT_ID_KEY
+  )
+  const cachedReferralGroupSlug = local?.getItem(CACHED_REFERRAL_GROUP_SLUG_KEY)
+
+  // get user via username
+  if (cachedReferralUsername)
+    getUserByUsername(cachedReferralUsername).then((referredByUser) => {
+      if (!referredByUser) return
+      // update user's referralId
+      updateUser(
+        user.id,
+        removeUndefinedProps({
+          referredByUserId: referredByUser.id,
+          referredByContractId: cachedReferralContractId
+            ? cachedReferralContractId
+            : undefined,
+        })
+      )
+        .then((data) => console.log('done!', data))
+        .catch(console.error)
+    })
+
+  if (cachedReferralGroupSlug)
+    addUserToGroupViaSlug(cachedReferralGroupSlug, user.id)
+
+  local?.removeItem(CACHED_REFERRAL_GROUP_SLUG_KEY)
+  local?.removeItem(CACHED_REFERRAL_USERNAME_KEY)
+  local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
+}
 
 export function listenForLogin(onUser: (user: User | null) => void) {
   const local = safeLocalStorage()
@@ -117,6 +191,7 @@ export function listenForLogin(onUser: (user: User | null) => void) {
       // Persist to local storage, to reduce login blink next time.
       // Note: Cap on localStorage size is ~5mb
       local?.setItem(CACHED_USER_KEY, JSON.stringify(user))
+      setCachedReferralInfoForUser(user)
     } else {
       // User logged out; reset to null
       onUser(null)
@@ -126,6 +201,21 @@ export function listenForLogin(onUser: (user: User | null) => void) {
   })
 }
 
+// create new signup banner on markets for referrees
+// markets that someone signs up to bet on are referred to the market's creator
+// it would be great if you could invite someone to your group/allowlist their email
+// invite a user to your group with a unique link
+// pass the referrer id to this function
+// add the referrer id to the new user's field
+// in on-update-user check if the new user had a referrer,add the new user's ide to the referrees field
+// create a txn for both
+// create on-create-txn that checks why it was created, create a notification for it
+
+// manalinks no required for:
+// referral from: user to site, user to another user's market, open group, implicit from market creator
+// from groups or market page, get the manalink id from the url and pass it here
+// then claim it upon successful signup
+//
 export async function firebaseLogin() {
   const provider = new GoogleAuthProvider()
   return signInWithPopup(auth, provider)

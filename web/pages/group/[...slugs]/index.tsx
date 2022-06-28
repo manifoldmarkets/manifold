@@ -13,7 +13,12 @@ import {
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
-import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
+import {
+  firebaseLogin,
+  getUser,
+  User,
+  writeReferralInfo,
+} from 'web/lib/firebase/users'
 import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
@@ -145,6 +150,12 @@ export default function GroupPage(props: {
   const { memberIds } = group
   const isCreator = user && group && user.id === group.creatorId
   const isMember = user && memberIds.includes(user.id)
+
+  const { referrer } = router.query as {
+    referrer?: string
+  }
+  if (!user && router.isReady)
+    writeReferralInfo(creator.username, undefined, referrer, group.slug)
 
   const rightSidebar = (
     <Col className="mt-6 hidden xl:block">

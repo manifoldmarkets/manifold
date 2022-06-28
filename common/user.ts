@@ -33,6 +33,9 @@ export type User = {
   followerCountCached: number
 
   followedCategories?: string[]
+
+  referredByUserId?: string
+  referredByContractId?: string
 }
 
 export const STARTING_BALANCE = 1000

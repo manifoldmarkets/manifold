@@ -27,6 +27,7 @@ export * from './on-unfollow-user'
 export * from './on-create-liquidity-provision'
 export * from './on-update-group'
 export * from './on-create-group'
+export * from './on-update-user'
 
 // v2
 export * from './health'

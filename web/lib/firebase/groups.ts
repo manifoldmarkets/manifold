@@ -94,3 +94,13 @@ export async function getGroupsWithContractId(
   const groups = await getValues<Group>(q)
   setGroups(groups)
 }
+
+export async function addUserToGroupViaSlug(groupSlug: string, userId: string) {
+  // get group to get the member ids
+  const group = await getGroupBySlug(groupSlug)
+  if (group && !group.memberIds.includes(userId))
+    return await updateGroup(group, {
+      memberIds: [userId, ...group.memberIds],
+    })
+  return null
+}

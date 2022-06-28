@@ -14,9 +14,6 @@ import { Title } from 'web/components/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
-import { Answer } from 'common/answer'
-import { Comment } from 'web/lib/firebase/comments'
-import { getValue } from 'web/lib/firebase/utils'
 import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/user-page'
 import { notification_subscribe_types, PrivateUser } from 'common/user'
@@ -38,7 +35,6 @@ import {
   NotificationGroup,
   usePreferredGroupedNotifications,
 } from 'web/hooks/use-notifications'
-import { getContractFromId } from 'web/lib/firebase/contracts'
 import { CheckIcon, XIcon } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
 import { formatMoney } from 'common/util/format'
@@ -182,7 +178,7 @@ function NotificationGroupItem(props: {
   className?: string
 }) {
   const { notificationGroup, className } = props
-  const { sourceContractId, notifications } = notificationGroup
+  const { notifications } = notificationGroup
   const {
     sourceContractTitle,
     sourceContractSlug,
@@ -191,28 +187,6 @@ function NotificationGroupItem(props: {
   const numSummaryLines = 3
 
   const [expanded, setExpanded] = useState(false)
-  const [contract, setContract] = useState<Contract | undefined>(undefined)
-
-  useEffect(() => {
-    if (
-      sourceContractTitle &&
-      sourceContractSlug &&
-      sourceContractCreatorUsername
-    )
-      return
-    if (sourceContractId) {
-      getContractFromId(sourceContractId)
-        .then((contract) => {
-          if (contract) setContract(contract)
-        })
-        .catch((e) => console.log(e))
-    }
-  }, [
-    sourceContractCreatorUsername,
-    sourceContractId,
-    sourceContractSlug,
-    sourceContractTitle,
-  ])
 
   useEffect(() => {
     setNotificationsAsSeen(notifications)
@@ -240,20 +214,20 @@ function NotificationGroupItem(props: {
             onClick={() => setExpanded(!expanded)}
             className={'line-clamp-1 cursor-pointer pl-1  sm:pl-0'}
           >
-            {sourceContractTitle || contract ? (
+            {sourceContractTitle ? (
               <span>
                 {'Activity on '}
                 <a
                   href={
                     sourceContractCreatorUsername
                       ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-                      : `/${contract?.creatorUsername}/${contract?.slug}`
+                      : ''
                   }
                   className={
                     'font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2'
                   }
                 >
-                  {sourceContractTitle || contract?.question}
+                  {sourceContractTitle}
                 </a>
               </span>
             ) : (
@@ -515,7 +489,6 @@ function NotificationItem(props: {
   const { notification, justSummary } = props
   const {
     sourceType,
-    sourceContractId,
     sourceId,
     sourceUserName,
     sourceUserAvatarUrl,
@@ -534,60 +507,15 @@ function NotificationItem(props: {
 
   const [defaultNotificationText, setDefaultNotificationText] =
     useState<string>('')
-  const [contract, setContract] = useState<Contract | null>(null)
-
-  useEffect(() => {
-    if (
-      !sourceContractId ||
-      (sourceContractSlug && sourceContractCreatorUsername)
-    )
-      return
-    getContractFromId(sourceContractId)
-      .then((contract) => {
-        if (contract) setContract(contract)
-      })
-      .catch((e) => console.log(e))
-  }, [
-    sourceContractCreatorUsername,
-    sourceContractId,
-    sourceContractSlug,
-    sourceContractTitle,
-  ])
 
   useEffect(() => {
     if (sourceText) {
       setDefaultNotificationText(sourceText)
-    } else if (!contract || !sourceContractId || !sourceId) return
-    else if (
-      sourceType === 'answer' ||
-      sourceType === 'comment' ||
-      sourceType === 'contract'
-    ) {
-      try {
-        parseOldStyleNotificationText(
-          sourceId,
-          sourceContractId,
-          sourceType,
-          sourceUpdateType,
-          setDefaultNotificationText,
-          contract
-        )
-      } catch (err) {
-        console.error(err)
-      }
     } else if (reasonText) {
       // Handle arbitrary notifications with reason text here.
       setDefaultNotificationText(reasonText)
     }
-  }, [
-    contract,
-    reasonText,
-    sourceContractId,
-    sourceId,
-    sourceText,
-    sourceType,
-    sourceUpdateType,
-  ])
+  }, [reasonText, sourceText])
 
   useEffect(() => {
     setNotificationsAsSeen([notification])
@@ -596,14 +524,16 @@ function NotificationItem(props: {
   function getSourceUrl() {
     if (sourceType === 'follow') return `/${sourceUserUsername}`
     if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
+    if (
+      sourceContractCreatorUsername &&
+      sourceContractSlug &&
+      sourceType === 'user'
+    )
+      return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
     if (sourceContractCreatorUsername && sourceContractSlug)
       return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
         sourceId ?? ''
       )}`
-    if (!contract) return ''
-    return `/${contract.creatorUsername}/${
-      contract.slug
-    }#${getSourceIdForLinkComponent(sourceId ?? '')}`
   }
 
   function getSourceIdForLinkComponent(sourceId: string) {
@@ -616,38 +546,6 @@ function NotificationItem(props: {
         return ''
       default:
         return sourceId
-    }
-  }
-
-  async function parseOldStyleNotificationText(
-    sourceId: string,
-    sourceContractId: string,
-    sourceType: 'answer' | 'comment' | 'contract',
-    sourceUpdateType: notification_source_update_types | undefined,
-    setText: (text: string) => void,
-    contract: Contract
-  ) {
-    if (sourceType === 'contract') {
-      if (
-        isNotificationAboutContractResolution(
-          sourceType,
-          sourceUpdateType,
-          contract
-        ) &&
-        contract.resolution
-      )
-        setText(contract.resolution)
-      else setText(contract.question)
-    } else if (sourceType === 'answer') {
-      const answer = await getValue<Answer>(
-        doc(db, `contracts/${sourceContractId}/answers/`, sourceId)
-      )
-      setText(answer?.text ?? '')
-    } else {
-      const comment = await getValue<Comment>(
-        doc(db, `contracts/${sourceContractId}/comments/`, sourceId)
-      )
-      setText(comment?.text ?? '')
     }
   }
 
@@ -669,13 +567,13 @@ function NotificationItem(props: {
                     sourceType,
                     reason,
                     sourceUpdateType,
-                    contract,
+                    undefined,
                     true
                   ).replace(' on', '')}
               </span>
               <div className={'ml-1 text-black'}>
                 <NotificationTextLabel
-                  contract={contract}
+                  contract={null}
                   defaultText={defaultNotificationText}
                   className={'line-clamp-1'}
                   notification={notification}
@@ -717,7 +615,9 @@ function NotificationItem(props: {
                       sourceType,
                       reason,
                       sourceUpdateType,
-                      contract
+                      undefined,
+                      false,
+                      sourceSlug
                     )}
                     <a
                       href={
@@ -725,13 +625,13 @@ function NotificationItem(props: {
                           ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
                           : sourceType === 'group' && sourceSlug
                           ? `${groupPath(sourceSlug)}`
-                          : `/${contract?.creatorUsername}/${contract?.slug}`
+                          : ''
                       }
                       className={
                         'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2'
                       }
                     >
-                      {contract?.question || sourceContractTitle || sourceTitle}
+                      {sourceContractTitle || sourceTitle}
                     </a>
                   </div>
                 )}
@@ -752,7 +652,7 @@ function NotificationItem(props: {
         </Row>
         <div className={'mt-1 ml-1 md:text-base'}>
           <NotificationTextLabel
-            contract={contract}
+            contract={null}
             defaultText={defaultNotificationText}
             notification={notification}
           />
@@ -811,6 +711,16 @@ function NotificationTextLabel(props: {
         </span>
       )
     }
+  } else if (sourceType === 'user' && sourceText) {
+    return (
+      <span>
+        As a thank you, we sent you{' '}
+        <span className="text-primary">
+          {formatMoney(parseInt(sourceText))}
+        </span>
+        !
+      </span>
+    )
   } else if (sourceType === 'liquidity' && sourceText) {
     return (
       <span className="text-blue-400">{formatMoney(parseInt(sourceText))}</span>
@@ -829,7 +739,8 @@ function getReasonForShowingNotification(
   reason: notification_reason_types,
   sourceUpdateType: notification_source_update_types | undefined,
   contract: Contract | undefined | null,
-  simple?: boolean
+  simple?: boolean,
+  sourceSlug?: string
 ) {
   let reasonText: string
   switch (source) {
@@ -882,6 +793,12 @@ function getReasonForShowingNotification(
       break
     case 'group':
       reasonText = 'added you to the group'
+      break
+    case 'user':
+      if (sourceSlug && reason === 'user_joined_to_bet_on_your_market')
+        reasonText = 'joined to bet on your market'
+      else if (sourceSlug) reasonText = 'joined because you shared'
+      else reasonText = 'joined because of you'
       break
     default:
       reasonText = ''
