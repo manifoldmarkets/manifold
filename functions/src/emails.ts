@@ -16,6 +16,10 @@ const from = {
   from: 'David from Manifold <david@manifold.markets>',
 }
 
+const userIsEmailSubscribed = (user: PrivateUser | undefined, emailType: keyof PrivateUser): user is PrivateUser & {email: string} => {
+  return !!(user?.email && !user[emailType])
+}
+
 export const sendMarketResolutionEmail = async (
   userId: string,
   investment: number,
@@ -28,10 +32,7 @@ export const sendMarketResolutionEmail = async (
   resolutions?: { [outcome: string]: number }
 ) => {
   const privateUser = await getPrivateUser(userId)
-  if (
-    !privateUser?.email ||
-    privateUser.unsubscribedFromResolutionEmails
-  )
+  if (!userIsEmailSubscribed(privateUser, 'unsubscribedFromResolutionEmails'))
     return
 
   const user = await getUser(userId)
@@ -147,10 +148,7 @@ export const sendOneWeekBonusEmail = async (
   user: User,
   privateUser: PrivateUser
 ) => {
-  if (
-    !privateUser?.email ||
-    privateUser.unsubscribedFromGenericEmails
-  )
+  if (!userIsEmailSubscribed(privateUser, 'unsubscribedFromGenericEmails'))
     return
 
   const { name, id: userId } = user
@@ -176,10 +174,7 @@ export const sendThankYouEmail = async (
   user: User,
   privateUser: PrivateUser
 ) => {
-  if (
-    !privateUser?.email ||
-    privateUser.unsubscribedFromGenericEmails
-  )
+  if (!userIsEmailSubscribed(privateUser, 'unsubscribedFromGenericEmails'))
     return
 
   const { name, id: userId } = user
@@ -205,10 +200,7 @@ export const sendMarketCloseEmail = async (
   privateUser: PrivateUser,
   contract: Contract
 ) => {
-  if (
-    !privateUser?.email ||
-    privateUser.unsubscribedFromResolutionEmails
-  )
+  if (!userIsEmailSubscribed(privateUser, 'unsubscribedFromResolutionEmails'))
     return
 
   const { username, name, id: userId } = user
@@ -246,10 +238,8 @@ export const sendNewCommentEmail = async (
   answerId?: string
 ) => {
   const privateUser = await getPrivateUser(userId)
-  if (
-    !privateUser?.email ||
-    privateUser.unsubscribedFromCommentEmails
-  )
+
+  if (!userIsEmailSubscribed(privateUser, 'unsubscribedFromCommentEmails'))
     return
 
   const { question, creatorUsername, slug } = contract
@@ -325,10 +315,7 @@ export const sendNewAnswerEmail = async (
   if (answer.userId === userId) return
 
   const privateUser = await getPrivateUser(userId)
-  if (
-    !privateUser?.email ||
-    privateUser.unsubscribedFromAnswerEmails
-  )
+  if (!userIsEmailSubscribed(privateUser, 'unsubscribedFromAnswerEmails'))
     return
 
   const { question, creatorUsername, slug } = contract
