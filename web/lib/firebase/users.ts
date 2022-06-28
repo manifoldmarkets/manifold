@@ -47,6 +47,7 @@ export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
 export const auth = getAuth(app)
 
 export async function getUser(userId: string) {
+  /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
   return (await getDoc(doc(users, userId))).data()!
 }
 
