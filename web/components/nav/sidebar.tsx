@@ -5,7 +5,6 @@ import {
   DotsHorizontalIcon,
   CashIcon,
   HeartIcon,
-  PresentationChartLineIcon,
   UserGroupIcon,
   ChevronDownIcon,
   TrendingUpIcon,
@@ -27,14 +26,9 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Group } from 'common/group'
 
-function getNavigation(username: string) {
+function getNavigation() {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    {
-      name: 'Portfolio',
-      href: `/${username}?tab=bets`,
-      icon: PresentationChartLineIcon,
-    },
     {
       name: 'Notifications',
       href: `/notifications`,
@@ -177,9 +171,7 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
 
   const user = useUser()
-  const navigationOptions = !user
-    ? signedOutNavigation
-    : getNavigation(user?.username || 'error')
+  const navigationOptions = !user ? signedOutNavigation : getNavigation()
   const mobileNavigationOptions = !user
     ? signedOutMobileNavigation
     : signedInMobileNavigation
