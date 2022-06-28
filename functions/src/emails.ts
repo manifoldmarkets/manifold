@@ -12,6 +12,10 @@ import { getValueFromBucket } from '../../common/calculate-dpm'
 import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 
+const from = {
+  from: 'David from Manifold <david@manifold.markets>',
+}
+
 export const sendMarketResolutionEmail = async (
   userId: string,
   investment: number,
@@ -135,9 +139,7 @@ export const sendWelcomeEmail = async (
       name: firstName,
       unsubscribeLink,
     },
-    {
-      from: 'David from Manifold <david@manifold.markets>',
-    }
+    from
   )
 }
 
@@ -167,9 +169,7 @@ export const sendOneWeekBonusEmail = async (
       unsubscribeLink,
       manalink: '', // TODO
     },
-    {
-      from: 'David from Manifold <david@manifold.markets>',
-    }
+    from
   )
 }
 
@@ -197,9 +197,7 @@ export const sendThankYouEmail = async (
       name: firstName,
       unsubscribeLink,
     },
-    {
-      from: 'David from Manifold <david@manifold.markets>',
-    }
+    from
   )
 }
 
