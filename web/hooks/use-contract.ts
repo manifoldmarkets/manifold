@@ -1,7 +1,10 @@
 import { useEffect } from 'react'
 import { useFirestoreDocumentData } from '@react-query-firebase/firestore'
-import { Contract, listenForContract } from 'web/lib/firebase/contracts'
-import { contracts } from 'web/lib/firebase/schema'
+import {
+  Contract,
+  contracts,
+  listenForContract,
+} from 'web/lib/firebase/contracts'
 import { useStateCheckEquality } from './use-state-check-equality'
 import { doc, DocumentData } from 'firebase/firestore'
 

@@ -15,8 +15,7 @@ import {
 } from 'firebase/firestore'
 import { sortBy, sum } from 'lodash'
 
-import { getValues, listenForValue, listenForValues } from './utils'
-import { contracts } from './schema'
+import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract } from 'common/contract'
 import { getDpmProbability } from 'common/calculate-dpm'
 import { createRNG, shuffle } from 'common/util/random'
@@ -27,6 +26,9 @@ import { MAX_FEED_CONTRACTS } from 'common/recommended-contracts'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
+
+export const contracts = coll<Contract>('contracts')
+
 export type { Contract }
 
 export function contractPath(contract: Contract) {

@@ -1,9 +1,10 @@
-import { ManalinkTxn, DonationTxn, TipTxn } from 'common/txn'
+import { ManalinkTxn, DonationTxn, TipTxn, Txn } from 'common/txn'
 import { orderBy, query, where } from 'firebase/firestore'
-import { txns } from './schema'
-import { getValues, listenForValues } from './utils'
+import { coll, getValues, listenForValues } from './utils'
 import { useState, useEffect } from 'react'
 import { orderBy as _orderBy } from 'lodash'
+
+export const txns = coll<Txn>('txns')
 
 const getCharityQuery = (charityId: string) =>
   query(

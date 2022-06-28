@@ -23,14 +23,22 @@ import {
 import { throttle, zip } from 'lodash'
 
 import { app, db } from './init'
-import { privateUsers, users } from './schema'
 import { PortfolioMetrics, PrivateUser, User } from 'common/user'
 import { createUser } from './fn-call'
-import { getValue, getValues, listenForValue, listenForValues } from './utils'
+import {
+  coll,
+  getValue,
+  getValues,
+  listenForValue,
+  listenForValues,
+} from './utils'
 import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
+
+export const users = coll<User>('users')
+export const privateUsers = coll<PrivateUser>('private-users')
 
 export type { User }
 

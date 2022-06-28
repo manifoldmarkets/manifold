@@ -1,10 +1,11 @@
 import { getDoc, orderBy, query, setDoc, where } from 'firebase/firestore'
 import { doc } from 'firebase/firestore'
 import { Manalink } from '../../../common/manalink'
-import { manalinks } from './schema'
 import { customAlphabet } from 'nanoid'
-import { listenForValues } from './utils'
+import { coll, listenForValues } from './utils'
 import { useEffect, useState } from 'react'
+
+export const manalinks = coll<Manalink>('manalinks')
 
 export async function createManalink(data: {
   fromId: string

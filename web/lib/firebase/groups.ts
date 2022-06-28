@@ -9,9 +9,16 @@ import {
 import { sortBy } from 'lodash'
 import { Group } from 'common/group'
 import { getContractFromId } from './contracts'
-import { groups } from './schema'
-import { getValue, getValues, listenForValue, listenForValues } from './utils'
+import {
+  coll,
+  getValue,
+  getValues,
+  listenForValue,
+  listenForValues,
+} from './utils'
 import { filterDefined } from 'common/util/array'
+
+export const groups = coll<Group>('groups')
 
 export function groupPath(
   groupSlug: string,

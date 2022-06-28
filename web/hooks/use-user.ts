@@ -10,8 +10,8 @@ import {
   listenForPrivateUser,
   listenForUser,
   User,
+  users,
 } from 'web/lib/firebase/users'
-import { users } from 'web/lib/firebase/schema'
 import { useStateCheckEquality } from './use-state-check-equality'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 
