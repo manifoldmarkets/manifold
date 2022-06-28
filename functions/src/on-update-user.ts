@@ -78,7 +78,7 @@ export const onUpdateUser = functions.firestore
       }
 
       const txnDoc = await firestore.collection(`txns/`).doc(txn.id)
-      await transaction.set(txnDoc, removeUndefinedProps(txn))
+      await transaction.set(txnDoc, txn)
       console.log('created referral with txn id:', txn.id)
       transaction.update(referredByUserDoc, {
         balance: referredByUser.balance + referralAmount,

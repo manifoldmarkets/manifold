@@ -5,15 +5,6 @@ import { User } from 'common/user'
 import { Manalink } from 'common/manalink'
 import { runTxn, TxnData } from './transact'
 
-// if the userId claiming the manalink just signed up:
-// - the manalink funds come from the house
-// -
-// if the manalink has a refergroupid:
-//  - add the user to the group
-// in on-create-txn detect if it was a referral bonus, create notification for both parties
-// necessary for manalink: authentication from fromUser
-// - sending user's funds
-// - allowing new user to join closed group
 export const claimManalink = functions
   .runWith({ minInstances: 1 })
   .https.onCall(async (slug: string, context) => {

@@ -201,21 +201,6 @@ export function listenForLogin(onUser: (user: User | null) => void) {
   })
 }
 
-// create new signup banner on markets for referrees
-// markets that someone signs up to bet on are referred to the market's creator
-// it would be great if you could invite someone to your group/allowlist their email
-// invite a user to your group with a unique link
-// pass the referrer id to this function
-// add the referrer id to the new user's field
-// in on-update-user check if the new user had a referrer,add the new user's ide to the referrees field
-// create a txn for both
-// create on-create-txn that checks why it was created, create a notification for it
-
-// manalinks no required for:
-// referral from: user to site, user to another user's market, open group, implicit from market creator
-// from groups or market page, get the manalink id from the url and pass it here
-// then claim it upon successful signup
-//
 export async function firebaseLogin() {
   const provider = new GoogleAuthProvider()
   return signInWithPopup(auth, provider)
