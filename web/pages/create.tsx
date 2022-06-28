@@ -27,6 +27,8 @@ import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { CATEGORIES } from 'common/categories'
 import { User } from 'common/user'
+import { TextEditor } from 'web/components/editor'
+import { JSONContent } from '@tiptap/react'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -87,7 +89,6 @@ export function NewContract(props: {
   const [initialProb] = useState(50)
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
-  const [description, setDescription] = useState('')
   // const [tagText, setTagText] = useState<string>(tag ?? '')
   // const tags = parseWordsAsTags(tagText)
   useEffect(() => {
@@ -132,8 +133,7 @@ export function NewContract(props: {
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
-  const hasUnsavedChanges = !isSubmitting && Boolean(question || description)
-  useWarnUnsavedChanges(hasUnsavedChanges)
+  useWarnUnsavedChanges(!isSubmitting && Boolean(question))
 
   const isValid =
     (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&
@@ -158,11 +158,13 @@ export function NewContract(props: {
     setCloseDate(newCloseDate)
   }
 
-  async function submit() {
+  function submit() {
     // TODO: Tell users why their contract is invalid
     if (!creator || !isValid) return
-
     setIsSubmitting(true)
+  }
+
+  async function onSubmit(description?: JSONContent) {
     // TODO: add contract id to the group contractIds
     try {
       const result = await createMarket(
@@ -353,15 +355,13 @@ export function NewContract(props: {
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
-        <Textarea
-          className="textarea textarea-bordered w-full resize-none"
+        <TextEditor
+          className="w-full"
           rows={3}
-          maxLength={MAX_DESCRIPTION_LENGTH}
+          max={MAX_DESCRIPTION_LENGTH}
           placeholder={descriptionPlaceholder}
-          value={description}
-          disabled={isSubmitting}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => setDescription(e.target.value || '')}
+          sending={isSubmitting}
+          onSend={onSubmit}
         />
       </div>
 
