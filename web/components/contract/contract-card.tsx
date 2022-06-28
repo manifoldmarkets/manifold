@@ -17,7 +17,7 @@ import {
   FreeResponseOutcomeLabel,
 } from '../outcome-label'
 import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
-import { AvatarDetails, MiscDetails } from './contract-details'
+import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { QuickBet, ProbBar, getColor } from './quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
@@ -28,13 +28,12 @@ import { trackCallback } from 'web/lib/service/analytics'
 export function ContractCard(props: {
   contract: Contract
   showHotVolume?: boolean
-  showCloseTime?: boolean
+  showTime?: ShowTime
   className?: string
   onClick?: () => void
   hideQuickBet?: boolean
 }) {
-  const { showHotVolume, showCloseTime, className, onClick, hideQuickBet } =
-    props
+  const { showHotVolume, showTime, className, onClick, hideQuickBet } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
   const { resolution } = contract
@@ -118,7 +117,7 @@ export function ContractCard(props: {
             <MiscDetails
               contract={contract}
               showHotVolume={showHotVolume}
-              showCloseTime={showCloseTime}
+              showTime={showTime}
             />
           </Col>
           {showQuickBet ? (

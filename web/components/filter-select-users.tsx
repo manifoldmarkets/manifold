@@ -1,12 +1,11 @@
 import { UserIcon } from '@heroicons/react/outline'
 import { useUsers } from 'web/hooks/use-users'
 import { User } from 'common/user'
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { Menu, Transition } from '@headlessui/react'
 import { Avatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
-import { debounce } from 'lodash'
 
 export function FilterSelectUsers(props: {
   setSelectedUsers: (users: User[]) => void
@@ -16,18 +15,20 @@ export function FilterSelectUsers(props: {
   const { ignoreUserIds, selectedUsers, setSelectedUsers } = props
   const users = useUsers()
   const [query, setQuery] = useState('')
-
-  const filteredUsers =
-    query === ''
-      ? users
-      : users.filter((user: User) => {
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
+  const beginQuerying = query.length > 2
+  useMemo(() => {
+    if (beginQuerying)
+      setFilteredUsers(
+        users.filter((user: User) => {
           return (
             !selectedUsers.map((user) => user.name).includes(user.name) &&
             !ignoreUserIds.includes(user.id) &&
             user.name.toLowerCase().includes(query.toLowerCase())
           )
         })
-  const debouncedQuery = debounce(setQuery, 50)
+      )
+  }, [beginQuerying, users, selectedUsers, ignoreUserIds, query])
 
   return (
     <div>
@@ -40,7 +41,7 @@ export function FilterSelectUsers(props: {
           name="user name"
           id="user name"
           value={query}
-          onChange={(e) => debouncedQuery(e.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           className="input input-bordered block w-full pl-10 focus:border-gray-300 "
           placeholder="Austin Chen"
         />
@@ -48,13 +49,13 @@ export function FilterSelectUsers(props: {
       <Menu
         as="div"
         className={clsx(
-          'relative inline-block w-full text-right',
-          query !== '' && 'h-36'
+          'relative inline-block w-full overflow-y-scroll text-right',
+          beginQuerying && 'h-36'
         )}
       >
         {({}) => (
           <Transition
-            show={query !== ''}
+            show={beginQuerying}
             as={Fragment}
             enter="transition ease-out duration-100"
             enterFrom="transform opacity-0 scale-95"

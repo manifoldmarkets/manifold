@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import {
+  getGroupsWithContractId,
   listenForGroup,
   listenForGroups,
   listenForMemberGroups,
@@ -64,15 +65,24 @@ export const useMemberGroupIds = (user: User | null | undefined) => {
 export function useMembers(group: Group) {
   const [members, setMembers] = useState<User[]>([])
   useEffect(() => {
-    const { memberIds, creatorId } = group
-    if (memberIds.length > 1)
-      // get users via their user ids:
-      Promise.all(
-        memberIds.filter((mId) => mId !== creatorId).map(getUser)
-      ).then((users) => {
-        const members = users.filter((user) => user)
-        setMembers(members)
-      })
+    const { memberIds } = group
+    if (memberIds.length > 0) {
+      listMembers(group).then((members) => setMembers(members))
+    }
   }, [group])
   return members
+}
+
+export async function listMembers(group: Group) {
+  return await Promise.all(group.memberIds.map(getUser))
+}
+
+export const useGroupsWithContract = (contractId: string | undefined) => {
+  const [groups, setGroups] = useState<Group[] | null | undefined>()
+
+  useEffect(() => {
+    if (contractId) getGroupsWithContractId(contractId, setGroups)
+  }, [contractId])
+
+  return groups
 }

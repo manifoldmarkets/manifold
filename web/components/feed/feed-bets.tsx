@@ -4,9 +4,9 @@ import { Bet } from 'common/bet'
 import { User } from 'common/user'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/avatar'
+import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import clsx from 'clsx'
-import { UserIcon, UsersIcon } from '@heroicons/react/solid'
+import { UsersIcon } from '@heroicons/react/solid'
 import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -50,9 +50,7 @@ export function FeedBet(props: {
           />
         ) : (
           <div className="relative px-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-              <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
-            </div>
+            <EmptyAvatar />
           </div>
         )}
         <div className={'min-w-0 flex-1 py-1.5'}>

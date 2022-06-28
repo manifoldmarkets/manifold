@@ -4,6 +4,7 @@ admin.initializeApp()
 
 // v1
 // export * from './keep-awake'
+export * from './claim-manalink'
 export * from './transact'
 export * from './resolve-market'
 export * from './stripe'
@@ -14,6 +15,7 @@ export * from './on-create-comment'
 export * from './on-view'
 export * from './unsubscribe'
 export * from './update-metrics'
+export * from './update-stats'
 export * from './backup-db'
 export * from './change-user-info'
 export * from './market-close-notifications'

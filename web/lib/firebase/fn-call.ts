@@ -68,3 +68,8 @@ export const addLiquidity = (data: { amount: number; contractId: string }) => {
     .then((r) => r.data as { status: string })
     .catch((e) => ({ status: 'error', message: e.message }))
 }
+
+export const claimManalink = cloudFunction<
+  string,
+  { status: 'error' | 'success'; message?: string }
+>('claimManalink')

@@ -17,7 +17,6 @@ import {
   outcomeType,
 } from 'common/contract'
 import { formatMoney } from 'common/util/format'
-import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { getGroup, updateGroup } from 'web/lib/firebase/groups'
@@ -27,6 +26,7 @@ import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { CATEGORIES } from 'common/categories'
+import { User } from 'common/user'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -34,7 +34,13 @@ export default function Create() {
   const router = useRouter()
   const { groupId } = router.query as { groupId: string }
   useTracking('view create page')
-  if (!router.isReady) return <div />
+  const creator = useUser()
+
+  useEffect(() => {
+    if (creator === null) router.push('/')
+  }, [creator, router])
+
+  if (!router.isReady || !creator) return <div />
 
   return (
     <Page>
@@ -59,7 +65,11 @@ export default function Create() {
             </div>
           </form>
           <Spacer h={6} />
-          <NewContract question={question} groupId={groupId} />
+          <NewContract
+            question={question}
+            groupId={groupId}
+            creator={creator}
+          />
         </div>
       </div>
     </Page>
@@ -67,14 +77,12 @@ export default function Create() {
 }
 
 // Allow user to create a new contract
-export function NewContract(props: { question: string; groupId?: string }) {
-  const { question, groupId } = props
-  const creator = useUser()
-
-  useEffect(() => {
-    if (creator === null) router.push('/')
-  }, [creator])
-
+export function NewContract(props: {
+  creator: User
+  question: string
+  groupId?: string
+}) {
+  const { creator, question, groupId } = props
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb] = useState(50)
   const [minString, setMinString] = useState('')
@@ -92,11 +100,6 @@ export function NewContract(props: { question: string; groupId?: string }) {
       })
   }, [creator, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
-
-  const mustWaitForDailyFreeMarketStatus = useHasCreatedContractToday(creator)
-  const isFree =
-    mustWaitForDailyFreeMarketStatus != 'loading' &&
-    !mustWaitForDailyFreeMarketStatus
 
   // useEffect(() => {
   //   if (ante === null && creator) {
@@ -138,9 +141,7 @@ export function NewContract(props: { question: string; groupId?: string }) {
     ante !== undefined &&
     ante !== null &&
     ante >= MINIMUM_ANTE &&
-    (ante <= balance ||
-      (mustWaitForDailyFreeMarketStatus != 'loading' &&
-        !mustWaitForDailyFreeMarketStatus)) &&
+    ante <= balance &&
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now() &&
@@ -175,13 +176,14 @@ export function NewContract(props: { question: string; groupId?: string }) {
           min,
           max,
           groupId: selectedGroup?.id,
+          tags: category ? [category] : undefined,
         })
       )
       track('create market', {
         slug: result.slug,
         initialProb,
         selectedGroup: selectedGroup?.id,
-        isFree,
+        isFree: false,
       })
       if (result && selectedGroup) {
         await updateGroup(selectedGroup, {
@@ -369,41 +371,26 @@ export function NewContract(props: { question: string; groupId?: string }) {
         <div className="form-control mb-1 items-start">
           <label className="label mb-1 gap-2">
             <span>Cost</span>
-            {mustWaitForDailyFreeMarketStatus != 'loading' &&
-              mustWaitForDailyFreeMarketStatus && (
-                <InfoTooltip
-                  text={`Cost to create your question. This amount is used to subsidize betting.`}
-                />
-              )}
+            <InfoTooltip
+              text={`Cost to create your question. This amount is used to subsidize betting.`}
+            />
           </label>
-          {mustWaitForDailyFreeMarketStatus != 'loading' &&
-          !mustWaitForDailyFreeMarketStatus ? (
-            <div className="label-text text-primary pl-1">
-              <span className={'label-text text-neutral line-through '}>
-                {formatMoney(ante)}
-              </span>{' '}
-              FREE
+
+          <div className="label-text text-neutral pl-1">
+            {formatMoney(ante)}
+          </div>
+
+          {ante > balance && (
+            <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+              <span className="mr-2 text-red-500">Insufficient balance</span>
+              <button
+                className="btn btn-xs btn-primary"
+                onClick={() => (window.location.href = '/add-funds')}
+              >
+                Get M$
+              </button>
             </div>
-          ) : (
-            mustWaitForDailyFreeMarketStatus != 'loading' && (
-              <div className="label-text text-neutral pl-1">
-                {formatMoney(ante)}
-              </div>
-            )
           )}
-          {mustWaitForDailyFreeMarketStatus != 'loading' &&
-            mustWaitForDailyFreeMarketStatus &&
-            ante > balance && (
-              <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-                <span className="mr-2 text-red-500">Insufficient balance</span>
-                <button
-                  className="btn btn-xs btn-primary"
-                  onClick={() => (window.location.href = '/add-funds')}
-                >
-                  Get M$
-                </button>
-              </div>
-            )}
         </div>
 
         <button

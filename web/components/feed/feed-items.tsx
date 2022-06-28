@@ -35,6 +35,7 @@ import {
 } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
 import { CPMMBinaryContract, NumericContract } from 'common/contract'
+import { FeedLiquidity } from './feed-liquidity'
 
 export function FeedItems(props: {
   contract: Contract
@@ -86,6 +87,8 @@ export function FeedItem(props: { item: ActivityItem }) {
       return <FeedDescription {...item} />
     case 'bet':
       return <FeedBet {...item} />
+    case 'liquidity':
+      return <FeedLiquidity {...item} />
     case 'answergroup':
       return <FeedAnswerCommentGroup {...item} />
     case 'close':

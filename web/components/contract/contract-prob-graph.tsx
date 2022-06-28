@@ -56,7 +56,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
 
   const timeStep: number = latestTime.diff(startDate, 'ms') / totalPoints
   const points: { x: Date; y: number }[] = []
-  for (let i = 0; i < times.length; i++) {
+  for (let i = 0; i < times.length - 1; i++) {
     points[points.length] = { x: times[i], y: probs[i] * 100 }
     const numPoints: number = Math.floor(
       dayjs(times[i + 1]).diff(dayjs(times[i]), 'ms') / timeStep

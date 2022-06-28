@@ -12,13 +12,17 @@ service cloud.firestore {
              || request.auth.uid == 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // Manifold
     }
 
+    match /stats/stats {
+      allow read;
+    }
+
     match /users/{userId} {
       allow read;
       allow update: if resource.data.id == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
                                                                     .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories']);
     }
-    
+
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
       allow read;
     }
@@ -102,6 +106,16 @@ service cloud.firestore {
 
     match /txns/{txnId} {
       allow read;
+    }
+
+    // Note: `resource` = existing doc, `request.resource` = incoming doc
+    match /manalinks/{slug} {
+      // Anyone can view any manalink
+      allow get;
+      // Only you can create a manalink with your fromId
+      allow create: if request.auth.uid == request.resource.data.fromId;
+      // Only you can list and change your own manalinks
+      allow list, update: if request.auth.uid == resource.data.fromId;
     }
 
     match /users/{userId}/notifications/{notificationId} {

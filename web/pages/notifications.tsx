@@ -7,7 +7,7 @@ import {
   notification_source_types,
   notification_source_update_types,
 } from 'common/notification'
-import { Avatar } from 'web/components/avatar'
+import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
@@ -25,7 +25,6 @@ import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { listenForPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import clsx from 'clsx'
-import { UsersIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
 import {
@@ -235,9 +234,7 @@ function NotificationGroupItem(props: {
         />
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-          <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
-        </div>
+        <EmptyAvatar multi />
         <div className={'flex-1 overflow-hidden pl-2 sm:flex'}>
           <div
             onClick={() => setExpanded(!expanded)}

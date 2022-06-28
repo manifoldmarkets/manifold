@@ -2,6 +2,7 @@ const API_DOCS_URL = 'https://docs.manifold.markets/api'
 
 /** @type {import('next').NextConfig} */
 module.exports = {
+  staticPageGenerationTimeout: 600, // e.g. stats page
   reactStrictMode: true,
   experimental: {
     externalDir: true,

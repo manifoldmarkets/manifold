@@ -21,13 +21,12 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth'
-import { range, throttle, zip } from 'lodash'
+import { throttle, zip } from 'lodash'
 
 import { app } from './init'
-import { PrivateUser, User } from 'common/user'
+import { PortfolioMetrics, PrivateUser, User } from 'common/user'
 import { createUser } from './fn-call'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
-import { DAY_MS } from 'common/util/time'
 import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
@@ -35,7 +34,7 @@ import { filterDefined } from 'common/util/array'
 
 export type { User }
 
-export type LeaderboardPeriod = 'daily' | 'weekly' | 'monthly' | 'allTime'
+export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
 
 const db = getFirestore(app)
 export const auth = getAuth(app)
@@ -128,7 +127,7 @@ export function listenForLogin(onUser: (user: User | null) => void) {
 
 export async function firebaseLogin() {
   const provider = new GoogleAuthProvider()
-  signInWithPopup(auth, provider)
+  return signInWithPopup(auth, provider)
 }
 
 export async function firebaseLogout() {
@@ -180,7 +179,7 @@ export function listenForPrivateUsers(
   listenForValues(q, setUsers)
 }
 
-export function getTopTraders(period: LeaderboardPeriod) {
+export function getTopTraders(period: Period) {
   const topTraders = query(
     collection(db, 'users'),
     orderBy('profitCached.' + period, 'desc'),
@@ -190,7 +189,7 @@ export function getTopTraders(period: LeaderboardPeriod) {
   return getValues(topTraders)
 }
 
-export function getTopCreators(period: LeaderboardPeriod) {
+export function getTopCreators(period: Period) {
   const topCreators = query(
     collection(db, 'users'),
     orderBy('creatorVolumeCached.' + period, 'desc'),
@@ -212,30 +211,6 @@ const topFollowedQuery = query(
 
 export function getUsers() {
   return getValues<User>(collection(db, 'users'))
-}
-
-const getUsersQuery = (startTime: number, endTime: number) =>
-  query(
-    collection(db, 'users'),
-    where('createdTime', '>=', startTime),
-    where('createdTime', '<', endTime),
-    orderBy('createdTime', 'asc')
-  )
-
-export async function getDailyNewUsers(
-  startTime: number,
-  numberOfDays: number
-) {
-  const query = getUsersQuery(startTime, startTime + DAY_MS * numberOfDays)
-  const users = await getValues<User>(query)
-
-  const usersByDay = range(0, numberOfDays).map(() => [] as User[])
-  for (const user of users) {
-    const dayIndex = Math.floor((user.createdTime - startTime) / DAY_MS)
-    usersByDay[dayIndex].push(user)
-  }
-
-  return usersByDay
 }
 
 export async function getUserFeed(userId: string) {
@@ -268,6 +243,16 @@ export async function follow(userId: string, followedUserId: string) {
 export async function unfollow(userId: string, unfollowedUserId: string) {
   const followDoc = doc(db, 'users', userId, 'follows', unfollowedUserId)
   await deleteDoc(followDoc)
+}
+
+export async function getPortfolioHistory(userId: string) {
+  return getValues<PortfolioMetrics>(
+    query(
+      collectionGroup(db, 'portfolioHistory'),
+      where('userId', '==', userId),
+      orderBy('timestamp', 'asc')
+    )
+  )
 }
 
 export function listenForFollows(

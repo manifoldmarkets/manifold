@@ -1,7 +1,7 @@
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
-import React, { useEffect, memo, useState } from 'react'
+import React, { useEffect, memo, useState, useMemo } from 'react'
 import { Avatar } from 'web/components/avatar'
 import { Group } from 'common/group'
 import { Comment, createCommentOnGroup } from 'web/lib/firebase/comments'
@@ -19,7 +19,7 @@ import { UserLink } from 'web/components/user-page'
 import { groupPath } from 'web/lib/firebase/groups'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 
-export function Discussion(props: {
+export function GroupChat(props: {
   messages: Comment[]
   user: User | null | undefined
   group: Group
@@ -33,15 +33,39 @@ export function Discussion(props: {
   const [scrollToMessageRef, setScrollToMessageRef] =
     useState<HTMLDivElement | null>(null)
   const [replyToUsername, setReplyToUsername] = useState('')
+  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
+  const [groupedMessages, setGroupedMessages] = useState<Comment[]>([])
   const router = useRouter()
+
+  useMemo(() => {
+    // Group messages with createdTime within 2 minutes of each other.
+    const tempMessages = []
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i]
+      if (i === 0) tempMessages.push({ ...message })
+      else {
+        const prevMessage = messages[i - 1]
+        const diff = message.createdTime - prevMessage.createdTime
+        const creatorsMatch = message.userId === prevMessage.userId
+        if (diff < 2 * 60 * 1000 && creatorsMatch) {
+          tempMessages[tempMessages.length - 1].text += `\n${message.text}`
+        } else {
+          tempMessages.push({ ...message })
+        }
+      }
+    }
+
+    setGroupedMessages(tempMessages)
+  }, [messages])
 
   useEffect(() => {
     scrollToMessageRef?.scrollIntoView()
   }, [scrollToMessageRef])
 
   useEffect(() => {
-    scrollToBottomRef?.scrollIntoView()
-  }, [isSubmitting, scrollToBottomRef])
+    if (!isSubmitting)
+      scrollToBottomRef?.scrollTo({ top: scrollToBottomRef?.scrollHeight || 0 })
+  }, [scrollToBottomRef, isSubmitting])
 
   useEffect(() => {
     const elementInUrl = router.asPath.split('#')[1]
@@ -65,6 +89,7 @@ export function Discussion(props: {
     setMessageText('')
     setIsSubmitting(false)
     setReplyToUsername('')
+    inputRef?.focus()
   }
 
   return (
@@ -73,8 +98,9 @@ export function Discussion(props: {
         className={
           'max-h-[65vh] w-full space-y-2 overflow-x-hidden overflow-y-scroll'
         }
+        ref={setScrollToBottomRef}
       >
-        {messages.map((message, i) => (
+        {groupedMessages.map((message) => (
           <GroupMessage
             user={user}
             key={message.id}
@@ -85,8 +111,6 @@ export function Discussion(props: {
             setRef={
               scrollToMessageId === message.id
                 ? setScrollToMessageRef
-                : i === messages.length - 1
-                ? setScrollToBottomRef
                 : undefined
             }
           />
@@ -116,6 +140,7 @@ export function Discussion(props: {
               submitComment={submitMessage}
               isSubmitting={isSubmitting}
               enterToSubmit={true}
+              setRef={setInputRef}
             />
           </div>
         </div>
@@ -128,58 +153,62 @@ const GroupMessage = memo(function GroupMessage_(props: {
   user: User | null | undefined
   comment: Comment
   group: Group
-  truncate?: boolean
-  smallAvatar?: boolean
   onReplyClick?: (comment: Comment) => void
   setRef?: (ref: HTMLDivElement) => void
   highlight?: boolean
 }) {
-  const { comment, truncate, onReplyClick, group, setRef, highlight, user } =
-    props
+  const { comment, onReplyClick, group, setRef, highlight, user } = props
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
+  const isCreatorsComment = user && comment.userId === user.id
   return (
-    <Row
+    <Col
       ref={setRef}
       className={clsx(
-        comment.userId === user?.id ? 'mr-2 self-end' : ' ml-2',
-        'w-fit space-x-1.5 rounded-md bg-white p-2 px-4 transition-all duration-1000 sm:space-x-3',
+        isCreatorsComment ? 'mr-2 self-end' : '',
+        'w-fit max-w-sm gap-1 space-x-3 rounded-md bg-white p-1 text-sm text-gray-500 transition-colors duration-1000  sm:max-w-md sm:p-3 sm:leading-[1.3rem]',
         highlight ? `-m-1 bg-indigo-500/[0.2] p-2` : ''
       )}
     >
-      <Avatar
-        className={'ml-1'}
-        size={'sm'}
-        username={userUsername}
-        avatarUrl={userAvatarUrl}
-      />
-      <div className="w-full">
-        <div className="mt-0.5 pl-0.5 text-sm text-gray-500">
-          <UserLink
-            className="text-gray-500"
-            username={userUsername}
-            name={userName}
-          />{' '}
-          <CopyLinkDateTimeComponent
-            prefix={'group'}
-            slug={group.slug}
-            createdTime={createdTime}
-            elementId={comment.id}
-          />
-        </div>
+      <Row className={'items-center'}>
+        {!isCreatorsComment && (
+          <Col>
+            <Avatar
+              className={'mx-2 ml-2.5'}
+              size={'xs'}
+              username={userUsername}
+              avatarUrl={userAvatarUrl}
+            />
+          </Col>
+        )}
+        {!isCreatorsComment ? (
+          <UserLink username={userUsername} name={userName} />
+        ) : (
+          <span className={'ml-2.5'}>{'You'}</span>
+        )}
+        <CopyLinkDateTimeComponent
+          prefix={'group'}
+          slug={group.slug}
+          createdTime={createdTime}
+          elementId={comment.id}
+        />
+      </Row>
+      <Row className={'text-black'}>
         <TruncatedComment
           comment={text}
           moreHref={groupPath(group.slug)}
-          shouldTruncate={truncate}
+          shouldTruncate={false}
         />
-        {onReplyClick && (
-          <button
-            className={'text-xs font-bold text-gray-500 hover:underline'}
-            onClick={() => onReplyClick(comment)}
-          >
-            Reply
-          </button>
-        )}
-      </div>
-    </Row>
+      </Row>
+      {!isCreatorsComment && onReplyClick && (
+        <button
+          className={
+            'self-start py-1 text-xs font-bold text-gray-500 hover:underline'
+          }
+          onClick={() => onReplyClick(comment)}
+        >
+          Reply
+        </button>
+      )}
+    </Col>
   )
 })
