@@ -123,7 +123,7 @@ export const sendWelcomeEmail = async (
   user: User,
   privateUser: PrivateUser
 ) => {
-  if (!privateUser || !privateUser.email) return
+  if (!privateUser?.email) return
 
   const { name, id: userId } = user
   const firstName = name.split(' ')[0]
