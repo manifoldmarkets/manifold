@@ -29,9 +29,8 @@ export const sendMarketResolutionEmail = async (
 ) => {
   const privateUser = await getPrivateUser(userId)
   if (
-    !privateUser ||
-    privateUser.unsubscribedFromResolutionEmails ||
-    !privateUser.email
+    !privateUser?.email ||
+    privateUser.unsubscribedFromResolutionEmails
   )
     return
 
@@ -207,9 +206,8 @@ export const sendMarketCloseEmail = async (
   contract: Contract
 ) => {
   if (
-    !privateUser ||
-    privateUser.unsubscribedFromResolutionEmails ||
-    !privateUser.email
+    !privateUser?.email ||
+    privateUser.unsubscribedFromResolutionEmails
   )
     return
 
