@@ -81,13 +81,16 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
     }
   }
 
-  const data = [{ id: 'Yes', data: points, color: '#11b981' }]
+  const isBinary = contract.outcomeType === 'BINARY'
+
+  const data = [
+    { id: 'Yes', data: points, color: isBinary ? '#11b981' : '#5fa5f9' },
+  ]
 
   const multiYear = !dayjs(startDate).isSame(latestTime, 'year')
   const lessThanAWeek = dayjs(startDate).add(8, 'day').isAfter(latestTime)
 
-  const formatter =
-    contract.outcomeType === 'BINARY' ? formatPercent : formatNumeric
+  const formatter = isBinary ? formatPercent : formatNumeric
 
   return (
     <div

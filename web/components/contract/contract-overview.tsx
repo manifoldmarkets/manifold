@@ -11,6 +11,7 @@ import {
   FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
+  PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
 import BetRow from '../bet-row'
@@ -50,6 +51,13 @@ export const ContractOverview = (props: {
             />
           )}
 
+          {isPseudoNumeric && (
+            <PseudoNumericResolutionOrExpectation
+              contract={contract}
+              className="hidden items-end xl:flex"
+            />
+          )}
+
           {outcomeType === 'NUMERIC' && (
             <NumericResolutionOrExpectation
               contract={contract}
@@ -62,6 +70,11 @@ export const ContractOverview = (props: {
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
 
+            {tradingAllowed(contract) && <BetRow contract={contract} />}
+          </Row>
+        ) : isPseudoNumeric ? (
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <PseudoNumericResolutionOrExpectation contract={contract} />
             {tradingAllowed(contract) && <BetRow contract={contract} />}
           </Row>
         ) : (

@@ -25,7 +25,7 @@ import { APIError, placeBet } from 'web/lib/firebase/api-call'
 import { sellShares } from 'web/lib/firebase/api-call'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
-import { BinaryOutcomeLabel } from './outcome-label'
+import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from './outcome-label'
 import {
   calculatePayoutAfterCorrectBet,
   calculateShares,
@@ -46,7 +46,7 @@ import { isIOS } from 'web/lib/util/device'
 import { track } from 'web/lib/service/analytics'
 
 export function BetPanel(props: {
-  contract: BinaryContract
+  contract: BinaryContract | PseudoNumericContract
   className?: string
 }) {
   const { contract, className } = props
@@ -85,7 +85,7 @@ export function BetPanel(props: {
 }
 
 export function BetPanelSwitcher(props: {
-  contract: BinaryContract
+  contract: BinaryContract | PseudoNumericContract
   className?: string
   title?: string // Set if BetPanel is on a feed modal
   selected?: 'YES' | 'NO'
@@ -93,7 +93,8 @@ export function BetPanelSwitcher(props: {
 }) {
   const { contract, className, title, selected, onBetSuccess } = props
 
-  const { mechanism } = contract
+  const { mechanism, outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
@@ -126,7 +127,12 @@ export function BetPanelSwitcher(props: {
           <Row className="items-center justify-between gap-2">
             <div>
               You have {formatWithCommas(floorShares)}{' '}
-              <BinaryOutcomeLabel outcome={sharesOutcome} /> shares
+              {isPseudoNumeric ? (
+                <PseudoNumericOutcomeLabel outcome={sharesOutcome} />
+              ) : (
+                <BinaryOutcomeLabel outcome={sharesOutcome} />
+              )}{' '}
+              shares
             </div>
 
             {tradeType === 'BUY' && (
@@ -405,7 +411,7 @@ function BuyPanel(props: {
 }
 
 export function SellPanel(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'

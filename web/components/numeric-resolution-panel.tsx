@@ -7,12 +7,12 @@ import { NumberCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { resolveMarket } from 'web/lib/firebase/fn-call'
-import { NumericContract } from 'common/contract'
+import { NumericContract, PseudoNumericContract } from 'common/contract'
 import { BucketInput } from './bucket-input'
 
 export function NumericResolutionPanel(props: {
   creator: User
-  contract: NumericContract
+  contract: NumericContract | PseudoNumericContract
   className?: string
 }) {
   useEffect(() => {

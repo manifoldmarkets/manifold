@@ -142,11 +142,12 @@ export function ContractPageContent(
   const { creatorId, isResolved, question, outcomeType } = contract
 
   const isCreator = user?.id === creatorId
-  const isBinary = outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC'
+  const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
-  const hasSidePanel = (isBinary || isNumeric) && (allowTrade || allowResolve)
+  const hasSidePanel = (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
 
   const ogCardProps = getOpenGraphProps(contract)
 
@@ -159,7 +160,7 @@ export function ContractPageContent(
           <BetPanel className="hidden xl:flex" contract={contract} />
         ))}
       {allowResolve &&
-        (isNumeric ? (
+        (isNumeric || isPseudoNumeric ? (
           <NumericResolutionPanel creator={user} contract={contract} />
         ) : (
           <ResolutionPanel creator={user} contract={contract} />
