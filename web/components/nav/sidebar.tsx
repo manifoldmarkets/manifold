@@ -57,12 +57,10 @@ function getMoreNavigation(user?: User | null) {
   }
 
   return [
+    { name: 'Send M$', href: '/links' },
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Charity', href: '/charity' },
-    { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
-    { name: 'Statistics', href: '/stats' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     {
       name: 'Sign out',
@@ -99,6 +97,18 @@ const signedInMobileNavigation = [
     : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ...signedOutMobileNavigation,
 ]
+
+function getMoreMobileNav() {
+  return [
+    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    { name: 'Statistics', href: '/stats' },
+    {
+      name: 'Sign out',
+      href: '#',
+      onClick: withTracking(firebaseLogout, 'sign out'),
+    },
+  ]
+}
 
 export type Item = {
   name: string
@@ -211,29 +221,7 @@ export default function Sidebar(props: { className?: string }) {
 
         {user && (
           <MenuButton
-            menuItems={[
-              {
-                name: 'Blog',
-                href: 'https://news.manifold.markets',
-              },
-              {
-                name: 'Discord',
-                href: 'https://discord.gg/eHQBNBqXuh',
-              },
-              {
-                name: 'Twitter',
-                href: 'https://twitter.com/ManifoldMarkets',
-              },
-              {
-                name: 'Statistics',
-                href: '/stats',
-              },
-              {
-                name: 'Sign out',
-                href: '#',
-                onClick: withTracking(firebaseLogout, 'sign out'),
-              },
-            ]}
+            menuItems={getMoreMobileNav()}
             buttonContent={<MoreButton />}
           />
         )}
