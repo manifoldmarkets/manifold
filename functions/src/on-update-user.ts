@@ -47,17 +47,16 @@ export const onUpdateUser = functions.firestore
       .collection('txns')
       .where('toId', '==', referredByUserId)
       .where('category', '==', 'REFERRAL')
-    // find txns to this user, find if they have a txn that contains a BANK category txn that contains 'referred by' the current username in the description
     const referralTxns = await getValues<Txn>(txnQuery).catch((err) => {
       console.error('error getting txns:', err)
-      return []
+      throw err
     })
+    // If user has a referral txn contains 'referred by' the current username in the description, halt
     if (referralTxns.map((txn) => txn.description).includes(referredByUserId)) {
       console.log('found referral txn with the same details, aborting')
       return
     }
     console.log('creating referral txns')
-    // TODO: change this to prod id
     const fromId = HOUSE_LIQUIDITY_PROVIDER_ID
     const referralAmount = 500
 
@@ -79,6 +78,7 @@ export const onUpdateUser = functions.firestore
       const txnDoc = await firestore.collection(`txns/`).doc(txn.id)
       await transaction.set(txnDoc, txn)
       console.log('created referral with txn id:', txn.id)
+      // We're currently not subtracting M$ from the house, not sure if we want to for accounting purposes.
       transaction.update(referredByUserDoc, {
         balance: referredByUser.balance + referralAmount,
         totalDeposits: referredByUser.totalDeposits + referralAmount,
