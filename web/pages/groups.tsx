@@ -107,7 +107,7 @@ export default function Groups(props: {
 
             <Tabs
               tabs={[
-                ...(user
+                ...(user && memberGroupIds.length > 0
                   ? [
                       {
                         title: 'My Groups',
