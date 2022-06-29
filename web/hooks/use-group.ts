@@ -29,11 +29,11 @@ export const useGroups = () => {
   return groups
 }
 
-export const useMemberGroups = (user: User | null | undefined) => {
+export const useMemberGroups = (userId: string | null | undefined) => {
   const [memberGroups, setMemberGroups] = useState<Group[] | undefined>()
   useEffect(() => {
-    if (user) return listenForMemberGroups(user.id, setMemberGroups)
-  }, [user])
+    if (userId) return listenForMemberGroups(userId, setMemberGroups)
+  }, [userId])
   return memberGroups
 }
 

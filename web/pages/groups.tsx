@@ -15,6 +15,8 @@ import { getUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
 import { GroupMembersList } from 'web/pages/group/[...slugs]'
 import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
+import { SiteLink } from 'web/components/site-link'
+import clsx from 'clsx'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])
@@ -200,5 +202,18 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
       </div>
       <div className="text-sm text-gray-500">{group.about}</div>
     </Col>
+  )
+}
+
+export function GroupLink(props: { group: Group; className?: string }) {
+  const { group, className } = props
+
+  return (
+    <SiteLink
+      href={groupPath(group.slug)}
+      className={clsx('z-10 truncate', className)}
+    >
+      {group.name}
+    </SiteLink>
   )
 }

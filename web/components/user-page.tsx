@@ -37,6 +37,7 @@ import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
 import { PortfolioMetrics } from 'common/user'
 import { ReferralsButton } from 'web/components/referrals-button'
+import { GroupsButton } from 'web/components/groups/groups-button'
 
 export function UserLink(props: {
   name: string
@@ -199,6 +200,7 @@ export function UserPage(props: {
             <FollowingButton user={user} />
             <FollowersButton user={user} />
             <ReferralsButton user={user} />
+            <GroupsButton user={user} />
           </Row>
 
           {user.website && (
