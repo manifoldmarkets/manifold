@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { sum, mapValues } from 'lodash'
+import { sum } from 'lodash'
 import { useState } from 'react'
 
 import { Contract, FreeResponse } from 'common/contract'
