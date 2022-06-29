@@ -1,5 +1,4 @@
 import {
-  getFirestore,
   doc,
   setDoc,
   getDoc,
@@ -23,58 +22,62 @@ import {
 } from 'firebase/auth'
 import { throttle, zip } from 'lodash'
 
-import { app } from './init'
+import { app, db } from './init'
 import { PortfolioMetrics, PrivateUser, User } from 'common/user'
 import { createUser } from './fn-call'
-import { getValue, getValues, listenForValue, listenForValues } from './utils'
+import {
+  coll,
+  getValue,
+  getValues,
+  listenForValue,
+  listenForValues,
+} from './utils'
 import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
 
+export const users = coll<User>('users')
+export const privateUsers = coll<PrivateUser>('private-users')
+
 export type { User }
 
 export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
 
-const db = getFirestore(app)
 export const auth = getAuth(app)
 
-export const userDocRef = (userId: string) => doc(db, 'users', userId)
-
 export async function getUser(userId: string) {
-  const docSnap = await getDoc(userDocRef(userId))
-  return docSnap.data() as User
+  /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+  return (await getDoc(doc(users, userId))).data()!
 }
 
 export async function getUserByUsername(username: string) {
   // Find a user whose username matches the given username, or null if no such user exists.
-  const userCollection = collection(db, 'users')
-  const q = query(userCollection, where('username', '==', username), limit(1))
-  const docs = await getDocs(q)
-  const users = docs.docs.map((doc) => doc.data() as User)
-  return users[0] || null
+  const q = query(users, where('username', '==', username), limit(1))
+  const docs = (await getDocs(q)).docs
+  return docs.length > 0 ? docs[0].data() : null
 }
 
 export async function setUser(userId: string, user: User) {
-  await setDoc(doc(db, 'users', userId), user)
+  await setDoc(doc(users, userId), user)
 }
 
 export async function updateUser(userId: string, update: Partial<User>) {
-  await updateDoc(doc(db, 'users', userId), { ...update })
+  await updateDoc(doc(users, userId), { ...update })
 }
 
 export async function updatePrivateUser(
   userId: string,
   update: Partial<PrivateUser>
 ) {
-  await updateDoc(doc(db, 'private-users', userId), { ...update })
+  await updateDoc(doc(privateUsers, userId), { ...update })
 }
 
 export function listenForUser(
   userId: string,
   setUser: (user: User | null) => void
 ) {
-  const userRef = doc(db, 'users', userId)
+  const userRef = doc(users, userId)
   return listenForValue<User>(userRef, setUser)
 }
 
@@ -82,7 +85,7 @@ export function listenForPrivateUser(
   userId: string,
   setPrivateUser: (privateUser: PrivateUser | null) => void
 ) {
-  const userRef = doc(db, 'private-users', userId)
+  const userRef = doc(privateUsers, userId)
   return listenForValue<PrivateUser>(userRef, setPrivateUser)
 }
 
@@ -152,36 +155,29 @@ export async function listUsers(userIds: string[]) {
   if (userIds.length > 10) {
     throw new Error('Too many users requested at once; Firestore limits to 10')
   }
-  const userCollection = collection(db, 'users')
-  const q = query(userCollection, where('id', 'in', userIds))
-  const docs = await getDocs(q)
-  return docs.docs.map((doc) => doc.data() as User)
+  const q = query(users, where('id', 'in', userIds))
+  const docs = (await getDocs(q)).docs
+  return docs.map((doc) => doc.data())
 }
 
 export async function listAllUsers() {
-  const userCollection = collection(db, 'users')
-  const q = query(userCollection)
-  const docs = await getDocs(q)
-  return docs.docs.map((doc) => doc.data() as User)
+  const docs = (await getDocs(users)).docs
+  return docs.map((doc) => doc.data())
 }
 
 export function listenForAllUsers(setUsers: (users: User[]) => void) {
-  const userCollection = collection(db, 'users')
-  const q = query(userCollection)
-  listenForValues(q, setUsers)
+  listenForValues(users, setUsers)
 }
 
 export function listenForPrivateUsers(
   setUsers: (users: PrivateUser[]) => void
 ) {
-  const userCollection = collection(db, 'private-users')
-  const q = query(userCollection)
-  listenForValues(q, setUsers)
+  listenForValues(privateUsers, setUsers)
 }
 
 export function getTopTraders(period: Period) {
   const topTraders = query(
-    collection(db, 'users'),
+    users,
     orderBy('profitCached.' + period, 'desc'),
     limit(20)
   )
@@ -191,7 +187,7 @@ export function getTopTraders(period: Period) {
 
 export function getTopCreators(period: Period) {
   const topCreators = query(
-    collection(db, 'users'),
+    users,
     orderBy('creatorVolumeCached.' + period, 'desc'),
     limit(20)
   )
@@ -199,22 +195,21 @@ export function getTopCreators(period: Period) {
 }
 
 export async function getTopFollowed() {
-  const users = await getValues<User>(topFollowedQuery)
-  return users.slice(0, 20)
+  return (await getValues<User>(topFollowedQuery)).slice(0, 20)
 }
 
 const topFollowedQuery = query(
-  collection(db, 'users'),
+  users,
   orderBy('followerCountCached', 'desc'),
   limit(20)
 )
 
 export function getUsers() {
-  return getValues<User>(collection(db, 'users'))
+  return getValues<User>(users)
 }
 
 export async function getUserFeed(userId: string) {
-  const feedDoc = doc(db, 'private-users', userId, 'cache', 'feed')
+  const feedDoc = doc(privateUsers, userId, 'cache', 'feed')
   const userFeed = await getValue<{
     feed: feed
   }>(feedDoc)
@@ -222,7 +217,7 @@ export async function getUserFeed(userId: string) {
 }
 
 export async function getCategoryFeeds(userId: string) {
-  const cacheCollection = collection(db, 'private-users', userId, 'cache')
+  const cacheCollection = collection(privateUsers, userId, 'cache')
   const feedData = await Promise.all(
     CATEGORY_LIST.map((category) =>
       getValue<{ feed: feed }>(doc(cacheCollection, `feed-${category}`))
@@ -233,7 +228,7 @@ export async function getCategoryFeeds(userId: string) {
 }
 
 export async function follow(userId: string, followedUserId: string) {
-  const followDoc = doc(db, 'users', userId, 'follows', followedUserId)
+  const followDoc = doc(collection(users, userId, 'follows'), followedUserId)
   await setDoc(followDoc, {
     userId: followedUserId,
     timestamp: Date.now(),
@@ -241,7 +236,7 @@ export async function follow(userId: string, followedUserId: string) {
 }
 
 export async function unfollow(userId: string, unfollowedUserId: string) {
-  const followDoc = doc(db, 'users', userId, 'follows', unfollowedUserId)
+  const followDoc = doc(collection(users, userId, 'follows'), unfollowedUserId)
   await deleteDoc(followDoc)
 }
 
@@ -259,7 +254,7 @@ export function listenForFollows(
   userId: string,
   setFollowIds: (followIds: string[]) => void
 ) {
-  const follows = collection(db, 'users', userId, 'follows')
+  const follows = collection(users, userId, 'follows')
   return listenForValues<{ userId: string }>(follows, (docs) =>
     setFollowIds(docs.map(({ userId }) => userId))
   )
