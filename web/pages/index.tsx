@@ -8,7 +8,19 @@ import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 
-export async function getStaticProps() {
+import { GetServerSideProps } from 'next'
+import { getServerAuthenticatedUid } from 'web/lib/firebase/server-auth'
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const uid = await getServerAuthenticatedUid(ctx)
+  if (uid != null) {
+    return {
+      redirect: {
+        destination: '/home',
+        permanent: false,
+      },
+    }
+  }
   // These hardcoded markets will be shown in the frontpage for signed-out users:
   const hotContracts = await getContractsBySlugs([
     'will-max-go-to-prom-with-a-girl',
@@ -22,14 +34,10 @@ export async function getStaticProps() {
     'will-congress-hold-any-hearings-abo-e21f987033b3',
     'will-at-least-10-world-cities-have',
   ])
-
-  return {
-    props: { hotContracts },
-    revalidate: 60, // regenerate after a minute
-  }
+  return { props: { hotContracts } }
 }
 
-const Home = (props: { hotContracts: Contract[] }) => {
+export default function Home(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
 
   const user = useUser()
@@ -58,5 +66,3 @@ const Home = (props: { hotContracts: Contract[] }) => {
     </Page>
   )
 }
-
-export default Home
