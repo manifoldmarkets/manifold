@@ -1,6 +1,4 @@
 import clsx from 'clsx'
-import { PencilIcon } from '@heroicons/react/outline'
-
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { prefetchUsers, useUserById } from 'web/hooks/use-user'
@@ -8,34 +6,10 @@ import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Tabs } from './layout/tabs'
 import { TextButton } from './text-button'
-import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 import { UserLink } from 'web/components/user-page'
 import { useReferrals } from 'web/hooks/use-referrals'
-
-export function EditReferredByButton(props: {
-  user: User
-  className?: string
-}) {
-  const { user, className } = props
-  const [isOpen, setIsOpen] = useState(false)
-  return (
-    <div
-      className={clsx(
-        className,
-        'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-700'
-      )}
-      onClick={() => {
-        setIsOpen(true)
-        track('edit referred by button')
-      }}
-    >
-      <PencilIcon className="inline h-4 w-4" />
-      Referred By {user.referredByUserId ?? 'No one'}
-    </div>
-  )
-}
 
 export function ReferralsButton(props: { user: User }) {
   const { user } = props
