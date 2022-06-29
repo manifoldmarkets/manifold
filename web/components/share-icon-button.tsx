@@ -8,7 +8,7 @@ import { contractPath } from 'web/lib/firebase/contracts'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ToastClipboard } from 'web/components/toast-clipboard'
 import { track } from 'web/lib/service/analytics'
-import { ContractDetailsButtonClassName } from 'web/components/contract/contract-info-dialog'
+import { contractDetailsButtonClassName } from 'web/components/contract/contract-info-dialog'
 import { Group } from 'common/group'
 import { groupPath } from 'web/lib/firebase/groups'
 
@@ -49,7 +49,7 @@ export function ShareIconButton(props: {
   return (
     <div className="relative z-10 flex-shrink-0">
       <button
-        className={clsx(ContractDetailsButtonClassName, buttonClassName)}
+        className={clsx(contractDetailsButtonClassName, buttonClassName)}
         onClick={() => {
           if (contract) copyContractWithReferral(contract, username)
           if (group) copyGroupWithReferral(group, username)

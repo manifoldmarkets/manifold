@@ -2,7 +2,6 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { REFERRAL_AMOUNT, User } from '../../common/user'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../common/antes'
-import { getValues, getContract } from './utils'
 import { createNotification } from './create-notification'
 import { ReferralTxn, Txn } from '../../common/txn'
 import { Contract } from '../../common/contract'
@@ -29,37 +28,46 @@ async function handleUserUpdatedReferral(user: User, eventId: string) {
   }
   const referredByUserId = user.referredByUserId
 
-  // get user that referred this user
-  const referredByUserDoc = firestore.doc(`users/${referredByUserId}`)
-  const referredByUserSnap = await referredByUserDoc.get()
-  if (!referredByUserSnap.exists) {
-    console.log(`User ${referredByUserId} not found`)
-    return
-  }
-  const referredByUser = referredByUserSnap.data() as User
-
-  let referredByContract: Contract | undefined = undefined
-  if (user.referredByContractId)
-    referredByContract = await getContract(user.referredByContractId)
-  console.log(`referredByContract: ${referredByContract}`)
-
-  const txnQuery = firestore
-    .collection('txns')
-    .where('toId', '==', referredByUserId)
-    .where('category', '==', 'REFERRAL')
-  const referralTxns = await getValues<Txn>(txnQuery).catch((err) => {
-    console.error('error getting txns:', err)
-    throw err
-  })
-  // If the referring user already has a referral txn due to referring this user, halt
-  if (referralTxns.map((txn) => txn.description).includes(user.id)) {
-    console.log('found referral txn with the same details, aborting')
-    return
-  }
-  console.log('creating referral txns')
-  const fromId = HOUSE_LIQUIDITY_PROVIDER_ID
-
   await firestore.runTransaction(async (transaction) => {
+    // get user that referred this user
+    const referredByUserDoc = firestore.doc(`users/${referredByUserId}`)
+    const referredByUserSnap = await transaction.get(referredByUserDoc)
+    if (!referredByUserSnap.exists) {
+      console.log(`User ${referredByUserId} not found`)
+      return
+    }
+    const referredByUser = referredByUserSnap.data() as User
+
+    let referredByContract: Contract | undefined = undefined
+    if (user.referredByContractId) {
+      const referredByContractDoc = firestore.doc(
+        `contracts/${user.referredByContractId}`
+      )
+      referredByContract = await transaction
+        .get(referredByContractDoc)
+        .then((snap) => snap.data() as Contract)
+    }
+    console.log(`referredByContract: ${referredByContract}`)
+
+    const txns = (
+      await firestore
+        .collection('txns')
+        .where('toId', '==', referredByUserId)
+        .where('category', '==', 'REFERRAL')
+        .get()
+    ).docs.map((txn) => txn.ref)
+    const referralTxns = await transaction.getAll(...txns).catch((err) => {
+      console.error('error getting txns:', err)
+      throw err
+    })
+    // If the referring user already has a referral txn due to referring this user, halt
+    if (referralTxns.map((txn) => txn.data()?.description).includes(user.id)) {
+      console.log('found referral txn with the same details, aborting')
+      return
+    }
+    console.log('creating referral txns')
+    const fromId = HOUSE_LIQUIDITY_PROVIDER_ID
+
     // if they're updating their referredId, create a txn for both
     const txn: ReferralTxn = {
       id: eventId,

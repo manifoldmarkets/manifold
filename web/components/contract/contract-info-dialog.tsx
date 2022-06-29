@@ -22,7 +22,7 @@ import { TweetButton } from '../tweet-button'
 import { InfoTooltip } from '../info-tooltip'
 import { TagsInput } from 'web/components/tags-input'
 
-export const ContractDetailsButtonClassName =
+export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium  cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
 
 export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
@@ -50,7 +50,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   return (
     <>
       <button
-        className={ContractDetailsButtonClassName}
+        className={contractDetailsButtonClassName}
         onClick={() => setOpen(true)}
       >
         <DotsHorizontalIcon

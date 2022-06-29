@@ -6,7 +6,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { sortBy } from 'lodash'
+import { sortBy, uniq } from 'lodash'
 import { Group } from 'common/group'
 import { getContractFromId } from './contracts'
 import { db } from './init'
@@ -98,12 +98,13 @@ export async function getGroupsWithContractId(
 export async function addUserToGroupViaSlug(groupSlug: string, userId: string) {
   // get group to get the member ids
   const group = await getGroupBySlug(groupSlug)
-  if (group && !group.memberIds.includes(userId))
-    return await updateGroup(group, {
-      memberIds: [userId, ...group.memberIds],
-    })
-  return null
+  if (!group) {
+    console.error(`Group not found: ${groupSlug}`)
+    return
   }
+  return await joinGroup(group, userId)
+}
+
 export async function joinGroup(group: Group, userId: string): Promise<Group> {
   const { memberIds } = group
   if (memberIds.includes(userId)) {
@@ -111,7 +112,7 @@ export async function joinGroup(group: Group, userId: string): Promise<Group> {
   }
   const newMemberIds = [...memberIds, userId]
   const newGroup = { ...group, memberIds: newMemberIds }
-  await updateGroup(newGroup, { memberIds: newMemberIds })
+  await updateGroup(newGroup, { memberIds: uniq(newMemberIds) })
   return newGroup
 }
 export async function leaveGroup(group: Group, userId: string): Promise<Group> {
@@ -121,6 +122,6 @@ export async function leaveGroup(group: Group, userId: string): Promise<Group> {
   }
   const newMemberIds = memberIds.filter((id) => id !== userId)
   const newGroup = { ...group, memberIds: newMemberIds }
-  await updateGroup(newGroup, { memberIds: newMemberIds })
+  await updateGroup(newGroup, { memberIds: uniq(newMemberIds) })
   return newGroup
 }

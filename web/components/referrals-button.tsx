@@ -42,7 +42,7 @@ function ReferralsDialog(props: {
   const { user, referralIds, isOpen, setIsOpen } = props
 
   useEffect(() => {
-    prefetchUsers([...referralIds])
+    prefetchUsers(referralIds)
   }, [referralIds])
 
   return (
