@@ -23,11 +23,6 @@ function getNavigation(username: string) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
     {
-      name: 'Portfolio',
-      href: `/${username}?tab=bets`,
-      icon: PresentationChartLineIcon,
-    },
-    {
       name: 'Notifications',
       href: `/notifications`,
       icon: NotificationsIcon,
@@ -64,29 +59,32 @@ export function BottomNavBar() {
       {navigationOptions.map((item) => (
         <NavBarItem key={item.name} item={item} currentPage={currentPage} />
       ))}
+
+      {user && (
+        <NavBarItem
+          key={'profile'}
+          currentPage={currentPage}
+          item={{
+            name: formatMoney(user.balance),
+            href: `/${user.username}?tab=bets`,
+            icon: () => (
+              <Avatar
+                className="mx-auto my-1"
+                size="xs"
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                noLink
+              />
+            ),
+          }}
+        />
+      )}
       <div
         className="w-full select-none py-1 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
         onClick={() => setSidebarOpen(true)}
       >
-        {user === null ? (
-          <>
-            <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
-            More
-          </>
-        ) : user ? (
-          <>
-            <Avatar
-              className="mx-auto my-1"
-              size="xs"
-              username={user.username}
-              avatarUrl={user.avatarUrl}
-              noLink
-            />
-            {formatMoney(user.balance)}
-          </>
-        ) : (
-          <></>
-        )}
+        <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
+        More
       </div>
 
       <MobileSidebar
