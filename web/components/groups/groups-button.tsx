@@ -11,6 +11,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { GroupLink } from 'web/pages/groups'
 
 export function GroupsButton(props: { user: User }) {
   const { user } = props
@@ -72,7 +73,9 @@ function GroupItem(props: { group: Group; className?: string }) {
   const { group, className } = props
   return (
     <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
-      <Row className="line-clamp-1 items-center gap-2">{group.name}</Row>
+      <Row className="line-clamp-1 items-center gap-2">
+        <GroupLink group={group} />
+      </Row>
       <JoinOrLeaveGroupButton group={group} />
     </Row>
   )
