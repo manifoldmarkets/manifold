@@ -12,6 +12,7 @@ import { getContractFromId } from './contracts'
 import { db } from './init'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
 import { filterDefined } from 'common/util/array'
+import { User } from 'common/user'
 
 const groupCollection = collection(db, 'groups')
 
@@ -93,4 +94,25 @@ export async function getGroupsWithContractId(
   )
   const groups = await getValues<Group>(q)
   setGroups(groups)
+}
+
+export async function joinGroup(group: Group, userId: string): Promise<Group> {
+  const { memberIds } = group
+  if (memberIds.includes(userId)) {
+    return group
+  }
+  const newMemberIds = [...memberIds, userId]
+  const newGroup = { ...group, memberIds: newMemberIds }
+  await updateGroup(newGroup, { memberIds: newMemberIds })
+  return newGroup
+}
+export async function leaveGroup(group: Group, userId: string): Promise<Group> {
+  const { memberIds } = group
+  if (!memberIds.includes(userId)) {
+    return group
+  }
+  const newMemberIds = memberIds.filter((id) => id !== userId)
+  const newGroup = { ...group, memberIds: newMemberIds }
+  await updateGroup(newGroup, { memberIds: newMemberIds })
+  return newGroup
 }
