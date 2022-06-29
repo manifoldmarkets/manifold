@@ -28,20 +28,29 @@ const binarySchema = z.object({
 
 const freeResponseSchema = z.union([
   z.object({
-    outcome: z.union([z.enum(['CANCEL']), z.number()]),
+    outcome: z.literal('CANCEL'),
   }),
   z.object({
-    outcome: z.enum(['MKT']),
-    resolutions: z.map(z.string(), z.number()),
+    outcome: z.literal('MKT'),
+    resolutions: z.array(
+      z.object({
+        answer: z.number().int().nonnegative(),
+        pct: z.number().nonnegative(),
+      })
+    ),
+  }),
+  z.object({
+    outcome: z.number().gte(0),
   }),
 ])
 
 const numericSchema = z.object({
-  outcome: z.union([z.enum(['CANCEL']), z.string()]),
+  outcome: z.union([z.literal('CANCEL'), z.string()]),
   value: z.number().optional(),
 })
 
-export const resolvemarket = newEndpoint(['POST'], async (req, auth) => {
+const opts = { secrets: ['MAILGUN_KEY'] }
+export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
   const userId = auth.uid
 
@@ -90,10 +99,10 @@ export const resolvemarket = newEndpoint(['POST'], async (req, auth) => {
   const { payouts, creatorPayout, liquidityPayouts, collectedFees } =
     getPayouts(
       outcome,
-      Object.fromEntries(resolutions || []),
       contract,
       bets,
       liquidities,
+      resolutions,
       resolutionProbability
     )
 
@@ -144,7 +153,7 @@ export const resolvemarket = newEndpoint(['POST'], async (req, auth) => {
     contract,
     outcome,
     resolutionProbability,
-    Object.fromEntries(resolutions || [])
+    resolutions
   )
 
   return updatedContract
@@ -218,7 +227,9 @@ function getResolutionParams(outcomeType: string, body: string) {
     const { outcome } = freeResponseParams
     const resolutions =
       'resolutions' in freeResponseParams
-        ? freeResponseParams.resolutions
+        ? Object.fromEntries(
+            freeResponseParams.resolutions.map((r) => [r.answer, r.pct])
+          )
         : undefined
     return {
       // Free Response outcome IDs are numbers by convention,

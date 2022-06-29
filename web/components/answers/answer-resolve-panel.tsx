@@ -31,20 +31,19 @@ export function AnswerResolvePanel(props: {
     setIsSubmitting(true)
 
     const totalProb = sum(Object.values(chosenAnswers))
-    const normalizedProbs = mapValues(
-      chosenAnswers,
-      (prob) => (100 * prob) / totalProb
-    )
+    const resolutions = Object.entries(chosenAnswers).map(([i, p]) => {
+      return { answer: parseInt(i), pct: (100 * p) / totalProb }
+    })
 
     const resolutionProps = removeUndefinedProps({
       outcome:
         resolveOption === 'CHOOSE'
-          ? answers[0]
+          ? parseInt(answers[0])
           : resolveOption === 'CHOOSE_MULTIPLE'
           ? 'MKT'
           : 'CANCEL',
       resolutions:
-        resolveOption === 'CHOOSE_MULTIPLE' ? normalizedProbs : undefined,
+        resolveOption === 'CHOOSE_MULTIPLE' ? resolutions : undefined,
       contractId: contract.id,
     })
 
