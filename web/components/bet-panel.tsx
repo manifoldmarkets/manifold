@@ -510,6 +510,13 @@ export function SellPanel(props: {
     }
   }
 
+  const { outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const format = isPseudoNumeric
+    ? (p: number) =>
+        Math.round(p * (contract.max - contract.min) + contract.min).toString()
+    : (p: number) => formatPercent(p)
+
   return (
     <>
       <AmountInput
@@ -533,11 +540,13 @@ export function SellPanel(props: {
           <span className="text-neutral">{formatMoney(saleValue)}</span>
         </Row>
         <Row className="items-center justify-between">
-          <div className="text-gray-500">Probability</div>
+          <div className="text-gray-500">
+            {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+          </div>
           <div>
-            {formatPercent(initialProb)}
+            {format(initialProb)}
             <span className="mx-2">→</span>
-            {formatPercent(resultProb)}
+            {format(resultProb)}
           </div>
         </Row>
       </Col>
