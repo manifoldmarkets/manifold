@@ -109,7 +109,7 @@ function NavBarItem(props: { item: Item; currentPage: string }) {
         )}
         onClick={trackCallback('navbar: ' + item.name)}
       >
-        <item.icon className="my-1 mx-auto h-6 w-6" />
+        {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
         {item.name}
       </a>
     </Link>

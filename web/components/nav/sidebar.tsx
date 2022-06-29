@@ -6,7 +6,6 @@ import {
   CashIcon,
   HeartIcon,
   UserGroupIcon,
-  ChevronDownIcon,
   TrendingUpIcon,
   ChatIcon,
 } from '@heroicons/react/outline'
