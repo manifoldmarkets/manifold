@@ -1,17 +1,11 @@
-import {
-  collection,
-  getDoc,
-  orderBy,
-  query,
-  setDoc,
-  where,
-} from 'firebase/firestore'
+import { getDoc, orderBy, query, setDoc, where } from 'firebase/firestore'
 import { doc } from 'firebase/firestore'
 import { Manalink } from '../../../common/manalink'
-import { db } from './init'
 import { customAlphabet } from 'nanoid'
-import { listenForValues } from './utils'
+import { coll, listenForValues } from './utils'
 import { useEffect, useState } from 'react'
+
+export const manalinks = coll<Manalink>('manalinks')
 
 export async function createManalink(data: {
   fromId: string
@@ -45,29 +39,25 @@ export async function createManalink(data: {
     message,
   }
 
-  const ref = doc(db, 'manalinks', slug)
-  await setDoc(ref, manalink)
+  await setDoc(doc(manalinks, slug), manalink)
   return slug
 }
-
-const manalinkCol = collection(db, 'manalinks')
 
 // TODO: This required an index, make sure to also set up in prod
 function listUserManalinks(fromId?: string) {
   return query(
-    manalinkCol,
+    manalinks,
     where('fromId', '==', fromId),
     orderBy('createdTime', 'desc')
   )
 }
 
 export async function getManalink(slug: string) {
-  const docSnap = await getDoc(doc(db, 'manalinks', slug))
-  return docSnap.data() as Manalink
+  return (await getDoc(doc(manalinks, slug))).data()
 }
 
 export function useManalink(slug: string) {
-  const [manalink, setManalink] = useState<Manalink | null>(null)
+  const [manalink, setManalink] = useState<Manalink | undefined>(undefined)
   useEffect(() => {
     if (slug) {
       getManalink(slug).then(setManalink)
