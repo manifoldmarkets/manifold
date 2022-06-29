@@ -45,6 +45,7 @@ import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
 import ShortToggle from 'web/components/widgets/short-toggle'
+import { ShareIconButton } from 'web/components/share-icon-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -332,18 +333,17 @@ function GroupOverview(props: {
 
   return (
     <Col>
-      <Row className="items-center justify-end rounded-t bg-indigo-500 px-4 py-3 text-sm text-white">
-        <Row className="flex-1 justify-start">About {group.name}</Row>
-        {isCreator && <EditGroupButton className={'ml-1'} group={group} />}
-      </Row>
       <Col className="gap-2 rounded-b bg-white p-4">
-        <Row>
-          <div className="mr-1 text-gray-500">Created by</div>
-          <UserLink
-            className="text-neutral"
-            name={creator.name}
-            username={creator.username}
-          />
+        <Row className={'justify-between'}>
+          <div className={'inline-flex items-center'}>
+            <div className="mr-1 text-gray-500">Created by</div>
+            <UserLink
+              className="text-neutral"
+              name={creator.name}
+              username={creator.username}
+            />
+          </div>
+          {isCreator && <EditGroupButton className={'ml-1'} group={group} />}
         </Row>
         <Row className={'items-center gap-1'}>
           <span className={'text-gray-500'}>Membership</span>
@@ -361,6 +361,17 @@ function GroupOverview(props: {
             <span className={'text-gray-700'}>
               {anyoneCanJoin ? 'Open' : 'Closed'}
             </span>
+          )}
+          {anyoneCanJoin && user && (
+            <ShareIconButton
+              group={group}
+              username={user.username}
+              buttonClassName={'hover:bg-gray-300 !text-gray-700'}
+            >
+              <span className={' mx-2'}>
+                Invite a friend to join and earn M$500
+              </span>
+            </ShareIconButton>
           )}
         </Row>
       </Col>

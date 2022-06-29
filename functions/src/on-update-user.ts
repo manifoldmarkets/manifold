@@ -4,7 +4,6 @@ import { User } from '../../common/user'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../common/antes'
 import { getValues, getContract } from './utils'
 import { createNotification } from './create-notification'
-import { removeUndefinedProps } from '../../common/util/object'
 import { ReferralTxn, Txn } from '../../common/txn'
 import { Contract } from '../../common/contract'
 const firestore = admin.firestore()
@@ -59,7 +58,7 @@ export const onUpdateUser = functions.firestore
     }
     console.log('creating referral txns')
     // TODO: change this to prod id
-    const fromId = '94YYTk1AFWfbWMpfYcvnnwI1veP2' //HOUSE_LIQUIDITY_PROVIDER_ID
+    const fromId = HOUSE_LIQUIDITY_PROVIDER_ID
     const referralAmount = 500
 
     await firestore.runTransaction(async (transaction) => {

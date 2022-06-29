@@ -10,13 +10,7 @@ import { useUser } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
-import {
-  getUserByUsername,
-  listUsers,
-  updateUser,
-  User,
-  writeReferralInfo,
-} from 'web/lib/firebase/users'
+import { listUsers, User, writeReferralInfo } from 'web/lib/firebase/users'
 import {
   Contract,
   getContractFromSlug,
@@ -49,8 +43,6 @@ import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useRouter } from 'next/router'
-import dayjs from 'dayjs'
-import { addUserToGroupViaSlug, getGroup } from 'web/lib/firebase/groups'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 
 export const getStaticProps = fromPropz(getStaticPropz)

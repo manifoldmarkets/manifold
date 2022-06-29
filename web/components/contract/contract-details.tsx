@@ -29,7 +29,6 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { SiteLink } from 'web/components/site-link'
 import { DAY_MS } from 'common/util/time'
 import { useGroupsWithContract } from 'web/hooks/use-group'
-import { CopyLinkButton } from 'web/components/copy-link-button'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { useUser } from 'web/hooks/use-user'
 
