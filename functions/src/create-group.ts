@@ -20,7 +20,7 @@ const bodySchema = z.object({
   about: z.string().min(1).max(MAX_ABOUT_LENGTH).optional(),
 })
 
-export const creategroup = newEndpoint(['POST'], async (req, auth) => {
+export const creategroup = newEndpoint({}, async (req, auth) => {
   const { name, about, memberIds, anyoneCanJoin } = validate(
     bodySchema,
     req.body
