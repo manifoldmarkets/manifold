@@ -3,7 +3,6 @@ import Link from 'next/link'
 import {
   HomeIcon,
   MenuAlt3Icon,
-  PresentationChartLineIcon,
   SearchIcon,
   XIcon,
 } from '@heroicons/react/outline'
@@ -19,7 +18,7 @@ import NotificationsIcon from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 
-function getNavigation(username: string) {
+function getNavigation() {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
     {
@@ -50,9 +49,7 @@ export function BottomNavBar() {
   }
 
   const navigationOptions =
-    user === null
-      ? signedOutNavigation
-      : getNavigation(user?.username || 'error')
+    user === null ? signedOutNavigation : getNavigation()
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
