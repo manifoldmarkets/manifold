@@ -185,7 +185,7 @@ export default function Sidebar(props: { className?: string }) {
   const mobileNavigationOptions = !user
     ? signedOutMobileNavigation
     : signedInMobileNavigation
-  const memberItems = (useMemberGroups(user) ?? []).map((group: Group) => ({
+  const memberItems = (useMemberGroups(user?.id) ?? []).map((group: Group) => ({
     name: group.name,
     href: groupPath(group.slug),
   }))
