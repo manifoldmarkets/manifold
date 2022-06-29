@@ -58,7 +58,6 @@ export const onUpdateUser = functions.firestore
     }
     console.log('creating referral txns')
     const fromId = HOUSE_LIQUIDITY_PROVIDER_ID
-    const referralAmount = REFERRAL_AMOUNT
 
     await firestore.runTransaction(async (transaction) => {
       // if they're updating their referredId, create a txn for both
@@ -69,10 +68,10 @@ export const onUpdateUser = functions.firestore
         fromType: 'BANK',
         toId: referredByUserId,
         toType: 'USER',
-        amount: referralAmount,
+        amount: REFERRAL_AMOUNT,
         token: 'M$',
         category: 'REFERRAL',
-        description: `${ReferredUserDescriptionPrefix}: ${user.id} for ${referralAmount}`,
+        description: `${ReferredUserDescriptionPrefix}: ${user.id} for ${REFERRAL_AMOUNT}`,
       }
 
       const txnDoc = await firestore.collection(`txns/`).doc(txn.id)
@@ -80,8 +79,8 @@ export const onUpdateUser = functions.firestore
       console.log('created referral with txn id:', txn.id)
       // We're currently not subtracting M$ from the house, not sure if we want to for accounting purposes.
       transaction.update(referredByUserDoc, {
-        balance: referredByUser.balance + referralAmount,
-        totalDeposits: referredByUser.totalDeposits + referralAmount,
+        balance: referredByUser.balance + REFERRAL_AMOUNT,
+        totalDeposits: referredByUser.totalDeposits + REFERRAL_AMOUNT,
       })
 
       await createNotification(
