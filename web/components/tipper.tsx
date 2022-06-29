@@ -7,8 +7,8 @@ import clsx from 'clsx'
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { debounce, sumBy } from 'lodash'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { debounce, sum } from 'lodash'
+import { useEffect, useRef, useState } from 'react'
 import { CommentTips } from 'web/hooks/use-tip-txns'
 import { useUser } from 'web/hooks/use-user'
 import { transact } from 'web/lib/firebase/fn-call'
@@ -16,33 +16,24 @@ import { track } from 'web/lib/service/analytics'
 import { Row } from './layout/row'
 import { Tooltip } from './tooltip'
 
-// xth triangle number * 5  =  5 + 10 + 15 + ... + (x * 5)
-const quad = (x: number) => (5 / 2) * x * (x + 1)
-
-// inverse (see https://math.stackexchange.com/questions/2041988/how-to-get-inverse-of-formula-for-sum-of-integers-from-1-to-nsee )
-const invQuad = (y: number) => Math.sqrt((2 / 5) * y + 1 / 4) - 1 / 2
-
 export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   const { comment, tips } = prop
 
   const me = useUser()
   const myId = me?.id ?? ''
-  const savedTip = tips[myId] as number | undefined
+  const savedTip = tips[myId] ?? 0
 
-  // optimistically increase the tip count, but debounce the update
-  const [localTip, setLocalTip] = useState(savedTip ?? 0)
+  const [localTip, setLocalTip] = useState(savedTip)
+  // listen for user being set
   const initialized = useRef(false)
   useEffect(() => {
-    if (savedTip && !initialized.current) {
-      setLocalTip(savedTip)
+    if (tips[myId] && !initialized.current) {
+      setLocalTip(tips[myId])
       initialized.current = true
     }
-  }, [savedTip])
+  }, [tips, myId])
 
-  const score = useMemo(() => {
-    const tipVals = Object.values({ ...tips, [myId]: localTip })
-    return sumBy(tipVals, invQuad)
-  }, [localTip, tips, myId])
+  const total = sum(Object.values(tips)) - savedTip + localTip
 
   // declare debounced function only on first render
   const [saveTip] = useState(() =>
@@ -80,7 +71,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
 
   const changeTip = (tip: number) => {
     setLocalTip(tip)
-    me && saveTip(me, tip - (savedTip ?? 0))
+    me && saveTip(me, tip - savedTip)
   }
 
   return (
@@ -88,13 +79,13 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
       <DownTip
         value={localTip}
         onChange={changeTip}
-        disabled={!me || localTip <= 0}
+        disabled={!me || localTip <= savedTip}
       />
-      <span className="font-bold">{Math.floor(score)} </span>
+      <span className="font-bold">{Math.floor(total)}</span>
       <UpTip
         value={localTip}
         onChange={changeTip}
-        disabled={!me || me.id === comment.userId}
+        disabled={!me || me.id === comment.userId || me.balance < localTip + 5}
       />
       {localTip === 0 ? (
         ''
@@ -118,16 +109,15 @@ function DownTip(prop: {
   disabled?: boolean
 }) {
   const { onChange, value, disabled } = prop
-  const marginal = 5 * invQuad(value)
   return (
     <Tooltip
       className="tooltip-bottom"
-      text={!disabled && `Refund ${formatMoney(marginal)}`}
+      text={!disabled && `-${formatMoney(5)}`}
     >
       <button
         className="flex h-max items-center hover:text-red-600 disabled:text-gray-300"
         disabled={disabled}
-        onClick={() => onChange(value - marginal)}
+        onClick={() => onChange(value - 5)}
       >
         <ChevronLeftIcon className="h-6 w-6" />
       </button>
@@ -141,19 +131,18 @@ function UpTip(prop: {
   disabled?: boolean
 }) {
   const { onChange, value, disabled } = prop
-  const marginal = 5 * invQuad(value) + 5
 
   return (
     <Tooltip
       className="tooltip-bottom"
-      text={!disabled && `Tip ${formatMoney(marginal)}`}
+      text={!disabled && `Tip ${formatMoney(5)}`}
     >
       <button
         className="hover:text-primary flex h-max items-center disabled:text-gray-300"
         disabled={disabled}
-        onClick={() => onChange(value + marginal)}
+        onClick={() => onChange(value + 5)}
       >
-        {value >= quad(2) ? (
+        {value >= 10 ? (
           <ChevronDoubleRightIcon className="text-primary mx-1 h-6 w-6" />
         ) : value > 0 ? (
           <ChevronRightIcon className="text-primary h-6 w-6" />
