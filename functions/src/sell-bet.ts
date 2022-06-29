@@ -13,7 +13,7 @@ const bodySchema = z.object({
   betId: z.string(),
 })
 
-export const sellbet = newEndpoint(['POST'], async (req, auth) => {
+export const sellbet = newEndpoint({}, async (req, auth) => {
   const { contractId, betId } = validate(bodySchema, req.body)
 
   // run as transaction to prevent race conditions
