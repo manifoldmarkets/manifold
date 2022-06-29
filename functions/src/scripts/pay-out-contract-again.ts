@@ -27,10 +27,10 @@ async function checkIfPayOutAgain(contractRef: DocRef, contract: Contract) {
 
     const { payouts } = getPayouts(
       resolution,
-      resolutions,
       contract,
       openBets,
       [],
+      resolutions,
       resolutionProbability
     )
 
