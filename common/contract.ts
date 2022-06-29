@@ -82,6 +82,7 @@ export type PseudoNumeric = {
   min: number
   max: number
   isLogScale: boolean
+  resolutionValue?: number
 
   // same as binary market; map to everything to probability
   initialProbability: number

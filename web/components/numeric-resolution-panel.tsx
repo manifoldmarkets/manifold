@@ -21,6 +21,7 @@ export function NumericResolutionPanel(props: {
   }, [])
 
   const { contract, className } = props
+  const { min, max, outcomeType } = contract
 
   const [outcomeMode, setOutcomeMode] = useState<
     'NUMBER' | 'CANCEL' | undefined
@@ -32,15 +33,24 @@ export function NumericResolutionPanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
 
   const resolve = async () => {
-    const finalOutcome = outcomeMode === 'NUMBER' ? outcome : 'CANCEL'
+    const finalOutcome =
+      outcomeMode === 'CANCEL'
+        ? 'CANCEL'
+        : outcomeType === 'PSEUDO_NUMERIC'
+        ? 'MKT'
+        : 'NUMBER'
     if (outcomeMode === undefined || finalOutcome === undefined) return
 
     setIsSubmitting(true)
+
+    const boundedValue = Math.max(Math.min(max, value ?? 0), min)
+    const probabilityInt = ((boundedValue - min) / (max - min)) * 100
 
     const result = await resolveMarket({
       outcome: finalOutcome,
       value,
       contractId: contract.id,
+      probabilityInt,
     }).then((r) => r.data)
 
     console.log('resolved', outcome, 'result:', result)
@@ -72,7 +82,7 @@ export function NumericResolutionPanel(props: {
 
       {outcomeMode === 'NUMBER' && (
         <BucketInput
-          contract={contract}
+          contract={contract as any}
           isSubmitting={isSubmitting}
           onBucketChange={(v, o) => (setValue(v), setOutcome(o))}
         />

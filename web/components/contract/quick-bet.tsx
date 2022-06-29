@@ -306,11 +306,15 @@ function QuickOutcomeView(props: {
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
 function getProb(contract: Contract) {
-  const { outcomeType, resolution } = contract
-  return resolution
+  const { outcomeType, resolution, resolutionProbability } = contract
+  return resolutionProbability
+    ? resolutionProbability
+    : resolution
     ? 1
     : outcomeType === 'BINARY'
     ? getBinaryProb(contract)
+    : outcomeType === 'PSEUDO_NUMERIC'
+    ? getProbability(contract)
     : outcomeType === 'FREE_RESPONSE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
     : outcomeType === 'NUMERIC'

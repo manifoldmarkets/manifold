@@ -137,6 +137,13 @@ export function ContractCard(props: {
                 />
               )}
 
+              {outcomeType === 'PSEUDO_NUMERIC' && (
+                <PseudoNumericResolutionOrExpectation
+                  className="items-center"
+                  contract={contract}
+                />
+              )}
+
               {outcomeType === 'NUMERIC' && (
                 <NumericResolutionOrExpectation
                   className="items-center"
@@ -296,7 +303,7 @@ export function PseudoNumericResolutionOrExpectation(props: {
   className?: string
 }) {
   const { contract, className } = props
-  const { resolution, resolutionProbability } = contract
+  const { resolution, resolutionValue, resolutionProbability } = contract
   const textColor = `text-blue-400`
 
   return (
@@ -309,7 +316,8 @@ export function PseudoNumericResolutionOrExpectation(props: {
             <CancelLabel />
           ) : (
             <div className="text-blue-400">
-              {formatNumericProbability(resolutionProbability ?? 0, contract)}
+              {resolutionValue ??
+                formatNumericProbability(resolutionProbability ?? 0, contract)}
             </div>
           )}
         </>

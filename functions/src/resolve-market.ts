@@ -54,6 +54,9 @@ export const resolveMarket = functions
       } else if (outcomeType === 'NUMERIC') {
         if (isNaN(+outcome) && outcome !== 'CANCEL')
           return { status: 'error', message: 'Invalid outcome' }
+      } else if (outcomeType === 'PSEUDO_NUMERIC') {
+        if (probabilityInt === undefined && outcome !== 'CANCEL')
+          return { status: 'error', message: 'Invalid outcome' }
       } else {
         return { status: 'error', message: 'Invalid contract outcomeType' }
       }
@@ -62,7 +65,7 @@ export const resolveMarket = functions
         return { status: 'error', message: 'Invalid value' }
 
       if (
-        outcomeType === 'BINARY' &&
+        (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
         probabilityInt !== undefined &&
         (probabilityInt < 0 ||
           probabilityInt > 100 ||
@@ -111,16 +114,19 @@ export const resolveMarket = functions
           resolutionProbability
         )
 
+      const resolutionInfo =
+        outcome !== 'CANCEL'
+          ? { resolutionValue: value, resolutionProbability, resolutions }
+          : {}
+
       await contractDoc.update(
         removeUndefinedProps({
           isResolved: true,
           resolution: outcome,
-          resolutionValue: value,
           resolutionTime,
           closeTime: newCloseTime,
-          resolutionProbability,
-          resolutions,
           collectedFees,
+          ...resolutionInfo,
         })
       )
 

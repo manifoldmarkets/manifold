@@ -8,6 +8,7 @@ import { DPM_CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
 import { formatMoney, formatPercent } from '../../common/util/format'
 import { getValueFromBucket } from '../../common/calculate-dpm'
+import { formatNumericProbability } from '../../common/numeric'
 
 import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
@@ -88,10 +89,7 @@ const toDisplayResolution = (
   resolutionProbability?: number,
   resolutions?: { [outcome: string]: number }
 ) => {
-  if (
-    contract.outcomeType === 'BINARY' ||
-    contract.outcomeType === 'PSEUDO_NUMERIC'
-  ) {
+  if (contract.outcomeType === 'BINARY') {
     const prob = resolutionProbability ?? getProbability(contract)
 
     const display = {
@@ -102,6 +100,16 @@ const toDisplayResolution = (
     }[resolution]
 
     return display || resolution
+  }
+
+  if (contract.outcomeType === 'PSEUDO_NUMERIC') {
+    return (
+      contract.resolutionValue?.toString() ??
+      formatNumericProbability(
+        resolutionProbability ?? getProbability(contract),
+        contract
+      )
+    )
   }
 
   if (resolution === 'MKT' && resolutions) return 'MULTI'
