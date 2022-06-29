@@ -24,7 +24,7 @@ import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import { sellBet } from 'web/lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
-import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
+import { OutcomeLabel, YesLabel, NoLabel, HigherLabel, LowerLabel } from './outcome-label'
 import { filterDefined } from 'common/util/array'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
@@ -366,6 +366,7 @@ export function BetsSummary(props: {
   const { contract, isYourBets, className } = props
   const { resolution, closeTime, outcomeType, mechanism } = contract
   const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isCpmm = mechanism === 'cpmm-1'
   const isClosed = closeTime && Date.now() > closeTime
 
@@ -421,6 +422,25 @@ export function BetsSummary(props: {
                 <Col>
                   <div className="whitespace-nowrap text-sm text-gray-500">
                     Payout if <NoLabel />
+                  </div>
+                  <div className="whitespace-nowrap">
+                    {formatMoney(noWinnings)}
+                  </div>
+                </Col>
+              </>
+            ) : isPseudoNumeric ? (
+              <>
+                <Col>
+                  <div className="whitespace-nowrap text-sm text-gray-500">
+                    Payout if <HigherLabel />
+                  </div>
+                  <div className="whitespace-nowrap">
+                    {formatMoney(yesWinnings)}
+                  </div>
+                </Col>
+                <Col>
+                  <div className="whitespace-nowrap text-sm text-gray-500">
+                    Payout if <LowerLabel />
                   </div>
                   <div className="whitespace-nowrap">
                     {formatMoney(noWinnings)}
