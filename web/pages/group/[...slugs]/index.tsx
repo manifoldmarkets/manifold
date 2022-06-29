@@ -46,6 +46,7 @@ import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { ShareIconButton } from 'web/components/share-icon-button'
+import { REFERRAL_AMOUNT } from 'common/user'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -369,7 +370,7 @@ function GroupOverview(props: {
               buttonClassName={'hover:bg-gray-300 !text-gray-700'}
             >
               <span className={' mx-2'}>
-                Invite a friend to join and earn M$500
+                Invite a friend to join and earn M${REFERRAL_AMOUNT}
               </span>
             </ShareIconButton>
           )}

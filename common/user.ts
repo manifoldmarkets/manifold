@@ -40,7 +40,7 @@ export type User = {
 
 export const STARTING_BALANCE = 1000
 export const SUS_STARTING_BALANCE = 10 // for sus users, i.e. multiple sign ups for same person
-
+export const REFERRAL_AMOUNT = 500
 export type PrivateUser = {
   id: string // same as User.id
   username: string // denormalized from User

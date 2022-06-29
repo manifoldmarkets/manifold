@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { User } from '../../common/user'
+import { REFERRAL_AMOUNT, User } from '../../common/user'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../common/antes'
 import { getValues, getContract } from './utils'
 import { createNotification } from './create-notification'
@@ -58,7 +58,7 @@ export const onUpdateUser = functions.firestore
     }
     console.log('creating referral txns')
     const fromId = HOUSE_LIQUIDITY_PROVIDER_ID
-    const referralAmount = 500
+    const referralAmount = REFERRAL_AMOUNT
 
     await firestore.runTransaction(async (transaction) => {
       // if they're updating their referredId, create a txn for both
