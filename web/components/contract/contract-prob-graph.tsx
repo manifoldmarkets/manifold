@@ -14,7 +14,8 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   height?: number
 }) {
   const { contract, height } = props
-  const { resolutionTime, closeTime } = contract
+  const { resolutionTime, closeTime, outcomeType } = contract
+  const isBinary = outcomeType === 'BINARY'
 
   const bets = props.bets.filter((bet) => !bet.isAnte && !bet.isRedemption)
 
@@ -45,7 +46,9 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   times.push(latestTime.toDate())
   probs.push(probs[probs.length - 1])
 
-  const yTickValues = [0, 25, 50, 75, 100].map(f)
+  const yTickValues = isBinary
+    ? [0, 25, 50, 75, 100]
+    : [0, 0.25, 0.5, 0.75, 1].map(f).map((x) => x * 100)
 
   const { width } = useWindowSize()
 
@@ -81,8 +84,6 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
     }
   }
 
-  const isBinary = contract.outcomeType === 'BINARY'
-
   const data = [
     { id: 'Yes', data: points, color: isBinary ? '#11b981' : '#5fa5f9' },
   ]
@@ -99,7 +100,11 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
     >
       <ResponsiveLine
         data={data}
-        yScale={{ min: 0, max: 100, type: 'linear' }}
+        yScale={
+          isBinary
+            ? { min: 0, max: 100, type: 'linear' }
+            : { min: contract.min, max: contract.max, type: 'linear' }
+        }
         yFormat={formatter}
         gridYValues={yTickValues}
         axisLeft={{
