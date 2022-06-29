@@ -157,18 +157,20 @@ export default function GroupPage(props: {
   }, [group])
 
   const user = useUser()
+  useEffect(() => {
+    const { referrer } = router.query as {
+      referrer?: string
+    }
+    if (!user && router.isReady)
+      writeReferralInfo(creator.username, undefined, referrer, group?.slug)
+  }, [user, creator, group, router])
+
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
   }
   const { memberIds } = group
   const isCreator = user && group && user.id === group.creatorId
   const isMember = user && memberIds.includes(user.id)
-
-  const { referrer } = router.query as {
-    referrer?: string
-  }
-  if (!user && router.isReady)
-    writeReferralInfo(creator.username, undefined, referrer, group.slug)
 
   const rightSidebar = (
     <Col className="mt-6 hidden xl:block">

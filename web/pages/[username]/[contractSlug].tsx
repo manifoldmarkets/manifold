@@ -152,12 +152,14 @@ export function ContractPageContent(
   const ogCardProps = getOpenGraphProps(contract)
 
   const router = useRouter()
-  const { referrer, username } = router.query as {
-    username: string
-    referrer?: string
-  }
-  if (!user && router.isReady)
-    writeReferralInfo(username, contract.id, referrer)
+
+  useEffect(() => {
+    const { referrer } = router.query as {
+      referrer?: string
+    }
+    if (!user && router.isReady)
+      writeReferralInfo(contract.creatorUsername, contract.id, referrer)
+  }, [user, contract, router])
 
   const rightSidebar = hasSidePanel ? (
     <Col className="gap-4">

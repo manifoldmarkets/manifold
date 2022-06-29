@@ -100,7 +100,7 @@ let createUserPromise: Promise<User | null> | undefined = undefined
 const warmUpCreateUser = throttle(createUser, 5000 /* ms */)
 
 export function writeReferralInfo(
-  contractUsername: string,
+  defaultReferrerUsername: string,
   contractId?: string,
   referralUsername?: string,
   groupSlug?: string
@@ -111,7 +111,7 @@ export function writeReferralInfo(
   if (!cachedReferralUser)
     local?.setItem(
       CACHED_REFERRAL_USERNAME_KEY,
-      referralUsername || contractUsername
+      referralUsername || defaultReferrerUsername
     )
 
   // If an explicit referral query is passed, overwrite the cached referral username.
