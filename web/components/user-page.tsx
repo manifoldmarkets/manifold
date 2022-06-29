@@ -36,6 +36,7 @@ import { FollowersButton, FollowingButton } from './following-button'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
 import { PortfolioMetrics } from 'common/user'
+import { GroupsButton } from 'web/components/groups/groups-button'
 
 export function UserLink(props: {
   name: string
@@ -197,6 +198,7 @@ export function UserPage(props: {
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
+            <GroupsButton user={user} />
           </Row>
 
           {user.website && (
