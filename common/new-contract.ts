@@ -28,7 +28,8 @@ export function getNewContract(
   // used for numeric markets
   bucketCount: number,
   min: number,
-  max: number
+  max: number,
+  isLogScale: boolean
 ) {
   const tags = parseTags(
     `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
@@ -39,7 +40,7 @@ export function getNewContract(
     outcomeType === 'BINARY'
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
       : outcomeType === 'PSEUDO_NUMERIC'
-      ? getPseudoNumericCpmmProps(initialProb, ante, min, max, false)
+      ? getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale)
       : outcomeType === 'NUMERIC'
       ? getNumericProps(ante, bucketCount, min, max)
       : getFreeAnswerProps(ante)

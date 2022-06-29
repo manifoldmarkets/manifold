@@ -76,9 +76,12 @@ export function NewContract(props: { question: string; groupId?: string }) {
 
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb] = useState(50)
+
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
+  const [isLogScale, setIsLogScale] = useState(false)
   const [initialValueString, setInitialValueString] = useState('')
+
   const [description, setDescription] = useState('')
   // const [tagText, setTagText] = useState<string>(tag ?? '')
   // const tags = parseWordsAsTags(tagText)
@@ -174,6 +177,7 @@ export function NewContract(props: { question: string; groupId?: string }) {
           min,
           max,
           initialValue,
+          isLogScale,
           groupId: selectedGroup?.id,
           tags: category ? [category] : undefined,
         })
@@ -260,12 +264,36 @@ export function NewContract(props: { question: string; groupId?: string }) {
                 placeholder="MAX"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}
+                onBlur={() => {
+                  if (min === undefined || max === undefined) return
+                  const lengthDiff = Math.abs(
+                    maxString.length - minString.length
+                  )
+                  if (lengthDiff > 2) {
+                    setIsLogScale(true)
+                  }
+                }}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
                 disabled={isSubmitting}
                 value={maxString}
               />
             </Row>
+
+            <Row className="mt-1 ml-2 mb-2 items-center">
+              <span className="mr-2 text-sm">Log scale</span>{' '}
+              <input
+                type="checkbox"
+                checked={isLogScale}
+                onChange={() => setIsLogScale(!isLogScale)}
+              />
+            </Row>
+
+            {min !== undefined && max !== undefined && min >= max && (
+              <div className="mt-2 mb-2 text-sm text-red-500">
+                The maximum value must be greater than the minimum.
+              </div>
+            )}
           </div>
           <div className="form-control mb-2 items-start">
             <label className="label gap-2">
@@ -285,6 +313,16 @@ export function NewContract(props: { question: string; groupId?: string }) {
                 value={initialValueString ?? ''}
               />
             </Row>
+
+            {initialValue !== undefined &&
+              min !== undefined &&
+              max !== undefined &&
+              min < max &&
+              (initialValue < min || initialValue > max) && (
+                <div className="mt-2 mb-2 text-sm text-red-500">
+                  Initial value must be in between {min} and {max}.{' '}
+                </div>
+              )}
           </div>
         </>
       )}

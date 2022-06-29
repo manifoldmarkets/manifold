@@ -49,21 +49,25 @@ const numericSchema = z.object({
   min: z.number(),
   max: z.number(),
   initialValue: z.number(),
+  isLogScale: z.boolean().optional(),
 })
 
 export const createmarket = newEndpoint(['POST'], async (req, auth) => {
   const { question, description, tags, closeTime, outcomeType, groupId } =
     validate(bodySchema, req.body)
 
-  let min, max, initialProb
+  let min, max, initialProb, isLogScale
 
   if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
     let initialValue
-    ;({ min, max, initialValue } = validate(numericSchema, req.body))
+    ;({ min, max, initialValue, isLogScale } = validate(
+      numericSchema,
+      req.body
+    ))
     if (max - min <= 0.01 || initialValue < min || initialValue > max)
       throw new APIError(400, 'Invalid range.')
 
-    initialProb = (initialValue - min) / (max - min) * 100
+    initialProb = ((initialValue - min) / (max - min)) * 100
   }
   if (outcomeType === 'BINARY') {
     ;({ initialProb } = validate(binarySchema, req.body))
@@ -127,7 +131,8 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     tags ?? [],
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
-    max ?? 0
+    max ?? 0,
+    isLogScale ?? false
   )
 
   if (ante) await chargeUser(user.id, ante, true)
