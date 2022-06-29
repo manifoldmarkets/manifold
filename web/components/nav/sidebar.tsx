@@ -230,7 +230,12 @@ export default function Sidebar(props: { className?: string }) {
           buttonContent={<MoreButton />}
         />
 
-        {memberItems.length > 0 && <Spacer h={6} />}
+        {/* Spacer if there are any groups */}
+        {memberItems.length > 0 && (
+          <div className="py-3">
+            <div className="h-[1px] bg-gray-300" />
+          </div>
+        )}
         <GroupsList currentPage={currentPage} memberItems={memberItems} />
       </div>
     </nav>
