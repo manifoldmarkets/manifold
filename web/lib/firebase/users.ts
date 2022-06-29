@@ -154,9 +154,9 @@ async function setCachedReferralInfoForUser(user: User | null) {
             ? cachedReferralContractId
             : undefined,
         })
-      )
-        .then((data) => console.log('done!', data))
-        .catch(console.error)
+      ).catch((err) => {
+        console.log('error setting referral details', err)
+      })
     })
 
   if (cachedReferralGroupSlug)
@@ -356,6 +356,25 @@ export function listenForFollowers(
 
       const values = snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
       setFollowerIds(filterDefined(values))
+    }
+  )
+}
+export function listenForReferrals(
+  userId: string,
+  setReferralIds: (referralIds: string[]) => void
+) {
+  const referralsQuery = query(
+    collection(db, 'users'),
+    where('referredByUserId', '==', userId)
+  )
+  return onSnapshot(
+    referralsQuery,
+    { includeMetadataChanges: true },
+    (snapshot) => {
+      if (snapshot.metadata.fromCache) return
+
+      const values = snapshot.docs.map((doc) => doc.ref.id)
+      setReferralIds(filterDefined(values))
     }
   )
 }
