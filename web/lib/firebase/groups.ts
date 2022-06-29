@@ -12,7 +12,6 @@ import { getContractFromId } from './contracts'
 import { db } from './init'
 import { getValue, getValues, listenForValue, listenForValues } from './utils'
 import { filterDefined } from 'common/util/array'
-import { User } from 'common/user'
 
 const groupCollection = collection(db, 'groups')
 
