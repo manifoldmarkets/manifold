@@ -35,12 +35,12 @@ const freeResponseSchema = z.union([
     resolutions: z.array(
       z.object({
         answer: z.number().int().nonnegative(),
-        pct: z.number().nonnegative(),
+        pct: z.number().gte(0).lt(100),
       })
     ),
   }),
   z.object({
-    outcome: z.number().gte(0),
+    outcome: z.number().int().nonnegative(),
   }),
 ])
 
