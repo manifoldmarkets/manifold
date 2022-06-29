@@ -6,8 +6,7 @@ import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
 import { User } from '../../common/user'
 import {
   BetInfo,
-  getBinaryCpmmLimitBetInfo,
-  getNewBinaryCpmmBetInfo,
+  getBinaryCpmmBetInfo,
   getNewBinaryDpmBetInfo,
   getNewMultiBetInfo,
   getNumericBetsInfo,
@@ -17,6 +16,7 @@ import { redeemShares } from './redeem-shares'
 import { log } from './utils'
 import { LimitBet } from 'common/bet'
 import { Query } from 'firebase-admin/firestore'
+import { sumBy } from 'lodash'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -70,18 +70,28 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
       newTotalBets,
       newTotalLiquidity,
       newP,
-    } = await (async (): Promise<BetInfo> => {
+      makers,
+    } = await (async (): Promise<
+      BetInfo & {
+        makers?: {
+          bet: LimitBet
+          amount: number
+          shares: number
+        }[]
+      }
+    > => {
       if (outcomeType == 'BINARY' && mechanism == 'dpm-2') {
         const { outcome } = validate(binarySchema, req.body)
         return getNewBinaryDpmBetInfo(outcome, amount, contract, loanAmount)
       } else if (outcomeType == 'BINARY' && mechanism == 'cpmm-1') {
         const { outcome, limitProb } = validate(binarySchema, req.body)
+        const boundedLimitProb = limitProb ?? (outcome === 'YES' ? 1 : 0)
         const unfilledBetsQuery = contractDoc
           .collection('bets')
           .where('outcome', '==', outcome === 'YES' ? 'NO' : 'YES')
           .where('isFilled', '==', false)
           .where('isCancelled', '==', false)
-          .where('limitProb', outcome === 'YES' ? '<=' : '>=', limitProb)
+          .where('limitProb', outcome === 'YES' ? '<=' : '>=', boundedLimitProb)
           .orderBy('createdTime', 'desc')
           .orderBy(
             'limitProb',
@@ -91,16 +101,13 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
         const unfilledBetsSnap = await trans.get(unfilledBetsQuery)
         const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
 
-        if (limitProb !== undefined) {
-           getBinaryCpmmLimitBetInfo(
-            outcome,
-            amount,
-            contract,
-            limitProb,
-            unfilledBets,
-          )
-        }
-        return getNewBinaryCpmmBetInfo(outcome, amount, contract, loanAmount)
+        return getBinaryCpmmBetInfo(
+          outcome,
+          amount,
+          contract,
+          limitProb,
+          unfilledBets
+        )
       } else if (outcomeType == 'FREE_RESPONSE' && mechanism == 'dpm-2') {
         const { outcome } = validate(freeResponseSchema, req.body)
         const answerDoc = contractDoc.collection('answers').doc(outcome)
@@ -129,6 +136,25 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
     const betDoc = contractDoc.collection('bets').doc()
     trans.create(betDoc, { id: betDoc.id, userId: user.id, ...newBet })
     log('Created new bet document.')
+
+    if (makers) {
+      for (const maker of makers) {
+        const { bet, amount, shares } = maker
+        const newFill = { amount, shares, matchedBetId: betDoc.id }
+        const fills = [...bet.fills, newFill]
+        const totalShares = sumBy(fills, 'shares')
+        const isFilled =
+          Math.abs(sumBy(fills, 'amount') - bet.amount) < 0.0000001
+
+        log('Updated a matched limit bet.')
+        trans.update(contractDoc.collection('bets').doc(bet.id), {
+          fills,
+          isFilled,
+          shares: totalShares,
+        })
+      }
+    }
+
     trans.update(userDoc, { balance: newBalance })
     log('Updated user balance.')
     trans.update(

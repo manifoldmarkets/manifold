@@ -37,17 +37,19 @@ export type BetInfo = {
 const computeFill = (
   betAmount: number,
   outcome: 'YES' | 'NO',
-  limitProb: number,
+  limitProb: number | undefined,
   cpmmState: CpmmState,
   matchedBet: LimitBet
 ) => {
   const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
   if (
-    outcome === 'YES'
+    limitProb !== undefined &&
+    (outcome === 'YES'
       ? Math.min(prob, matchedBet.limitProb) > limitProb
-      : Math.max(prob, matchedBet.limitProb) < limitProb
+      : Math.max(prob, matchedBet.limitProb) < limitProb)
   ) {
+    // No fill.
     return undefined
   }
 
@@ -59,20 +61,19 @@ const computeFill = (
     // Fill from pool.
     const limit =
       outcome === 'YES'
-        ? Math.min(matchedBet.limitProb, limitProb)
-        : Math.max(matchedBet.limitProb, limitProb)
-    const amount = calculateCpmmAmount(cpmmState, limit, 'YES')
+        ? Math.min(matchedBet.limitProb, limitProb ?? Infinity)
+        : Math.max(matchedBet.limitProb, limitProb ?? -Infinity)
+    const amount = calculateCpmmAmount(cpmmState, limit, outcome)
 
     const { shares, newPool, newP, fees } = calculateCpmmPurchase(
       cpmmState,
       amount,
-      'YES'
+      outcome
     )
     const newState = { pool: newPool, p: newP }
 
     return {
       maker: {
-        betId: 'bet',
         matchedBetId: null,
         shares,
         amount,
@@ -80,7 +81,6 @@ const computeFill = (
         fees,
       },
       taker: {
-        betId: 'bet',
         matchedBetId: null,
         shares,
         amount,
@@ -88,17 +88,16 @@ const computeFill = (
     }
   }
 
-  // Fill from bet.
+  // Fill from matchedBet.
   const amount = Math.min(betAmount, matchedBet.amount)
   const shares = matchedBet.shares * (amount / matchedBet.amount)
   const maker = {
-    betId: matchedBet.id,
-    matchedBetId: 'bet',
+    bet: matchedBet,
+    matchedBetId: 'taker',
     amount,
     shares,
   }
   const taker = {
-    betId: 'bet',
     matchedBetId: matchedBet.id,
     amount,
     shares,
@@ -106,20 +105,33 @@ const computeFill = (
   return { maker, taker }
 }
 
-export const getBinaryCpmmLimitBetInfo = (
+export const getBinaryCpmmBetInfo = (
   outcome: 'YES' | 'NO',
   betAmount: number,
   contract: CPMMBinaryContract,
-  limitProb: number,
+  limitProb: number | undefined,
   unfilledBets: LimitBet[] // Sorted by limitProb, createdTime
 ) => {
-  const fills: LimitBet['fills'] = []
+  const takers: {
+    matchedBetId: string | null
+    amount: number
+    shares: number
+  }[] = []
+  const makers: { bet: LimitBet; amount: number; shares: number }[] = []
 
   let cpmmState = { pool: contract.pool, p: contract.p }
   let totalFees = noFees
 
-  for (const bet of unfilledBets) {
-    const fill = computeFill(betAmount, outcome, limitProb, cpmmState, bet)
+  let i = 0
+  while (i < unfilledBets.length) {
+    const matchedBet = unfilledBets[i]
+    const fill = computeFill(
+      betAmount,
+      outcome,
+      limitProb,
+      cpmmState,
+      matchedBet
+    )
     if (!fill) break
 
     const { maker, taker } = fill
@@ -130,12 +142,43 @@ export const getBinaryCpmmLimitBetInfo = (
       cpmmState = maker.state
       totalFees = addObjects(totalFees, maker.fees)
     } else {
-      fills.push(maker)
+      makers.push(maker)
+      i++
     }
-    fills.push(taker)
+    takers.push(taker)
   }
 
-  return { fills, cpmmState, totalFees }
+  const probBefore = getCpmmProbability(contract.pool, contract.p)
+  const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
+
+  const takerAmount = sumBy(takers, 'amount')
+  const takerShares = sumBy(takers, 'shares')
+  const isFilled = Math.abs(betAmount - takerAmount) < 0.000000001
+
+  const newBet = {
+    amount: betAmount,
+    isFilled,
+    fills: takers,
+    contractId: contract.id,
+    shares: takerShares,
+    outcome,
+    probBefore,
+    probAfter,
+    loanAmount: 0,
+    createdTime: Date.now(),
+    fees: totalFees,
+  }
+
+  const { liquidityFee } = totalFees
+  const newTotalLiquidity = (contract.totalLiquidity ?? 0) + liquidityFee
+
+  return {
+    newBet,
+    newPool: cpmmState.pool,
+    newP: cpmmState.p,
+    newTotalLiquidity,
+    makers,
+  }
 }
 
 export const getNewBinaryCpmmBetInfo = (
