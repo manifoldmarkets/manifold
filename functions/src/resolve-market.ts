@@ -1,8 +1,12 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
+import { difference, uniq, mapValues, groupBy, sumBy, sum } from 'lodash'
 
-import { Contract, RESOLUTIONS } from '../../common/contract'
+import {
+  Contract,
+  FreeResponseContract,
+  RESOLUTIONS,
+} from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, isProd, payUser } from './utils'
@@ -73,6 +77,20 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
 
   const creator = await getUser(creatorId)
   if (!creator) throw new APIError(500, 'Creator not found')
+
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    if (resolutions) {
+      Object.keys(resolutions).forEach((outcome) =>
+        validateFreeResponseOutcome(contract, outcome)
+      )
+      const pctSum = sum(Object.values(resolutions))
+      if (pctSum !== 100) {
+        throw new APIError(400, 'Resolution percentages must sum to 100')
+      }
+    } else if (!isNaN(+outcome)) {
+      validateFreeResponseOutcome(contract, outcome)
+    }
+  }
 
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
@@ -247,6 +265,16 @@ function getResolutionParams(outcomeType: string, body: string) {
     }
   }
   throw new APIError(500, `Invalid outcome type: ${outcomeType}`)
+}
+
+function validateFreeResponseOutcome(
+  contract: FreeResponseContract,
+  outcome: string
+) {
+  const validIds = contract.answers.map((a) => a.id)
+  if (!validIds.includes(outcome)) {
+    throw new APIError(400, `Outcome ${outcome} is not a valid answer ID`)
+  }
 }
 
 const firestore = admin.firestore()
