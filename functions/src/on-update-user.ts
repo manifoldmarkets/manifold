@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { REFERRAL_AMOUNT, User } from '../../common/user'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../common/antes'
 import { createNotification } from './create-notification'
-import { ReferralTxn, Txn } from '../../common/txn'
+import { ReferralTxn } from '../../common/txn'
 import { Contract } from '../../common/contract'
 const firestore = admin.firestore()
 
@@ -14,7 +14,6 @@ export const onUpdateUser = functions.firestore
     const user = change.after.data() as User
     const { eventId } = context
 
-    // TODO: prevent a user from setting their referral if not the first time
     if (prevUser.referredByUserId !== user.referredByUserId) {
       await handleUserUpdatedReferral(user, eventId)
     }

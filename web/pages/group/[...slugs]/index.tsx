@@ -1,4 +1,4 @@
-import { take, sortBy, debounce, uniq } from 'lodash'
+import { take, sortBy, debounce } from 'lodash'
 
 import { Group } from 'common/group'
 import { Page } from 'web/components/page'
@@ -47,7 +47,6 @@ import { useCommentsOnGroup } from 'web/hooks/use-comments'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { REFERRAL_AMOUNT } from 'common/user'
-import Link from 'next/link'
 import { SiteLink } from 'web/components/site-link'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -383,7 +382,7 @@ function GroupOverview(props: {
               buttonClassName={'hover:bg-gray-300 mt-1 !text-gray-700'}
             >
               <span className={'mx-2'}>
-                Invite a friend and get M$ if they sign up!
+                Invite a friend and get M${REFERRAL_AMOUNT} if they sign up!
               </span>
             </ShareIconButton>
           </Row>

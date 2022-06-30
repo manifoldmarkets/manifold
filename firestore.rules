@@ -20,7 +20,12 @@ service cloud.firestore {
       allow read;
       allow update: if resource.data.id == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'referredByUserId', 'referredByContractId']);
+                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'referredByContractId']);
+      // only one referral allowed per user
+      allow update: if resource.data.id == request.auth.uid
+                       && request.resource.data.diff(resource.data).affectedKeys()
+                                                                    .hasOnly(['referredByUserId']);
+                                        && !("referredByUserId" in resource.data);
     }
 
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
