@@ -19,7 +19,6 @@ for the pool to be sorted into.
 - Users can create a market on any question they want.
 - When a user creates a market, they must choose a close date, after which trading will halt.
 - They must also pay a M$100 market creation fee, which is used as liquidity to subsidize trading on the market.
-  - The creation fee for the first market created each day is provided by Manifold.
 - The market creator will earn a commission on all bets placed in the market.
 - The market creator is responsible for resolving each market in a timely manner. All fees earned as a commission will be paid out after resolution.
 - Creators can also resolve N/A to cancel all transactions and reverse all transactions made on the market - this includes profits from selling shares.
