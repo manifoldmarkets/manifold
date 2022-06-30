@@ -526,8 +526,8 @@ For binary markets:
 
 For free response markets:
 
-- `outcome`: Required. One of `MKT`, `CANCEL`, or a `number` indicating the Free Response outcome ID.
-- `resolutions`: A map of from outcome => number to use as the weights for resolving in favor of multiple free response options. Can only be set with `MKT` outcome.
+- `outcome`: Required. One of `MKT`, `CANCEL`, or a `number` indicating the answer index.
+- `resolutions`: An array of `{ answer, pct }` objects to use as the weights for resolving in favor of multiple free response options. Can only be set with `MKT` outcome.
 
 For numeric markets:
 
@@ -538,33 +538,33 @@ Example request:
 
 ```
 # Resolve a binary market
-$ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: application/json' \
-    -H 'Authorization: Key {...}'
-    --data-raw '{"contractId":"{...}", \
-                 "outcome":"YES"}'
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "YES"}'
 
 # Resolve a binary market with a specified probability
-$ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: application/json' \
-    -H 'Authorization: Key {...}'
-    --data-raw '{"contractId":"{...}", \
-                 "outcome":"MKT",
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "MKT", \
                  "probabilityInt": 75}'
 
 # Resolve a free response market with a single answer chosen
-$ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: application/json' \
-    -H 'Authorization: Key {...}'
-    --data-raw '{"contractId":"{...}", \
-                 "outcome":"{...}"}'
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": 2}'
 
 # Resolve a free response market with multiple answers chosen
-$ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: application/json' \
-    -H 'Authorization: Key {...}'
-    --data-raw '{"contractId":"{...}", \
-                 "outcome":"MKT",
-                 "resolutions": {
-                   "{...}": 1,
-                   "{...}": 2,
-                 }}'
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "MKT", \
+                 "resolutions": [ \
+                   {"answer": 0, "pct": 50}, \
+                   {"answer": 2, "pct": 50} \
+                 ]}'
 ```
 
 ## Changelog
