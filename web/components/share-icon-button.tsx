@@ -21,6 +21,8 @@ function copyContractWithReferral(contract: Contract, username?: string) {
     `https://${ENV_CONFIG.domain}${contractPath(contract)}${postFix}`
   )
 }
+
+// Note: if a user arrives at a /group endpoint with a ?referral= query, they'll be added to the group automatically
 function copyGroupWithReferral(group: Group, username?: string) {
   const postFix = username ? '?referrer=' + username : ''
   copyToClipboard(
