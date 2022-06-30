@@ -1,4 +1,4 @@
-import { take, sortBy, debounce } from 'lodash'
+import { take, sortBy, debounce, uniq } from 'lodash'
 
 import { Group } from 'common/group'
 import { Page } from 'web/components/page'
@@ -47,6 +47,8 @@ import { useCommentsOnGroup } from 'web/hooks/use-comments'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { REFERRAL_AMOUNT } from 'common/user'
+import Link from 'next/link'
+import { SiteLink } from 'web/components/site-link'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -272,7 +274,13 @@ export default function GroupPage(props: {
                     </>
                   ) : (
                     <div className="p-2 text-gray-500">
-                      No questions yet. 🦗... Why not add one?
+                      No questions yet. Why not{' '}
+                      <SiteLink
+                        href={`/create/?groupId=${group.id}`}
+                        className={'font-bold text-gray-700'}
+                      >
+                        add one?
+                      </SiteLink>
                     </div>
                   )
                 ) : (
@@ -337,7 +345,7 @@ function GroupOverview(props: {
   return (
     <Col>
       <Col className="gap-2 rounded-b bg-white p-4">
-        <Row className={'justify-between'}>
+        <Row className={'flex-wrap justify-between'}>
           <div className={'inline-flex items-center'}>
             <div className="mr-1 text-gray-500">Created by</div>
             <UserLink
@@ -365,18 +373,21 @@ function GroupOverview(props: {
               {anyoneCanJoin ? 'Open' : 'Closed'}
             </span>
           )}
-          {anyoneCanJoin && user && (
+        </Row>
+        {anyoneCanJoin && user && (
+          <Row className={'flex-wrap items-center gap-1'}>
+            <span className={'text-gray-500'}>Sharing</span>
             <ShareIconButton
               group={group}
               username={user.username}
-              buttonClassName={'hover:bg-gray-300 !text-gray-700'}
+              buttonClassName={'hover:bg-gray-300 mt-1 !text-gray-700'}
             >
-              <span className={' mx-2'}>
-                Invite a friend to join and earn M${REFERRAL_AMOUNT}
+              <span className={'mx-2'}>
+                Invite a friend and get M$ if they sign up!
               </span>
             </ShareIconButton>
-          )}
-        </Row>
+          </Row>
+        )}
       </Col>
     </Col>
   )

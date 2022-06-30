@@ -46,7 +46,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
     <div className={clsx('flex p-1', className)}>
       <div
         className={clsx(
-          'btn-ghost cursor-pointer whitespace-nowrap rounded-full p-1 text-sm text-gray-700'
+          'btn-ghost cursor-pointer whitespace-nowrap rounded-md p-1 text-sm text-gray-700'
         )}
         onClick={() => updateOpen(!open)}
       >
