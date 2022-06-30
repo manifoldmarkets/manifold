@@ -24,7 +24,7 @@ service cloud.firestore {
       // only one referral allowed per user
       allow update: if resource.data.id == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['referredByUserId']);
+                                                                    .hasOnly(['referredByUserId'])
                                         && !("referredByUserId" in resource.data);
     }
 
