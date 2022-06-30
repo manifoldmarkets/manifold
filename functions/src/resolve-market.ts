@@ -1,14 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import {
-  difference,
-  uniq,
-  mapValues,
-  groupBy,
-  sumBy,
-  sum,
-  isNumber,
-} from 'lodash'
+import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
 
 import {
   Contract,
@@ -238,32 +230,39 @@ function getResolutionParams(contract: Contract, body: string) {
   } else if (outcomeType === 'FREE_RESPONSE') {
     const freeResponseParams = validate(freeResponseSchema, body)
     const { outcome } = freeResponseParams
-    const resolutions =
-      'resolutions' in freeResponseParams
-        ? Object.fromEntries(
-            freeResponseParams.resolutions.map((r) => [r.answer, r.pct])
-          )
-        : undefined
-
-    if (resolutions) {
-      Object.keys(resolutions).forEach((outcome) =>
-        validateFreeResponseOutcome(contract, outcome)
-      )
-      const pctSum = sum(Object.values(resolutions))
-      if (Math.abs(pctSum - 100) > 0.1) {
-        throw new APIError(400, 'Resolution percentages must sum to 100')
+    switch (outcome) {
+      case 'CANCEL':
+        return {
+          outcome: outcome.toString(),
+          resolutions: undefined,
+          value: undefined,
+          probabilityInt: undefined,
+        }
+      case 'MKT': {
+        const { resolutions } = freeResponseParams
+        resolutions.forEach(({ answer }) => validateAnswer(contract, answer))
+        const pctSum = sumBy(resolutions, ({ pct }) => pct)
+        if (Math.abs(pctSum - 100) > 0.1) {
+          throw new APIError(400, 'Resolution percentages must sum to 100')
+        }
+        return {
+          outcome: outcome.toString(),
+          resolutions: Object.fromEntries(
+            resolutions.map((r) => [r.answer, r.pct])
+          ),
+          value: undefined,
+          probabilityInt: undefined,
+        }
       }
-    } else if (isNumber(outcome)) {
-      validateFreeResponseOutcome(contract, outcome.toString())
-    }
-
-    return {
-      // Free Response outcome IDs are numbers by convention,
-      // but treated as strings everywhere else.
-      outcome: outcome.toString(),
-      resolutions,
-      value: undefined,
-      probabilityInt: undefined,
+      default: {
+        validateAnswer(contract, outcome)
+        return {
+          outcome: outcome.toString(),
+          resolutions: undefined,
+          value: undefined,
+          probabilityInt: undefined,
+        }
+      }
     }
   } else if (outcomeType === 'BINARY') {
     return {
@@ -275,13 +274,10 @@ function getResolutionParams(contract: Contract, body: string) {
   throw new APIError(500, `Invalid outcome type: ${outcomeType}`)
 }
 
-function validateFreeResponseOutcome(
-  contract: FreeResponseContract,
-  outcome: string
-) {
+function validateAnswer(contract: FreeResponseContract, answer: number) {
   const validIds = contract.answers.map((a) => a.id)
-  if (!validIds.includes(outcome)) {
-    throw new APIError(400, `Outcome ${outcome} is not a valid answer ID`)
+  if (!validIds.includes(answer.toString())) {
+    throw new APIError(400, `${answer} is not a valid answer ID`)
   }
 }
 
