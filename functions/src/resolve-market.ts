@@ -1,6 +1,14 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { difference, uniq, mapValues, groupBy, sumBy, sum } from 'lodash'
+import {
+  difference,
+  uniq,
+  mapValues,
+  groupBy,
+  sumBy,
+  sum,
+  isNumber,
+} from 'lodash'
 
 import {
   Contract,
@@ -63,10 +71,10 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   if (!contractSnap.exists)
     throw new APIError(404, 'No contract exists with the provided ID')
   const contract = contractSnap.data() as Contract
-  const { creatorId, outcomeType, closeTime } = contract
+  const { creatorId, closeTime } = contract
 
   const { value, resolutions, probabilityInt, outcome } = getResolutionParams(
-    outcomeType,
+    contract,
     req.body
   )
 
@@ -77,20 +85,6 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
 
   const creator = await getUser(creatorId)
   if (!creator) throw new APIError(500, 'Creator not found')
-
-  if (contract.outcomeType === 'FREE_RESPONSE') {
-    if (resolutions) {
-      Object.keys(resolutions).forEach((outcome) =>
-        validateFreeResponseOutcome(contract, outcome)
-      )
-      const pctSum = sum(Object.values(resolutions))
-      if (pctSum !== 100) {
-        throw new APIError(400, 'Resolution percentages must sum to 100')
-      }
-    } else if (!isNaN(+outcome)) {
-      validateFreeResponseOutcome(contract, outcome)
-    }
-  }
 
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
@@ -233,7 +227,8 @@ const sendResolutionEmails = async (
   )
 }
 
-function getResolutionParams(outcomeType: string, body: string) {
+function getResolutionParams(contract: Contract, body: string) {
+  const { outcomeType } = contract
   if (outcomeType === 'NUMERIC') {
     return {
       ...validate(numericSchema, body),
@@ -249,6 +244,19 @@ function getResolutionParams(outcomeType: string, body: string) {
             freeResponseParams.resolutions.map((r) => [r.answer, r.pct])
           )
         : undefined
+
+    if (resolutions) {
+      Object.keys(resolutions).forEach((outcome) =>
+        validateFreeResponseOutcome(contract, outcome)
+      )
+      const pctSum = sum(Object.values(resolutions))
+      if (Math.abs(pctSum - 100) > 0.1) {
+        throw new APIError(400, 'Resolution percentages must sum to 100')
+      }
+    } else if (isNumber(outcome)) {
+      validateFreeResponseOutcome(contract, outcome.toString())
+    }
+
     return {
       // Free Response outcome IDs are numbers by convention,
       // but treated as strings everywhere else.
