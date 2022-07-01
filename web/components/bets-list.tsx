@@ -653,7 +653,8 @@ function BetRow(props: {
             truncate="short"
           />
         )}
-        {isPseudoNumeric && ' than ' +formatNumericProbability(bet.probAfter, contract)}
+        {isPseudoNumeric &&
+          ' than ' + formatNumericProbability(bet.probAfter, contract)}
       </td>
       <td>{formatMoney(Math.abs(amount))}</td>
       {!isCPMM && !isNumeric && <td>{saleDisplay}</td>}
