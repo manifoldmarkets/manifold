@@ -23,8 +23,8 @@ export function Tabs(props: {
 
   return (
     <>
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px mb-4 flex space-x-8" aria-label="Tabs">
+      <div className="mb-4 border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           {tabs.map((tab, i) => (
             <Link href={tab.href ?? '#'} key={tab.title} shallow={!!tab.href}>
               <a
