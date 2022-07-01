@@ -55,14 +55,18 @@ async function handleUserUpdatedReferral(user: User, eventId: string) {
         .where('category', '==', 'REFERRAL')
         .get()
     ).docs.map((txn) => txn.ref)
-    const referralTxns = await transaction.getAll(...txns).catch((err) => {
-      console.error('error getting txns:', err)
-      throw err
-    })
-    // If the referring user already has a referral txn due to referring this user, halt
-    if (referralTxns.map((txn) => txn.data()?.description).includes(user.id)) {
-      console.log('found referral txn with the same details, aborting')
-      return
+    if (txns.length > 0) {
+      const referralTxns = await transaction.getAll(...txns).catch((err) => {
+        console.error('error getting txns:', err)
+        throw err
+      })
+      // If the referring user already has a referral txn due to referring this user, halt
+      if (
+        referralTxns.map((txn) => txn.data()?.description).includes(user.id)
+      ) {
+        console.log('found referral txn with the same details, aborting')
+        return
+      }
     }
     console.log('creating referral txns')
     const fromId = HOUSE_LIQUIDITY_PROVIDER_ID
