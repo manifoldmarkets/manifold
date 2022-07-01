@@ -160,8 +160,8 @@ export function NewContract(props: {
         isFinite(max) &&
         min < max &&
         max - min > 0.01 &&
-        min <= initialValue &&
-        initialValue <= max))
+        min < initialValue &&
+        initialValue < max))
 
   function setCloseDateInDays(days: number) {
     const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
@@ -327,7 +327,7 @@ export function NewContract(props: {
               min !== undefined &&
               max !== undefined &&
               min < max &&
-              (initialValue < min || initialValue > max) && (
+              (initialValue <= min || initialValue >= max) && (
                 <div className="mt-2 mb-2 text-sm text-red-500">
                   Initial value must be in between {min} and {max}.{' '}
                 </div>
