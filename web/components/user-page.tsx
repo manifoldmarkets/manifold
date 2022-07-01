@@ -36,6 +36,7 @@ import { FollowersButton, FollowingButton } from './following-button'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
 import { PortfolioMetrics } from 'common/user'
+import { ReferralsButton } from 'web/components/referrals-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
 
 export function UserLink(props: {
@@ -194,10 +195,11 @@ export function UserPage(props: {
           </>
         )}
 
-        <Col className="gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <Col className="flex-wrap gap-2 sm:flex-row sm:items-center sm:gap-4">
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
+            <ReferralsButton user={user} />
             <GroupsButton user={user} />
           </Row>
 

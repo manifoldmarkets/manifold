@@ -91,6 +91,9 @@ export function GroupChat(props: {
     setReplyToUsername('')
     inputRef?.focus()
   }
+  function focusInput() {
+    inputRef?.focus()
+  }
 
   return (
     <Col className={'flex-1'}>
@@ -117,7 +120,13 @@ export function GroupChat(props: {
         ))}
         {messages.length === 0 && (
           <div className="p-2 text-gray-500">
-            No messages yet. 🦗... Why not say something?
+            No messages yet. Why not{' '}
+            <button
+              className={'cursor-pointer font-bold text-gray-700'}
+              onClick={() => focusInput()}
+            >
+              add one?
+            </button>
           </div>
         )}
       </Col>
