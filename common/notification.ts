@@ -33,6 +33,7 @@ export type notification_source_types =
   | 'tip'
   | 'admin_message'
   | 'group'
+  | 'user'
 
 export type notification_source_update_types =
   | 'created'
@@ -53,3 +54,5 @@ export type notification_reason_types =
   | 'on_new_follow'
   | 'you_follow_user'
   | 'added_you_to_group'
+  | 'you_referred_user'
+  | 'user_joined_to_bet_on_your_market'
