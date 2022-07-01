@@ -36,12 +36,22 @@ export const backupDbCore = async (
     'groups',
     'private-users',
     'stripe-transactions',
+    'transactions',
     'users',
     'bets',
     'comments',
     'followers',
     'answers',
     'txns',
+    'manalinks',
+    'liquidity',
+    'stats',
+    'cache',
+    'latency',
+    'views',
+    'notifications',
+    'portfolioHistory',
+    'folds',
   ]
   return await client.exportDocuments({ name, outputUriPrefix, collectionIds })
 }
