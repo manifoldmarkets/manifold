@@ -186,7 +186,7 @@ export function NewContract(props: {
           min,
           max,
           initialValue,
-          isLogScale,
+          isLogScale: (min ?? 0) < 0 ? false : isLogScale,
           groupId: selectedGroup?.id,
           tags: category ? [category] : undefined,
         })
@@ -289,14 +289,16 @@ export function NewContract(props: {
               />
             </Row>
 
-            <Row className="mt-1 ml-2 mb-2 items-center">
-              <span className="mr-2 text-sm">Log scale</span>{' '}
-              <input
-                type="checkbox"
-                checked={isLogScale}
-                onChange={() => setIsLogScale(!isLogScale)}
-              />
-            </Row>
+            {!(min !== undefined && min < 0) && (
+              <Row className="mt-1 ml-2 mb-2 items-center">
+                <span className="mr-2 text-sm">Log scale</span>{' '}
+                <input
+                  type="checkbox"
+                  checked={isLogScale}
+                  onChange={() => setIsLogScale(!isLogScale)}
+                />
+              </Row>
+            )}
 
             {min !== undefined && max !== undefined && min >= max && (
               <div className="mt-2 mb-2 text-sm text-red-500">
