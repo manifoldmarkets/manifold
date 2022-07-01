@@ -112,11 +112,11 @@ export function YesLabel() {
 }
 
 export function HigherLabel() {
-  return <span className="text-primary">HIGH</span>
+  return <span className="text-primary">HIGHER</span>
 }
 
 export function LowerLabel() {
-  return <span className="text-red-400">LOW</span>
+  return <span className="text-red-400">LOWER</span>
 }
 
 export function NoLabel() {
