@@ -216,7 +216,7 @@ export function ContractPageContent(
         {isNumeric && (
           <AlertBox
             title="Warning"
-            text="Numeric markets were introduced as an experimental feature and are now deprecated."
+            text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
           />
         )}
 
