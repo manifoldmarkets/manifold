@@ -122,7 +122,7 @@ export function ContractSearch(props: {
 
   const indexName = `${indexPrefix}contracts-${sort}`
 
-  if (IS_PRIVATE_MANIFOLD) {
+  if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return (
       <ContractSearchFirestore
         querySortOptions={querySortOptions}
