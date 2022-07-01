@@ -53,7 +53,7 @@ const numericSchema = z.object({
   isLogScale: z.boolean().optional(),
 })
 
-export const createmarket = newEndpoint(['POST'], async (req, auth) => {
+export const createmarket = newEndpoint({}, async (req, auth) => {
   const { question, description, tags, closeTime, outcomeType, groupId } =
     validate(bodySchema, req.body)
 

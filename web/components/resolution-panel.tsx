@@ -6,7 +6,7 @@ import { User } from 'web/lib/firebase/users'
 import { YesNoCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
-import { resolveMarket } from 'web/lib/firebase/fn-call'
+import { APIError, resolveMarket } from 'web/lib/firebase/api-call'
 import { ProbabilitySelector } from './probability-selector'
 import { DPM_CREATOR_FEE } from 'common/fees'
 import { getProbability } from 'common/calculate'
@@ -42,17 +42,22 @@ export function ResolutionPanel(props: {
 
     setIsSubmitting(true)
 
-    const result = await resolveMarket({
-      outcome,
-      contractId: contract.id,
-      probabilityInt: prob,
-    }).then((r) => r.data)
-
-    console.log('resolved', outcome, 'result:', result)
-
-    if (result?.status !== 'success') {
-      setError(result?.message || 'Error resolving market')
+    try {
+      const result = await resolveMarket({
+        outcome,
+        contractId: contract.id,
+        probabilityInt: prob,
+      })
+      console.log('resolved', outcome, 'result:', result)
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.toString())
+      } else {
+        console.error(e)
+        setError('Error resolving market')
+      }
     }
+
     setIsSubmitting(false)
   }
 

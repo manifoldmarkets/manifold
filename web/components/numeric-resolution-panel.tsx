@@ -6,8 +6,8 @@ import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
-import { resolveMarket } from 'web/lib/firebase/fn-call'
 import { NumericContract, PseudoNumericContract } from 'common/contract'
+import { APIError, resolveMarket } from 'web/lib/firebase/api-call'
 import { BucketInput } from './bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 
@@ -55,18 +55,23 @@ export function NumericResolutionPanel(props: {
         outcomeType === 'PSEUDO_NUMERIC' && contract.isLogScale
       )
 
-    const result = await resolveMarket({
-      outcome: finalOutcome,
-      value,
-      contractId: contract.id,
-      probabilityInt,
-    }).then((r) => r.data)
-
-    console.log('resolved', outcome, 'result:', result)
-
-    if (result?.status !== 'success') {
-      setError(result?.message || 'Error resolving market')
+    try {
+      const result = await resolveMarket({
+        outcome: finalOutcome,
+        value,
+        probabilityInt,
+        contractId: contract.id,
+      })
+      console.log('resolved', outcome, 'result:', result)
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.toString())
+      } else {
+        console.error(e)
+        setError('Error resolving market')
+      }
     }
+
     setIsSubmitting(false)
   }
 

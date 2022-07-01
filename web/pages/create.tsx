@@ -26,6 +26,7 @@ import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { CATEGORIES } from 'common/categories'
+import { User } from 'common/user'
 
 export default function Create() {
   const [question, setQuestion] = useState('')
@@ -33,7 +34,13 @@ export default function Create() {
   const router = useRouter()
   const { groupId } = router.query as { groupId: string }
   useTracking('view create page')
-  if (!router.isReady) return <div />
+  const creator = useUser()
+
+  useEffect(() => {
+    if (creator === null) router.push('/')
+  }, [creator, router])
+
+  if (!router.isReady || !creator) return <div />
 
   return (
     <Page>
@@ -58,7 +65,11 @@ export default function Create() {
             </div>
           </form>
           <Spacer h={6} />
-          <NewContract question={question} groupId={groupId} />
+          <NewContract
+            question={question}
+            groupId={groupId}
+            creator={creator}
+          />
         </div>
       </div>
     </Page>
@@ -66,14 +77,12 @@ export default function Create() {
 }
 
 // Allow user to create a new contract
-export function NewContract(props: { question: string; groupId?: string }) {
-  const { question, groupId } = props
-  const creator = useUser()
-
-  useEffect(() => {
-    if (creator === null) router.push('/')
-  }, [creator])
-
+export function NewContract(props: {
+  creator: User
+  question: string
+  groupId?: string
+}) {
+  const { creator, question, groupId } = props
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb] = useState(50)
 

@@ -87,7 +87,7 @@ export function FreeResponseOutcomeLabel(props: {
   if (resolution === 'CANCEL') return <CancelLabel />
   if (resolution === 'MKT') return <MultiLabel />
 
-  const chosen = contract.answers.find((answer) => answer.id === resolution)
+  const chosen = contract.answers?.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
     <FreeResponseAnswerToolTip text={chosen.text}>

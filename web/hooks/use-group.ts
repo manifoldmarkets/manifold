@@ -29,11 +29,11 @@ export const useGroups = () => {
   return groups
 }
 
-export const useMemberGroups = (user: User | null | undefined) => {
+export const useMemberGroups = (userId: string | null | undefined) => {
   const [memberGroups, setMemberGroups] = useState<Group[] | undefined>()
   useEffect(() => {
-    if (user) return listenForMemberGroups(user.id, setMemberGroups)
-  }, [user])
+    if (userId) return listenForMemberGroups(userId, setMemberGroups)
+  }, [userId])
   return memberGroups
 }
 
@@ -74,7 +74,9 @@ export function useMembers(group: Group) {
 }
 
 export async function listMembers(group: Group) {
-  return await Promise.all(group.memberIds.map(getUser))
+  return (await Promise.all(group.memberIds.map(getUser))).filter(
+    (user) => user
+  )
 }
 
 export const useGroupsWithContract = (contractId: string | undefined) => {

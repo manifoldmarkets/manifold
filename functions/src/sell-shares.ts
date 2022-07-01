@@ -16,7 +16,7 @@ const bodySchema = z.object({
   outcome: z.enum(['YES', 'NO']),
 })
 
-export const sellshares = newEndpoint(['POST'], async (req, auth) => {
+export const sellshares = newEndpoint({}, async (req, auth) => {
   const { contractId, shares, outcome } = validate(bodySchema, req.body)
 
   // Run as transaction to prevent race conditions.

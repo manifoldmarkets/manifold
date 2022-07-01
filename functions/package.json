@@ -5,7 +5,8 @@
     "firestore": "dev-mantic-markets.appspot.com"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "yarn compile && rm -rf dist && mkdir -p dist/functions && cp -R ../common/lib dist/common && cp -R lib/src dist/functions/src && cp ../yarn.lock dist && cp package.json dist",
+    "compile": "tsc -b",
     "watch": "tsc -w",
     "shell": "yarn build && firebase functions:shell",
     "start": "yarn shell",
@@ -16,9 +17,10 @@
     "db:backup-local": "firebase emulators:export --force ./firestore_export",
     "db:rename-remote-backup-folder": "gsutil mv gs://$npm_package_config_firestore/firestore_export gs://$npm_package_config_firestore/firestore_export_$(date +%d-%m-%Y-%H-%M)",
     "db:backup-remote": "yarn db:rename-remote-backup-folder && gcloud firestore export gs://$npm_package_config_firestore/firestore_export/",
-    "verify": "(cd .. && yarn verify)"
+    "verify": "(cd .. && yarn verify)",
+    "verify:dir": "npx eslint . --max-warnings 0; tsc -b -v --pretty"
   },
-  "main": "lib/functions/src/index.js",
+  "main": "functions/src/index.js",
   "dependencies": {
     "@amplitude/node": "1.10.0",
     "fetch": "1.1.0",

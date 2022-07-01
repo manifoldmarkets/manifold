@@ -516,6 +516,22 @@ The American Civil Liberties Union is our nation's guardian of liberty, working 
 
 The U.S. Constitution and the Bill of Rights trumpet our aspirations for the kind of society that we want to be. But for much of our history, our nation failed to fulfill the promise of liberty for whole groups of people.`,
   },
+  {
+    name: 'The Center for Election Science',
+    website: 'https://electionscience.org/',
+    photo: 'https://i.imgur.com/WvdHHZa.png',
+    preview:
+      'The Center for Election Science is a nonpartisan nonprofit dedicated to empowering voters with voting methods that strengthen democracy. We believe you deserve a vote that empowers you to impact the world you live in.',
+    description: `Founded in 2011, The Center for Election Science is a national, nonpartisan nonprofit focused on voting reform.
+
+Our Mission — To empower people with voting methods that strengthen democracy.
+
+Our Vision — A world where democracies thrive because voters’ voices are heard.
+
+With an emphasis on approval voting, we bring better elections to people across the country through both advocacy and research.
+
+The movement for a better way to vote is rapidly gaining momentum as voters grow tired of election results that don’t represent the will of the people. In 2018, we worked with locals in Fargo, ND to help them become the first city in the U.S. to adopt approval voting. And in 2020, we helped grassroots activists empower the 300k people of St. Louis, MO with stronger democracy through approval voting.`,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
