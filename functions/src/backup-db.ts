@@ -18,46 +18,52 @@
 
 import * as functions from 'firebase-functions'
 import * as firestore from '@google-cloud/firestore'
-const client = new firestore.v1.FirestoreAdminClient()
+import { FirestoreAdminClient } from '@google-cloud/firestore/types/v1/firestore_admin_client'
 
-const bucket = 'gs://manifold-firestore-backup'
+export const backupDbCore = async (
+  client: FirestoreAdminClient,
+  project: string,
+  bucket: string
+) => {
+  const name = client.databasePath(project, '(default)')
+  const outputUriPrefix = `gs://${bucket}`
+  // Leave collectionIds empty to export all collections
+  // or set to a list of collection IDs to export,
+  // collectionIds: ['users', 'posts']
+  // NOTE: Subcollections are not backed up by default
+  const collectionIds = [
+    'contracts',
+    'groups',
+    'private-users',
+    'stripe-transactions',
+    'users',
+    'bets',
+    'comments',
+    'followers',
+    'answers',
+    'txns',
+  ]
+  return await client.exportDocuments({ name, outputUriPrefix, collectionIds })
+}
 
 export const backupDb = functions.pubsub
   .schedule('every 24 hours')
-  .onRun((_context) => {
-    const projectId = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT
-    if (projectId == null) {
-      throw new Error('No project ID environment variable set.')
+  .onRun(async (_context) => {
+    try {
+      const client = new firestore.v1.FirestoreAdminClient()
+      const project = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT
+      if (project == null) {
+        throw new Error('No project ID environment variable set.')
+      }
+      const responses = await backupDbCore(
+        client,
+        project,
+        'manifold-firestore-backup'
+      )
+      const response = responses[0]
+      console.log(`Operation Name: ${response['name']}`)
+    } catch (err) {
+      console.error(err)
+      throw new Error('Export operation failed')
     }
-    const databaseName = client.databasePath(projectId, '(default)')
-
-    return client
-      .exportDocuments({
-        name: databaseName,
-        outputUriPrefix: bucket,
-        // Leave collectionIds empty to export all collections
-        // or set to a list of collection IDs to export,
-        // collectionIds: ['users', 'posts']
-        // NOTE: Subcollections are not backed up by default
-        collectionIds: [
-          'contracts',
-          'groups',
-          'private-users',
-          'stripe-transactions',
-          'users',
-          'bets',
-          'comments',
-          'followers',
-          'answers',
-          'txns',
-        ],
-      })
-      .then((responses) => {
-        const response = responses[0]
-        console.log(`Operation Name: ${response['name']}`)
-      })
-      .catch((err) => {
-        console.error(err)
-        throw new Error('Export operation failed')
-      })
   })
