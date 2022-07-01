@@ -40,6 +40,7 @@ export const backupDbCore = async (
     'users',
     'bets',
     'comments',
+    'follows',
     'followers',
     'answers',
     'txns',
