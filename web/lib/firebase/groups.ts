@@ -102,10 +102,13 @@ export async function addUserToGroupViaSlug(groupSlug: string, userId: string) {
     console.error(`Group not found: ${groupSlug}`)
     return
   }
-  return await joinGroup(group, userId)
+  return await addUserToGroup(group, userId)
 }
 
-export async function joinGroup(group: Group, userId: string): Promise<Group> {
+export async function addUserToGroup(
+  group: Group,
+  userId: string
+): Promise<Group> {
   const { memberIds } = group
   if (memberIds.includes(userId)) {
     return group
@@ -124,4 +127,15 @@ export async function leaveGroup(group: Group, userId: string): Promise<Group> {
   const newGroup = { ...group, memberIds: newMemberIds }
   await updateGroup(newGroup, { memberIds: uniq(newMemberIds) })
   return newGroup
+}
+
+export async function addContractToGroup(group: Group, contractId: string) {
+  return await updateGroup(group, {
+    contractIds: uniq([...group.contractIds, contractId]),
+  })
+    .then(() => group)
+    .catch((err) => {
+      console.error('error adding contract to group', err)
+      return err
+    })
 }

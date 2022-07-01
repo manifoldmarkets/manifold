@@ -14,17 +14,17 @@ type Tab = {
 export function Tabs(props: {
   tabs: Tab[]
   defaultIndex?: number
-  className?: string
+  labelClassName?: string
   onClick?: (tabTitle: string, index: number) => void
 }) {
-  const { tabs, defaultIndex, className, onClick } = props
+  const { tabs, defaultIndex, labelClassName, onClick } = props
   const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
   const activeTab = tabs[activeIndex] as Tab | undefined // can be undefined in weird case
 
   return (
-    <div>
+    <>
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+        <nav className="-mb-px mb-4 flex space-x-8" aria-label="Tabs">
           {tabs.map((tab, i) => (
             <Link href={tab.href ?? '#'} key={tab.title} shallow={!!tab.href}>
               <a
@@ -42,7 +42,7 @@ export function Tabs(props: {
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
                   'cursor-pointer whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium',
-                  className
+                  labelClassName
                 )}
                 aria-current={activeIndex === i ? 'page' : undefined}
               >
@@ -56,7 +56,7 @@ export function Tabs(props: {
         </nav>
       </div>
 
-      <div className="mt-4">{activeTab?.content}</div>
-    </div>
+      {activeTab?.content}
+    </>
   )
 }
