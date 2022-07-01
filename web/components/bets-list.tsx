@@ -24,7 +24,13 @@ import { Row } from './layout/row'
 import { UserLink } from './user-page'
 import { sellBet } from 'web/lib/firebase/api-call'
 import { ConfirmationButton } from './confirmation-button'
-import { OutcomeLabel, YesLabel, NoLabel, HigherLabel, LowerLabel } from './outcome-label'
+import {
+  OutcomeLabel,
+  YesLabel,
+  NoLabel,
+  HigherLabel,
+  LowerLabel,
+} from './outcome-label'
 import { filterDefined } from 'common/util/array'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'

@@ -148,7 +148,8 @@ export function ContractPageContent(
   const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
-  const hasSidePanel = (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
+  const hasSidePanel =
+    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
 
   const ogCardProps = getOpenGraphProps(contract)
 

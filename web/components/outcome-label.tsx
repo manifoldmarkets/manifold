@@ -19,7 +19,7 @@ export function OutcomeLabel(props: {
   value?: number
 }) {
   const { outcome, contract, truncate, value } = props
-  const {outcomeType} = contract
+  const { outcomeType } = contract
 
   if (outcomeType === 'PSEUDO_NUMERIC')
     return <PseudoNumericOutcomeLabel outcome={outcome as any} />
@@ -118,8 +118,6 @@ export function HigherLabel() {
 export function LowerLabel() {
   return <span className="text-red-400">LOW</span>
 }
-
-
 
 export function NoLabel() {
   return <span className="text-red-400">NO</span>
