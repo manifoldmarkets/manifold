@@ -130,9 +130,32 @@ export function ContractDetails(props: {
   const { contract, bets, isCreator, disabled } = props
   const { closeTime, creatorName, creatorUsername, creatorId } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
-  // Find a group that this contract id is in
-  const groups = useGroupsWithContract(contract.id)
+
+  const groups = (useGroupsWithContract(contract.id) ?? []).sort((g1, g2) => {
+    return g2.createdTime - g1.createdTime
+  })
   const user = useUser()
+
+  const groupsUserIsMemberOf = groups
+    ? groups.filter((g) => g.memberIds.includes(contract.creatorId))
+    : []
+  const groupsUserIsCreatorOf = groups
+    ? groups.filter((g) => g.creatorId === contract.creatorId)
+    : []
+
+  // Priorities for which group the contract belongs to:
+  // In order of created most recently
+  // Group that the contract owner created
+  // Group the contract owner is a member of
+  // Any group the contract is in
+  const groupToDisplay =
+    groupsUserIsCreatorOf.length > 0
+      ? groupsUserIsCreatorOf[0]
+      : groupsUserIsMemberOf.length > 0
+      ? groupsUserIsMemberOf[0]
+      : groups
+      ? groups[0]
+      : undefined
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
       <Row className="items-center gap-2">
@@ -153,14 +176,15 @@ export function ContractDetails(props: {
         )}
         {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
-      {/*// TODO: we can add contracts to multiple groups but only show the first it was added to*/}
-      {groups && groups.length > 0 && (
+      {groupToDisplay ? (
         <Row className={'line-clamp-1 mt-1 max-w-[200px]'}>
-          <SiteLink href={`${groupPath(groups[0].slug)}`}>
+          <SiteLink href={`${groupPath(groupToDisplay.slug)}`}>
             <UserGroupIcon className="mx-1 mb-1 inline h-5 w-5" />
-            <span>{groups[0].name}</span>
+            <span>{groupToDisplay.name}</span>
           </SiteLink>
         </Row>
+      ) : (
+        <div />
       )}
 
       {(!!closeTime || !!resolvedDate) && (

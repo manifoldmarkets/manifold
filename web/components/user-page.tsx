@@ -258,7 +258,7 @@ export function UserPage(props: {
 
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
-            className={'pb-2 pt-1 '}
+            labelClassName={'pb-2 pt-1 '}
             defaultIndex={
               defaultTabTitle ? TAB_IDS.indexOf(defaultTabTitle) : 0
             }
