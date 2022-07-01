@@ -6,7 +6,7 @@ import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
-import { resolveMarket } from 'web/lib/firebase/fn-call'
+import { APIError, resolveMarket } from 'web/lib/firebase/api-call'
 import { NumericContract } from 'common/contract'
 import { BucketInput } from './bucket-input'
 
@@ -37,17 +37,22 @@ export function NumericResolutionPanel(props: {
 
     setIsSubmitting(true)
 
-    const result = await resolveMarket({
-      outcome: finalOutcome,
-      value,
-      contractId: contract.id,
-    }).then((r) => r.data)
-
-    console.log('resolved', outcome, 'result:', result)
-
-    if (result?.status !== 'success') {
-      setError(result?.message || 'Error resolving market')
+    try {
+      const result = await resolveMarket({
+        outcome: finalOutcome,
+        value,
+        contractId: contract.id,
+      })
+      console.log('resolved', outcome, 'result:', result)
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.toString())
+      } else {
+        console.error(e)
+        setError('Error resolving market')
+      }
     }
+
     setIsSubmitting(false)
   }
 

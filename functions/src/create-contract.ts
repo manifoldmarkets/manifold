@@ -50,7 +50,7 @@ const numericSchema = z.object({
   max: z.number(),
 })
 
-export const createmarket = newEndpoint(['POST'], async (req, auth) => {
+export const createmarket = newEndpoint({}, async (req, auth) => {
   const { question, description, tags, closeTime, outcomeType, groupId } =
     validate(bodySchema, req.body)
 

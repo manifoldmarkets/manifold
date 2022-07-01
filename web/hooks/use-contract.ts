@@ -2,16 +2,16 @@ import { useEffect } from 'react'
 import { useFirestoreDocumentData } from '@react-query-firebase/firestore'
 import {
   Contract,
-  contractDocRef,
+  contracts,
   listenForContract,
 } from 'web/lib/firebase/contracts'
 import { useStateCheckEquality } from './use-state-check-equality'
-import { DocumentData } from 'firebase/firestore'
+import { doc, DocumentData } from 'firebase/firestore'
 
 export const useContract = (contractId: string) => {
   const result = useFirestoreDocumentData<DocumentData, Contract>(
     ['contracts', contractId],
-    contractDocRef(contractId),
+    doc(contracts, contractId),
     { subscribe: true, includeMetadataChanges: true }
   )
 

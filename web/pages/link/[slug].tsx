@@ -31,7 +31,7 @@ export default function ClaimPage() {
         url="/send"
       />
       <div className="mx-auto max-w-xl">
-        <Title text={`Claim ${manalink.amount} mana`} />
+        <Title text={`Claim M$${manalink.amount} mana`} />
         <ManalinkCard
           defaultMessage={fromUser?.name || 'Enjoy this mana!'}
           info={info}

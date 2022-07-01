@@ -58,6 +58,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
         setText('')
         setBetAmount(10)
         setAmountError(undefined)
+        setPossibleDuplicateAnswer(undefined)
       } else setAmountError(result.message)
     }
   }

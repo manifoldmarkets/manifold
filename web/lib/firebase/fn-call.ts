@@ -29,17 +29,6 @@ export const createAnswer = cloudFunction<
   }
 >('createAnswer')
 
-export const resolveMarket = cloudFunction<
-  {
-    outcome: string
-    value?: number
-    contractId: string
-    probabilityInt?: number
-    resolutions?: { [outcome: string]: number }
-  },
-  { status: 'error' | 'success'; message?: string }
->('resolveMarket')
-
 export const createUser: () => Promise<User | null> = () => {
   const local = safeLocalStorage()
   let deviceToken = local?.getItem('device-token')

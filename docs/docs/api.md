@@ -456,7 +456,6 @@ Requires no authorization.
   }
   ```
 
-
 ### `POST /v0/bet`
 
 Places a new bet on behalf of the authorized user.
@@ -512,6 +511,60 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
                  "description":"I'm not going to type some long ass example description.", \
                  "closeTime":1700000000000, \
                  "initialProb":25}'
+```
+
+### `POST /v0/market/[marketId]/resolve`
+
+Resolves a market on behalf of the authorized user.
+
+Parameters:
+
+For binary markets:
+
+- `outcome`: Required. One of `YES`, `NO`, `MKT`, or `CANCEL`.
+- `probabilityInt`: Optional. The probability to use for `MKT` resolution.
+
+For free response markets:
+
+- `outcome`: Required. One of `MKT`, `CANCEL`, or a `number` indicating the answer index.
+- `resolutions`: An array of `{ answer, pct }` objects to use as the weights for resolving in favor of multiple free response options. Can only be set with `MKT` outcome.
+
+For numeric markets:
+
+- `outcome`: Required. One of `CANCEL`, or a `number` indicating the selected numeric bucket ID.
+- `value`: The value that the market may resolves to.
+
+Example request:
+
+```
+# Resolve a binary market
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "YES"}'
+
+# Resolve a binary market with a specified probability
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "MKT", \
+                 "probabilityInt": 75}'
+
+# Resolve a free response market with a single answer chosen
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": 2}'
+
+# Resolve a free response market with multiple answers chosen
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "MKT", \
+                 "resolutions": [ \
+                   {"answer": 0, "pct": 50}, \
+                   {"answer": 2, "pct": 50} \
+                 ]}'
 ```
 
 ## Changelog

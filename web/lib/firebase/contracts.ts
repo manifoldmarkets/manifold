@@ -1,6 +1,5 @@
 import dayjs from 'dayjs'
 import {
-  getFirestore,
   doc,
   setDoc,
   deleteDoc,
@@ -16,8 +15,7 @@ import {
 } from 'firebase/firestore'
 import { sortBy, sum } from 'lodash'
 
-import { app } from './init'
-import { getValues, listenForValue, listenForValues } from './utils'
+import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract } from 'common/contract'
 import { getDpmProbability } from 'common/calculate-dpm'
 import { createRNG, shuffle } from 'common/util/random'
@@ -28,6 +26,9 @@ import { MAX_FEED_CONTRACTS } from 'common/recommended-contracts'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
+
+export const contracts = coll<Contract>('contracts')
+
 export type { Contract }
 
 export function contractPath(contract: Contract) {
@@ -86,83 +87,72 @@ export function tradingAllowed(contract: Contract) {
   )
 }
 
-const db = getFirestore(app)
-export const contractCollection = collection(db, 'contracts')
-export const contractDocRef = (contractId: string) =>
-  doc(db, 'contracts', contractId)
-
 // Push contract to Firestore
 export async function setContract(contract: Contract) {
-  const docRef = doc(db, 'contracts', contract.id)
-  await setDoc(docRef, contract)
+  await setDoc(doc(contracts, contract.id), contract)
 }
 
 export async function updateContract(
   contractId: string,
   update: Partial<Contract>
 ) {
-  const docRef = doc(db, 'contracts', contractId)
-  await updateDoc(docRef, update)
+  await updateDoc(doc(contracts, contractId), update)
 }
 
 export async function getContractFromId(contractId: string) {
-  const docRef = doc(db, 'contracts', contractId)
-  const result = await getDoc(docRef)
-
-  return result.exists() ? (result.data() as Contract) : undefined
+  const result = await getDoc(doc(contracts, contractId))
+  return result.exists() ? result.data() : undefined
 }
 
 export async function getContractFromSlug(slug: string) {
-  const q = query(contractCollection, where('slug', '==', slug))
+  const q = query(contracts, where('slug', '==', slug))
   const snapshot = await getDocs(q)
-
-  return snapshot.empty ? undefined : (snapshot.docs[0].data() as Contract)
+  return snapshot.empty ? undefined : snapshot.docs[0].data()
 }
 
 export async function deleteContract(contractId: string) {
-  const docRef = doc(db, 'contracts', contractId)
-  await deleteDoc(docRef)
+  await deleteDoc(doc(contracts, contractId))
 }
 
 export async function listContracts(creatorId: string): Promise<Contract[]> {
   const q = query(
-    contractCollection,
+    contracts,
     where('creatorId', '==', creatorId),
     orderBy('createdTime', 'desc')
   )
   const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => doc.data() as Contract)
+  return snapshot.docs.map((doc) => doc.data())
 }
 
 export async function listTaggedContractsCaseInsensitive(
   tag: string
 ): Promise<Contract[]> {
   const q = query(
-    contractCollection,
+    contracts,
     where('lowercaseTags', 'array-contains', tag.toLowerCase()),
     orderBy('createdTime', 'desc')
   )
   const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => doc.data() as Contract)
+  return snapshot.docs.map((doc) => doc.data())
 }
 
 export async function listAllContracts(
   n: number,
   before?: string
 ): Promise<Contract[]> {
-  let q = query(contractCollection, orderBy('createdTime', 'desc'), limit(n))
+  let q = query(contracts, orderBy('createdTime', 'desc'), limit(n))
   if (before != null) {
-    const snap = await getDoc(doc(db, 'contracts', before))
+    const snap = await getDoc(doc(contracts, before))
     q = query(q, startAfter(snap))
   }
   const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => doc.data() as Contract)
+  return snapshot.docs.map((doc) => doc.data())
 }
 
 export function listenForContracts(
   setContracts: (contracts: Contract[]) => void
 ) {
-  const q = query(contractCollection, orderBy('createdTime', 'desc'))
+  const q = query(contracts, orderBy('createdTime', 'desc'))
   return listenForValues<Contract>(q, setContracts)
 }
 
@@ -171,7 +161,7 @@ export function listenForUserContracts(
   setContracts: (contracts: Contract[]) => void
 ) {
   const q = query(
-    contractCollection,
+    contracts,
     where('creatorId', '==', creatorId),
     orderBy('createdTime', 'desc')
   )
@@ -179,7 +169,7 @@ export function listenForUserContracts(
 }
 
 const activeContractsQuery = query(
-  contractCollection,
+  contracts,
   where('isResolved', '==', false),
   where('visibility', '==', 'public'),
   where('volume7Days', '>', 0)
@@ -196,7 +186,7 @@ export function listenForActiveContracts(
 }
 
 const inactiveContractsQuery = query(
-  contractCollection,
+  contracts,
   where('isResolved', '==', false),
   where('closeTime', '>', Date.now()),
   where('visibility', '==', 'public'),
@@ -214,7 +204,7 @@ export function listenForInactiveContracts(
 }
 
 const newContractsQuery = query(
-  contractCollection,
+  contracts,
   where('isResolved', '==', false),
   where('volume7Days', '==', 0),
   where('createdTime', '>', Date.now() - 7 * DAY_MS)
@@ -230,7 +220,7 @@ export function listenForContract(
   contractId: string,
   setContract: (contract: Contract | null) => void
 ) {
-  const contractRef = doc(contractCollection, contractId)
+  const contractRef = doc(contracts, contractId)
   return listenForValue<Contract>(contractRef, setContract)
 }
 
@@ -242,7 +232,7 @@ function chooseRandomSubset(contracts: Contract[], count: number) {
 }
 
 const hotContractsQuery = query(
-  contractCollection,
+  contracts,
   where('isResolved', '==', false),
   where('visibility', '==', 'public'),
   orderBy('volume24Hours', 'desc'),
@@ -262,22 +252,22 @@ export function listenForHotContracts(
 }
 
 export async function getHotContracts() {
-  const contracts = await getValues<Contract>(hotContractsQuery)
+  const data = await getValues<Contract>(hotContractsQuery)
   return sortBy(
-    chooseRandomSubset(contracts, 10),
+    chooseRandomSubset(data, 10),
     (contract) => -1 * contract.volume24Hours
   )
 }
 
 export async function getContractsBySlugs(slugs: string[]) {
-  const q = query(contractCollection, where('slug', 'in', slugs))
+  const q = query(contracts, where('slug', 'in', slugs))
   const snapshot = await getDocs(q)
-  const contracts = snapshot.docs.map((doc) => doc.data() as Contract)
-  return sortBy(contracts, (contract) => -1 * contract.volume24Hours)
+  const data = snapshot.docs.map((doc) => doc.data())
+  return sortBy(data, (contract) => -1 * contract.volume24Hours)
 }
 
 const topWeeklyQuery = query(
-  contractCollection,
+  contracts,
   where('isResolved', '==', false),
   orderBy('volume7Days', 'desc'),
   limit(MAX_FEED_CONTRACTS)
@@ -287,7 +277,7 @@ export async function getTopWeeklyContracts() {
 }
 
 const closingSoonQuery = query(
-  contractCollection,
+  contracts,
   where('isResolved', '==', false),
   where('visibility', '==', 'public'),
   where('closeTime', '>', Date.now()),
@@ -296,15 +286,12 @@ const closingSoonQuery = query(
 )
 
 export async function getClosingSoonContracts() {
-  const contracts = await getValues<Contract>(closingSoonQuery)
-  return sortBy(
-    chooseRandomSubset(contracts, 2),
-    (contract) => contract.closeTime
-  )
+  const data = await getValues<Contract>(closingSoonQuery)
+  return sortBy(chooseRandomSubset(data, 2), (contract) => contract.closeTime)
 }
 
 export async function getRecentBetsAndComments(contract: Contract) {
-  const contractDoc = doc(db, 'contracts', contract.id)
+  const contractDoc = doc(contracts, contract.id)
 
   const [recentBets, recentComments] = await Promise.all([
     getValues<Bet>(

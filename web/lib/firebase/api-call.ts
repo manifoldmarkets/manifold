@@ -41,12 +41,21 @@ export async function call(url: string, method: string, params: any) {
 // one less hop
 
 export function getFunctionUrl(name: string) {
-  const { cloudRunId, cloudRunRegion } = ENV_CONFIG
-  return `https://${name}-${cloudRunId}-${cloudRunRegion}.a.run.app`
+  if (process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
+    const { projectId, region } = ENV_CONFIG.firebaseConfig
+    return `http://localhost:5001/${projectId}/${region}/${name}`
+  } else {
+    const { cloudRunId, cloudRunRegion } = ENV_CONFIG
+    return `https://${name}-${cloudRunId}-${cloudRunRegion}.a.run.app`
+  }
 }
 
 export function createMarket(params: any) {
   return call(getFunctionUrl('createmarket'), 'POST', params)
+}
+
+export function resolveMarket(params: any) {
+  return call(getFunctionUrl('resolvemarket'), 'POST', params)
 }
 
 export function placeBet(params: any) {
