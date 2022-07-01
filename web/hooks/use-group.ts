@@ -74,7 +74,9 @@ export function useMembers(group: Group) {
 }
 
 export async function listMembers(group: Group) {
-  return await Promise.all(group.memberIds.map(getUser))
+  return (await Promise.all(group.memberIds.map(getUser))).filter(
+    (user) => user
+  )
 }
 
 export const useGroupsWithContract = (contractId: string | undefined) => {
