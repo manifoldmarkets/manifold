@@ -29,7 +29,7 @@ import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
-import { formatNumericProbability } from 'common/numeric'
+import { formatNumericProbability } from 'common/pseudo-numeric'
 
 export function ContractCard(props: {
   contract: Contract
@@ -283,7 +283,9 @@ export function NumericResolutionOrExpectation(props: {
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
-            <div className="text-blue-400">{resolutionValue}</div>
+            <div className="text-blue-400">
+              {formatLargeNumber(resolutionValue)}
+            </div>
           )}
         </>
       ) : (
@@ -316,8 +318,12 @@ export function PseudoNumericResolutionOrExpectation(props: {
             <CancelLabel />
           ) : (
             <div className="text-blue-400">
-              {resolutionValue ??
-                formatNumericProbability(resolutionProbability ?? 0, contract)}
+              {resolutionValue
+                ? formatLargeNumber(resolutionValue)
+                : formatNumericProbability(
+                    resolutionProbability ?? 0,
+                    contract
+                  )}
             </div>
           )}
         </>

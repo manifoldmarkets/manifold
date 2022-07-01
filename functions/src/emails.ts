@@ -6,9 +6,13 @@ import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
 import { DPM_CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
-import { formatMoney, formatPercent } from '../../common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatPercent,
+} from '../../common/util/format'
 import { getValueFromBucket } from '../../common/calculate-dpm'
-import { formatNumericProbability } from '../../common/numeric'
+import { formatNumericProbability } from '../../common/pseudo-numeric'
 
 import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
@@ -103,13 +107,14 @@ const toDisplayResolution = (
   }
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    return (
-      contract.resolutionValue?.toString() ??
-      formatNumericProbability(
-        resolutionProbability ?? getProbability(contract),
-        contract
-      )
-    )
+    const { resolutionValue } = contract
+
+    return resolutionValue
+      ? formatLargeNumber(resolutionValue)
+      : formatNumericProbability(
+          resolutionProbability ?? getProbability(contract),
+          contract
+        )
   }
 
   if (resolution === 'MKT' && resolutions) return 'MULTI'

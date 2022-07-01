@@ -26,7 +26,7 @@ import { useSaveShares } from '../use-save-shares'
 import { sellShares } from 'web/lib/firebase/api-call'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { track } from 'web/lib/service/analytics'
-import { formatNumericProbability } from 'common/numeric'
+import { formatNumericProbability } from 'common/pseudo-numeric'
 
 const BET_SIZE = 10
 

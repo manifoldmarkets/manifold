@@ -28,6 +28,7 @@ import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, MAX_ID_LENGTH } from '../../common/group'
+import { getPseudoProbability } from '../../common/pseudo-numeric'
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -67,7 +68,7 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     if (max - min <= 0.01 || initialValue < min || initialValue > max)
       throw new APIError(400, 'Invalid range.')
 
-    initialProb = ((initialValue - min) / (max - min)) * 100
+    initialProb = getPseudoProbability(initialValue, min, max, isLogScale) * 100
   }
   if (outcomeType === 'BINARY') {
     ;({ initialProb } = validate(binarySchema, req.body))

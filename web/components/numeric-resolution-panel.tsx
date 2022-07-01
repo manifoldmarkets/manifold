@@ -9,6 +9,7 @@ import { ResolveConfirmationButton } from './confirmation-button'
 import { resolveMarket } from 'web/lib/firebase/fn-call'
 import { NumericContract, PseudoNumericContract } from 'common/contract'
 import { BucketInput } from './bucket-input'
+import { getPseudoProbability } from 'common/pseudo-numeric'
 
 export function NumericResolutionPanel(props: {
   creator: User
@@ -44,7 +45,15 @@ export function NumericResolutionPanel(props: {
     setIsSubmitting(true)
 
     const boundedValue = Math.max(Math.min(max, value ?? 0), min)
-    const probabilityInt = ((boundedValue - min) / (max - min)) * 100
+
+    const probabilityInt =
+      100 *
+      getPseudoProbability(
+        boundedValue,
+        min,
+        max,
+        outcomeType === 'PSEUDO_NUMERIC' && contract.isLogScale
+      )
 
     const result = await resolveMarket({
       outcome: finalOutcome,

@@ -7,6 +7,7 @@ import { Bet } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
 import { BinaryContract, PseudoNumericContract } from 'common/contract'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { getMappedValue } from 'common/pseudo-numeric'
 
 export const ContractProbGraph = memo(function ContractProbGraph(props: {
   contract: BinaryContract | PseudoNumericContract
@@ -26,10 +27,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
     ...bets.map((bet) => bet.createdTime),
   ].map((time) => new Date(time))
 
-  const f =
-    contract.outcomeType === 'PSEUDO_NUMERIC'
-      ? (p: number) => (p * (contract.max - contract.min) + contract.min) / 100
-      : (p: number) => p
+  const f = getMappedValue(contract)
 
   const probs = [startProb, ...bets.map((bet) => bet.probAfter)].map(f)
 
@@ -46,9 +44,11 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   times.push(latestTime.toDate())
   probs.push(probs[probs.length - 1])
 
+  const quartiles = [0, 25, 50, 75, 100]
+
   const yTickValues = isBinary
-    ? [0, 25, 50, 75, 100]
-    : [0, 0.25, 0.5, 0.75, 1].map(f).map((x) => x * 100)
+    ? quartiles
+    : quartiles.map((x) => x / 100).map(f)
 
   const { width } = useWindowSize()
 
@@ -64,9 +64,12 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   const totalPoints = width ? (width > 800 ? 300 : 50) : 1
 
   const timeStep: number = latestTime.diff(startDate, 'ms') / totalPoints
+
   const points: { x: Date; y: number }[] = []
+  const s = isBinary ? 100 : 1
+
   for (let i = 0; i < times.length - 1; i++) {
-    points[points.length] = { x: times[i], y: probs[i] * 100 }
+    points[points.length] = { x: times[i], y: s * probs[i] }
     const numPoints: number = Math.floor(
       dayjs(times[i + 1]).diff(dayjs(times[i]), 'ms') / timeStep
     )
@@ -78,7 +81,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
           x: dayjs(times[i])
             .add(thisTimeStep * n, 'ms')
             .toDate(),
-          y: probs[i] * 100,
+          y: s * probs[i],
         }
       }
     }
@@ -103,7 +106,11 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
         yScale={
           isBinary
             ? { min: 0, max: 100, type: 'linear' }
-            : { min: contract.min, max: contract.max, type: 'linear' }
+            : {
+                min: contract.min,
+                max: contract.max,
+                type: contract.isLogScale ? 'log' : 'linear',
+              }
         }
         yFormat={formatter}
         gridYValues={yTickValues}

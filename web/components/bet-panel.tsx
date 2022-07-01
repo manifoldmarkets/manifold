@@ -39,6 +39,7 @@ import {
   getCpmmProbability,
   getCpmmLiquidityFee,
 } from 'common/calculate-cpmm'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
 import { SignUpPrompt } from './sign-up-prompt'
@@ -314,10 +315,7 @@ function BuyPanel(props: {
         )} ${betChoice ?? 'YES'} shares`
       : undefined
 
-  const format = isPseudoNumeric
-    ? (p: number) =>
-        Math.round(p * (contract.max - contract.min) + contract.min).toString()
-    : (p: number) => formatPercent(p)
+  const format = getFormattedMappedValue(contract)
 
   return (
     <>
@@ -512,10 +510,7 @@ export function SellPanel(props: {
 
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const format = isPseudoNumeric
-    ? (p: number) =>
-        Math.round(p * (contract.max - contract.min) + contract.min).toString()
-    : (p: number) => formatPercent(p)
+  const format = getFormattedMappedValue(contract)
 
   return (
     <>
