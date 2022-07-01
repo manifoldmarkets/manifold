@@ -136,6 +136,15 @@ export function NewContract(props: {
   const initialValue = initialValueString
     ? parseFloat(initialValueString)
     : undefined
+
+  const adjustIsLog = () => {
+    if (min === undefined || max === undefined) return
+    const lengthDiff = Math.abs(Math.log10(max) - Math.log10(min))
+    if (lengthDiff > 2) {
+      setIsLogScale(true)
+    }
+  }
+
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
@@ -262,6 +271,7 @@ export function NewContract(props: {
                 placeholder="MIN"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
+                onBlur={adjustIsLog}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
                 disabled={isSubmitting}
@@ -273,15 +283,7 @@ export function NewContract(props: {
                 placeholder="MAX"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}
-                onBlur={() => {
-                  if (min === undefined || max === undefined) return
-                  const lengthDiff = Math.abs(
-                    maxString.length - minString.length
-                  )
-                  if (lengthDiff > 2) {
-                    setIsLogScale(true)
-                  }
-                }}
+                onBlur={adjustIsLog}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
                 disabled={isSubmitting}
@@ -296,6 +298,7 @@ export function NewContract(props: {
                   type="checkbox"
                   checked={isLogScale}
                   onChange={() => setIsLogScale(!isLogScale)}
+                  disabled={isSubmitting}
                 />
               </Row>
             )}
