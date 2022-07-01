@@ -34,6 +34,7 @@ import { filterDefined } from 'common/util/array'
 import { addUserToGroupViaSlug } from 'web/lib/firebase/groups'
 import { removeUndefinedProps } from 'common/util/object'
 import dayjs from 'dayjs'
+import { track } from '@amplitude/analytics-browser'
 
 export type { User }
 
@@ -154,9 +155,18 @@ async function setCachedReferralInfoForUser(user: User | null) {
             ? cachedReferralContractId
             : undefined,
         })
-      ).catch((err) => {
-        console.log('error setting referral details', err)
-      })
+      )
+        .catch((err) => {
+          console.log('error setting referral details', err)
+        })
+        .then(() => {
+          track('Referral', {
+            userId: user.id,
+            referredByUserId: referredByUser.id,
+            referredByContractId: cachedReferralContractId,
+            referredByGroupSlug: cachedReferralGroupSlug,
+          })
+        })
     })
 
   if (cachedReferralGroupSlug)

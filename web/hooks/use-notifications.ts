@@ -117,7 +117,7 @@ function getAppropriateNotifications(
     return notifications.filter(
       (n) =>
         n.reason &&
-        // Show all contract notifications
+        // Show all contract notifications and any that aren't in the above list:
         (n.sourceType === 'contract' || !lessPriorityReasons.includes(n.reason))
     )
   if (notificationPreferences === 'none') return []

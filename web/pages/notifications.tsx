@@ -280,6 +280,7 @@ function NotificationGroupItem(props: {
   )
 }
 
+// TODO: where should we put referral bonus notifications?
 function NotificationSettings() {
   const user = useUser()
   const [notificationSettings, setNotificationSettings] =
@@ -428,6 +429,10 @@ function NotificationSettings() {
             <NotificationSettingLine
               highlight={notificationSettings !== 'none'}
               label={"Activity on questions you're betting on"}
+            />
+            <NotificationSettingLine
+              highlight={notificationSettings !== 'none'}
+              label={"Referral bonuses you've received"}
             />
             <NotificationSettingLine
               label={"Activity on questions you've ever bet or commented on"}
