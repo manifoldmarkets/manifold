@@ -7,13 +7,14 @@ import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import clsx from 'clsx'
 import { UsersIcon } from '@heroicons/react/solid'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import React, { Fragment } from 'react'
 import { uniqBy, partition, sumBy, groupBy } from 'lodash'
 import { JoinSpans } from 'web/components/join-spans'
 import { UserLink } from '../user-page'
+import { formatNumericProbability } from 'common/pseudo-numeric'
 
 export function FeedBet(props: {
   contract: Contract
@@ -75,6 +76,8 @@ export function BetStatusText(props: {
   hideOutcome?: boolean
 }) {
   const { bet, contract, bettor, isSelf, hideOutcome } = props
+  const { outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const { amount, outcome, createdTime } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
@@ -97,7 +100,10 @@ export function BetStatusText(props: {
             value={(bet as any).value}
             contract={contract}
             truncate="short"
-          />
+          />{' '}
+          {isPseudoNumeric
+            ? ' than ' + formatNumericProbability(bet.probAfter, contract)
+            : ' at ' + formatPercent(bet.probAfter)}
         </>
       )}
       <RelativeTimestamp time={createdTime} />

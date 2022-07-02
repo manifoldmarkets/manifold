@@ -16,7 +16,11 @@ export const redeemShares = async (userId: string, contractId: string) => {
       return { status: 'error', message: 'Invalid contract' }
 
     const contract = contractSnap.data() as Contract
-    if (contract.outcomeType !== 'BINARY' || contract.mechanism !== 'cpmm-1')
+    const { mechanism, outcomeType } = contract
+    if (
+      !(outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') ||
+      mechanism !== 'cpmm-1'
+    )
       return { status: 'success' }
 
     const betsSnap = await transaction.get(

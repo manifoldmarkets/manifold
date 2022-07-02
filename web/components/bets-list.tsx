@@ -8,6 +8,7 @@ import { useUserBets } from 'web/hooks/use-user-bets'
 import { Bet } from 'web/lib/firebase/bets'
 import { User } from 'web/lib/firebase/users'
 import {
+  formatLargeNumber,
   formatMoney,
   formatPercent,
   formatWithCommas,
@@ -40,6 +41,7 @@ import {
 import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
 import { trackLatency } from 'web/lib/firebase/tracking'
 import { NumericContract } from 'common/contract'
+import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { SellSharesModal } from './sell-modal'
 
@@ -366,6 +368,7 @@ export function BetsSummary(props: {
   const { contract, isYourBets, className } = props
   const { resolution, closeTime, outcomeType, mechanism } = contract
   const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isCpmm = mechanism === 'cpmm-1'
   const isClosed = closeTime && Date.now() > closeTime
 
@@ -421,6 +424,25 @@ export function BetsSummary(props: {
                 <Col>
                   <div className="whitespace-nowrap text-sm text-gray-500">
                     Payout if <NoLabel />
+                  </div>
+                  <div className="whitespace-nowrap">
+                    {formatMoney(noWinnings)}
+                  </div>
+                </Col>
+              </>
+            ) : isPseudoNumeric ? (
+              <>
+                <Col>
+                  <div className="whitespace-nowrap text-sm text-gray-500">
+                    Payout if {'>='} {formatLargeNumber(contract.max)}
+                  </div>
+                  <div className="whitespace-nowrap">
+                    {formatMoney(yesWinnings)}
+                  </div>
+                </Col>
+                <Col>
+                  <div className="whitespace-nowrap text-sm text-gray-500">
+                    Payout if {'<='} {formatLargeNumber(contract.min)}
                   </div>
                   <div className="whitespace-nowrap">
                     {formatMoney(noWinnings)}
@@ -507,13 +529,15 @@ export function ContractBetsTable(props: {
   const { isResolved, mechanism, outcomeType } = contract
   const isCPMM = mechanism === 'cpmm-1'
   const isNumeric = outcomeType === 'NUMERIC'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   return (
     <div className={clsx('overflow-x-auto', className)}>
       {amountRedeemed > 0 && (
         <>
           <div className="pl-2 text-sm text-gray-500">
-            {amountRedeemed} YES shares and {amountRedeemed} NO shares
+            {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
+            {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
             automatically redeemed for {formatMoney(amountRedeemed)}.
           </div>
           <Spacer h={4} />
@@ -541,7 +565,7 @@ export function ContractBetsTable(props: {
             )}
             {!isCPMM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
-            <th>Probability</th>
+            {!isPseudoNumeric && <th>Probability</th>}
             <th>Date</th>
           </tr>
         </thead>
@@ -585,6 +609,7 @@ function BetRow(props: {
 
   const isCPMM = mechanism === 'cpmm-1'
   const isNumeric = outcomeType === 'NUMERIC'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   const saleAmount = saleBet?.sale?.amount
 
@@ -628,14 +653,18 @@ function BetRow(props: {
             truncate="short"
           />
         )}
+        {isPseudoNumeric &&
+          ' than ' + formatNumericProbability(bet.probAfter, contract)}
       </td>
       <td>{formatMoney(Math.abs(amount))}</td>
       {!isCPMM && !isNumeric && <td>{saleDisplay}</td>}
       {!isCPMM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>{formatWithCommas(Math.abs(shares))}</td>
-      <td>
-        {formatPercent(probBefore)} → {formatPercent(probAfter)}
-      </td>
+      {!isPseudoNumeric && (
+        <td>
+          {formatPercent(probBefore)} → {formatPercent(probAfter)}
+        </td>
+      )}
       <td>{dayjs(createdTime).format('MMM D, h:mma')}</td>
     </tr>
   )
