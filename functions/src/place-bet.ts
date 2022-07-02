@@ -16,7 +16,7 @@ import { redeemShares } from './redeem-shares'
 import { log } from './utils'
 import { LimitBet } from 'common/bet'
 import { Query } from 'firebase-admin/firestore'
-import { sumBy } from 'lodash'
+import { sortBy, sumBy } from 'lodash'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -91,15 +91,18 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           .where('outcome', '==', outcome === 'YES' ? 'NO' : 'YES')
           .where('isFilled', '==', false)
           .where('isCancelled', '==', false)
-          .where('limitProb', outcome === 'YES' ? '<=' : '>=', boundedLimitProb)
-          .orderBy('createdTime', 'desc')
-          .orderBy(
+          .where(
             'limitProb',
-            outcome === 'YES' ? 'asc' : 'desc'
+            outcome === 'YES' ? '<=' : '>=',
+            boundedLimitProb
           ) as Query<LimitBet>
 
         const unfilledBetsSnap = await trans.get(unfilledBetsQuery)
-        const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
+        const unfilledBets = sortBy(
+          unfilledBetsSnap.docs.map((doc) => doc.data()),
+          (bet) => (outcome === 'YES' ? bet.limitProb : -bet.limitProb),
+          (bet) => bet.createdTime
+        )
 
         return getBinaryCpmmBetInfo(
           outcome,
