@@ -39,7 +39,8 @@ export const addLiquidity = functions.runWith({ minInstances: 1 }).https.onCall(
         const contract = contractSnap.data() as Contract
         if (
           contract.mechanism !== 'cpmm-1' ||
-          contract.outcomeType !== 'BINARY'
+          (contract.outcomeType !== 'BINARY' &&
+            contract.outcomeType !== 'PSEUDO_NUMERIC')
         )
           return { status: 'error', message: 'Invalid contract' }
 
