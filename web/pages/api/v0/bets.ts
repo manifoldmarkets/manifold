@@ -3,20 +3,22 @@ import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { Bet, getBets } from 'web/lib/firebase/bets'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { getUserByUsername } from 'web/lib/firebase/users'
-import { ApiError, ValidationError } from '../_types'
+import { ApiError, ValidationError } from './_types'
 import { z } from 'zod'
-import { validate } from '../_validate'
+import { validate } from './_validate'
 
-const queryParams = z.object({
-  username: z.string().optional(),
-  market: z.string().optional(),
-  limit: z
-    .number()
-    .default(1000)
-    .or(z.string().regex(/\d+/).transform(Number))
-    .refine((n) => n >= 0 && n <= 1000, 'Limit must be between 0 and 1000'),
-  before: z.string().optional(),
-})
+const queryParams = z
+  .object({
+    username: z.string().optional(),
+    market: z.string().optional(),
+    limit: z
+      .number()
+      .default(1000)
+      .or(z.string().regex(/\d+/).transform(Number))
+      .refine((n) => n >= 0 && n <= 1000, 'Limit must be between 0 and 1000'),
+    before: z.string().optional(),
+  })
+  .strict()
 
 export default async function handler(
   req: NextApiRequest,
