@@ -1,6 +1,4 @@
-import { sumBy } from 'lodash'
-
-import { Bet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
+import { Bet, NumericBet } from './bet'
 import {
   calculateDpmShares,
   getDpmProbability,
@@ -32,8 +30,7 @@ export type BetInfo = {
 export const getNewBinaryCpmmBetInfo = (
   outcome: 'YES' | 'NO',
   amount: number,
-  contract: CPMMBinaryContract,
-  loanAmount: number
+  contract: CPMMBinaryContract
 ) => {
   const { shares, newPool, newP, fees } = calculateCpmmPurchase(
     contract,
@@ -51,7 +48,7 @@ export const getNewBinaryCpmmBetInfo = (
     shares,
     outcome,
     fees,
-    loanAmount,
+    loanAmount: 0,
     probBefore,
     probAfter,
     createdTime: Date.now(),
@@ -66,8 +63,7 @@ export const getNewBinaryCpmmBetInfo = (
 export const getNewBinaryDpmBetInfo = (
   outcome: 'YES' | 'NO',
   amount: number,
-  contract: DPMBinaryContract,
-  loanAmount: number
+  contract: DPMBinaryContract
 ) => {
   const { YES: yesPool, NO: noPool } = contract.pool
 
@@ -98,7 +94,7 @@ export const getNewBinaryDpmBetInfo = (
   const newBet: CandidateBet<Bet> = {
     contractId: contract.id,
     amount,
-    loanAmount,
+    loanAmount: 0,
     shares,
     outcome,
     probBefore,
@@ -113,8 +109,7 @@ export const getNewBinaryDpmBetInfo = (
 export const getNewMultiBetInfo = (
   outcome: string,
   amount: number,
-  contract: FreeResponseContract,
-  loanAmount: number
+  contract: FreeResponseContract
 ) => {
   const { pool, totalShares, totalBets } = contract
 
@@ -135,7 +130,7 @@ export const getNewMultiBetInfo = (
   const newBet: CandidateBet<Bet> = {
     contractId: contract.id,
     amount,
-    loanAmount,
+    loanAmount: 0,
     shares,
     outcome,
     probBefore,
@@ -188,14 +183,4 @@ export const getNumericBetsInfo = (
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }
-}
-
-export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {
-  const openBets = yourBets.filter((bet) => !bet.isSold && !bet.sale)
-  const prevLoanAmount = sumBy(openBets, (bet) => bet.loanAmount ?? 0)
-  const loanAmount = Math.min(
-    newBetAmount,
-    MAX_LOAN_PER_CONTRACT - prevLoanAmount
-  )
-  return loanAmount
 }
