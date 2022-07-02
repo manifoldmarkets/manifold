@@ -46,10 +46,12 @@ const binarySchema = z.object({
   initialProb: z.number().min(1).max(99),
 })
 
+const finite = () => z.number().gte(Number.MIN_SAFE_INTEGER).lte(Number.MAX_SAFE_INTEGER)
+
 const numericSchema = z.object({
-  min: z.number(),
-  max: z.number(),
-  initialValue: z.number(),
+  min: finite(),
+  max: finite(),
+  initialValue: finite(),
   isLogScale: z.boolean().optional(),
 })
 

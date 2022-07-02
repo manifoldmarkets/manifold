@@ -84,7 +84,7 @@ export type PseudoNumeric = {
   isLogScale: boolean
   resolutionValue?: number
 
-  // same as binary market; map to everything to probability
+  // same as binary market; map everything to probability
   initialProbability: number
   resolutionProbability?: number
 }

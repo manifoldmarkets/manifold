@@ -139,7 +139,7 @@ export function NewContract(props: {
 
   const adjustIsLog = () => {
     if (min === undefined || max === undefined) return
-    const lengthDiff = Math.abs(Math.log10(max) - Math.log10(min))
+    const lengthDiff = Math.log10(max - min)
     if (lengthDiff > 2) {
       setIsLogScale(true)
     }
@@ -322,7 +322,7 @@ export function NewContract(props: {
                 placeholder="Initial value"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setInitialValueString(e.target.value)}
-                maxLength={6}
+                max={Number.MAX_SAFE_INTEGER}
                 disabled={isSubmitting}
                 value={initialValueString ?? ''}
               />
