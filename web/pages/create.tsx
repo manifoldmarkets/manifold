@@ -85,8 +85,12 @@ export function NewContract(props: {
   const { creator, question, groupId } = props
   const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
   const [initialProb] = useState(50)
+
   const [minString, setMinString] = useState('')
   const [maxString, setMaxString] = useState('')
+  const [isLogScale, setIsLogScale] = useState(false)
+  const [initialValueString, setInitialValueString] = useState('')
+
   const [description, setDescription] = useState('')
   // const [tagText, setTagText] = useState<string>(tag ?? '')
   // const tags = parseWordsAsTags(tagText)
@@ -129,6 +133,18 @@ export function NewContract(props: {
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
+  const initialValue = initialValueString
+    ? parseFloat(initialValueString)
+    : undefined
+
+  const adjustIsLog = () => {
+    if (min === undefined || max === undefined) return
+    const lengthDiff = Math.log10(max - min)
+    if (lengthDiff > 2) {
+      setIsLogScale(true)
+    }
+  }
+
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
@@ -145,13 +161,16 @@ export function NewContract(props: {
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now() &&
-    (outcomeType !== 'NUMERIC' ||
+    (outcomeType !== 'PSEUDO_NUMERIC' ||
       (min !== undefined &&
         max !== undefined &&
+        initialValue !== undefined &&
         isFinite(min) &&
         isFinite(max) &&
         min < max &&
-        max - min > 0.01))
+        max - min > 0.01 &&
+        min < initialValue &&
+        initialValue < max))
 
   function setCloseDateInDays(days: number) {
     const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
@@ -175,6 +194,8 @@ export function NewContract(props: {
           closeTime,
           min,
           max,
+          initialValue,
+          isLogScale: (min ?? 0) < 0 ? false : isLogScale,
           groupId: selectedGroup?.id,
           tags: category ? [category] : undefined,
         })
@@ -220,6 +241,7 @@ export function NewContract(props: {
         choicesMap={{
           'Yes / No': 'BINARY',
           'Free response': 'FREE_RESPONSE',
+          Numeric: 'PSEUDO_NUMERIC',
         }}
         isSubmitting={isSubmitting}
         className={'col-span-4'}
@@ -232,38 +254,89 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      {outcomeType === 'NUMERIC' && (
-        <div className="form-control items-start">
-          <label className="label gap-2">
-            <span className="mb-1">Range</span>
-            <InfoTooltip text="The minimum and maximum numbers across the numeric range." />
-          </label>
+      {outcomeType === 'PSEUDO_NUMERIC' && (
+        <>
+          <div className="form-control mb-2 items-start">
+            <label className="label gap-2">
+              <span className="mb-1">Range</span>
+              <InfoTooltip text="The minimum and maximum numbers across the numeric range." />
+            </label>
 
-          <Row className="gap-2">
-            <input
-              type="number"
-              className="input input-bordered"
-              placeholder="MIN"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setMinString(e.target.value)}
-              min={Number.MIN_SAFE_INTEGER}
-              max={Number.MAX_SAFE_INTEGER}
-              disabled={isSubmitting}
-              value={minString ?? ''}
-            />
-            <input
-              type="number"
-              className="input input-bordered"
-              placeholder="MAX"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setMaxString(e.target.value)}
-              min={Number.MIN_SAFE_INTEGER}
-              max={Number.MAX_SAFE_INTEGER}
-              disabled={isSubmitting}
-              value={maxString}
-            />
-          </Row>
-        </div>
+            <Row className="gap-2">
+              <input
+                type="number"
+                className="input input-bordered"
+                placeholder="MIN"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setMinString(e.target.value)}
+                onBlur={adjustIsLog}
+                min={Number.MIN_SAFE_INTEGER}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={minString ?? ''}
+              />
+              <input
+                type="number"
+                className="input input-bordered"
+                placeholder="MAX"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setMaxString(e.target.value)}
+                onBlur={adjustIsLog}
+                min={Number.MIN_SAFE_INTEGER}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={maxString}
+              />
+            </Row>
+
+            {!(min !== undefined && min < 0) && (
+              <Row className="mt-1 ml-2 mb-2 items-center">
+                <span className="mr-2 text-sm">Log scale</span>{' '}
+                <input
+                  type="checkbox"
+                  checked={isLogScale}
+                  onChange={() => setIsLogScale(!isLogScale)}
+                  disabled={isSubmitting}
+                />
+              </Row>
+            )}
+
+            {min !== undefined && max !== undefined && min >= max && (
+              <div className="mt-2 mb-2 text-sm text-red-500">
+                The maximum value must be greater than the minimum.
+              </div>
+            )}
+          </div>
+          <div className="form-control mb-2 items-start">
+            <label className="label gap-2">
+              <span className="mb-1">Initial value</span>
+              <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
+            </label>
+
+            <Row className="gap-2">
+              <input
+                type="number"
+                className="input input-bordered"
+                placeholder="Initial value"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setInitialValueString(e.target.value)}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={initialValueString ?? ''}
+              />
+            </Row>
+
+            {initialValue !== undefined &&
+              min !== undefined &&
+              max !== undefined &&
+              min < max &&
+              (initialValue <= min || initialValue >= max) && (
+                <div className="mt-2 mb-2 text-sm text-red-500">
+                  Initial value must be in between {min} and {max}.{' '}
+                </div>
+              )}
+          </div>
+        </>
       )}
 
       <div className="form-control max-w-[265px] items-start">

@@ -9,6 +9,7 @@ import {
   BinaryContract,
   FreeResponseContract,
   NumericContract,
+  PseudoNumericContract,
 } from 'common/contract'
 import {
   AnswerLabel,
@@ -16,7 +17,11 @@ import {
   CancelLabel,
   FreeResponseOutcomeLabel,
 } from '../outcome-label'
-import { getOutcomeProbability, getTopAnswer } from 'common/calculate'
+import {
+  getOutcomeProbability,
+  getProbability,
+  getTopAnswer,
+} from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { QuickBet, ProbBar, getColor } from './quick-bet'
@@ -24,6 +29,7 @@ import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
+import { formatNumericProbability } from 'common/pseudo-numeric'
 
 export function ContractCard(props: {
   contract: Contract
@@ -126,6 +132,13 @@ export function ContractCard(props: {
             <Col className="m-auto pl-2">
               {outcomeType === 'BINARY' && (
                 <BinaryResolutionOrChance
+                  className="items-center"
+                  contract={contract}
+                />
+              )}
+
+              {outcomeType === 'PSEUDO_NUMERIC' && (
+                <PseudoNumericResolutionOrExpectation
                   className="items-center"
                   contract={contract}
                 />
@@ -270,13 +283,54 @@ export function NumericResolutionOrExpectation(props: {
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
-            <div className="text-blue-400">{resolutionValue}</div>
+            <div className="text-blue-400">
+              {formatLargeNumber(resolutionValue)}
+            </div>
           )}
         </>
       ) : (
         <>
           <div className={clsx('text-3xl', textColor)}>
             {formatLargeNumber(getExpectedValue(contract))}
+          </div>
+          <div className={clsx('text-base', textColor)}>expected</div>
+        </>
+      )}
+    </Col>
+  )
+}
+
+export function PseudoNumericResolutionOrExpectation(props: {
+  contract: PseudoNumericContract
+  className?: string
+}) {
+  const { contract, className } = props
+  const { resolution, resolutionValue, resolutionProbability } = contract
+  const textColor = `text-blue-400`
+
+  return (
+    <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
+      {resolution ? (
+        <>
+          <div className={clsx('text-base text-gray-500')}>Resolved</div>
+
+          {resolution === 'CANCEL' ? (
+            <CancelLabel />
+          ) : (
+            <div className="text-blue-400">
+              {resolutionValue
+                ? formatLargeNumber(resolutionValue)
+                : formatNumericProbability(
+                    resolutionProbability ?? 0,
+                    contract
+                  )}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className={clsx('text-3xl', textColor)}>
+            {formatNumericProbability(getProbability(contract), contract)}
           </div>
           <div className={clsx('text-base', textColor)}>expected</div>
         </>

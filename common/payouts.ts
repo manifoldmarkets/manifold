@@ -1,7 +1,12 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet, NumericBet } from './bet'
-import { Contract, CPMMBinaryContract, DPMContract } from './contract'
+import {
+  Contract,
+  CPMMBinaryContract,
+  DPMContract,
+  PseudoNumericContract,
+} from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
@@ -56,7 +61,11 @@ export const getPayouts = (
   },
   resolutionProbability?: number
 ): PayoutInfo => {
-  if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
+  if (
+    contract.mechanism === 'cpmm-1' &&
+    (contract.outcomeType === 'BINARY' ||
+      contract.outcomeType === 'PSEUDO_NUMERIC')
+  ) {
     return getFixedPayouts(
       outcome,
       contract,
@@ -76,7 +85,7 @@ export const getPayouts = (
 
 export const getFixedPayouts = (
   outcome: string | undefined,
-  contract: CPMMBinaryContract,
+  contract: CPMMBinaryContract | PseudoNumericContract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
   resolutionProbability?: number

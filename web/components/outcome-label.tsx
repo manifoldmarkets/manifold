@@ -19,11 +19,15 @@ export function OutcomeLabel(props: {
   value?: number
 }) {
   const { outcome, contract, truncate, value } = props
+  const { outcomeType } = contract
 
-  if (contract.outcomeType === 'BINARY')
+  if (outcomeType === 'PSEUDO_NUMERIC')
+    return <PseudoNumericOutcomeLabel outcome={outcome as any} />
+
+  if (outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
 
-  if (contract.outcomeType === 'NUMERIC')
+  if (outcomeType === 'NUMERIC')
     return (
       <span className="text-blue-500">
         {value ?? getValueFromBucket(outcome, contract)}
@@ -45,6 +49,15 @@ export function BinaryOutcomeLabel(props: { outcome: resolution }) {
 
   if (outcome === 'YES') return <YesLabel />
   if (outcome === 'NO') return <NoLabel />
+  if (outcome === 'MKT') return <ProbLabel />
+  return <CancelLabel />
+}
+
+export function PseudoNumericOutcomeLabel(props: { outcome: resolution }) {
+  const { outcome } = props
+
+  if (outcome === 'YES') return <HigherLabel />
+  if (outcome === 'NO') return <LowerLabel />
   if (outcome === 'MKT') return <ProbLabel />
   return <CancelLabel />
 }
@@ -96,6 +109,14 @@ export const OUTCOME_TO_COLOR = {
 
 export function YesLabel() {
   return <span className="text-primary">YES</span>
+}
+
+export function HigherLabel() {
+  return <span className="text-primary">HIGHER</span>
+}
+
+export function LowerLabel() {
+  return <span className="text-red-400">LOWER</span>
 }
 
 export function NoLabel() {

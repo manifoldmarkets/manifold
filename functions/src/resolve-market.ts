@@ -27,7 +27,7 @@ const bodySchema = z.object({
 
 const binarySchema = z.object({
   outcome: z.enum(RESOLUTIONS),
-  probabilityInt: z.number().gte(0).lt(100).optional(),
+  probabilityInt: z.number().gte(0).lte(100).optional(),
 })
 
 const freeResponseSchema = z.union([
@@ -39,7 +39,7 @@ const freeResponseSchema = z.union([
     resolutions: z.array(
       z.object({
         answer: z.number().int().nonnegative(),
-        pct: z.number().gte(0).lt(100),
+        pct: z.number().gte(0).lte(100),
       })
     ),
   }),
@@ -53,7 +53,19 @@ const numericSchema = z.object({
   value: z.number().optional(),
 })
 
+const pseudoNumericSchema = z.union([
+  z.object({
+    outcome: z.literal('CANCEL'),
+  }),
+  z.object({
+    outcome: z.literal('MKT'),
+    value: z.number(),
+    probabilityInt: z.number().gte(0).lte(100),
+  }),
+])
+
 const opts = { secrets: ['MAILGUN_KEY'] }
+
 export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
   const userId = auth.uid
@@ -221,11 +233,17 @@ const sendResolutionEmails = async (
 
 function getResolutionParams(contract: Contract, body: string) {
   const { outcomeType } = contract
+
   if (outcomeType === 'NUMERIC') {
     return {
       ...validate(numericSchema, body),
       resolutions: undefined,
       probabilityInt: undefined,
+    }
+  } else if (outcomeType === 'PSEUDO_NUMERIC') {
+    return {
+      ...validate(pseudoNumericSchema, body),
+      resolutions: undefined,
     }
   } else if (outcomeType === 'FREE_RESPONSE') {
     const freeResponseParams = validate(freeResponseSchema, body)
