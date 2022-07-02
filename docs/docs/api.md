@@ -569,13 +569,23 @@ $ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
 
 ### `GET /v0/bets`
 
-Gets a list of bets.
+Gets a list of bets, ordered by creation date descending.
+
+Parameters:
+
+- `username`: Optional. If set, the response will include only bets created by this user.
+- `market`: Optional. The slug of a market. If set, the response will only include bets on this market.
+- `limit`: Optional. How many bets to return. The maximum and the default is 1000.
+- `before`: Optional. The ID of the bet before which the list will start. For
+  example, if you ask for the most recent 10 bets, and then perform a second
+  query for 10 more bets with `before=[the id of the 10th bet]`, you will
+  get bets 11 through 20.
 
 Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/user/ManifoldMarkets/bets
+  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&market=will-california-abolish-daylight-sa
   ```
 - Response type: A `Bet[]`.
 
