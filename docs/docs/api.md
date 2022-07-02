@@ -567,9 +567,9 @@ $ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
                  ]}'
 ```
 
-### `GET /v0/user/[username]/bets`
+### `GET /v0/bets`
 
-Gets a list of bets made by the user.
+Gets a list of bets.
 
 Requires no authorization.
 
