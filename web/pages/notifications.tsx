@@ -86,7 +86,7 @@ export default function Notifications() {
       <div className={'p-2 sm:p-4'}>
         <Title text={'Notifications'} className={'hidden md:block'} />
         <Tabs
-          className={'pb-2 pt-1 '}
+          labelClassName={'pb-2 pt-1 '}
           defaultIndex={0}
           tabs={[
             {
