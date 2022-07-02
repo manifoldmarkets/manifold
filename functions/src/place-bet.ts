@@ -41,10 +41,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
     log('Inside main transaction.')
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
-    const [contractSnap, userSnap] = await Promise.all([
-      trans.get(contractDoc),
-      trans.get(userDoc),
-    ])
+    const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
     log('Loaded user and contract snapshots.')
