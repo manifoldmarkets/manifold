@@ -53,13 +53,19 @@ const numericSchema = z.object({
   value: z.number().optional(),
 })
 
-const pseudoNumericSchema = z.object({
-  outcome: z.union([z.literal('CANCEL'), z.literal('MKT')]),
-  value: z.number(),
-  probabilityInt: z.number().gte(0).lte(100),
-})
+const pseudoNumericSchema = z.union([
+  z.object({
+    outcome: z.literal('CANCEL'),
+  }),
+  z.object({
+    outcome: z.literal('MKT'),
+    value: z.number(),
+    probabilityInt: z.number().gte(0).lte(100),
+  }),
+])
 
 const opts = { secrets: ['MAILGUN_KEY'] }
+
 export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
   const userId = auth.uid
