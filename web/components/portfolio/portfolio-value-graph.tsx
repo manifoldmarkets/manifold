@@ -52,7 +52,7 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
         margin={{ top: 20, right: 28, bottom: 22, left: 60 }}
         xScale={{
           type: 'time',
-          min: points[0].x,
+          min: points[0]?.x,
           max: endDate,
         }}
         yScale={{
@@ -77,6 +77,7 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
         enableGridY={true}
         enableSlices="x"
         animate={false}
+        yFormat={(value) => formatMoney(+value)}
       ></ResponsiveLine>
     </div>
   )

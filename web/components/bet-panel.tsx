@@ -4,7 +4,7 @@ import { partition, sumBy } from 'lodash'
 import { SwitchHorizontalIcon } from '@heroicons/react/solid'
 
 import { useUser } from 'web/hooks/use-user'
-import { CPMMBinaryContract } from 'common/contract'
+import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
@@ -22,7 +22,7 @@ import { APIError, placeBet } from 'web/lib/firebase/api-call'
 import { sellShares } from 'web/lib/firebase/api-call'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
-import { BinaryOutcomeLabel } from './outcome-label'
+import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from './outcome-label'
 import {
   calculatePayoutAfterCorrectBet,
   calculateShares,
@@ -37,6 +37,7 @@ import {
   getCpmmLiquidityFee,
   calculateCpmmAmount,
 } from 'common/calculate-cpmm'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
 import { SignUpPrompt } from './sign-up-prompt'
@@ -46,7 +47,7 @@ import { track } from 'web/lib/service/analytics'
 import { removeUndefinedProps } from 'common/util/object'
 
 export function BetPanel(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
 }) {
   const { contract, className } = props
@@ -95,7 +96,7 @@ export function BetPanel(props: {
 }
 
 export function BetPanelSwitcher(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
   title?: string // Set if BetPanel is on a feed modal
   selected?: 'YES' | 'NO'
@@ -103,7 +104,8 @@ export function BetPanelSwitcher(props: {
 }) {
   const { contract, className, title, selected, onBetSuccess } = props
 
-  const { mechanism } = contract
+  const { mechanism, outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
@@ -136,7 +138,12 @@ export function BetPanelSwitcher(props: {
           <Row className="items-center justify-between gap-2">
             <div>
               You have {formatWithCommas(floorShares)}{' '}
-              <BinaryOutcomeLabel outcome={sharesOutcome} /> shares
+              {isPseudoNumeric ? (
+                <PseudoNumericOutcomeLabel outcome={sharesOutcome} />
+              ) : (
+                <BinaryOutcomeLabel outcome={sharesOutcome} />
+              )}{' '}
+              shares
             </div>
 
             {tradeType === 'BUY' && (
@@ -201,7 +208,7 @@ export function BetPanelSwitcher(props: {
 }
 
 function BuyPanel(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
   isLimitOrder?: boolean
   selected?: 'YES' | 'NO'
@@ -210,6 +217,7 @@ function BuyPanel(props: {
   const { contract, user, isLimitOrder, selected, onBuySuccess } = props
 
   const initialProb = getProbability(contract)
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
@@ -323,6 +331,8 @@ function BuyPanel(props: {
     betChoice ?? 'YES'
   ).totalFees
 
+  const format = getFormattedMappedValue(contract)
+
   return (
     <>
       <YesNoSelector
@@ -330,6 +340,7 @@ function BuyPanel(props: {
         btnClassName="flex-1"
         selected={betChoice}
         onSelect={(choice) => onBetChoice(choice)}
+        isPseudoNumeric={isPseudoNumeric}
       />
       <div className="my-3 text-left text-sm text-gray-500">Amount</div>
       <BuyAmountInput
@@ -359,11 +370,13 @@ function BuyPanel(props: {
       <Col className="mt-3 w-full gap-3">
         {!isLimitOrder && (
           <Row className="items-center justify-between text-sm">
-            <div className="text-gray-500">Probability</div>
+            <div className="text-gray-500">
+              {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+            </div>
             <div>
-              {formatPercent(initialProb)}
+              {format(initialProb)}
               <span className="mx-2">→</span>
-              {formatPercent(resultProb)}
+              {format(resultProb)}
             </div>
           </Row>
         )}
@@ -371,7 +384,13 @@ function BuyPanel(props: {
         <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
             <div>
-              Payout if <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
+              {isPseudoNumeric ? (
+                'Max payout'
+              ) : (
+                <>
+                  Payout if <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
+                </>
+              )}
             </div>
             <InfoTooltip
               text={`Includes ${formatMoneyWithDecimals(cpmmFees)} in fees`}
@@ -411,7 +430,7 @@ function BuyPanel(props: {
 }
 
 export function SellPanel(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'
@@ -510,6 +529,10 @@ export function SellPanel(props: {
     }
   }
 
+  const { outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const format = getFormattedMappedValue(contract)
+
   return (
     <>
       <AmountInput
@@ -533,11 +556,13 @@ export function SellPanel(props: {
           <span className="text-neutral">{formatMoney(saleValue)}</span>
         </Row>
         <Row className="items-center justify-between">
-          <div className="text-gray-500">Probability</div>
+          <div className="text-gray-500">
+            {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+          </div>
           <div>
-            {formatPercent(initialProb)}
+            {format(initialProb)}
             <span className="mx-2">→</span>
-            {formatPercent(resultProb)}
+            {format(resultProb)}
           </div>
         </Row>
       </Col>

@@ -64,7 +64,7 @@ export default function LinkPage() {
       <Col className="w-full px-8">
         <Title text="Manalinks" />
         <Tabs
-          className={'pb-2 pt-1 '}
+          labelClassName={'pb-2 pt-1 '}
           defaultIndex={0}
           tabs={[
             {

@@ -23,8 +23,10 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 ### For local development
 
 0. [Install](https://cloud.google.com/sdk/docs/install) gcloud CLI
-1. If you don't have java (or see the error `Error: Process java -version has exited with code 1. Please make sure Java is installed and on your system PATH.`): 0. `$ brew install java`
-   1. `$ sudo ln -sfn /opt/homebrew/opt/openjdk/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk`
+1. If you don't have java (or see the error `Error: Process java -version has exited with code 1. Please make sure Java is installed and on your system PATH.`):
+
+   1. `$ brew install java`
+   2. `$ sudo ln -sfn /opt/homebrew/opt/openjdk/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk`
 2. `$ gcloud auth login` to authenticate the CLI tools to Google Cloud
 3. `$ gcloud config set project <project-id>` to choose the project (`$ gcloud projects list` to see options)
 4. `$ mkdir firestore_export` to create a folder to store the exported database

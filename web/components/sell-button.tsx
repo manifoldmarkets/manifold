@@ -1,4 +1,4 @@
-import { BinaryContract } from 'common/contract'
+import { BinaryContract, PseudoNumericContract } from 'common/contract'
 import { User } from 'common/user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useState } from 'react'
@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import { SellSharesModal } from './sell-modal'
 
 export function SellButton(props: {
-  contract: BinaryContract
+  contract: BinaryContract | PseudoNumericContract
   user: User | null | undefined
   sharesOutcome: 'YES' | 'NO' | undefined
   shares: number
@@ -16,7 +16,8 @@ export function SellButton(props: {
   const { contract, user, sharesOutcome, shares, panelClassName } = props
   const userBets = useUserContractBets(user?.id, contract.id)
   const [showSellModal, setShowSellModal] = useState(false)
-  const { mechanism } = contract
+  const { mechanism, outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   if (sharesOutcome && user && mechanism === 'cpmm-1') {
     return (
@@ -32,7 +33,10 @@ export function SellButton(props: {
           )}
           onClick={() => setShowSellModal(true)}
         >
-          {'Sell ' + sharesOutcome}
+          Sell{' '}
+          {isPseudoNumeric
+            ? { YES: 'HIGH', NO: 'LOW' }[sharesOutcome]
+            : sharesOutcome}
         </button>
         <div className={'mt-1 w-24 text-center text-sm text-gray-500'}>
           {'(' + Math.floor(shares) + ' shares)'}

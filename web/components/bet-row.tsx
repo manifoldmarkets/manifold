@@ -3,7 +3,7 @@ import clsx from 'clsx'
 
 import { BetPanelSwitcher } from './bet-panel'
 import { YesNoSelector } from './yes-no-selector'
-import { CPMMBinaryContract } from 'common/contract'
+import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { Modal } from './layout/modal'
 import { SellButton } from './sell-button'
 import { useUser } from 'web/hooks/use-user'
@@ -12,7 +12,7 @@ import { useSaveShares } from './use-save-shares'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
 export default function BetRow(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
   btnClassName?: string
   betPanelClassName?: string
@@ -28,10 +28,12 @@ export default function BetRow(props: {
     contract,
     userBets
   )
+  
 
   return (
     <>
       <YesNoSelector
+        isPseudoNumeric={contract.outcomeType === 'PSEUDO_NUMERIC'}
         className={clsx('justify-end', className)}
         btnClassName={clsx('btn-sm w-24', btnClassName)}
         onSelect={(choice) => {

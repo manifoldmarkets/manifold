@@ -11,6 +11,7 @@ import {
   FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
+  PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
 import BetRow from '../bet-row'
@@ -32,6 +33,7 @@ export const ContractOverview = (props: {
   const user = useUser()
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   return (
     <Col className={clsx('mb-6', className)}>
@@ -46,6 +48,13 @@ export const ContractOverview = (props: {
               className="hidden items-end xl:flex"
               contract={contract}
               large
+            />
+          )}
+
+          {isPseudoNumeric && (
+            <PseudoNumericResolutionOrExpectation
+              contract={contract}
+              className="hidden items-end xl:flex"
             />
           )}
 
@@ -64,6 +73,11 @@ export const ContractOverview = (props: {
             {tradingAllowed(contract) && (
               <BetRow contract={contract as CPMMBinaryContract} />
             )}
+          </Row>
+        ) : isPseudoNumeric ? (
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <PseudoNumericResolutionOrExpectation contract={contract} />
+            {tradingAllowed(contract) && <BetRow contract={contract} />}
           </Row>
         ) : (
           outcomeType === 'FREE_RESPONSE' &&
@@ -88,7 +102,9 @@ export const ContractOverview = (props: {
         />
       </Col>
       <Spacer h={4} />
-      {isBinary && <ContractProbGraph contract={contract} bets={bets} />}{' '}
+      {(isBinary || isPseudoNumeric) && (
+        <ContractProbGraph contract={contract} bets={bets} />
+      )}{' '}
       {outcomeType === 'FREE_RESPONSE' && (
         <AnswersGraph contract={contract} bets={bets} />
       )}

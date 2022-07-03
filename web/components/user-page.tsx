@@ -38,6 +38,7 @@ import { FollowButton } from './follow-button'
 import { PortfolioMetrics } from 'common/user'
 import { ReferralsButton } from 'web/components/referrals-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
+import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 
 export function UserLink(props: {
   name: string
@@ -75,7 +76,9 @@ export function UserPage(props: {
     'loading'
   )
   const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
-  const [, setUsersPortfolioHistory] = useState<PortfolioMetrics[]>([])
+  const [portfolioHistory, setUsersPortfolioHistory] = useState<
+    PortfolioMetrics[]
+  >([])
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
@@ -258,7 +261,7 @@ export function UserPage(props: {
 
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
-            className={'pb-2 pt-1 '}
+            labelClassName={'pb-2 pt-1 '}
             defaultIndex={
               defaultTabTitle ? TAB_IDS.indexOf(defaultTabTitle) : 0
             }
@@ -297,9 +300,9 @@ export function UserPage(props: {
                 title: 'Bets',
                 content: (
                   <div>
-                    {
-                      // TODO: add portfolio-value-section here
-                    }
+                    <PortfolioValueSection
+                      portfolioHistory={portfolioHistory}
+                    />
                     <BetsList
                       user={user}
                       hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
