@@ -21,11 +21,16 @@ service cloud.firestore {
       allow update: if resource.data.id == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
                                                                     .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'referredByContractId']);
-      // only one referral allowed per user
       allow update: if resource.data.id == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['referredByUserId'])
-                                        && !("referredByUserId" in resource.data);
+                        .hasOnly(['referredByUserId'])
+                        // only one referral allowed per user
+                        && !("referredByUserId" in resource.data)
+                        // user can't refer themselves
+                        && (resource.data.id != request.resource.data.referredByUserId)
+                        // user can't refer someone who referred them quid pro quo
+                        && get(/databases/$(database)/documents/users/$(request.resource.data.referredByUserId)).referredByUserId != resource.data.id;
+
     }
 
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {

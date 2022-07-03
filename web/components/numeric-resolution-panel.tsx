@@ -6,13 +6,14 @@ import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
+import { NumericContract, PseudoNumericContract } from 'common/contract'
 import { APIError, resolveMarket } from 'web/lib/firebase/api-call'
-import { NumericContract } from 'common/contract'
 import { BucketInput } from './bucket-input'
+import { getPseudoProbability } from 'common/pseudo-numeric'
 
 export function NumericResolutionPanel(props: {
   creator: User
-  contract: NumericContract
+  contract: NumericContract | PseudoNumericContract
   className?: string
 }) {
   useEffect(() => {
@@ -21,6 +22,7 @@ export function NumericResolutionPanel(props: {
   }, [])
 
   const { contract, className } = props
+  const { min, max, outcomeType } = contract
 
   const [outcomeMode, setOutcomeMode] = useState<
     'NUMBER' | 'CANCEL' | undefined
@@ -32,15 +34,32 @@ export function NumericResolutionPanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
 
   const resolve = async () => {
-    const finalOutcome = outcomeMode === 'NUMBER' ? outcome : 'CANCEL'
+    const finalOutcome =
+      outcomeMode === 'CANCEL'
+        ? 'CANCEL'
+        : outcomeType === 'PSEUDO_NUMERIC'
+        ? 'MKT'
+        : 'NUMBER'
     if (outcomeMode === undefined || finalOutcome === undefined) return
 
     setIsSubmitting(true)
+
+    const boundedValue = Math.max(Math.min(max, value ?? 0), min)
+
+    const probabilityInt =
+      100 *
+      getPseudoProbability(
+        boundedValue,
+        min,
+        max,
+        outcomeType === 'PSEUDO_NUMERIC' && contract.isLogScale
+      )
 
     try {
       const result = await resolveMarket({
         outcome: finalOutcome,
         value,
+        probabilityInt,
         contractId: contract.id,
       })
       console.log('resolved', outcome, 'result:', result)
@@ -77,7 +96,7 @@ export function NumericResolutionPanel(props: {
 
       {outcomeMode === 'NUMBER' && (
         <BucketInput
-          contract={contract}
+          contract={contract as any}
           isSubmitting={isSubmitting}
           onBucketChange={(v, o) => (setValue(v), setOutcome(o))}
         />

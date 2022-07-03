@@ -9,7 +9,7 @@ import { TextButton } from 'web/components/text-button'
 import { Group } from 'common/group'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
+import { addUserToGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { GroupLink } from 'web/pages/groups'
 
@@ -93,7 +93,7 @@ export function JoinOrLeaveGroupButton(props: {
     : false
   const onJoinGroup = () => {
     if (!currentUser) return
-    joinGroup(group, currentUser.id)
+    addUserToGroup(group, currentUser.id)
   }
   const onLeaveGroup = () => {
     if (!currentUser) return

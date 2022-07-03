@@ -9,7 +9,7 @@ import {
   useSortBy,
 } from 'react-instantsearch-hooks-web'
 
-import { Contract } from '../../common/contract'
+import { Contract } from 'common/contract'
 import {
   Sort,
   useInitialQueryAndSort,
@@ -58,15 +58,24 @@ export function ContractSearch(props: {
   additionalFilter?: {
     creatorId?: string
     tag?: string
+    excludeContractIds?: string[]
   }
   showCategorySelector: boolean
   onContractClick?: (contract: Contract) => void
+  showPlaceHolder?: boolean
+  hideOrderSelector?: boolean
+  overrideGridClassName?: string
+  hideQuickBet?: boolean
 }) {
   const {
     querySortOptions,
     additionalFilter,
     showCategorySelector,
     onContractClick,
+    overrideGridClassName,
+    hideOrderSelector,
+    showPlaceHolder,
+    hideQuickBet,
   } = props
 
   const user = useUser()
@@ -136,6 +145,7 @@ export function ContractSearch(props: {
       <Row className="gap-1 sm:gap-2">
         <SearchBox
           className="flex-1"
+          placeholder={showPlaceHolder ? `Search ${filter} contracts` : ''}
           classNames={{
             form: 'before:top-6',
             input: '!pl-10 !input !input-bordered shadow-none w-[100px]',
@@ -153,13 +163,15 @@ export function ContractSearch(props: {
           <option value="resolved">Resolved</option>
           <option value="all">All</option>
         </select>
-        <SortBy
-          items={sortIndexes}
-          classNames={{
-            select: '!select !select-bordered',
-          }}
-          onBlur={trackCallback('select search sort')}
-        />
+        {!hideOrderSelector && (
+          <SortBy
+            items={sortIndexes}
+            classNames={{
+              select: '!select !select-bordered',
+            }}
+            onBlur={trackCallback('select search sort')}
+          />
+        )}
         <Configure
           facetFilters={filters}
           numericFilters={numericFilters}
@@ -187,6 +199,9 @@ export function ContractSearch(props: {
         <ContractSearchInner
           querySortOptions={querySortOptions}
           onContractClick={onContractClick}
+          overrideGridClassName={overrideGridClassName}
+          hideQuickBet={hideQuickBet}
+          excludeContractIds={additionalFilter?.excludeContractIds}
         />
       )}
     </InstantSearch>
@@ -199,8 +214,17 @@ export function ContractSearchInner(props: {
     shouldLoadFromStorage?: boolean
   }
   onContractClick?: (contract: Contract) => void
+  overrideGridClassName?: string
+  hideQuickBet?: boolean
+  excludeContractIds?: string[]
 }) {
-  const { querySortOptions, onContractClick } = props
+  const {
+    querySortOptions,
+    onContractClick,
+    overrideGridClassName,
+    hideQuickBet,
+    excludeContractIds,
+  } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
   const { query, setQuery, setSort } = useUpdateQueryAndSort({
@@ -239,7 +263,7 @@ export function ContractSearchInner(props: {
   }, [])
 
   const { showMore, hits, isLastPage } = useInfiniteHits()
-  const contracts = hits as any as Contract[]
+  let contracts = hits as any as Contract[]
 
   if (isInitialLoad && contracts.length === 0) return <></>
 
@@ -249,6 +273,9 @@ export function ContractSearchInner(props: {
     ? 'resolve-date'
     : undefined
 
+  if (excludeContractIds)
+    contracts = contracts.filter((c) => !excludeContractIds.includes(c.id))
+
   return (
     <ContractsGrid
       contracts={contracts}
@@ -256,6 +283,8 @@ export function ContractSearchInner(props: {
       hasMore={!isLastPage}
       showTime={showTime}
       onContractClick={onContractClick}
+      overrideGridClassName={overrideGridClassName}
+      hideQuickBet={hideQuickBet}
     />
   )
 }

@@ -14,6 +14,7 @@ import {
   DPMBinaryContract,
   FreeResponseContract,
   NumericContract,
+  PseudoNumericContract,
 } from './contract'
 import { noFees } from './fees'
 import { addObjects } from './util/object'
@@ -32,7 +33,7 @@ export type BetInfo = {
 export const getNewBinaryCpmmBetInfo = (
   outcome: 'YES' | 'NO',
   amount: number,
-  contract: CPMMBinaryContract,
+  contract: CPMMBinaryContract | PseudoNumericContract,
   loanAmount: number
 ) => {
   const { shares, newPool, newP, fees } = calculateCpmmPurchase(
