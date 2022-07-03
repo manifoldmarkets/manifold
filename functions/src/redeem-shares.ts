@@ -1,60 +1,10 @@
 import * as admin from 'firebase-admin'
-import { partition, sumBy } from 'lodash'
 
 import { Bet } from '../../common/bet'
-import { getProbability } from '../../common/calculate'
+import { getRedeemableAmount, getRedemptionBets } from '../../common/redeem'
 
-import { Contract, CPMMContract } from '../../common/contract'
-import { noFees } from '../../common/fees'
+import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
-
-type CandidateBet<T extends Bet> = Omit<T, 'id' | 'userId'>
-type RedeemableBet = Pick<Bet, 'outcome' | 'shares' | 'loanAmount'>
-
-const getRedeemableAmount = (bets: RedeemableBet[]) => {
-  const [yesBets, noBets] = partition(bets, (b) => b.outcome === 'YES')
-  const yesShares = sumBy(yesBets, (b) => b.shares)
-  const noShares = sumBy(noBets, (b) => b.shares)
-  const shares = Math.max(Math.min(yesShares, noShares), 0)
-  const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
-  const loanPayment = Math.min(loanAmount, shares)
-  const netAmount = shares - loanPayment
-  return { shares, loanPayment, netAmount }
-}
-
-const getRedemptionBets = (
-  shares: number,
-  loanPayment: number,
-  contract: CPMMContract
-) => {
-  const p = getProbability(contract)
-  const createdTime = Date.now()
-  const yesBet: CandidateBet<Bet> = {
-    contractId: contract.id,
-    amount: p * -shares,
-    shares: -shares,
-    loanAmount: loanPayment ? -loanPayment / 2 : 0,
-    outcome: 'YES',
-    probBefore: p,
-    probAfter: p,
-    createdTime,
-    isRedemption: true,
-    fees: noFees,
-  }
-  const noBet: CandidateBet<Bet> = {
-    contractId: contract.id,
-    amount: (1 - p) * -shares,
-    shares: -shares,
-    loanAmount: loanPayment ? -loanPayment / 2 : 0,
-    outcome: 'NO',
-    probBefore: p,
-    probAfter: p,
-    createdTime,
-    isRedemption: true,
-    fees: noFees,
-  }
-  return [yesBet, noBet]
-}
 
 export const redeemShares = async (userId: string, contractId: string) => {
   return await firestore.runTransaction(async (trans) => {
