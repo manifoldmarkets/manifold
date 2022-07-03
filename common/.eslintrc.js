@@ -32,6 +32,7 @@ module.exports = {
   rules: {
     'no-extra-semi': 'off',
     'no-constant-condition': ['error', { checkLoops: false }],
+    'linebreak-style': ['error', 'unix'],
     'lodash/import-scope': [2, 'member'],
   },
 }

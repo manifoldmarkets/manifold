@@ -30,6 +30,7 @@ module.exports = {
     },
   ],
   rules: {
+    'linebreak-style': ['error', 'unix'],
     'lodash/import-scope': [2, 'member'],
   },
 }
