@@ -1,4 +1,4 @@
-import { sumBy } from 'lodash'
+import { sortBy, sumBy } from 'lodash'
 
 import { Bet, LimitBet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
 import {
@@ -152,11 +152,18 @@ const computeFill = (
 export const getBinaryCpmmBetInfo = (
   outcome: 'YES' | 'NO',
   betAmount: number,
-  contract: CPMMBinaryContract,
+  contract: CPMMBinaryContract | PseudoNumericContract,
   limitProb: number | undefined,
-  unfilledBets: LimitBet[] // Sorted by limitProb, createdTime
+  unfilledBets: LimitBet[]
 ) => {
-  console.log({ outcome, betAmount, limitProb, unfilledBets })
+  const sortedBets = sortBy(
+    unfilledBets,
+    (bet) => (outcome === 'YES' ? bet.limitProb : -bet.limitProb),
+    (bet) => bet.createdTime
+  )
+
+  console.log({ outcome, betAmount, limitProb, sortedBets })
+
   const takers: {
     matchedBetId: string | null
     amount: number
@@ -170,19 +177,21 @@ export const getBinaryCpmmBetInfo = (
 
   let i = 0
   while (true) {
-    const matchedBet: LimitBet | undefined = unfilledBets[i]
+    const matchedBet: LimitBet | undefined = sortedBets[i]
     const fill = computeFill(amount, outcome, limitProb, cpmmState, matchedBet)
     if (!fill) break
 
-    const { maker, taker } = fill
+    const { taker, maker } = fill
 
     amount -= taker.amount
 
     if (maker.matchedBetId === null) {
+      // Matched against pool.
       cpmmState = maker.state
       totalFees = addObjects(totalFees, maker.fees)
       takers.push(taker)
     } else {
+      // Matched against bet.
       takers.push(taker)
       makers.push(maker)
       i++
@@ -226,40 +235,6 @@ export const getBinaryCpmmBetInfo = (
     newTotalLiquidity,
     makers,
   }
-}
-
-export const getNewBinaryCpmmBetInfo = (
-  outcome: 'YES' | 'NO',
-  amount: number,
-  contract: CPMMBinaryContract | PseudoNumericContract,
-  loanAmount: number
-) => {
-  const { shares, newPool, newP, fees } = calculateCpmmPurchase(
-    contract,
-    amount,
-    outcome
-  )
-
-  const { pool, p, totalLiquidity } = contract
-  const probBefore = getCpmmProbability(pool, p)
-  const probAfter = getCpmmProbability(newPool, newP)
-
-  const newBet: CandidateBet<Bet> = {
-    contractId: contract.id,
-    amount,
-    shares,
-    outcome,
-    fees,
-    loanAmount,
-    probBefore,
-    probAfter,
-    createdTime: Date.now(),
-  }
-
-  const { liquidityFee } = fees
-  const newTotalLiquidity = (totalLiquidity ?? 0) + liquidityFee
-
-  return { newBet, newPool, newP, newTotalLiquidity }
 }
 
 export const getNewBinaryDpmBetInfo = (

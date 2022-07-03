@@ -7,7 +7,6 @@ import { User } from '../../common/user'
 import {
   BetInfo,
   getBinaryCpmmBetInfo,
-  getNewBinaryDpmBetInfo,
   getNewMultiBetInfo,
   getNumericBetsInfo,
 } from '../../common/new-bet'
@@ -16,7 +15,8 @@ import { redeemShares } from './redeem-shares'
 import { log } from './utils'
 import { LimitBet } from 'common/bet'
 import { Query } from 'firebase-admin/firestore'
-import { sortBy, sumBy } from 'lodash'
+import { sumBy } from 'lodash'
+import { floatingEqual } from 'common/util/math'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -79,11 +79,8 @@ export const placebet = newEndpoint({}, async (req, auth) => {
     > => {
       if (
         (outcomeType == 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
-        mechanism == 'dpm-2'
+        mechanism == 'cpmm-1'
       ) {
-        const { outcome } = validate(binarySchema, req.body)
-        return getNewBinaryDpmBetInfo(outcome, amount, contract, loanAmount)
-      } else if (outcomeType == 'BINARY' && mechanism == 'cpmm-1') {
         const { outcome, limitProb } = validate(binarySchema, req.body)
         const boundedLimitProb = limitProb ?? (outcome === 'YES' ? 1 : 0)
         const unfilledBetsQuery = contractDoc
@@ -98,11 +95,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           ) as Query<LimitBet>
 
         const unfilledBetsSnap = await trans.get(unfilledBetsQuery)
-        const unfilledBets = sortBy(
-          unfilledBetsSnap.docs.map((doc) => doc.data()),
-          (bet) => (outcome === 'YES' ? bet.limitProb : -bet.limitProb),
-          (bet) => bet.createdTime
-        )
+        const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
 
         return getBinaryCpmmBetInfo(
           outcome,
@@ -146,8 +139,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
         const newFill = { amount, shares, matchedBetId: betDoc.id }
         const fills = [...bet.fills, newFill]
         const totalShares = sumBy(fills, 'shares')
-        const isFilled =
-          Math.abs(sumBy(fills, 'amount') - bet.amount) < 0.0000001
+        const isFilled = floatingEqual(sumBy(fills, 'amount'), bet.amount)
 
         log('Updated a matched limit bet.')
         trans.update(contractDoc.collection('bets').doc(bet.id), {
