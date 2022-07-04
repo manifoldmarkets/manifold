@@ -20,7 +20,7 @@ export const ATLAS2_CONFIG: EnvConfig = {
   fixedAnte: 25,
   startingBalance: 500,
   visibility: 'PRIVATE',
-  // navbarLogoPath: '/atlas/atlas-logo-white.svg',
+  navbarLogoPath: '/atlas/atlas-logo-white.svg',
   newQuestionPlaceholders: [
     'Will we have at least 5 new team members by the end of this quarter?',
     'Will we meet or exceed our goals this sprint?',
