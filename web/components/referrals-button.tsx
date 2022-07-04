@@ -139,7 +139,7 @@ function ReferralsDialog(props: {
                           />
                         </Row>
                       ) : (
-                        <span>No one...</span>
+                        <span className={'text-gray-500'}>No one...</span>
                       )}
                     </div>
                   )}
