@@ -12,16 +12,16 @@ export function FilterSelectUsers(props: {
   setSelectedUsers: (users: User[]) => void
   selectedUsers: User[]
   ignoreUserIds: string[]
-  showLabel?: boolean
-  memberListClassName?: string
+  showSelectedUsersTitle?: boolean
+  selectedUsersClassName?: string
   maxUsers?: number
 }) {
   const {
     ignoreUserIds,
     selectedUsers,
     setSelectedUsers,
-    showLabel,
-    memberListClassName,
+    showSelectedUsersTitle,
+    selectedUsersClassName,
     maxUsers,
   } = props
   const users = useUsers()
@@ -117,9 +117,14 @@ export function FilterSelectUsers(props: {
       )}
       {selectedUsers.length > 0 && (
         <>
-          <div className={'mb-2'}>{showLabel && 'Added members:'}</div>
+          <div className={'mb-2'}>
+            {showSelectedUsersTitle && 'Added members:'}
+          </div>
           <Row
-            className={clsx('mt-0 grid grid-cols-6 gap-2', memberListClassName)}
+            className={clsx(
+              'mt-0 grid grid-cols-6 gap-2',
+              selectedUsersClassName
+            )}
           >
             {selectedUsers.map((user: User) => (
               <div

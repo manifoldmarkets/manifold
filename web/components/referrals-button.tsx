@@ -87,8 +87,8 @@ function ReferralsDialog(props: {
                         setSelectedUsers={setReferredBy}
                         selectedUsers={referredBy}
                         ignoreUserIds={[currentUser.id]}
-                        showLabel={false}
-                        memberListClassName={'grid-cols-2 '}
+                        showSelectedUsersTitle={false}
+                        selectedUsersClassName={'grid-cols-2 '}
                         maxUsers={1}
                       />
                       <Row className={'mt-0 justify-end'}>
