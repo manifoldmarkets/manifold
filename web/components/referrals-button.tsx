@@ -50,17 +50,12 @@ function ReferralsDialog(props: {
 
   const [referredByUser, setReferredByUser] = useState<User | null>()
   useEffect(() => {
-    if (
-      isOpen &&
-      !referredByUser &&
-      currentUser?.referredByUserId &&
-      currentUser.id === user.id
-    ) {
-      getUser(currentUser.referredByUserId).then((user) => {
+    if (isOpen && !referredByUser && user?.referredByUserId) {
+      getUser(user.referredByUserId).then((user) => {
         setReferredByUser(user)
       })
     }
-  }, [currentUser, isOpen, referredByUser, user.id])
+  }, [isOpen, referredByUser, user.referredByUserId])
 
   useEffect(() => {
     prefetchUsers(referralIds)
