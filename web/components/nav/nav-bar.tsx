@@ -63,6 +63,7 @@ export function BottomNavBar() {
           currentPage={currentPage}
           item={{
             name: formatMoney(user.balance),
+            trackingEventName: 'profile',
             href: `/${user.username}?tab=bets`,
             icon: () => (
               <Avatar
@@ -94,6 +95,7 @@ export function BottomNavBar() {
 
 function NavBarItem(props: { item: Item; currentPage: string }) {
   const { item, currentPage } = props
+  const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
 
   return (
     <Link href={item.href}>
@@ -102,7 +104,7 @@ function NavBarItem(props: { item: Item; currentPage: string }) {
           'block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700',
           currentPage === item.href && 'bg-gray-200 text-indigo-700'
         )}
-        onClick={trackCallback('navbar: ' + item.name)}
+        onClick={track}
       >
         {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
         {item.name}
