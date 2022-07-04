@@ -63,12 +63,18 @@ function UsersTable() {
               href="/${cell}">@${cell}</a>`),
           },
           {
+            id: 'name',
+            name: 'Name',
+            formatter: (cell) =>
+              html(`<span class="whitespace-nowrap">${cell}</span>`),
+          },
+          {
             id: 'email',
             name: 'Email',
           },
           {
             id: 'createdTime',
-            name: 'Created Time',
+            name: 'Created',
             formatter: (cell) =>
               html(
                 `<span class="whitespace-nowrap">${dayjs(cell as number).format(
