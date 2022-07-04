@@ -126,13 +126,12 @@ function ReferralsDialog(props: {
                       <span className={'text-error'}>{errorText}</span>
                     </>
                   ) : (
-                    <div className="justify-center text-gray-500">
+                    <div className="justify-center text-gray-700">
                       {referredByUser ? (
-                        <Row className={'items-center gap-2'}>
+                        <Row className={'items-center gap-2 p-2'}>
                           <Avatar
                             username={referredByUser.username}
                             avatarUrl={referredByUser.avatarUrl}
-                            size={'sm'}
                           />
                           <UserLink
                             username={referredByUser.username}
