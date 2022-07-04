@@ -10,9 +10,11 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 import { UserLink } from 'web/components/user-page'
 import { useReferrals } from 'web/hooks/use-referrals'
+import { FilterSelectUsers } from 'web/components/filter-select-users'
+import { getUser, updateUser } from 'web/lib/firebase/users'
 
-export function ReferralsButton(props: { user: User }) {
-  const { user } = props
+export function ReferralsButton(props: { user: User; currentUser?: User }) {
+  const { user, currentUser } = props
   const [isOpen, setIsOpen] = useState(false)
   const referralIds = useReferrals(user.id)
 
@@ -28,6 +30,7 @@ export function ReferralsButton(props: { user: User }) {
         referralIds={referralIds ?? []}
         isOpen={isOpen}
         setIsOpen={setIsOpen}
+        currentUser={currentUser}
       />
     </>
   )
@@ -38,8 +41,21 @@ function ReferralsDialog(props: {
   referralIds: string[]
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
+  currentUser?: User
 }) {
-  const { user, referralIds, isOpen, setIsOpen } = props
+  const { user, referralIds, isOpen, setIsOpen, currentUser } = props
+  const [referredBy, setReferredBy] = useState<User[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorText, setErrorText] = useState('')
+
+  const [referredByUser, setReferredByUser] = useState<User | null>()
+  useEffect(() => {
+    if (isOpen && !referredByUser && user?.referredByUserId) {
+      getUser(user.referredByUserId).then((user) => {
+        setReferredByUser(user)
+      })
+    }
+  }, [isOpen, referredByUser, user.referredByUserId])
 
   useEffect(() => {
     prefetchUsers(referralIds)
@@ -55,6 +71,75 @@ function ReferralsDialog(props: {
             {
               title: 'Referrals',
               content: <ReferralsList userIds={referralIds} />,
+            },
+            {
+              title: 'Referred by',
+              content: (
+                <>
+                  {user.id === currentUser?.id && !referredByUser ? (
+                    <>
+                      <FilterSelectUsers
+                        setSelectedUsers={setReferredBy}
+                        selectedUsers={referredBy}
+                        ignoreUserIds={[currentUser.id]}
+                        showSelectedUsersTitle={false}
+                        selectedUsersClassName={'grid-cols-2 '}
+                        maxUsers={1}
+                      />
+                      <Row className={'mt-0 justify-end'}>
+                        <button
+                          className={
+                            referredBy.length === 0
+                              ? 'hidden'
+                              : 'btn btn-primary btn-md my-2 w-24 normal-case'
+                          }
+                          disabled={referredBy.length === 0 || isSubmitting}
+                          onClick={() => {
+                            setIsSubmitting(true)
+                            updateUser(currentUser.id, {
+                              referredByUserId: referredBy[0].id,
+                            })
+                              .then(async () => {
+                                setErrorText('')
+                                setIsSubmitting(false)
+                                setReferredBy([])
+                                setIsOpen(false)
+                              })
+                              .catch((error) => {
+                                setIsSubmitting(false)
+                                setErrorText(error.message)
+                              })
+                          }}
+                        >
+                          Save
+                        </button>
+                      </Row>
+                      <span className={'text-warning'}>
+                        {referredBy.length > 0 &&
+                          'Careful: you can only set who referred you once!'}
+                      </span>
+                      <span className={'text-error'}>{errorText}</span>
+                    </>
+                  ) : (
+                    <div className="justify-center text-gray-700">
+                      {referredByUser ? (
+                        <Row className={'items-center gap-2 p-2'}>
+                          <Avatar
+                            username={referredByUser.username}
+                            avatarUrl={referredByUser.avatarUrl}
+                          />
+                          <UserLink
+                            username={referredByUser.username}
+                            name={referredByUser.name}
+                          />
+                        </Row>
+                      ) : (
+                        <span className={'text-gray-500'}>No one...</span>
+                      )}
+                    </div>
+                  )}
+                </>
+              ),
             },
           ]}
         />

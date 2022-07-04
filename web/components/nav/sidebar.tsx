@@ -120,6 +120,7 @@ function getMoreMobileNav() {
 
 export type Item = {
   name: string
+  trackingEventName?: string
   href: string
   icon?: React.ComponentType<{ className?: string }>
 }
