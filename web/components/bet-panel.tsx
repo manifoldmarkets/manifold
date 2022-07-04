@@ -72,21 +72,22 @@ export function BetPanel(props: {
       />
       <Col
         className={clsx(
-          'relative rounded-b-md bg-white px-8 py-6 pt-12',
+          'relative rounded-b-md bg-white px-8 py-6',
           !sharesOutcome && 'rounded-t-md',
           className
         )}
       >
-        <button
-          className="btn btn-ghost btn-sm absolute right-3 top-1 mt-1 gap-2 self-end text-sm normal-case"
-          onClick={() => setIsLimitOrder(!isLimitOrder)}
-        >
-          <SwitchHorizontalIcon className="inline h-4 w-4" />
-          {isLimitOrder ? <>Simple bet</> : <>Limit bet</>}
-        </button>
-        <div className="mb-6 text-2xl">
-          {isLimitOrder ? <>Bet to a probability</> : <>Place your bet</>}
-        </div>
+        <Row className="align-center justify-between">
+          <div className="mb-6 text-2xl">
+            {isLimitOrder ? <>Limit bet</> : <>Place your bet</>}
+          </div>
+          <button
+            className="btn btn-ghost btn-sm text-sm normal-case"
+            onClick={() => setIsLimitOrder(!isLimitOrder)}
+          >
+            <SwitchHorizontalIcon className="inline h-6 w-6" />
+          </button>
+        </Row>
 
         <BuyPanel
           contract={contract}
