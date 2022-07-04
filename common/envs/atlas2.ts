@@ -11,8 +11,8 @@ export const ATLAS2_CONFIG: EnvConfig = {
     appId: '1:466243568587:web:c725617dd393bca76fec4e',
     measurementId: 'G-YL3CW8Y62X',
   },
-  cloudRunId: 'TODO',
-  cloudRunRegion: 'TODO',
+  cloudRunId: 'bdiirjgiyq',
+  cloudRunRegion: 'uc',
 
   adminEmails: [...PROD_CONFIG.adminEmails],
   whitelistEmail: '',
