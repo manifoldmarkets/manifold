@@ -157,7 +157,7 @@ export const getBinaryCpmmBetInfo = (
   unfilledBets: LimitBet[]
 ) => {
   const sortedBets = sortBy(
-    unfilledBets,
+    unfilledBets.filter((bet) => bet.outcome !== outcome),
     (bet) => (outcome === 'YES' ? bet.limitProb : -bet.limitProb),
     (bet) => bet.createdTime
   )

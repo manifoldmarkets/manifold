@@ -122,6 +122,22 @@ export function listenForUserContractBets(
   })
 }
 
+export function listenForUnfilledBets(
+  contractId: string,
+  setBets: (bets: Bet[]) => void
+) {
+  const betsQuery = query(
+    collection(db, 'contracts', contractId, 'bets'),
+    where('contractId', '==', contractId),
+    where('isFilled', '==', false),
+    where('isCancelled', '==', false)
+  )
+  return listenForValues<Bet>(betsQuery, (bets) => {
+    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
+    setBets(bets)
+  })
+}
+
 export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
   const { createdTime } = contract
 

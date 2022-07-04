@@ -4,6 +4,7 @@ import {
   Bet,
   listenForBets,
   listenForRecentBets,
+  listenForUnfilledBets,
   withoutAnteBets,
 } from 'web/lib/firebase/bets'
 
@@ -35,4 +36,13 @@ export const useRecentBets = () => {
   const [recentBets, setRecentBets] = useState<Bet[] | undefined>()
   useEffect(() => listenForRecentBets(setRecentBets), [])
   return recentBets
+}
+
+export const useUnfilledBets = (contractId: string) => {
+  const [unfilledBets, setUnfilledBets] = useState<Bet[] | undefined>()
+  useEffect(
+    () => listenForUnfilledBets(contractId, setUnfilledBets),
+    [contractId]
+  )
+  return unfilledBets
 }

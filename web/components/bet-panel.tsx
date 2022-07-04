@@ -15,9 +15,10 @@ import {
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
+import { getBinaryCpmmBetInfo } from 'common/new-bet'
 import { Title } from './title'
 import { User } from 'web/lib/firebase/users'
-import { Bet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api-call'
 import { sellShares } from 'web/lib/firebase/api-call'
 import { AmountInput, BuyAmountInput } from './amount-input'
@@ -25,9 +26,7 @@ import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from './outcome-label'
 import {
   calculatePayoutAfterCorrectBet,
-  calculateShares,
   getProbability,
-  getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -45,6 +44,7 @@ import { isIOS } from 'web/lib/util/device'
 import { ProbabilityInput } from './probability-input'
 import { track } from 'web/lib/service/analytics'
 import { removeUndefinedProps } from 'common/util/object'
+import { useUnfilledBets } from 'web/hooks/use-bets'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -53,6 +53,7 @@ export function BetPanel(props: {
   const { contract, className } = props
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
   const { yesFloorShares, noFloorShares } = useSaveShares(contract, userBets)
   const sharesOutcome = yesFloorShares
     ? 'YES'
@@ -87,7 +88,12 @@ export function BetPanel(props: {
           {isLimitOrder ? <>Bet to a probability</> : <>Place your bet</>}
         </div>
 
-        <BuyPanel contract={contract} user={user} isLimitOrder={isLimitOrder} />
+        <BuyPanel
+          contract={contract}
+          user={user}
+          isLimitOrder={isLimitOrder}
+          unfilledBets={unfilledBets}
+        />
 
         <SignUpPrompt />
       </Col>
@@ -109,6 +115,7 @@ export function BetPanelSwitcher(props: {
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
 
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
 
@@ -196,6 +203,7 @@ export function BetPanelSwitcher(props: {
           <BuyPanel
             contract={contract}
             user={user}
+            unfilledBets={unfilledBets}
             selected={selected}
             onBuySuccess={onBetSuccess}
           />
@@ -210,11 +218,13 @@ export function BetPanelSwitcher(props: {
 function BuyPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
+  unfilledBets: Bet[]
   isLimitOrder?: boolean
   selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
 }) {
-  const { contract, user, isLimitOrder, selected, onBuySuccess } = props
+  const { contract, user, unfilledBets, isLimitOrder, selected, onBuySuccess } =
+    props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -229,14 +239,6 @@ function BuyPanel(props: {
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const [inputRef, focusAmountInput] = useFocus()
-
-  const amountToGoToProb = calculateCpmmAmount(
-    contract,
-    (limitProb ?? initialProb * 100) / 100,
-    betChoice ?? 'YES'
-  )
-
-  console.log('limitProb', limitProb, 'amountToGoToProb', amountToGoToProb)
 
   useEffect(() => {
     if (selected) {
@@ -306,19 +308,37 @@ function BuyPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const resultProb = getOutcomeProbabilityAfterBet(
+  const amountToGoToProb = calculateCpmmAmount(
     contract,
-    betChoice || 'YES',
-    betAmount ?? 0
+    (limitProb ?? initialProb * 100) / 100,
+    betChoice ?? 'YES'
   )
 
-  const shares = calculateShares(contract, betAmount ?? 0, betChoice || 'YES')
+  const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
+    betChoice ?? 'YES',
+    betAmount ?? 0,
+    contract,
+    isLimitOrder ? limitProb : undefined,
+    unfilledBets as LimitBet[]
+  )
 
-  const currentPayout = betAmount
+  console.log(
+    'limitProb',
+    limitProb,
+    'amountToGoToProb',
+    amountToGoToProb,
+    'unfilledBets',
+    unfilledBets
+  )
+
+  const resultProb = getCpmmProbability(newPool, newP)
+  const matchedAmount = sumBy(newBet.fills, (fill) => fill.amount)
+
+  const currentPayout = matchedAmount
     ? calculatePayoutAfterCorrectBet(contract, {
         outcome: betChoice,
-        amount: betAmount,
-        shares,
+        amount: matchedAmount,
+        shares: newBet.shares,
       } as Bet)
     : 0
 
