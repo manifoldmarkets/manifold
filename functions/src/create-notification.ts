@@ -17,7 +17,7 @@ import { removeUndefinedProps } from '../../common/util/object'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
-  [userId: string]: { reason: notification_reason_types }
+  [userId: string]: { reason: notification_reason_types; isSeeOnHref?: string }
 }
 
 export const createNotification = async (
@@ -72,6 +72,7 @@ export const createNotification = async (
           sourceContractSlug: sourceContract?.slug,
           sourceSlug: sourceSlug ? sourceSlug : sourceContract?.slug,
           sourceTitle: sourceTitle ? sourceTitle : sourceContract?.question,
+          isSeenOnHref: userToReasonTexts[userId].isSeeOnHref,
         }
         await notificationRef.set(removeUndefinedProps(notification))
       })
@@ -276,6 +277,17 @@ export const createNotification = async (
     }
   }
 
+  const notifyOtherGroupMembersOfComment = async (
+    userToReasonTexts: user_to_reason_texts,
+    userId: string
+  ) => {
+    if (shouldGetNotification(userId, userToReasonTexts))
+      userToReasonTexts[userId] = {
+        reason: 'on_group_you_are_member_of',
+        isSeeOnHref: sourceSlug,
+      }
+  }
+
   const getUsersToNotify = async () => {
     const userToReasonTexts: user_to_reason_texts = {}
     // The following functions modify the userToReasonTexts object in place.
@@ -286,6 +298,8 @@ export const createNotification = async (
         await notifyUserAddedToGroup(userToReasonTexts, relatedUserId)
     } else if (sourceType === 'user' && relatedUserId) {
       await notifyUserReceivedReferralBonus(userToReasonTexts, relatedUserId)
+    } else if (sourceType === 'comment' && !sourceContract && relatedUserId) {
+      await notifyOtherGroupMembersOfComment(userToReasonTexts, relatedUserId)
     }
 
     // The following functions need sourceContract to be defined.

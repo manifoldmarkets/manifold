@@ -12,6 +12,7 @@ export const onUpdateGroup = functions.firestore
     // ignore the update we just made
     if (prevGroup.mostRecentActivityTime !== group.mostRecentActivityTime)
       return
+    // TODO: create notification with isSeeOnHref set to the group's /group/questions url
 
     await firestore
       .collection('groups')
