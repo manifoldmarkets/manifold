@@ -16,7 +16,11 @@ export function ProbabilityInput(props: {
   const onProbChange = (str: string) => {
     let prob = parseInt(str.replace(/\D/g, ''))
     const isInvalid = !str || isNaN(prob)
-    if (prob.toString().length > 2) prob = +prob.toString().slice(0, 2)
+    if (prob.toString().length > 2) {
+      if (prob === 100) prob = 99
+      else if (prob < 1) prob = 1
+      else prob = +prob.toString().slice(-2)
+    }
     onChange(isInvalid ? undefined : prob)
   }
 
@@ -30,8 +34,8 @@ export function ProbabilityInput(props: {
             inputClassName
           )}
           type="number"
-          max={100}
-          min={0}
+          max={99}
+          min={1}
           pattern="[0-9]*"
           inputMode="numeric"
           placeholder="0"
