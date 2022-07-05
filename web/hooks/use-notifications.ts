@@ -83,11 +83,11 @@ export function groupNotifications(notifications: Notification[]) {
   return notificationGroups
 }
 
-function usePreferredNotifications(
+export function usePreferredNotifications(
   userId: string | undefined,
-  options: { unseenOnly: boolean }
+  options: { unseenOnly: boolean; customHref?: string }
 ) {
-  const { unseenOnly } = options
+  const { unseenOnly, customHref } = options
   const [privateUser, setPrivateUser] = useState<PrivateUser | null>(null)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [userAppropriateNotifications, setUserAppropriateNotifications] =
@@ -112,9 +112,11 @@ function usePreferredNotifications(
     const notificationsToShow = getAppropriateNotifications(
       notifications,
       privateUser.notificationPreferences
+    ).filter((n) =>
+      customHref ? n.isSeenOnHref?.includes(customHref) : !n.isSeenOnHref
     )
     setUserAppropriateNotifications(notificationsToShow)
-  }, [privateUser, notifications])
+  }, [privateUser, notifications, customHref])
 
   return userAppropriateNotifications
 }
