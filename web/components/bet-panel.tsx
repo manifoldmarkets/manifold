@@ -45,6 +45,7 @@ import { ProbabilityInput } from './probability-input'
 import { track } from 'web/lib/service/analytics'
 import { removeUndefinedProps } from 'common/util/object'
 import { useUnfilledBets } from 'web/hooks/use-bets'
+import { OpenBets } from './open-bets'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -54,6 +55,7 @@ export function BetPanel(props: {
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
   const unfilledBets = useUnfilledBets(contract.id) ?? []
+  const yourUnfilledBets = unfilledBets.filter((bet) => bet.userId === user?.id)
   const { yesFloorShares, noFloorShares } = useSaveShares(contract, userBets)
   const sharesOutcome = yesFloorShares
     ? 'YES'
@@ -98,6 +100,9 @@ export function BetPanel(props: {
 
         <SignUpPrompt />
       </Col>
+      {yourUnfilledBets.length > 0 && (
+        <OpenBets className="mt-4" bets={yourUnfilledBets} />
+      )}
     </Col>
   )
 }
@@ -376,7 +381,7 @@ function BuyPanel(props: {
       {isLimitOrder && (
         <>
           <div className="my-3 text-left text-sm text-gray-500">
-            Probability
+            {betChoice === 'YES' ? 'Max' : 'Min'} probability
           </div>
           <ProbabilityInput
             inputClassName="w-full max-w-none"
