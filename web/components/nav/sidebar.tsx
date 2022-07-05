@@ -18,7 +18,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -26,11 +26,7 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Group } from 'common/group'
 import { Spacer } from '../layout/spacer'
-import { Notification } from 'common/notification'
-import {
-  usePreferredGroupedNotifications,
-  usePreferredNotifications,
-} from 'web/hooks/use-notifications'
+import { usePreferredNotifications } from 'web/hooks/use-notifications'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
 
 function getNavigation() {
