@@ -166,7 +166,7 @@ export default function Notifications() {
   )
 }
 
-const setNotificationsAsSeen = (notifications: Notification[]) => {
+export const setNotificationsAsSeen = (notifications: Notification[]) => {
   notifications.forEach((notification) => {
     if (!notification.isSeen)
       updateDoc(
@@ -758,7 +758,7 @@ function NotificationItem(props: {
     <div
       className={clsx(
         'bg-white px-2 pt-6 text-sm sm:px-4',
-        highlighted && 'bg-indigo-200'
+        highlighted && 'bg-indigo-200 hover:bg-indigo-100'
       )}
     >
       <a href={getSourceUrl()}>

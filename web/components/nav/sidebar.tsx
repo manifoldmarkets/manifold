@@ -18,7 +18,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -26,6 +26,8 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Group } from 'common/group'
 import { Spacer } from '../layout/spacer'
+import { usePreferredNotifications } from 'web/hooks/use-notifications'
+import { setNotificationsAsSeen } from 'web/pages/notifications'
 
 function getNavigation() {
   return [
@@ -182,6 +184,7 @@ export default function Sidebar(props: { className?: string }) {
   const { className } = props
   const router = useRouter()
   const currentPage = router.pathname
+
   const user = useUser()
   const navigationOptions = !user ? signedOutNavigation : getNavigation()
   const mobileNavigationOptions = !user
@@ -217,7 +220,11 @@ export default function Sidebar(props: { className?: string }) {
           />
         )}
 
-        <GroupsList currentPage={currentPage} memberItems={memberItems} />
+        <GroupsList
+          currentPage={router.asPath}
+          memberItems={memberItems}
+          user={user}
+        />
       </div>
 
       {/* Desktop navigation */}
@@ -236,14 +243,36 @@ export default function Sidebar(props: { className?: string }) {
             <div className="h-[1px] bg-gray-300" />
           </div>
         )}
-        <GroupsList currentPage={currentPage} memberItems={memberItems} />
+        <GroupsList
+          currentPage={router.asPath}
+          memberItems={memberItems}
+          user={user}
+        />
       </div>
     </nav>
   )
 }
 
-function GroupsList(props: { currentPage: string; memberItems: Item[] }) {
-  const { currentPage, memberItems } = props
+function GroupsList(props: {
+  currentPage: string
+  memberItems: Item[]
+  user: User | null | undefined
+}) {
+  const { currentPage, memberItems, user } = props
+  const preferredNotifications = usePreferredNotifications(user?.id, {
+    unseenOnly: true,
+    customHref: '/group/',
+  })
+
+  // Set notification as seen if our current page is equal to the isSeenOnHref property
+  useEffect(() => {
+    preferredNotifications.forEach((notification) => {
+      if (notification.isSeenOnHref === currentPage) {
+        setNotificationsAsSeen([notification])
+      }
+    })
+  }, [currentPage, preferredNotifications])
+
   return (
     <>
       <SidebarItem
@@ -256,9 +285,14 @@ function GroupsList(props: { currentPage: string; memberItems: Item[] }) {
           <a
             key={item.href}
             href={item.href}
-            className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            className={clsx(
+              'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+              preferredNotifications.some(
+                (n) => !n.isSeen && n.isSeenOnHref === item.href
+              ) && 'font-bold'
+            )}
           >
-            <span className="truncate">&nbsp; {item.name}</span>
+            <span className="truncate">{item.name}</span>
           </a>
         ))}
       </div>
