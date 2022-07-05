@@ -57,6 +57,7 @@ export type PrivateUser = {
   initialIpAddress?: string
   apiKey?: string
   notificationPreferences?: notification_subscribe_types
+  lastTimeReceivedBonuses?: number
 }
 
 export type notification_subscribe_types = 'all' | 'less' | 'none'

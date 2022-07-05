@@ -267,6 +267,15 @@ export const createNotification = async (
       }
   }
 
+  const notifyContractCreatorOfUniqueBettorsBonus = async (
+    userToReasonTexts: user_to_reason_texts,
+    userId: string
+  ) => {
+    userToReasonTexts[userId] = {
+      reason: 'unique_bettors_on_your_contract',
+    }
+  }
+
   const getUsersToNotify = async () => {
     const userToReasonTexts: user_to_reason_texts = {}
     // The following functions modify the userToReasonTexts object in place.
@@ -309,6 +318,12 @@ export const createNotification = async (
       })
     } else if (sourceType === 'liquidity' && sourceUpdateType === 'created') {
       await notifyContractCreator(userToReasonTexts, sourceContract)
+    } else if (sourceType === 'bonus' && sourceUpdateType === 'created') {
+      // Note: the daily bonus won't have a contract attached to it
+      await notifyContractCreatorOfUniqueBettorsBonus(
+        userToReasonTexts,
+        sourceContract.creatorId
+      )
     }
     return userToReasonTexts
   }
