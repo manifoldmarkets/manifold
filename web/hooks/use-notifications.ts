@@ -7,9 +7,10 @@ import { groupBy, map } from 'lodash'
 
 export type NotificationGroup = {
   notifications: Notification[]
-  sourceContractId: string
+  groupedById: string
   isSeen: boolean
   timePeriod: string
+  type: 'income' | 'normal'
 }
 
 export function usePreferredGroupedNotifications(
@@ -37,25 +38,43 @@ export function groupNotifications(notifications: Notification[]) {
     new Date(notification.createdTime).toDateString()
   )
   Object.keys(notificationGroupsByDay).forEach((day) => {
-    // Group notifications by contract:
+    const notificationsGroupedByDay = notificationGroupsByDay[day]
+    const bonusNotifications = notificationsGroupedByDay.filter(
+      (notification) => notification.sourceType === 'bonus'
+    )
+    const normalNotificationsGroupedByDay = notificationsGroupedByDay.filter(
+      (notification) => notification.sourceType !== 'bonus'
+    )
+    if (bonusNotifications.length > 0) {
+      notificationGroups = notificationGroups.concat({
+        notifications: bonusNotifications,
+        groupedById: 'income' + day,
+        isSeen: bonusNotifications[0].isSeen,
+        timePeriod: day,
+        type: 'income',
+      })
+    }
+    // Group notifications by contract, filtering out bonuses:
     const groupedNotificationsByContractId = groupBy(
-      notificationGroupsByDay[day],
+      normalNotificationsGroupedByDay,
       (notification) => {
         return notification.sourceContractId
       }
     )
     notificationGroups = notificationGroups.concat(
       map(groupedNotificationsByContractId, (notifications, contractId) => {
+        const notificationsForContractId = groupedNotificationsByContractId[
+          contractId
+        ].sort((a, b) => {
+          return b.createdTime - a.createdTime
+        })
         // Create a notification group for each contract within each day
         const notificationGroup: NotificationGroup = {
-          notifications: groupedNotificationsByContractId[contractId].sort(
-            (a, b) => {
-              return b.createdTime - a.createdTime
-            }
-          ),
-          sourceContractId: contractId,
-          isSeen: groupedNotificationsByContractId[contractId][0].isSeen,
+          notifications: notificationsForContractId,
+          groupedById: contractId,
+          isSeen: notificationsForContractId[0].isSeen,
           timePeriod: day,
+          type: 'normal',
         }
         return notificationGroup
       })
