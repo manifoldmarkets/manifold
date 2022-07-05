@@ -32,6 +32,7 @@ export * from './on-update-user'
 // v2
 export * from './health'
 export * from './place-bet'
+export * from './cancel-bet'
 export * from './sell-bet'
 export * from './sell-shares'
 export * from './create-contract'

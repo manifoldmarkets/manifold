@@ -3,7 +3,10 @@ import { LimitBet } from 'common/bet'
 import { formatPercent } from 'common/lib/util/format'
 import { formatMoney } from 'common/util/format'
 import { sortBy, sumBy } from 'lodash'
+import { useState } from 'react'
+import { cancelBet } from 'web/lib/firebase/api-call'
 import { Col } from './layout/col'
+import { LoadingIndicator } from './loading-indicator'
 import { BinaryOutcomeLabel } from './outcome-label'
 
 export function OpenBets(props: { bets: LimitBet[]; className?: string }) {
@@ -16,13 +19,7 @@ export function OpenBets(props: { bets: LimitBet[]; className?: string }) {
       <table className="table-compact table w-full rounded text-gray-500">
         <tbody>
           {recentBets.map((bet) => (
-            <LimitBet
-              key={bet.id}
-              bet={bet}
-              onCancel={() => {
-                console.log('Cancel', bet)
-              }}
-            />
+            <LimitBet key={bet.id} bet={bet} />
           ))}
         </tbody>
       </table>
@@ -30,9 +27,16 @@ export function OpenBets(props: { bets: LimitBet[]; className?: string }) {
   )
 }
 
-function LimitBet(props: { bet: LimitBet; onCancel: () => void }) {
-  const { bet, onCancel } = props
+function LimitBet(props: { bet: LimitBet }) {
+  const { bet } = props
   const filledAmount = sumBy(bet.fills, (fill) => fill.amount)
+  const [isCancelling, setIsCancelling] = useState(false)
+
+  const onCancel = () => {
+    cancelBet({ betId: bet.id })
+    setIsCancelling(true)
+  }
+
   return (
     <tr>
       <td>
@@ -43,12 +47,16 @@ function LimitBet(props: { bet: LimitBet; onCancel: () => void }) {
       <td>{formatMoney(bet.amount - filledAmount)}</td>
       <td>{formatPercent(bet.limitProb)}</td>
       <td>
-        <button
-          className="btn btn-xs btn-outline my-auto normal-case"
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
+        {isCancelling ? (
+          <LoadingIndicator />
+        ) : (
+          <button
+            className="btn btn-xs btn-outline my-auto normal-case"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+        )}
       </td>
     </tr>
   )
