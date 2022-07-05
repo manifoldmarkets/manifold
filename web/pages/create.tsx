@@ -109,8 +109,6 @@ export function NewContract(props: {
   const [initialValueString, setInitialValueString] = useState(initValue)
 
   const [description, setDescription] = useState(params?.description ?? '')
-  // const [tagText, setTagText] = useState<string>(tag ?? '')
-  // const tags = parseWordsAsTags(tagText)
   useEffect(() => {
     if (groupId && creator)
       getGroup(groupId).then((group) => {
@@ -121,15 +119,6 @@ export function NewContract(props: {
       })
   }, [creator, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
-
-  // useEffect(() => {
-  //   if (ante === null && creator) {
-  //     const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
-  //     setAnte(initialAnte)
-  //   }
-  // }, [ante, creator])
-
-  // const [anteError, setAnteError] = useState<string | undefined>()
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the market a week from today
