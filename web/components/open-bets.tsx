@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
-import { formatPercent } from 'common/lib/util/format'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { sortBy, sumBy } from 'lodash'
 import { useState } from 'react'
 import { cancelBet } from 'web/lib/firebase/api-call'
