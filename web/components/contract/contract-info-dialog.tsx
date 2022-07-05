@@ -21,6 +21,7 @@ import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
 import { InfoTooltip } from '../info-tooltip'
 import { TagsInput } from 'web/components/tags-input'
+import { DuplicateContractButton } from '../copy-contract-button'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium  cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -71,6 +72,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
               tweetText={getTweetText(contract, false)}
             />
             <ShareEmbedButton contract={contract} toastClassName={'-left-20'} />
+            <DuplicateContractButton contract={contract} />
           </Row>
           <div />
 

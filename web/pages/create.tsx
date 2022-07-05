@@ -28,14 +28,32 @@ import { GroupSelector } from 'web/components/groups/group-selector'
 import { CATEGORIES } from 'common/categories'
 import { User } from 'common/user'
 
-export default function Create() {
-  const [question, setQuestion] = useState('')
-  // get query params:
-  const router = useRouter()
-  const { groupId } = router.query as { groupId: string }
-  useTracking('view create page')
-  const creator = useUser()
+type NewQuestionParams = {
+  groupId?: string
+  q: string
+  type: string
+  description: string
+  closeTime: string
+  outcomeType: string
+  // Params for PSEUDO_NUMERIC outcomeType
+  min?: string
+  max?: string
+  isLogScale?: string
+  initValue?: string
+}
 
+export default function Create() {
+  useTracking('view create page')
+  const router = useRouter()
+  const params = router.query as NewQuestionParams
+  // TODO: Not sure why Question is pulled out as its own component;
+  // Maybe merge into newContract and then we don't need useEffect here.
+  const [question, setQuestion] = useState('')
+  useEffect(() => {
+    setQuestion(params.q ?? '')
+  }, [params.q])
+
+  const creator = useUser()
   useEffect(() => {
     if (creator === null) router.push('/')
   }, [creator, router])
@@ -65,11 +83,7 @@ export default function Create() {
             </div>
           </form>
           <Spacer h={6} />
-          <NewContract
-            question={question}
-            groupId={groupId}
-            creator={creator}
-          />
+          <NewContract question={question} params={params} creator={creator} />
         </div>
       </div>
     </Page>
@@ -80,20 +94,21 @@ export default function Create() {
 export function NewContract(props: {
   creator: User
   question: string
-  groupId?: string
+  params?: NewQuestionParams
 }) {
-  const { creator, question, groupId } = props
-  const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
+  const { creator, question, params } = props
+  const { groupId, initValue } = params ?? {}
+  const [outcomeType, setOutcomeType] = useState<outcomeType>(
+    (params?.outcomeType as outcomeType) ?? 'BINARY'
+  )
   const [initialProb] = useState(50)
 
-  const [minString, setMinString] = useState('')
-  const [maxString, setMaxString] = useState('')
-  const [isLogScale, setIsLogScale] = useState(false)
-  const [initialValueString, setInitialValueString] = useState('')
+  const [minString, setMinString] = useState(params?.min ?? '')
+  const [maxString, setMaxString] = useState(params?.max ?? '')
+  const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
+  const [initialValueString, setInitialValueString] = useState(initValue)
 
-  const [description, setDescription] = useState('')
-  // const [tagText, setTagText] = useState<string>(tag ?? '')
-  // const tags = parseWordsAsTags(tagText)
+  const [description, setDescription] = useState(params?.description ?? '')
   useEffect(() => {
     if (groupId && creator)
       getGroup(groupId).then((group) => {
@@ -105,18 +120,17 @@ export function NewContract(props: {
   }, [creator, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
-  // useEffect(() => {
-  //   if (ante === null && creator) {
-  //     const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
-  //     setAnte(initialAnte)
-  //   }
-  // }, [ante, creator])
-
-  // const [anteError, setAnteError] = useState<string | undefined>()
+  // If params.closeTime is set, extract out the specified date and time
   // By default, close the market a week from today
   const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
-  const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
-  const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
+  const timeInMs = Number(params?.closeTime ?? 0)
+  const initDate = timeInMs
+    ? dayjs(timeInMs).format('YYYY-MM-DD')
+    : weekFromToday
+  const initTime = timeInMs ? dayjs(timeInMs).format('HH:mm') : '23:59'
+  const [closeDate, setCloseDate] = useState<undefined | string>(initDate)
+  const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>(initTime)
+
   const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(
