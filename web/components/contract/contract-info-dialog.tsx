@@ -13,7 +13,6 @@ import {
   getBinaryProbPercent,
 } from 'web/lib/firebase/contracts'
 import { LiquidityPanel } from '../liquidity-panel'
-import { CopyLinkButton } from '../copy-link-button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -22,6 +21,10 @@ import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
 import { InfoTooltip } from '../info-tooltip'
 import { TagsInput } from 'web/components/tags-input'
+import { DuplicateContractButton } from '../copy-contract-button'
+
+export const contractDetailsButtonClassName =
+  'group flex items-center rounded-md px-3 py-2 text-sm font-medium  cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
 
 export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
@@ -48,13 +51,11 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   return (
     <>
       <button
-        className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:cursor-pointer hover:bg-gray-100"
+        className={contractDetailsButtonClassName}
         onClick={() => setOpen(true)}
       >
         <DotsHorizontalIcon
-          className={clsx(
-            'h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500'
-          )}
+          className={clsx('h-6 w-6 flex-shrink-0')}
           aria-hidden="true"
         />
       </button>
@@ -66,15 +67,12 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <div>Share</div>
 
           <Row className="justify-start gap-4">
-            <CopyLinkButton
-              contract={contract}
-              toastClassName={'sm:-left-10 -left-4 min-w-[250%]'}
-            />
             <TweetButton
               className="self-start"
               tweetText={getTweetText(contract, false)}
             />
             <ShareEmbedButton contract={contract} toastClassName={'-left-20'} />
+            <DuplicateContractButton contract={contract} />
           </Row>
           <div />
 

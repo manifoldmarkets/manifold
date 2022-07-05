@@ -14,14 +14,15 @@ import {
   DPMBinaryContract,
   FreeResponseContract,
   NumericContract,
+  PseudoNumericContract,
 } from './contract'
 import { noFees } from './fees'
 import { addObjects } from './util/object'
 import { NUMERIC_FIXED_VAR } from './numeric-constants'
 
-export type CandidateBet<T extends Bet> = Omit<T, 'id' | 'userId'>
+export type CandidateBet<T extends Bet = Bet> = Omit<T, 'id' | 'userId'>
 export type BetInfo = {
-  newBet: CandidateBet<Bet>
+  newBet: CandidateBet
   newPool?: { [outcome: string]: number }
   newTotalShares?: { [outcome: string]: number }
   newTotalBets?: { [outcome: string]: number }
@@ -32,7 +33,7 @@ export type BetInfo = {
 export const getNewBinaryCpmmBetInfo = (
   outcome: 'YES' | 'NO',
   amount: number,
-  contract: CPMMBinaryContract,
+  contract: CPMMBinaryContract | PseudoNumericContract,
   loanAmount: number
 ) => {
   const { shares, newPool, newP, fees } = calculateCpmmPurchase(
@@ -45,7 +46,7 @@ export const getNewBinaryCpmmBetInfo = (
   const probBefore = getCpmmProbability(pool, p)
   const probAfter = getCpmmProbability(newPool, newP)
 
-  const newBet: CandidateBet<Bet> = {
+  const newBet: CandidateBet = {
     contractId: contract.id,
     amount,
     shares,
@@ -95,7 +96,7 @@ export const getNewBinaryDpmBetInfo = (
   const probBefore = getDpmProbability(contract.totalShares)
   const probAfter = getDpmProbability(newTotalShares)
 
-  const newBet: CandidateBet<Bet> = {
+  const newBet: CandidateBet = {
     contractId: contract.id,
     amount,
     loanAmount,
@@ -132,7 +133,7 @@ export const getNewMultiBetInfo = (
   const probBefore = getDpmOutcomeProbability(totalShares, outcome)
   const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
 
-  const newBet: CandidateBet<Bet> = {
+  const newBet: CandidateBet = {
     contractId: contract.id,
     amount,
     loanAmount,

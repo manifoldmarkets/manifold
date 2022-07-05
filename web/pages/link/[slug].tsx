@@ -31,7 +31,7 @@ export default function ClaimPage() {
         url="/send"
       />
       <div className="mx-auto max-w-xl">
-        <Title text={`Claim ${manalink.amount} mana`} />
+        <Title text={`Claim M$${manalink.amount} mana`} />
         <ManalinkCard
           defaultMessage={fromUser?.name || 'Enjoy this mana!'}
           info={info}
@@ -46,7 +46,7 @@ export default function ClaimPage() {
               if (result.data.status == 'error') {
                 throw new Error(result.data.message)
               }
-              router.push('/account?claimed-mana=yes')
+              user && router.push(`/${user.username}?claimed-mana=yes`)
             } catch (e) {
               console.log(e)
               const message =

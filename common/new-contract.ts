@@ -7,6 +7,7 @@ import {
   FreeResponse,
   Numeric,
   outcomeType,
+  PseudoNumeric,
 } from './contract'
 import { User } from './user'
 import { parseTags, richTextToString } from './util/parse'
@@ -28,7 +29,8 @@ export function getNewContract(
   // used for numeric markets
   bucketCount: number,
   min: number,
-  max: number
+  max: number,
+  isLogScale: boolean
 ) {
   const tags = parseTags(
     [
@@ -42,6 +44,8 @@ export function getNewContract(
   const propsByOutcomeType =
     outcomeType === 'BINARY'
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
+      : outcomeType === 'PSEUDO_NUMERIC'
+      ? getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale)
       : outcomeType === 'NUMERIC'
       ? getNumericProps(ante, bucketCount, min, max)
       : getFreeAnswerProps(ante)
@@ -111,6 +115,24 @@ const getBinaryCpmmProps = (initialProb: number, ante: number) => {
     initialProbability: p,
     p,
     pool: pool,
+  }
+
+  return system
+}
+
+const getPseudoNumericCpmmProps = (
+  initialProb: number,
+  ante: number,
+  min: number,
+  max: number,
+  isLogScale: boolean
+) => {
+  const system: CPMM & PseudoNumeric = {
+    ...getBinaryCpmmProps(initialProb, ante),
+    outcomeType: 'PSEUDO_NUMERIC',
+    min,
+    max,
+    isLogScale,
   }
 
   return system

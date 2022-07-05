@@ -6,8 +6,8 @@ import {
   CashIcon,
   HeartIcon,
   UserGroupIcon,
-  ChevronDownIcon,
   TrendingUpIcon,
+  ChatIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -18,13 +18,16 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Group } from 'common/group'
+import { Spacer } from '../layout/spacer'
+import { usePreferredNotifications } from 'web/hooks/use-notifications'
+import { setNotificationsAsSeen } from 'web/pages/notifications'
 
 function getNavigation() {
   return [
@@ -82,8 +85,20 @@ const signedOutNavigation = [
 ]
 
 const signedOutMobileNavigation = [
+  {
+    name: 'About',
+    href: 'https://docs.manifold.markets/$how-to',
+    icon: BookOpenIcon,
+  },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+  { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
+]
+
+const signedInMobileNavigation = [
+  ...(IS_PRIVATE_MANIFOLD
+    ? []
+    : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   {
     name: 'About',
     href: 'https://docs.manifold.markets/$how-to',
@@ -91,17 +106,12 @@ const signedOutMobileNavigation = [
   },
 ]
 
-const signedInMobileNavigation = [
-  ...(IS_PRIVATE_MANIFOLD
-    ? []
-    : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
-  ...signedOutMobileNavigation,
-]
-
 function getMoreMobileNav() {
   return [
+    { name: 'Send M$', href: '/links' },
+    { name: 'Charity', href: '/charity' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    { name: 'Statistics', href: '/stats' },
+    { name: 'Leaderboards', href: '/leaderboards' },
     {
       name: 'Sign out',
       href: '#',
@@ -112,8 +122,9 @@ function getMoreMobileNav() {
 
 export type Item = {
   name: string
+  trackingEventName?: string
   href: string
-  icon: React.ComponentType<{ className?: string }>
+  icon?: React.ComponentType<{ className?: string }>
 }
 
 function SidebarItem(props: { item: Item; currentPage: string }) {
@@ -130,15 +141,17 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
         )}
         aria-current={item.href == currentPage ? 'page' : undefined}
       >
-        <item.icon
-          className={clsx(
-            item.href == currentPage
-              ? 'text-gray-500'
-              : 'text-gray-400 group-hover:text-gray-500',
-            '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
-          )}
-          aria-hidden="true"
-        />
+        {item.icon && (
+          <item.icon
+            className={clsx(
+              item.href == currentPage
+                ? 'text-gray-500'
+                : 'text-gray-400 group-hover:text-gray-500',
+              '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
+            )}
+            aria-hidden="true"
+          />
+        )}
         <span className="truncate">{item.name}</span>
       </a>
     </Link>
@@ -167,14 +180,6 @@ function MoreButton() {
   return <SidebarButton text={'More'} icon={DotsHorizontalIcon} />
 }
 
-function GroupsButton() {
-  return (
-    <SidebarButton icon={UserGroupIcon} text={'Groups'}>
-      <ChevronDownIcon className=" mt-0.5 ml-2 h-5 w-5" aria-hidden="true" />
-    </SidebarButton>
-  )
-}
-
 export default function Sidebar(props: { className?: string }) {
   const { className } = props
   const router = useRouter()
@@ -185,7 +190,7 @@ export default function Sidebar(props: { className?: string }) {
   const mobileNavigationOptions = !user
     ? signedOutMobileNavigation
     : signedInMobileNavigation
-  const memberItems = (useMemberGroups(user) ?? []).map((group: Group) => ({
+  const memberItems = (useMemberGroups(user?.id) ?? []).map((group: Group) => ({
     name: group.name,
     href: groupPath(group.slug),
   }))
@@ -193,31 +198,20 @@ export default function Sidebar(props: { className?: string }) {
   return (
     <nav aria-label="Sidebar" className={className}>
       <ManifoldLogo className="pb-6" twoLine />
+
+      <CreateQuestionButton user={user} />
+      <Spacer h={4} />
       {user && (
-        <div className="mb-2" style={{ minHeight: 80 }}>
+        <div className="w-full" style={{ minHeight: 80 }}>
           <ProfileSummary user={user} />
         </div>
       )}
 
       {/* Mobile navigation */}
       <div className="space-y-1 lg:hidden">
-        {user && (
-          <MenuButton
-            buttonContent={<GroupsButton />}
-            menuItems={[{ name: 'Explore', href: '/groups' }, ...memberItems]}
-            className={'relative z-50 flex-shrink-0'}
-          />
-        )}
         {mobileNavigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
-        {!user && (
-          <SidebarItem
-            key={'Groups'}
-            item={{ name: 'Groups', href: '/groups', icon: UserGroupIcon }}
-            currentPage={currentPage}
-          />
-        )}
 
         {user && (
           <MenuButton
@@ -225,41 +219,83 @@ export default function Sidebar(props: { className?: string }) {
             buttonContent={<MoreButton />}
           />
         )}
+
+        <GroupsList
+          currentPage={router.asPath}
+          memberItems={memberItems}
+          user={user}
+        />
       </div>
 
       {/* Desktop navigation */}
       <div className="hidden space-y-1 lg:block">
-        {navigationOptions.map((item) =>
-          item.name === 'Notifications' ? (
-            <div key={item.href}>
-              <SidebarItem item={item} currentPage={currentPage} />
-              {user && (
-                <MenuButton
-                  key={'groupsdropdown'}
-                  buttonContent={<GroupsButton />}
-                  menuItems={[
-                    { name: 'Explore', href: '/groups' },
-                    ...memberItems,
-                  ]}
-                  className={'relative z-50 flex-shrink-0'}
-                />
-              )}
-            </div>
-          ) : (
-            <SidebarItem
-              key={item.href}
-              item={item}
-              currentPage={currentPage}
-            />
-          )
-        )}
-
+        {navigationOptions.map((item) => (
+          <SidebarItem key={item.href} item={item} currentPage={currentPage} />
+        ))}
         <MenuButton
           menuItems={getMoreNavigation(user)}
           buttonContent={<MoreButton />}
         />
+
+        {/* Spacer if there are any groups */}
+        {memberItems.length > 0 && (
+          <div className="py-3">
+            <div className="h-[1px] bg-gray-300" />
+          </div>
+        )}
+        <GroupsList
+          currentPage={router.asPath}
+          memberItems={memberItems}
+          user={user}
+        />
       </div>
-      <CreateQuestionButton user={user} />
     </nav>
+  )
+}
+
+function GroupsList(props: {
+  currentPage: string
+  memberItems: Item[]
+  user: User | null | undefined
+}) {
+  const { currentPage, memberItems, user } = props
+  const preferredNotifications = usePreferredNotifications(user?.id, {
+    unseenOnly: true,
+    customHref: '/group/',
+  })
+
+  // Set notification as seen if our current page is equal to the isSeenOnHref property
+  useEffect(() => {
+    preferredNotifications.forEach((notification) => {
+      if (notification.isSeenOnHref === currentPage) {
+        setNotificationsAsSeen([notification])
+      }
+    })
+  }, [currentPage, preferredNotifications])
+
+  return (
+    <>
+      <SidebarItem
+        item={{ name: 'Groups', href: '/groups', icon: UserGroupIcon }}
+        currentPage={currentPage}
+      />
+
+      <div className="mt-1 space-y-0.5">
+        {memberItems.map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            className={clsx(
+              'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+              preferredNotifications.some(
+                (n) => !n.isSeen && n.isSeenOnHref === item.href
+              ) && 'font-bold'
+            )}
+          >
+            <span className="truncate">{item.name}</span>
+          </a>
+        ))}
+      </div>
+    </>
   )
 }

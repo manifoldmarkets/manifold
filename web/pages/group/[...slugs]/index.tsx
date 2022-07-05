@@ -4,16 +4,23 @@ import { Group } from 'common/group'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { listAllBets } from 'web/lib/firebase/bets'
-import { Contract, listenForUserContracts } from 'web/lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
 import {
   groupPath,
   getGroupBySlug,
   getGroupContracts,
   updateGroup,
+  addContractToGroup,
+  addUserToGroup,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
-import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
+import {
+  firebaseLogin,
+  getUser,
+  User,
+  writeReferralInfo,
+} from 'web/lib/firebase/users'
 import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
@@ -34,12 +41,15 @@ import React, { useEffect, useState } from 'react'
 import { GroupChat } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
-import { PlusIcon } from '@heroicons/react/outline'
 import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
 import ShortToggle from 'web/components/widgets/short-toggle'
+import { ShareIconButton } from 'web/components/share-icon-button'
+import { REFERRAL_AMOUNT } from 'common/user'
+import { SiteLink } from 'web/components/site-link'
+import { ContractSearch } from 'web/components/contract-search'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -149,6 +159,14 @@ export default function GroupPage(props: {
   }, [group])
 
   const user = useUser()
+  useEffect(() => {
+    const { referrer } = router.query as {
+      referrer?: string
+    }
+    if (!user && router.isReady)
+      writeReferralInfo(creator.username, undefined, referrer, group?.slug)
+  }, [user, creator, group, router])
+
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
   }
@@ -256,7 +274,13 @@ export default function GroupPage(props: {
                     </>
                   ) : (
                     <div className="p-2 text-gray-500">
-                      No questions yet. 🦗... Why not add one?
+                      No questions yet. Why not{' '}
+                      <SiteLink
+                        href={`/create/?groupId=${group.id}`}
+                        className={'font-bold text-gray-700'}
+                      >
+                        add one?
+                      </SiteLink>
                     </div>
                   )
                 ) : (
@@ -320,18 +344,17 @@ function GroupOverview(props: {
 
   return (
     <Col>
-      <Row className="items-center justify-end rounded-t bg-indigo-500 px-4 py-3 text-sm text-white">
-        <Row className="flex-1 justify-start">About {group.name}</Row>
-        {isCreator && <EditGroupButton className={'ml-1'} group={group} />}
-      </Row>
       <Col className="gap-2 rounded-b bg-white p-4">
-        <Row>
-          <div className="mr-1 text-gray-500">Created by</div>
-          <UserLink
-            className="text-neutral"
-            name={creator.name}
-            username={creator.username}
-          />
+        <Row className={'flex-wrap justify-between'}>
+          <div className={'inline-flex items-center'}>
+            <div className="mr-1 text-gray-500">Created by</div>
+            <UserLink
+              className="text-neutral"
+              name={creator.name}
+              username={creator.username}
+            />
+          </div>
+          {isCreator && <EditGroupButton className={'ml-1'} group={group} />}
         </Row>
         <Row className={'items-center gap-1'}>
           <span className={'text-gray-500'}>Membership</span>
@@ -351,6 +374,20 @@ function GroupOverview(props: {
             </span>
           )}
         </Row>
+        {anyoneCanJoin && user && (
+          <Row className={'flex-wrap items-center gap-1'}>
+            <span className={'text-gray-500'}>Sharing</span>
+            <ShareIconButton
+              group={group}
+              username={user.username}
+              buttonClassName={'hover:bg-gray-300 mt-1 !text-gray-700'}
+            >
+              <span className={'mx-2'}>
+                Invite a friend and get M${REFERRAL_AMOUNT} if they sign up!
+              </span>
+            </ShareIconButton>
+          </Row>
+        )}
       </Col>
     </Col>
   )
@@ -473,74 +510,46 @@ function GroupLeaderboards(props: {
 }
 
 function AddContractButton(props: { group: Group; user: User }) {
-  const { group, user } = props
+  const { group } = props
   const [open, setOpen] = useState(false)
-  const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
-  const [query, setQuery] = useState('')
 
-  useEffect(() => {
-    return listenForUserContracts(user.id, (contracts) => {
-      setContracts(contracts.filter((c) => !group.contractIds.includes(c.id)))
-    })
-  }, [group.contractIds, user.id])
-
-  async function addContractToGroup(contract: Contract) {
-    await updateGroup(group, {
-      ...group,
-      contractIds: [...group.contractIds, contract.id],
-    })
+  async function addContractToCurrentGroup(contract: Contract) {
+    await addContractToGroup(group, contract.id)
     setOpen(false)
   }
 
-  // TODO use find-active-contracts to sort by?
-  const matches = sortBy(contracts, [
-    (contract) => -1 * contract.createdTime,
-  ]).filter(
-    (c) =>
-      checkAgainstQuery(query, c.question) ||
-      checkAgainstQuery(query, c.tags.flat().join(' '))
-  )
-  const debouncedQuery = debounce(setQuery, 50)
   return (
     <>
-      <Modal open={open} setOpen={setOpen}>
-        <Col className={'max-h-[60vh] w-full gap-4 rounded-md bg-white p-8'}>
+      <Modal open={open} setOpen={setOpen} className={'sm:p-0'}>
+        <Col
+          className={
+            'max-h-[60vh] min-h-[60vh] w-full gap-4 rounded-md bg-white p-8'
+          }
+        >
           <div className={'text-lg text-indigo-700'}>
             Add a question to your group
           </div>
-          <input
-            type="text"
-            onChange={(e) => debouncedQuery(e.target.value)}
-            placeholder="Search your questions"
-            className="input input-bordered mb-4 w-full"
-          />
-          <div className={'overflow-y-scroll'}>
-            {contracts ? (
-              <ContractsGrid
-                contracts={matches}
-                loadMore={() => {}}
-                hasMore={false}
-                onContractClick={(contract) => {
-                  addContractToGroup(contract)
-                }}
-                overrideGridClassName={'flex grid-cols-1 flex-col gap-3 p-1'}
-                hideQuickBet={true}
-              />
-            ) : (
-              <LoadingIndicator />
-            )}
+          <div className={'overflow-y-scroll p-1'}>
+            <ContractSearch
+              hideOrderSelector={true}
+              onContractClick={addContractToCurrentGroup}
+              showCategorySelector={false}
+              overrideGridClassName={'flex grid-cols-1 flex-col gap-3 p-1'}
+              showPlaceHolder={true}
+              hideQuickBet={true}
+              additionalFilter={{ excludeContractIds: group.contractIds }}
+            />
           </div>
         </Col>
       </Modal>
       <Row className={'items-center justify-center'}>
         <button
           className={
-            'btn btn-sm btn-outline cursor-pointer gap-2 whitespace-nowrap text-sm normal-case'
+            'btn btn-md btn-outline cursor-pointer gap-2 whitespace-nowrap text-sm normal-case'
           }
           onClick={() => setOpen(true)}
         >
-          <PlusIcon className="mr-1 h-5 w-5" />
-          Add old questions to this group
+          Add an old question
         </button>
       </Row>
     </>
@@ -554,17 +563,11 @@ function JoinGroupButton(props: {
   const { group, user } = props
   function joinGroup() {
     if (user && !group.memberIds.includes(user.id)) {
-      toast.promise(
-        updateGroup(group, {
-          ...group,
-          memberIds: [...group.memberIds, user.id],
-        }),
-        {
-          loading: 'Joining group...',
-          success: 'Joined group!',
-          error: "Couldn't join group",
-        }
-      )
+      toast.promise(addUserToGroup(group, user.id), {
+        loading: 'Joining group...',
+        success: 'Joined group!',
+        error: "Couldn't join group",
+      })
     }
   }
   return (

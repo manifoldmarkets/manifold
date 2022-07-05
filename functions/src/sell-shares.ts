@@ -16,7 +16,7 @@ const bodySchema = z.object({
   outcome: z.enum(['YES', 'NO']),
 })
 
-export const sellshares = newEndpoint(['POST'], async (req, auth) => {
+export const sellshares = newEndpoint({}, async (req, auth) => {
   const { contractId, shares, outcome } = validate(bodySchema, req.body)
 
   // Run as transaction to prevent race conditions.
@@ -24,9 +24,8 @@ export const sellshares = newEndpoint(['POST'], async (req, auth) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
-    const [contractSnap, userSnap, userBets] = await Promise.all([
-      transaction.get(contractDoc),
-      transaction.get(userDoc),
+    const [[contractSnap, userSnap], userBets] = await Promise.all([
+      transaction.getAll(contractDoc, userDoc),
       getValues<Bet>(betsQ), // TODO: why is this not in the transaction??
     ])
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
@@ -47,7 +46,7 @@ export const sellshares = newEndpoint(['POST'], async (req, auth) => {
     const outcomeBets = userBets.filter((bet) => bet.outcome == outcome)
     const maxShares = sumBy(outcomeBets, (bet) => bet.shares)
 
-    if (shares > maxShares + 0.000000000001)
+    if (shares > maxShares)
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
     const { newBet, newPool, newP, fees } = getCpmmSellBetInfo(

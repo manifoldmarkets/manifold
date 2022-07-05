@@ -27,6 +27,7 @@ import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, MAX_ID_LENGTH } from '../../common/group'
+import { getPseudoProbability } from '../../common/pseudo-numeric'
 import { JSONContent } from '@tiptap/core'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
@@ -68,19 +69,31 @@ const binarySchema = z.object({
   initialProb: z.number().min(1).max(99),
 })
 
+const finite = () => z.number().gte(Number.MIN_SAFE_INTEGER).lte(Number.MAX_SAFE_INTEGER)
+
 const numericSchema = z.object({
-  min: z.number(),
-  max: z.number(),
+  min: finite(),
+  max: finite(),
+  initialValue: finite(),
+  isLogScale: z.boolean().optional(),
 })
 
-export const createmarket = newEndpoint(['POST'], async (req, auth) => {
+export const createmarket = newEndpoint({}, async (req, auth) => {
   const { question, description, tags, closeTime, outcomeType, groupId } =
     validate(bodySchema, req.body)
 
-  let min, max, initialProb
-  if (outcomeType === 'NUMERIC') {
-    ;({ min, max } = validate(numericSchema, req.body))
-    if (max - min <= 0.01) throw new APIError(400, 'Invalid range.')
+  let min, max, initialProb, isLogScale
+
+  if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
+    let initialValue
+    ;({ min, max, initialValue, isLogScale } = validate(
+      numericSchema,
+      req.body
+    ))
+    if (max - min <= 0.01 || initialValue < min || initialValue > max)
+      throw new APIError(400, 'Invalid range.')
+
+    initialProb = getPseudoProbability(initialValue, min, max, isLogScale) * 100
   }
   if (outcomeType === 'BINARY') {
     ;({ initialProb } = validate(binarySchema, req.body))
@@ -144,7 +157,8 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     tags ?? [],
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
-    max ?? 0
+    max ?? 0,
+    isLogScale ?? false
   )
 
   if (ante) await chargeUser(user.id, ante, true)
@@ -153,7 +167,7 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
 
   const providerId = user.id
 
-  if (outcomeType === 'BINARY') {
+  if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)
       .doc()

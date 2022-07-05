@@ -1,7 +1,12 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet, NumericBet } from './bet'
-import { Contract, CPMMBinaryContract, DPMContract } from './contract'
+import {
+  Contract,
+  CPMMBinaryContract,
+  DPMContract,
+  PseudoNumericContract,
+} from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
@@ -48,15 +53,19 @@ export type PayoutInfo = {
 
 export const getPayouts = (
   outcome: string | undefined,
-  resolutions: {
-    [outcome: string]: number
-  },
   contract: Contract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
+  resolutions?: {
+    [outcome: string]: number
+  },
   resolutionProbability?: number
 ): PayoutInfo => {
-  if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
+  if (
+    contract.mechanism === 'cpmm-1' &&
+    (contract.outcomeType === 'BINARY' ||
+      contract.outcomeType === 'PSEUDO_NUMERIC')
+  ) {
     return getFixedPayouts(
       outcome,
       contract,
@@ -67,16 +76,16 @@ export const getPayouts = (
   }
   return getDpmPayouts(
     outcome,
-    resolutions,
     contract,
     bets,
+    resolutions,
     resolutionProbability
   )
 }
 
 export const getFixedPayouts = (
   outcome: string | undefined,
-  contract: CPMMBinaryContract,
+  contract: CPMMBinaryContract | PseudoNumericContract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
   resolutionProbability?: number
@@ -100,11 +109,11 @@ export const getFixedPayouts = (
 
 export const getDpmPayouts = (
   outcome: string | undefined,
-  resolutions: {
-    [outcome: string]: number
-  },
   contract: DPMContract,
   bets: Bet[],
+  resolutions?: {
+    [outcome: string]: number
+  },
   resolutionProbability?: number
 ): PayoutInfo => {
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
@@ -115,8 +124,8 @@ export const getDpmPayouts = (
       return getDpmStandardPayouts(outcome, contract, openBets)
 
     case 'MKT':
-      return contract.outcomeType === 'FREE_RESPONSE'
-        ? getPayoutsMultiOutcome(resolutions, contract, openBets)
+      return contract.outcomeType === 'FREE_RESPONSE' // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        ? getPayoutsMultiOutcome(resolutions!, contract, openBets)
         : getDpmMktPayouts(contract, openBets, resolutionProbability)
     case 'CANCEL':
     case undefined:

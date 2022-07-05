@@ -22,7 +22,7 @@ export function GroupSelector(props: {
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
 
   const [query, setQuery] = useState('')
-  const memberGroups = useMemberGroups(creator)
+  const memberGroups = useMemberGroups(creator?.id)
   const filteredGroups = memberGroups
     ? query === ''
       ? memberGroups

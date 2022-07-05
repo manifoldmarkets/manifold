@@ -3,7 +3,6 @@ import Link from 'next/link'
 import {
   HomeIcon,
   MenuAlt3Icon,
-  PresentationChartLineIcon,
   SearchIcon,
   XIcon,
 } from '@heroicons/react/outline'
@@ -19,14 +18,9 @@ import NotificationsIcon from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 
-function getNavigation(username: string) {
+function getNavigation() {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    {
-      name: 'Portfolio',
-      href: `/${username}?tab=bets`,
-      icon: PresentationChartLineIcon,
-    },
     {
       name: 'Notifications',
       href: `/notifications`,
@@ -55,38 +49,40 @@ export function BottomNavBar() {
   }
 
   const navigationOptions =
-    user === null
-      ? signedOutNavigation
-      : getNavigation(user?.username || 'error')
+    user === null ? signedOutNavigation : getNavigation()
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
       {navigationOptions.map((item) => (
         <NavBarItem key={item.name} item={item} currentPage={currentPage} />
       ))}
+
+      {user && (
+        <NavBarItem
+          key={'profile'}
+          currentPage={currentPage}
+          item={{
+            name: formatMoney(user.balance),
+            trackingEventName: 'profile',
+            href: `/${user.username}?tab=bets`,
+            icon: () => (
+              <Avatar
+                className="mx-auto my-1"
+                size="xs"
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                noLink
+              />
+            ),
+          }}
+        />
+      )}
       <div
         className="w-full select-none py-1 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
         onClick={() => setSidebarOpen(true)}
       >
-        {user === null ? (
-          <>
-            <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
-            More
-          </>
-        ) : user ? (
-          <>
-            <Avatar
-              className="mx-auto my-1"
-              size="xs"
-              username={user.username}
-              avatarUrl={user.avatarUrl}
-              noLink
-            />
-            {formatMoney(user.balance)}
-          </>
-        ) : (
-          <></>
-        )}
+        <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
+        More
       </div>
 
       <MobileSidebar
@@ -99,6 +95,7 @@ export function BottomNavBar() {
 
 function NavBarItem(props: { item: Item; currentPage: string }) {
   const { item, currentPage } = props
+  const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
 
   return (
     <Link href={item.href}>
@@ -107,9 +104,9 @@ function NavBarItem(props: { item: Item; currentPage: string }) {
           'block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700',
           currentPage === item.href && 'bg-gray-200 text-indigo-700'
         )}
-        onClick={trackCallback('navbar: ' + item.name)}
+        onClick={track}
       >
-        <item.icon className="my-1 mx-auto h-6 w-6" />
+        {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
         {item.name}
       </a>
     </Link>

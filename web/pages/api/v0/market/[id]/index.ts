@@ -3,7 +3,7 @@ import { listAllBets } from 'web/lib/firebase/bets'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { FullMarket, ApiError, toFullMarket } from '../_types'
+import { FullMarket, ApiError, toFullMarket } from '../../_types'
 
 export default async function handler(
   req: NextApiRequest,

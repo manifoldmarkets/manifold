@@ -7,7 +7,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { useUser } from 'web/hooks/use-user'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api-call'
-import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
+import { FIXED_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
 import { Row } from 'web/components/layout/row'
@@ -19,7 +19,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { getGroup, updateGroup } from 'web/lib/firebase/groups'
+import { addContractToGroup, getGroup } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -30,14 +30,32 @@ import { User } from 'common/user'
 import { TextEditor } from 'web/components/editor'
 import { JSONContent } from '@tiptap/react'
 
-export default function Create() {
-  const [question, setQuestion] = useState('')
-  // get query params:
-  const router = useRouter()
-  const { groupId } = router.query as { groupId: string }
-  useTracking('view create page')
-  const creator = useUser()
+type NewQuestionParams = {
+  groupId?: string
+  q: string
+  type: string
+  description: string
+  closeTime: string
+  outcomeType: string
+  // Params for PSEUDO_NUMERIC outcomeType
+  min?: string
+  max?: string
+  isLogScale?: string
+  initValue?: string
+}
 
+export default function Create() {
+  useTracking('view create page')
+  const router = useRouter()
+  const params = router.query as NewQuestionParams
+  // TODO: Not sure why Question is pulled out as its own component;
+  // Maybe merge into newContract and then we don't need useEffect here.
+  const [question, setQuestion] = useState('')
+  useEffect(() => {
+    setQuestion(params.q ?? '')
+  }, [params.q])
+
+  const creator = useUser()
   useEffect(() => {
     if (creator === null) router.push('/')
   }, [creator, router])
@@ -67,11 +85,7 @@ export default function Create() {
             </div>
           </form>
           <Spacer h={6} />
-          <NewContract
-            question={question}
-            groupId={groupId}
-            creator={creator}
-          />
+          <NewContract question={question} params={params} creator={creator} />
         </div>
       </div>
     </Page>
@@ -82,15 +96,20 @@ export default function Create() {
 export function NewContract(props: {
   creator: User
   question: string
-  groupId?: string
+  params?: NewQuestionParams
 }) {
-  const { creator, question, groupId } = props
-  const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
+  const { creator, question, params } = props
+  const { groupId, initValue } = params ?? {}
+  const [outcomeType, setOutcomeType] = useState<outcomeType>(
+    (params?.outcomeType as outcomeType) ?? 'BINARY'
+  )
   const [initialProb] = useState(50)
-  const [minString, setMinString] = useState('')
-  const [maxString, setMaxString] = useState('')
-  // const [tagText, setTagText] = useState<string>(tag ?? '')
-  // const tags = parseWordsAsTags(tagText)
+
+  const [minString, setMinString] = useState(params?.min ?? '')
+  const [maxString, setMaxString] = useState(params?.max ?? '')
+  const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
+  const [initialValueString, setInitialValueString] = useState(initValue)
+
   useEffect(() => {
     if (groupId && creator)
       getGroup(groupId).then((group) => {
@@ -102,18 +121,17 @@ export function NewContract(props: {
   }, [creator, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
-  // useEffect(() => {
-  //   if (ante === null && creator) {
-  //     const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
-  //     setAnte(initialAnte)
-  //   }
-  // }, [ante, creator])
-
-  // const [anteError, setAnteError] = useState<string | undefined>()
+  // If params.closeTime is set, extract out the specified date and time
   // By default, close the market a week from today
   const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
-  const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
-  const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
+  const timeInMs = Number(params?.closeTime ?? 0)
+  const initDate = timeInMs
+    ? dayjs(timeInMs).format('YYYY-MM-DD')
+    : weekFromToday
+  const initTime = timeInMs ? dayjs(timeInMs).format('HH:mm') : '23:59'
+  const [closeDate, setCloseDate] = useState<undefined | string>(initDate)
+  const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>(initTime)
+
   const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(
@@ -130,6 +148,18 @@ export function NewContract(props: {
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
+  const initialValue = initialValueString
+    ? parseFloat(initialValueString)
+    : undefined
+
+  const adjustIsLog = () => {
+    if (min === undefined || max === undefined) return
+    const lengthDiff = Math.log10(max - min)
+    if (lengthDiff > 2) {
+      setIsLogScale(true)
+    }
+  }
+
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
@@ -140,18 +170,20 @@ export function NewContract(props: {
     question.length > 0 &&
     ante !== undefined &&
     ante !== null &&
-    ante >= MINIMUM_ANTE &&
     ante <= balance &&
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now() &&
-    (outcomeType !== 'NUMERIC' ||
+    (outcomeType !== 'PSEUDO_NUMERIC' ||
       (min !== undefined &&
         max !== undefined &&
+        initialValue !== undefined &&
         isFinite(min) &&
         isFinite(max) &&
         min < max &&
-        max - min > 0.01))
+        max - min > 0.01 &&
+        min < initialValue &&
+        initialValue < max))
 
   function setCloseDateInDays(days: number) {
     const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
@@ -177,6 +209,8 @@ export function NewContract(props: {
           closeTime,
           min,
           max,
+          initialValue,
+          isLogScale: (min ?? 0) < 0 ? false : isLogScale,
           groupId: selectedGroup?.id,
           tags: category ? [category] : undefined,
         })
@@ -188,9 +222,7 @@ export function NewContract(props: {
         isFree: false,
       })
       if (result && selectedGroup) {
-        await updateGroup(selectedGroup, {
-          contractIds: [...selectedGroup.contractIds, result.id],
-        })
+        await addContractToGroup(selectedGroup, result.id)
       }
 
       await router.push(contractPath(result as Contract))
@@ -224,6 +256,7 @@ export function NewContract(props: {
         choicesMap={{
           'Yes / No': 'BINARY',
           'Free response': 'FREE_RESPONSE',
+          Numeric: 'PSEUDO_NUMERIC',
         }}
         isSubmitting={isSubmitting}
         className={'col-span-4'}
@@ -236,38 +269,89 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      {outcomeType === 'NUMERIC' && (
-        <div className="form-control items-start">
-          <label className="label gap-2">
-            <span className="mb-1">Range</span>
-            <InfoTooltip text="The minimum and maximum numbers across the numeric range." />
-          </label>
+      {outcomeType === 'PSEUDO_NUMERIC' && (
+        <>
+          <div className="form-control mb-2 items-start">
+            <label className="label gap-2">
+              <span className="mb-1">Range</span>
+              <InfoTooltip text="The minimum and maximum numbers across the numeric range." />
+            </label>
 
-          <Row className="gap-2">
-            <input
-              type="number"
-              className="input input-bordered"
-              placeholder="MIN"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setMinString(e.target.value)}
-              min={Number.MIN_SAFE_INTEGER}
-              max={Number.MAX_SAFE_INTEGER}
-              disabled={isSubmitting}
-              value={minString ?? ''}
-            />
-            <input
-              type="number"
-              className="input input-bordered"
-              placeholder="MAX"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setMaxString(e.target.value)}
-              min={Number.MIN_SAFE_INTEGER}
-              max={Number.MAX_SAFE_INTEGER}
-              disabled={isSubmitting}
-              value={maxString}
-            />
-          </Row>
-        </div>
+            <Row className="gap-2">
+              <input
+                type="number"
+                className="input input-bordered"
+                placeholder="MIN"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setMinString(e.target.value)}
+                onBlur={adjustIsLog}
+                min={Number.MIN_SAFE_INTEGER}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={minString ?? ''}
+              />
+              <input
+                type="number"
+                className="input input-bordered"
+                placeholder="MAX"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setMaxString(e.target.value)}
+                onBlur={adjustIsLog}
+                min={Number.MIN_SAFE_INTEGER}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={maxString}
+              />
+            </Row>
+
+            {!(min !== undefined && min < 0) && (
+              <Row className="mt-1 ml-2 mb-2 items-center">
+                <span className="mr-2 text-sm">Log scale</span>{' '}
+                <input
+                  type="checkbox"
+                  checked={isLogScale}
+                  onChange={() => setIsLogScale(!isLogScale)}
+                  disabled={isSubmitting}
+                />
+              </Row>
+            )}
+
+            {min !== undefined && max !== undefined && min >= max && (
+              <div className="mt-2 mb-2 text-sm text-red-500">
+                The maximum value must be greater than the minimum.
+              </div>
+            )}
+          </div>
+          <div className="form-control mb-2 items-start">
+            <label className="label gap-2">
+              <span className="mb-1">Initial value</span>
+              <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
+            </label>
+
+            <Row className="gap-2">
+              <input
+                type="number"
+                className="input input-bordered"
+                placeholder="Initial value"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setInitialValueString(e.target.value)}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={initialValueString ?? ''}
+              />
+            </Row>
+
+            {initialValue !== undefined &&
+              min !== undefined &&
+              max !== undefined &&
+              min < max &&
+              (initialValue <= min || initialValue >= max) && (
+                <div className="mt-2 mb-2 text-sm text-red-500">
+                  Initial value must be in between {min} and {max}.{' '}
+                </div>
+              )}
+          </div>
+        </>
       )}
 
       <div className="form-control max-w-[265px] items-start">

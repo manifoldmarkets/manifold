@@ -3,9 +3,10 @@ import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 
 export type AnyMechanism = DPM | CPMM
-export type AnyOutcomeType = Binary | FreeResponse | Numeric
+export type AnyOutcomeType = Binary | PseudoNumeric | FreeResponse | Numeric
 export type AnyContractType =
   | (CPMM & Binary)
+  | (CPMM & PseudoNumeric)
   | (DPM & Binary)
   | (DPM & FreeResponse)
   | (DPM & Numeric)
@@ -45,7 +46,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   collectedFees: Fees
 } & T
 
-export type BinaryContract = Contract & Binary
+export type BinaryContract = Contract & Binary 
+export type PseudoNumericContract = Contract & PseudoNumeric 
 export type NumericContract = Contract & Numeric
 export type FreeResponseContract = Contract & FreeResponse
 export type DPMContract = Contract & DPM
@@ -76,6 +78,18 @@ export type Binary = {
   resolution?: resolution
 }
 
+export type PseudoNumeric = {
+  outcomeType: 'PSEUDO_NUMERIC'
+  min: number
+  max: number
+  isLogScale: boolean
+  resolutionValue?: number
+
+  // same as binary market; map everything to probability
+  initialProbability: number
+  resolutionProbability?: number
+}
+
 export type FreeResponse = {
   outcomeType: 'FREE_RESPONSE'
   answers: Answer[] // Used for outcomeType 'FREE_RESPONSE'.
@@ -95,7 +109,7 @@ export type Numeric = {
 export type outcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
-export const OUTCOME_TYPES = ['BINARY', 'FREE_RESPONSE', 'NUMERIC'] as const
+export const OUTCOME_TYPES = ['BINARY', 'FREE_RESPONSE', 'PSEUDO_NUMERIC', 'NUMERIC'] as const
 
 export const MAX_QUESTION_LENGTH = 480
 export const MAX_DESCRIPTION_LENGTH = 10000

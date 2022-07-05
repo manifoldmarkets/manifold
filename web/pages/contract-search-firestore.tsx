@@ -9,6 +9,8 @@ import {
   useInitialQueryAndSort,
 } from 'web/hooks/use-sort-and-query-params'
 
+const MAX_CONTRACTS_RENDERED = 100
+
 export default function ContractSearchFirestore(props: {
   querySortOptions?: {
     defaultSort: Sort
@@ -78,6 +80,8 @@ export default function ContractSearchFirestore(props: {
       )
     }
   }
+
+  matches = matches.slice(0, MAX_CONTRACTS_RENDERED)
 
   const showTime = ['close-date', 'closed'].includes(sort)
     ? 'close-date'

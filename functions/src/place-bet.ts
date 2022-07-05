@@ -33,7 +33,7 @@ const numericSchema = z.object({
   value: z.number(),
 })
 
-export const placebet = newEndpoint(['POST'], async (req, auth) => {
+export const placebet = newEndpoint({}, async (req, auth) => {
   log('Inside endpoint handler.')
   const { amount, contractId } = validate(bodySchema, req.body)
 
@@ -41,10 +41,7 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
     log('Inside main transaction.')
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
-    const [contractSnap, userSnap] = await Promise.all([
-      trans.get(contractDoc),
-      trans.get(userDoc),
-    ])
+    const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
     log('Loaded user and contract snapshots.')
@@ -70,7 +67,10 @@ export const placebet = newEndpoint(['POST'], async (req, auth) => {
       if (outcomeType == 'BINARY' && mechanism == 'dpm-2') {
         const { outcome } = validate(binarySchema, req.body)
         return getNewBinaryDpmBetInfo(outcome, amount, contract, loanAmount)
-      } else if (outcomeType == 'BINARY' && mechanism == 'cpmm-1') {
+      } else if (
+        (outcomeType == 'BINARY' || outcomeType == 'PSEUDO_NUMERIC') &&
+        mechanism == 'cpmm-1'
+      ) {
         const { outcome } = validate(binarySchema, req.body)
         return getNewBinaryCpmmBetInfo(outcome, amount, contract, loanAmount)
       } else if (outcomeType == 'FREE_RESPONSE' && mechanism == 'dpm-2') {

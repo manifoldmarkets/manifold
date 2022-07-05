@@ -1,7 +1,7 @@
 module.exports = {
   plugins: ['lodash'],
   extends: ['eslint:recommended'],
-  ignorePatterns: ['lib'],
+  ignorePatterns: ['dist', 'lib'],
   env: {
     node: true,
   },
@@ -30,6 +30,7 @@ module.exports = {
     },
   ],
   rules: {
+    'linebreak-style': ['error', 'unix'],
     'lodash/import-scope': [2, 'member'],
   },
 }

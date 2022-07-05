@@ -36,6 +36,9 @@ import { FollowersButton, FollowingButton } from './following-button'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
 import { PortfolioMetrics } from 'common/user'
+import { ReferralsButton } from 'web/components/referrals-button'
+import { GroupsButton } from 'web/components/groups/groups-button'
+import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 
 export function UserLink(props: {
   name: string
@@ -73,7 +76,9 @@ export function UserPage(props: {
     'loading'
   )
   const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
-  const [, setUsersPortfolioHistory] = useState<PortfolioMetrics[]>([])
+  const [portfolioHistory, setUsersPortfolioHistory] = useState<
+    PortfolioMetrics[]
+  >([])
   const [commentsByContract, setCommentsByContract] = useState<
     Map<Contract, Comment[]> | 'loading'
   >('loading')
@@ -154,7 +159,7 @@ export function UserPage(props: {
           <Avatar
             username={user.username}
             avatarUrl={user.avatarUrl}
-            size={20}
+            size={24}
             className="bg-white ring-4 ring-white"
           />
         </div>
@@ -193,10 +198,12 @@ export function UserPage(props: {
           </>
         )}
 
-        <Col className="gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <Col className="flex-wrap gap-2 sm:flex-row sm:items-center sm:gap-4">
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
+            <ReferralsButton user={user} currentUser={currentUser} />
+            <GroupsButton user={user} />
           </Row>
 
           {user.website && (
@@ -254,7 +261,7 @@ export function UserPage(props: {
 
         {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
           <Tabs
-            className={'pb-2 pt-1 '}
+            labelClassName={'pb-2 pt-1 '}
             defaultIndex={
               defaultTabTitle ? TAB_IDS.indexOf(defaultTabTitle) : 0
             }
@@ -293,9 +300,9 @@ export function UserPage(props: {
                 title: 'Bets',
                 content: (
                   <div>
-                    {
-                      // TODO: add portfolio-value-section here
-                    }
+                    <PortfolioValueSection
+                      portfolioHistory={portfolioHistory}
+                    />
                     <BetsList
                       user={user}
                       hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}

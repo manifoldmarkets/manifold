@@ -17,7 +17,7 @@ import { removeUndefinedProps } from '../../common/util/object'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
-  [userId: string]: { reason: notification_reason_types }
+  [userId: string]: { reason: notification_reason_types; isSeeOnHref?: string }
 }
 
 export const createNotification = async (
@@ -68,9 +68,11 @@ export const createNotification = async (
           sourceContractCreatorUsername: sourceContract?.creatorUsername,
           // TODO: move away from sourceContractTitle to sourceTitle
           sourceContractTitle: sourceContract?.question,
+          // TODO: move away from sourceContractSlug to sourceSlug
           sourceContractSlug: sourceContract?.slug,
           sourceSlug: sourceSlug ? sourceSlug : sourceContract?.slug,
           sourceTitle: sourceTitle ? sourceTitle : sourceContract?.question,
+          isSeenOnHref: userToReasonTexts[userId].isSeeOnHref,
         }
         await notificationRef.set(removeUndefinedProps(notification))
       })
@@ -252,44 +254,90 @@ export const createNotification = async (
       }
   }
 
+  const notifyUserReceivedReferralBonus = async (
+    userToReasonTexts: user_to_reason_texts,
+    relatedUserId: string
+  ) => {
+    if (shouldGetNotification(relatedUserId, userToReasonTexts))
+      userToReasonTexts[relatedUserId] = {
+        // If the referrer is the market creator, just tell them they joined to bet on their market
+        reason:
+          sourceContract?.creatorId === relatedUserId
+            ? 'user_joined_to_bet_on_your_market'
+            : 'you_referred_user',
+      }
+  }
+
+  const notifyContractCreatorOfUniqueBettorsBonus = async (
+    userToReasonTexts: user_to_reason_texts,
+    userId: string
+  ) => {
+    userToReasonTexts[userId] = {
+      reason: 'unique_bettors_on_your_contract',
+    }
+  }
+
+  const notifyOtherGroupMembersOfComment = async (
+    userToReasonTexts: user_to_reason_texts,
+    userId: string
+  ) => {
+    if (shouldGetNotification(userId, userToReasonTexts))
+      userToReasonTexts[userId] = {
+        reason: 'on_group_you_are_member_of',
+        isSeeOnHref: sourceSlug,
+      }
+  }
+
   const getUsersToNotify = async () => {
     const userToReasonTexts: user_to_reason_texts = {}
     // The following functions modify the userToReasonTexts object in place.
-    if (sourceContract) {
-      if (
-        sourceType === 'comment' ||
-        sourceType === 'answer' ||
-        (sourceType === 'contract' &&
-          (sourceUpdateType === 'updated' || sourceUpdateType === 'resolved'))
-      ) {
-        if (sourceType === 'comment') {
-          if (relatedUserId && relatedSourceType)
-            await notifyRepliedUsers(
-              userToReasonTexts,
-              relatedUserId,
-              relatedSourceType
-            )
-          if (sourceText) await notifyTaggedUsers(userToReasonTexts, sourceText)
-        }
-        await notifyContractCreator(userToReasonTexts, sourceContract)
-        await notifyOtherAnswerersOnContract(userToReasonTexts, sourceContract)
-        await notifyLiquidityProviders(userToReasonTexts, sourceContract)
-        await notifyBettorsOnContract(userToReasonTexts, sourceContract)
-        await notifyOtherCommentersOnContract(userToReasonTexts, sourceContract)
-      } else if (sourceType === 'contract' && sourceUpdateType === 'created') {
-        await notifyUsersFollowers(userToReasonTexts)
-      } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
-        await notifyContractCreator(userToReasonTexts, sourceContract, {
-          force: true,
-        })
-      } else if (sourceType === 'liquidity' && sourceUpdateType === 'created') {
-        await notifyContractCreator(userToReasonTexts, sourceContract)
-      }
-    } else if (sourceType === 'follow' && relatedUserId) {
+    if (sourceType === 'follow' && relatedUserId) {
       await notifyFollowedUser(userToReasonTexts, relatedUserId)
     } else if (sourceType === 'group' && relatedUserId) {
       if (sourceUpdateType === 'created')
         await notifyUserAddedToGroup(userToReasonTexts, relatedUserId)
+    } else if (sourceType === 'user' && relatedUserId) {
+      await notifyUserReceivedReferralBonus(userToReasonTexts, relatedUserId)
+    } else if (sourceType === 'comment' && !sourceContract && relatedUserId) {
+      await notifyOtherGroupMembersOfComment(userToReasonTexts, relatedUserId)
+    }
+
+    // The following functions need sourceContract to be defined.
+    if (!sourceContract) return userToReasonTexts
+    if (
+      sourceType === 'comment' ||
+      sourceType === 'answer' ||
+      (sourceType === 'contract' &&
+        (sourceUpdateType === 'updated' || sourceUpdateType === 'resolved'))
+    ) {
+      if (sourceType === 'comment') {
+        if (relatedUserId && relatedSourceType)
+          await notifyRepliedUsers(
+            userToReasonTexts,
+            relatedUserId,
+            relatedSourceType
+          )
+        if (sourceText) await notifyTaggedUsers(userToReasonTexts, sourceText)
+      }
+      await notifyContractCreator(userToReasonTexts, sourceContract)
+      await notifyOtherAnswerersOnContract(userToReasonTexts, sourceContract)
+      await notifyLiquidityProviders(userToReasonTexts, sourceContract)
+      await notifyBettorsOnContract(userToReasonTexts, sourceContract)
+      await notifyOtherCommentersOnContract(userToReasonTexts, sourceContract)
+    } else if (sourceType === 'contract' && sourceUpdateType === 'created') {
+      await notifyUsersFollowers(userToReasonTexts)
+    } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
+      await notifyContractCreator(userToReasonTexts, sourceContract, {
+        force: true,
+      })
+    } else if (sourceType === 'liquidity' && sourceUpdateType === 'created') {
+      await notifyContractCreator(userToReasonTexts, sourceContract)
+    } else if (sourceType === 'bonus' && sourceUpdateType === 'created') {
+      // Note: the daily bonus won't have a contract attached to it
+      await notifyContractCreatorOfUniqueBettorsBonus(
+        userToReasonTexts,
+        sourceContract.creatorId
+      )
     }
     return userToReasonTexts
   }

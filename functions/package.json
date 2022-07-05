@@ -5,14 +5,14 @@
     "firestore": "dev-mantic-markets.appspot.com"
   },
   "scripts": {
-    "build": "yarn compile && rm -rf dist && mkdir -p dist/functions && cp -R ../common/lib dist/common && cp -R lib/src dist/functions/src && cp ../yarn.lock dist && cp package.json dist",
+    "build": "yarn compile && rm -rf dist && mkdir -p dist/functions && cp -R ../common/lib dist/common && cp -R lib/src dist/functions/src && cp ../yarn.lock dist && cp package.json dist && cp .env dist",
     "compile": "tsc -b",
     "watch": "tsc -w",
     "shell": "yarn build && firebase functions:shell",
     "start": "yarn shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "serve": "yarn build && firebase emulators:start --only functions,firestore --import=./firestore_export",
+    "serve": "firebase use dev && yarn build && firebase emulators:start --only functions,firestore --import=./firestore_export",
     "db:update-local-from-remote": "yarn db:backup-remote && gsutil rsync -r gs://$npm_package_config_firestore/firestore_export ./firestore_export",
     "db:backup-local": "firebase emulators:export --force ./firestore_export",
     "db:rename-remote-backup-folder": "gsutil mv gs://$npm_package_config_firestore/firestore_export gs://$npm_package_config_firestore/firestore_export_$(date +%d-%m-%Y-%H-%M)",
@@ -23,9 +23,9 @@
   "main": "functions/src/index.js",
   "dependencies": {
     "@amplitude/node": "1.10.0",
+    "@google-cloud/functions-framework": "3.1.2",
     "@tiptap/core": "^2.0.0-beta.181",
     "@tiptap/starter-kit": "^2.0.0-beta.190",
-    "fetch": "1.1.0",
     "firebase-admin": "10.0.0",
     "firebase-functions": "3.21.2",
     "lodash": "4.17.21",
