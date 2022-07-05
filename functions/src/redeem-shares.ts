@@ -21,6 +21,9 @@ export const redeemShares = async (userId: string, contractId: string) => {
     const betsSnap = await trans.get(betsColl.where('userId', '==', userId))
     const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
     const { shares, loanPayment, netAmount } = getRedeemableAmount(bets)
+    if (netAmount === 0) {
+      return { status: 'success' }
+    }
     const [yesBet, noBet] = getRedemptionBets(shares, loanPayment, contract)
 
     const userDoc = firestore.doc(`users/${userId}`)
