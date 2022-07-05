@@ -1,4 +1,4 @@
-import { EnvConfig, PROD_CONFIG } from './prod'
+import { EnvConfig } from './prod'
 
 export const ATLAS2_CONFIG: EnvConfig = {
   domain: 'atlas2.manifold.markets',
@@ -14,7 +14,12 @@ export const ATLAS2_CONFIG: EnvConfig = {
   cloudRunId: 'bdiirjgiyq',
   cloudRunRegion: 'uc',
 
-  adminEmails: [...PROD_CONFIG.adminEmails],
+  adminEmails: [
+    'akrolsmir@gmail.com',
+    'ricki.heicklen@gmail.com',
+    'ross@ftx.org',
+    'gpimpale29@gmail.com',
+  ],
   whitelistEmail: '',
   moneyMoniker: '📎',
   fixedAnte: 25,
