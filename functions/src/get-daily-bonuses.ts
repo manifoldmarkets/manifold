@@ -13,31 +13,38 @@ import { Contract } from '../../common/lib/contract'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from '../../common/numeric-constants'
 
 const BONUS_START_DATE = new Date('2022-07-01T00:00:00.000Z').getTime()
+const QUERY_LIMIT_SECONDS = 60
 
 export const getdailybonuses = newEndpoint({}, async (req, auth) => {
-  log('Inside endpoint handler.')
-  const { user, fromUser, lastReceivedBonusTime } =
-    await firestore.runTransaction(async (trans) => {
-      const userSnap = await firestore.doc(`private-users/${auth.uid}`).get()
+  const { user, lastTimeCheckedBonuses } = await firestore.runTransaction(
+    async (trans) => {
+      const userSnap = await trans.get(
+        firestore.doc(`private-users/${auth.uid}`)
+      )
       if (!userSnap.exists) throw new APIError(400, 'User not found.')
       const user = userSnap.data() as PrivateUser
-      // TODO: switch to prod id
-      const fromUserId = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // dev manifold account
-      //const fromUserId = HOUSE_LIQUIDITY_PROVIDER_ID, // prod manifold account
-      const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
-      if (!userSnap.exists) throw new APIError(400, 'From user not found.')
-      const fromUser = fromSnap.data() as User
-      const lastReceivedBonusTime = user.lastTimeReceivedBonuses ?? 0
-      if (Date.now() - lastReceivedBonusTime < 5 * 1000)
-        throw new APIError(400, 'Limited to one query per user per 5 seconds.')
-
-      await trans.update(firestore.doc(`private-users/${user.id}`), {
-        lastTimeReceivedBonuses: Date.now(),
+      const lastTimeCheckedBonuses = user.lastTimeCheckedBonuses ?? 0
+      if (Date.now() - lastTimeCheckedBonuses < QUERY_LIMIT_SECONDS * 1000)
+        throw new APIError(
+          400,
+          `Limited to one query per user per ${QUERY_LIMIT_SECONDS} seconds.`
+        )
+      await trans.update(userSnap.ref, {
+        lastTimeCheckedBonuses: Date.now(),
       })
-      return { user, fromUser, lastReceivedBonusTime }
-    })
-
-  // get all users contracts made since implementation time
+      return {
+        user,
+        lastTimeCheckedBonuses,
+      }
+    }
+  )
+  // TODO: switch to prod id
+  // const fromUserId = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // dev manifold account
+  const fromUserId = HOUSE_LIQUIDITY_PROVIDER_ID // prod manifold account
+  const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
+  if (!fromSnap.exists) throw new APIError(400, 'From user not found.')
+  const fromUser = fromSnap.data() as User
+  // Get all users contracts made since implementation time
   const userContractsSnap = await firestore
     .collection(`contracts`)
     .where('creatorId', '==', user.id)
@@ -50,8 +57,7 @@ export const getdailybonuses = newEndpoint({}, async (req, auth) => {
   for (const contract of userContracts) {
     const result = await firestore.runTransaction(async (trans) => {
       const contractId = contract.id
-      // log(`Checking contract ${contractId}`)
-      // get all bets made on user's contracts
+      // Get all bets made on user's contracts
       const bets = (
         await firestore
           .collection(`contracts/${contractId}/bets`)
@@ -63,21 +69,21 @@ export const getdailybonuses = newEndpoint({}, async (req, auth) => {
       }
       const contractBetsSnap = await trans.getAll(...bets)
       const contractBets = contractBetsSnap.map((doc) => doc.data() as Bet)
-      // log(`Got ${contractBets.length} bets`)
 
       const uniqueBettorIdsBeforeLastResetTime = uniq(
         contractBets
-          .filter((bet) => bet.createdTime < lastReceivedBonusTime)
+          .filter((bet) => bet.createdTime < lastTimeCheckedBonuses)
           .map((bet) => bet.userId)
       )
 
-      // filter users for ONLY those that have made bets since the last daily bonus received time
+      // Filter users for ONLY those that have made bets since the last daily bonus received time
       const uniqueBettorIdsWithBetsAfterLastResetTime = uniq(
         contractBets
-          .filter((bet) => bet.createdTime > lastReceivedBonusTime)
+          .filter((bet) => bet.createdTime > lastTimeCheckedBonuses)
           .map((bet) => bet.userId)
       )
-      // filter for users only present in the above list
+
+      // Filter for users only present in the above list
       const newUniqueBettorIds =
         uniqueBettorIdsWithBetsAfterLastResetTime.filter(
           (userId) => !uniqueBettorIdsBeforeLastResetTime.includes(userId)
@@ -87,10 +93,9 @@ export const getdailybonuses = newEndpoint({}, async (req, auth) => {
           `Got ${newUniqueBettorIds.length} new unique bettors since last bonus`
         )
       if (newUniqueBettorIds.length === 0) {
-        // log(`No new unique bettors for contract ${contractId}`)
         return nullReturn
       }
-      // create txn for each unique user
+      // Create combined txn for all unique bettors
       const bonusTxnDetails = {
         contractId: contractId,
         uniqueBettors: newUniqueBettorIds.length,
@@ -122,7 +127,7 @@ export const getdailybonuses = newEndpoint({}, async (req, auth) => {
         result.txn.amount + '',
         contract,
         undefined,
-        // No need to set the user id, they're the contract creator id
+        // No need to set the user id, we'll use the contract creator id
         undefined,
         contract.slug,
         contract.question

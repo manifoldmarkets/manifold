@@ -42,6 +42,9 @@ export function groupNotifications(notifications: Notification[]) {
     const bonusNotifications = notificationsGroupedByDay.filter(
       (notification) => notification.sourceType === 'bonus'
     )
+    const normalNotificationsGroupedByDay = notificationsGroupedByDay.filter(
+      (notification) => notification.sourceType !== 'bonus'
+    )
     if (bonusNotifications.length > 0) {
       notificationGroups = notificationGroups.concat({
         notifications: bonusNotifications,
@@ -53,9 +56,7 @@ export function groupNotifications(notifications: Notification[]) {
     }
     // Group notifications by contract, filtering out bonuses:
     const groupedNotificationsByContractId = groupBy(
-      notificationsGroupedByDay.filter(
-        (notification) => notification.sourceType !== 'bonus'
-      ),
+      normalNotificationsGroupedByDay,
       (notification) => {
         return notification.sourceContractId
       }

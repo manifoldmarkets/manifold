@@ -198,7 +198,7 @@ export default function Sidebar(props: { className?: string }) {
   useEffect(() => {
     if (!privateUser) return
 
-    if (Date.now() - (privateUser.lastTimeReceivedBonuses ?? 0) > 1000)
+    if (Date.now() - (privateUser.lastTimeCheckedBonuses ?? 0) > 30 * 1000)
       requestBonuses({}).catch((error) => {
         console.log("couldn't get bonuses:", error.message)
       })

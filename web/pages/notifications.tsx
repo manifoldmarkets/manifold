@@ -37,7 +37,7 @@ import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
 import { groupBy } from 'lodash'
 
 export const NOTIFICATIONS_PER_PAGE = 30
-export const HIGHLIGHT_DURATION = 20000
+export const HIGHLIGHT_DURATION = 30 * 1000
 
 export default function Notifications() {
   const user = useUser()
@@ -100,46 +100,52 @@ export default function Notifications() {
                       />
                     )
                   )}
-                  <nav
-                    className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
-                    aria-label="Pagination"
-                  >
-                    <div className="hidden sm:block">
-                      <p className="text-sm text-gray-700">
-                        Showing{' '}
-                        <span className="font-medium">
-                          {page === 1
-                            ? page
-                            : (page - 1) * NOTIFICATIONS_PER_PAGE}
-                        </span>{' '}
-                        to{' '}
-                        <span className="font-medium">
-                          {page * NOTIFICATIONS_PER_PAGE}
-                        </span>{' '}
-                        of{' '}
-                        <span className="font-medium">
-                          {groupedNotifications.length}
-                        </span>{' '}
-                        results
-                      </p>
-                    </div>
-                    <div className="flex flex-1 justify-between sm:justify-end">
-                      <a
-                        href="#"
-                        className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        onClick={() => page > 1 && setPage(page - 1)}
-                      >
-                        Previous
-                      </a>
-                      <a
-                        href="#"
-                        className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        onClick={() => setPage(page + 1)}
-                      >
-                        Next
-                      </a>
-                    </div>
-                  </nav>
+                  {groupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
+                    <nav
+                      className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
+                      aria-label="Pagination"
+                    >
+                      <div className="hidden sm:block">
+                        <p className="text-sm text-gray-700">
+                          Showing{' '}
+                          <span className="font-medium">
+                            {page === 1
+                              ? page
+                              : (page - 1) * NOTIFICATIONS_PER_PAGE}
+                          </span>{' '}
+                          to{' '}
+                          <span className="font-medium">
+                            {page * NOTIFICATIONS_PER_PAGE}
+                          </span>{' '}
+                          of{' '}
+                          <span className="font-medium">
+                            {groupedNotifications.length}
+                          </span>{' '}
+                          results
+                        </p>
+                      </div>
+                      <div className="flex flex-1 justify-between sm:justify-end">
+                        <a
+                          href="#"
+                          className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                          onClick={() => page > 1 && setPage(page - 1)}
+                        >
+                          Previous
+                        </a>
+                        <a
+                          href="#"
+                          className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                          onClick={() =>
+                            page <
+                              groupedNotifications?.length /
+                                NOTIFICATIONS_PER_PAGE && setPage(page + 1)
+                          }
+                        >
+                          Next
+                        </a>
+                      </div>
+                    </nav>
+                  )}
                 </div>
               ) : (
                 <LoadingIndicator />
@@ -268,7 +274,7 @@ function IncomeNotificationGroupItem(props: {
             className={'line-clamp-1 cursor-pointer pl-1  sm:pl-0'}
           >
             <span>
-              {'Income Summary: '}
+              {'Daily Income Summary: '}
               <span className={'text-primary'}>{formatMoney(totalIncome)}</span>
             </span>
           </div>

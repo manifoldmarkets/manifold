@@ -58,4 +58,3 @@ export type notification_reason_types =
   | 'you_referred_user'
   | 'user_joined_to_bet_on_your_market'
   | 'unique_bettors_on_your_contract'
-  | 'daily_bonus'
