@@ -45,7 +45,7 @@ import { ProbabilityInput } from './probability-input'
 import { track } from 'web/lib/service/analytics'
 import { removeUndefinedProps } from 'common/util/object'
 import { useUnfilledBets } from 'web/hooks/use-bets'
-import { OpenBets } from './open-bets'
+import { LimitBets } from './limit-bets'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -101,7 +101,7 @@ export function BetPanel(props: {
         <SignUpPrompt />
       </Col>
       {yourUnfilledBets.length > 0 && (
-        <OpenBets className="mt-4" bets={yourUnfilledBets} />
+        <LimitBets className="mt-4" bets={yourUnfilledBets} />
       )}
     </Col>
   )
@@ -320,11 +320,13 @@ function BuyPanel(props: {
     betChoice ?? 'YES'
   )
 
+  const limitProbFrac = (limitProb ?? 0) / 100
+
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
     betChoice ?? 'YES',
     betAmount ?? 0,
     contract,
-    isLimitOrder ? limitProb : undefined,
+    isLimitOrder ? limitProbFrac : undefined,
     unfilledBets as LimitBet[]
   )
 
@@ -339,14 +341,26 @@ function BuyPanel(props: {
 
   const resultProb = getCpmmProbability(newPool, newP)
   const matchedAmount = sumBy(newBet.fills, (fill) => fill.amount)
+  const filledShares = sumBy(newBet.fills, (fill) => fill.shares)
+  const overallShares =
+    filledShares +
+    ((betAmount ?? 0) - matchedAmount) /
+      (betChoice === 'YES' ? limitProbFrac : 1 - limitProbFrac)
 
-  const currentPayout = matchedAmount
-    ? calculatePayoutAfterCorrectBet(contract, {
-        outcome: betChoice,
-        amount: matchedAmount,
-        shares: newBet.shares,
-      } as Bet)
-    : 0
+  console.log(
+    'overallShares',
+    overallShares,
+    'filledShares',
+    filledShares,
+    'amount',
+    betAmount,
+    'matchedAmount',
+    matchedAmount,
+    'limitProb',
+    limitProb
+  )
+
+  const currentPayout = overallShares
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
@@ -381,7 +395,7 @@ function BuyPanel(props: {
       {isLimitOrder && (
         <>
           <div className="my-3 text-left text-sm text-gray-500">
-            {betChoice === 'YES' ? 'Max' : 'Min'} probability
+            {betChoice === 'NO' ? 'Min' : 'Max'} probability
           </div>
           <ProbabilityInput
             inputClassName="w-full max-w-none"

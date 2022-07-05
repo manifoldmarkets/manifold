@@ -45,7 +45,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useRouter } from 'next/router'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import { OpenBets } from 'web/components/open-bets'
+import { LimitBets } from 'web/components/limit-bets'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -222,7 +222,7 @@ export function ContractPageContent(
         <ContractOverview contract={contract} bets={bets} />
 
         {yourUnfilledBets.length > 0 && (
-          <OpenBets className="mb-4 xl:hidden" bets={yourUnfilledBets} />
+          <LimitBets className="mb-4 xl:hidden" bets={yourUnfilledBets} />
         )}
 
         {isNumeric && (

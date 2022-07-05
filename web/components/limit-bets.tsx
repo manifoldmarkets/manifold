@@ -8,13 +8,13 @@ import { Col } from './layout/col'
 import { LoadingIndicator } from './loading-indicator'
 import { BinaryOutcomeLabel } from './outcome-label'
 
-export function OpenBets(props: { bets: LimitBet[]; className?: string }) {
+export function LimitBets(props: { bets: LimitBet[]; className?: string }) {
   const { bets, className } = props
   const recentBets = sortBy(bets, (bet) => bet.createdTime).reverse()
 
   return (
     <Col className={clsx(className, 'gap-2 rounded bg-white')}>
-      <div className="px-6 py-3 text-xl">Open bets</div>
+      <div className="px-6 py-3 text-xl">Limit bets</div>
       <table className="table-compact table w-full rounded text-gray-500">
         <tbody>
           {recentBets.map((bet) => (
