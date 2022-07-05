@@ -22,6 +22,8 @@ export type Notification = {
 
   sourceSlug?: string
   sourceTitle?: string
+
+  isSeenOnHref?: string
 }
 export type notification_source_types =
   | 'contract'
@@ -34,6 +36,7 @@ export type notification_source_types =
   | 'admin_message'
   | 'group'
   | 'user'
+  | 'bonus'
 
 export type notification_source_update_types =
   | 'created'
@@ -56,3 +59,5 @@ export type notification_reason_types =
   | 'added_you_to_group'
   | 'you_referred_user'
   | 'user_joined_to_bet_on_your_market'
+  | 'unique_bettors_on_your_contract'
+  | 'on_group_you_are_member_of'

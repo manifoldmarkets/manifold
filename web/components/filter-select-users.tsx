@@ -35,7 +35,8 @@ export function FilterSelectUsers(props: {
           return (
             !selectedUsers.map((user) => user.name).includes(user.name) &&
             !ignoreUserIds.includes(user.id) &&
-            user.name.toLowerCase().includes(query.toLowerCase())
+            (user.name.toLowerCase().includes(query.toLowerCase()) ||
+              user.username.toLowerCase().includes(query.toLowerCase()))
           )
         })
       )
