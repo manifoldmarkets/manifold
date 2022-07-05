@@ -12,13 +12,13 @@ import {
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -26,9 +26,6 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Group } from 'common/group'
 import { Spacer } from '../layout/spacer'
-import { getUtcFreeMarketResetTime } from 'web/hooks/use-has-created-contract-today'
-import { requestBonuses } from 'web/lib/firebase/api-call'
-import { result } from 'lodash'
 
 function getNavigation() {
   return [
@@ -186,7 +183,6 @@ export default function Sidebar(props: { className?: string }) {
   const router = useRouter()
   const currentPage = router.pathname
   const user = useUser()
-  const privateUser = usePrivateUser(user?.id)
   const navigationOptions = !user ? signedOutNavigation : getNavigation()
   const mobileNavigationOptions = !user
     ? signedOutMobileNavigation
@@ -195,14 +191,6 @@ export default function Sidebar(props: { className?: string }) {
     name: group.name,
     href: groupPath(group.slug),
   }))
-  useEffect(() => {
-    if (!privateUser) return
-
-    if (Date.now() - (privateUser.lastTimeCheckedBonuses ?? 0) > 30 * 1000)
-      requestBonuses({}).catch((error) => {
-        console.log("couldn't get bonuses:", error.message)
-      })
-  }, [privateUser])
 
   return (
     <nav aria-label="Sidebar" className={className}>

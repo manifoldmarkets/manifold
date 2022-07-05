@@ -2,17 +2,28 @@ import { BellIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useRouter } from 'next/router'
 import { usePreferredGroupedNotifications } from 'web/hooks/use-notifications'
 import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
+import { requestBonuses } from 'web/lib/firebase/api-call'
 
 export default function NotificationsIcon(props: { className?: string }) {
   const user = useUser()
-  const notifications = usePreferredGroupedNotifications(user?.id, {
+  const privateUser = usePrivateUser(user?.id)
+  const notifications = usePreferredGroupedNotifications(privateUser?.id, {
     unseenOnly: true,
   })
   const [seen, setSeen] = useState(false)
+
+  useEffect(() => {
+    if (!privateUser) return
+
+    if (Date.now() - (privateUser.lastTimeCheckedBonuses ?? 0) > 60 * 1000)
+      requestBonuses({}).catch((error) => {
+        console.log("couldn't get bonuses:", error.message)
+      })
+  }, [privateUser])
 
   const router = useRouter()
   useEffect(() => {
