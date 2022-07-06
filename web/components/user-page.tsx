@@ -45,15 +45,16 @@ export function UserLink(props: {
   username: string
   showUsername?: boolean
   className?: string
+  justFirstName?: boolean
 }) {
-  const { name, username, showUsername, className } = props
+  const { name, username, showUsername, className, justFirstName } = props
 
   return (
     <SiteLink
       href={`/${username}`}
       className={clsx('z-10 truncate', className)}
     >
-      {name}
+      {justFirstName ? name.split(' ')[0] : name}
       {showUsername && ` (@${username})`}
     </SiteLink>
   )

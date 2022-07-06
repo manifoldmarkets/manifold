@@ -19,7 +19,7 @@ export default function NotificationsIcon(props: { className?: string }) {
   useEffect(() => {
     if (!privateUser) return
 
-    if (Date.now() - (privateUser.lastTimeCheckedBonuses ?? 0) > 60 * 1000)
+    if (Date.now() - (privateUser.lastTimeCheckedBonuses ?? 0) > 65 * 1000)
       requestBonuses({}).catch((error) => {
         console.log("couldn't get bonuses:", error.message)
       })
