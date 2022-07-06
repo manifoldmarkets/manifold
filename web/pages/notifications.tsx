@@ -275,7 +275,7 @@ function IncomeNotificationGroupItem(props: {
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <TrendingUpIcon className={'text-primary h-7 w-7'} />
-        <div className={'flex-1 overflow-hidden pl-2 sm:flex'}>
+        <div className={'flex truncate'}>
           <div
             onClick={() => setExpanded(!expanded)}
             className={'line-clamp-1 cursor-pointer pl-1  sm:pl-0'}
@@ -286,8 +286,8 @@ function IncomeNotificationGroupItem(props: {
                 {'+' + formatMoney(totalIncome)}
               </span>
             </span>
+            <RelativeTimestamp time={notifications[0].createdTime} />
           </div>
-          <RelativeTimestamp time={notifications[0].createdTime} />
         </div>
       </Row>
       <div>
