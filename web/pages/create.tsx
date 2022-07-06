@@ -25,7 +25,6 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
-import { CATEGORIES } from 'common/categories'
 import { User } from 'common/user'
 
 type NewQuestionParams = {
@@ -137,7 +136,6 @@ export function NewContract(props: {
     undefined
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
-  const [category, setCategory] = useState<string>('')
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -210,7 +208,6 @@ export function NewContract(props: {
           initialValue,
           isLogScale: (min ?? 0) < 0 ? false : isLogScale,
           groupId: selectedGroup?.id,
-          tags: category ? [category] : undefined,
         })
       )
       track('create market', {
@@ -351,28 +348,6 @@ export function NewContract(props: {
           </div>
         </>
       )}
-
-      <div className="form-control max-w-[265px] items-start">
-        <label className="label gap-2">
-          <span className="mb-1">Category</span>
-        </label>
-
-        <select
-          className={clsx(
-            'select select-bordered w-full text-sm',
-            category === '' ? 'font-normal text-gray-500' : ''
-          )}
-          value={category}
-          onChange={(e) => setCategory(e.currentTarget.value ?? '')}
-        >
-          <option value={''}>None</option>
-          {Object.entries(CATEGORIES).map(([id, name]) => (
-            <option key={id} value={id}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <div className={'mt-2'}>
         <GroupSelector
