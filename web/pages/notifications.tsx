@@ -347,10 +347,10 @@ function IncomeNotificationItem(props: {
     let reasonText = ''
     if (sourceType === 'bonus' && sourceText) {
       reasonText = !simple
-        ? `bonus for ${
+        ? `Bonus for ${
             parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
           } unique bettors`
-        : ' bonus for unique bettors on'
+        : 'bonus on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you` : `in tips on`
     }

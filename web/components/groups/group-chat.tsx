@@ -36,6 +36,7 @@ export function GroupChat(props: {
   const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
   const [groupedMessages, setGroupedMessages] = useState<Comment[]>([])
   const router = useRouter()
+  const isMember = user && group.memberIds.includes(user?.id)
 
   useMemo(() => {
     // Group messages with createdTime within 2 minutes of each other.
@@ -120,7 +121,7 @@ export function GroupChat(props: {
         ))}
         {messages.length === 0 && (
           <div className="p-2 text-gray-500">
-            No messages yet. Why not{' '}
+            No messages yet. Why not{isMember ? ` ` : ' join and '}
             <button
               className={'cursor-pointer font-bold text-gray-700'}
               onClick={() => focusInput()}

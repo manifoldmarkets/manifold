@@ -21,7 +21,6 @@ import {
   User,
   writeReferralInfo,
 } from 'web/lib/firebase/users'
-import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
@@ -36,7 +35,10 @@ import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
 import { ContractsGrid } from 'web/components/contract/contracts-list'
-import { CreateQuestionButton } from 'web/components/create-question-button'
+import {
+  createButtonStyle,
+  CreateQuestionButton,
+} from 'web/components/create-question-button'
 import React, { useEffect, useState } from 'react'
 import { GroupChat } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
@@ -45,11 +47,13 @@ import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
-import ShortToggle from 'web/components/widgets/short-toggle'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { REFERRAL_AMOUNT } from 'common/user'
 import { SiteLink } from 'web/components/site-link'
 import { ContractSearch } from 'web/components/contract-search'
+import clsx from 'clsx'
+import { FollowList } from 'web/components/follow-list'
+import { SearchIcon } from '@heroicons/react/outline'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -104,7 +108,13 @@ async function toTopUsers(userScores: { [userId: string]: number }) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const groupSubpages = [undefined, 'chat', 'questions', 'about'] as const
+const groupSubpages = [
+  undefined,
+  'chat',
+  'questions',
+  'rankings',
+  'about',
+] as const
 
 export default function GroupPage(props: {
   group: Group | null
@@ -178,20 +188,18 @@ export default function GroupPage(props: {
   const rightSidebar = (
     <Col className="mt-6 hidden xl:block">
       <JoinOrCreateButton group={group} user={user} isMember={!!isMember} />
-      <Spacer h={6} />
-      {contracts && (
-        <div className={'mt-2'}>
-          <div className={'my-2 text-gray-500'}>Recent Questions</div>
-          <ContractsGrid
-            contracts={contracts
-              .sort((a, b) => b.createdTime - a.createdTime)
-              .slice(0, 3)}
-            hasMore={false}
-            loadMore={() => {}}
-            overrideGridClassName={'grid w-full grid-cols-1 gap-4'}
-          />
-        </div>
-      )}
+    </Col>
+  )
+  const leaderboard = (
+    <Col>
+      <GroupLeaderboards
+        traderScores={traderScores}
+        creatorScores={creatorScores}
+        topTraders={topTraders}
+        topCreators={topCreators}
+        members={members}
+        user={user}
+      />
     </Col>
   )
 
@@ -201,16 +209,6 @@ export default function GroupPage(props: {
         group={group}
         creator={creator}
         isCreator={!!isCreator}
-        user={user}
-      />
-      <Spacer h={8} />
-
-      <GroupLeaderboards
-        traderScores={traderScores}
-        creatorScores={creatorScores}
-        topTraders={topTraders}
-        topCreators={topCreators}
-        members={members}
         user={user}
       />
     </Col>
@@ -243,7 +241,15 @@ export default function GroupPage(props: {
       </Col>
 
       <Tabs
-        defaultIndex={page === 'about' ? 2 : page === 'questions' ? 1 : 0}
+        defaultIndex={
+          page === 'rankings'
+            ? 2
+            : page === 'about'
+            ? 3
+            : page === 'questions'
+            ? 1
+            : 0
+        }
         tabs={[
           {
             title: 'Chat',
@@ -287,10 +293,14 @@ export default function GroupPage(props: {
                 ) : (
                   <LoadingIndicator />
                 )}
-                {isMember && <AddContractButton group={group} user={user} />}
               </div>
             ),
             href: groupPath(group.slug, 'questions'),
+          },
+          {
+            title: 'Leaderboards',
+            content: leaderboard,
+            href: groupPath(group.slug, 'rankings'),
           },
           {
             title: 'About',
@@ -309,13 +319,16 @@ function JoinOrCreateButton(props: {
   isMember: boolean
 }) {
   const { group, user, isMember } = props
-  return isMember ? (
-    <CreateQuestionButton
-      user={user}
-      overrideText={'Add a new question'}
-      className={'w-48 flex-shrink-0'}
-      query={`?groupId=${group.id}`}
-    />
+  return user && isMember ? (
+    <Row className={'justify-between sm:flex-col sm:justify-center'}>
+      <CreateQuestionButton
+        user={user}
+        overrideText={'Add a new question'}
+        className={'w-48 flex-shrink-0'}
+        query={`?groupId=${group.id}`}
+      />
+      <AddContractButton group={group} user={user} />
+    </Row>
   ) : group.anyoneCanJoin ? (
     <JoinGroupButton group={group} user={user} />
   ) : null
@@ -389,8 +402,48 @@ function GroupOverview(props: {
             </ShareIconButton>
           </Row>
         )}
+        <Col className={'mt-2'}>
+          <GroupMemberSearch group={group} />
+        </Col>
       </Col>
     </Col>
+  )
+}
+
+function SearchBar(props: { setQuery: (query: string) => void }) {
+  const { setQuery } = props
+  const debouncedQuery = debounce(setQuery, 50)
+  return (
+    <div className={'relative'}>
+      <SearchIcon className={'absolute left-5 top-3.5 h-5 w-5 text-gray-500'} />
+      <input
+        type="text"
+        onChange={(e) => debouncedQuery(e.target.value)}
+        placeholder="Find a member"
+        className="input input-bordered mb-4 w-full pl-12"
+      />
+    </div>
+  )
+}
+
+function GroupMemberSearch(props: { group: Group }) {
+  const [query, setQuery] = useState('')
+  const members = useMembers(props.group)
+
+  // TODO use find-active-contracts to sort by?
+  const matches = sortBy(members, [(member) => member.name]).filter(
+    (m) =>
+      checkAgainstQuery(query, m.name) || checkAgainstQuery(query, m.username)
+  )
+  return (
+    <div>
+      <SearchBar setQuery={setQuery} />
+      <Col className={'gap-2'}>
+        {matches.length > 0 && (
+          <FollowList userIds={matches.map((m) => m.id)} />
+        )}
+      </Col>
+    </div>
   )
 }
 
@@ -449,32 +502,24 @@ function GroupLeaderboards(props: {
 }) {
   const { traderScores, creatorScores, members, topTraders, topCreators } =
     props
-  const [includeOutsiders, setIncludeOutsiders] = useState(false)
 
   // Consider hiding M$0
+  // If it's just one member (curator), show all bettors, otherwise just show members
   return (
     <Col>
-      <Row className="items-center justify-end gap-4 text-gray-500">
-        Include all users
-        <ShortToggle
-          enabled={includeOutsiders}
-          setEnabled={setIncludeOutsiders}
-        />
-      </Row>
-
       <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
-        {!includeOutsiders ? (
+        {members.length > 1 ? (
           <>
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => traderScores[user.id] ?? 0}
-              title="🏅 Top bettors"
+              title="🏅 Bettor rankings"
               header="Profit"
             />
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => creatorScores[user.id] ?? 0}
-              title="🏅 Top creators"
+              title="🏅 Creator rankings"
               header="Market volume"
             />
           </>
@@ -543,16 +588,17 @@ function AddContractButton(props: { group: Group; user: User }) {
           </div>
         </Col>
       </Modal>
-      <Row className={'items-center justify-center'}>
+      <div className={'flex w-48 justify-center'}>
         <button
-          className={
-            'btn btn-md btn-outline cursor-pointer gap-2 whitespace-nowrap text-sm normal-case'
-          }
+          className={clsx(
+            createButtonStyle,
+            'w-48 whitespace-nowrap border border-black text-black hover:bg-black hover:text-white'
+          )}
           onClick={() => setOpen(true)}
         >
           Add an old question
         </button>
-      </Row>
+      </div>
     </>
   )
 }
