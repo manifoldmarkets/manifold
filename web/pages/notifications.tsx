@@ -345,14 +345,11 @@ function IncomeNotificationItem(props: {
   const { notification, justSummary } = props
   const {
     sourceType,
-    sourceId,
     sourceUserName,
     sourceUserAvatarUrl,
     reason,
     sourceUserUsername,
     createdTime,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
   } = notification
   const [highlighted] = useState(!notification.isSeen)
 
