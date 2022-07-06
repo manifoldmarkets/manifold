@@ -357,6 +357,21 @@ function IncomeNotificationItem(props: {
     setNotificationsAsSeen([notification])
   }, [notification])
 
+  function getReasonForShowingIncomeNotification(simple: boolean) {
+    const { sourceText } = notification
+    let reasonText = ''
+    if (sourceType === 'bonus' && sourceText) {
+      reasonText = !simple
+        ? `for ${
+            parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
+          } unique bettors`
+        : ' for unique bettors on'
+    } else if (sourceType === 'tip') {
+      reasonText = !simple ? `tipped you` : `in tips on`
+    }
+    return <span className={'flex-shrink-0'}>{reasonText}</span>
+  }
+
   if (justSummary) {
     return (
       <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
@@ -373,7 +388,7 @@ function IncomeNotificationItem(props: {
                 />
               </div>
               <span className={'flex truncate'}>
-                {getReasonForShowingNotification(notification, true)}
+                {getReasonForShowingIncomeNotification(true)}
                 <NotificationLink notification={notification} />
               </span>
             </div>
@@ -430,7 +445,7 @@ function IncomeNotificationItem(props: {
                         justFirstName={true}
                       />
                     ))}
-                  {getReasonForShowingNotification(notification, false)}
+                  {getReasonForShowingIncomeNotification(false)}
                 </div>
               )}
             </div>
@@ -1041,8 +1056,7 @@ function getReasonForShowingNotification(
   simple?: boolean,
   replaceOn?: boolean
 ) {
-  const { sourceType, sourceUpdateType, sourceText, reason, sourceSlug } =
-    notification
+  const { sourceType, sourceUpdateType, reason, sourceSlug } = notification
   let reasonText: string
   switch (sourceType) {
     case 'comment':
@@ -1093,18 +1107,6 @@ function getReasonForShowingNotification(
         reasonText = 'joined to bet on your market'
       else if (sourceSlug) reasonText = 'joined because you shared'
       else reasonText = 'joined because of you'
-      break
-    case 'bonus':
-      if (reason === 'unique_bettors_on_your_contract' && sourceText)
-        reasonText = !simple
-          ? `for ${
-              parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-            } unique bettors`
-          : ' for unique bettors on'
-      else reasonText = 'You earned your daily manna'
-      break
-    case 'tip':
-      reasonText = !simple ? `tipped you` : `in tips on`
       break
     default:
       reasonText = ''
