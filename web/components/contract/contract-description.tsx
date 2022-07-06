@@ -38,7 +38,7 @@ export function ContractDescription(props: {
     })
   }
 
-  if (!isCreator && !contract.description.trim()) return null
+  if (!isCreator && !contract.description) return null
 
   const { tags } = contract
   const categories = tags.filter((tag) =>
