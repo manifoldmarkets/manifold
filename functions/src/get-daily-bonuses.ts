@@ -1,11 +1,14 @@
 import { APIError, newEndpoint } from './api'
-import { log } from './utils'
+import { isProd, log } from './utils'
 import * as admin from 'firebase-admin'
 import { PrivateUser } from '../../common/lib/user'
 import { uniq } from 'lodash'
 import { Bet } from '../../common/lib/bet'
 const firestore = admin.firestore()
-import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../common/antes'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from '../../common/antes'
 import { runTxn, TxnData } from './transact'
 import { createNotification } from './create-notification'
 import { User } from '../../common/lib/user'
@@ -38,9 +41,9 @@ export const getdailybonuses = newEndpoint({}, async (req, auth) => {
       }
     }
   )
-  // TODO: switch to prod id
-  // const fromUserId = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // dev manifold account
-  const fromUserId = HOUSE_LIQUIDITY_PROVIDER_ID // prod manifold account
+  const fromUserId = isProd()
+    ? HOUSE_LIQUIDITY_PROVIDER_ID
+    : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
   const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
   if (!fromSnap.exists) throw new APIError(400, 'From user not found.')
   const fromUser = fromSnap.data() as User
