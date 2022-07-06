@@ -783,13 +783,12 @@ function NotificationItem(props: {
       <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
         <div className={'line-clamp-1 flex-1 overflow-hidden sm:flex'}>
           <div className={'flex pl-1 sm:pl-0'}>
-            {sourceType != 'bonus' && (
-              <UserLink
-                name={sourceUserName || ''}
-                username={sourceUserUsername || ''}
-                className={'mr-0 flex-shrink-0'}
-              />
-            )}
+            <UserLink
+              name={sourceUserName || ''}
+              username={sourceUserUsername || ''}
+              className={'mr-0 flex-shrink-0'}
+              justFirstName={true}
+            />
             <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
               <span className={'flex-shrink-0'}>
                 {sourceType &&
@@ -845,6 +844,7 @@ function NotificationItem(props: {
                   name={sourceUserName || ''}
                   username={sourceUserUsername || ''}
                   className={'mr-0 flex-shrink-0'}
+                  justFirstName={true}
                 />
               )}
               <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
