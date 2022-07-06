@@ -29,6 +29,7 @@ export * from './on-update-group'
 export * from './on-create-group'
 export * from './on-update-user'
 export * from './on-create-comment-on-group'
+export * from './on-create-txn'
 
 // v2
 export * from './health'

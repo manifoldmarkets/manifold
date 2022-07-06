@@ -66,9 +66,7 @@ export const createNotification = async (
           sourceUserAvatarUrl: sourceUser.avatarUrl,
           sourceText,
           sourceContractCreatorUsername: sourceContract?.creatorUsername,
-          // TODO: move away from sourceContractTitle to sourceTitle
           sourceContractTitle: sourceContract?.question,
-          // TODO: move away from sourceContractSlug to sourceSlug
           sourceContractSlug: sourceContract?.slug,
           sourceSlug: sourceSlug ? sourceSlug : sourceContract?.slug,
           sourceTitle: sourceTitle ? sourceTitle : sourceContract?.question,
@@ -278,13 +276,22 @@ export const createNotification = async (
   }
 
   const notifyOtherGroupMembersOfComment = async (
+    userToReasons: user_to_reason_texts,
+    userId: string
+  ) => {
+    if (shouldGetNotification(userId, userToReasons))
+      userToReasons[userId] = {
+        reason: 'on_group_you_are_member_of',
+        isSeeOnHref: sourceSlug,
+      }
+  }
+  const notifyTippedUserOfNewTip = async (
     userToReasonTexts: user_to_reason_texts,
     userId: string
   ) => {
     if (shouldGetNotification(userId, userToReasonTexts))
       userToReasonTexts[userId] = {
-        reason: 'on_group_you_are_member_of',
-        isSeeOnHref: sourceSlug,
+        reason: 'tip_received',
       }
   }
 
@@ -304,6 +311,7 @@ export const createNotification = async (
 
     // The following functions need sourceContract to be defined.
     if (!sourceContract) return userToReasonTexts
+
     if (
       sourceType === 'comment' ||
       sourceType === 'answer' ||
@@ -338,6 +346,8 @@ export const createNotification = async (
         userToReasonTexts,
         sourceContract.creatorId
       )
+    } else if (sourceType === 'tip' && relatedUserId) {
+      await notifyTippedUserOfNewTip(userToReasonTexts, relatedUserId)
     }
     return userToReasonTexts
   }
