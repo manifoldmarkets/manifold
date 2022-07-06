@@ -27,8 +27,8 @@ import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { CATEGORIES } from 'common/categories'
 import { User } from 'common/user'
-import { TextEditor } from 'web/components/editor'
-import { JSONContent } from '@tiptap/react'
+import { useTextEditor } from 'web/components/editor'
+import { EditorContent } from '@tiptap/react'
 
 type NewQuestionParams = {
   groupId?: string
@@ -163,8 +163,6 @@ export function NewContract(props: {
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
-  useWarnUnsavedChanges(!isSubmitting && Boolean(question))
-
   const isValid =
     (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&
     question.length > 0 &&
@@ -185,25 +183,39 @@ export function NewContract(props: {
         min < initialValue &&
         initialValue < max))
 
+  const descriptionPlaceholder =
+    outcomeType === 'BINARY'
+      ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
+      : `e.g. I will choose the answer according to...`
+
+  const editor = useTextEditor({
+    rows: 3,
+    max: MAX_DESCRIPTION_LENGTH,
+    placeholder: descriptionPlaceholder,
+    disabled: isSubmitting,
+  })
+
+  useWarnUnsavedChanges(
+    !isSubmitting && (Boolean(question) || (editor != null && !editor.isEmpty))
+  )
+
   function setCloseDateInDays(days: number) {
     const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
     setCloseDate(newCloseDate)
   }
 
-  function submit() {
+  async function submit() {
     // TODO: Tell users why their contract is invalid
     if (!creator || !isValid) return
     setIsSubmitting(true)
-  }
 
-  async function onSubmit(description?: JSONContent) {
     // TODO: add contract id to the group contractIds
     try {
       const result = await createMarket(
         removeUndefinedProps({
           question,
           outcomeType,
-          description,
+          description: editor?.getJSON(),
           initialProb,
           ante,
           closeTime,
@@ -231,11 +243,6 @@ export function NewContract(props: {
       setIsSubmitting(false)
     }
   }
-
-  const descriptionPlaceholder =
-    outcomeType === 'BINARY'
-      ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
-      : `e.g. I will choose the answer according to...`
 
   if (!creator) return <></>
 
@@ -440,14 +447,7 @@ export function NewContract(props: {
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
-        <TextEditor
-          className="w-full"
-          rows={3}
-          max={MAX_DESCRIPTION_LENGTH}
-          placeholder={descriptionPlaceholder}
-          sending={isSubmitting}
-          onSend={onSubmit}
-        />
+        <EditorContent editor={editor} className="w-full" />
       </div>
 
       <Spacer h={6} />

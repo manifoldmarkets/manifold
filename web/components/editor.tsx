@@ -4,33 +4,20 @@ import { useEditor, EditorContent, JSONContent, Content } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
 import { useEffect } from 'react'
-import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { Linkify } from './linkify'
 
 const LINE_HEIGHT = 2
 
 const proseClass = 'prose prose-sm prose-p:my-0 prose-li:my-0 max-w-none'
 
-export function TextEditor(props: {
-  className?: string
+export function useTextEditor(props: {
   rows?: number
   placeholder?: string
   max?: number
   defaultValue?: Content
-  onSend: (data: JSONContent) => void
-  sending: boolean
   disabled?: boolean
 }) {
-  const {
-    className,
-    rows,
-    placeholder,
-    max,
-    defaultValue = '',
-    onSend,
-    sending,
-    disabled,
-  } = props
+  const { rows, placeholder, max, defaultValue = '', disabled } = props
 
   const rowsClass = rows && `box-content min-h-[${LINE_HEIGHT * rows}em]`
 
@@ -49,16 +36,10 @@ export function TextEditor(props: {
   })
 
   useEffect(() => {
-    if (sending && editor) onSend(editor.getJSON())
-  }, [sending, editor, onSend])
+    editor?.setEditable(!disabled)
+  }, [editor, disabled])
 
-  useEffect(() => {
-    editor?.setEditable(!disabled && !sending)
-  }, [editor, disabled, sending])
-
-  useWarnUnsavedChanges(!sending && editor != null && !editor.isEmpty)
-
-  return <EditorContent editor={editor} className={className} />
+  return editor
 }
 
 function RichContent(props: { content: JSONContent }) {
