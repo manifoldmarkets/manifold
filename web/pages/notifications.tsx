@@ -346,7 +346,6 @@ function IncomeNotificationItem(props: {
   const {
     sourceType,
     sourceUserName,
-    sourceUserAvatarUrl,
     reason,
     sourceUserUsername,
     createdTime,
