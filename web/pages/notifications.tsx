@@ -34,9 +34,10 @@ import toast from 'react-hot-toast'
 import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
-import { groupBy, uniq } from 'lodash'
+import { groupBy, sum, uniq } from 'lodash'
 
 export const NOTIFICATIONS_PER_PAGE = 30
+const MULTIPLE_USERS_KEY = 'multipleUsers'
 
 export default function Notifications() {
   const user = useUser()
@@ -186,7 +187,6 @@ function IncomeNotificationGroupItem(props: {
   const { notificationGroup, className } = props
   const { notifications } = notificationGroup
   const numSummaryLines = 3
-
   const [expanded, setExpanded] = useState(false)
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
@@ -200,12 +200,12 @@ function IncomeNotificationGroupItem(props: {
     if (expanded) setHighlighted(false)
   }, [expanded])
 
-  const totalIncome = notifications.reduce(
-    (acc, notification) =>
-      acc + (notification.sourceText ? parseInt(notification.sourceText) : 0),
-    0
+  const totalIncome = sum(
+    notifications.map((notification) =>
+      notification.sourceText ? parseInt(notification.sourceText) : 0
+    )
   )
-  // loop through the contracts and combine the notification items into one
+  // Loop through the contracts and combine the notification items into one
   function combineNotificationsByAddingNumericSourceTexts(
     notifications: Notification[]
   ) {
@@ -245,7 +245,7 @@ function IncomeNotificationGroupItem(props: {
           sourceText: sum.toString(),
           sourceUserUsername:
             uniqueUsers.length > 1
-              ? 'Multiple Users'
+              ? MULTIPLE_USERS_KEY
               : notificationsForContractId[0].sourceType,
         }
         newNotifications.push(newNotification)
@@ -362,10 +362,10 @@ function IncomeNotificationItem(props: {
     let reasonText = ''
     if (sourceType === 'bonus' && sourceText) {
       reasonText = !simple
-        ? `for ${
+        ? `bonus for ${
             parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
           } unique bettors`
-        : ' for unique bettors on'
+        : ' bonus for unique bettors on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you` : `in tips on`
     }
@@ -407,48 +407,31 @@ function IncomeNotificationItem(props: {
     >
       <a href={getSourceUrl(notification)}>
         <Row className={'items-center text-gray-500 sm:justify-start'}>
-          {sourceType != 'bonus' ? (
-            sourceUserUsername === 'Multiple Users' ? (
-              <div className={'mr-2'}>
-                <EmptyAvatar multi />
-              </div>
-            ) : (
-              <Avatar
-                avatarUrl={sourceUserAvatarUrl}
-                size={'sm'}
-                className={'mr-1'}
-                username={sourceUserName}
-              />
-            )
-          ) : (
-            <TrendingUpIcon className={'text-primary mr-1 h-7 w-7'} />
-          )}
-          <div className={'flex max-w-xl shrink pl-1 sm:pl-0'}>
-            <div className={'inline-flex pl-1'}>
-              {sourceType && reason && (
-                <div className={'inline'}>
-                  <span className={'mr-1'}>
-                    <NotificationTextLabel
-                      contract={null}
-                      defaultText={notification.sourceText ?? ''}
-                      notification={notification}
+          <div className={'flex max-w-xl shrink '}>
+            {sourceType && reason && (
+              <div className={'inline'}>
+                <span className={'mr-1'}>
+                  <NotificationTextLabel
+                    contract={null}
+                    defaultText={notification.sourceText ?? ''}
+                    notification={notification}
+                  />
+                </span>
+
+                {sourceType != 'bonus' &&
+                  (sourceUserUsername === MULTIPLE_USERS_KEY ? (
+                    <span className={'mr-1 truncate'}>Multiple users</span>
+                  ) : (
+                    <UserLink
+                      name={sourceUserName || ''}
+                      username={sourceUserUsername || ''}
+                      className={'mr-1 flex-shrink-0'}
+                      justFirstName={true}
                     />
-                  </span>
-                  {sourceType != 'bonus' &&
-                    (sourceUserUsername === 'Multiple Users' ? (
-                      <span className={'mr-1'}>Users</span>
-                    ) : (
-                      <UserLink
-                        name={sourceUserName || ''}
-                        username={sourceUserUsername || ''}
-                        className={'mr-1 flex-shrink-0'}
-                        justFirstName={true}
-                      />
-                    ))}
-                  {getReasonForShowingIncomeNotification(false)}
-                </div>
-              )}
-            </div>
+                  ))}
+              </div>
+            )}
+            {getReasonForShowingIncomeNotification(false)}
             <span className={'ml-1 flex hidden sm:inline-block'}>
               on
               <NotificationLink notification={notification} />
