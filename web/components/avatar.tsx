@@ -53,7 +53,7 @@ export function EmptyAvatar(props: { size?: number; multi?: boolean }) {
 
   return (
     <div
-      className={`flex h-${size} w-${size} items-center justify-center rounded-full bg-gray-200`}
+      className={`flex flex-shrink-0 h-${size} w-${size} items-center justify-center rounded-full bg-gray-200`}
     >
       <Icon className={`h-${insize} w-${insize} text-gray-500`} aria-hidden />
     </div>

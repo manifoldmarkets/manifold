@@ -375,9 +375,8 @@ function IncomeNotificationItem(props: {
                   justSummary={true}
                 />
               </div>
-              <span className={'flex-shrink-0'}>
+              <span className={'flex truncate'}>
                 {getReasonForShowingNotification(notification, true)}
-                {` on`}
                 <NotificationLink notification={notification} />
               </span>
             </div>
@@ -405,64 +404,51 @@ function IncomeNotificationItem(props: {
               <Avatar
                 avatarUrl={sourceUserAvatarUrl}
                 size={'sm'}
-                className={'mr-2'}
+                className={'mr-1'}
                 username={sourceUserName}
               />
             )
           ) : (
             <TrendingUpIcon className={'text-primary mr-1 h-7 w-7'} />
           )}
-          <div className={'flex-1 overflow-hidden sm:flex'}>
-            <div
-              className={
-                'flex max-w-xl shrink overflow-hidden text-ellipsis pl-1 sm:pl-0'
-              }
-            >
-              {sourceType != 'bonus' &&
-                (sourceUserUsername === 'Multiple Users' ? (
-                  <span>Multiple Users</span>
-                ) : (
-                  <UserLink
-                    name={sourceUserName || ''}
-                    username={sourceUserUsername || ''}
-                    className={'mr-0 flex-shrink-0'}
-                    justFirstName={true}
-                  />
-                ))}
-              <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
-                {sourceType && reason && (
-                  <div className={'inline truncate'}>
-                    {getReasonForShowingNotification(notification, false)}
-                    <NotificationLink notification={notification} />
-                  </div>
-                )}
-              </div>
+          <div className={'flex max-w-xl shrink pl-1 sm:pl-0'}>
+            <div className={'inline-flex pl-1'}>
+              {sourceType && reason && (
+                <div className={'inline'}>
+                  <span className={'mr-1'}>
+                    <NotificationTextLabel
+                      contract={null}
+                      defaultText={notification.sourceText ?? ''}
+                      notification={notification}
+                    />
+                  </span>
+                  {sourceType != 'bonus' &&
+                    (sourceUserUsername === 'Multiple Users' ? (
+                      <span className={'mr-1'}>Users</span>
+                    ) : (
+                      <UserLink
+                        name={sourceUserName || ''}
+                        username={sourceUserUsername || ''}
+                        className={'mr-1 flex-shrink-0'}
+                        justFirstName={true}
+                      />
+                    ))}
+                  {getReasonForShowingNotification(notification, false)}
+                </div>
+              )}
             </div>
-            {sourceId && sourceContractSlug && sourceContractCreatorUsername ? (
-              <CopyLinkDateTimeComponent
-                prefix={sourceContractCreatorUsername}
-                slug={sourceContractSlug}
-                createdTime={createdTime}
-                elementId={getSourceIdForLinkComponent(sourceId)}
-                className={clsx(
-                  '-mx-1 inline-flex sm:inline-block',
-                  sourceType === 'bonus' && 'mx-0 sm:-mx-1'
-                )}
-              />
-            ) : (
-              <RelativeTimestamp time={createdTime} />
-            )}
+            <span className={'ml-1 flex hidden sm:inline-block'}>
+              on
+              <NotificationLink notification={notification} />
+            </span>
+            <RelativeTimestamp time={createdTime} />
           </div>
         </Row>
-        <div className={'mt-1 ml-1 md:text-base'}>
-          <NotificationTextLabel
-            contract={null}
-            defaultText={notification.sourceText ?? ''}
-            notification={notification}
-          />
-        </div>
-
-        <div className={'mt-6 border-b border-gray-300'} />
+        <span className={'flex truncate text-gray-500 sm:hidden'}>
+          on
+          <NotificationLink notification={notification} />
+        </span>
+        <div className={'mt-4 border-b border-gray-300'} />
       </a>
     </div>
   )
@@ -507,16 +493,18 @@ function NotificationGroupItem(props: {
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <EmptyAvatar multi />
-        <div className={'flex-1 overflow-hidden pl-2 sm:flex'}>
+        <div className={'flex truncate pl-2'}>
           <div
             onClick={() => setExpanded(!expanded)}
-            className={'line-clamp-1 cursor-pointer pl-1  sm:pl-0'}
+            className={' flex cursor-pointer truncate pl-1  sm:pl-0'}
           >
             {sourceContractTitle ? (
-              <span>
-                {'Activity on '}
-                <NotificationLink notification={notifications[0]} />
-              </span>
+              <>
+                <span className={'flex-shrink-0'}>{'Activity on '}</span>
+                <span className={'truncate'}>
+                  <NotificationLink notification={notifications[0]} />
+                </span>
+              </>
             ) : (
               'Other activity'
             )}
@@ -560,6 +548,7 @@ function NotificationGroupItem(props: {
                     notification={notification}
                     key={notification.id}
                     justSummary={false}
+                    hideTitle={true}
                   />
                 ))}
               </>
@@ -789,7 +778,7 @@ function NotificationLink(props: { notification: Notification }) {
           : ''
       }
       className={
-        'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2'
+        'ml-1 inline max-w-xs truncate font-bold text-gray-500 hover:underline hover:decoration-indigo-400 hover:decoration-2 sm:max-w-sm'
       }
     >
       {sourceContractTitle || sourceTitle}
@@ -842,8 +831,9 @@ function getSourceIdForLinkComponent(
 function NotificationItem(props: {
   notification: Notification
   justSummary?: boolean
+  hideTitle?: boolean
 }) {
-  const { notification, justSummary } = props
+  const { notification, justSummary, hideTitle } = props
   const {
     sourceType,
     sourceId,
@@ -892,10 +882,7 @@ function NotificationItem(props: {
               <span className={'flex-shrink-0'}>
                 {sourceType &&
                   reason &&
-                  getReasonForShowingNotification(notification, true).replace(
-                    ' on',
-                    ''
-                  )}
+                  getReasonForShowingNotification(notification, true, true)}
               </span>
               <div className={'ml-1 text-black'}>
                 <NotificationTextLabel
@@ -942,26 +929,30 @@ function NotificationItem(props: {
                   justFirstName={true}
                 />
               )}
-              <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
-                {sourceType && reason && (
-                  <div className={'inline truncate'}>
-                    {getReasonForShowingNotification(notification, false)}
+              {sourceType && reason && (
+                <div className={'inline flex truncate'}>
+                  <span className={'ml-1 flex-shrink-0'}>
+                    {getReasonForShowingNotification(notification, false, true)}
+                  </span>
+                  {!hideTitle && (
                     <NotificationLink notification={notification} />
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
+              {sourceId &&
+              sourceContractSlug &&
+              sourceContractCreatorUsername ? (
+                <CopyLinkDateTimeComponent
+                  prefix={sourceContractCreatorUsername}
+                  slug={sourceContractSlug}
+                  createdTime={createdTime}
+                  elementId={getSourceIdForLinkComponent(sourceId)}
+                  className={'-mx-1 inline-flex sm:inline-block'}
+                />
+              ) : (
+                <RelativeTimestamp time={createdTime} />
+              )}
             </div>
-            {sourceId && sourceContractSlug && sourceContractCreatorUsername ? (
-              <CopyLinkDateTimeComponent
-                prefix={sourceContractCreatorUsername}
-                slug={sourceContractSlug}
-                createdTime={createdTime}
-                elementId={getSourceIdForLinkComponent(sourceId)}
-                className={'-mx-1 inline-flex sm:inline-block'}
-              />
-            ) : (
-              <RelativeTimestamp time={createdTime} />
-            )}
           </div>
         </Row>
         <div className={'mt-1 ml-1 md:text-base'}>
@@ -1035,7 +1026,9 @@ function NotificationTextLabel(props: {
     )
   } else if ((sourceType === 'bonus' || sourceType === 'tip') && sourceText) {
     return (
-      <span className="text-primary">{formatMoney(parseInt(sourceText))}</span>
+      <span className="text-primary">
+        {'+' + formatMoney(parseInt(sourceText))}
+      </span>
     )
   }
   // return default text
@@ -1048,7 +1041,8 @@ function NotificationTextLabel(props: {
 
 function getReasonForShowingNotification(
   notification: Notification,
-  simple?: boolean
+  simple?: boolean,
+  replaceOn?: boolean
 ) {
   const { sourceType, sourceUpdateType, sourceText, reason, sourceSlug } =
     notification
@@ -1106,17 +1100,22 @@ function getReasonForShowingNotification(
     case 'bonus':
       if (reason === 'unique_bettors_on_your_contract' && sourceText)
         reasonText = !simple
-          ? `You had ${
+          ? `for ${
               parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-            } unique bettors on`
-          : ' for unique bettors'
+            } unique bettors`
+          : ' for unique bettors on'
       else reasonText = 'You earned your daily manna'
       break
     case 'tip':
-      reasonText = !simple ? `tipped you on` : `in tips on`
+      reasonText = !simple ? `tipped you` : `in tips on`
       break
     default:
       reasonText = ''
   }
-  return reasonText
+
+  return (
+    <span className={'flex-shrink-0'}>
+      {replaceOn ? reasonText.replace(' on', '') : reasonText}
+    </span>
+  )
 }
