@@ -71,7 +71,7 @@ const config = {
             label: 'Docs',
           },
           {
-            href: 'https://github.com/manifoldmarkets/docs',
+            href: 'https://github.com/manifoldmarkets/manifold/tree/main/docs/docs',
             label: 'GitHub',
             position: 'right',
           },
@@ -115,7 +115,7 @@ const config = {
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/manifoldmarkets/manifold/tree/main/docs/docs',
+                href: 'https://github.com/manifoldmarkets/manifold/',
               },
             ],
           },
