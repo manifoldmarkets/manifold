@@ -39,17 +39,19 @@ export function groupNotifications(notifications: Notification[]) {
   )
   Object.keys(notificationGroupsByDay).forEach((day) => {
     const notificationsGroupedByDay = notificationGroupsByDay[day]
-    const bonusNotifications = notificationsGroupedByDay.filter(
-      (notification) => notification.sourceType === 'bonus'
+    const incomeNotifications = notificationsGroupedByDay.filter(
+      (notification) =>
+        notification.sourceType === 'bonus' || notification.sourceType === 'tip'
     )
     const normalNotificationsGroupedByDay = notificationsGroupedByDay.filter(
-      (notification) => notification.sourceType !== 'bonus'
+      (notification) =>
+        notification.sourceType !== 'bonus' && notification.sourceType !== 'tip'
     )
-    if (bonusNotifications.length > 0) {
+    if (incomeNotifications.length > 0) {
       notificationGroups = notificationGroups.concat({
-        notifications: bonusNotifications,
+        notifications: incomeNotifications,
         groupedById: 'income' + day,
-        isSeen: bonusNotifications[0].isSeen,
+        isSeen: incomeNotifications[0].isSeen,
         timePeriod: day,
         type: 'income',
       })
