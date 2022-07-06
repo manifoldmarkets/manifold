@@ -45,15 +45,16 @@ export function UserLink(props: {
   username: string
   showUsername?: boolean
   className?: string
+  justFirstName?: boolean
 }) {
-  const { name, username, showUsername, className } = props
+  const { name, username, showUsername, className, justFirstName } = props
 
   return (
     <SiteLink
       href={`/${username}`}
       className={clsx('z-10 truncate', className)}
     >
-      {name}
+      {justFirstName ? name.split(' ')[0] : name}
       {showUsername && ` (@${username})`}
     </SiteLink>
   )
@@ -159,7 +160,7 @@ export function UserPage(props: {
           <Avatar
             username={user.username}
             avatarUrl={user.avatarUrl}
-            size={20}
+            size={24}
             className="bg-white ring-4 ring-white"
           />
         </div>
@@ -202,7 +203,7 @@ export function UserPage(props: {
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
-            <ReferralsButton user={user} />
+            <ReferralsButton user={user} currentUser={currentUser} />
             <GroupsButton user={user} />
           </Row>
 

@@ -77,3 +77,7 @@ export function sellBet(params: any) {
 export function createGroup(params: any) {
   return call(getFunctionUrl('creategroup'), 'POST', params)
 }
+
+export function requestBonuses(params: any) {
+  return call(getFunctionUrl('getdailybonuses'), 'POST', params)
+}

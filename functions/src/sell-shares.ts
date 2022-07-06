@@ -46,7 +46,7 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     const outcomeBets = userBets.filter((bet) => bet.outcome == outcome)
     const maxShares = sumBy(outcomeBets, (bet) => bet.shares)
 
-    if (shares > maxShares + 0.000000000001)
+    if (shares > maxShares)
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
     const { newBet, newPool, newP, fees } = getCpmmSellBetInfo(

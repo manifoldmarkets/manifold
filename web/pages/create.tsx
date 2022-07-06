@@ -7,7 +7,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { useUser } from 'web/hooks/use-user'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api-call'
-import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
+import { FIXED_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
 import { Row } from 'web/components/layout/row'
@@ -25,17 +25,34 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
-import { CATEGORIES } from 'common/categories'
 import { User } from 'common/user'
 
-export default function Create() {
-  const [question, setQuestion] = useState('')
-  // get query params:
-  const router = useRouter()
-  const { groupId } = router.query as { groupId: string }
-  useTracking('view create page')
-  const creator = useUser()
+type NewQuestionParams = {
+  groupId?: string
+  q: string
+  type: string
+  description: string
+  closeTime: string
+  outcomeType: string
+  // Params for PSEUDO_NUMERIC outcomeType
+  min?: string
+  max?: string
+  isLogScale?: string
+  initValue?: string
+}
 
+export default function Create() {
+  useTracking('view create page')
+  const router = useRouter()
+  const params = router.query as NewQuestionParams
+  // TODO: Not sure why Question is pulled out as its own component;
+  // Maybe merge into newContract and then we don't need useEffect here.
+  const [question, setQuestion] = useState('')
+  useEffect(() => {
+    setQuestion(params.q ?? '')
+  }, [params.q])
+
+  const creator = useUser()
   useEffect(() => {
     if (creator === null) router.push('/')
   }, [creator, router])
@@ -65,11 +82,7 @@ export default function Create() {
             </div>
           </form>
           <Spacer h={6} />
-          <NewContract
-            question={question}
-            groupId={groupId}
-            creator={creator}
-          />
+          <NewContract question={question} params={params} creator={creator} />
         </div>
       </div>
     </Page>
@@ -80,20 +93,21 @@ export default function Create() {
 export function NewContract(props: {
   creator: User
   question: string
-  groupId?: string
+  params?: NewQuestionParams
 }) {
-  const { creator, question, groupId } = props
-  const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
+  const { creator, question, params } = props
+  const { groupId, initValue } = params ?? {}
+  const [outcomeType, setOutcomeType] = useState<outcomeType>(
+    (params?.outcomeType as outcomeType) ?? 'BINARY'
+  )
   const [initialProb] = useState(50)
 
-  const [minString, setMinString] = useState('')
-  const [maxString, setMaxString] = useState('')
-  const [isLogScale, setIsLogScale] = useState(false)
-  const [initialValueString, setInitialValueString] = useState('')
+  const [minString, setMinString] = useState(params?.min ?? '')
+  const [maxString, setMaxString] = useState(params?.max ?? '')
+  const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
+  const [initialValueString, setInitialValueString] = useState(initValue)
 
-  const [description, setDescription] = useState('')
-  // const [tagText, setTagText] = useState<string>(tag ?? '')
-  // const tags = parseWordsAsTags(tagText)
+  const [description, setDescription] = useState(params?.description ?? '')
   useEffect(() => {
     if (groupId && creator)
       getGroup(groupId).then((group) => {
@@ -105,25 +119,23 @@ export function NewContract(props: {
   }, [creator, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
-  // useEffect(() => {
-  //   if (ante === null && creator) {
-  //     const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
-  //     setAnte(initialAnte)
-  //   }
-  // }, [ante, creator])
-
-  // const [anteError, setAnteError] = useState<string | undefined>()
+  // If params.closeTime is set, extract out the specified date and time
   // By default, close the market a week from today
   const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
-  const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
-  const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
+  const timeInMs = Number(params?.closeTime ?? 0)
+  const initDate = timeInMs
+    ? dayjs(timeInMs).format('YYYY-MM-DD')
+    : weekFromToday
+  const initTime = timeInMs ? dayjs(timeInMs).format('HH:mm') : '23:59'
+  const [closeDate, setCloseDate] = useState<undefined | string>(initDate)
+  const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>(initTime)
+
   const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(
     undefined
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
-  const [category, setCategory] = useState<string>('')
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -156,7 +168,6 @@ export function NewContract(props: {
     question.length > 0 &&
     ante !== undefined &&
     ante !== null &&
-    ante >= MINIMUM_ANTE &&
     ante <= balance &&
     // closeTime must be in the future
     closeTime &&
@@ -197,7 +208,6 @@ export function NewContract(props: {
           initialValue,
           isLogScale: (min ?? 0) < 0 ? false : isLogScale,
           groupId: selectedGroup?.id,
-          tags: category ? [category] : undefined,
         })
       )
       track('create market', {
@@ -338,28 +348,6 @@ export function NewContract(props: {
           </div>
         </>
       )}
-
-      <div className="form-control max-w-[265px] items-start">
-        <label className="label gap-2">
-          <span className="mb-1">Category</span>
-        </label>
-
-        <select
-          className={clsx(
-            'select select-bordered w-full text-sm',
-            category === '' ? 'font-normal text-gray-500' : ''
-          )}
-          value={category}
-          onChange={(e) => setCategory(e.currentTarget.value ?? '')}
-        >
-          <option value={''}>None</option>
-          {Object.entries(CATEGORIES).map(([id, name]) => (
-            <option key={id} value={id}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <div className={'mt-2'}>
         <GroupSelector

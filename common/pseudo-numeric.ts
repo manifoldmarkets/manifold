@@ -17,7 +17,7 @@ export const getMappedValue =
 
     if (isLogScale) {
       const logValue = p * Math.log10(max - min)
-      return 10 ** logValue + min 
+      return 10 ** logValue + min
     }
 
     return p * (max - min) + min

@@ -30,9 +30,9 @@ import {
   floatingLesserEqual,
 } from './util/math'
 
-export type CandidateBet<T extends Bet> = Omit<T, 'id' | 'userId'>
+export type CandidateBet<T extends Bet = Bet> = Omit<T, 'id' | 'userId'>
 export type BetInfo = {
-  newBet: CandidateBet<Bet>
+  newBet: CandidateBet
   newPool?: { [outcome: string]: number }
   newTotalShares?: { [outcome: string]: number }
   newTotalBets?: { [outcome: string]: number }
@@ -209,7 +209,7 @@ export const getBinaryCpmmBetInfo = (
   const takerShares = sumBy(takers, 'shares')
   const isFilled = floatingEqual(betAmount, takerAmount)
 
-  const newBet = removeUndefinedProps({
+  const newBet: CandidateBet = removeUndefinedProps({
     amount: betAmount,
     limitProb,
     isFilled,
@@ -269,7 +269,7 @@ export const getNewBinaryDpmBetInfo = (
   const probBefore = getDpmProbability(contract.totalShares)
   const probAfter = getDpmProbability(newTotalShares)
 
-  const newBet: CandidateBet<Bet> = {
+  const newBet: CandidateBet = {
     contractId: contract.id,
     amount,
     loanAmount,
@@ -306,7 +306,7 @@ export const getNewMultiBetInfo = (
   const probBefore = getDpmOutcomeProbability(totalShares, outcome)
   const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
 
-  const newBet: CandidateBet<Bet> = {
+  const newBet: CandidateBet = {
     contractId: contract.id,
     amount,
     loanAmount,

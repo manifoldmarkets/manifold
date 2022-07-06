@@ -224,7 +224,7 @@ export function FeedComment(props: {
   return (
     <Row
       className={clsx(
-        'flex space-x-1.5 transition-all duration-1000 sm:space-x-3',
+        'flex space-x-1.5 sm:space-x-3',
         highlighted ? `-m-1 rounded bg-indigo-500/[0.2] p-2` : ''
       )}
     >

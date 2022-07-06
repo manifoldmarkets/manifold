@@ -7,11 +7,7 @@ import { Bet } from 'common/bet'
 
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
-import {
-  contractPath,
-  contractPool,
-  getBinaryProbPercent,
-} from 'web/lib/firebase/contracts'
+import { contractPath, contractPool } from 'web/lib/firebase/contracts'
 import { LiquidityPanel } from '../liquidity-panel'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -21,6 +17,7 @@ import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
 import { InfoTooltip } from '../info-tooltip'
 import { TagsInput } from 'web/components/tags-input'
+import { DuplicateContractButton } from '../copy-contract-button'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium  cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -68,9 +65,10 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
           <Row className="justify-start gap-4">
             <TweetButton
               className="self-start"
-              tweetText={getTweetText(contract, false)}
+              tweetText={getTweetText(contract)}
             />
             <ShareEmbedButton contract={contract} toastClassName={'-left-20'} />
+            <DuplicateContractButton contract={contract} />
           </Row>
           <div />
 
@@ -155,23 +153,13 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   )
 }
 
-const getTweetText = (contract: Contract, isCreator: boolean) => {
-  const { question, creatorName, resolution, outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
+const getTweetText = (contract: Contract) => {
+  const { question, resolution } = contract
 
-  const tweetQuestion = isCreator
-    ? question
-    : `${question}\nAsked by ${creatorName}.`
-  const tweetDescription = resolution
-    ? `Resolved ${resolution}!`
-    : isBinary
-    ? `Currently ${getBinaryProbPercent(
-        contract
-      )} chance, place your bets here:`
-    : `Submit your own answer:`
+  const tweetDescription = resolution ? `\n\nResolved ${resolution}!` : ''
 
   const timeParam = `${Date.now()}`.substring(7)
   const url = `https://manifold.markets${contractPath(contract)}?t=${timeParam}`
 
-  return `${tweetQuestion}\n\n${tweetDescription}\n\n${url}`
+  return `${question}\n\n${url}${tweetDescription}`
 }

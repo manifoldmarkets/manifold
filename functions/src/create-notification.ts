@@ -17,7 +17,7 @@ import { removeUndefinedProps } from '../../common/util/object'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
-  [userId: string]: { reason: notification_reason_types }
+  [userId: string]: { reason: notification_reason_types; isSeeOnHref?: string }
 }
 
 export const createNotification = async (
@@ -66,12 +66,11 @@ export const createNotification = async (
           sourceUserAvatarUrl: sourceUser.avatarUrl,
           sourceText,
           sourceContractCreatorUsername: sourceContract?.creatorUsername,
-          // TODO: move away from sourceContractTitle to sourceTitle
           sourceContractTitle: sourceContract?.question,
-          // TODO: move away from sourceContractSlug to sourceSlug
           sourceContractSlug: sourceContract?.slug,
           sourceSlug: sourceSlug ? sourceSlug : sourceContract?.slug,
           sourceTitle: sourceTitle ? sourceTitle : sourceContract?.question,
+          isSeenOnHref: userToReasonTexts[userId].isSeeOnHref,
         }
         await notificationRef.set(removeUndefinedProps(notification))
       })
@@ -267,6 +266,35 @@ export const createNotification = async (
       }
   }
 
+  const notifyContractCreatorOfUniqueBettorsBonus = async (
+    userToReasonTexts: user_to_reason_texts,
+    userId: string
+  ) => {
+    userToReasonTexts[userId] = {
+      reason: 'unique_bettors_on_your_contract',
+    }
+  }
+
+  const notifyOtherGroupMembersOfComment = async (
+    userToReasons: user_to_reason_texts,
+    userId: string
+  ) => {
+    if (shouldGetNotification(userId, userToReasons))
+      userToReasons[userId] = {
+        reason: 'on_group_you_are_member_of',
+        isSeeOnHref: sourceSlug,
+      }
+  }
+  const notifyTippedUserOfNewTip = async (
+    userToReasonTexts: user_to_reason_texts,
+    userId: string
+  ) => {
+    if (shouldGetNotification(userId, userToReasonTexts))
+      userToReasonTexts[userId] = {
+        reason: 'tip_received',
+      }
+  }
+
   const getUsersToNotify = async () => {
     const userToReasonTexts: user_to_reason_texts = {}
     // The following functions modify the userToReasonTexts object in place.
@@ -277,10 +305,13 @@ export const createNotification = async (
         await notifyUserAddedToGroup(userToReasonTexts, relatedUserId)
     } else if (sourceType === 'user' && relatedUserId) {
       await notifyUserReceivedReferralBonus(userToReasonTexts, relatedUserId)
+    } else if (sourceType === 'comment' && !sourceContract && relatedUserId) {
+      await notifyOtherGroupMembersOfComment(userToReasonTexts, relatedUserId)
     }
 
     // The following functions need sourceContract to be defined.
     if (!sourceContract) return userToReasonTexts
+
     if (
       sourceType === 'comment' ||
       sourceType === 'answer' ||
@@ -309,6 +340,14 @@ export const createNotification = async (
       })
     } else if (sourceType === 'liquidity' && sourceUpdateType === 'created') {
       await notifyContractCreator(userToReasonTexts, sourceContract)
+    } else if (sourceType === 'bonus' && sourceUpdateType === 'created') {
+      // Note: the daily bonus won't have a contract attached to it
+      await notifyContractCreatorOfUniqueBettorsBonus(
+        userToReasonTexts,
+        sourceContract.creatorId
+      )
+    } else if (sourceType === 'tip' && relatedUserId) {
+      await notifyTippedUserOfNewTip(userToReasonTexts, relatedUserId)
     }
     return userToReasonTexts
   }

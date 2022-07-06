@@ -5,7 +5,7 @@
     "firestore": "dev-mantic-markets.appspot.com"
   },
   "scripts": {
-    "build": "yarn compile && rm -rf dist && mkdir -p dist/functions && cp -R ../common/lib dist/common && cp -R lib/src dist/functions/src && cp ../yarn.lock dist && cp package.json dist",
+    "build": "yarn compile && rm -rf dist && mkdir -p dist/functions && cp -R ../common/lib dist/common && cp -R lib/src dist/functions/src && cp ../yarn.lock dist && cp package.json dist && cp .env dist",
     "compile": "tsc -b",
     "watch": "tsc -w",
     "shell": "yarn build && firebase functions:shell",
@@ -23,6 +23,7 @@
   "main": "functions/src/index.js",
   "dependencies": {
     "@amplitude/node": "1.10.0",
+    "@google-cloud/functions-framework": "3.1.2",
     "firebase-admin": "10.0.0",
     "firebase-functions": "3.21.2",
     "lodash": "4.17.21",

@@ -79,6 +79,11 @@ export const ContractOverview = (props: {
             <PseudoNumericResolutionOrExpectation contract={contract} />
             {tradingAllowed(contract) && <BetRow contract={contract} />}
           </Row>
+        ) : isPseudoNumeric ? (
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <PseudoNumericResolutionOrExpectation contract={contract} />
+            {tradingAllowed(contract) && <BetRow contract={contract} />}
+          </Row>
         ) : (
           outcomeType === 'FREE_RESPONSE' &&
           resolution && (
