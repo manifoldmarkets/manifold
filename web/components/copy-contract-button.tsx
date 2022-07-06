@@ -1,7 +1,9 @@
 import { DuplicateIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { getMappedValue } from 'common/pseudo-numeric'
+import { contractPath } from 'web/lib/firebase/contracts'
 import { trackCallback } from 'web/lib/service/analytics'
 
 export function DuplicateContractButton(props: {
@@ -34,7 +36,9 @@ function duplicateContractHref(contract: Contract) {
   const params = {
     q: contract.question,
     closeTime: contract.closeTime || 0,
-    description: contract.description,
+    description:
+      (contract.description ? `${contract.description}\n\n` : '') +
+      `(Copied from https://${ENV_CONFIG.domain}${contractPath(contract)})`,
     outcomeType: contract.outcomeType,
   } as Record<string, any>
 
