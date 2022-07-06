@@ -1,6 +1,6 @@
 import { MAX_TAG_LENGTH } from '../contract'
-import { generateText, JSONContent } from '@tiptap/core'
-import StarterKit from '@tiptap/starter-kit'
+import { generateText, JSONContent, Extension } from '@tiptap/core'
+import * as StarterKit from '@tiptap/starter-kit' // needed for cjs import to work on firebase
 
 export function parseTags(text: string) {
   const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
@@ -31,5 +31,7 @@ export function parseWordsAsTags(text: string) {
 }
 
 export function richTextToString(text: JSONContent | string) {
-  return typeof text === 'string' ? text : generateText(text, [StarterKit])
+  return typeof text === 'string'
+    ? text
+    : generateText(text, [StarterKit as unknown as Extension])
 }
