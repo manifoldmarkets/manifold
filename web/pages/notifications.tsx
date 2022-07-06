@@ -83,15 +83,15 @@ export default function Notifications() {
                   {paginatedNotificationGroups.length === 0 &&
                     "You don't have any notifications. Try changing your settings to see more."}
                   {paginatedNotificationGroups.map((notification) =>
-                    notification.notifications.length === 1 ? (
-                      <NotificationItem
-                        notification={notification.notifications[0]}
-                        key={notification.notifications[0].id}
-                      />
-                    ) : notification.type === 'income' ? (
+                    notification.type === 'income' ? (
                       <IncomeNotificationGroupItem
                         notificationGroup={notification}
                         key={notification.groupedById + notification.timePeriod}
+                      />
+                    ) : notification.notifications.length === 1 ? (
+                      <NotificationItem
+                        notification={notification.notifications[0]}
+                        key={notification.notifications[0].id}
                       />
                     ) : (
                       <NotificationGroupItem
