@@ -1,6 +1,6 @@
 import { sortBy, sumBy } from 'lodash'
 
-import { Bet, LimitBet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
+import { Bet, fill, LimitBet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
 import {
   calculateDpmShares,
   getDpmProbability,
@@ -62,6 +62,8 @@ const computeFill = (
     return undefined
   }
 
+  const timestamp = Date.now()
+
   if (
     !matchedBet ||
     (outcome === 'YES'
@@ -103,18 +105,19 @@ const computeFill = (
         amount: poolAmount,
         state: newState,
         fees,
+        timestamp,
       },
       taker: {
         matchedBetId: null,
         shares,
         amount: poolAmount,
+        timestamp,
       },
     }
   }
 
   // Fill from matchedBet.
-  const matchRemaining =
-    matchedBet.amount - sumBy(matchedBet.fills, (fill) => fill.amount)
+  const matchRemaining = matchedBet.orderAmount - matchedBet.amount
   const shares = Math.min(
     amount /
       (outcome === 'YES' ? matchedBet.limitProb : 1 - matchedBet.limitProb),
@@ -138,6 +141,7 @@ const computeFill = (
       shares *
       (outcome === 'YES' ? 1 - matchedBet.limitProb : matchedBet.limitProb),
     shares,
+    timestamp,
   }
   const taker = {
     matchedBetId: matchedBet.id,
@@ -145,6 +149,7 @@ const computeFill = (
       shares *
       (outcome === 'YES' ? matchedBet.limitProb : 1 - matchedBet.limitProb),
     shares,
+    timestamp,
   }
   return { maker, taker }
 }
@@ -164,12 +169,13 @@ export const getBinaryCpmmBetInfo = (
 
   console.log({ outcome, betAmount, limitProb, sortedBets })
 
-  const takers: {
-    matchedBetId: string | null
+  const takers: fill[] = []
+  const makers: {
+    bet: LimitBet
     amount: number
     shares: number
+    timestamp: number
   }[] = []
-  const makers: { bet: LimitBet; amount: number; shares: number }[] = []
 
   let amount = betAmount
   let cpmmState = { pool: contract.pool, p: contract.p }
@@ -210,13 +216,14 @@ export const getBinaryCpmmBetInfo = (
   const isFilled = floatingEqual(betAmount, takerAmount)
 
   const newBet: CandidateBet = removeUndefinedProps({
-    amount: betAmount,
+    orderAmount: betAmount,
+    amount: takerAmount,
+    shares: takerShares,
     limitProb,
     isFilled,
     isCancelled: false,
     fills: takers,
     contractId: contract.id,
-    shares: takerShares,
     outcome,
     probBefore,
     probAfter,

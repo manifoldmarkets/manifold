@@ -24,10 +24,7 @@ import { sellShares } from 'web/lib/firebase/api-call'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from './outcome-label'
-import {
-  calculatePayoutAfterCorrectBet,
-  getProbability,
-} from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import {

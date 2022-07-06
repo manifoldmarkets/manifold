@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { Query } from 'firebase-admin/firestore'
-import { sumBy } from 'lodash'
+import { FieldValue, Query } from 'firebase-admin/firestore'
+import { groupBy, mapValues, sumBy } from 'lodash'
 
 import { APIError, newEndpoint, validate } from './api'
 import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
@@ -74,6 +74,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           bet: LimitBet
           amount: number
           shares: number
+          timestamp: number
         }[]
       }
     > => {
@@ -128,29 +129,44 @@ export const placebet = newEndpoint({}, async (req, auth) => {
       throw new APIError(400, 'Bet too large for current liquidity pool.')
     }
 
-    const newBalance = user.balance - amount - loanAmount
     const betDoc = contractDoc.collection('bets').doc()
     trans.create(betDoc, { id: betDoc.id, userId: user.id, ...newBet })
     log('Created new bet document.')
 
     if (makers) {
-      for (const maker of makers) {
-        const { bet, amount, shares } = maker
-        const newFill = { amount, shares, matchedBetId: betDoc.id }
-        const fills = [...bet.fills, newFill]
+      const makersByBet = groupBy(makers, (maker) => maker.bet.id)
+      for (const makers of Object.values(makersByBet)) {
+        const bet = makers[0].bet
+        const newFills = makers.map((maker) => {
+          const { amount, shares, timestamp } = maker
+          return { amount, shares, matchedBetId: betDoc.id, timestamp }
+        })
+        const fills = [...bet.fills, ...newFills]
         const totalShares = sumBy(fills, 'shares')
-        const isFilled = floatingEqual(sumBy(fills, 'amount'), bet.amount)
+        const totalAmount = sumBy(fills, 'amount')
+        const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
         log('Updated a matched limit bet.')
         trans.update(contractDoc.collection('bets').doc(bet.id), {
           fills,
           isFilled,
+          amount: totalAmount,
           shares: totalShares,
         })
       }
+
+      // Deduct balance of makers.
+      const spentByUser = mapValues(
+        groupBy(makers, (maker) => maker.bet.userId),
+        (makers) => sumBy(makers, (maker) => maker.amount)
+      )
+      for (const [userId, spent] of Object.entries(spentByUser)) {
+        const userDoc = firestore.collection('users').doc(userId)
+        trans.update(userDoc, { balance: FieldValue.increment(-spent) })
+      }
     }
 
-    trans.update(userDoc, { balance: newBalance })
+    trans.update(userDoc, { balance: FieldValue.increment(-amount) })
     log('Updated user balance.')
     trans.update(
       contractDoc,

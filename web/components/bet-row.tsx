@@ -28,7 +28,6 @@ export default function BetRow(props: {
     contract,
     userBets
   )
-  
 
   return (
     <>

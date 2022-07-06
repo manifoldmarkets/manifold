@@ -505,7 +505,7 @@ export function ContractBetsTable(props: {
   const { contract, className, isYourBets } = props
 
   const bets = sortBy(
-    props.bets.filter((b) => !b.isAnte),
+    props.bets.filter((b) => !b.isAnte && b.amount !== 0),
     (bet) => bet.createdTime
   ).reverse()
 

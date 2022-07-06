@@ -28,7 +28,7 @@ export function LimitBets(props: { bets: LimitBet[]; className?: string }) {
 
 function LimitBet(props: { bet: LimitBet }) {
   const { bet } = props
-  const filledAmount = sumBy(bet.fills, (fill) => fill.amount)
+  const { orderAmount, amount, limitProb, outcome } = bet
   const [isCancelling, setIsCancelling] = useState(false)
 
   const onCancel = () => {
@@ -40,11 +40,11 @@ function LimitBet(props: { bet: LimitBet }) {
     <tr>
       <td>
         <div className="pl-2">
-          <BinaryOutcomeLabel outcome={bet.outcome as 'YES' | 'NO'} />
+          <BinaryOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
         </div>
       </td>
-      <td>{formatMoney(bet.amount - filledAmount)}</td>
-      <td>{formatPercent(bet.limitProb)}</td>
+      <td>{formatMoney(orderAmount - amount)}</td>
+      <td>{formatPercent(limitProb)}</td>
       <td>
         {isCancelling ? (
           <LoadingIndicator />
