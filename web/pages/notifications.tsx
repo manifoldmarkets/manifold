@@ -275,7 +275,9 @@ function IncomeNotificationGroupItem(props: {
           >
             <span>
               {'Daily Income Summary: '}
-              <span className={'text-primary'}>{formatMoney(totalIncome)}</span>
+              <span className={'text-primary'}>
+                {'+' + formatMoney(totalIncome)}
+              </span>
             </span>
           </div>
           <RelativeTimestamp time={notifications[0].createdTime} />
@@ -291,11 +293,44 @@ function IncomeNotificationGroupItem(props: {
                   .slice(0, numSummaryLines)
                   .map((notification) => {
                     return (
-                      <NotificationItem
-                        notification={notification}
-                        justSummary={true}
+                      <Row
+                        className={
+                          'items-center text-sm text-gray-500 sm:justify-start'
+                        }
                         key={notification.id}
-                      />
+                      >
+                        <div
+                          className={
+                            'line-clamp-1 flex-1 overflow-hidden sm:flex'
+                          }
+                        >
+                          <div className={'flex pl-1 sm:pl-0'}>
+                            <div
+                              className={
+                                'inline-flex overflow-hidden text-ellipsis pl-1'
+                              }
+                            >
+                              <div className={'mr-1 text-black'}>
+                                <NotificationTextLabel
+                                  contract={null}
+                                  defaultText={notification.sourceText ?? ''}
+                                  className={'line-clamp-1'}
+                                  notification={notification}
+                                  justSummary={true}
+                                />
+                              </div>
+                              <span className={'flex-shrink-0'}>
+                                {getReasonForShowingNotification(
+                                  notification,
+                                  true
+                                )}
+                                {` on`}
+                                <NotificationLink notification={notification} />
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </Row>
                     )
                   })}
                 <div className={'text-sm text-gray-500 hover:underline '}>
@@ -640,6 +675,34 @@ function NotificationSettings() {
   )
 }
 
+function NotificationLink(props: { notification: Notification }) {
+  const { notification } = props
+  const {
+    sourceType,
+    sourceContractTitle,
+    sourceContractCreatorUsername,
+    sourceContractSlug,
+    sourceSlug,
+    sourceTitle,
+  } = notification
+  return (
+    <a
+      href={
+        sourceContractCreatorUsername
+          ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
+          : sourceType === 'group' && sourceSlug
+          ? `${groupPath(sourceSlug)}`
+          : ''
+      }
+      className={
+        'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2'
+      }
+    >
+      {sourceContractTitle || sourceTitle}
+    </a>
+  )
+}
+
 function NotificationItem(props: {
   notification: Notification
   justSummary?: boolean
@@ -656,11 +719,9 @@ function NotificationItem(props: {
     sourceUserUsername,
     createdTime,
     sourceText,
-    sourceContractTitle,
     sourceContractCreatorUsername,
     sourceContractSlug,
     sourceSlug,
-    sourceTitle,
   } = notification
 
   const [defaultNotificationText, setDefaultNotificationText] =
@@ -790,20 +851,7 @@ function NotificationItem(props: {
                 {sourceType && reason && (
                   <div className={'inline truncate'}>
                     {getReasonForShowingNotification(notification, false)}
-                    <a
-                      href={
-                        sourceContractCreatorUsername
-                          ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-                          : sourceType === 'group' && sourceSlug
-                          ? `${groupPath(sourceSlug)}`
-                          : ''
-                      }
-                      className={
-                        'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2'
-                      }
-                    >
-                      {sourceContractTitle || sourceTitle}
-                    </a>
+                    <NotificationLink notification={notification} />
                   </div>
                 )}
               </div>
@@ -892,9 +940,7 @@ function NotificationTextLabel(props: {
     )
   } else if (sourceType === 'bonus' && sourceText) {
     return (
-      <span className="text-primary">
-        {'+' + formatMoney(parseInt(sourceText))}
-      </span>
+      <span className="text-primary">{formatMoney(parseInt(sourceText))}</span>
     )
   }
   // return default text
@@ -931,7 +977,7 @@ function getReasonForShowingNotification(
       else reasonText = `commented on`
       break
     case 'contract':
-      if (reason === 'you_follow_user') reasonText = 'created a new question'
+      if (reason === 'you_follow_user') reasonText = 'asked'
       else if (sourceUpdateType === 'resolved') reasonText = `resolved`
       else if (sourceUpdateType === 'closed')
         reasonText = `Please resolve your question`
@@ -968,7 +1014,7 @@ function getReasonForShowingNotification(
           ? `You had ${
               parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
             } unique bettors on`
-          : 'You earned Mana for unique bettors:'
+          : ' for unique bettors'
       else reasonText = 'You earned your daily manna'
       break
     default:
