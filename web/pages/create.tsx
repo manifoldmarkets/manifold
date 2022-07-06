@@ -227,7 +227,8 @@ export function NewContract(props: {
 
       await router.push(contractPath(result as Contract))
     } catch (e) {
-      console.log('error creating contract', e)
+      console.error('error creating contract', e, (e as any).details)
+      setIsSubmitting(false)
     }
   }
 
