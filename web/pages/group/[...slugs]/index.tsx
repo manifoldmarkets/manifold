@@ -2,7 +2,6 @@ import { take, sortBy, debounce } from 'lodash'
 
 import { Group } from 'common/group'
 import { Page } from 'web/components/page'
-import { Title } from 'web/components/title'
 import { listAllBets } from 'web/lib/firebase/bets'
 import { Contract } from 'web/lib/firebase/contracts'
 import {
@@ -53,7 +52,7 @@ import { SiteLink } from 'web/components/site-link'
 import { ContractSearch } from 'web/components/contract-search'
 import clsx from 'clsx'
 import { FollowList } from 'web/components/follow-list'
-import { PlusIcon, SearchIcon } from '@heroicons/react/outline'
+import { SearchIcon } from '@heroicons/react/outline'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -410,7 +409,7 @@ function GroupOverview(props: {
         </Row>
         {anyoneCanJoin && user && (
           <Row className={'flex-wrap items-center gap-1'}>
-            <span className={'text-gray-500'}>Sharing</span>
+            <span className={'text-gray-500'}>Share</span>
             <ShareIconButton
               group={group}
               username={user.username}
