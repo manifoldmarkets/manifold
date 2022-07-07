@@ -16,7 +16,8 @@ export type NotificationGroup = {
   type: 'income' | 'normal'
 }
 
-// This doesn't listen for new notifications, use firebase listener for that
+// For some reason react-query subscriptions don't actually listen for notifications
+// Use useUnseenPreferredNotificationGroups to listen for new notifications
 export function usePreferredGroupedNotifications(privateUser: PrivateUser) {
   const [notificationGroups, setNotificationGroups] = useState<
     NotificationGroup[] | undefined
@@ -26,11 +27,7 @@ export function usePreferredGroupedNotifications(privateUser: PrivateUser) {
 
   const result = useFirestoreQuery(
     [key],
-    getNotificationsQuery(privateUser.id, false),
-    {
-      // subscribe: false,
-      // includeMetadataChanges: true,
-    }
+    getNotificationsQuery(privateUser.id, false)
   )
   useEffect(() => {
     if (result.isLoading) return
@@ -131,7 +128,10 @@ export function useUnseenPreferredNotifications(
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [userAppropriateNotifications, setUserAppropriateNotifications] =
     useState<Notification[]>([])
-  listenForNotifications(privateUser.id, setNotifications, true)
+
+  useEffect(() => {
+    return listenForNotifications(privateUser.id, setNotifications, true)
+  }, [privateUser.id])
 
   useEffect(() => {
     const notificationsToShow = getAppropriateNotifications(
@@ -154,7 +154,7 @@ const lessPriorityReasons = [
   // 'on_contract_with_users_shares_in',
 ]
 
-export function getAppropriateNotifications(
+function getAppropriateNotifications(
   notifications: Notification[],
   notificationPreferences?: notification_subscribe_types
 ) {

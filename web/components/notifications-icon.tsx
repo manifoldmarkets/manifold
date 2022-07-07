@@ -15,14 +15,12 @@ export default function NotificationsIcon(props: { className?: string }) {
 
   useEffect(() => {
     if (user) {
-      const bonusChecker = setTimeout(() => {
-        requestBonuses({}).catch((error) => {
-          console.log("couldn't get bonuses:", error.message)
-        })
+      const bonusChecker = setInterval(() => {
+        requestBonuses({})
         return () => {
           clearInterval(bonusChecker)
         }
-      }, 1000 * 120)
+      }, 1000 * 60)
     }
   }, [user])
 
