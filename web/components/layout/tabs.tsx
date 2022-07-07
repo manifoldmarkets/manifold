@@ -16,14 +16,15 @@ export function Tabs(props: {
   defaultIndex?: number
   labelClassName?: string
   onClick?: (tabTitle: string, index: number) => void
+  className?: string
 }) {
-  const { tabs, defaultIndex, labelClassName, onClick } = props
+  const { tabs, defaultIndex, labelClassName, onClick, className } = props
   const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
   const activeTab = tabs[activeIndex] as Tab | undefined // can be undefined in weird case
 
   return (
     <>
-      <div className="mb-4 border-b border-gray-200">
+      <div className={clsx('mb-4 border-b border-gray-200', className)}>
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           {tabs.map((tab, i) => (
             <Link href={tab.href ?? '#'} key={tab.title} shallow={!!tab.href}>
