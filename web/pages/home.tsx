@@ -34,7 +34,6 @@ const Home = () => {
               shouldLoadFromStorage: true,
               defaultSort: getSavedSort() ?? '24-hour-vol',
             }}
-            showCategorySelector
             onContractClick={(c) => {
               // Show contract without navigating to contract page.
               setContract(c)
