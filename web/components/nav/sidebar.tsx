@@ -265,9 +265,13 @@ function GroupsList(props: {
   privateUser: PrivateUser
 }) {
   const { currentPage, memberItems, privateUser } = props
-  const preferredNotifications = useUnseenPreferredNotifications(privateUser, {
-    customHref: '/group/',
-  })
+  const preferredNotifications = useUnseenPreferredNotifications(
+    privateUser,
+    {
+      customHref: '/group/',
+    },
+    memberItems.length
+  )
 
   // Set notification as seen if our current page is equal to the isSeenOnHref property
   useEffect(() => {

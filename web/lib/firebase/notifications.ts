@@ -27,13 +27,10 @@ export function getNotificationsQuery(
 export function listenForNotifications(
   userId: string,
   setNotifications: (notifs: Notification[]) => void,
-  unseenOnly?: boolean
+  unseenOnlyOptions?: { unseenOnly: boolean; limit: number }
 ) {
   return listenForValues<Notification>(
-    getNotificationsQuery(
-      userId,
-      unseenOnly ? { unseenOnly, limit: NOTIFICATIONS_PER_PAGE } : undefined
-    ),
+    getNotificationsQuery(userId, unseenOnlyOptions),
     (notifs) => {
       notifs.sort((n1, n2) => n2.createdTime - n1.createdTime)
       setNotifications(notifs)

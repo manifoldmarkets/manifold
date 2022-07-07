@@ -7,6 +7,7 @@ import {
 } from 'web/lib/firebase/notifications'
 import { groupBy, map } from 'lodash'
 import { useFirestoreQuery } from '@react-query-firebase/firestore'
+import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -119,7 +120,8 @@ export function groupNotifications(notifications: Notification[]) {
 
 export function useUnseenPreferredNotifications(
   privateUser: PrivateUser,
-  options: { customHref?: string }
+  options: { customHref?: string },
+  limit: number = NOTIFICATIONS_PER_PAGE
 ) {
   const { customHref } = options
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -127,8 +129,11 @@ export function useUnseenPreferredNotifications(
     useState<Notification[]>([])
 
   useEffect(() => {
-    return listenForNotifications(privateUser.id, setNotifications, true)
-  }, [privateUser.id])
+    return listenForNotifications(privateUser.id, setNotifications, {
+      unseenOnly: true,
+      limit,
+    })
+  }, [limit, privateUser.id])
 
   useEffect(() => {
     const notificationsToShow = getAppropriateNotifications(
