@@ -53,6 +53,7 @@ import { ContractSearch } from 'web/components/contract-search'
 import clsx from 'clsx'
 import { FollowList } from 'web/components/follow-list'
 import { SearchIcon } from '@heroicons/react/outline'
+import { useTipTxns } from 'web/hooks/use-tip-txns'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -149,6 +150,7 @@ export default function GroupPage(props: {
   const group = useGroup(props.group?.id) ?? props.group
   const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
   const [query, setQuery] = useState('')
+  const tips = useTipTxns({ groupId: group?.id })
 
   const messages = useCommentsOnGroup(group?.id)
   const debouncedQuery = debounce(setQuery, 50)
@@ -263,7 +265,12 @@ export default function GroupPage(props: {
           {
             title: 'Chat',
             content: messages ? (
-              <GroupChat messages={messages} user={user} group={group} />
+              <GroupChat
+                messages={messages}
+                user={user}
+                group={group}
+                tips={tips}
+              />
             ) : (
               <LoadingIndicator />
             ),
