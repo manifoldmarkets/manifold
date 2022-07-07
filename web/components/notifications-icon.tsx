@@ -16,11 +16,11 @@ export default function NotificationsIcon(props: { className?: string }) {
   useEffect(() => {
     if (user) {
       const bonusChecker = setInterval(() => {
-        requestBonuses({})
+        requestBonuses({}).catch(console.log)
         return () => {
           clearInterval(bonusChecker)
         }
-      }, 1000 * 60)
+      }, 1000 * 65)
     }
   }, [user])
 
