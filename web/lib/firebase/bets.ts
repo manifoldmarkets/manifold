@@ -4,6 +4,13 @@ import {
   query,
   where,
   orderBy,
+  QueryConstraint,
+  limit,
+  startAfter,
+  doc,
+  getDocs,
+  getDoc,
+  DocumentSnapshot,
 } from 'firebase/firestore'
 import { uniq } from 'lodash'
 
@@ -76,6 +83,43 @@ export async function getUserBets(
       )
     )
     .catch((reason) => reason)
+}
+
+export async function getBets(options: {
+  userId?: string
+  contractId?: string
+  before?: string
+  limit: number
+}) {
+  const { userId, contractId, before } = options
+
+  const queryParts: QueryConstraint[] = [
+    orderBy('createdTime', 'desc'),
+    limit(options.limit),
+  ]
+  if (userId) {
+    queryParts.push(where('userId', '==', userId))
+  }
+  if (before) {
+    let beforeSnap: DocumentSnapshot
+    if (contractId) {
+      beforeSnap = await getDoc(
+        doc(db, 'contracts', contractId, 'bets', before)
+      )
+    } else {
+      beforeSnap = (
+        await getDocs(
+          query(collectionGroup(db, 'bets'), where('id', '==', before))
+        )
+      ).docs[0]
+    }
+    queryParts.push(startAfter(beforeSnap))
+  }
+
+  const querySource = contractId
+    ? collection(db, 'contracts', contractId, 'bets')
+    : collectionGroup(db, 'bets')
+  return await getValues<Bet>(query(querySource, ...queryParts))
 }
 
 export async function getContractsOfUserBets(userId: string) {

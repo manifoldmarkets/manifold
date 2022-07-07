@@ -2,37 +2,39 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { listAllContracts } from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { toLiteMarket } from './_types'
+import { toLiteMarket, ValidationError } from './_types'
+import { z } from 'zod'
+import { validate } from './_validate'
+
+const queryParams = z
+  .object({
+    limit: z
+      .number()
+      .default(1000)
+      .or(z.string().regex(/\d+/).transform(Number))
+      .refine((n) => n >= 0 && n <= 1000, 'Limit must be between 0 and 1000'),
+    before: z.string().optional(),
+  })
+  .strict()
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
-  let before: string | undefined
-  let limit: number | undefined
-  if (req.query.before != null) {
-    if (typeof req.query.before !== 'string') {
-      res.status(400).json({ error: 'before must be null or a market ID.' })
-      return
+
+  let params: z.infer<typeof queryParams>
+  try {
+    params = validate(queryParams, req.query)
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      return res.status(400).json(e)
     }
-    before = req.query.before
+    console.error(`Unknown error during validation: ${e}`)
+    return res.status(500).json({ error: 'Unknown error during validation' })
   }
-  if (req.query.limit != null) {
-    if (typeof req.query.limit !== 'string') {
-      res
-        .status(400)
-        .json({ error: 'limit must be null or a number of markets to return.' })
-      return
-    }
-    limit = parseInt(req.query.limit)
-  } else {
-    limit = 1000
-  }
-  if (limit < 1 || limit > 1000) {
-    res.status(400).json({ error: 'limit must be between 1 and 1000.' })
-    return
-  }
+
+  const { limit, before } = params
 
   try {
     const contracts = await listAllContracts(limit, before)
