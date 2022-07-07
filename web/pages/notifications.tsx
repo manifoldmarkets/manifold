@@ -8,7 +8,6 @@ import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
-import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { UserLink } from 'web/components/user-page'
 import { notification_subscribe_types, PrivateUser } from 'common/user'
 import { Contract } from 'common/contract'
@@ -340,13 +339,7 @@ function IncomeNotificationItem(props: {
   justSummary?: boolean
 }) {
   const { notification, justSummary } = props
-  const {
-    sourceType,
-    sourceUserName,
-    reason,
-    sourceUserUsername,
-    createdTime,
-  } = notification
+  const { sourceType, sourceUserName, sourceUserUsername } = notification
   const [highlighted] = useState(!notification.isSeen)
 
   useEffect(() => {
@@ -365,7 +358,7 @@ function IncomeNotificationItem(props: {
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you` : `in tips on`
     }
-    return <span className={'flex-shrink-0'}>{reasonText}</span>
+    return reasonText
   }
 
   if (justSummary) {
@@ -385,7 +378,7 @@ function IncomeNotificationItem(props: {
               </div>
               <span className={'flex truncate'}>
                 {getReasonForShowingIncomeNotification(true)}
-                <NotificationLink notification={notification} />
+                <NotificationLink notification={notification} noClick={true} />
               </span>
             </div>
           </div>
@@ -403,42 +396,33 @@ function IncomeNotificationItem(props: {
     >
       <a href={getSourceUrl(notification)}>
         <Row className={'items-center text-gray-500 sm:justify-start'}>
-          <div className={'flex max-w-xl shrink '}>
-            {sourceType && reason && (
-              <div className={'inline'}>
-                <span className={'mr-1'}>
-                  <NotificationTextLabel
-                    contract={null}
-                    defaultText={notification.sourceText ?? ''}
-                    notification={notification}
+          <div className={'line-clamp-2 flex max-w-xl shrink '}>
+            <div className={'inline'}>
+              <span className={'mr-1'}>
+                <NotificationTextLabel
+                  contract={null}
+                  defaultText={notification.sourceText ?? ''}
+                  notification={notification}
+                />
+              </span>
+            </div>
+            <span>
+              {sourceType != 'bonus' &&
+                (sourceUserUsername === MULTIPLE_USERS_KEY ? (
+                  <span className={'mr-1 truncate'}>Multiple users</span>
+                ) : (
+                  <UserLink
+                    name={sourceUserName || ''}
+                    username={sourceUserUsername || ''}
+                    className={'mr-1 flex-shrink-0'}
+                    justFirstName={true}
                   />
-                </span>
-
-                {sourceType != 'bonus' &&
-                  (sourceUserUsername === MULTIPLE_USERS_KEY ? (
-                    <span className={'mr-1 truncate'}>Multiple users</span>
-                  ) : (
-                    <UserLink
-                      name={sourceUserName || ''}
-                      username={sourceUserUsername || ''}
-                      className={'mr-1 flex-shrink-0'}
-                      justFirstName={true}
-                    />
-                  ))}
-              </div>
-            )}
-            {getReasonForShowingIncomeNotification(false)}
-            <span className={'ml-1 flex hidden sm:inline-block'}>
-              on
+                ))}
+              {getReasonForShowingIncomeNotification(false)} {' on'}
               <NotificationLink notification={notification} />
             </span>
-            <RelativeTimestamp time={createdTime} />
           </div>
         </Row>
-        <span className={'flex truncate text-gray-500 sm:hidden'}>
-          on
-          <NotificationLink notification={notification} />
-        </span>
         <div className={'mt-4 border-b border-gray-300'} />
       </a>
     </div>
@@ -484,23 +468,20 @@ function NotificationGroupItem(props: {
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <EmptyAvatar multi />
-        <div className={'flex truncate pl-2'}>
-          <div
-            onClick={() => setExpanded(!expanded)}
-            className={' flex cursor-pointer truncate pl-1  sm:pl-0'}
-          >
+        <div className={'line-clamp-2 flex max-w-xl flex-wrap pl-1 sm:pl-0'}>
+          <span className={'ml-1 inline max-w-xs text-gray-500 sm:max-w-sm'}>
             {sourceContractTitle ? (
-              <>
-                <span className={'flex-shrink-0'}>{'Activity on '}</span>
-                <span className={'truncate'}>
-                  <NotificationLink notification={notifications[0]} />
-                </span>
-              </>
+              <span>
+                Activity on
+                <NotificationLink notification={notifications[0]} />
+              </span>
             ) : (
-              'Other activity'
+              <span>
+                Other activity
+                <RelativeTimestamp time={notifications[0].createdTime} />
+              </span>
             )}
-          </div>
-          <RelativeTimestamp time={notifications[0].createdTime} />
+          </span>
         </div>
       </Row>
       <div>
@@ -561,17 +542,13 @@ function NotificationItem(props: {
   const { notification, justSummary, hideTitle } = props
   const {
     sourceType,
-    sourceId,
     sourceUserName,
     sourceUserAvatarUrl,
     sourceUpdateType,
     reasonText,
     reason,
     sourceUserUsername,
-    createdTime,
     sourceText,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
   } = notification
 
   const [defaultNotificationText, setDefaultNotificationText] =
@@ -640,45 +617,32 @@ function NotificationItem(props: {
             className={'mr-2'}
             username={sourceUserName}
           />
-          <div className={'flex-1 overflow-hidden sm:flex'}>
-            <div
-              className={
-                'flex max-w-xl shrink overflow-hidden text-ellipsis pl-1 sm:pl-0'
-              }
-            >
-              {sourceUpdateType != 'closed' && (
-                <UserLink
-                  name={sourceUserName || ''}
-                  username={sourceUserUsername || ''}
-                  className={'mr-0 flex-shrink-0'}
-                  justFirstName={true}
-                />
-              )}
-              {sourceType && reason && (
-                <div className={'inline flex truncate'}>
-                  <span className={'ml-1 flex-shrink-0'}>
-                    {getReasonForShowingNotification(notification, false, true)}
-                  </span>
-                  {!hideTitle && (
-                    <NotificationLink notification={notification} />
+          <span>
+            <div className={'line-clamp-2 flex flex-wrap pl-1 sm:pl-0'}>
+              <span className={'ml-1 inline text-gray-500 '}>
+                <span>
+                  {sourceUpdateType != 'closed' && (
+                    <UserLink
+                      name={sourceUserName || ''}
+                      username={sourceUserUsername || ''}
+                      className={'mr-1 flex-shrink-0'}
+                      justFirstName={true}
+                    />
                   )}
-                </div>
-              )}
-              {sourceId &&
-              sourceContractSlug &&
-              sourceContractCreatorUsername ? (
-                <CopyLinkDateTimeComponent
-                  prefix={sourceContractCreatorUsername}
-                  slug={sourceContractSlug}
-                  createdTime={createdTime}
-                  elementId={getSourceIdForLinkComponent(sourceId)}
-                  className={'-mx-1 inline-flex sm:inline-block'}
-                />
-              ) : (
-                <RelativeTimestamp time={createdTime} />
-              )}
+                  {getReasonForShowingNotification(notification, false, true)}
+                  {hideTitle && (
+                    <RelativeTimestamp time={notification.createdTime} />
+                  )}
+                </span>
+                {!hideTitle && <NotificationLink notification={notification} />}
+                {!hideTitle && (
+                  <span className={'hidden sm:inline-block'}>
+                    <RelativeTimestamp time={notification.createdTime} />
+                  </span>
+                )}
+              </span>
             </div>
-          </div>
+          </span>
         </Row>
         <div className={'mt-1 ml-1 md:text-base'}>
           <NotificationTextLabel
@@ -708,8 +672,11 @@ export const setNotificationsAsSeen = (notifications: Notification[]) => {
   return notifications
 }
 
-function NotificationLink(props: { notification: Notification }) {
-  const { notification } = props
+function NotificationLink(props: {
+  notification: Notification
+  noClick?: boolean
+}) {
+  const { notification, noClick } = props
   const {
     sourceType,
     sourceContractTitle,
@@ -718,17 +685,23 @@ function NotificationLink(props: { notification: Notification }) {
     sourceSlug,
     sourceTitle,
   } = notification
+  if (noClick)
+    return (
+      <span className={'ml-1 font-bold '}>
+        {sourceContractTitle || sourceTitle}
+      </span>
+    )
   return (
     <a
+      className={
+        'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2 '
+      }
       href={
         sourceContractCreatorUsername
           ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
           : sourceType === 'group' && sourceSlug
           ? `${groupPath(sourceSlug)}`
           : ''
-      }
-      className={
-        'ml-1 inline max-w-xs truncate font-bold text-gray-500 hover:underline hover:decoration-indigo-400 hover:decoration-2 sm:max-w-sm'
       }
     >
       {sourceContractTitle || sourceTitle}
@@ -908,12 +881,7 @@ function getReasonForShowingNotification(
     default:
       reasonText = ''
   }
-
-  return (
-    <span className={'flex-shrink-0'}>
-      {replaceOn ? reasonText.replace(' on', '') : reasonText}
-    </span>
-  )
+  return replaceOn ? reasonText.replace(' on', '') : reasonText
 }
 
 // TODO: where should we put referral bonus notifications?
