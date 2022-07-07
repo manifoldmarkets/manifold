@@ -9,20 +9,21 @@ import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 
-const LINE_HEIGHT = 2
-
-const proseClass = 'prose prose-sm prose-p:my-0 prose-li:my-0 max-w-none'
+const proseClass =
+  'prose prose-sm prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none'
 
 export function useTextEditor(props: {
-  rows?: number
   placeholder?: string
   max?: number
   defaultValue?: Content
   disabled?: boolean
 }) {
-  const { rows, placeholder, max, defaultValue = '', disabled } = props
+  const { placeholder, max, defaultValue = '', disabled } = props
 
-  const rowsClass = rows && `box-content min-h-[${LINE_HEIGHT * rows}em]`
+  const editorClass = clsx(
+    proseClass,
+    'box-content min-h-[6em] textarea textarea-bordered'
+  )
 
   const upload = useMutation((files: File[]) =>
     Promise.all(files.map((file) => uploadImage('default', file)))
@@ -30,9 +31,7 @@ export function useTextEditor(props: {
 
   const editor = useEditor({
     editorProps: {
-      attributes: {
-        class: clsx(proseClass, rowsClass, 'textarea textarea-bordered'),
-      },
+      attributes: { class: editorClass },
       handlePaste(view, event) {
         const files = Array.from(event.clipboardData?.files ?? []).filter(
           (file) => file.type.startsWith('image')
@@ -56,8 +55,14 @@ export function useTextEditor(props: {
       },
     },
     extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+      }),
+      Placeholder.configure({
+        placeholder,
+        emptyEditorClass:
+          'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0',
+      }),
       CharacterCount.configure({ limit: max }),
       Image,
     ],

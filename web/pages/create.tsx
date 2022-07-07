@@ -189,7 +189,6 @@ export function NewContract(props: {
       : `e.g. I will choose the answer according to...`
 
   const { editor, upload } = useTextEditor({
-    rows: 3,
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
     disabled: isSubmitting,
