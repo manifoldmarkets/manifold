@@ -31,7 +31,6 @@ import {
   calculateCpmmSale,
   getCpmmProbability,
   getCpmmLiquidityFee,
-  calculateCpmmAmount,
 } from 'common/calculate-cpmm'
 import {
   getFormattedMappedValue,
@@ -334,12 +333,6 @@ function BuyPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const amountToGoToProb = calculateCpmmAmount(
-    contract,
-    (limitProb ?? initialProb * 100) / 100,
-    betChoice ?? 'YES'
-  )
-
   const limitProbFrac = (limitProb ?? 0) / 100
 
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
@@ -350,15 +343,6 @@ function BuyPanel(props: {
     unfilledBets as LimitBet[]
   )
 
-  console.log(
-    'limitProb',
-    limitProb,
-    'amountToGoToProb',
-    amountToGoToProb,
-    'unfilledBets',
-    unfilledBets
-  )
-
   const resultProb = getCpmmProbability(newPool, newP)
   const matchedAmount = sumBy(newBet.fills, (fill) => fill.amount)
   const filledShares = sumBy(newBet.fills, (fill) => fill.shares)
@@ -366,19 +350,6 @@ function BuyPanel(props: {
     filledShares +
     ((betAmount ?? 0) - matchedAmount) /
       (betChoice === 'YES' ? limitProbFrac : 1 - limitProbFrac)
-
-  console.log(
-    'overallShares',
-    overallShares,
-    'filledShares',
-    filledShares,
-    'amount',
-    betAmount,
-    'matchedAmount',
-    matchedAmount,
-    'limitProb',
-    limitProb
-  )
 
   const currentPayout = overallShares
 

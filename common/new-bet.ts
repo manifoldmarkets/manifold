@@ -57,7 +57,6 @@ const computeFill = (
       : floatingLesserEqual(prob, limitProb) &&
         (matchedBet?.limitProb ?? 0) < limitProb)
   ) {
-    console.log('no fill', amount, outcome, prob, limitProb)
     // No fill.
     return undefined
   }
@@ -89,15 +88,6 @@ const computeFill = (
     )
     const newState = { pool: newPool, p: newP }
 
-    console.log(
-      'fill from pool',
-      poolAmount,
-      '/',
-      amount,
-      outcome,
-      prob,
-      limitProb
-    )
     return {
       maker: {
         matchedBetId: null,
@@ -123,15 +113,6 @@ const computeFill = (
       (outcome === 'YES' ? matchedBet.limitProb : 1 - matchedBet.limitProb),
     matchRemaining /
       (outcome === 'YES' ? 1 - matchedBet.limitProb : matchedBet.limitProb)
-  )
-
-  console.log(
-    'fill from matchedBet',
-    amount,
-    matchRemaining,
-    shares,
-    outcome,
-    limitProb
   )
 
   const maker = {
@@ -166,8 +147,6 @@ export const getBinaryCpmmBetInfo = (
     (bet) => (outcome === 'YES' ? bet.limitProb : -bet.limitProb),
     (bet) => bet.createdTime
   )
-
-  console.log({ outcome, betAmount, limitProb, sortedBets })
 
   const takers: fill[] = []
   const makers: {
@@ -205,8 +184,6 @@ export const getBinaryCpmmBetInfo = (
 
     if (floatingEqual(amount, 0)) break
   }
-
-  console.log({ makers, takers })
 
   const probBefore = getCpmmProbability(contract.pool, contract.p)
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
