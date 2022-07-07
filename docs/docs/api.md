@@ -567,6 +567,64 @@ $ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
                  ]}'
 ```
 
+### `GET /v0/bets`
+
+Gets a list of bets, ordered by creation date descending.
+
+Parameters:
+
+- `username`: Optional. If set, the response will include only bets created by this user.
+- `market`: Optional. The slug of a market. If set, the response will only include bets on this market.
+- `limit`: Optional. How many bets to return. The maximum and the default is 1000.
+- `before`: Optional. The ID of the bet before which the list will start. For
+  example, if you ask for the most recent 10 bets, and then perform a second
+  query for 10 more bets with `before=[the id of the 10th bet]`, you will
+  get bets 11 through 20.
+
+Requires no authorization.
+
+- Example request
+  ```
+  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&market=will-california-abolish-daylight-sa
+  ```
+- Response type: A `Bet[]`.
+
+- <details><summary>Example response</summary><p>
+
+  ```json
+  [
+    {
+      "probAfter": 0.44418877319153904,
+      "shares": -645.8346334931828,
+      "outcome": "YES",
+      "contractId": "tgB1XmvFXZNhjr3xMNLp",
+      "sale": {
+        "betId": "RcOtarI3d1DUUTjiE0rx",
+        "amount": 474.9999999999998
+      },
+      "createdTime": 1644602886293,
+      "userId": "94YYTk1AFWfbWMpfYcvnnwI1veP2",
+      "probBefore": 0.7229189477449224,
+      "id": "x9eNmCaqQeXW8AgJ8Zmp",
+      "amount": -499.9999999999998
+    },
+    {
+      "probAfter": 0.9901970375647697,
+      "contractId": "zdeaYVAfHlo9jKzWh57J",
+      "outcome": "YES",
+      "amount": 1,
+      "id": "8PqxKYwXCcLYoXy2m2Nm",
+      "shares": 1.0049875638533763,
+      "userId": "94YYTk1AFWfbWMpfYcvnnwI1veP2",
+      "probBefore": 0.9900000000000001,
+      "createdTime": 1644705818872
+    }
+  ]
+  ```
+
+  </p>
+  </details>
+
 ## Changelog
 
 - 2022-06-08: Add paging to markets endpoint
