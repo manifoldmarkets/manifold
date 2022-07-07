@@ -149,14 +149,6 @@ export function NewContract(props: {
     ? parseFloat(initialValueString)
     : undefined
 
-  const adjustIsLog = () => {
-    if (min === undefined || max === undefined) return
-    const lengthDiff = Math.log10(max - min)
-    if (lengthDiff > 2) {
-      setIsLogScale(true)
-    }
-  }
-
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
@@ -279,7 +271,6 @@ export function NewContract(props: {
                 placeholder="MIN"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
-                onBlur={adjustIsLog}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
                 disabled={isSubmitting}
@@ -291,7 +282,6 @@ export function NewContract(props: {
                 placeholder="MAX"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}
-                onBlur={adjustIsLog}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
                 disabled={isSubmitting}
