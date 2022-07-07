@@ -12,7 +12,7 @@ import {
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
@@ -26,8 +26,9 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Group } from 'common/group'
 import { Spacer } from '../layout/spacer'
-import { usePreferredNotifications } from 'web/hooks/use-notifications'
+import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
+import { PrivateUser } from 'common/lib/user'
 
 function getNavigation() {
   return [
@@ -186,6 +187,7 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
 
   const user = useUser()
+  const privateUser = usePrivateUser(user?.id)
   const navigationOptions = !user ? signedOutNavigation : getNavigation()
   const mobileNavigationOptions = !user
     ? signedOutMobileNavigation
@@ -220,11 +222,13 @@ export default function Sidebar(props: { className?: string }) {
           />
         )}
 
-        <GroupsList
-          currentPage={router.asPath}
-          memberItems={memberItems}
-          user={user}
-        />
+        {privateUser && (
+          <GroupsList
+            currentPage={router.asPath}
+            memberItems={memberItems}
+            privateUser={privateUser}
+          />
+        )}
       </div>
 
       {/* Desktop navigation */}
@@ -243,11 +247,13 @@ export default function Sidebar(props: { className?: string }) {
             <div className="h-[1px] bg-gray-300" />
           </div>
         )}
-        <GroupsList
-          currentPage={router.asPath}
-          memberItems={memberItems}
-          user={user}
-        />
+        {privateUser && (
+          <GroupsList
+            currentPage={router.asPath}
+            memberItems={memberItems}
+            privateUser={privateUser}
+          />
+        )}
       </div>
     </nav>
   )
@@ -256,11 +262,10 @@ export default function Sidebar(props: { className?: string }) {
 function GroupsList(props: {
   currentPage: string
   memberItems: Item[]
-  user: User | null | undefined
+  privateUser: PrivateUser
 }) {
-  const { currentPage, memberItems, user } = props
-  const preferredNotifications = usePreferredNotifications(user?.id, {
-    unseenOnly: true,
+  const { currentPage, memberItems, privateUser } = props
+  const preferredNotifications = useUnseenPreferredNotifications(privateUser, {
     customHref: '/group/',
   })
 

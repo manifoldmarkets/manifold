@@ -1,12 +1,17 @@
-import { collection, query, where } from 'firebase/firestore'
+import { collection, orderBy, query, where } from 'firebase/firestore'
 import { Notification } from 'common/notification'
 import { db } from 'web/lib/firebase/init'
 import { listenForValues } from 'web/lib/firebase/utils'
 
-function getNotificationsQuery(userId: string, unseenOnly?: boolean) {
+export function getNotificationsQuery(userId: string, unseenOnly?: boolean) {
   const notifsCollection = collection(db, `/users/${userId}/notifications`)
-  if (unseenOnly) return query(notifsCollection, where('isSeen', '==', false))
-  return query(notifsCollection)
+  if (unseenOnly)
+    return query(
+      notifsCollection,
+      where('isSeen', '==', false),
+      orderBy('createdTime', 'desc')
+    )
+  return query(notifsCollection, orderBy('createdTime', 'desc'))
 }
 
 export function listenForNotifications(
@@ -19,6 +24,7 @@ export function listenForNotifications(
     (notifs) => {
       notifs.sort((n1, n2) => n2.createdTime - n1.createdTime)
       setNotifications(notifs)
-    }
+    },
+    true
   )
 }

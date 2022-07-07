@@ -1,5 +1,5 @@
 import { Tabs } from 'web/components/layout/tabs'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import React, { useEffect, useState } from 'react'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
@@ -9,7 +9,6 @@ import { Title } from 'web/components/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
-import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/user-page'
 import { notification_subscribe_types, PrivateUser } from 'common/user'
 import { Contract } from 'common/contract'
@@ -35,134 +34,141 @@ import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
 import { groupBy, sum, uniq } from 'lodash'
+import Custom404 from 'web/pages/404'
+import { Col } from 'web/components/layout/col'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
 
 export default function Notifications() {
   const user = useUser()
-  const [page, setPage] = useState(1)
+  const privateUser = usePrivateUser(user?.id)
 
-  const groupedNotifications = usePreferredGroupedNotifications(user?.id, {
-    unseenOnly: false,
-  })
-  const [paginatedNotificationGroups, setPaginatedNotificationGroups] =
-    useState<NotificationGroup[]>([])
-  useEffect(() => {
-    if (!groupedNotifications) return
-    const start = (page - 1) * NOTIFICATIONS_PER_PAGE
-    const end = start + NOTIFICATIONS_PER_PAGE
-    const maxNotificationsToShow = groupedNotifications.slice(start, end)
-    const remainingNotification = groupedNotifications.slice(end)
-    for (const notification of remainingNotification) {
-      if (notification.isSeen) break
-      else setNotificationsAsSeen(notification.notifications)
-    }
-    setPaginatedNotificationGroups(maxNotificationsToShow)
-  }, [groupedNotifications, page])
-
-  if (user === undefined) {
-    return <LoadingIndicator />
-  }
-  if (user === null) {
-    return <Custom404 />
-  }
-
+  if (!user) return <Custom404 />
   return (
     <Page>
       <div className={'p-2 sm:p-4'}>
         <Title text={'Notifications'} className={'hidden md:block'} />
-        <Tabs
-          labelClassName={'pb-2 pt-1 '}
-          defaultIndex={0}
-          tabs={[
-            {
-              title: 'Notifications',
-              content: groupedNotifications ? (
-                <div className={''}>
-                  {paginatedNotificationGroups.length === 0 &&
-                    "You don't have any notifications. Try changing your settings to see more."}
-                  {paginatedNotificationGroups.map((notification) =>
-                    notification.type === 'income' ? (
-                      <IncomeNotificationGroupItem
-                        notificationGroup={notification}
-                        key={notification.groupedById + notification.timePeriod}
-                      />
-                    ) : notification.notifications.length === 1 ? (
-                      <NotificationItem
-                        notification={notification.notifications[0]}
-                        key={notification.notifications[0].id}
-                      />
-                    ) : (
-                      <NotificationGroupItem
-                        notificationGroup={notification}
-                        key={notification.groupedById + notification.timePeriod}
-                      />
-                    )
-                  )}
-                  {groupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
-                    <nav
-                      className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
-                      aria-label="Pagination"
-                    >
-                      <div className="hidden sm:block">
-                        <p className="text-sm text-gray-700">
-                          Showing{' '}
-                          <span className="font-medium">
-                            {page === 1
-                              ? page
-                              : (page - 1) * NOTIFICATIONS_PER_PAGE}
-                          </span>{' '}
-                          to{' '}
-                          <span className="font-medium">
-                            {page * NOTIFICATIONS_PER_PAGE}
-                          </span>{' '}
-                          of{' '}
-                          <span className="font-medium">
-                            {groupedNotifications.length}
-                          </span>{' '}
-                          results
-                        </p>
-                      </div>
-                      <div className="flex flex-1 justify-between sm:justify-end">
-                        <a
-                          href="#"
-                          className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                          onClick={() => page > 1 && setPage(page - 1)}
-                        >
-                          Previous
-                        </a>
-                        <a
-                          href="#"
-                          className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                          onClick={() =>
-                            page <
-                              groupedNotifications?.length /
-                                NOTIFICATIONS_PER_PAGE && setPage(page + 1)
-                          }
-                        >
-                          Next
-                        </a>
-                      </div>
-                    </nav>
-                  )}
-                </div>
-              ) : (
-                <LoadingIndicator />
-              ),
-            },
-            {
-              title: 'Settings',
-              content: (
-                <div className={''}>
-                  <NotificationSettings />
-                </div>
-              ),
-            },
-          ]}
-        />
+        <div>
+          <Tabs
+            labelClassName={'pb-2 pt-1 '}
+            className={'mb-0 sm:mb-2'}
+            defaultIndex={0}
+            tabs={[
+              {
+                title: 'Notifications',
+                content: privateUser ? (
+                  <NotificationsList privateUser={privateUser} />
+                ) : (
+                  <LoadingIndicator />
+                ),
+              },
+              {
+                title: 'Settings',
+                content: (
+                  <div className={''}>
+                    <NotificationSettings />
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </div>
       </div>
     </Page>
+  )
+}
+
+function NotificationsList(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
+  const [page, setPage] = useState(1)
+  const allGroupedNotifications = usePreferredGroupedNotifications(privateUser)
+  const [paginatedGroupedNotifications, setPaginatedGroupedNotifications] =
+    useState<NotificationGroup[] | undefined>(undefined)
+
+  useEffect(() => {
+    if (!allGroupedNotifications) return
+    const start = (page - 1) * NOTIFICATIONS_PER_PAGE
+    const end = start + NOTIFICATIONS_PER_PAGE
+    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
+    const remainingNotification = allGroupedNotifications.slice(end)
+    for (const notification of remainingNotification) {
+      if (notification.isSeen) break
+      else setNotificationsAsSeen(notification.notifications)
+    }
+    setPaginatedGroupedNotifications(maxNotificationsToShow)
+  }, [allGroupedNotifications, page])
+
+  if (!paginatedGroupedNotifications) return <LoadingIndicator />
+
+  return (
+    <Col className={'min-h-screen'}>
+      {paginatedGroupedNotifications.length === 0 &&
+        "You don't have any notifications. Try changing your settings to see more."}
+      {paginatedGroupedNotifications.map((notification) =>
+        notification.type === 'income' ? (
+          <IncomeNotificationGroupItem
+            notificationGroup={notification}
+            key={notification.groupedById + notification.timePeriod}
+          />
+        ) : notification.notifications.length === 1 ? (
+          <NotificationItem
+            notification={notification.notifications[0]}
+            key={notification.notifications[0].id}
+          />
+        ) : (
+          <NotificationGroupItem
+            notificationGroup={notification}
+            key={notification.groupedById + notification.timePeriod}
+          />
+        )
+      )}
+      {allGroupedNotifications &&
+        allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
+          <nav
+            className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
+            aria-label="Pagination"
+          >
+            <div className="hidden sm:block">
+              <p className="text-sm text-gray-700">
+                Showing{' '}
+                <span className="font-medium">
+                  {page === 1 ? page : (page - 1) * NOTIFICATIONS_PER_PAGE}
+                </span>{' '}
+                to{' '}
+                <span className="font-medium">
+                  {page * NOTIFICATIONS_PER_PAGE}
+                </span>{' '}
+                of{' '}
+                <span className="font-medium">
+                  {allGroupedNotifications.length}
+                </span>{' '}
+                results
+              </p>
+            </div>
+            <div className="flex flex-1 justify-between sm:justify-end">
+              <a
+                href="#"
+                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => page > 1 && setPage(page - 1)}
+              >
+                Previous
+              </a>
+              <a
+                href="#"
+                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() =>
+                  page <
+                    allGroupedNotifications?.length / NOTIFICATIONS_PER_PAGE &&
+                  setPage(page + 1)
+                }
+              >
+                Next
+              </a>
+            </div>
+          </nav>
+        )}
+    </Col>
   )
 }
 
