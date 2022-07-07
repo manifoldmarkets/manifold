@@ -168,8 +168,6 @@ export const getBinaryCpmmBetInfo = (
 
     const { taker, maker } = fill
 
-    amount -= taker.amount
-
     if (maker.matchedBetId === null) {
       // Matched against pool.
       cpmmState = maker.state
@@ -181,6 +179,8 @@ export const getBinaryCpmmBetInfo = (
       makers.push(maker)
       i++
     }
+
+    amount -= taker.amount
 
     if (floatingEqual(amount, 0)) break
   }
