@@ -10,6 +10,9 @@ export class APIError extends Error {
     this.name = 'APIError'
     this.details = details
   }
+  toString() {
+    return this.name
+  }
 }
 
 export async function call(url: string, method: string, params: any) {
