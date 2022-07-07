@@ -2,9 +2,11 @@ import CharacterCount from '@tiptap/extension-character-count'
 import Placeholder from '@tiptap/extension-placeholder'
 import { useEditor, EditorContent, JSONContent, Content } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import { Image } from '@tiptap/extension-image'
 import clsx from 'clsx'
 import { useEffect } from 'react'
 import { Linkify } from './linkify'
+import { uploadImage } from 'web/lib/firebase/storage'
 
 const LINE_HEIGHT = 2
 
@@ -26,11 +28,35 @@ export function useTextEditor(props: {
       attributes: {
         class: clsx(proseClass, rowsClass, 'textarea textarea-bordered'),
       },
+      handlePaste(view, event) {
+        const files = Array.from(event.clipboardData?.files ?? []).filter(
+          (file) => file.type.startsWith('image')
+        )
+
+        if (!files.length) {
+          return // if no files pasted, use default paste handler
+        }
+
+        event.preventDefault()
+        ;(async () => {
+          // TODO: show loading state, compress large images
+          const urls = await Promise.all(
+            files.map((file) => uploadImage('default', file))
+          )
+          let trans = view.state.tr
+          urls.forEach((src: any) => {
+            const node = view.state.schema.nodes.image.create({ src })
+            trans = trans.insert(view.state.selection.to, node)
+          })
+          view.dispatch(trans)
+        })()
+      },
     },
     extensions: [
       StarterKit,
       Placeholder.configure({ placeholder }),
       CharacterCount.configure({ limit: max }),
+      Image,
     ],
     content: defaultValue,
   })
@@ -46,7 +72,7 @@ function RichContent(props: { content: JSONContent }) {
   const { content } = props
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },
-    extensions: [StarterKit],
+    extensions: [StarterKit, Image],
     content,
     editable: false,
   })
