@@ -7,7 +7,7 @@ import { useRouter } from 'next/router'
 import { useUnseenPreferredNotificationGroups } from 'web/hooks/use-notifications'
 import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 import { requestBonuses } from 'web/lib/firebase/api-call'
-import { PrivateUser } from 'common/lib/user'
+import { PrivateUser } from 'common/user'
 
 export default function NotificationsIcon(props: { className?: string }) {
   const user = useUser()

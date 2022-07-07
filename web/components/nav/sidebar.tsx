@@ -28,7 +28,7 @@ import { Group } from 'common/group'
 import { Spacer } from '../layout/spacer'
 import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
-import { PrivateUser } from 'common/lib/user'
+import { PrivateUser } from 'common/user'
 
 function getNavigation() {
   return [
