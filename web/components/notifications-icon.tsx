@@ -19,7 +19,7 @@ export default function NotificationsIcon(props: { className?: string }) {
       privateUser.lastTimeCheckedBonuses &&
       Date.now() - privateUser.lastTimeCheckedBonuses > 1000 * 70
     )
-      requestBonuses({}).catch(console.log)
+      requestBonuses({}).catch(() => console.log('no bonuses for you (yet)'))
   }, [privateUser])
 
   return (
