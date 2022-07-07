@@ -54,6 +54,14 @@ export function changeUserInfo(params: any) {
   return call(getFunctionUrl('changeuserinfo'), 'POST', params)
 }
 
+export function addLiquidity(params: any) {
+  return call(getFunctionUrl('addliquidity'), 'POST', params)
+}
+
+export function withdrawLiquidity(params: any) {
+  return call(getFunctionUrl('withdrawliquidity'), 'POST', params)
+}
+
 export function createMarket(params: any) {
   return call(getFunctionUrl('createmarket'), 'POST', params)
 }
