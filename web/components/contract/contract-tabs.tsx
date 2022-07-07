@@ -87,6 +87,7 @@ export function ContractTabs(props: {
 
   return (
     <Tabs
+      currentPageForAnalytics={'contract'}
       tabs={[
         { title: 'Comments', content: commentActivity },
         { title: 'Bets', content: betActivity },
