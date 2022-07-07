@@ -475,7 +475,7 @@ function NotificationGroupItem(props: {
         >
           {sourceContractTitle ? (
             <div className={'flex w-full flex-row justify-between'}>
-              <div>
+              <div className={'ml-2'}>
                 Activity on
                 <NotificationLink notification={notifications[0]} />
               </div>
@@ -631,7 +631,6 @@ function NotificationItem(props: {
               }
             >
               <div>
-                {' '}
                 {sourceUpdateType != 'closed' && (
                   <UserLink
                     name={sourceUserName || ''}
