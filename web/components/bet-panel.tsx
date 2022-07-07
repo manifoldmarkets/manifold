@@ -121,6 +121,7 @@ export function BetPanelSwitcher(props: {
   const unfilledBets = useUnfilledBets(contract.id) ?? []
 
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
+  const [isLimitOrder, setIsLimitOrder] = useState(false)
 
   const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
     contract,
@@ -183,13 +184,26 @@ export function BetPanelSwitcher(props: {
           !sharesOutcome && 'rounded-t-md'
         )}
       >
-        <Title
-          className={clsx(
-            '!mt-0',
-            tradeType === 'BUY' && title ? '!text-xl' : ''
+        <Row className="justify-between">
+          <Title
+            className={clsx(
+              '!mt-0',
+              tradeType === 'BUY' && title ? '!text-xl' : ''
+            )}
+            text={
+              tradeType === 'BUY' ? title ?? 'Place a trade' : 'Sell shares'
+            }
+          />
+
+          {tradeType === 'BUY' && (
+            <button
+              className="btn btn-ghost btn-sm text-sm normal-case"
+              onClick={() => setIsLimitOrder(!isLimitOrder)}
+            >
+              <SwitchHorizontalIcon className="inline h-6 w-6" />
+            </button>
           )}
-          text={tradeType === 'BUY' ? title ?? 'Place a trade' : 'Sell shares'}
-        />
+        </Row>
 
         {tradeType === 'SELL' && user && sharesOutcome && (
           <SellPanel
@@ -209,6 +223,7 @@ export function BetPanelSwitcher(props: {
             unfilledBets={unfilledBets}
             selected={selected}
             onBuySuccess={onBetSuccess}
+            isLimitOrder={isLimitOrder}
           />
         )}
 
