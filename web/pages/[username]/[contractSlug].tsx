@@ -39,7 +39,7 @@ import { FeedBet } from 'web/components/feed/feed-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets, useUnfilledBets } from 'web/hooks/use-bets'
-import { CPMMBinaryContract } from 'common/contract'
+import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
@@ -222,7 +222,11 @@ export function ContractPageContent(
         <ContractOverview contract={contract} bets={bets} />
 
         {yourUnfilledBets.length > 0 && (
-          <LimitBets className="mb-4 xl:hidden" bets={yourUnfilledBets} />
+          <LimitBets
+            className="mb-4 xl:hidden"
+            contract={contract as CPMMBinaryContract | PseudoNumericContract}
+            bets={yourUnfilledBets}
+          />
         )}
 
         {isNumeric && (

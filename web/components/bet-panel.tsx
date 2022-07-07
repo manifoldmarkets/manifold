@@ -33,7 +33,10 @@ import {
   getCpmmLiquidityFee,
   calculateCpmmAmount,
 } from 'common/calculate-cpmm'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import {
+  getFormattedMappedValue,
+  getPseudoProbability,
+} from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
 import { useSaveShares } from './use-save-shares'
 import { SignUpPrompt } from './sign-up-prompt'
@@ -43,6 +46,7 @@ import { track } from 'web/lib/service/analytics'
 import { removeUndefinedProps } from 'common/util/object'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
+import { BucketInput } from './bucket-input'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -98,7 +102,11 @@ export function BetPanel(props: {
         <SignUpPrompt />
       </Col>
       {yourUnfilledBets.length > 0 && (
-        <LimitBets className="mt-4" bets={yourUnfilledBets} />
+        <LimitBets
+          className="mt-4"
+          contract={contract}
+          bets={yourUnfilledBets}
+        />
       )}
     </Col>
   )
@@ -407,16 +415,37 @@ function BuyPanel(props: {
       {isLimitOrder && (
         <>
           <div className="my-3 text-left text-sm text-gray-500">
-            {betChoice === 'NO' ? 'Min' : 'Max'} probability
+            {betChoice === 'NO' ? 'Min' : 'Max'}{' '}
+            {isPseudoNumeric ? 'value' : 'probability'}
           </div>
-          <ProbabilityInput
-            inputClassName="w-full max-w-none"
-            prob={limitProb}
-            onChange={setLimitProb}
-            error={error}
-            setError={setError}
-            disabled={isSubmitting}
-          />
+          {isPseudoNumeric ? (
+            <BucketInput
+              contract={contract}
+              onBucketChange={(value) =>
+                setLimitProb(
+                  value === undefined
+                    ? undefined
+                    : 100 *
+                        getPseudoProbability(
+                          value,
+                          contract.min,
+                          contract.max,
+                          contract.isLogScale
+                        )
+                )
+              }
+              isSubmitting={isSubmitting}
+            />
+          ) : (
+            <ProbabilityInput
+              inputClassName="w-full max-w-none"
+              prob={limitProb}
+              onChange={setLimitProb}
+              error={error}
+              setError={setError}
+              disabled={isSubmitting}
+            />
+          )}
         </>
       )}
       <Col className="mt-3 w-full gap-3">
