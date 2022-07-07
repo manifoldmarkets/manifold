@@ -25,10 +25,7 @@ export function usePreferredGroupedNotifications(privateUser: PrivateUser) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const key = `notifications-${privateUser.id}-all`
 
-  const result = useFirestoreQuery(
-    [key],
-    getNotificationsQuery(privateUser.id, false)
-  )
+  const result = useFirestoreQuery([key], getNotificationsQuery(privateUser.id))
   useEffect(() => {
     if (result.isLoading) return
     if (!result.data) return setNotifications([])
