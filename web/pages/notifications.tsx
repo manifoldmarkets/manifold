@@ -527,7 +527,7 @@ function NotificationGroupItem(props: {
                     notification={notification}
                     key={notification.id}
                     justSummary={false}
-                    hideTitle={true}
+                    isChildOfGroup={true}
                   />
                 ))}
               </>
@@ -544,9 +544,9 @@ function NotificationGroupItem(props: {
 function NotificationItem(props: {
   notification: Notification
   justSummary?: boolean
-  hideTitle?: boolean
+  isChildOfGroup?: boolean
 }) {
-  const { notification, justSummary, hideTitle } = props
+  const { notification, justSummary, isChildOfGroup } = props
   const {
     sourceType,
     sourceUserName,
@@ -631,25 +631,28 @@ function NotificationItem(props: {
               }
             >
               <div>
-                <UserLink
-                  name={sourceUserName || ''}
-                  username={sourceUserUsername || ''}
-                  className={'mr-1 flex-shrink-0'}
-                  justFirstName={true}
-                />
+                {' '}
+                {sourceUpdateType != 'closed' && (
+                  <UserLink
+                    name={sourceUserName || ''}
+                    username={sourceUserUsername || ''}
+                    className={'mr-1 flex-shrink-0'}
+                    justFirstName={true}
+                  />
+                )}
                 {getReasonForShowingNotification(
                   notification,
                   false,
-                  hideTitle
+                  isChildOfGroup
                 )}
-
-                {!hideTitle && <NotificationLink notification={notification} />}
-                {hideTitle && (
+                {isChildOfGroup ? (
                   <RelativeTimestamp time={notification.createdTime} />
+                ) : (
+                  <NotificationLink notification={notification} />
                 )}
               </div>
             </div>
-            {!hideTitle && (
+            {!isChildOfGroup && (
               <div className={'hidden sm:inline-block'}>
                 <RelativeTimestamp time={notification.createdTime} />
               </div>
