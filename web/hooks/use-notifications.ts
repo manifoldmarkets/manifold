@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
-import { listenForPrivateUser } from 'web/lib/firebase/users'
 import { notification_subscribe_types, PrivateUser } from 'common/user'
 import { Notification } from 'common/notification'
-import { listenForNotifications } from 'web/lib/firebase/notifications'
+import {
+  getNotificationsQuery,
+  listenForNotifications,
+} from 'web/lib/firebase/notifications'
 import { groupBy, map } from 'lodash'
+import { useFirestoreQuery } from '@react-query-firebase/firestore'
+import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -13,15 +17,30 @@ export type NotificationGroup = {
   type: 'income' | 'normal'
 }
 
-export function usePreferredGroupedNotifications(
-  userId: string | undefined,
-  options: { unseenOnly: boolean }
-) {
+// For some reason react-query subscriptions don't actually listen for notifications
+// Use useUnseenPreferredNotificationGroups to listen for new notifications
+export function usePreferredGroupedNotifications(privateUser: PrivateUser) {
   const [notificationGroups, setNotificationGroups] = useState<
     NotificationGroup[] | undefined
   >(undefined)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const key = `notifications-${privateUser.id}-all`
 
-  const notifications = usePreferredNotifications(userId, options)
+  const result = useFirestoreQuery([key], getNotificationsQuery(privateUser.id))
+  useEffect(() => {
+    if (result.isLoading) return
+    if (!result.data) return setNotifications([])
+    const notifications = result.data.docs.map(
+      (doc) => doc.data() as Notification
+    )
+
+    const notificationsToShow = getAppropriateNotifications(
+      notifications,
+      privateUser.notificationPreferences
+    ).filter((n) => !n.isSeenOnHref)
+    setNotifications(notificationsToShow)
+  }, [privateUser.notificationPreferences, result.data, result.isLoading])
+
   useEffect(() => {
     if (!notifications) return
 
@@ -29,6 +48,20 @@ export function usePreferredGroupedNotifications(
     setNotificationGroups(groupedNotifications)
   }, [notifications])
 
+  return notificationGroups
+}
+
+export function useUnseenPreferredNotificationGroups(privateUser: PrivateUser) {
+  const notifications = useUnseenPreferredNotifications(privateUser, {})
+  const [notificationGroups, setNotificationGroups] = useState<
+    NotificationGroup[] | undefined
+  >(undefined)
+  useEffect(() => {
+    if (!notifications) return
+
+    const groupedNotifications = groupNotifications(notifications)
+    setNotificationGroups(groupedNotifications)
+  }, [notifications])
   return notificationGroups
 }
 
@@ -85,32 +118,24 @@ export function groupNotifications(notifications: Notification[]) {
   return notificationGroups
 }
 
-export function usePreferredNotifications(
-  userId: string | undefined,
-  options: { unseenOnly: boolean; customHref?: string }
+export function useUnseenPreferredNotifications(
+  privateUser: PrivateUser,
+  options: { customHref?: string },
+  limit: number = NOTIFICATIONS_PER_PAGE
 ) {
-  const { unseenOnly, customHref } = options
-  const [privateUser, setPrivateUser] = useState<PrivateUser | null>(null)
+  const { customHref } = options
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [userAppropriateNotifications, setUserAppropriateNotifications] =
     useState<Notification[]>([])
 
   useEffect(() => {
-    if (userId) listenForPrivateUser(userId, setPrivateUser)
-  }, [userId])
+    return listenForNotifications(privateUser.id, setNotifications, {
+      unseenOnly: true,
+      limit,
+    })
+  }, [limit, privateUser.id])
 
   useEffect(() => {
-    if (privateUser)
-      return listenForNotifications(
-        privateUser.id,
-        setNotifications,
-        unseenOnly
-      )
-  }, [privateUser, unseenOnly])
-
-  useEffect(() => {
-    if (!privateUser) return
-
     const notificationsToShow = getAppropriateNotifications(
       notifications,
       privateUser.notificationPreferences
@@ -118,7 +143,7 @@ export function usePreferredNotifications(
       customHref ? n.isSeenOnHref?.includes(customHref) : !n.isSeenOnHref
     )
     setUserAppropriateNotifications(notificationsToShow)
-  }, [privateUser, notifications, customHref])
+  }, [notifications, customHref, privateUser.notificationPreferences])
 
   return userAppropriateNotifications
 }
