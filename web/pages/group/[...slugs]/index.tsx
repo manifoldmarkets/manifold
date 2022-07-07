@@ -307,7 +307,7 @@ export default function GroupPage(props: {
             href: groupPath(group.slug, 'questions'),
           },
           {
-            title: 'Leaderboards',
+            title: 'Rankings',
             content: leaderboard,
             href: groupPath(group.slug, 'rankings'),
           },
