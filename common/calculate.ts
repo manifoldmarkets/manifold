@@ -24,6 +24,7 @@ import {
   FreeResponseContract,
   PseudoNumericContract,
 } from './contract'
+import { floatingEqual } from './util/math'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract
@@ -157,7 +158,9 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const profit = payout + saleValue + redeemed - totalInvested
   const profitPercent = (profit / totalInvested) * 100
 
-  const hasShares = Object.values(totalShares).some((shares) => shares > 0)
+  const hasShares = Object.values(totalShares).some(
+    (shares) => !floatingEqual(shares, 0)
+  )
 
   return {
     invested: Math.max(0, currentInvested),
