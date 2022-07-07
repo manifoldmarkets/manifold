@@ -7,6 +7,7 @@ import clsx from 'clsx'
 import { useEffect } from 'react'
 import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
+import { useMutation } from 'react-query'
 
 const LINE_HEIGHT = 2
 
@@ -23,6 +24,10 @@ export function useTextEditor(props: {
 
   const rowsClass = rows && `box-content min-h-[${LINE_HEIGHT * rows}em]`
 
+  const upload = useMutation((files: File[]) =>
+    Promise.all(files.map((file) => uploadImage('default', file)))
+  )
+
   const editor = useEditor({
     editorProps: {
       attributes: {
@@ -38,18 +43,16 @@ export function useTextEditor(props: {
         }
 
         event.preventDefault()
-        ;(async () => {
-          // TODO: show loading state, compress large images
-          const urls = await Promise.all(
-            files.map((file) => uploadImage('default', file))
-          )
-          let trans = view.state.tr
-          urls.forEach((src: any) => {
-            const node = view.state.schema.nodes.image.create({ src })
-            trans = trans.insert(view.state.selection.to, node)
-          })
-          view.dispatch(trans)
-        })()
+        upload.mutate(files, {
+          onSuccess: (urls) => {
+            let trans = view.state.tr
+            urls.forEach((src: any) => {
+              const node = view.state.schema.nodes.image.create({ src })
+              trans = trans.insert(view.state.selection.to, node)
+            })
+            view.dispatch(trans)
+          },
+        })
       },
     },
     extensions: [
@@ -65,7 +68,7 @@ export function useTextEditor(props: {
     editor?.setEditable(!disabled)
   }, [editor, disabled])
 
-  return editor
+  return { editor, upload }
 }
 
 function RichContent(props: { content: JSONContent }) {

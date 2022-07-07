@@ -188,7 +188,7 @@ export function NewContract(props: {
       ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
       : `e.g. I will choose the answer according to...`
 
-  const editor = useTextEditor({
+  const { editor, upload } = useTextEditor({
     rows: 3,
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
@@ -442,12 +442,18 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      <div className="form-control mb-1 items-start">
-        <label className="label mb-1 gap-2">
+      <div className="form-control mb-1 items-start gap-1">
+        <label className="label gap-2">
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
         <EditorContent editor={editor} className="w-full" />
+        {upload.isLoading && (
+          <span className="text-xs">Uploading image...</span>
+        )}
+        {upload.isError && (
+          <span className="text-error text-xs">Error uploading image :(</span>
+        )}
       </div>
 
       <Spacer h={6} />
@@ -484,7 +490,7 @@ export function NewContract(props: {
             'btn btn-primary normal-case',
             isSubmitting && 'loading disabled'
           )}
-          disabled={isSubmitting || !isValid}
+          disabled={isSubmitting || !isValid || upload.isLoading}
           onClick={(e) => {
             e.preventDefault()
             submit()
