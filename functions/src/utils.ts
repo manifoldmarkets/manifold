@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { chunk } from 'lodash'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
+import { Group } from '../../common/group'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -64,6 +65,10 @@ export const getValues = async <T>(query: admin.firestore.Query) => {
 
 export const getContract = (contractId: string) => {
   return getDoc<Contract>('contracts', contractId)
+}
+
+export const getGroup = (groupId: string) => {
+  return getDoc<Group>('groups', groupId)
 }
 
 export const getUser = (userId: string) => {

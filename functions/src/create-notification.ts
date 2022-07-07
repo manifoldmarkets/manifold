@@ -14,6 +14,8 @@ import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { getContractBetMetrics } from '../../common/calculate'
 import { removeUndefinedProps } from '../../common/util/object'
+import { TipTxn } from '../../common/txn'
+import { Group } from '../../common/group'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
@@ -285,15 +287,6 @@ export const createNotification = async (
         isSeeOnHref: sourceSlug,
       }
   }
-  const notifyTippedUserOfNewTip = async (
-    userToReasonTexts: user_to_reason_texts,
-    userId: string
-  ) => {
-    if (shouldGetNotification(userId, userToReasonTexts))
-      userToReasonTexts[userId] = {
-        reason: 'tip_received',
-      }
-  }
 
   const getUsersToNotify = async () => {
     const userToReasonTexts: user_to_reason_texts = {}
@@ -346,12 +339,46 @@ export const createNotification = async (
         userToReasonTexts,
         sourceContract.creatorId
       )
-    } else if (sourceType === 'tip' && relatedUserId) {
-      await notifyTippedUserOfNewTip(userToReasonTexts, relatedUserId)
     }
     return userToReasonTexts
   }
 
   const userToReasonTexts = await getUsersToNotify()
   await createUsersNotifications(userToReasonTexts)
+}
+
+export const createTipNotification = async (
+  fromUser: User,
+  toUser: User,
+  tip: TipTxn,
+  idempotencyKey: string,
+  commentId: string,
+  contract?: Contract,
+  group?: Group
+) => {
+  const slug = group ? group.slug + `#${commentId}` : commentId
+
+  const notificationRef = firestore
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: 'tip_received',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: tip.id,
+    sourceType: 'tip',
+    sourceUpdateType: 'created',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: tip.amount.toString(),
+    sourceContractCreatorUsername: contract?.creatorUsername,
+    sourceContractTitle: contract?.question,
+    sourceContractSlug: contract?.slug,
+    sourceSlug: slug,
+    sourceTitle: group?.name,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
 }
