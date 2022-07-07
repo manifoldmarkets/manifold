@@ -384,7 +384,10 @@ function IncomeNotificationItem(props: {
               </div>
               <span className={'flex truncate'}>
                 {getReasonForShowingIncomeNotification(true)}
-                <QuestionLink notification={notification} ignoreClick={true} />
+                <QuestionOrGroupLink
+                  notification={notification}
+                  ignoreClick={true}
+                />
               </span>
             </div>
           </div>
@@ -425,7 +428,7 @@ function IncomeNotificationItem(props: {
                   />
                 ))}
               {getReasonForShowingIncomeNotification(false)} {' on'}
-              <QuestionLink notification={notification} />
+              <QuestionOrGroupLink notification={notification} />
             </span>
           </div>
         </Row>
@@ -481,7 +484,7 @@ function NotificationGroupItem(props: {
             <div className={'flex w-full flex-row justify-between'}>
               <div className={'ml-2'}>
                 Activity on
-                <QuestionLink notification={notifications[0]} />
+                <QuestionOrGroupLink notification={notifications[0]} />
               </div>
               <div className={'hidden sm:inline-block'}>
                 <RelativeTimestamp time={notifications[0].createdTime} />
@@ -666,7 +669,7 @@ function NotificationItem(props: {
                 {isChildOfGroup ? (
                   <RelativeTimestamp time={notification.createdTime} />
                 ) : (
-                  <QuestionLink notification={notification} />
+                  <QuestionOrGroupLink notification={notification} />
                 )}
               </div>
             </div>
@@ -705,7 +708,7 @@ export const setNotificationsAsSeen = (notifications: Notification[]) => {
   return notifications
 }
 
-function QuestionLink(props: {
+function QuestionOrGroupLink(props: {
   notification: Notification
   ignoreClick?: boolean
 }) {
@@ -733,7 +736,7 @@ function QuestionLink(props: {
       href={
         sourceContractCreatorUsername
           ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-          : sourceType === 'group' && sourceSlug
+          : (sourceType === 'group' || sourceType === 'tip') && sourceSlug
           ? `${groupPath(sourceSlug)}`
           : ''
       }
@@ -771,8 +774,9 @@ function getSourceUrl(notification: Notification) {
     sourceType === 'user'
   )
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-  if (sourceType === 'tip')
+  if (sourceType === 'tip' && sourceContractSlug)
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
+  if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
   if (sourceContractCreatorUsername && sourceContractSlug)
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
       sourceId ?? '',

@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
-import { Txn } from 'common/txn'
-import { getContract, getUser, log } from './utils'
-import { createNotification } from './create-notification'
+import { TipTxn, Txn } from 'common/txn'
+import { getContract, getGroup, getUser, log } from './utils'
+import { createTipNotification } from './create-notification'
 import * as admin from 'firebase-admin'
 import { Comment } from 'common/comment'
 
@@ -18,7 +18,7 @@ export const onCreateTxn = functions.firestore
     }
   })
 
-async function handleTipTxn(txn: Txn, eventId: string) {
+async function handleTipTxn(txn: TipTxn, eventId: string) {
   // get user sending and receiving tip
   const [sender, receiver] = await Promise.all([
     getUser(txn.fromId),
@@ -29,40 +29,53 @@ async function handleTipTxn(txn: Txn, eventId: string) {
     return
   }
 
-  if (!txn.data?.contractId || !txn.data?.commentId) {
-    log('No contractId or comment id in tip txn.data')
+  if (!txn.data?.commentId) {
+    log('No comment id in tip txn.data')
     return
   }
+  let contract = undefined
+  let group = undefined
+  let commentSnapshot = undefined
 
-  const contract = await getContract(txn.data.contractId)
-  if (!contract) {
-    log('Could not find contract')
-    return
+  if (txn.data.contractId) {
+    contract = await getContract(txn.data.contractId)
+    if (!contract) {
+      log('Could not find contract')
+      return
+    }
+    commentSnapshot = await firestore
+      .collection('contracts')
+      .doc(contract.id)
+      .collection('comments')
+      .doc(txn.data.commentId)
+      .get()
+  } else if (txn.data.groupId) {
+    group = await getGroup(txn.data.groupId)
+    if (!group) {
+      log('Could not find group')
+      return
+    }
+    commentSnapshot = await firestore
+      .collection('groups')
+      .doc(group.id)
+      .collection('comments')
+      .doc(txn.data.commentId)
+      .get()
   }
 
-  const commentSnapshot = await firestore
-    .collection('contracts')
-    .doc(contract.id)
-    .collection('comments')
-    .doc(txn.data.commentId)
-    .get()
-  if (!commentSnapshot.exists) {
+  if (!commentSnapshot || !commentSnapshot.exists) {
     log('Could not find comment')
     return
   }
   const comment = commentSnapshot.data() as Comment
 
-  await createNotification(
-    txn.id,
-    'tip',
-    'created',
+  await createTipNotification(
     sender,
+    receiver,
+    txn,
     eventId,
-    txn.amount.toString(),
+    comment.id,
     contract,
-    'comment',
-    receiver.id,
-    txn.data?.commentId,
-    comment.text
+    group
   )
 }

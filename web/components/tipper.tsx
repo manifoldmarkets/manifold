@@ -53,6 +53,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
         data: {
           contractId: comment.contractId,
           commentId: comment.id,
+          groupId: comment.groupId,
         },
         description: `${user.name} tipped M$ ${change} to ${comment.userName} for a comment`,
       })
@@ -60,6 +61,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
       track('send comment tip', {
         contractId: comment.contractId,
         commentId: comment.id,
+        groupId: comment.groupId,
         amount: change,
         fromId: user.id,
         toId: comment.userId,
