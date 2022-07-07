@@ -8,6 +8,7 @@ import { PrivateUser } from '../../common/user'
 import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
+  CORS_ORIGIN_VERCEL,
 } from '../../common/envs/constants'
 
 type Output = Record<string, unknown>
@@ -118,7 +119,7 @@ const DEFAULT_OPTS = {
   concurrency: 100,
   memory: '2GiB',
   cpu: 1,
-  cors: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
+  cors: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
 }
 
 export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
