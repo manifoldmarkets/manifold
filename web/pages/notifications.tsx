@@ -34,6 +34,7 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
 import { groupBy, sum, uniq } from 'lodash'
 import Custom404 from 'web/pages/404'
+import { track } from '@amplitude/analytics-browser'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -380,7 +381,7 @@ function IncomeNotificationItem(props: {
               </div>
               <span className={'flex truncate'}>
                 {getReasonForShowingIncomeNotification(true)}
-                <NotificationLink notification={notification} noClick={true} />
+                <QuestionLink notification={notification} ignoreClick={true} />
               </span>
             </div>
           </div>
@@ -421,7 +422,7 @@ function IncomeNotificationItem(props: {
                   />
                 ))}
               {getReasonForShowingIncomeNotification(false)} {' on'}
-              <NotificationLink notification={notification} />
+              <QuestionLink notification={notification} />
             </span>
           </div>
         </Row>
@@ -477,7 +478,7 @@ function NotificationGroupItem(props: {
             <div className={'flex w-full flex-row justify-between'}>
               <div className={'ml-2'}>
                 Activity on
-                <NotificationLink notification={notifications[0]} />
+                <QuestionLink notification={notifications[0]} />
               </div>
               <div className={'hidden sm:inline-block'}>
                 <RelativeTimestamp time={notifications[0].createdTime} />
@@ -616,7 +617,22 @@ function NotificationItem(props: {
         highlighted && 'bg-indigo-200 hover:bg-indigo-100'
       )}
     >
-      <a href={getSourceUrl(notification)}>
+      <a
+        href={getSourceUrl(notification)}
+        onClick={() =>
+          track('Notification Clicked', {
+            type: 'notification item',
+            sourceType,
+            sourceUserName,
+            sourceUserAvatarUrl,
+            sourceUpdateType,
+            reasonText,
+            reason,
+            sourceUserUsername,
+            sourceText,
+          })
+        }
+      >
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <Avatar
             avatarUrl={sourceUserAvatarUrl}
@@ -647,7 +663,7 @@ function NotificationItem(props: {
                 {isChildOfGroup ? (
                   <RelativeTimestamp time={notification.createdTime} />
                 ) : (
-                  <NotificationLink notification={notification} />
+                  <QuestionLink notification={notification} />
                 )}
               </div>
             </div>
@@ -686,11 +702,11 @@ export const setNotificationsAsSeen = (notifications: Notification[]) => {
   return notifications
 }
 
-function NotificationLink(props: {
+function QuestionLink(props: {
   notification: Notification
-  noClick?: boolean
+  ignoreClick?: boolean
 }) {
-  const { notification, noClick } = props
+  const { notification, ignoreClick } = props
   const {
     sourceType,
     sourceContractTitle,
@@ -699,7 +715,8 @@ function NotificationLink(props: {
     sourceSlug,
     sourceTitle,
   } = notification
-  if (noClick)
+
+  if (ignoreClick)
     return (
       <span className={'ml-1 font-bold '}>
         {sourceContractTitle || sourceTitle}
@@ -716,6 +733,17 @@ function NotificationLink(props: {
           : sourceType === 'group' && sourceSlug
           ? `${groupPath(sourceSlug)}`
           : ''
+      }
+      onClick={() =>
+        track('Notification Clicked', {
+          type: 'question title',
+          sourceType,
+          sourceContractTitle,
+          sourceContractCreatorUsername,
+          sourceContractSlug,
+          sourceSlug,
+          sourceTitle,
+        })
       }
     >
       {sourceContractTitle || sourceTitle}
@@ -969,6 +997,10 @@ function NotificationSettings() {
     newValue: notification_subscribe_types
   ) {
     if (!privateUser) return
+    track('In-App Notification Preferences Changed', {
+      newPreference: newValue,
+      oldPreference: privateUser.notificationPreferences,
+    })
     toast.promise(
       updatePrivateUser(privateUser.id, {
         notificationPreferences: newValue,
