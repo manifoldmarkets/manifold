@@ -272,9 +272,11 @@ function IncomeNotificationGroupItem(props: {
         />
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
-        <TrendingUpIcon className={'text-primary h-7 w-7'} />
+        <TrendingUpIcon
+          className={'text-primary ml-1 h-7 w-7 flex-shrink-0 sm:ml-2'}
+        />
         <div
-          className={'flex w-full flex-row flex-wrap pl-1 sm:pl-0'}
+          className={'ml-2 flex w-full flex-row flex-wrap truncate'}
           onClick={() => setExpanded(!expanded)}
         >
           <div className={'flex w-full flex-row justify-between'}>
