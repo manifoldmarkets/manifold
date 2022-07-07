@@ -50,6 +50,10 @@ export function getFunctionUrl(name: string) {
   }
 }
 
+export function changeUserInfo(params: any) {
+  return call(getFunctionUrl('changeuserinfo'), 'POST', params)
+}
+
 export function createMarket(params: any) {
   return call(getFunctionUrl('createmarket'), 'POST', params)
 }
