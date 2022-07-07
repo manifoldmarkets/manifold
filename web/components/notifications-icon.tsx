@@ -14,15 +14,13 @@ export default function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser(user?.id)
 
   useEffect(() => {
-    if (user) {
-      const bonusChecker = setInterval(() => {
-        requestBonuses({}).catch(console.log)
-        return () => {
-          clearInterval(bonusChecker)
-        }
-      }, 1000 * 65)
-    }
-  }, [user])
+    if (
+      privateUser &&
+      privateUser.lastTimeCheckedBonuses &&
+      Date.now() - privateUser.lastTimeCheckedBonuses > 1000 * 70
+    )
+      requestBonuses({}).catch(console.log)
+  }, [privateUser])
 
   return (
     <Row className={clsx('justify-center')}>

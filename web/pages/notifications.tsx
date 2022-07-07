@@ -102,9 +102,14 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
   if (!paginatedGroupedNotifications) return <LoadingIndicator />
 
   return (
-    <Col className={'min-h-screen'}>
-      {paginatedGroupedNotifications.length === 0 &&
-        "You don't have any notifications. Try changing your settings to see more."}
+    <div className={'min-h-[100vh]'}>
+      {paginatedGroupedNotifications.length === 0 && (
+        <div className={'mt-2'}>
+          You don't have any notifications. Try changing your settings to see
+          more.
+        </div>
+      )}
+
       {paginatedGroupedNotifications.map((notification) =>
         notification.type === 'income' ? (
           <IncomeNotificationGroupItem
@@ -168,7 +173,7 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
             </div>
           </nav>
         )}
-    </Col>
+    </div>
   )
 }
 
