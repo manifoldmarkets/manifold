@@ -36,8 +36,9 @@ type Tip = {
   toType: 'USER'
   category: 'TIP'
   data: {
-    contractId: string
     commentId: string
+    contractId?: string
+    groupId?: string
   }
 }
 

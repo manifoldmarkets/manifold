@@ -126,7 +126,7 @@ export function ContractPageContent(
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
-  const tips = useTipTxns(contract.id)
+  const tips = useTipTxns({ contractId: contract.id })
 
   const user = useUser()
   const unfilledBets = useUnfilledBets(contract.id) ?? []
