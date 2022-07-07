@@ -270,7 +270,7 @@ function GroupsList(props: {
     {
       customHref: '/group/',
     },
-    memberItems.length
+    memberItems.length > 0 ? memberItems.length : undefined
   )
 
   // Set notification as seen if our current page is equal to the isSeenOnHref property
