@@ -97,7 +97,7 @@ export function GroupChat(props: {
   }
 
   return (
-    <Col className={'flex-1'}>
+    <Col className={'mt-2 flex-1'}>
       <Col
         className={
           'max-h-[65vh] w-full space-y-2 overflow-x-hidden overflow-y-scroll'

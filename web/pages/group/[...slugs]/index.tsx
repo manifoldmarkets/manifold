@@ -53,7 +53,7 @@ import { SiteLink } from 'web/components/site-link'
 import { ContractSearch } from 'web/components/contract-search'
 import clsx from 'clsx'
 import { FollowList } from 'web/components/follow-list'
-import { SearchIcon } from '@heroicons/react/outline'
+import { PlusIcon, SearchIcon } from '@heroicons/react/outline'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -223,9 +223,17 @@ export default function GroupPage(props: {
 
       <Col className="px-3 lg:px-1">
         <Row className={'items-center justify-between gap-4'}>
-          <div className={'mb-1'}>
-            <Title className={'line-clamp-2'} text={group.name} />
-            <Linkify text={group.about} />
+          <div className={'sm:mb-1'}>
+            <div
+              className={
+                'line-clamp-1 my-1 text-lg text-indigo-700 sm:my-3 sm:text-2xl'
+              }
+            >
+              {group.name}
+            </div>
+            <div className={'hidden sm:block'}>
+              <Linkify text={group.about} />
+            </div>
           </div>
           <div className="hidden sm:block xl:hidden">
             <JoinOrCreateButton
@@ -241,6 +249,7 @@ export default function GroupPage(props: {
       </Col>
 
       <Tabs
+        className={'mb-0 sm:mb-2'}
         defaultIndex={
           page === 'rankings'
             ? 2
@@ -320,11 +329,19 @@ function JoinOrCreateButton(props: {
 }) {
   const { group, user, isMember } = props
   return user && isMember ? (
-    <Row className={'justify-between sm:flex-col sm:justify-center'}>
+    <Row
+      className={'-mt-2 justify-between sm:mt-0 sm:flex-col sm:justify-center'}
+    >
       <CreateQuestionButton
         user={user}
         overrideText={'Add a new question'}
-        className={'w-48 flex-shrink-0'}
+        className={'hidden w-48 flex-shrink-0 sm:block'}
+        query={`?groupId=${group.id}`}
+      />
+      <CreateQuestionButton
+        user={user}
+        overrideText={'New question'}
+        className={'block w-40 flex-shrink-0 sm:hidden'}
         query={`?groupId=${group.id}`}
       />
       <AddContractButton group={group} user={user} />
@@ -357,8 +374,8 @@ function GroupOverview(props: {
   }
 
   return (
-    <Col>
-      <Col className="gap-2 rounded-b bg-white p-4">
+    <>
+      <Col className="gap-2 rounded-b bg-white p-2">
         <Row className={'flex-wrap justify-between'}>
           <div className={'inline-flex items-center'}>
             <div className="mr-1 text-gray-500">Created by</div>
@@ -370,6 +387,9 @@ function GroupOverview(props: {
           </div>
           {isCreator && <EditGroupButton className={'ml-1'} group={group} />}
         </Row>
+        <div className={'block sm:hidden'}>
+          <Linkify text={group.about} />
+        </div>
         <Row className={'items-center gap-1'}>
           <span className={'text-gray-500'}>Membership</span>
           {user && user.id === creator.id ? (
@@ -406,7 +426,7 @@ function GroupOverview(props: {
           <GroupMemberSearch group={group} />
         </Col>
       </Col>
-    </Col>
+    </>
   )
 }
 
@@ -588,15 +608,24 @@ function AddContractButton(props: { group: Group; user: User }) {
           </div>
         </Col>
       </Modal>
-      <div className={'flex w-48 justify-center'}>
+      <div className={'flex justify-center'}>
         <button
           className={clsx(
             createButtonStyle,
-            'w-48 whitespace-nowrap border border-black text-black hover:bg-black hover:text-white'
+            'hidden w-48 whitespace-nowrap border border-black text-black hover:bg-black hover:text-white sm:block'
           )}
           onClick={() => setOpen(true)}
         >
           Add an old question
+        </button>
+        <button
+          className={clsx(
+            createButtonStyle,
+            'block w-40 whitespace-nowrap border border-black text-black hover:bg-black hover:text-white sm:hidden'
+          )}
+          onClick={() => setOpen(true)}
+        >
+          Old question
         </button>
       </div>
     </>
