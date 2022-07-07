@@ -98,7 +98,8 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
     setPaginatedGroupedNotifications(maxNotificationsToShow)
   }, [allGroupedNotifications, page])
 
-  if (!paginatedGroupedNotifications) return <LoadingIndicator />
+  if (!paginatedGroupedNotifications || !allGroupedNotifications)
+    return <LoadingIndicator />
 
   return (
     <div className={'min-h-[100vh]'}>
@@ -127,7 +128,7 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
           />
         )
       )}
-      {allGroupedNotifications &&
+      {paginatedGroupedNotifications.length > 0 &&
         allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
           <nav
             className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
