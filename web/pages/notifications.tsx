@@ -1,5 +1,5 @@
 import { Tabs } from 'web/components/layout/tabs'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import React, { useEffect, useState } from 'react'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
@@ -8,8 +8,6 @@ import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
-import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
-import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/user-page'
 import { notification_subscribe_types, PrivateUser } from 'common/user'
 import { Contract } from 'common/contract'
@@ -35,134 +33,146 @@ import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
 import { groupBy, sum, uniq } from 'lodash'
+import Custom404 from 'web/pages/404'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
 
 export default function Notifications() {
   const user = useUser()
-  const [page, setPage] = useState(1)
+  const privateUser = usePrivateUser(user?.id)
 
-  const groupedNotifications = usePreferredGroupedNotifications(user?.id, {
-    unseenOnly: false,
-  })
-  const [paginatedNotificationGroups, setPaginatedNotificationGroups] =
-    useState<NotificationGroup[]>([])
-  useEffect(() => {
-    if (!groupedNotifications) return
-    const start = (page - 1) * NOTIFICATIONS_PER_PAGE
-    const end = start + NOTIFICATIONS_PER_PAGE
-    const maxNotificationsToShow = groupedNotifications.slice(start, end)
-    const remainingNotification = groupedNotifications.slice(end)
-    for (const notification of remainingNotification) {
-      if (notification.isSeen) break
-      else setNotificationsAsSeen(notification.notifications)
-    }
-    setPaginatedNotificationGroups(maxNotificationsToShow)
-  }, [groupedNotifications, page])
-
-  if (user === undefined) {
-    return <LoadingIndicator />
-  }
-  if (user === null) {
-    return <Custom404 />
-  }
-
+  if (!user) return <Custom404 />
   return (
     <Page>
       <div className={'p-2 sm:p-4'}>
         <Title text={'Notifications'} className={'hidden md:block'} />
-        <Tabs
-          labelClassName={'pb-2 pt-1 '}
-          defaultIndex={0}
-          tabs={[
-            {
-              title: 'Notifications',
-              content: groupedNotifications ? (
-                <div className={''}>
-                  {paginatedNotificationGroups.length === 0 &&
-                    "You don't have any notifications. Try changing your settings to see more."}
-                  {paginatedNotificationGroups.map((notification) =>
-                    notification.type === 'income' ? (
-                      <IncomeNotificationGroupItem
-                        notificationGroup={notification}
-                        key={notification.groupedById + notification.timePeriod}
-                      />
-                    ) : notification.notifications.length === 1 ? (
-                      <NotificationItem
-                        notification={notification.notifications[0]}
-                        key={notification.notifications[0].id}
-                      />
-                    ) : (
-                      <NotificationGroupItem
-                        notificationGroup={notification}
-                        key={notification.groupedById + notification.timePeriod}
-                      />
-                    )
-                  )}
-                  {groupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
-                    <nav
-                      className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
-                      aria-label="Pagination"
-                    >
-                      <div className="hidden sm:block">
-                        <p className="text-sm text-gray-700">
-                          Showing{' '}
-                          <span className="font-medium">
-                            {page === 1
-                              ? page
-                              : (page - 1) * NOTIFICATIONS_PER_PAGE}
-                          </span>{' '}
-                          to{' '}
-                          <span className="font-medium">
-                            {page * NOTIFICATIONS_PER_PAGE}
-                          </span>{' '}
-                          of{' '}
-                          <span className="font-medium">
-                            {groupedNotifications.length}
-                          </span>{' '}
-                          results
-                        </p>
-                      </div>
-                      <div className="flex flex-1 justify-between sm:justify-end">
-                        <a
-                          href="#"
-                          className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                          onClick={() => page > 1 && setPage(page - 1)}
-                        >
-                          Previous
-                        </a>
-                        <a
-                          href="#"
-                          className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                          onClick={() =>
-                            page <
-                              groupedNotifications?.length /
-                                NOTIFICATIONS_PER_PAGE && setPage(page + 1)
-                          }
-                        >
-                          Next
-                        </a>
-                      </div>
-                    </nav>
-                  )}
-                </div>
-              ) : (
-                <LoadingIndicator />
-              ),
-            },
-            {
-              title: 'Settings',
-              content: (
-                <div className={''}>
-                  <NotificationSettings />
-                </div>
-              ),
-            },
-          ]}
-        />
+        <div>
+          <Tabs
+            labelClassName={'pb-2 pt-1 '}
+            className={'mb-0 sm:mb-2'}
+            defaultIndex={0}
+            tabs={[
+              {
+                title: 'Notifications',
+                content: privateUser ? (
+                  <NotificationsList privateUser={privateUser} />
+                ) : (
+                  <LoadingIndicator />
+                ),
+              },
+              {
+                title: 'Settings',
+                content: (
+                  <div className={''}>
+                    <NotificationSettings />
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </div>
       </div>
     </Page>
+  )
+}
+
+function NotificationsList(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
+  const [page, setPage] = useState(1)
+  const allGroupedNotifications = usePreferredGroupedNotifications(privateUser)
+  const [paginatedGroupedNotifications, setPaginatedGroupedNotifications] =
+    useState<NotificationGroup[] | undefined>(undefined)
+
+  useEffect(() => {
+    if (!allGroupedNotifications) return
+    const start = (page - 1) * NOTIFICATIONS_PER_PAGE
+    const end = start + NOTIFICATIONS_PER_PAGE
+    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
+    const remainingNotification = allGroupedNotifications.slice(end)
+    for (const notification of remainingNotification) {
+      if (notification.isSeen) break
+      else setNotificationsAsSeen(notification.notifications)
+    }
+    setPaginatedGroupedNotifications(maxNotificationsToShow)
+  }, [allGroupedNotifications, page])
+
+  if (!paginatedGroupedNotifications || !allGroupedNotifications)
+    return <LoadingIndicator />
+
+  return (
+    <div className={'min-h-[100vh]'}>
+      {paginatedGroupedNotifications.length === 0 && (
+        <div className={'mt-2'}>
+          You don't have any notifications. Try changing your settings to see
+          more.
+        </div>
+      )}
+
+      {paginatedGroupedNotifications.map((notification) =>
+        notification.type === 'income' ? (
+          <IncomeNotificationGroupItem
+            notificationGroup={notification}
+            key={notification.groupedById + notification.timePeriod}
+          />
+        ) : notification.notifications.length === 1 ? (
+          <NotificationItem
+            notification={notification.notifications[0]}
+            key={notification.notifications[0].id}
+          />
+        ) : (
+          <NotificationGroupItem
+            notificationGroup={notification}
+            key={notification.groupedById + notification.timePeriod}
+          />
+        )
+      )}
+      {paginatedGroupedNotifications.length > 0 &&
+        allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
+          <nav
+            className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
+            aria-label="Pagination"
+          >
+            <div className="hidden sm:block">
+              <p className="text-sm text-gray-700">
+                Showing{' '}
+                <span className="font-medium">
+                  {page === 1 ? page : (page - 1) * NOTIFICATIONS_PER_PAGE}
+                </span>{' '}
+                to{' '}
+                <span className="font-medium">
+                  {page * NOTIFICATIONS_PER_PAGE}
+                </span>{' '}
+                of{' '}
+                <span className="font-medium">
+                  {allGroupedNotifications.length}
+                </span>{' '}
+                results
+              </p>
+            </div>
+            <div className="flex flex-1 justify-between sm:justify-end">
+              <a
+                href="#"
+                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => page > 1 && setPage(page - 1)}
+              >
+                Previous
+              </a>
+              <a
+                href="#"
+                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() =>
+                  page <
+                    allGroupedNotifications?.length / NOTIFICATIONS_PER_PAGE &&
+                  setPage(page + 1)
+                }
+              >
+                Next
+              </a>
+            </div>
+          </nav>
+        )}
+    </div>
   )
 }
 
@@ -261,18 +271,20 @@ function IncomeNotificationGroupItem(props: {
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <TrendingUpIcon className={'text-primary h-7 w-7'} />
-        <div className={'flex truncate'}>
-          <div
-            onClick={() => setExpanded(!expanded)}
-            className={'line-clamp-1 cursor-pointer pl-1  sm:pl-0'}
-          >
-            <span>
+        <div
+          className={'flex w-full flex-row flex-wrap pl-1 sm:pl-0'}
+          onClick={() => setExpanded(!expanded)}
+        >
+          <div className={'flex w-full flex-row justify-between'}>
+            <div>
               {'Daily Income Summary: '}
               <span className={'text-primary'}>
                 {'+' + formatMoney(totalIncome)}
               </span>
-            </span>
-            <RelativeTimestamp time={notifications[0].createdTime} />
+            </div>
+            <div className={'inline-block'}>
+              <RelativeTimestamp time={notifications[0].createdTime} />
+            </div>
           </div>
         </div>
       </Row>
@@ -329,13 +341,7 @@ function IncomeNotificationItem(props: {
   justSummary?: boolean
 }) {
   const { notification, justSummary } = props
-  const {
-    sourceType,
-    sourceUserName,
-    reason,
-    sourceUserUsername,
-    createdTime,
-  } = notification
+  const { sourceType, sourceUserName, sourceUserUsername } = notification
   const [highlighted] = useState(!notification.isSeen)
 
   useEffect(() => {
@@ -354,7 +360,7 @@ function IncomeNotificationItem(props: {
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you` : `in tips on`
     }
-    return <span className={'flex-shrink-0'}>{reasonText}</span>
+    return reasonText
   }
 
   if (justSummary) {
@@ -374,7 +380,7 @@ function IncomeNotificationItem(props: {
               </div>
               <span className={'flex truncate'}>
                 {getReasonForShowingIncomeNotification(true)}
-                <NotificationLink notification={notification} />
+                <NotificationLink notification={notification} noClick={true} />
               </span>
             </div>
           </div>
@@ -392,42 +398,33 @@ function IncomeNotificationItem(props: {
     >
       <a href={getSourceUrl(notification)}>
         <Row className={'items-center text-gray-500 sm:justify-start'}>
-          <div className={'flex max-w-xl shrink '}>
-            {sourceType && reason && (
-              <div className={'inline'}>
-                <span className={'mr-1'}>
-                  <NotificationTextLabel
-                    contract={null}
-                    defaultText={notification.sourceText ?? ''}
-                    notification={notification}
+          <div className={'line-clamp-2 flex max-w-xl shrink '}>
+            <div className={'inline'}>
+              <span className={'mr-1'}>
+                <NotificationTextLabel
+                  contract={null}
+                  defaultText={notification.sourceText ?? ''}
+                  notification={notification}
+                />
+              </span>
+            </div>
+            <span>
+              {sourceType != 'bonus' &&
+                (sourceUserUsername === MULTIPLE_USERS_KEY ? (
+                  <span className={'mr-1 truncate'}>Multiple users</span>
+                ) : (
+                  <UserLink
+                    name={sourceUserName || ''}
+                    username={sourceUserUsername || ''}
+                    className={'mr-1 flex-shrink-0'}
+                    justFirstName={true}
                   />
-                </span>
-
-                {sourceType != 'bonus' &&
-                  (sourceUserUsername === MULTIPLE_USERS_KEY ? (
-                    <span className={'mr-1 truncate'}>Multiple users</span>
-                  ) : (
-                    <UserLink
-                      name={sourceUserName || ''}
-                      username={sourceUserUsername || ''}
-                      className={'mr-1 flex-shrink-0'}
-                      justFirstName={true}
-                    />
-                  ))}
-              </div>
-            )}
-            {getReasonForShowingIncomeNotification(false)}
-            <span className={'ml-1 flex hidden sm:inline-block'}>
-              on
+                ))}
+              {getReasonForShowingIncomeNotification(false)} {' on'}
               <NotificationLink notification={notification} />
             </span>
-            <RelativeTimestamp time={createdTime} />
           </div>
         </Row>
-        <span className={'flex truncate text-gray-500 sm:hidden'}>
-          on
-          <NotificationLink notification={notification} />
-        </span>
         <div className={'mt-4 border-b border-gray-300'} />
       </a>
     </div>
@@ -473,23 +470,25 @@ function NotificationGroupItem(props: {
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <EmptyAvatar multi />
-        <div className={'flex truncate pl-2'}>
-          <div
-            onClick={() => setExpanded(!expanded)}
-            className={' flex cursor-pointer truncate pl-1  sm:pl-0'}
-          >
-            {sourceContractTitle ? (
-              <>
-                <span className={'flex-shrink-0'}>{'Activity on '}</span>
-                <span className={'truncate'}>
-                  <NotificationLink notification={notifications[0]} />
-                </span>
-              </>
-            ) : (
-              'Other activity'
-            )}
-          </div>
-          <RelativeTimestamp time={notifications[0].createdTime} />
+        <div
+          className={'line-clamp-2 flex w-full flex-row flex-wrap pl-1 sm:pl-0'}
+        >
+          {sourceContractTitle ? (
+            <div className={'flex w-full flex-row justify-between'}>
+              <div className={'ml-2'}>
+                Activity on
+                <NotificationLink notification={notifications[0]} />
+              </div>
+              <div className={'hidden sm:inline-block'}>
+                <RelativeTimestamp time={notifications[0].createdTime} />
+              </div>
+            </div>
+          ) : (
+            <span>
+              Other activity
+              <RelativeTimestamp time={notifications[0].createdTime} />
+            </span>
+          )}
         </div>
       </Row>
       <div>
@@ -528,7 +527,7 @@ function NotificationGroupItem(props: {
                     notification={notification}
                     key={notification.id}
                     justSummary={false}
-                    hideTitle={true}
+                    isChildOfGroup={true}
                   />
                 ))}
               </>
@@ -545,22 +544,18 @@ function NotificationGroupItem(props: {
 function NotificationItem(props: {
   notification: Notification
   justSummary?: boolean
-  hideTitle?: boolean
+  isChildOfGroup?: boolean
 }) {
-  const { notification, justSummary, hideTitle } = props
+  const { notification, justSummary, isChildOfGroup } = props
   const {
     sourceType,
-    sourceId,
     sourceUserName,
     sourceUserAvatarUrl,
     sourceUpdateType,
     reasonText,
     reason,
     sourceUserUsername,
-    createdTime,
     sourceText,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
   } = notification
 
   const [defaultNotificationText, setDefaultNotificationText] =
@@ -629,44 +624,38 @@ function NotificationItem(props: {
             className={'mr-2'}
             username={sourceUserName}
           />
-          <div className={'flex-1 overflow-hidden sm:flex'}>
+          <div className={'flex w-full flex-row pl-1 sm:pl-0'}>
             <div
               className={
-                'flex max-w-xl shrink overflow-hidden text-ellipsis pl-1 sm:pl-0'
+                'line-clamp-2 sm:line-clamp-none flex w-full flex-row justify-between'
               }
             >
-              {sourceUpdateType != 'closed' && (
-                <UserLink
-                  name={sourceUserName || ''}
-                  username={sourceUserUsername || ''}
-                  className={'mr-0 flex-shrink-0'}
-                  justFirstName={true}
-                />
-              )}
-              {sourceType && reason && (
-                <div className={'inline flex truncate'}>
-                  <span className={'ml-1 flex-shrink-0'}>
-                    {getReasonForShowingNotification(notification, false, true)}
-                  </span>
-                  {!hideTitle && (
-                    <NotificationLink notification={notification} />
-                  )}
-                </div>
-              )}
-              {sourceId &&
-              sourceContractSlug &&
-              sourceContractCreatorUsername ? (
-                <CopyLinkDateTimeComponent
-                  prefix={sourceContractCreatorUsername}
-                  slug={sourceContractSlug}
-                  createdTime={createdTime}
-                  elementId={getSourceIdForLinkComponent(sourceId)}
-                  className={'-mx-1 inline-flex sm:inline-block'}
-                />
-              ) : (
-                <RelativeTimestamp time={createdTime} />
-              )}
+              <div>
+                {sourceUpdateType != 'closed' && (
+                  <UserLink
+                    name={sourceUserName || ''}
+                    username={sourceUserUsername || ''}
+                    className={'mr-1 flex-shrink-0'}
+                    justFirstName={true}
+                  />
+                )}
+                {getReasonForShowingNotification(
+                  notification,
+                  false,
+                  isChildOfGroup
+                )}
+                {isChildOfGroup ? (
+                  <RelativeTimestamp time={notification.createdTime} />
+                ) : (
+                  <NotificationLink notification={notification} />
+                )}
+              </div>
             </div>
+            {!isChildOfGroup && (
+              <div className={'hidden sm:inline-block'}>
+                <RelativeTimestamp time={notification.createdTime} />
+              </div>
+            )}
           </div>
         </Row>
         <div className={'mt-1 ml-1 md:text-base'}>
@@ -697,8 +686,11 @@ export const setNotificationsAsSeen = (notifications: Notification[]) => {
   return notifications
 }
 
-function NotificationLink(props: { notification: Notification }) {
-  const { notification } = props
+function NotificationLink(props: {
+  notification: Notification
+  noClick?: boolean
+}) {
+  const { notification, noClick } = props
   const {
     sourceType,
     sourceContractTitle,
@@ -707,17 +699,23 @@ function NotificationLink(props: { notification: Notification }) {
     sourceSlug,
     sourceTitle,
   } = notification
+  if (noClick)
+    return (
+      <span className={'ml-1 font-bold '}>
+        {sourceContractTitle || sourceTitle}
+      </span>
+    )
   return (
     <a
+      className={
+        'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2 '
+      }
       href={
         sourceContractCreatorUsername
           ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
           : sourceType === 'group' && sourceSlug
           ? `${groupPath(sourceSlug)}`
           : ''
-      }
-      className={
-        'ml-1 inline max-w-xs truncate font-bold text-gray-500 hover:underline hover:decoration-indigo-400 hover:decoration-2 sm:max-w-sm'
       }
     >
       {sourceContractTitle || sourceTitle}
@@ -852,14 +850,6 @@ function getReasonForShowingNotification(
         reasonText = !simple ? 'tagged you on' : 'tagged you'
       else if (reason === 'reply_to_users_comment')
         reasonText = !simple ? 'replied to you on' : 'replied'
-      else if (reason === 'on_users_contract')
-        reasonText = !simple ? `commented on your question` : 'commented'
-      else if (reason === 'on_contract_with_users_comment')
-        reasonText = `commented on`
-      else if (reason === 'on_contract_with_users_answer')
-        reasonText = `commented on`
-      else if (reason === 'on_contract_with_users_shares_in')
-        reasonText = `commented on`
       else reasonText = `commented on`
       break
     case 'contract':
@@ -871,12 +861,6 @@ function getReasonForShowingNotification(
       break
     case 'answer':
       if (reason === 'on_users_contract') reasonText = `answered your question `
-      else if (reason === 'on_contract_with_users_comment')
-        reasonText = `answered`
-      else if (reason === 'on_contract_with_users_answer')
-        reasonText = `answered`
-      else if (reason === 'on_contract_with_users_shares_in')
-        reasonText = `answered`
       else reasonText = `answered`
       break
     case 'follow':
@@ -897,12 +881,7 @@ function getReasonForShowingNotification(
     default:
       reasonText = ''
   }
-
-  return (
-    <span className={'flex-shrink-0'}>
-      {replaceOn ? reasonText.replace(' on', '') : reasonText}
-    </span>
-  )
+  return replaceOn ? reasonText.replace(' on', '') : reasonText
 }
 
 // TODO: where should we put referral bonus notifications?
