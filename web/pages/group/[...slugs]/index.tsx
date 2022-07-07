@@ -598,7 +598,6 @@ function AddContractButton(props: { group: Group; user: User }) {
             <ContractSearch
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
-              showCategorySelector={false}
               overrideGridClassName={'flex grid-cols-1 flex-col gap-3 p-1'}
               showPlaceHolder={true}
               hideQuickBet={true}

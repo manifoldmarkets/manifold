@@ -18,7 +18,6 @@ export default function TagPage() {
           shouldLoadFromStorage: true,
         }}
         additionalFilter={{ tag }}
-        showCategorySelector={false}
       />
     </Page>
   )
