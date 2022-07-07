@@ -248,6 +248,7 @@ export default function GroupPage(props: {
       </Col>
 
       <Tabs
+        currentPageForAnalytics={groupPath(group.slug)}
         className={'mb-0 sm:mb-2'}
         defaultIndex={
           page === 'rankings'

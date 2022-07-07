@@ -50,6 +50,7 @@ export default function Notifications() {
         <Title text={'Notifications'} className={'hidden md:block'} />
         <div>
           <Tabs
+            currentPageForAnalytics={'notifications'}
             labelClassName={'pb-2 pt-1 '}
             className={'mb-0 sm:mb-2'}
             defaultIndex={0}

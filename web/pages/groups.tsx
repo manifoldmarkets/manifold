@@ -106,6 +106,7 @@ export default function Groups(props: {
             </div>
 
             <Tabs
+              currentPageForAnalytics={'groups'}
               tabs={[
                 ...(user && memberGroupIds.length > 0
                   ? [
