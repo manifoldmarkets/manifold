@@ -156,6 +156,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
       }
 
       // Deduct balance of makers.
+      // TODO: Check if users would go negative from fills and cancel those bets.
       const spentByUser = mapValues(
         groupBy(makers, (maker) => maker.bet.userId),
         (makers) => sumBy(makers, (maker) => maker.amount)
@@ -166,7 +167,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
       }
     }
 
-    trans.update(userDoc, { balance: FieldValue.increment(-amount) })
+    trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
     log('Updated user balance.')
     trans.update(
       contractDoc,
@@ -177,7 +178,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
         totalBets: newTotalBets,
         totalLiquidity: newTotalLiquidity,
         collectedFees: addObjects(newBet.fees, collectedFees),
-        volume: volume + amount,
+        volume: volume + newBet.amount,
       })
     )
     log('Updated contract properties.')
