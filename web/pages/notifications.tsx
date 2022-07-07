@@ -271,18 +271,20 @@ function IncomeNotificationGroupItem(props: {
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <TrendingUpIcon className={'text-primary h-7 w-7'} />
-        <div className={'flex truncate'}>
-          <div
-            onClick={() => setExpanded(!expanded)}
-            className={'line-clamp-1 cursor-pointer pl-1  sm:pl-0'}
-          >
-            <span>
+        <div
+          className={'flex w-full flex-row flex-wrap pl-1 sm:pl-0'}
+          onClick={() => setExpanded(!expanded)}
+        >
+          <div className={'flex w-full flex-row justify-between'}>
+            <div>
               {'Daily Income Summary: '}
               <span className={'text-primary'}>
                 {'+' + formatMoney(totalIncome)}
               </span>
-            </span>
-            <RelativeTimestamp time={notifications[0].createdTime} />
+            </div>
+            <div className={'inline-block'}>
+              <RelativeTimestamp time={notifications[0].createdTime} />
+            </div>
           </div>
         </div>
       </Row>
@@ -468,20 +470,25 @@ function NotificationGroupItem(props: {
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <EmptyAvatar multi />
-        <div className={'line-clamp-2 flex max-w-xl flex-wrap pl-1 sm:pl-0'}>
-          <span className={'ml-1 inline max-w-xs text-gray-500 sm:max-w-sm'}>
-            {sourceContractTitle ? (
-              <span>
+        <div
+          className={'line-clamp-2 flex w-full flex-row flex-wrap pl-1 sm:pl-0'}
+        >
+          {sourceContractTitle ? (
+            <div className={'flex w-full flex-row justify-between'}>
+              <div>
                 Activity on
                 <NotificationLink notification={notifications[0]} />
-              </span>
-            ) : (
-              <span>
-                Other activity
+              </div>
+              <div className={'hidden sm:inline-block'}>
                 <RelativeTimestamp time={notifications[0].createdTime} />
-              </span>
-            )}
-          </span>
+              </div>
+            </div>
+          ) : (
+            <span>
+              Other activity
+              <RelativeTimestamp time={notifications[0].createdTime} />
+            </span>
+          )}
         </div>
       </Row>
       <div>
@@ -617,32 +624,37 @@ function NotificationItem(props: {
             className={'mr-2'}
             username={sourceUserName}
           />
-          <span>
-            <div className={'line-clamp-2 flex flex-wrap pl-1 sm:pl-0'}>
-              <span className={'ml-1 inline text-gray-500 '}>
-                <span>
-                  {sourceUpdateType != 'closed' && (
-                    <UserLink
-                      name={sourceUserName || ''}
-                      username={sourceUserUsername || ''}
-                      className={'mr-1 flex-shrink-0'}
-                      justFirstName={true}
-                    />
-                  )}
-                  {getReasonForShowingNotification(notification, false, true)}
-                  {hideTitle && (
-                    <RelativeTimestamp time={notification.createdTime} />
-                  )}
-                </span>
-                {!hideTitle && <NotificationLink notification={notification} />}
-                {!hideTitle && (
-                  <span className={'hidden sm:inline-block'}>
-                    <RelativeTimestamp time={notification.createdTime} />
-                  </span>
+          <div className={'flex w-full flex-row pl-1 sm:pl-0'}>
+            <div
+              className={
+                'line-clamp-2 sm:line-clamp-none flex w-full flex-row justify-between'
+              }
+            >
+              <div>
+                <UserLink
+                  name={sourceUserName || ''}
+                  username={sourceUserUsername || ''}
+                  className={'mr-1 flex-shrink-0'}
+                  justFirstName={true}
+                />
+                {getReasonForShowingNotification(
+                  notification,
+                  false,
+                  hideTitle
                 )}
-              </span>
+
+                {!hideTitle && <NotificationLink notification={notification} />}
+                {hideTitle && (
+                  <RelativeTimestamp time={notification.createdTime} />
+                )}
+              </div>
             </div>
-          </span>
+            {!hideTitle && (
+              <div className={'hidden sm:inline-block'}>
+                <RelativeTimestamp time={notification.createdTime} />
+              </div>
+            )}
+          </div>
         </Row>
         <div className={'mt-1 ml-1 md:text-base'}>
           <NotificationTextLabel
@@ -836,14 +848,6 @@ function getReasonForShowingNotification(
         reasonText = !simple ? 'tagged you on' : 'tagged you'
       else if (reason === 'reply_to_users_comment')
         reasonText = !simple ? 'replied to you on' : 'replied'
-      else if (reason === 'on_users_contract')
-        reasonText = !simple ? `commented on your question` : 'commented'
-      else if (reason === 'on_contract_with_users_comment')
-        reasonText = `commented on`
-      else if (reason === 'on_contract_with_users_answer')
-        reasonText = `commented on`
-      else if (reason === 'on_contract_with_users_shares_in')
-        reasonText = `commented on`
       else reasonText = `commented on`
       break
     case 'contract':
@@ -855,12 +859,6 @@ function getReasonForShowingNotification(
       break
     case 'answer':
       if (reason === 'on_users_contract') reasonText = `answered your question `
-      else if (reason === 'on_contract_with_users_comment')
-        reasonText = `answered`
-      else if (reason === 'on_contract_with_users_answer')
-        reasonText = `answered`
-      else if (reason === 'on_contract_with_users_shares_in')
-        reasonText = `answered`
       else reasonText = `answered`
       break
     case 'follow':
