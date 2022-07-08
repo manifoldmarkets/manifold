@@ -1,11 +1,9 @@
 import React from 'react'
-import Router from 'next/router'
 
 import { Contract, getContractsBySlugs } from 'web/lib/firebase/contracts'
 import { Page } from 'web/components/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 
 import { GetServerSideProps } from 'next'
@@ -39,14 +37,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 export default function Home(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
-
-  const user = useUser()
-
-  if (user) {
-    Router.replace('/home')
-    return <></>
-  }
-
   return (
     <Page>
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
