@@ -36,8 +36,3 @@ export const createUser: () => Promise<User | null> = () => {
     .then((r) => (r.data as any)?.user || null)
     .catch(() => null)
 }
-
-export const claimManalink = cloudFunction<
-  string,
-  { status: 'error' | 'success'; message?: string }
->('claimManalink')

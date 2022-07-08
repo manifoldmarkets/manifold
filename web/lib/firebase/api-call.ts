@@ -10,6 +10,9 @@ export class APIError extends Error {
     this.name = 'APIError'
     this.details = details
   }
+  toString() {
+    return this.name
+  }
 }
 
 export async function call(url: string, method: string, params: any) {
@@ -80,6 +83,10 @@ export function sellShares(params: any) {
 
 export function sellBet(params: any) {
   return call(getFunctionUrl('sellbet'), 'POST', params)
+}
+
+export function claimManalink(params: any) {
+  return call(getFunctionUrl('claimmanalink'), 'POST', params)
 }
 
 export function createGroup(params: any) {
