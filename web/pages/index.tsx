@@ -5,20 +5,9 @@ import { Page } from 'web/components/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 
-import { GetServerSideProps } from 'next'
-import { getServerAuthenticatedUid } from 'web/lib/firebase/server-auth'
-
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const uid = await getServerAuthenticatedUid(ctx)
-  if (uid != null) {
-    return {
-      redirect: {
-        destination: '/home',
-        permanent: false,
-      },
-    }
-  }
+export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   // These hardcoded markets will be shown in the frontpage for signed-out users:
   const hotContracts = await getContractsBySlugs([
     'will-max-go-to-prom-with-a-girl',
@@ -33,7 +22,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     'will-at-least-10-world-cities-have',
   ])
   return { props: { hotContracts } }
-}
+})
 
 export default function Home(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props

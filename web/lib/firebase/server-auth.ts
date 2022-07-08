@@ -3,6 +3,7 @@ import fetch from 'node-fetch'
 import { IncomingMessage, ServerResponse } from 'http'
 import { FIREBASE_CONFIG, PROJECT_ID } from 'common/envs/constants'
 import { getAuthCookies, setAuthCookies } from './auth'
+import { GetServerSideProps, GetServerSidePropsContext } from 'next'
 
 const ensureApp = async () => {
   // Note: firebase-admin can only be imported from a server context,
@@ -60,4 +61,26 @@ export const getServerAuthenticatedUid = async (ctx: RequestContext) => {
     }
   }
   return undefined
+}
+
+export const redirectIfLoggedIn = (dest: string, fn?: GetServerSideProps) => {
+  return async (ctx: GetServerSidePropsContext) => {
+    const uid = await getServerAuthenticatedUid(ctx)
+    if (uid == null) {
+      return fn != null ? await fn(ctx) : { props: {} }
+    } else {
+      return { redirect: { destination: dest, permanent: false } }
+    }
+  }
+}
+
+export const redirectIfLoggedOut = (dest: string, fn?: GetServerSideProps) => {
+  return async (ctx: GetServerSidePropsContext) => {
+    const uid = await getServerAuthenticatedUid(ctx)
+    if (uid == null) {
+      return { redirect: { destination: dest, permanent: false } }
+    } else {
+      return fn != null ? await fn(ctx) : { props: {} }
+    }
+  }
 }
