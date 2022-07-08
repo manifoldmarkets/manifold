@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { CPMMContract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
-import { addLiquidity, withdrawLiquidity } from 'web/lib/firebase/fn-call'
+import { addLiquidity, withdrawLiquidity } from 'web/lib/firebase/api-call'
 import { AmountInput } from './amount-input'
 import { Row } from './layout/row'
 import { useUserLiquidity } from 'web/hooks/use-liquidity'
@@ -90,14 +90,10 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
     setIsSuccess(false)
 
     addLiquidity({ amount, contractId })
-      .then((r) => {
-        if (r.status === 'success') {
-          setIsSuccess(true)
-          setError(undefined)
-          setIsLoading(false)
-        } else {
-          setError('Server error')
-        }
+      .then((_) => {
+        setIsSuccess(true)
+        setError(undefined)
+        setIsLoading(false)
       })
       .catch((_) => setError('Server error'))
 
