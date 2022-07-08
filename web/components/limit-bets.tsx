@@ -20,7 +20,7 @@ export function LimitBets(props: {
 
   return (
     <Col className={clsx(className, 'gap-2 rounded bg-white')}>
-      <div className="px-6 py-3 text-xl">Limit bets</div>
+      <div className="px-6 py-3 text-xl">Your limit bets</div>
       <table className="table-compact table w-full rounded text-gray-500">
         <tbody>
           {recentBets.map((bet) => (
