@@ -28,6 +28,9 @@ import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Checkbox } from 'web/components/checkbox'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+
+export const getServerSideProps = redirectIfLoggedOut('/')
 
 type NewQuestionParams = {
   groupId?: string
@@ -55,11 +58,7 @@ export default function Create() {
   }, [params.q])
 
   const creator = useUser()
-  useEffect(() => {
-    if (creator === null) router.push('/')
-  }, [creator, router])
-
-  if (!router.isReady || !creator) return <div />
+  if (!router.isReady || creator) return <div />
 
   return (
     <Page>
@@ -93,7 +92,7 @@ export default function Create() {
 
 // Allow user to create a new contract
 export function NewContract(props: {
-  creator: User
+  creator?: User | null
   question: string
   params?: NewQuestionParams
 }) {
