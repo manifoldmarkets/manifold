@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 admin.initializeApp()
 
 // v1
-export * from './claim-manalink'
 export * from './transact'
 export * from './stripe'
 export * from './create-user'
@@ -34,6 +33,7 @@ export * from './change-user-info'
 export * from './place-bet'
 export * from './sell-bet'
 export * from './sell-shares'
+export * from './claim-manalink'
 export * from './create-contract'
 export * from './add-liquidity'
 export * from './withdraw-liquidity'
