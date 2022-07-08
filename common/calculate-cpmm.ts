@@ -1,7 +1,7 @@
 import { sum, groupBy, mapValues, sumBy, partition } from 'lodash'
 
 import { CPMMContract } from './contract'
-import { CREATOR_FEE, Fees, LIQUIDITY_FEE, noFees, PLATFORM_FEE } from './fees'
+import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { addObjects } from './util/object'
 
@@ -58,7 +58,7 @@ function calculateCpmmShares(
     : n + bet - (k * (bet + y) ** -p) ** (1 / (1 - p))
 }
 
-export function getCpmmLiquidityFee(
+export function getCpmmFees(
   contract: CPMMContract,
   bet: number,
   outcome: string
@@ -83,7 +83,7 @@ export function calculateCpmmSharesAfterFee(
   outcome: string
 ) {
   const { pool, p } = contract
-  const { remainingBet } = getCpmmLiquidityFee(contract, bet, outcome)
+  const { remainingBet } = getCpmmFees(contract, bet, outcome)
 
   return calculateCpmmShares(pool, p, remainingBet, outcome)
 }
@@ -94,9 +94,7 @@ export function calculateCpmmPurchase(
   outcome: string
 ) {
   const { pool, p } = contract
-  const { remainingBet, fees } = getCpmmLiquidityFee(contract, bet, outcome)
-  // const remainingBet = bet
-  // const fees = noFees
+  const { remainingBet, fees } = getCpmmFees(contract, bet, outcome)
 
   const shares = calculateCpmmShares(pool, p, remainingBet, outcome)
   const { YES: y, NO: n } = pool
@@ -176,19 +174,17 @@ export function calculateCpmmSale(
     throw new Error('Cannot sell non-positive shares')
   }
 
-  const saleValue = calculateCpmmShareValue(
+  const rawSaleValue = calculateCpmmShareValue(
     contract,
     shares,
     outcome as 'YES' | 'NO'
   )
 
-  const fees = noFees
-
-  // const { fees, remainingBet: saleValue } = getCpmmLiquidityFee(
-  //   contract,
-  //   rawSaleValue,
-  //   outcome === 'YES' ? 'NO' : 'YES'
-  // )
+  const { fees, remainingBet: saleValue } = getCpmmFees(
+    contract,
+    rawSaleValue,
+    outcome === 'YES' ? 'NO' : 'YES'
+  )
 
   const { pool } = contract
   const { YES: y, NO: n } = pool
