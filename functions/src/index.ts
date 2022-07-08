@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 admin.initializeApp()
 
 // v1
-// export * from './keep-awake'
 export * from './claim-manalink'
 export * from './transact'
 export * from './stripe'
@@ -16,7 +15,6 @@ export * from './unsubscribe'
 export * from './update-metrics'
 export * from './update-stats'
 export * from './backup-db'
-export * from './change-user-info'
 export * from './market-close-notifications'
 export * from './add-liquidity'
 export * from './on-create-answer'
@@ -33,6 +31,7 @@ export * from './on-create-txn'
 
 // v2
 export * from './health'
+export * from './change-user-info'
 export * from './place-bet'
 export * from './sell-bet'
 export * from './sell-shares'
