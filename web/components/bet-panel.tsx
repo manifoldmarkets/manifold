@@ -37,7 +37,7 @@ import { useUserContractBets } from 'web/hooks/use-user-bets'
 import {
   calculateCpmmSale,
   getCpmmProbability,
-  getCpmmLiquidityFee,
+  getCpmmFees,
 } from 'common/calculate-cpmm'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
@@ -302,7 +302,7 @@ function BuyPanel(props: {
 
   const cpmmFees =
     contract.mechanism === 'cpmm-1' &&
-    getCpmmLiquidityFee(contract, betAmount ?? 0, betChoice ?? 'YES').totalFees
+    getCpmmFees(contract, betAmount ?? 0, betChoice ?? 'YES').totalFees
 
   const dpmTooltip =
     contract.mechanism === 'dpm-2'
