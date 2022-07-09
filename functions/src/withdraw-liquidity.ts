@@ -42,7 +42,12 @@ export const withdrawliquidity = newEndpoint({}, async (req, auth) => {
         (doc) => doc.data() as LiquidityProvision
       )
 
-      const userShares = getUserLiquidityShares(auth.uid, contract, liquidities)
+      const userShares = getUserLiquidityShares(
+        auth.uid,
+        contract,
+        liquidities,
+        true
+      )
 
       // zero all added amounts for now
       // can add support for partial withdrawals in the future

@@ -285,18 +285,20 @@ const calculateLiquidityDelta = (p: number) => (l: LiquidityProvision) => {
 
 export function getCpmmLiquidityPoolWeights(
   state: CpmmState,
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  excludeAntes: boolean
 ) {
-  const [antes, nonAntes] = partition(liquidities, (l) => !!l.isAnte)
-
   const calcLiqudity = calculateLiquidityDelta(state.p)
-  const liquidityShares = nonAntes.map(calcLiqudity)
+  const liquidityShares = liquidities.map(calcLiqudity)
+  const shareSum = sum(liquidityShares)
 
-  const shareSum = sum(liquidityShares) + sum(antes.map(calcLiqudity))
+  const includedLiquidities = excludeAntes
+    ? liquidityShares.filter((_, i) => !liquidities[i].isAnte)
+    : liquidityShares
 
-  const weights = liquidityShares.map((s, i) => ({
+  const weights = includedLiquidities.map((s, i) => ({
     weight: s / shareSum,
-    providerId: nonAntes[i].userId,
+    providerId: liquidities[i].userId,
   }))
 
   const userWeights = groupBy(weights, (w) => w.providerId)
@@ -309,9 +311,14 @@ export function getCpmmLiquidityPoolWeights(
 export function getUserLiquidityShares(
   userId: string,
   state: CpmmState,
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  excludeAntes: boolean
 ) {
-  const weights = getCpmmLiquidityPoolWeights(state, liquidities)
+  const weights = getCpmmLiquidityPoolWeights(
+    state,
+    liquidities,
+    excludeAntes
+  )
   const userWeight = weights[userId] ?? 0
 
   return mapValues(state.pool, (shares) => userWeight * shares)
