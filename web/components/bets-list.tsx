@@ -46,7 +46,6 @@ import { useUser } from 'web/hooks/use-user'
 import { SellSharesModal } from './sell-modal'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
-import { useSaveShares } from './use-save-shares'
 import { floatingEqual } from 'common/util/math'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
