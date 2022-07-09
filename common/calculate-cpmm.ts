@@ -4,6 +4,7 @@ import { LimitBet } from './bet'
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
+import { binarySearch } from './util/algos'
 import { addObjects } from './util/object'
 
 export type CpmmState = {
@@ -137,29 +138,6 @@ export function calculateCpmmAmount(
   })
 
   return amount
-}
-
-function binarySearch(
-  min: number,
-  max: number,
-  comparator: (x: number) => number
-) {
-  let mid = 0
-  while (true) {
-    mid = min + (max - min) / 2
-
-    // Break once we've reached max precision.
-    if (mid === min || mid === max) break
-
-    const comparison = comparator(mid)
-    if (comparison === 0) break
-    else if (comparison > 0) {
-      max = mid
-    } else {
-      min = mid
-    }
-  }
-  return mid
 }
 
 function calculateAmountToBuyShares(
