@@ -39,6 +39,9 @@ import { filterDefined } from 'common/util/array'
 import { addUserToGroupViaSlug } from 'web/lib/firebase/groups'
 import { removeUndefinedProps } from 'common/util/object'
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+dayjs.extend(utc)
+
 import { track } from '@amplitude/analytics-browser'
 
 export const users = coll<User>('users')
