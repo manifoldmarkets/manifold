@@ -416,8 +416,6 @@ function BuyPanel(props: {
               inputClassName="w-full max-w-none"
               prob={limitProb}
               onChange={setLimitProb}
-              error={error}
-              setError={setError}
               disabled={isSubmitting}
             />
           )}

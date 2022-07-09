@@ -5,13 +5,11 @@ import { Spacer } from './layout/spacer'
 export function ProbabilityInput(props: {
   prob: number | undefined
   onChange: (newProb: number | undefined) => void
-  error: string | undefined
-  setError: (error: string | undefined) => void
   disabled?: boolean
   className?: string
   inputClassName?: string
 }) {
-  const { prob, onChange, error, disabled, className, inputClassName } = props
+  const { prob, onChange, disabled, className, inputClassName } = props
 
   const onProbChange = (str: string) => {
     let prob = parseInt(str.replace(/\D/g, ''))
@@ -30,7 +28,6 @@ export function ProbabilityInput(props: {
         <input
           className={clsx(
             'input input-bordered max-w-[200px] text-lg',
-            error && 'input-error',
             inputClassName
           )}
           type="number"
@@ -46,14 +43,7 @@ export function ProbabilityInput(props: {
         />
         <span className="bg-gray-200 text-sm">%</span>
       </label>
-
       <Spacer h={4} />
-
-      {error && (
-        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
-          {error}
-        </div>
-      )}
     </Col>
   )
 }
