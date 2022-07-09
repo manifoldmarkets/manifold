@@ -11,7 +11,7 @@ const commands = {
                     "- !sell - sells all shares\n" +
                     "- !balance - Manifold Bot replies your balance to you in main chat\n" +
                     "- !help - Manifold Bot sends a DM showing list of commands\n" +
-                    "- !sign up - Manifold Bot sends a DM explaining how to link accounts and free Mana on sign up."
+                    "- !signup - Manifold Bot sends a DM explaining how to link accounts and free Mana on sign up."
     },
     upvote: {
         response: (username: string, argument: string) => `Successfully upvoted ${argument}`,
@@ -112,6 +112,7 @@ client.on("connected", () => {
     let options: any = client.getOptions();
     let channel = options.channels[0];
     client.say(channel, "/clear");
+    client.say(channel, "/color BlueViolet");
 });
 
 // client.on("message", (channel, tags, rawMessage, self) => {

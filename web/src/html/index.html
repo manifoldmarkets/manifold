@@ -1,0 +1,42 @@
+<!--
+    COPYRIGHT 2022 Phil Bladen www.philbladen.co.uk
+-->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="main.css">
+
+    <title>Manifold viewport</title>
+    <!-- <link rel="icon" href="icon.png"> -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Readex+Pro&display=swap" rel="stylesheet">
+</head>
+
+<body style="color: white; text-align: center">
+    <div class="content">
+        <div class="row" style="align-items: center; justify-content: space-around; padding: 0.25em">
+            <div>Will dogdog get 1st place?</div>
+            <div class="col">
+                <div id="chance" style="color: #A5FF6E">99.1</div>
+                <div style="color: #A5FF6E; font-size: 0.7em">chance</div>
+            </div>
+        </div>
+        <div class="row" style="justify-content: center;">
+            <img src="graph.png" style="display: block; max-width: 70%;">
+        </div>
+        <div class="row" style="justify-content: flex-end; flex: 1 1; align-items: center; padding: 0.42em;">
+            <div id="transactions" class="col" style="flex: 1 1; height: 100%; align-items: flex-start;">
+                <div id="transaction-template" class="transaction"><p class="name"></p> bought M$<p class="amount">1000</p> of </div>
+            </div>
+            <img src="logo-white.svg" style="display: block; height: 90%; object-fit: contain;">
+        </div>
+    </div>
+    <script src="main.js"></script>
+</body>
+
+</html>

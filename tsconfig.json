@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "noResolve": false,
+    "noImplicitAny": false,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "preserveConstEnums": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": [
+      "dom",
+      "es6",
+      "WebWorker"
+    ],
+    "rootDir": "."
+  }
+}
