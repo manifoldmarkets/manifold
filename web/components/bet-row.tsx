@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 
-import { BetPanelSwitcher } from './bet-panel'
+import { SimpleBetPanel } from './bet-panel'
 import { YesNoSelector } from './yes-no-selector'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { Modal } from './layout/modal'
@@ -63,10 +63,9 @@ export default function BetRow(props: {
         }
       />
       <Modal open={open} setOpen={setOpen}>
-        <BetPanelSwitcher
+        <SimpleBetPanel
           className={betPanelClassName}
           contract={contract}
-          title={contract.question}
           selected={betChoice}
           onBetSuccess={() => setOpen(false)}
         />

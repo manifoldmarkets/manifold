@@ -23,7 +23,7 @@ import { APIError, placeBet } from 'web/lib/firebase/api-call'
 import { sellShares } from 'web/lib/firebase/api-call'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
-import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from './outcome-label'
+import { BinaryOutcomeLabel } from './outcome-label'
 import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -111,128 +111,43 @@ export function BetPanel(props: {
   )
 }
 
-export function BetPanelSwitcher(props: {
+export function SimpleBetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
-  title?: string // Set if BetPanel is on a feed modal
   selected?: 'YES' | 'NO'
   onBetSuccess?: () => void
 }) {
-  const { contract, className, title, selected, onBetSuccess } = props
-
-  const { mechanism, outcomeType } = contract
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const { contract, className, selected, onBetSuccess } = props
 
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)
   const unfilledBets = useUnfilledBets(contract.id) ?? []
-
-  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
   const [isLimitOrder, setIsLimitOrder] = useState(false)
-
-  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
-    contract,
-    userBets
-  )
-
-  const floorShares = yesFloorShares || noFloorShares
-  const sharesOutcome = yesFloorShares
-    ? 'YES'
-    : noFloorShares
-    ? 'NO'
-    : undefined
-
-  useEffect(() => {
-    // Switch back to BUY if the user has sold all their shares.
-    if (tradeType === 'SELL' && sharesOutcome === undefined) {
-      setTradeType('BUY')
-    }
-  }, [tradeType, sharesOutcome])
 
   return (
     <Col className={className}>
-      {sharesOutcome && mechanism === 'cpmm-1' && (
-        <Col className="rounded-t-md bg-gray-100 px-6 py-6">
-          <Row className="items-center justify-between gap-2">
-            <div>
-              You have {formatWithCommas(floorShares)}{' '}
-              {isPseudoNumeric ? (
-                <PseudoNumericOutcomeLabel outcome={sharesOutcome} />
-              ) : (
-                <BinaryOutcomeLabel outcome={sharesOutcome} />
-              )}{' '}
-              shares
-            </div>
-
-            {tradeType === 'BUY' && (
-              <button
-                className="btn btn-sm"
-                style={{
-                  backgroundColor: 'white',
-                  border: '2px solid',
-                  color: '#3D4451',
-                }}
-                onClick={() =>
-                  tradeType === 'BUY'
-                    ? setTradeType('SELL')
-                    : setTradeType('BUY')
-                }
-              >
-                {tradeType === 'BUY' ? 'Sell' : 'Bet'}
-              </button>
-            )}
-          </Row>
-        </Col>
-      )}
-
-      <Col
-        className={clsx(
-          'rounded-b-md bg-white px-8 py-6',
-          !sharesOutcome && 'rounded-t-md'
-        )}
-      >
+      <Col className={clsx('rounded-b-md rounded-t-md bg-white px-8 py-6')}>
         <Row className="justify-between">
           <Title
-            className={clsx(
-              '!mt-0',
-              tradeType === 'BUY' && title ? '!text-xl' : ''
-            )}
-            text={
-              tradeType === 'BUY' ? title ?? 'Place a trade' : 'Sell shares'
-            }
+            className={clsx('!mt-0')}
+            text={isLimitOrder ? 'Limit bet' : 'Place a trade'}
           />
 
-          {tradeType === 'BUY' && (
-            <button
-              className="btn btn-ghost btn-sm text-sm normal-case"
-              onClick={() => setIsLimitOrder(!isLimitOrder)}
-            >
-              <SwitchHorizontalIcon className="inline h-6 w-6" />
-            </button>
-          )}
+          <button
+            className="btn btn-ghost btn-sm text-sm normal-case"
+            onClick={() => setIsLimitOrder(!isLimitOrder)}
+          >
+            <SwitchHorizontalIcon className="inline h-6 w-6" />
+          </button>
         </Row>
 
-        {tradeType === 'SELL' && user && sharesOutcome && (
-          <SellPanel
-            contract={contract}
-            shares={yesShares || noShares}
-            sharesOutcome={sharesOutcome}
-            user={user}
-            userBets={userBets ?? []}
-            onSellSuccess={onBetSuccess}
-          />
-        )}
-
-        {tradeType === 'BUY' && (
-          <BuyPanel
-            contract={contract}
-            user={user}
-            unfilledBets={unfilledBets}
-            selected={selected}
-            onBuySuccess={onBetSuccess}
-            isLimitOrder={isLimitOrder}
-          />
-        )}
+        <BuyPanel
+          contract={contract}
+          user={user}
+          unfilledBets={unfilledBets}
+          selected={selected}
+          onBuySuccess={onBetSuccess}
+          isLimitOrder={isLimitOrder}
+        />
 
         <SignUpPrompt />
       </Col>
