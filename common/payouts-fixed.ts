@@ -72,7 +72,7 @@ export const getLiquidityPoolPayouts = (
   const { pool } = contract
   const finalPool = pool[outcome]
 
-  const weights = getCpmmLiquidityPoolWeights(contract, liquidities)
+  const weights = getCpmmLiquidityPoolWeights(contract, liquidities, false)
 
   return Object.entries(weights).map(([providerId, weight]) => ({
     userId: providerId,
@@ -123,7 +123,7 @@ export const getLiquidityPoolProbPayouts = (
   const { pool } = contract
   const finalPool = p * pool.YES + (1 - p) * pool.NO
 
-  const weights = getCpmmLiquidityPoolWeights(contract, liquidities)
+  const weights = getCpmmLiquidityPoolWeights(contract, liquidities, false)
 
   return Object.entries(weights).map(([providerId, weight]) => ({
     userId: providerId,

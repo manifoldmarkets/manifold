@@ -1,4 +1,4 @@
-import { sum, groupBy, mapValues, sumBy, partition } from 'lodash'
+import { sum, groupBy, mapValues, sumBy } from 'lodash'
 
 import { CPMMContract } from './contract'
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
@@ -268,18 +268,20 @@ const calculateLiquidityDelta = (p: number) => (l: LiquidityProvision) => {
 
 export function getCpmmLiquidityPoolWeights(
   contract: CPMMContract,
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  excludeAntes: boolean
 ) {
-  const [antes, nonAntes] = partition(liquidities, (l) => !!l.isAnte)
-
   const calcLiqudity = calculateLiquidityDelta(contract.p)
-  const liquidityShares = nonAntes.map(calcLiqudity)
+  const liquidityShares = liquidities.map(calcLiqudity)
+  const shareSum = sum(liquidityShares)
 
-  const shareSum = sum(liquidityShares) + sum(antes.map(calcLiqudity))
+  const includedLiquidities = excludeAntes
+    ? liquidityShares.filter((_, i) => !liquidities[i].isAnte)
+    : liquidityShares
 
-  const weights = liquidityShares.map((s, i) => ({
+  const weights = includedLiquidities.map((s, i) => ({
     weight: s / shareSum,
-    providerId: nonAntes[i].userId,
+    providerId: liquidities[i].userId,
   }))
 
   const userWeights = groupBy(weights, (w) => w.providerId)
@@ -292,9 +294,14 @@ export function getCpmmLiquidityPoolWeights(
 export function getUserLiquidityShares(
   userId: string,
   contract: CPMMContract,
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  excludeAntes: boolean
 ) {
-  const weights = getCpmmLiquidityPoolWeights(contract, liquidities)
+  const weights = getCpmmLiquidityPoolWeights(
+    contract,
+    liquidities,
+    excludeAntes
+  )
   const userWeight = weights[userId] ?? 0
 
   return mapValues(contract.pool, (shares) => userWeight * shares)
