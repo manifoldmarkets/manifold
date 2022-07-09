@@ -385,10 +385,14 @@ function BuyPanel(props: {
       />
       {isLimitOrder && (
         <>
-          <div className="my-3 text-left text-sm text-gray-500">
-            {betChoice === 'NO' ? 'Min' : 'Max'}{' '}
-            {isPseudoNumeric ? 'value' : 'probability'}
-          </div>
+          <Row className="my-3 items-center gap-2 text-left text-sm text-gray-500">
+            Limit {isPseudoNumeric ? 'value' : 'probability'}
+            <InfoTooltip
+              text={`Bet ${betChoice === 'YES' ? 'up' : 'down'} to this ${
+                isPseudoNumeric ? 'value' : 'probability'
+              } and wait to match other bets.`}
+            />
+          </Row>
           {isPseudoNumeric ? (
             <BucketInput
               contract={contract}
