@@ -1,4 +1,4 @@
-import { sum, groupBy, mapValues, sumBy, partition } from 'lodash'
+import { sum, groupBy, mapValues, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
@@ -314,11 +314,7 @@ export function getUserLiquidityShares(
   liquidities: LiquidityProvision[],
   excludeAntes: boolean
 ) {
-  const weights = getCpmmLiquidityPoolWeights(
-    state,
-    liquidities,
-    excludeAntes
-  )
+  const weights = getCpmmLiquidityPoolWeights(state, liquidities, excludeAntes)
   const userWeight = weights[userId] ?? 0
 
   return mapValues(state.pool, (shares) => userWeight * shares)
