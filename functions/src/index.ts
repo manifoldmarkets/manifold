@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 admin.initializeApp()
 
 // v1
-export * from './transact'
 export * from './stripe'
 export * from './create-user'
 export * from './on-create-bet'
@@ -28,6 +27,7 @@ export * from './on-create-txn'
 
 // v2
 export * from './health'
+export * from './transact'
 export * from './change-user-info'
 export * from './create-answer'
 export * from './place-bet'
