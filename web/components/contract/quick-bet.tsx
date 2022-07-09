@@ -134,6 +134,13 @@ export function QuickBet(props: { contract: Contract; user: User }) {
     })
   }
 
+  if (outcomeType === 'FREE_RESPONSE')
+    return (
+      <Col className="relative -my-4 -mr-5 min-w-[5.5rem] justify-center gap-2 pr-5 pl-1 align-middle">
+        <QuickOutcomeView contract={contract} previewProb={previewProb} />
+      </Col>
+    )
+
   return (
     <Col
       className={clsx(

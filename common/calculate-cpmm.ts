@@ -64,11 +64,7 @@ function calculateCpmmShares(
     : n + bet - (k * (bet + y) ** -p) ** (1 / (1 - p))
 }
 
-export function getCpmmLiquidityFee(
-  state: CpmmState,
-  bet: number,
-  outcome: string
-) {
+export function getCpmmFees(state: CpmmState, bet: number, outcome: string) {
   const prob = getCpmmProbabilityAfterBetBeforeFees(state, outcome, bet)
   const betP = outcome === 'YES' ? 1 - prob : prob
 
@@ -89,7 +85,7 @@ export function calculateCpmmSharesAfterFee(
   outcome: string
 ) {
   const { pool, p } = state
-  const { remainingBet } = getCpmmLiquidityFee(state, bet, outcome)
+  const { remainingBet } = getCpmmFees(state, bet, outcome)
 
   return calculateCpmmShares(pool, p, remainingBet, outcome)
 }
@@ -100,9 +96,7 @@ export function calculateCpmmPurchase(
   outcome: string
 ) {
   const { pool, p } = state
-  const { remainingBet, fees } = getCpmmLiquidityFee(state, bet, outcome)
-  // const remainingBet = bet
-  // const fees = noFees
+  const { remainingBet, fees } = getCpmmFees(state, bet, outcome)
 
   const shares = calculateCpmmShares(pool, p, remainingBet, outcome)
   const { YES: y, NO: n } = pool

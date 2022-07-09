@@ -1,5 +1,5 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { z } from 'zod'
 
 import { getUser } from './utils'
 import { Contract } from '../../common/contract'
@@ -11,37 +11,23 @@ import {
 } from '../../common/util/clean-username'
 import { removeUndefinedProps } from '../../common/util/object'
 import { Answer } from '../../common/answer'
+import { APIError, newEndpoint, validate } from './api'
 
-export const changeUserInfo = functions
-  .runWith({ minInstances: 1 })
-  .https.onCall(
-    async (
-      data: {
-        username?: string
-        name?: string
-        avatarUrl?: string
-      },
-      context
-    ) => {
-      const userId = context?.auth?.uid
-      if (!userId) return { status: 'error', message: 'Not authorized' }
+const bodySchema = z.object({
+  username: z.string().optional(),
+  name: z.string().optional(),
+  avatarUrl: z.string().optional(),
+})
 
-      const user = await getUser(userId)
-      if (!user) return { status: 'error', message: 'User not found' }
+export const changeuserinfo = newEndpoint({}, async (req, auth) => {
+  const { username, name, avatarUrl } = validate(bodySchema, req.body)
 
-      const { username, name, avatarUrl } = data
+  const user = await getUser(auth.uid)
+  if (!user) throw new APIError(400, 'User not found')
 
-      return await changeUser(user, { username, name, avatarUrl })
-        .then(() => {
-          console.log('succesfully changed', user.username, 'to', data)
-          return { status: 'success' }
-        })
-        .catch((e) => {
-          console.log('Error', e.message)
-          return { status: 'error', message: e.message }
-        })
-    }
-  )
+  await changeUser(user, { username, name, avatarUrl })
+  return { message: 'Successfully changed user info.' }
+})
 
 export const changeUser = async (
   user: User,
@@ -55,14 +41,14 @@ export const changeUser = async (
     if (update.username) {
       update.username = cleanUsername(update.username)
       if (!update.username) {
-        throw new Error('Invalid username')
+        throw new APIError(400, 'Invalid username')
       }
 
       const sameNameUser = await transaction.get(
         firestore.collection('users').where('username', '==', update.username)
       )
       if (!sameNameUser.empty) {
-        throw new Error('Username already exists')
+        throw new APIError(400, 'Username already exists')
       }
     }
 
@@ -104,17 +90,10 @@ export const changeUser = async (
     )
     const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
 
-    await transaction.update(userRef, userUpdate)
-
-    await Promise.all(
-      commentSnap.docs.map((d) => transaction.update(d.ref, commentUpdate))
-    )
-
-    await Promise.all(
-      answerSnap.docs.map((d) => transaction.update(d.ref, answerUpdate))
-    )
-
-    await contracts.docs.map((d) => transaction.update(d.ref, contractUpdate))
+    transaction.update(userRef, userUpdate)
+    commentSnap.docs.forEach((d) => transaction.update(d.ref, commentUpdate))
+    answerSnap.docs.forEach((d) => transaction.update(d.ref, answerUpdate))
+    contracts.docs.forEach((d) => transaction.update(d.ref, contractUpdate))
   })
 }
 

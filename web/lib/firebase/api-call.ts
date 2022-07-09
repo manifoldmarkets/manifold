@@ -50,6 +50,21 @@ export function getFunctionUrl(name: string) {
   }
 }
 
+export function createAnswer(params: any) {
+  return call(getFunctionUrl('createanswer'), 'POST', params)
+}
+export function changeUserInfo(params: any) {
+  return call(getFunctionUrl('changeuserinfo'), 'POST', params)
+}
+
+export function addLiquidity(params: any) {
+  return call(getFunctionUrl('addliquidity'), 'POST', params)
+}
+
+export function withdrawLiquidity(params: any) {
+  return call(getFunctionUrl('withdrawliquidity'), 'POST', params)
+}
+
 export function createMarket(params: any) {
   return call(getFunctionUrl('createmarket'), 'POST', params)
 }
@@ -72,6 +87,10 @@ export function sellShares(params: any) {
 
 export function sellBet(params: any) {
   return call(getFunctionUrl('sellbet'), 'POST', params)
+}
+
+export function claimManalink(params: any) {
+  return call(getFunctionUrl('claimmanalink'), 'POST', params)
 }
 
 export function createGroup(params: any) {

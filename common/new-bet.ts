@@ -76,14 +76,14 @@ const computeFill = (
       ? Math.min(matchedBet.limitProb, limitProb ?? 1)
       : Math.max(matchedBet.limitProb, limitProb ?? 0)
 
-    const poolAmount =
+    const buyAmount =
       limit === undefined
         ? amount
         : Math.min(amount, calculateCpmmAmount(cpmmState, limit, outcome))
 
     const { shares, newPool, newP, fees } = calculateCpmmPurchase(
       cpmmState,
-      poolAmount,
+      buyAmount,
       outcome
     )
     const newState = { pool: newPool, p: newP }
@@ -92,7 +92,7 @@ const computeFill = (
       maker: {
         matchedBetId: null,
         shares,
-        amount: poolAmount,
+        amount: buyAmount,
         state: newState,
         fees,
         timestamp,
@@ -100,7 +100,7 @@ const computeFill = (
       taker: {
         matchedBetId: null,
         shares,
-        amount: poolAmount,
+        amount: buyAmount,
         timestamp,
       },
     }

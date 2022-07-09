@@ -30,7 +30,7 @@ import { useUserContractBets } from 'web/hooks/use-user-bets'
 import {
   calculateCpmmSale,
   getCpmmProbability,
-  getCpmmLiquidityFee,
+  getCpmmFees,
 } from 'common/calculate-cpmm'
 import {
   getFormattedMappedValue,
@@ -356,7 +356,7 @@ function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const cpmmFees = getCpmmLiquidityFee(
+  const cpmmFees = getCpmmFees(
     contract,
     betAmount ?? 0,
     betChoice ?? 'YES'
