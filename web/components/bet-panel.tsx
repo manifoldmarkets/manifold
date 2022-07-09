@@ -388,7 +388,7 @@ function BuyPanel(props: {
           <Row className="my-3 items-center gap-2 text-left text-sm text-gray-500">
             Limit {isPseudoNumeric ? 'value' : 'probability'}
             <InfoTooltip
-              text={`Bet ${betChoice === 'YES' ? 'up' : 'down'} to this ${
+              text={`Bet ${betChoice === 'NO' ? 'down' : 'up'} to this ${
                 isPseudoNumeric ? 'value' : 'probability'
               } and wait to match other bets.`}
             />
