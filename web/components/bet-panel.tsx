@@ -37,7 +37,7 @@ import {
   getPseudoProbability,
 } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
-import { useSaveShares } from './use-save-shares'
+import { useSaveBinaryShares } from './use-save-binary-shares'
 import { SignUpPrompt } from './sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
 import { ProbabilityInput } from './probability-input'
@@ -56,12 +56,7 @@ export function BetPanel(props: {
   const userBets = useUserContractBets(user?.id, contract.id)
   const unfilledBets = useUnfilledBets(contract.id) ?? []
   const yourUnfilledBets = unfilledBets.filter((bet) => bet.userId === user?.id)
-  const { yesFloorShares, noFloorShares } = useSaveShares(contract, userBets)
-  const sharesOutcome = yesFloorShares
-    ? 'YES'
-    : noFloorShares
-    ? 'NO'
-    : undefined
+  const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
 
   const [isLimitOrder, setIsLimitOrder] = useState(false)
 
