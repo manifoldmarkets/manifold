@@ -1,12 +1,11 @@
-import { PROJECT_ID } from 'common/envs/constants'
+import { getFunctionUrl } from 'web/lib/firebase/api-call'
 
 export const checkoutURL = (
   userId: string,
   manticDollarQuantity: number,
   referer = ''
 ) => {
-  const endpoint = `https://us-central1-${PROJECT_ID}.cloudfunctions.net/createCheckoutSession`
-
+  const endpoint = getFunctionUrl('createcheckoutsession')
   return `${endpoint}?userId=${userId}&manticDollarQuantity=${manticDollarQuantity}&referer=${encodeURIComponent(
     referer
   )}`
