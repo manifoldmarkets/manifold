@@ -9,7 +9,7 @@ import {
   calculateNumericDpmShares,
 } from './calculate-dpm'
 import {
-  calculateCpmmAmount,
+  calculateCpmmAmountToProb,
   calculateCpmmPurchase,
   CpmmState,
   getCpmmProbability,
@@ -79,7 +79,7 @@ const computeFill = (
     const buyAmount =
       limit === undefined
         ? amount
-        : Math.min(amount, calculateCpmmAmount(cpmmState, limit, outcome))
+        : Math.min(amount, calculateCpmmAmountToProb(cpmmState, limit, outcome))
 
     const { shares, newPool, newP, fees } = calculateCpmmPurchase(
       cpmmState,

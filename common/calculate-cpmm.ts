@@ -116,7 +116,9 @@ export function calculateCpmmPurchase(
   return { shares, newPool, newP, fees }
 }
 
-export function calculateCpmmAmount(
+// Note: there might be a closed form solution for this.
+// If so, feel free to switch out this implementation.
+export function calculateCpmmAmountToProb(
   state: CpmmState,
   prob: number,
   outcome: 'YES' | 'NO'
