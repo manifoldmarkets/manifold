@@ -44,6 +44,8 @@ import { NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { SellSharesModal } from './sell-modal'
+import { useUnfilledBets } from 'web/hooks/use-bets'
+import { LimitBet } from 'common/bet'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -531,6 +533,8 @@ export function ContractBetsTable(props: {
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
+
   return (
     <div className={clsx('overflow-x-auto', className)}>
       {amountRedeemed > 0 && (
@@ -577,6 +581,7 @@ export function ContractBetsTable(props: {
               saleBet={salesDict[bet.id]}
               contract={contract}
               isYourBet={isYourBets}
+              unfilledBets={unfilledBets}
             />
           ))}
         </tbody>
@@ -590,8 +595,9 @@ function BetRow(props: {
   contract: Contract
   saleBet?: Bet
   isYourBet: boolean
+  unfilledBets: LimitBet[]
 }) {
-  const { bet, saleBet, contract, isYourBet } = props
+  const { bet, saleBet, contract, isYourBet, unfilledBets } = props
   const {
     amount,
     outcome,
@@ -621,7 +627,7 @@ function BetRow(props: {
     formatMoney(
       isResolved
         ? resolvedPayout(contract, bet)
-        : calculateSaleAmount(contract, bet)
+        : calculateSaleAmount(contract, bet, unfilledBets)
     )
   )
 
@@ -681,9 +687,16 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
     outcome === 'NO' ? 'YES' : outcome
   )
 
-  const outcomeProb = getProbabilityAfterSale(contract, outcome, shares)
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
 
-  const saleAmount = calculateSaleAmount(contract, bet)
+  const outcomeProb = getProbabilityAfterSale(
+    contract,
+    outcome,
+    shares,
+    unfilledBets
+  )
+
+  const saleAmount = calculateSaleAmount(contract, bet, unfilledBets)
   const profit = saleAmount - bet.amount
 
   return (

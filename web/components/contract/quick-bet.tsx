@@ -27,6 +27,7 @@ import { sellShares } from 'web/lib/firebase/api-call'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { track } from 'web/lib/service/analytics'
 import { formatNumericProbability } from 'common/pseudo-numeric'
+import { useUnfilledBets } from 'web/hooks/use-bets'
 
 const BET_SIZE = 10
 
@@ -36,6 +37,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
   const isCpmm = mechanism === 'cpmm-1'
 
   const userBets = useUserContractBets(user.id, contract.id)
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
   const topAnswer =
     outcomeType === 'FREE_RESPONSE' ? getTopAnswer(contract) : undefined
 
@@ -85,13 +87,14 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
       sharesSold = Math.min(oppositeShares, maxSharesSold)
 
-      const { newPool, saleValue } = calculateCpmmSale(
+      const { cpmmState, saleValue } = calculateCpmmSale(
         contract,
         sharesSold,
-        sellOutcome
+        sellOutcome,
+        unfilledBets
       )
       saleAmount = saleValue
-      previewProb = getCpmmProbability(newPool, contract.p)
+      previewProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
     }
   }
 

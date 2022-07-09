@@ -1,6 +1,11 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { FieldValue, Query } from 'firebase-admin/firestore'
+import {
+  DocumentReference,
+  FieldValue,
+  Query,
+  Transaction,
+} from 'firebase-admin/firestore'
 import { groupBy, mapValues, sumBy } from 'lodash'
 
 import { APIError, newEndpoint, validate } from './api'
@@ -70,12 +75,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
       makers,
     } = await (async (): Promise<
       BetInfo & {
-        makers?: {
-          bet: LimitBet
-          amount: number
-          shares: number
-          timestamp: number
-        }[]
+        makers?: maker[]
       }
     > => {
       if (
@@ -83,19 +83,10 @@ export const placebet = newEndpoint({}, async (req, auth) => {
         mechanism == 'cpmm-1'
       ) {
         const { outcome, limitProb } = validate(binarySchema, req.body)
-        const boundedLimitProb = limitProb ?? (outcome === 'YES' ? 1 : 0)
-        const unfilledBetsQuery = contractDoc
-          .collection('bets')
-          .where('outcome', '==', outcome === 'YES' ? 'NO' : 'YES')
-          .where('isFilled', '==', false)
-          .where('isCancelled', '==', false)
-          .where(
-            'limitProb',
-            outcome === 'YES' ? '<=' : '>=',
-            boundedLimitProb
-          ) as Query<LimitBet>
 
-        const unfilledBetsSnap = await trans.get(unfilledBetsQuery)
+        const unfilledBetsSnap = await trans.get(
+          getUnfilledBetsQuery(contractDoc)
+        )
         const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
 
         return getBinaryCpmmBetInfo(
@@ -134,37 +125,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
     log('Created new bet document.')
 
     if (makers) {
-      const makersByBet = groupBy(makers, (maker) => maker.bet.id)
-      for (const makers of Object.values(makersByBet)) {
-        const bet = makers[0].bet
-        const newFills = makers.map((maker) => {
-          const { amount, shares, timestamp } = maker
-          return { amount, shares, matchedBetId: betDoc.id, timestamp }
-        })
-        const fills = [...bet.fills, ...newFills]
-        const totalShares = sumBy(fills, 'shares')
-        const totalAmount = sumBy(fills, 'amount')
-        const isFilled = floatingEqual(totalAmount, bet.orderAmount)
-
-        log('Updated a matched limit bet.')
-        trans.update(contractDoc.collection('bets').doc(bet.id), {
-          fills,
-          isFilled,
-          amount: totalAmount,
-          shares: totalShares,
-        })
-      }
-
-      // Deduct balance of makers.
-      // TODO: Check if users would go negative from fills and cancel those bets.
-      const spentByUser = mapValues(
-        groupBy(makers, (maker) => maker.bet.userId),
-        (makers) => sumBy(makers, (maker) => maker.amount)
-      )
-      for (const [userId, spent] of Object.entries(spentByUser)) {
-        const userDoc = firestore.collection('users').doc(userId)
-        trans.update(userDoc, { balance: FieldValue.increment(-spent) })
-      }
+      updateMakers(makers, betDoc.id, contractDoc, trans)
     }
 
     trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
@@ -193,3 +154,55 @@ export const placebet = newEndpoint({}, async (req, auth) => {
 })
 
 const firestore = admin.firestore()
+
+export const getUnfilledBetsQuery = (contractDoc: DocumentReference) => {
+  return contractDoc
+    .collection('bets')
+    .where('isFilled', '==', false)
+    .where('isCancelled', '==', false) as Query<LimitBet>
+}
+
+type maker = {
+  bet: LimitBet
+  amount: number
+  shares: number
+  timestamp: number
+}
+export const updateMakers = (
+  makers: maker[],
+  takerBetId: string,
+  contractDoc: DocumentReference,
+  trans: Transaction
+) => {
+  const makersByBet = groupBy(makers, (maker) => maker.bet.id)
+  for (const makers of Object.values(makersByBet)) {
+    const bet = makers[0].bet
+    const newFills = makers.map((maker) => {
+      const { amount, shares, timestamp } = maker
+      return { amount, shares, matchedBetId: takerBetId, timestamp }
+    })
+    const fills = [...bet.fills, ...newFills]
+    const totalShares = sumBy(fills, 'shares')
+    const totalAmount = sumBy(fills, 'amount')
+    const isFilled = floatingEqual(totalAmount, bet.orderAmount)
+
+    log('Updated a matched limit bet.')
+    trans.update(contractDoc.collection('bets').doc(bet.id), {
+      fills,
+      isFilled,
+      amount: totalAmount,
+      shares: totalShares,
+    })
+  }
+
+  // Deduct balance of makers.
+  // TODO: Check if users would go negative from fills and cancel those bets.
+  const spentByUser = mapValues(
+    groupBy(makers, (maker) => maker.bet.userId),
+    (makers) => sumBy(makers, (maker) => maker.amount)
+  )
+  for (const [userId, spent] of Object.entries(spentByUser)) {
+    const userDoc = firestore.collection('users').doc(userId)
+    trans.update(userDoc, { balance: FieldValue.increment(-spent) })
+  }
+}

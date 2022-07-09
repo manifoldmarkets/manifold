@@ -1,7 +1,9 @@
 import { sum, groupBy, mapValues, sumBy, partition } from 'lodash'
+import { LimitBet } from './bet'
 
-import { CREATOR_FEE, Fees, LIQUIDITY_FEE, noFees, PLATFORM_FEE } from './fees'
+import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
+import { computeFills } from './new-bet'
 import { addObjects } from './util/object'
 
 export type CpmmState = {
@@ -166,119 +168,85 @@ function binarySearch(
   return mid
 }
 
-function computeK(y: number, n: number, p: number) {
-  return y ** p * n ** (1 - p)
-}
-
-function sellSharesK(
-  y: number,
-  n: number,
-  p: number,
-  s: number,
-  outcome: 'YES' | 'NO',
-  b: number
-) {
-  return outcome === 'YES'
-    ? computeK(y - b + s, n - b, p)
-    : computeK(y - b, n - b + s, p)
-}
-
-function calculateCpmmShareValue(
+function calculateAmountToBuyShares(
   state: CpmmState,
   shares: number,
-  outcome: 'YES' | 'NO'
+  outcome: 'YES' | 'NO',
+  unfilledBets: LimitBet[]
 ) {
-  const { pool, p } = state
+  // Search for amount between bounds (0, shares).
+  // Min share price is M$0, and max is M$1 each.
+  return binarySearch(0, shares, (amount) => {
+    const { takers } = computeFills(
+      outcome,
+      amount,
+      state,
+      undefined,
+      unfilledBets
+    )
 
-  // Find bet amount that preserves k after selling shares.
-  const k = computeK(pool.YES, pool.NO, p)
-  const otherPool = outcome === 'YES' ? pool.NO : pool.YES
-
-  // Constrain the max sale value to the lessor of 1. shares and 2. the other pool.
-  // This is because 1. the max value per share is M$ 1,
-  // and 2. The other pool cannot go negative and the sale value is subtracted from it.
-  // (Without this, there are multiple solutions for the same k.)
-  let highAmount = Math.min(shares, otherPool)
-  let lowAmount = 0
-  let mid = 0
-  let kGuess = 0
-  while (true) {
-    mid = lowAmount + (highAmount - lowAmount) / 2
-
-    // Break once we've reached max precision.
-    if (mid === lowAmount || mid === highAmount) break
-
-    kGuess = sellSharesK(pool.YES, pool.NO, p, shares, outcome, mid)
-    if (kGuess < k) {
-      highAmount = mid
-    } else {
-      lowAmount = mid
-    }
-  }
-  return mid
+    const totalShares = sumBy(takers, (taker) => taker.shares)
+    return totalShares - shares
+  })
 }
 
 export function calculateCpmmSale(
   state: CpmmState,
   shares: number,
-  outcome: string
+  outcome: 'YES' | 'NO',
+  unfilledBets: LimitBet[]
 ) {
   if (Math.round(shares) < 0) {
     throw new Error('Cannot sell non-positive shares')
   }
 
-  const saleValue = calculateCpmmShareValue(
+  const oppositeOutcome = outcome === 'YES' ? 'NO' : 'YES'
+  const buyAmount = calculateAmountToBuyShares(
     state,
     shares,
-    outcome as 'YES' | 'NO'
+    oppositeOutcome,
+    unfilledBets
   )
 
-  const fees = noFees
+  const { cpmmState, makers, takers, totalFees } = computeFills(
+    oppositeOutcome,
+    buyAmount,
+    state,
+    undefined,
+    unfilledBets
+  )
 
-  // const { fees, remainingBet: saleValue } = getCpmmLiquidityFee(
-  //   contract,
-  //   rawSaleValue,
-  //   outcome === 'YES' ? 'NO' : 'YES'
-  // )
+  // Transform buys of opposite outcome into sells.
+  const saleTakers = takers.map((taker) => ({
+    ...taker,
+    // You bought opposite shares, which combine with existing shares, removing them.
+    shares: -taker.shares,
+    // Opposite shares combine with shares you are selling for M$ of shares.
+    // You paid taker.amount for the opposite shares.
+    // Take the negative because this is money you gain.
+    amount: -(taker.shares - taker.amount),
+    isSale: true,
+  }))
 
-  const { pool } = state
-  const { YES: y, NO: n } = pool
+  const saleValue = -sumBy(saleTakers, (taker) => taker.amount)
 
-  const { liquidityFee: fee } = fees
-
-  const [newY, newN] =
-    outcome === 'YES'
-      ? [y + shares - saleValue + fee, n - saleValue + fee]
-      : [y - saleValue + fee, n + shares - saleValue + fee]
-
-  if (newY < 0 || newN < 0) {
-    console.log('calculateCpmmSale', {
-      newY,
-      newN,
-      y,
-      n,
-      shares,
-      saleValue,
-      fee,
-      outcome,
-    })
-    throw new Error('Cannot sell more than in pool')
+  return {
+    saleValue,
+    cpmmState,
+    fees: totalFees,
+    makers,
+    takers: saleTakers,
   }
-
-  const postBetPool = { YES: newY, NO: newN }
-
-  const { newPool, newP } = addCpmmLiquidity(postBetPool, state.p, fee)
-
-  return { saleValue, newPool, newP, fees }
 }
 
 export function getCpmmProbabilityAfterSale(
   state: CpmmState,
   shares: number,
-  outcome: 'YES' | 'NO'
+  outcome: 'YES' | 'NO',
+  unfilledBets: LimitBet[]
 ) {
-  const { newPool } = calculateCpmmSale(state, shares, outcome)
-  return getCpmmProbability(newPool, state.p)
+  const { cpmmState } = calculateCpmmSale(state, shares, outcome, unfilledBets)
+  return getCpmmProbability(cpmmState.pool, cpmmState.p)
 }
 
 export function getCpmmLiquidity(

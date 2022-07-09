@@ -497,7 +497,12 @@ export function SellPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
+
   const betDisabled = isSubmitting || !amount || error
+
+  // Sell all shares if remaining shares would be < 1
+  const sellQuantity = amount === Math.floor(shares) ? shares : amount
 
   async function submitSell() {
     if (!user || !amount) return
@@ -505,11 +510,8 @@ export function SellPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    // Sell all shares if remaining shares would be < 1
-    const sellAmount = amount === Math.floor(shares) ? shares : amount
-
     await sellShares({
-      shares: sellAmount,
+      shares: sellQuantity,
       outcome: sharesOutcome,
       contractId: contract.id,
     })
@@ -534,18 +536,19 @@ export function SellPanel(props: {
       outcomeType: contract.outcomeType,
       slug: contract.slug,
       contractId: contract.id,
-      shares: sellAmount,
+      shares: sellQuantity,
       outcome: sharesOutcome,
     })
   }
 
   const initialProb = getProbability(contract)
-  const { newPool } = calculateCpmmSale(
+  const { cpmmState, saleValue } = calculateCpmmSale(
     contract,
-    Math.min(amount ?? 0, shares),
-    sharesOutcome
+    sellQuantity ?? 0,
+    sharesOutcome,
+    unfilledBets
   )
-  const resultProb = getCpmmProbability(newPool, contract.p)
+  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
   const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
   const [yesBets, noBets] = partition(
@@ -557,16 +560,7 @@ export function SellPanel(props: {
     sumBy(noBets, (bet) => bet.shares),
   ]
 
-  const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
   const ownedShares = Math.round(yesShares) || Math.round(noShares)
-
-  const sharesSold = Math.min(amount ?? 0, ownedShares)
-
-  const { saleValue } = calculateCpmmSale(
-    contract,
-    sharesSold,
-    sellOutcome as 'YES' | 'NO'
-  )
 
   const onAmountChange = (amount: number | undefined) => {
     setAmount(amount)

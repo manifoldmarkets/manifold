@@ -172,7 +172,6 @@ export function listenForUnfilledBets(
 ) {
   const betsQuery = query(
     collection(db, 'contracts', contractId, 'bets'),
-    where('contractId', '==', contractId),
     where('isFilled', '==', false),
     where('isCancelled', '==', false)
   )

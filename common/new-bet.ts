@@ -135,10 +135,10 @@ const computeFill = (
   return { maker, taker }
 }
 
-export const getBinaryCpmmBetInfo = (
+export const computeFills = (
   outcome: 'YES' | 'NO',
   betAmount: number,
-  contract: CPMMBinaryContract | PseudoNumericContract,
+  state: CpmmState,
   limitProb: number | undefined,
   unfilledBets: LimitBet[]
 ) => {
@@ -157,7 +157,7 @@ export const getBinaryCpmmBetInfo = (
   }[] = []
 
   let amount = betAmount
-  let cpmmState = { pool: contract.pool, p: contract.p }
+  let cpmmState = { pool: state.pool, p: state.p }
   let totalFees = noFees
 
   let i = 0
@@ -185,6 +185,24 @@ export const getBinaryCpmmBetInfo = (
     if (floatingEqual(amount, 0)) break
   }
 
+  return { takers, makers, totalFees, cpmmState }
+}
+
+export const getBinaryCpmmBetInfo = (
+  outcome: 'YES' | 'NO',
+  betAmount: number,
+  contract: CPMMBinaryContract | PseudoNumericContract,
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[]
+) => {
+  const { pool, p } = contract
+  const { takers, makers, cpmmState, totalFees } = computeFills(
+    outcome,
+    betAmount,
+    { pool, p },
+    limitProb,
+    unfilledBets
+  )
   const probBefore = getCpmmProbability(contract.pool, contract.p)
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
