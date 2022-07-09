@@ -22,6 +22,7 @@ import { Spacer } from './layout/spacer'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -104,6 +105,10 @@ export function ContractSearch(props: {
 
   const indexName = `${indexPrefix}contracts-${sort}`
 
+  const [isSearching, setIsSearching] = useState(false)
+  const { width } = useWindowSize()
+  const showOptions = !isSearching || (width ?? 0) >= 500
+
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return (
       <ContractSearchFirestore
@@ -122,29 +127,38 @@ export function ContractSearch(props: {
           classNames={{
             form: 'before:top-6',
             input: '!pl-10 !input !input-bordered shadow-none w-[100px]',
-            resetIcon: 'mt-2 hidden sm:flex',
+            resetIcon: 'mt-2 sm:flex',
           }}
+          onFocus={() => setIsSearching(true)}
+          onBlur={() => setIsSearching(false)}
         />
-        <select
-          className="!select !select-bordered"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as filter)}
-          onBlur={trackCallback('select search filter')}
-        >
-          <option value="open">Open</option>
-          <option value="closed">Closed</option>
-          <option value="resolved">Resolved</option>
-          <option value="all">All</option>
-        </select>
-        {!hideOrderSelector && (
-          <SortBy
-            items={sortIndexes}
-            classNames={{
-              select: '!select !select-bordered',
-            }}
-            onBlur={trackCallback('select search sort')}
-          />
+
+        {showOptions && (
+          <>
+            <select
+              className="!select !select-bordered"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as filter)}
+              onBlur={trackCallback('select search filter')}
+            >
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+              <option value="resolved">Resolved</option>
+              <option value="all">All</option>
+            </select>
+
+            {!hideOrderSelector && (
+              <SortBy
+                items={sortIndexes}
+                classNames={{
+                  select: '!select !select-bordered',
+                }}
+                onBlur={trackCallback('select search sort')}
+              />
+            )}
+          </>
         )}
+
         <Configure
           facetFilters={filters}
           numericFilters={numericFilters}
