@@ -14,16 +14,6 @@ export const transact = cloudFunction<
   { status: 'error' | 'success'; message?: string; txn?: Txn }
 >('transact')
 
-export const createAnswer = cloudFunction<
-  { contractId: string; text: string; amount: number },
-  {
-    status: 'error' | 'success'
-    message?: string
-    answerId?: string
-    betId?: string
-  }
->('createAnswer')
-
 export const createUser: () => Promise<User | null> = () => {
   const local = safeLocalStorage()
   let deviceToken = local?.getItem('device-token')
