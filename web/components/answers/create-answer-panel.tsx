@@ -6,7 +6,7 @@ import { findBestMatch } from 'string-similarity'
 import { FreeResponseContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { createAnswer } from 'web/lib/firebase/fn-call'
+import { APIError, createAnswer } from 'web/lib/firebase/api-call'
 import { Row } from '../layout/row'
 import {
   formatMoney,
@@ -46,20 +46,23 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
     if (canSubmit) {
       setIsSubmitting(true)
 
-      const result = await createAnswer({
-        contractId: contract.id,
-        text,
-        amount: betAmount,
-      }).then((r) => r.data)
-
-      setIsSubmitting(false)
-
-      if (result.status === 'success') {
+      try {
+        await createAnswer({
+          contractId: contract.id,
+          text,
+          amount: betAmount,
+        })
         setText('')
         setBetAmount(10)
         setAmountError(undefined)
         setPossibleDuplicateAnswer(undefined)
-      } else setAmountError(result.message)
+      } catch (e) {
+        if (e instanceof APIError) {
+          setAmountError(e.toString())
+        }
+      }
+
+      setIsSubmitting(false)
     }
   }
 
