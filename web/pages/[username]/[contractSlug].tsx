@@ -38,14 +38,13 @@ import { FeedComment } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { useBets, useUnfilledBets } from 'web/hooks/use-bets'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import { useBets } from 'web/hooks/use-bets'
+import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useRouter } from 'next/router'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import { LimitBets } from 'web/components/limit-bets'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -129,8 +128,6 @@ export function ContractPageContent(
   const tips = useTipTxns({ contractId: contract.id })
 
   const user = useUser()
-  const unfilledBets = useUnfilledBets(contract.id) ?? []
-  const yourUnfilledBets = unfilledBets.filter((bet) => bet.userId === user?.id)
 
   const { width, height } = useWindowSize()
 
@@ -220,14 +217,6 @@ export function ContractPageContent(
         )}
 
         <ContractOverview contract={contract} bets={bets} />
-
-        {yourUnfilledBets.length > 0 && (
-          <LimitBets
-            className="mb-4 xl:hidden"
-            contract={contract as CPMMBinaryContract | PseudoNumericContract}
-            bets={yourUnfilledBets}
-          />
-        )}
 
         {isNumeric && (
           <AlertBox

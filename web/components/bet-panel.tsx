@@ -120,8 +120,10 @@ export function SimpleBetPanel(props: {
   const { contract, className, selected, onBetSuccess } = props
 
   const user = useUser()
-  const unfilledBets = useUnfilledBets(contract.id) ?? []
   const [isLimitOrder, setIsLimitOrder] = useState(false)
+
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
+  const yourUnfilledBets = unfilledBets.filter((bet) => bet.userId === user?.id)
 
   return (
     <Col className={className}>
@@ -151,6 +153,14 @@ export function SimpleBetPanel(props: {
 
         <SignUpPrompt />
       </Col>
+
+      {yourUnfilledBets.length > 0 && (
+        <LimitBets
+          className="mt-4"
+          contract={contract}
+          bets={yourUnfilledBets}
+        />
+      )}
     </Col>
   )
 }
