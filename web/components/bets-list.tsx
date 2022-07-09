@@ -46,6 +46,8 @@ import { useUser } from 'web/hooks/use-user'
 import { SellSharesModal } from './sell-modal'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
+import { useSaveShares } from './use-save-shares'
+import { floatingEqual } from 'common/util/math'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -392,6 +394,12 @@ export function BetsSummary(props: {
   const [showSellModal, setShowSellModal] = useState(false)
   const user = useUser()
 
+  const sharesOutcome = floatingEqual(totalShares.YES, 0)
+    ? floatingEqual(totalShares.NO, 0)
+      ? undefined
+      : 'NO'
+    : 'YES'
+
   return (
     <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>
       <Row className="flex-wrap gap-4 sm:gap-6">
@@ -471,6 +479,7 @@ export function BetsSummary(props: {
               !isClosed &&
               !resolution &&
               hasShares &&
+              sharesOutcome &&
               user && (
                 <>
                   <button
@@ -484,8 +493,8 @@ export function BetsSummary(props: {
                       contract={contract}
                       user={user}
                       userBets={bets}
-                      shares={totalShares.YES || totalShares.NO}
-                      sharesOutcome={totalShares.YES ? 'YES' : 'NO'}
+                      shares={totalShares[sharesOutcome]}
+                      sharesOutcome={sharesOutcome}
                       setOpen={setShowSellModal}
                     />
                   )}

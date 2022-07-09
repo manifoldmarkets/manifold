@@ -64,7 +64,7 @@ export function SellRow(props: {
             contract={contract}
             user={user}
             userBets={userBets ?? []}
-            shares={yesShares || noShares}
+            shares={sharesOutcome === 'YES' ? yesShares : noShares}
             sharesOutcome={sharesOutcome}
             setOpen={setShowSellModal}
           />
