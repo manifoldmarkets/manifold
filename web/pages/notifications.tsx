@@ -795,6 +795,8 @@ function getSourceIdForLinkComponent(
       return sourceId
     case 'contract':
       return ''
+    case 'bet':
+      return ''
     default:
       return sourceId
   }
@@ -861,8 +863,17 @@ function NotificationTextLabel(props: {
         {'+' + formatMoney(parseInt(sourceText))}
       </span>
     )
+  } else if (sourceType === 'bet' && sourceText) {
+    return (
+      <>
+        Filled{' '}
+        <span className="text-primary">
+          {formatMoney(parseInt(sourceText))}
+        </span>{' '}
+        <span>of your limit bet</span>
+      </>
+    )
   }
-  // return default text
   return (
     <div className={className ? className : 'line-clamp-4 whitespace-pre-line'}>
       <Linkify text={defaultText} />
@@ -912,6 +923,9 @@ function getReasonForShowingNotification(
         reasonText = 'joined to bet on your market'
       else if (sourceSlug) reasonText = 'joined because you shared'
       else reasonText = 'joined because of you'
+      break
+    case 'bet':
+      reasonText = 'bet against you'
       break
     default:
       reasonText = ''

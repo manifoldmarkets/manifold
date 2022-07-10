@@ -62,3 +62,4 @@ export type notification_reason_types =
   | 'unique_bettors_on_your_contract'
   | 'on_group_you_are_member_of'
   | 'tip_received'
+  | 'bet_fill'
