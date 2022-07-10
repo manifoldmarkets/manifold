@@ -23,15 +23,19 @@ export function LimitBets(props: {
   )
 
   return (
-    <Col className={clsx(className, 'gap-2 overflow-hidden rounded bg-white')}>
+    <Col
+      className={clsx(className, 'gap-2 overflow-hidden rounded bg-white py-3')}
+    >
       <div className="px-6 py-3 text-xl">Your limit bets</div>
-      <table className="table-compact table w-full rounded text-gray-500">
-        <tbody>
-          {recentBets.map((bet) => (
-            <LimitBet key={bet.id} bet={bet} contract={contract} />
-          ))}
-        </tbody>
-      </table>
+      <div className="px-4">
+        <table className="table-compact table w-full rounded text-gray-500">
+          <tbody>
+            {recentBets.map((bet) => (
+              <LimitBet key={bet.id} bet={bet} contract={contract} />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Col>
   )
 }
