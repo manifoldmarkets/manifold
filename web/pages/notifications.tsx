@@ -23,7 +23,6 @@ import {
   MultiLabel,
   NumericValueLabel,
   ProbPercentLabel,
-  PseudoNumericOutcomeLabel,
 } from 'web/components/outcome-label'
 import {
   NotificationGroup,
