@@ -1,16 +1,6 @@
 import { auth } from './users'
-import { ENV_CONFIG } from 'common/envs/constants'
-
-export class APIError extends Error {
-  code: number
-  details?: string
-  constructor(code: number, message: string, details?: string) {
-    super(message)
-    this.code = code
-    this.name = 'APIError'
-    this.details = details
-  }
-}
+import { APIError, getFunctionUrl } from 'common/api'
+export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
   const user = auth.currentUser
@@ -33,21 +23,6 @@ export async function call(url: string, method: string, params: any) {
     }
     return json
   })
-}
-
-// Our users access the API through the Vercel proxy routes at /api/v0/blah,
-// but right now at least until we get performance under control let's have the
-// app just hit the cloud functions directly -- there's no difference and it's
-// one less hop
-
-export function getFunctionUrl(name: string) {
-  if (process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
-    const { projectId, region } = ENV_CONFIG.firebaseConfig
-    return `http://localhost:5001/${projectId}/${region}/${name}`
-  } else {
-    const { cloudRunId, cloudRunRegion } = ENV_CONFIG
-    return `https://${name}-${cloudRunId}-${cloudRunRegion}.a.run.app`
-  }
 }
 
 export function createAnswer(params: any) {
