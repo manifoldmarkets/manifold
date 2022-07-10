@@ -65,7 +65,7 @@ export function BetPanel(props: {
       <SellRow
         contract={contract}
         user={user}
-        className={'rounded-t-md bg-gray-100 px-6 py-6'}
+        className={'rounded-t-md bg-gray-100 px-4 py-5'}
       />
       <Col
         className={clsx(

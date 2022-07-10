@@ -26,7 +26,7 @@ export function LimitBets(props: {
     <Col
       className={clsx(className, 'gap-2 overflow-hidden rounded bg-white py-3')}
     >
-      <div className="px-6 py-3 text-xl">Your limit bets</div>
+      <div className="px-6 py-3 text-2xl">Your limit bets</div>
       <div className="px-4">
         <table className="table-compact table w-full rounded text-gray-500">
           <tbody>
