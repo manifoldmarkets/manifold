@@ -66,8 +66,8 @@ const computeFill = (
   if (
     !matchedBet ||
     (outcome === 'YES'
-      ? prob < matchedBet.limitProb
-      : prob > matchedBet.limitProb)
+      ? !floatingGreaterEqual(prob, matchedBet.limitProb)
+      : !floatingLesserEqual(prob, matchedBet.limitProb))
   ) {
     // Fill from pool.
     const limit = !matchedBet
