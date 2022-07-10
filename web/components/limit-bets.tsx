@@ -16,10 +16,14 @@ export function LimitBets(props: {
   className?: string
 }) {
   const { contract, bets, className } = props
-  const recentBets = sortBy(bets, (bet) => bet.createdTime).reverse()
+  const recentBets = sortBy(
+    bets,
+    (bet) => -1 * bet.limitProb,
+    (bet) => -1 * bet.createdTime
+  )
 
   return (
-    <Col className={clsx(className, 'gap-2 rounded bg-white')}>
+    <Col className={clsx(className, 'gap-2 overflow-hidden rounded bg-white')}>
       <div className="px-6 py-3 text-xl">Your limit bets</div>
       <table className="table-compact table w-full rounded text-gray-500">
         <tbody>
