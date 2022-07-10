@@ -23,7 +23,7 @@ export const ATLAS2_CONFIG: EnvConfig = {
   whitelistEmail: '',
   moneyMoniker: '📎',
   fixedAnte: 25,
-  startingBalance: 500,
+  startingBalance: 0,
   visibility: 'PRIVATE',
   navbarLogoPath: '/atlas/atlas-logo-white.svg',
   newQuestionPlaceholders: [
