@@ -866,11 +866,10 @@ function NotificationTextLabel(props: {
   } else if (sourceType === 'bet' && sourceText) {
     return (
       <>
-        Filled{' '}
         <span className="text-primary">
           {formatMoney(parseInt(sourceText))}
         </span>{' '}
-        <span>of your limit bet</span>
+        <span>of your limit bet was filled</span>
       </>
     )
   }
