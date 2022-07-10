@@ -21,7 +21,9 @@ import {
   BinaryOutcomeLabel,
   CancelLabel,
   MultiLabel,
+  NumericValueLabel,
   ProbPercentLabel,
+  PseudoNumericOutcomeLabel,
 } from 'web/components/outcome-label'
 import {
   NotificationGroup,
@@ -828,6 +830,9 @@ function NotificationTextLabel(props: {
           )
         if (sourceText === 'CANCEL') return <CancelLabel />
         if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
+        if (contract?.outcomeType === 'PSEUDO_NUMERIC') {
+          return <NumericValueLabel value={parseFloat(sourceText)} />
+        }
       }
     }
     // Close date will be a number - it looks better without it

@@ -9,7 +9,7 @@ import {
   FreeResponseContract,
   resolution,
 } from 'common/contract'
-import { formatPercent } from 'common/util/format'
+import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
 
 export function OutcomeLabel(props: {
@@ -138,6 +138,11 @@ export function MultiLabel() {
 export function ProbPercentLabel(props: { prob: number }) {
   const { prob } = props
   return <span className="text-blue-400">{formatPercent(prob)}</span>
+}
+
+export function NumericValueLabel(props: { value: number }) {
+  const { value } = props
+  return <span className="text-blue-400">{formatLargeNumber(value)}</span>
 }
 
 export function AnswerNumberLabel(props: { number: string }) {
