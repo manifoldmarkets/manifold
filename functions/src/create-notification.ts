@@ -413,6 +413,7 @@ export const createBetFillNotification = async (
     sourceContractCreatorUsername: contract.creatorUsername,
     sourceContractTitle: contract.question,
     sourceContractSlug: contract.slug,
+    sourceContractId: contract.id,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }
