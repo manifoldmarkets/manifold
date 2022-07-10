@@ -1,6 +1,5 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-
+import { z } from 'zod'
 import {
   PrivateUser,
   STARTING_BALANCE,
@@ -18,83 +17,79 @@ import { isWhitelisted } from '../../common/envs/constants'
 import { DEFAULT_CATEGORIES } from '../../common/categories'
 
 import { track } from './analytics'
+import { APIError, newEndpoint, validate } from './api'
 
-export const createUser = functions
-  .runWith({ minInstances: 1, secrets: ['MAILGUN_KEY'] })
-  .https.onCall(async (data: { deviceToken?: string }, context) => {
-    const userId = context?.auth?.uid
-    if (!userId) return { status: 'error', message: 'Not authorized' }
+const bodySchema = z.object({
+  deviceToken: z.string().optional(),
+})
 
-    const preexistingUser = await getUser(userId)
-    if (preexistingUser)
-      return {
-        status: 'error',
-        message: 'User already created',
-        user: preexistingUser,
-      }
+const opts = { secrets: ['MAILGUN_KEY'] }
 
-    const fbUser = await admin.auth().getUser(userId)
+export const createuser = newEndpoint(opts, async (req, auth) => {
+  const { deviceToken } = validate(bodySchema, req.body)
+  const preexistingUser = await getUser(auth.uid)
+  if (preexistingUser)
+    throw new APIError(400, 'User already exists', { user: preexistingUser })
 
-    const email = fbUser.email
-    if (!isWhitelisted(email)) {
-      return { status: 'error', message: `${email} is not whitelisted` }
-    }
-    const emailName = email?.replace(/@.*$/, '')
+  const fbUser = await admin.auth().getUser(auth.uid)
 
-    const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
-    const name = cleanDisplayName(rawName)
-    let username = cleanUsername(name)
+  const email = fbUser.email
+  if (!isWhitelisted(email)) {
+    throw new APIError(400, `${email} is not whitelisted`)
+  }
+  const emailName = email?.replace(/@.*$/, '')
 
-    const sameNameUser = await getUserByUsername(username)
-    if (sameNameUser) {
-      username += randomString(4)
-    }
+  const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
+  const name = cleanDisplayName(rawName)
+  let username = cleanUsername(name)
 
-    const avatarUrl = fbUser.photoURL
+  const sameNameUser = await getUserByUsername(username)
+  if (sameNameUser) {
+    username += randomString(4)
+  }
 
-    const { deviceToken } = data
-    const deviceUsedBefore =
-      !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
+  const avatarUrl = fbUser.photoURL
+  const deviceUsedBefore =
+    !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
 
-    const ipAddress = context.rawRequest.ip
-    const ipCount = ipAddress ? await numberUsersWithIp(ipAddress) : 0
+  const ipCount = req.ip ? await numberUsersWithIp(req.ip) : 0
 
-    const balance =
-      deviceUsedBefore || ipCount > 2 ? SUS_STARTING_BALANCE : STARTING_BALANCE
+  const balance =
+    deviceUsedBefore || ipCount > 2 ? SUS_STARTING_BALANCE : STARTING_BALANCE
 
-    const user: User = {
-      id: userId,
-      name,
-      username,
-      avatarUrl,
-      balance,
-      totalDeposits: balance,
-      createdTime: Date.now(),
-      profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-      creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-      followerCountCached: 0,
-      followedCategories: DEFAULT_CATEGORIES,
-    }
+  const user: User = {
+    id: auth.uid,
+    name,
+    username,
+    avatarUrl,
+    balance,
+    totalDeposits: balance,
+    createdTime: Date.now(),
+    profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
+    creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
+    followerCountCached: 0,
+    followedCategories: DEFAULT_CATEGORIES,
+  }
 
-    await firestore.collection('users').doc(userId).create(user)
-    console.log('created user', username, 'firebase id:', userId)
+  await firestore.collection('users').doc(auth.uid).create(user)
+  console.log('created user', username, 'firebase id:', auth.uid)
 
-    const privateUser: PrivateUser = {
-      id: userId,
-      username,
-      email,
-      initialIpAddress: ipAddress,
-      initialDeviceToken: deviceToken,
-    }
+  const privateUser: PrivateUser = {
+    id: auth.uid,
+    username,
+    email,
+    initialIpAddress: req.ip,
+    initialDeviceToken: deviceToken,
+  }
 
-    await firestore.collection('private-users').doc(userId).create(privateUser)
+  await firestore.collection('private-users').doc(auth.uid).create(privateUser)
 
-    await sendWelcomeEmail(user, privateUser)
+  await sendWelcomeEmail(user, privateUser)
 
-    await track(userId, 'create user', { username }, { ip: ipAddress })
+  await track(auth.uid, 'create user', { username }, { ip: req.ip })
 
-    return { status: 'success', user }
-  })
+  return user
+})
 
 const firestore = admin.firestore()
 
