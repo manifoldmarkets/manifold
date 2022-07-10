@@ -1,5 +1,4 @@
 import { httpsCallable } from 'firebase/functions'
-import { Txn } from 'common/txn'
 import { User } from 'common/user'
 import { randomString } from 'common/util/random'
 import './init'
@@ -8,11 +7,6 @@ import { safeLocalStorage } from '../util/local'
 
 export const cloudFunction = <RequestData, ResponseData>(name: string) =>
   httpsCallable<RequestData, ResponseData>(functions, name)
-
-export const transact = cloudFunction<
-  Omit<Txn, 'id' | 'createdTime'>,
-  { status: 'error' | 'success'; message?: string; txn?: Txn }
->('transact')
 
 export const createUser: () => Promise<User | null> = () => {
   const local = safeLocalStorage()

@@ -1,40 +1,40 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { User } from '../../common/user'
 import { Txn } from '../../common/txn'
 import { removeUndefinedProps } from '../../common/util/object'
+import { APIError, newEndpoint } from './api'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
-export const transact = functions
-  .runWith({ minInstances: 1 })
-  .https.onCall(async (data: TxnData, context) => {
-    const userId = context?.auth?.uid
-    if (!userId) return { status: 'error', message: 'Not authorized' }
+// TODO: We totally fail to validate most of the input to this function,
+// so anyone can spam our database with malformed transactions.
 
-    const { amount, fromType, fromId } = data
+export const transact = newEndpoint({}, async (req, auth) => {
+  const data = req.body
+  const { amount, fromType, fromId } = data
 
-    if (fromType !== 'USER')
-      return {
-        status: 'error',
-        message: "From type is only implemented for type 'user'.",
-      }
+  if (fromType !== 'USER')
+    throw new APIError(400, "From type is only implemented for type 'user'.")
 
-    if (fromId !== userId)
-      return {
-        status: 'error',
-        message: 'Must be authenticated with userId equal to specified fromId.',
-      }
+  if (fromId !== auth.uid)
+    throw new APIError(
+      403,
+      'Must be authenticated with userId equal to specified fromId.'
+    )
 
-    if (isNaN(amount) || !isFinite(amount))
-      return { status: 'error', message: 'Invalid amount' }
+  if (isNaN(amount) || !isFinite(amount))
+    throw new APIError(400, 'Invalid amount')
 
-    // Run as transaction to prevent race conditions.
-    return await firestore.runTransaction(async (transaction) => {
-      await runTxn(transaction, data)
-    })
+  // Run as transaction to prevent race conditions.
+  return await firestore.runTransaction(async (transaction) => {
+    const result = await runTxn(transaction, data)
+    if (result.status == 'error') {
+      throw new APIError(500, result.message ?? 'An unknown error occurred.')
+    }
+    return result
   })
+})
 
 export async function runTxn(
   fbTransaction: admin.firestore.Transaction,

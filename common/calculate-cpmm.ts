@@ -272,16 +272,16 @@ export function getCpmmLiquidityPoolWeights(
   const liquidityShares = liquidities.map(calcLiqudity)
   const shareSum = sum(liquidityShares)
 
-  const includedLiquidities = excludeAntes
-    ? liquidityShares.filter((_, i) => !liquidities[i].isAnte)
-    : liquidityShares
-
-  const weights = includedLiquidities.map((s, i) => ({
-    weight: s / shareSum,
+  const weights = liquidityShares.map((shares, i) => ({
+    weight: shares / shareSum,
     providerId: liquidities[i].userId,
   }))
 
-  const userWeights = groupBy(weights, (w) => w.providerId)
+  const includedWeights = excludeAntes
+    ? weights.filter((_, i) => !liquidities[i].isAnte)
+    : weights
+
+  const userWeights = groupBy(includedWeights, (w) => w.providerId)
   const totalUserWeights = mapValues(userWeights, (userWeight) =>
     sumBy(userWeight, (w) => w.weight)
   )

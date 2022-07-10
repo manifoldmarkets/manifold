@@ -53,6 +53,11 @@ export function getFunctionUrl(name: string) {
 export function createAnswer(params: any) {
   return call(getFunctionUrl('createanswer'), 'POST', params)
 }
+
+export function transact(params: any) {
+  return call(getFunctionUrl('transact'), 'POST', params)
+}
+
 export function changeUserInfo(params: any) {
   return call(getFunctionUrl('changeuserinfo'), 'POST', params)
 }
