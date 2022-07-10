@@ -196,7 +196,6 @@ export const updateMakers = (
   }
 
   // Deduct balance of makers.
-  // TODO: Check if users would go negative from fills and cancel those bets.
   const spentByUser = mapValues(
     groupBy(makers, (maker) => maker.bet.userId),
     (makers) => sumBy(makers, (maker) => maker.amount)
