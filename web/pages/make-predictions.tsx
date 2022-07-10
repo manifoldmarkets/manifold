@@ -16,7 +16,7 @@ import { Linkify } from 'web/components/linkify'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { useUser } from 'web/hooks/use-user'
-import { createMarket } from 'web/lib/firebase/api-call'
+import { createMarket } from 'web/lib/firebase/api'
 import { contractPath } from 'web/lib/firebase/contracts'
 
 type Prediction = {

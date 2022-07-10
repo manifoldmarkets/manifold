@@ -7,7 +7,7 @@ import { NumberCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { NumericContract, PseudoNumericContract } from 'common/contract'
-import { APIError, resolveMarket } from 'web/lib/firebase/api-call'
+import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { BucketInput } from './bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 

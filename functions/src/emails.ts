@@ -1,4 +1,4 @@
-import { DOMAIN, ENV_CONFIG } from '../../common/envs/constants'
+import { DOMAIN } from '../../common/envs/constants'
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
@@ -16,6 +16,9 @@ import { formatNumericProbability } from '../../common/pseudo-numeric'
 
 import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
+import { getFunctionUrl } from '../../common/api'
+
+const UNSUBSCRIBE_ENDPOINT = getFunctionUrl('unsubscribe')
 
 export const sendMarketResolutionEmail = async (
   userId: string,
@@ -53,6 +56,9 @@ export const sendMarketResolutionEmail = async (
       ? ` (plus ${formatMoney(creatorPayout)} in commissions)`
       : ''
 
+  const emailType = 'market-resolved'
+  const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
+
   const templateData: market_resolved_template = {
     userId: user.id,
     name: user.name,
@@ -62,6 +68,7 @@ export const sendMarketResolutionEmail = async (
     investment: `${Math.floor(investment)}`,
     payout: `${Math.floor(payout)}${creatorPayoutText}`,
     url: `https://${DOMAIN}/${creator.username}/${contract.slug}`,
+    unsubscribeUrl,
   }
 
   // Modify template here:
@@ -85,6 +92,7 @@ type market_resolved_template = {
   investment: string
   payout: string
   url: string
+  unsubscribeUrl: string
 }
 
 const toDisplayResolution = (
@@ -141,8 +149,7 @@ export const sendWelcomeEmail = async (
   const firstName = name.split(' ')[0]
 
   const emailType = 'generic'
-  const { cloudRunId, cloudRunRegion } = ENV_CONFIG
-  const unsubscribeLink = `https://unsubscribe-${cloudRunId}-${cloudRunRegion}.a.run.app?id=${userId}&type=${emailType}`
+  const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
   await sendTemplateEmail(
     privateUser.email,
@@ -174,8 +181,7 @@ export const sendOneWeekBonusEmail = async (
   const firstName = name.split(' ')[0]
 
   const emailType = 'generic'
-  const { cloudRunId, cloudRunRegion } = ENV_CONFIG
-  const unsubscribeLink = `https://unsubscribe-${cloudRunId}-${cloudRunRegion}.a.run.app?id=${userId}&type=${emailType}`
+  const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
   await sendTemplateEmail(
     privateUser.email,
@@ -207,8 +213,7 @@ export const sendThankYouEmail = async (
   const firstName = name.split(' ')[0]
 
   const emailType = 'generic'
-  const { cloudRunId, cloudRunRegion } = ENV_CONFIG
-  const unsubscribeLink = `https://unsubscribe-${cloudRunId}-${cloudRunRegion}.a.run.app?id=${userId}&type=${emailType}`
+  const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
   await sendTemplateEmail(
     privateUser.email,
@@ -242,6 +247,8 @@ export const sendMarketCloseEmail = async (
   const { question, slug, volume, mechanism, collectedFees } = contract
 
   const url = `https://${DOMAIN}/${username}/${slug}`
+  const emailType = 'market-resolve'
+  const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
   await sendTemplateEmail(
     privateUser.email,
@@ -250,6 +257,7 @@ export const sendMarketCloseEmail = async (
     {
       question,
       url,
+      unsubscribeUrl,
       userId,
       name: firstName,
       volume: formatMoney(volume),
@@ -281,8 +289,7 @@ export const sendNewCommentEmail = async (
   const { question, creatorUsername, slug } = contract
   const marketUrl = `https://${DOMAIN}/${creatorUsername}/${slug}#${comment.id}`
   const emailType = 'market-comment'
-  const { cloudRunId, cloudRunRegion } = ENV_CONFIG
-  const unsubscribeUrl = `https://unsubscribe-${cloudRunId}-${cloudRunRegion}.a.run.app?id=${userId}&type=${emailType}`
+  const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
   const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
   const { text } = comment
@@ -364,8 +371,7 @@ export const sendNewAnswerEmail = async (
 
   const marketUrl = `https://${DOMAIN}/${creatorUsername}/${slug}`
   const emailType = 'market-answer'
-  const { cloudRunId, cloudRunRegion } = ENV_CONFIG
-  const unsubscribeUrl = `https://unsubscribe-${cloudRunId}-${cloudRunRegion}.a.run.app?id=${userId}&type=${emailType}`
+  const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
   const subject = `New answer on ${question}`
   const from = `${name} <info@manifold.markets>`

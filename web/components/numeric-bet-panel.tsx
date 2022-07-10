@@ -10,9 +10,9 @@ import {
 import { NumericContract } from 'common/contract'
 import { formatPercent, formatMoney } from 'common/util/format'
 
-import { useUser } from '../hooks/use-user'
-import { APIError, placeBet } from '../lib/firebase/api-call'
-import { User } from '../lib/firebase/users'
+import { useUser } from 'web/hooks/use-user'
+import { APIError, placeBet } from 'web/lib/firebase/api'
+import { User } from 'web/lib/firebase/users'
 import { BuyAmountInput } from './amount-input'
 import { BucketInput } from './bucket-input'
 import { Col } from './layout/col'

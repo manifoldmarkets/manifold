@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { promisify } from 'util'
 import { pipeline } from 'stream'
-import { getFunctionUrl } from 'web/lib/firebase/api-call'
+import { getFunctionUrl } from 'common/api'
 import fetch, { Headers, Response } from 'node-fetch'
 
 function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
