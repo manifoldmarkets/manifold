@@ -58,6 +58,10 @@ export function transact(params: any) {
   return call(getFunctionUrl('transact'), 'POST', params)
 }
 
+export function createUser(params: any) {
+  return call(getFunctionUrl('createuser'), 'POST', params)
+}
+
 export function changeUserInfo(params: any) {
   return call(getFunctionUrl('changeuserinfo'), 'POST', params)
 }
