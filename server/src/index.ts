@@ -1,20 +1,52 @@
 const TMI = require("tmi.js");
 
+// const express = require("express");
+import express from "express";
+import { AddressInfo } from "net";
+const app = express();
+const fs = require("fs");
+
 const regexpCommand = new RegExp(/!([a-zA-Z0-9]+)\s?(\S*)?/);
 const balances = {};
 
+class Transaction {
+    name: string;
+    amount: number;
+    yes: boolean;
+    timestamp: number;
+
+    constructor(name: string, amount: number, yes: boolean) {
+        this.name = name;
+        this.amount = amount;
+        this.yes = yes;
+        this.timestamp = Date.now();
+    }
+}
+
+function addTransaction(transaction: Transaction) {
+    if (latestTransactions.length >= 3) {
+        latestTransactions.shift();
+    }
+    latestTransactions.push(transaction);
+} 
+
+
+const latestTransactions: Transaction[] = [];
+
 const commands = {
     help: {
-        response: (username: string, argument: string) => "- !bet yes# - bets on yes (where # is the number of mana bet)\n" +
-                    "- !bet no# - bets on no (where # is the number of mana bet)\n" +
-                    "- !allin\n" +
-                    "- !sell - sells all shares\n" +
-                    "- !balance - Manifold Bot replies your balance to you in main chat\n" +
-                    "- !help - Manifold Bot sends a DM showing list of commands\n" +
-                    "- !signup - Manifold Bot sends a DM explaining how to link accounts and free Mana on sign up."
+        response: (username: string, argument: string) =>
+            "- !bet yes# - bets on yes (where # is the number of mana bet)\n" +
+            "- !bet no# - bets on no (where # is the number of mana bet)\n" +
+            "- !allin\n" +
+            "- !sell - sells all shares\n" +
+            "- !balance - Manifold Bot replies your balance to you in main chat\n" +
+            "- !help - Manifold Bot sends a DM showing list of commands\n" +
+            "- !signup - Manifold Bot sends a DM explaining how to link accounts and free Mana on sign up.",
     },
     upvote: {
-        response: (username: string, argument: string) => `Successfully upvoted ${argument}`,
+        response: (username: string, argument: string) =>
+            `Successfully upvoted ${argument}`,
     },
     bet: {
         response: (username: string, argument: string) => {
@@ -24,36 +56,45 @@ const commands = {
                     if (value == NaN) {
                         return null; //!!!
                     }
-                    return `@${username} has bet ${value} on YES!`;
-                }
-                catch (e) {
+                    addTransaction(new Transaction(username, value, true));
+                    return "";//`@${username} has bet ${value} on YES!`;
+                } catch (e) {
                     return null; //!!!
                 }
-            }
-            else if (argument.startsWith("no")) {
+            } else if (argument.startsWith("no")) {
                 try {
                     let value = Number.parseInt(argument.substring(2));
                     if (value == NaN) {
                         return null; //!!!
                     }
-                    return `@${username} has bet ${value} on NO!`;
-                }
-                catch (e) {
+                    addTransaction(new Transaction(username, value, false));
+                    return "";//`@${username} has bet ${value} on NO!`;
+                } catch (e) {
                     return null; //!!!
                 }
-            }
-            else {
+            } else {
                 return null; //!!!
             }
-        }
+        },
     },
     sell: {
         response: (username: string, argument: string) => `Sold all shares.`,
     },
     balance: {
-        response: (username: string, argument: string) => `Your balance is ${0}.`, //!!!
-    }
+        response: (username: string, argument: string) =>
+            `Your balance is ${0}.`, //!!!
+    },
 };
+
+app.get("/transactions", (request, response) => {
+    response.json(latestTransactions);
+});
+
+let server = app.listen(9172, () => {
+    let host = (<AddressInfo> server.address()).address;
+    let port = (<AddressInfo> server.address()).port;
+    console.log("Example app listening at http://%s:%s", host, port);
+});
 
 const client = new TMI.Client({
     options: { debug: true },
@@ -81,9 +122,9 @@ client.on("message", (channel, tags, message, self) => {
     let command: string = found[1];
     let argument: string = found[2];
 
-
     console.log(`Command: ${command}`);
-    const response: any = commands[command as keyof typeof commands].response || {};
+    const response: any =
+        commands[command as keyof typeof commands].response || {};
     console.log(response);
 
     let responseMessage = response;

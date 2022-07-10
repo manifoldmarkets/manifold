@@ -81,10 +81,18 @@ body {
     // display: flex;
     // flex-direction: row;
 
+    transition: all 0.5s ease-in-out;
+    height: 0;
+    overflow: hidden;
+
     font-family: 'Roboto Condensed', sans-serif;
 
 
     font-size: 0.7em;
+
+    &.show {
+        height: 1.2em;
+    }
 
     & > p {
         white-space: pre-wrap;

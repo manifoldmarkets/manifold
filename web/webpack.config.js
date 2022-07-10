@@ -5,7 +5,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 let config = {
     mode: "development",
     entry: {
-        "main": "./web/src/main.ts",
+        main: "./web/src/main.ts",
         "service-worker": "./web/src/service-worker.ts",
     },
     devServer: {
@@ -13,7 +13,15 @@ let config = {
         port: 19823,
         static: path.resolve(__dirname, "dist"),
         open: true,
-        watchFiles: ['web/src/**/*'],
+        watchFiles: ["web/src/**/*"],
+        proxy: {
+            "/api": {
+                target: "http://localhost:9172",
+                pathRewrite: {
+                    "^/api": "",
+                },
+            },
+        },
     },
     module: {
         rules: [

@@ -19,6 +19,8 @@ class Application {
         this.transactionTemplate.removeAttribute("id");
         this.transactionTemplate.parentElement.removeChild(this.transactionTemplate);
 
+        document.getElementById("question").innerHTML = "Will dogdog get 1st place?";
+
         let animationFrame = () => {
             this.animatedProbability += (this.currentProbability - this.animatedProbability) * 0.2;
             document.getElementById("chance").innerHTML = this.animatedProbability.toFixed(1);
@@ -52,7 +54,22 @@ class Application {
 
             setTimeout(addRandomTransaction, randomInt(5000));
         };
-        setTimeout(addRandomTransaction, 1000);
+        // setTimeout(addRandomTransaction, 1000); !!!
+
+        let lastAddedTimestamp = 0;
+        setInterval(() => {
+            fetch("/api/transactions")
+            .then(r => r.json())
+            .then(r => {
+                for (let t of r) {
+                    if (t.timestamp <= lastAddedTimestamp) {
+                        continue;
+                    }
+                    this.addTransaction(t.name, t.amount, t.yes);
+                    lastAddedTimestamp = t.timestamp;
+                }
+            });
+        }, 500);
     }
 
     addTransaction(name: string, amount: number, yes: boolean) {
@@ -73,10 +90,17 @@ class Application {
         document.getElementById("transactions").prepend(t);
 
         this.transactions.push(t);
+        t.offsetLeft;
+        setTimeout(() => {
+            t.classList.add("show");
+        }, 1);
 
         if (this.transactions.length > 3) {
             let transactionToRemove = this.transactions.shift();
-            transactionToRemove.parentElement.removeChild(transactionToRemove);
+            transactionToRemove.classList.remove("show");
+            setTimeout(() => {
+                transactionToRemove.parentElement.removeChild(transactionToRemove);
+            }, 500);
         }
     }
 }
