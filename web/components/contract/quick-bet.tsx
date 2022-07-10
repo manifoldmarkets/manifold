@@ -7,7 +7,13 @@ import {
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
-import { Contract, NumericContract, resolution } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  NumericContract,
+  PseudoNumericContract,
+  resolution,
+} from 'common/contract'
 import {
   formatLargeNumber,
   formatMoney,
@@ -22,33 +28,30 @@ import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { Col } from '../layout/col'
 import { OUTCOME_TO_COLOR } from '../outcome-label'
-import { useSaveShares } from '../use-save-shares'
+import { useSaveBinaryShares } from '../use-save-binary-shares'
 import { sellShares } from 'web/lib/firebase/api-call'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { track } from 'web/lib/service/analytics'
 import { formatNumericProbability } from 'common/pseudo-numeric'
+import { useUnfilledBets } from 'web/hooks/use-bets'
 
 const BET_SIZE = 10
 
-export function QuickBet(props: { contract: Contract; user: User }) {
+export function QuickBet(props: {
+  contract: BinaryContract | PseudoNumericContract
+  user: User
+}) {
   const { contract, user } = props
   const { mechanism, outcomeType } = contract
   const isCpmm = mechanism === 'cpmm-1'
 
   const userBets = useUserContractBets(user.id, contract.id)
-  const topAnswer =
-    outcomeType === 'FREE_RESPONSE' ? getTopAnswer(contract) : undefined
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
 
-  // TODO: yes/no from useSaveShares doesn't work on numeric contracts
-  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
-    contract,
-    userBets,
-    topAnswer?.number.toString() || undefined
-  )
-  const hasUpShares =
-    yesFloorShares || (noFloorShares && outcomeType === 'NUMERIC')
-  const hasDownShares =
-    noFloorShares && yesFloorShares <= 0 && outcomeType !== 'NUMERIC'
+  const { hasYesShares, hasNoShares, yesShares, noShares } =
+    useSaveBinaryShares(contract, userBets)
+  const hasUpShares = hasYesShares
+  const hasDownShares = hasNoShares && !hasUpShares
 
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
@@ -85,13 +88,14 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
       sharesSold = Math.min(oppositeShares, maxSharesSold)
 
-      const { newPool, saleValue } = calculateCpmmSale(
+      const { cpmmState, saleValue } = calculateCpmmSale(
         contract,
         sharesSold,
-        sellOutcome
+        sellOutcome,
+        unfilledBets
       )
       saleAmount = saleValue
-      previewProb = getCpmmProbability(newPool, contract.p)
+      previewProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
     }
   }
 
@@ -131,13 +135,6 @@ export function QuickBet(props: { contract: Contract; user: User }) {
     })
   }
 
-  if (outcomeType === 'FREE_RESPONSE')
-    return (
-      <Col className="relative -my-4 -mr-5 min-w-[5.5rem] justify-center gap-2 pr-5 pl-1 align-middle">
-        <QuickOutcomeView contract={contract} previewProb={previewProb} />
-      </Col>
-    )
-
   return (
     <Col
       className={clsx(
@@ -158,7 +155,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
           {formatMoney(10)}
         </div>
 
-        {hasUpShares > 0 ? (
+        {hasUpShares ? (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
@@ -193,7 +190,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
             onMouseLeave={() => setDownHover(false)}
             onClick={() => placeQuickBet('DOWN')}
           ></div>
-          {hasDownShares > 0 ? (
+          {hasDownShares ? (
             <TriangleDownFillIcon
               className={clsx(
                 'mx-auto h-5 w-5',

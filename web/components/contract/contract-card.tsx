@@ -52,10 +52,7 @@ export function ContractCard(props: {
   const showQuickBet =
     user &&
     !marketClosed &&
-    !(
-      outcomeType === 'FREE_RESPONSE' && getTopAnswer(contract) === undefined
-    ) &&
-    outcomeType !== 'NUMERIC' &&
+    (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
     !hideQuickBet
 
   return (

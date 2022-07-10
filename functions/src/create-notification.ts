@@ -10,7 +10,7 @@ import { Contract } from '../../common/contract'
 import { getUserByUsername, getValues } from './utils'
 import { Comment } from '../../common/comment'
 import { uniq } from 'lodash'
-import { Bet } from '../../common/bet'
+import { Bet, LimitBet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { getContractBetMetrics } from '../../common/calculate'
 import { removeUndefinedProps } from '../../common/util/object'
@@ -379,6 +379,40 @@ export const createTipNotification = async (
     sourceContractSlug: contract?.slug,
     sourceSlug: slug,
     sourceTitle: group?.name,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export const createBetFillNotification = async (
+  fromUser: User,
+  toUser: User,
+  bet: Bet,
+  userBet: LimitBet,
+  contract: Contract,
+  idempotencyKey: string
+) => {
+  const fill = userBet.fills.find((fill) => fill.matchedBetId === bet.id)
+  const fillAmount = fill?.amount ?? 0
+
+  const notificationRef = firestore
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: 'bet_fill',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: userBet.id,
+    sourceType: 'bet',
+    sourceUpdateType: 'updated',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: fillAmount.toString(),
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }

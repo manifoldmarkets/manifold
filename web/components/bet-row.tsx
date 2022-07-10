@@ -1,18 +1,18 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 
-import { BetPanelSwitcher } from './bet-panel'
+import { SimpleBetPanel } from './bet-panel'
 import { YesNoSelector } from './yes-no-selector'
-import { BinaryContract, PseudoNumericContract } from 'common/contract'
+import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { Modal } from './layout/modal'
 import { SellButton } from './sell-button'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useSaveShares } from './use-save-shares'
+import { useSaveBinaryShares } from './use-save-binary-shares'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
 export default function BetRow(props: {
-  contract: BinaryContract | PseudoNumericContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
   btnClassName?: string
   betPanelClassName?: string
@@ -24,10 +24,8 @@ export default function BetRow(props: {
   )
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
-  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
-    contract,
-    userBets
-  )
+  const { yesShares, noShares, hasYesShares, hasNoShares } =
+    useSaveBinaryShares(contract, userBets)
 
   return (
     <>
@@ -40,7 +38,7 @@ export default function BetRow(props: {
           setBetChoice(choice)
         }}
         replaceNoButton={
-          yesFloorShares > 0 ? (
+          hasYesShares ? (
             <SellButton
               panelClassName={betPanelClassName}
               contract={contract}
@@ -51,7 +49,7 @@ export default function BetRow(props: {
           ) : undefined
         }
         replaceYesButton={
-          noFloorShares > 0 ? (
+          hasNoShares ? (
             <SellButton
               panelClassName={betPanelClassName}
               contract={contract}
@@ -63,10 +61,9 @@ export default function BetRow(props: {
         }
       />
       <Modal open={open} setOpen={setOpen}>
-        <BetPanelSwitcher
+        <SimpleBetPanel
           className={betPanelClassName}
           contract={contract}
-          title={contract.question}
           selected={betChoice}
           onBetSuccess={() => setOpen(false)}
         />

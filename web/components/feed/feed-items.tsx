@@ -34,7 +34,7 @@ import {
   TruncatedComment,
 } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
-import { NumericContract } from 'common/contract'
+import { CPMMBinaryContract, NumericContract } from 'common/contract'
 import { FeedLiquidity } from './feed-liquidity'
 
 export function FeedItems(props: {
@@ -68,7 +68,10 @@ export function FeedItems(props: {
         ))}
       </div>
       {outcomeType === 'BINARY' && tradingAllowed(contract) && (
-        <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
+        <BetRow
+          contract={contract as CPMMBinaryContract}
+          className={clsx('mb-2', betRowClassName)}
+        />
       )}
     </div>
   )
