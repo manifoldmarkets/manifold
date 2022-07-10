@@ -9,6 +9,9 @@ import { getCpmmSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { getValues } from './utils'
 import { Bet } from '../../common/bet'
+import { floatingLesserEqual } from '../../common/util/math'
+import { getUnfilledBetsQuery, updateMakers } from './place-bet'
+import { FieldValue } from 'firebase-admin/firestore'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -46,14 +49,22 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     const outcomeBets = userBets.filter((bet) => bet.outcome == outcome)
     const maxShares = sumBy(outcomeBets, (bet) => bet.shares)
 
-    if (shares > maxShares)
+    if (!floatingLesserEqual(shares, maxShares))
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
-    const { newBet, newPool, newP, fees } = getCpmmSellBetInfo(
-      shares,
+    const soldShares = Math.min(shares, maxShares)
+
+    const unfilledBetsSnap = await transaction.get(
+      getUnfilledBetsQuery(contractDoc)
+    )
+    const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
+
+    const { newBet, newPool, newP, fees, makers } = getCpmmSellBetInfo(
+      soldShares,
       outcome,
       contract,
-      prevLoanAmount
+      prevLoanAmount,
+      unfilledBets
     )
 
     if (
@@ -65,11 +76,17 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     }
 
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
-    const newBalance = user.balance - newBet.amount + (newBet.loanAmount ?? 0)
-    const userId = user.id
 
-    transaction.update(userDoc, { balance: newBalance })
-    transaction.create(newBetDoc, { id: newBetDoc.id, userId, ...newBet })
+    updateMakers(makers, newBetDoc.id, contractDoc, transaction)
+
+    transaction.update(userDoc, {
+      balance: FieldValue.increment(-newBet.amount),
+    })
+    transaction.create(newBetDoc, {
+      id: newBetDoc.id,
+      userId: user.id,
+      ...newBet,
+    })
     transaction.update(
       contractDoc,
       removeUndefinedProps({

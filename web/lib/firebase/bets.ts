@@ -15,7 +15,7 @@ import {
 import { uniq } from 'lodash'
 
 import { db } from './init'
-import { Bet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { getValues, listenForValues } from './utils'
 import { getContractFromId } from './contracts'
@@ -161,6 +161,21 @@ export function listenForUserContractBets(
     where('userId', '==', userId)
   )
   return listenForValues<Bet>(betsQuery, (bets) => {
+    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
+    setBets(bets)
+  })
+}
+
+export function listenForUnfilledBets(
+  contractId: string,
+  setBets: (bets: LimitBet[]) => void
+) {
+  const betsQuery = query(
+    collection(db, 'contracts', contractId, 'bets'),
+    where('isFilled', '==', false),
+    where('isCancelled', '==', false)
+  )
+  return listenForValues<LimitBet>(betsQuery, (bets) => {
     bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
     setBets(bets)
   })

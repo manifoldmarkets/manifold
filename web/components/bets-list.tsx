@@ -44,6 +44,9 @@ import { NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { SellSharesModal } from './sell-modal'
+import { useUnfilledBets } from 'web/hooks/use-bets'
+import { LimitBet } from 'common/bet'
+import { floatingEqual } from 'common/util/math'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -390,6 +393,12 @@ export function BetsSummary(props: {
   const [showSellModal, setShowSellModal] = useState(false)
   const user = useUser()
 
+  const sharesOutcome = floatingEqual(totalShares.YES, 0)
+    ? floatingEqual(totalShares.NO, 0)
+      ? undefined
+      : 'NO'
+    : 'YES'
+
   return (
     <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>
       <Row className="flex-wrap gap-4 sm:gap-6">
@@ -469,6 +478,7 @@ export function BetsSummary(props: {
               !isClosed &&
               !resolution &&
               hasShares &&
+              sharesOutcome &&
               user && (
                 <>
                   <button
@@ -482,8 +492,8 @@ export function BetsSummary(props: {
                       contract={contract}
                       user={user}
                       userBets={bets}
-                      shares={totalShares.YES || totalShares.NO}
-                      sharesOutcome={totalShares.YES ? 'YES' : 'NO'}
+                      shares={totalShares[sharesOutcome]}
+                      sharesOutcome={sharesOutcome}
                       setOpen={setShowSellModal}
                     />
                   )}
@@ -505,7 +515,7 @@ export function ContractBetsTable(props: {
   const { contract, className, isYourBets } = props
 
   const bets = sortBy(
-    props.bets.filter((b) => !b.isAnte),
+    props.bets.filter((b) => !b.isAnte && b.amount !== 0),
     (bet) => bet.createdTime
   ).reverse()
 
@@ -530,6 +540,8 @@ export function ContractBetsTable(props: {
   const isCPMM = mechanism === 'cpmm-1'
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
 
   return (
     <div className={clsx('overflow-x-auto', className)}>
@@ -577,6 +589,7 @@ export function ContractBetsTable(props: {
               saleBet={salesDict[bet.id]}
               contract={contract}
               isYourBet={isYourBets}
+              unfilledBets={unfilledBets}
             />
           ))}
         </tbody>
@@ -590,8 +603,9 @@ function BetRow(props: {
   contract: Contract
   saleBet?: Bet
   isYourBet: boolean
+  unfilledBets: LimitBet[]
 }) {
-  const { bet, saleBet, contract, isYourBet } = props
+  const { bet, saleBet, contract, isYourBet, unfilledBets } = props
   const {
     amount,
     outcome,
@@ -621,7 +635,7 @@ function BetRow(props: {
     formatMoney(
       isResolved
         ? resolvedPayout(contract, bet)
-        : calculateSaleAmount(contract, bet)
+        : calculateSaleAmount(contract, bet, unfilledBets)
     )
   )
 
@@ -681,9 +695,16 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
     outcome === 'NO' ? 'YES' : outcome
   )
 
-  const outcomeProb = getProbabilityAfterSale(contract, outcome, shares)
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
 
-  const saleAmount = calculateSaleAmount(contract, bet)
+  const outcomeProb = getProbabilityAfterSale(
+    contract,
+    outcome,
+    shares,
+    unfilledBets
+  )
+
+  const saleAmount = calculateSaleAmount(contract, bet, unfilledBets)
   const profit = saleAmount - bet.amount
 
   return (

@@ -96,7 +96,7 @@ export function NumericResolutionPanel(props: {
 
       {outcomeMode === 'NUMBER' && (
         <BucketInput
-          contract={contract as any}
+          contract={contract}
           isSubmitting={isSubmitting}
           onBucketChange={(v, o) => (setValue(v), setOutcome(o))}
         />

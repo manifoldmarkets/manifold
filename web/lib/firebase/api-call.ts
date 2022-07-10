@@ -82,6 +82,10 @@ export function placeBet(params: any) {
   return call(getFunctionUrl('placebet'), 'POST', params)
 }
 
+export function cancelBet(params: { betId: string }) {
+  return call(getFunctionUrl('cancelbet'), 'POST', params)
+}
+
 export function sellShares(params: any) {
   return call(getFunctionUrl('sellshares'), 'POST', params)
 }
