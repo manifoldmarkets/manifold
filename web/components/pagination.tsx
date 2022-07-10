@@ -3,8 +3,9 @@ export function Pagination(props: {
   itemsPerPage: number
   totalItems: number
   setPage: (page: number) => void
+  scrollToTop?: boolean
 }) {
-  const { page, itemsPerPage, totalItems, setPage } = props
+  const { page, itemsPerPage, totalItems, setPage, scrollToTop } = props
 
   return (
     <nav
@@ -23,14 +24,14 @@ export function Pagination(props: {
       </div>
       <div className="flex flex-1 justify-between sm:justify-end">
         <a
-          href="#"
+          href={scrollToTop ? '#' : undefined}
           className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          onClick={() => page > 1 && setPage(page - 1)}
+          onClick={() => page > 0 && setPage(page - 1)}
         >
           Previous
         </a>
         <a
-          href="#"
+          href={scrollToTop ? '#' : undefined}
           className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           onClick={() => page < totalItems / itemsPerPage && setPage(page + 1)}
         >

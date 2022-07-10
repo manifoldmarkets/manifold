@@ -36,6 +36,7 @@ import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
 import { groupBy, sum, uniq } from 'lodash'
 import Custom404 from 'web/pages/404'
 import { track } from '@amplitude/analytics-browser'
+import { Pagination } from 'web/components/pagination'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -82,14 +83,14 @@ export default function Notifications() {
 
 function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(0)
   const allGroupedNotifications = usePreferredGroupedNotifications(privateUser)
   const [paginatedGroupedNotifications, setPaginatedGroupedNotifications] =
     useState<NotificationGroup[] | undefined>(undefined)
 
   useEffect(() => {
     if (!allGroupedNotifications) return
-    const start = (page - 1) * NOTIFICATIONS_PER_PAGE
+    const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
     const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
     const remainingNotification = allGroupedNotifications.slice(end)
@@ -132,48 +133,13 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
       )}
       {paginatedGroupedNotifications.length > 0 &&
         allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
-          <nav
-            className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
-            aria-label="Pagination"
-          >
-            <div className="hidden sm:block">
-              <p className="text-sm text-gray-700">
-                Showing{' '}
-                <span className="font-medium">
-                  {page === 1 ? page : (page - 1) * NOTIFICATIONS_PER_PAGE}
-                </span>{' '}
-                to{' '}
-                <span className="font-medium">
-                  {page * NOTIFICATIONS_PER_PAGE}
-                </span>{' '}
-                of{' '}
-                <span className="font-medium">
-                  {allGroupedNotifications.length}
-                </span>{' '}
-                results
-              </p>
-            </div>
-            <div className="flex flex-1 justify-between sm:justify-end">
-              <a
-                href="#"
-                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                onClick={() => page > 1 && setPage(page - 1)}
-              >
-                Previous
-              </a>
-              <a
-                href="#"
-                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                onClick={() =>
-                  page <
-                    allGroupedNotifications?.length / NOTIFICATIONS_PER_PAGE &&
-                  setPage(page + 1)
-                }
-              >
-                Next
-              </a>
-            </div>
-          </nav>
+          <Pagination
+            page={page}
+            itemsPerPage={NOTIFICATIONS_PER_PAGE}
+            totalItems={allGroupedNotifications.length}
+            setPage={setPage}
+            scrollToTop
+          />
         )}
     </div>
   )
