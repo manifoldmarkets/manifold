@@ -23,7 +23,7 @@ import {
 import { zip } from 'lodash'
 import { app, db } from './init'
 import { PortfolioMetrics, PrivateUser, User } from 'common/user'
-import { createUser } from './api-call'
+import { createUser } from './api'
 import {
   coll,
   getValue,

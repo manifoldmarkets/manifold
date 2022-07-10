@@ -1,4 +1,4 @@
-import { getFunctionUrl } from 'web/lib/firebase/api-call'
+import { getFunctionUrl } from 'common/api'
 
 export const checkoutURL = (
   userId: string,

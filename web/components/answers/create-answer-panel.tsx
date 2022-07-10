@@ -6,7 +6,7 @@ import { findBestMatch } from 'string-similarity'
 import { FreeResponseContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { APIError, createAnswer } from 'web/lib/firebase/api-call'
+import { APIError, createAnswer } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import {
   formatMoney,
