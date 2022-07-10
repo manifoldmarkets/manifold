@@ -1,0 +1,23 @@
+{
+  "name": "twitch-chat-bot",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx nodemon --watch src src/index.ts",
+    "start": "npm run dev"
+  },
+  "keywords": [],
+  "author": "Phil Bladen",
+  "license": "MIT",
+  "dependencies": {
+    "tmi.js": "^1.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.3",
+    "@types/tmi.js": "^1.8.1",
+    "ts-node": "^10.8.1",
+    "typescript": "^4.7.4"
+  }
+}

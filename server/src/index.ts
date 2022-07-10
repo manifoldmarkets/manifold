@@ -1,4 +1,4 @@
-import { Client } from "tmi.js";
+const TMI = require("tmi.js");
 
 const regexpCommand = new RegExp(/!([a-zA-Z0-9]+)\s?(\S*)?/);
 const balances = {};
@@ -55,7 +55,7 @@ const commands = {
     }
 };
 
-const client = new Client({
+const client = new TMI.Client({
     options: { debug: true },
     connection: {
         secure: true,
