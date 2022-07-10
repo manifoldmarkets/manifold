@@ -4,7 +4,6 @@ import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
-import { useUserBets } from 'web/hooks/use-user-bets'
 import { Bet } from 'web/lib/firebase/bets'
 import { User } from 'web/lib/firebase/users'
 import {
@@ -51,13 +50,16 @@ import { floatingEqual } from 'common/util/math'
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
 
-export function BetsList(props: { user: User; hideBetsBefore?: number }) {
-  const { user, hideBetsBefore } = props
+export function BetsList(props: {
+  user: User
+  bets: Bet[] | undefined
+  hideBetsBefore?: number
+}) {
+  const { user, bets: allBets, hideBetsBefore } = props
 
   const signedInUser = useUser()
   const isYourBets = user.id === signedInUser?.id
 
-  const allBets = useUserBets(user.id, { includeRedemptions: true })
   // Hide bets before 06-01-2022 if this isn't your own profile
   // NOTE: This means public profits also begin on 06-01-2022 as well.
   const bets = allBets?.filter(
