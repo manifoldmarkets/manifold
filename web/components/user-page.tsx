@@ -76,7 +76,12 @@ export function UserPage(props: {
   const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
     'loading'
   )
-  const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
+  const [userBets, setUserBets] = useState<Bet[] | undefined>()
+  const betCount =
+    userBets === undefined
+      ? 0
+      : userBets.filter((bet) => !bet.isRedemption && bet.amount !== 0).length
+
   const [portfolioHistory, setUsersPortfolioHistory] = useState<
     PortfolioMetrics[]
   >([])
@@ -95,7 +100,7 @@ export function UserPage(props: {
     if (!user) return
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
-    getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
+    getUserBets(user.id, { includeRedemptions: true }).then(setUserBets)
     getPortfolioHistory(user.id).then(setUsersPortfolioHistory)
   }, [user])
 
@@ -307,13 +312,12 @@ export function UserPage(props: {
                     />
                     <BetsList
                       user={user}
+                      bets={userBets}
                       hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
                     />
                   </div>
                 ),
-                tabIcon: (
-                  <div className="px-0.5 font-bold">{usersBets.length}</div>
-                ),
+                tabIcon: <div className="px-0.5 font-bold">{betCount}</div>,
               },
             ]}
           />
