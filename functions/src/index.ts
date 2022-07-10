@@ -3,12 +3,10 @@ import * as admin from 'firebase-admin'
 admin.initializeApp()
 
 // v1
-export * from './stripe'
 export * from './create-user'
 export * from './on-create-bet'
 export * from './on-create-comment-on-contract'
 export * from './on-view'
-export * from './unsubscribe'
 export * from './update-metrics'
 export * from './update-stats'
 export * from './backup-db'
@@ -41,3 +39,5 @@ export * from './withdraw-liquidity'
 export * from './create-group'
 export * from './resolve-market'
 export * from './get-daily-bonuses'
+export * from './unsubscribe'
+export * from './stripe'
