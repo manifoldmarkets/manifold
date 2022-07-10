@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { uniq, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
 
 import { Bet } from 'web/lib/firebase/bets'
@@ -46,9 +46,12 @@ import { SellSharesModal } from './sell-modal'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
+import { Pagination } from './pagination'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
+
+const CONTRACTS_PER_PAGE = 20
 
 export function BetsList(props: {
   user: User
@@ -62,13 +65,17 @@ export function BetsList(props: {
 
   // Hide bets before 06-01-2022 if this isn't your own profile
   // NOTE: This means public profits also begin on 06-01-2022 as well.
-  const bets = allBets?.filter(
-    (bet) => bet.createdTime >= (hideBetsBefore ?? 0)
+  const bets = useMemo(
+    () => allBets?.filter((bet) => bet.createdTime >= (hideBetsBefore ?? 0)),
+    [allBets, hideBetsBefore]
   )
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   const [sort, setSort] = useState<BetSort>('newest')
   const [filter, setFilter] = useState<BetFilter>('open')
+  const [page, setPage] = useState(0)
+  const start = page * CONTRACTS_PER_PAGE
+  const end = start + CONTRACTS_PER_PAGE
 
   useEffect(() => {
     if (bets) {
@@ -85,16 +92,14 @@ export function BetsList(props: {
         disposed = true
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allBets, hideBetsBefore])
+  }, [bets])
 
   const getTime = useTimeSinceFirstRender()
   useEffect(() => {
     if (bets && contracts) {
       trackLatency('portfolio', getTime())
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!bets, !!contracts])
+  }, [bets, contracts, getTime])
 
   if (!bets || !contracts) {
     return <LoadingIndicator />
@@ -130,7 +135,7 @@ export function BetsList(props: {
       (filter === 'open' ? -1 : 1) *
       (c.resolutionTime ?? c.closeTime ?? Infinity),
   }
-  const displayedContracts = sortBy(contracts, SORTS[sort])
+  const filteredContracts = sortBy(contracts, SORTS[sort])
     .reverse()
     .filter(FILTERS[filter])
     .filter((c) => {
@@ -141,6 +146,7 @@ export function BetsList(props: {
       if (filter === 'sold') return !hasShares
       return hasShares
     })
+  const displayedContracts = filteredContracts.slice(start, end)
 
   const unsettled = contracts.filter(
     (c) => !c.isResolved && contractsMetrics[c.id].invested !== 0
@@ -227,6 +233,13 @@ export function BetsList(props: {
           ))
         )}
       </Col>
+
+      <Pagination
+        page={page}
+        itemsPerPage={CONTRACTS_PER_PAGE}
+        totalItems={filteredContracts.length}
+        setPage={setPage}
+      />
     </Col>
   )
 }
