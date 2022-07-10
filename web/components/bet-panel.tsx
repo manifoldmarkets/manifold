@@ -264,14 +264,11 @@ function BuyPanel(props: {
   )
 
   const resultProb = getCpmmProbability(newPool, newP)
-  const matchedAmount = sumBy(newBet.fills, (fill) => fill.amount)
-  const filledShares = sumBy(newBet.fills, (fill) => fill.shares)
-  const overallShares =
-    filledShares +
-    ((betAmount ?? 0) - matchedAmount) /
+  const remainingMatched = isLimitOrder
+    ? ((newBet.orderAmount ?? 0) - newBet.amount) /
       (betChoice === 'YES' ? limitProbFrac : 1 - limitProbFrac)
-
-  const currentPayout = overallShares
+    : 0
+  const currentPayout = newBet.shares + remainingMatched
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
