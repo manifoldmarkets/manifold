@@ -215,14 +215,14 @@ export default function GroupPage(props: {
     </Col>
   )
   return (
-    <Page rightSidebar={rightSidebar}>
+    <Page rightSidebar={rightSidebar} className="!pb-0">
       <SEO
         title={group.name}
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
 
-      <Col className="px-3 lg:px-1">
+      <Col className="px-3">
         <Row className={'items-center justify-between gap-4'}>
           <div className={'sm:mb-1'}>
             <div
@@ -251,7 +251,7 @@ export default function GroupPage(props: {
 
       <Tabs
         currentPageForAnalytics={groupPath(group.slug)}
-        className={'mb-0 sm:mb-2'}
+        className={'mx-3 mb-0'}
         defaultIndex={
           page === 'rankings'
             ? 2

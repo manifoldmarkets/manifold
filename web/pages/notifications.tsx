@@ -47,7 +47,7 @@ export default function Notifications() {
   if (!user) return <Custom404 />
   return (
     <Page>
-      <div className={'p-2 sm:p-4'}>
+      <div className={'px-2 sm:px-4'}>
         <Title text={'Notifications'} className={'hidden md:block'} />
         <div>
           <Tabs
