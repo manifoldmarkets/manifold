@@ -89,7 +89,9 @@ export function BetStatusText(props: {
   const money = formatMoney(Math.abs(amount))
 
   const hadPoolMatch =
-    bet.fills?.some((fill) => fill.matchedBetId === null) ?? false
+    (bet.limitProb === undefined ||
+      bet.fills?.some((fill) => fill.matchedBetId === null)) ??
+    false
 
   return (
     <div className="text-sm text-gray-500">

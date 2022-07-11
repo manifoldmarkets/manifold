@@ -669,7 +669,9 @@ function BetRow(props: {
       : formatMoney(calculatePayout(contract, bet, bet.outcome))
 
   const hadPoolMatch =
-    bet.fills?.some((fill) => fill.matchedBetId === null) ?? false
+    (bet.limitProb === undefined ||
+      bet.fills?.some((fill) => fill.matchedBetId === null)) ??
+    false
 
   const ofTotalAmount =
     bet.limitProb === undefined || bet.orderAmount === undefined
