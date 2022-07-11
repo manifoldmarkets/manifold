@@ -48,7 +48,7 @@ import { Pagination } from './pagination'
 import { LimitBets } from './limit-bets'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
-type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
+type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -110,6 +110,7 @@ export function BetsList(props: {
     open: (c) => !(FILTERS.closed(c) || FILTERS.resolved(c)),
     all: () => true,
     sold: () => true,
+    limit_bet: (c) => FILTERS.open(c),
   }
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => contractsMetrics[c.id].profit,
@@ -130,6 +131,8 @@ export function BetsList(props: {
       const { hasShares } = contractsMetrics[c.id]
 
       if (filter === 'sold') return !hasShares
+      if (filter === 'limit_bet')
+        return (contractBets[c.id] ?? []).some((b) => b.limitProb !== undefined)
       return hasShares
     })
   const displayedContracts = filteredContracts.slice(start, end)
@@ -185,6 +188,7 @@ export function BetsList(props: {
             onChange={(e) => setFilter(e.target.value as BetFilter)}
           >
             <option value="open">Open</option>
+            <option value="limit_bet">Limit bets</option>
             <option value="sold">Sold</option>
             <option value="closed">Closed</option>
             <option value="resolved">Resolved</option>
