@@ -54,7 +54,6 @@
     "@types/react": "17.0.43",
     "@types/string-similarity": "^4.0.0",
     "autoprefixer": "10.2.6",
-    "concurrently": "6.5.1",
     "critters": "0.0.16",
     "cross-env": "^7.0.3",
     "eslint-config-next": "12.1.6",
