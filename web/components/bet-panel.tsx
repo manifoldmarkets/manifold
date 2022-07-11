@@ -16,7 +16,6 @@ import {
   formatWithCommas,
 } from 'common/util/format'
 import { getBinaryCpmmBetInfo } from 'common/new-bet'
-import { Title } from './title'
 import { User } from 'web/lib/firebase/users'
 import { Bet, LimitBet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api'
