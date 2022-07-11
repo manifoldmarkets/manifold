@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { uniq, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
+import { groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
@@ -16,7 +16,6 @@ import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 import {
   Contract,
-  getContractFromId,
   contractPath,
   getBinaryProbPercent,
 } from 'web/lib/firebase/contracts'
@@ -25,7 +24,6 @@ import { UserLink } from './user-page'
 import { sellBet } from 'web/lib/firebase/api'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
-import { filterDefined } from 'common/util/array'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
 import {
@@ -56,9 +54,10 @@ const CONTRACTS_PER_PAGE = 20
 export function BetsList(props: {
   user: User
   bets: Bet[] | undefined
+  contractsById: { [id: string]: Contract } | undefined
   hideBetsBefore?: number
 }) {
-  const { user, bets: allBets, hideBetsBefore } = props
+  const { user, bets: allBets, contractsById, hideBetsBefore } = props
 
   const signedInUser = useUser()
   const isYourBets = user.id === signedInUser?.id
@@ -69,7 +68,6 @@ export function BetsList(props: {
     () => allBets?.filter((bet) => bet.createdTime >= (hideBetsBefore ?? 0)),
     [allBets, hideBetsBefore]
   )
-  const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   const [sort, setSort] = useState<BetSort>('newest')
   const [filter, setFilter] = useState<BetFilter>('open')
@@ -77,39 +75,26 @@ export function BetsList(props: {
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
 
-  useEffect(() => {
-    if (bets) {
-      const contractIds = uniq(bets.map((bet) => bet.contractId))
-
-      let disposed = false
-      Promise.all(contractIds.map((id) => getContractFromId(id))).then(
-        (contracts) => {
-          if (!disposed) setContracts(filterDefined(contracts))
-        }
-      )
-
-      return () => {
-        disposed = true
-      }
-    }
-  }, [bets])
-
   const getTime = useTimeSinceFirstRender()
   useEffect(() => {
-    if (bets && contracts) {
+    if (bets && contractsById) {
       trackLatency('portfolio', getTime())
     }
-  }, [bets, contracts, getTime])
+  }, [bets, contractsById, getTime])
 
-  if (!bets || !contracts) {
+  if (!bets || !contractsById) {
     return <LoadingIndicator />
   }
-
   if (bets.length === 0) return <NoBets user={user} />
+
   // Decending creation time.
   bets.sort((bet1, bet2) => bet2.createdTime - bet1.createdTime)
   const contractBets = groupBy(bets, 'contractId')
-  const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
+
+  // Keep only contracts that have bets.
+  const contracts = Object.values(contractsById).filter(
+    (c) => contractBets[c.id]
+  )
 
   const contractsMetrics = mapValues(contractBets, (bets, contractId) => {
     const contract = contractsById[contractId]
