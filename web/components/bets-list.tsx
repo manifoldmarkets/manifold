@@ -132,7 +132,9 @@ export function BetsList(props: {
 
       if (filter === 'sold') return !hasShares
       if (filter === 'limit_bet')
-        return (contractBets[c.id] ?? []).some((b) => b.limitProb !== undefined)
+        return (contractBets[c.id] ?? []).some(
+          (b) => b.limitProb !== undefined && !b.isCancelled && !b.isFilled
+        )
       return hasShares
     })
   const displayedContracts = filteredContracts.slice(start, end)
@@ -262,7 +264,7 @@ function ContractBets(props: {
   const { resolution, outcomeType } = contract
 
   const limitBets = bets.filter(
-    (bet) => bet.limitProb !== undefined
+    (bet) => bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
   ) as LimitBet[]
   const resolutionValue = (contract as NumericContract).resolutionValue
 
