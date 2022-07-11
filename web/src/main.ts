@@ -5,9 +5,11 @@
 import "./style/style.scss";
 
 import { uniqueNamesGenerator, Config, adjectives, colors, animals, countries } from 'unique-names-generator';
+import Chart from "./chart";
 
 class Application {
     readonly transactionTemplate: HTMLElement;
+    readonly chart: Chart;
 
     transactions: HTMLElement[] = [];
 
@@ -18,6 +20,8 @@ class Application {
         this.transactionTemplate = document.getElementById("transaction-template");
         this.transactionTemplate.removeAttribute("id");
         this.transactionTemplate.parentElement.removeChild(this.transactionTemplate);
+
+        this.chart = new Chart(<HTMLCanvasElement> document.getElementById("chart"));
 
         document.getElementById("question").innerHTML = "Will dogdog get 1st place?";
 
@@ -32,9 +36,9 @@ class Application {
             this.currentProbability = 90 + (10 * Math.random());
         }, 2000);
 
-        this.addTransaction("FoolRxN", 10, true);
-        this.addTransaction("Akrolsmir", 100, false);
-        this.addTransaction("SirSalty", 1000, true);
+        // this.addTransaction("FoolRxN", 10, true);
+        // this.addTransaction("Akrolsmir", 100, false);
+        // this.addTransaction("SirSalty", 1000, true);
 
         const addRandomTransaction = () => {
             const customConfig: Config = {
@@ -67,6 +71,8 @@ class Application {
                     }
                     this.addTransaction(t.name, t.amount, t.yes);
                     lastAddedTimestamp = t.timestamp;
+
+                    this.chart.data = this.chart.produceData();
                 }
             });
         }, 500);

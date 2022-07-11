@@ -23,11 +23,12 @@
             <div id="question" style="padding-right: 0.5em;"></div>
             <div class="col" style="align-items: center">
                 <div id="chance" style="color: #A5FF6E;"></div>
-                <div style="color: #A5FF6E; font-size: 0.7em; margin-top: -.3em;">chance</div>
+                <div style="color: #A5FF6E; font-size: 0.7em; margin-top: -.3em;">favoured</div>
             </div>
         </div>
-        <div class="row" style="justify-content: center; flex: 1 1 0px; align-items: center; min-height: 0px;">
-            <img src="graph.png" style="object-fit: contain; height: 100%; max-width: 90%;">
+        <div class="col" style="flex: 1 1; align-items: stretch; min-height: 0px; padding: .25em;">
+            <!-- <img src="graph.png" style="object-fit: contain; height: 100%; max-width: 90%;"> -->
+            <canvas id="chart" style="height: 100%; aspect-ratio: unset;"></canvas>
         </div>
         <div class="row" style="justify-content: flex-end; align-items: center; padding: 0.2em;">
             <div id="transactions" class="col" style="flex: 1 1; height: 100%; align-items: flex-start; justify-content: flex-end;">
