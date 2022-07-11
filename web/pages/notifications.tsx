@@ -179,15 +179,16 @@ function IncomeNotificationGroupItem(props: {
       (n) => n.sourceType
     )
     for (const sourceType in groupedNotificationsBySourceType) {
-      const groupedNotificationsByContractId = groupBy(
+      // Source title splits by contracts and groups
+      const groupedNotificationsBySourceTitle = groupBy(
         groupedNotificationsBySourceType[sourceType],
         (notification) => {
-          return notification.sourceContractId
+          return notification.sourceTitle
         }
       )
-      for (const contractId in groupedNotificationsByContractId) {
+      for (const contractId in groupedNotificationsBySourceTitle) {
         const notificationsForContractId =
-          groupedNotificationsByContractId[contractId]
+          groupedNotificationsBySourceTitle[contractId]
         if (notificationsForContractId.length === 1) {
           newNotifications.push(notificationsForContractId[0])
           continue
