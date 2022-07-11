@@ -668,6 +668,14 @@ function BetRow(props: {
       ? 'N/A'
       : formatMoney(calculatePayout(contract, bet, bet.outcome))
 
+  const hadPoolMatch =
+    bet.fills?.some((fill) => fill.matchedBetId === null) ?? false
+
+  const ofTotalAmount =
+    bet.limitProb === undefined || bet.orderAmount === undefined
+      ? ''
+      : ` / ${formatMoney(bet.orderAmount)}`
+
   return (
     <tr>
       <td className="text-neutral">
@@ -694,13 +702,22 @@ function BetRow(props: {
         {isPseudoNumeric &&
           ' than ' + formatNumericProbability(bet.probAfter, contract)}
       </td>
-      <td>{formatMoney(Math.abs(amount))}</td>
+      <td>
+        {formatMoney(Math.abs(amount))}
+        {ofTotalAmount}
+      </td>
       {!isCPMM && !isNumeric && <td>{saleDisplay}</td>}
       {!isCPMM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>{formatWithCommas(Math.abs(shares))}</td>
       {!isPseudoNumeric && (
         <td>
-          {formatPercent(probBefore)} → {formatPercent(probAfter)}
+          {outcomeType === 'FREE_RESPONSE' || hadPoolMatch ? (
+            <>
+              {formatPercent(probBefore)} → {formatPercent(probAfter)}
+            </>
+          ) : (
+            formatPercent(bet.limitProb ?? 0)
+          )}
         </td>
       )}
       <td>{dayjs(createdTime).format('MMM D, h:mma')}</td>
