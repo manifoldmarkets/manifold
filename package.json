@@ -14,6 +14,7 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "5.25.0",
     "@typescript-eslint/parser": "5.25.0",
+    "concurrently": "6.5.1",
     "eslint": "8.15.0",
     "eslint-plugin-lodash": "^7.4.0",
     "prettier": "2.5.0",
