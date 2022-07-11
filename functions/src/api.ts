@@ -113,7 +113,7 @@ const DEFAULT_OPTS = {
 }
 
 export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
-  const opts = Object.assign(endpointOpts, DEFAULT_OPTS)
+  const opts = Object.assign({}, DEFAULT_OPTS, endpointOpts)
   return onRequest(opts, async (req, res) => {
     log('Request processing started.')
     try {
