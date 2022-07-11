@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
-import { partition, sumBy } from 'lodash'
+import { partition, sum, sumBy } from 'lodash'
 import { SwitchHorizontalIcon } from '@heroicons/react/solid'
 
 import { useUser } from 'web/hooks/use-user'
@@ -26,11 +26,7 @@ import { BinaryOutcomeLabel } from './outcome-label'
 import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import {
-  calculateCpmmSale,
-  getCpmmProbability,
-  getCpmmFees,
-} from 'common/calculate-cpmm'
+import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import {
   getFormattedMappedValue,
   getPseudoProbability,
@@ -271,11 +267,7 @@ function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const cpmmFees = getCpmmFees(
-    contract,
-    betAmount ?? 0,
-    betChoice ?? 'YES'
-  ).totalFees
+  const totalFees = sum(Object.values(newBet.fees))
 
   const format = getFormattedMappedValue(contract)
 
@@ -362,7 +354,7 @@ function BuyPanel(props: {
               )}
             </div>
             <InfoTooltip
-              text={`Includes ${formatMoneyWithDecimals(cpmmFees)} in fees`}
+              text={`Includes ${formatMoneyWithDecimals(totalFees)} in fees`}
             />
           </Row>
           <div>
