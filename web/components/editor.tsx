@@ -34,16 +34,16 @@ export function useTextEditor(props: {
     editorProps: {
       attributes: { class: editorClass },
       handlePaste(view, event) {
-        const files = Array.from(event.clipboardData?.files ?? []).filter(
+        const imageFiles = Array.from(event.clipboardData?.files ?? []).filter(
           (file) => file.type.startsWith('image')
         )
 
-        if (!files.length) {
+        if (!imageFiles.length) {
           return // if no files pasted, use default paste handler
         }
 
         event.preventDefault()
-        upload.mutate(files, {
+        upload.mutate(imageFiles, {
           onSuccess: (urls) => {
             let trans = view.state.tr
             urls.forEach((src: any) => {
