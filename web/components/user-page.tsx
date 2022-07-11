@@ -30,8 +30,6 @@ import { Contract } from 'common/contract'
 import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
 import { LoadingIndicator } from './loading-indicator'
 import { BetsList } from './bets-list'
-import { Bet } from 'common/bet'
-import { getUserBets } from 'web/lib/firebase/bets'
 import { FollowersButton, FollowingButton } from './following-button'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
@@ -39,6 +37,7 @@ import { PortfolioMetrics } from 'common/user'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { filterDefined } from 'common/util/array'
+import { useUserBets } from 'web/hooks/use-user-bets'
 
 export function UserLink(props: {
   name: string
@@ -76,7 +75,7 @@ export function UserPage(props: {
   const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
     'loading'
   )
-  const [userBets, setUserBets] = useState<Bet[] | undefined>()
+  const userBets = useUserBets(user.id, { includeRedemptions: true })
   const betCount =
     userBets === undefined
       ? 0
@@ -100,7 +99,6 @@ export function UserPage(props: {
     if (!user) return
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
-    getUserBets(user.id, { includeRedemptions: true }).then(setUserBets)
     getPortfolioHistory(user.id).then(setUsersPortfolioHistory)
   }, [user])
 
