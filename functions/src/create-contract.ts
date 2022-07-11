@@ -69,7 +69,8 @@ const binarySchema = z.object({
   initialProb: z.number().min(1).max(99),
 })
 
-const finite = () => z.number().gte(Number.MIN_SAFE_INTEGER).lte(Number.MAX_SAFE_INTEGER)
+const finite = () =>
+  z.number().gte(Number.MIN_SAFE_INTEGER).lte(Number.MAX_SAFE_INTEGER)
 
 const numericSchema = z.object({
   min: finite(),
@@ -90,10 +91,13 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
       numericSchema,
       req.body
     ))
-    if (max - min <= 0.01 || initialValue < min || initialValue > max)
+    if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
       throw new APIError(400, 'Invalid range.')
 
     initialProb = getPseudoProbability(initialValue, min, max, isLogScale) * 100
+
+    if (initialProb < 1 || initialProb > 99)
+      throw new APIError(400, 'Invalid initial value.')
   }
   if (outcomeType === 'BINARY') {
     ;({ initialProb } = validate(binarySchema, req.body))

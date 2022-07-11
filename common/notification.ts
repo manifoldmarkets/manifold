@@ -61,3 +61,5 @@ export type notification_reason_types =
   | 'user_joined_to_bet_on_your_market'
   | 'unique_bettors_on_your_contract'
   | 'on_group_you_are_member_of'
+  | 'tip_received'
+  | 'bet_fill'

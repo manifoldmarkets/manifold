@@ -39,6 +39,7 @@ import { FeedBet } from 'web/components/feed/feed-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
+import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
@@ -125,9 +126,10 @@ export function ContractPageContent(
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
-  const tips = useTipTxns(contract.id)
+  const tips = useTipTxns({ contractId: contract.id })
 
   const user = useUser()
+
   const { width, height } = useWindowSize()
 
   const [showConfetti, setShowConfetti] = useState(false)
@@ -170,7 +172,10 @@ export function ContractPageContent(
         (isNumeric ? (
           <NumericBetPanel className="hidden xl:flex" contract={contract} />
         ) : (
-          <BetPanel className="hidden xl:flex" contract={contract} />
+          <BetPanel
+            className="hidden xl:flex"
+            contract={contract as CPMMBinaryContract}
+          />
         ))}
       {allowResolve &&
         (isNumeric || isPseudoNumeric ? (

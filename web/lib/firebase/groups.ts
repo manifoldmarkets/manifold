@@ -22,7 +22,7 @@ export const groups = coll<Group>('groups')
 
 export function groupPath(
   groupSlug: string,
-  subpath?: 'edit' | 'questions' | 'about' | 'chat'
+  subpath?: 'edit' | 'questions' | 'about' | 'chat' | 'rankings'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }

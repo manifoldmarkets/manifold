@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { Contract, FreeResponse } from 'common/contract'
 import { Col } from '../layout/col'
-import { APIError, resolveMarket } from 'web/lib/firebase/api-call'
+import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../yes-no-selector'
 import { ResolveConfirmationButton } from '../confirmation-button'

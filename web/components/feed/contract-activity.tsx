@@ -31,7 +31,9 @@ export function ContractActivity(props: {
   const comments = updatedComments ?? props.comments
 
   const updatedBets = useBets(contract.id)
-  const bets = (updatedBets ?? props.bets).filter((bet) => !bet.isRedemption)
+  const bets = (updatedBets ?? props.bets).filter(
+    (bet) => !bet.isRedemption && bet.amount !== 0
+  )
   const items = getSpecificContractActivityItems(
     contract,
     bets,

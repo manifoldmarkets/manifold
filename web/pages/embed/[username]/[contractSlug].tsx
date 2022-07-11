@@ -1,5 +1,5 @@
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { AnswersGraph } from 'web/components/answers/answers-graph'
 import BetRow from 'web/components/bet-row'
@@ -112,7 +112,10 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
           {isBinary && (
             <Row className="items-center gap-4">
-              <BetRow contract={contract} betPanelClassName="scale-75" />
+              <BetRow
+                contract={contract as CPMMBinaryContract}
+                betPanelClassName="scale-75"
+              />
               <BinaryResolutionOrChance contract={contract} />
             </Row>
           )}

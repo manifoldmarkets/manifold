@@ -16,7 +16,7 @@ import {
 import { Bet } from 'common/bet'
 import BetRow from '../bet-row'
 import { AnswersGraph } from '../answers/answers-graph'
-import { Contract } from 'common/contract'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { ShareMarket } from '../share-market'
@@ -70,6 +70,13 @@ export const ContractOverview = (props: {
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
 
+            {tradingAllowed(contract) && (
+              <BetRow contract={contract as CPMMBinaryContract} />
+            )}
+          </Row>
+        ) : isPseudoNumeric ? (
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <PseudoNumericResolutionOrExpectation contract={contract} />
             {tradingAllowed(contract) && <BetRow contract={contract} />}
           </Row>
         ) : isPseudoNumeric ? (

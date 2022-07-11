@@ -6,7 +6,7 @@ import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
 import { useUser } from 'web/hooks/use-user'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
-import { createMarket } from 'web/lib/firebase/api-call'
+import { createMarket } from 'web/lib/firebase/api'
 import { FIXED_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
@@ -25,7 +25,6 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
-import { CATEGORIES } from 'common/categories'
 import { User } from 'common/user'
 import { useTextEditor } from 'web/components/editor'
 import { EditorContent } from '@tiptap/react'
@@ -104,7 +103,6 @@ export function NewContract(props: {
     (params?.outcomeType as outcomeType) ?? 'BINARY'
   )
   const [initialProb] = useState(50)
-
   const [minString, setMinString] = useState(params?.min ?? '')
   const [maxString, setMaxString] = useState(params?.max ?? '')
   const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
@@ -138,7 +136,6 @@ export function NewContract(props: {
     undefined
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
-  const [category, setCategory] = useState<string>('')
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -151,14 +148,6 @@ export function NewContract(props: {
   const initialValue = initialValueString
     ? parseFloat(initialValueString)
     : undefined
-
-  const adjustIsLog = () => {
-    if (min === undefined || max === undefined) return
-    const lengthDiff = Math.log10(max - min)
-    if (lengthDiff > 2) {
-      setIsLogScale(true)
-    }
-  }
 
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
@@ -194,9 +183,8 @@ export function NewContract(props: {
     disabled: isSubmitting,
   })
 
-  useWarnUnsavedChanges(
-    !isSubmitting && (Boolean(question) || (editor != null && !editor.isEmpty))
-  )
+  const isEditorFilled = editor != null && !editor.isEmpty
+  useWarnUnsavedChanges(!isSubmitting && (Boolean(question) || isEditorFilled))
 
   function setCloseDateInDays(days: number) {
     const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
@@ -207,8 +195,6 @@ export function NewContract(props: {
     // TODO: Tell users why their contract is invalid
     if (!creator || !isValid) return
     setIsSubmitting(true)
-
-    // TODO: add contract id to the group contractIds
     try {
       const result = await createMarket(
         removeUndefinedProps({
@@ -223,7 +209,6 @@ export function NewContract(props: {
           initialValue,
           isLogScale: (min ?? 0) < 0 ? false : isLogScale,
           groupId: selectedGroup?.id,
-          tags: category ? [category] : undefined,
         })
       )
       track('create market', {
@@ -291,7 +276,6 @@ export function NewContract(props: {
                 placeholder="MIN"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
-                onBlur={adjustIsLog}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
                 disabled={isSubmitting}
@@ -303,7 +287,6 @@ export function NewContract(props: {
                 placeholder="MAX"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}
-                onBlur={adjustIsLog}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
                 disabled={isSubmitting}
@@ -360,28 +343,6 @@ export function NewContract(props: {
           </div>
         </>
       )}
-
-      <div className="form-control max-w-[265px] items-start">
-        <label className="label gap-2">
-          <span className="mb-1">Category</span>
-        </label>
-
-        <select
-          className={clsx(
-            'select select-bordered w-full text-sm',
-            category === '' ? 'font-normal text-gray-500' : ''
-          )}
-          value={category}
-          onChange={(e) => setCategory(e.currentTarget.value ?? '')}
-        >
-          <option value={''}>None</option>
-          {Object.entries(CATEGORIES).map(([id, name]) => (
-            <option key={id} value={id}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <div className={'mt-2'}>
         <GroupSelector

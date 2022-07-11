@@ -1,4 +1,4 @@
-import { Bet } from './bet'
+import { Bet, LimitBet } from './bet'
 import {
   calculateDpmShareValue,
   deductDpmFees,
@@ -7,6 +7,7 @@ import {
 import { calculateCpmmSale, getCpmmProbability } from './calculate-cpmm'
 import { CPMMContract, DPMContract } from './contract'
 import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees } from './fees'
+import { sumBy } from 'lodash'
 
 export type CandidateBet<T extends Bet> = Omit<T, 'id' | 'userId'>
 
@@ -78,19 +79,24 @@ export const getCpmmSellBetInfo = (
   shares: number,
   outcome: 'YES' | 'NO',
   contract: CPMMContract,
-  prevLoanAmount: number
+  prevLoanAmount: number,
+  unfilledBets: LimitBet[]
 ) => {
   const { pool, p } = contract
 
-  const { saleValue, newPool, newP, fees } = calculateCpmmSale(
+  const { saleValue, cpmmState, fees, makers, takers } = calculateCpmmSale(
     contract,
     shares,
-    outcome
+    outcome,
+    unfilledBets
   )
 
   const loanPaid = Math.min(prevLoanAmount, saleValue)
   const probBefore = getCpmmProbability(pool, p)
-  const probAfter = getCpmmProbability(newPool, p)
+  const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
+
+  const takerAmount = sumBy(takers, 'amount')
+  const takerShares = sumBy(takers, 'shares')
 
   console.log(
     'SELL M$',
@@ -104,20 +110,26 @@ export const getCpmmSellBetInfo = (
 
   const newBet: CandidateBet<Bet> = {
     contractId: contract.id,
-    amount: -saleValue,
-    shares: -shares,
+    amount: takerAmount,
+    shares: takerShares,
     outcome,
     probBefore,
     probAfter,
     createdTime: Date.now(),
     loanAmount: -loanPaid,
     fees,
+    fills: takers,
+    isFilled: true,
+    isCancelled: false,
+    orderAmount: takerAmount,
   }
 
   return {
     newBet,
-    newPool,
-    newP,
+    newPool: cpmmState.pool,
+    newP: cpmmState.p,
     fees,
+    makers,
+    takers,
   }
 }

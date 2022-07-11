@@ -3,12 +3,14 @@ import { logger } from 'firebase-functions/v2'
 import { HttpsOptions, onRequest, Request } from 'firebase-functions/v2/https'
 import { log } from './utils'
 import { z } from 'zod'
-
+import { APIError } from '../../common/api'
 import { PrivateUser } from '../../common/user'
 import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
+  CORS_ORIGIN_VERCEL,
 } from '../../common/envs/constants'
+export { APIError } from '../../common/api'
 
 type Output = Record<string, unknown>
 type AuthedUser = {
@@ -19,17 +21,6 @@ type Handler = (req: Request, user: AuthedUser) => Promise<Output>
 type JwtCredentials = { kind: 'jwt'; data: admin.auth.DecodedIdToken }
 type KeyCredentials = { kind: 'key'; data: string }
 type Credentials = JwtCredentials | KeyCredentials
-
-export class APIError {
-  code: number
-  msg: string
-  details: unknown
-  constructor(code: number, msg: string, details?: unknown) {
-    this.code = code
-    this.msg = msg
-    this.details = details
-  }
-}
 
 const auth = admin.auth()
 const firestore = admin.firestore()
@@ -118,7 +109,7 @@ const DEFAULT_OPTS = {
   concurrency: 100,
   memory: '2GiB',
   cpu: 1,
-  cors: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
+  cors: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
 }
 
 export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
@@ -135,7 +126,7 @@ export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
       res.status(200).json(await fn(req, authedUser))
     } catch (e) {
       if (e instanceof APIError) {
-        const output: { [k: string]: unknown } = { message: e.msg }
+        const output: { [k: string]: unknown } = { message: e.message }
         if (e.details != null) {
           output.details = e.details
         }

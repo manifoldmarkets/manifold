@@ -10,10 +10,12 @@ import { Contract } from '../../common/contract'
 import { getUserByUsername, getValues } from './utils'
 import { Comment } from '../../common/comment'
 import { uniq } from 'lodash'
-import { Bet } from '../../common/bet'
+import { Bet, LimitBet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { getContractBetMetrics } from '../../common/calculate'
 import { removeUndefinedProps } from '../../common/util/object'
+import { TipTxn } from '../../common/txn'
+import { Group } from '../../common/group'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
@@ -66,9 +68,7 @@ export const createNotification = async (
           sourceUserAvatarUrl: sourceUser.avatarUrl,
           sourceText,
           sourceContractCreatorUsername: sourceContract?.creatorUsername,
-          // TODO: move away from sourceContractTitle to sourceTitle
           sourceContractTitle: sourceContract?.question,
-          // TODO: move away from sourceContractSlug to sourceSlug
           sourceContractSlug: sourceContract?.slug,
           sourceSlug: sourceSlug ? sourceSlug : sourceContract?.slug,
           sourceTitle: sourceTitle ? sourceTitle : sourceContract?.question,
@@ -278,11 +278,11 @@ export const createNotification = async (
   }
 
   const notifyOtherGroupMembersOfComment = async (
-    userToReasonTexts: user_to_reason_texts,
+    userToReasons: user_to_reason_texts,
     userId: string
   ) => {
-    if (shouldGetNotification(userId, userToReasonTexts))
-      userToReasonTexts[userId] = {
+    if (shouldGetNotification(userId, userToReasons))
+      userToReasons[userId] = {
         reason: 'on_group_you_are_member_of',
         isSeeOnHref: sourceSlug,
       }
@@ -304,6 +304,7 @@ export const createNotification = async (
 
     // The following functions need sourceContract to be defined.
     if (!sourceContract) return userToReasonTexts
+
     if (
       sourceType === 'comment' ||
       sourceType === 'answer' ||
@@ -344,4 +345,75 @@ export const createNotification = async (
 
   const userToReasonTexts = await getUsersToNotify()
   await createUsersNotifications(userToReasonTexts)
+}
+
+export const createTipNotification = async (
+  fromUser: User,
+  toUser: User,
+  tip: TipTxn,
+  idempotencyKey: string,
+  commentId: string,
+  contract?: Contract,
+  group?: Group
+) => {
+  const slug = group ? group.slug + `#${commentId}` : commentId
+
+  const notificationRef = firestore
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: 'tip_received',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: tip.id,
+    sourceType: 'tip',
+    sourceUpdateType: 'created',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: tip.amount.toString(),
+    sourceContractCreatorUsername: contract?.creatorUsername,
+    sourceContractTitle: contract?.question,
+    sourceContractSlug: contract?.slug,
+    sourceSlug: slug,
+    sourceTitle: group?.name,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export const createBetFillNotification = async (
+  fromUser: User,
+  toUser: User,
+  bet: Bet,
+  userBet: LimitBet,
+  contract: Contract,
+  idempotencyKey: string
+) => {
+  const fill = userBet.fills.find((fill) => fill.matchedBetId === bet.id)
+  const fillAmount = fill?.amount ?? 0
+
+  const notificationRef = firestore
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: 'bet_fill',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: userBet.id,
+    sourceType: 'bet',
+    sourceUpdateType: 'updated',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: fillAmount.toString(),
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceContractId: contract.id,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
 }

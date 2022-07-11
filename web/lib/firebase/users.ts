@@ -20,11 +20,10 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth'
-import { throttle, zip } from 'lodash'
-
+import { zip } from 'lodash'
 import { app, db } from './init'
 import { PortfolioMetrics, PrivateUser, User } from 'common/user'
-import { createUser } from './fn-call'
+import { createUser } from './api'
 import {
   coll,
   getValue,
@@ -38,7 +37,11 @@ import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
 import { addUserToGroupViaSlug } from 'web/lib/firebase/groups'
 import { removeUndefinedProps } from 'common/util/object'
+import { randomString } from 'common/util/random'
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+dayjs.extend(utc)
+
 import { track } from '@amplitude/analytics-browser'
 
 export const users = coll<User>('users')
@@ -97,11 +100,6 @@ const CACHED_USER_KEY = 'CACHED_USER_KEY'
 const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
 const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
 const CACHED_REFERRAL_GROUP_SLUG_KEY = 'CACHED_REFERRAL_GROUP_KEY'
-
-// used to avoid weird race condition
-let createUserPromise: Promise<User | null> | undefined = undefined
-
-const warmUpCreateUser = throttle(createUser, 5000 /* ms */)
 
 export function writeReferralInfo(
   defaultReferrerUsername: string,
@@ -180,22 +178,29 @@ async function setCachedReferralInfoForUser(user: User | null) {
   local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
 }
 
+// used to avoid weird race condition
+let createUserPromise: Promise<User> | undefined = undefined
+
 export function listenForLogin(onUser: (user: User | null) => void) {
   const local = safeLocalStorage()
   const cachedUser = local?.getItem(CACHED_USER_KEY)
   onUser(cachedUser && JSON.parse(cachedUser))
-
-  if (!cachedUser) warmUpCreateUser()
 
   return onAuthStateChanged(auth, async (fbUser) => {
     if (fbUser) {
       let user: User | null = await getUser(fbUser.uid)
 
       if (!user) {
-        if (!createUserPromise) {
-          createUserPromise = createUser()
+        if (createUserPromise == null) {
+          const local = safeLocalStorage()
+          let deviceToken = local?.getItem('device-token')
+          if (!deviceToken) {
+            deviceToken = randomString()
+            local?.setItem('device-token', deviceToken)
+          }
+          createUserPromise = createUser({ deviceToken }).then((r) => r as User)
         }
-        user = (await createUserPromise) || null
+        user = await createUserPromise
       }
 
       onUser(user)
@@ -208,7 +213,6 @@ export function listenForLogin(onUser: (user: User | null) => void) {
       // User logged out; reset to null
       onUser(null)
       local?.removeItem(CACHED_USER_KEY)
-      createUserPromise = undefined
     }
   })
 }

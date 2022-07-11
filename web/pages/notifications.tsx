@@ -1,18 +1,15 @@
 import { Tabs } from 'web/components/layout/tabs'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import React, { useEffect, useState } from 'react'
-import { Notification } from 'common/notification'
+import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
-import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
-import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/user-page'
 import { notification_subscribe_types, PrivateUser } from 'common/user'
-import { Contract } from 'common/contract'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { listenForPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
 import { LoadingIndicator } from 'web/components/loading-indicator'
@@ -23,6 +20,7 @@ import {
   BinaryOutcomeLabel,
   CancelLabel,
   MultiLabel,
+  NumericValueLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import {
@@ -34,150 +32,116 @@ import toast from 'react-hot-toast'
 import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
-import { groupBy } from 'lodash'
+import { groupBy, sum, uniq } from 'lodash'
+import Custom404 from 'web/pages/404'
+import { track } from '@amplitude/analytics-browser'
+import { Pagination } from 'web/components/pagination'
 
 export const NOTIFICATIONS_PER_PAGE = 30
-export const HIGHLIGHT_DURATION = 30 * 1000
+const MULTIPLE_USERS_KEY = 'multipleUsers'
 
 export default function Notifications() {
   const user = useUser()
-  const [page, setPage] = useState(1)
+  const privateUser = usePrivateUser(user?.id)
 
-  const groupedNotifications = usePreferredGroupedNotifications(user?.id, {
-    unseenOnly: false,
-  })
-  const [paginatedNotificationGroups, setPaginatedNotificationGroups] =
-    useState<NotificationGroup[]>([])
-  useEffect(() => {
-    if (!groupedNotifications) return
-    const start = (page - 1) * NOTIFICATIONS_PER_PAGE
-    const end = start + NOTIFICATIONS_PER_PAGE
-    const maxNotificationsToShow = groupedNotifications.slice(start, end)
-    const remainingNotification = groupedNotifications.slice(end)
-    for (const notification of remainingNotification) {
-      if (notification.isSeen) break
-      else setNotificationsAsSeen(notification.notifications)
-    }
-    setPaginatedNotificationGroups(maxNotificationsToShow)
-  }, [groupedNotifications, page])
-
-  if (user === undefined) {
-    return <LoadingIndicator />
-  }
-  if (user === null) {
-    return <Custom404 />
-  }
-
+  if (!user) return <Custom404 />
   return (
     <Page>
       <div className={'p-2 sm:p-4'}>
         <Title text={'Notifications'} className={'hidden md:block'} />
-        <Tabs
-          labelClassName={'pb-2 pt-1 '}
-          defaultIndex={0}
-          tabs={[
-            {
-              title: 'Notifications',
-              content: groupedNotifications ? (
-                <div className={''}>
-                  {paginatedNotificationGroups.length === 0 &&
-                    "You don't have any notifications. Try changing your settings to see more."}
-                  {paginatedNotificationGroups.map((notification) =>
-                    notification.notifications.length === 1 ? (
-                      <NotificationItem
-                        notification={notification.notifications[0]}
-                        key={notification.notifications[0].id}
-                      />
-                    ) : notification.type === 'income' ? (
-                      <IncomeNotificationGroupItem
-                        notificationGroup={notification}
-                        key={notification.groupedById + notification.timePeriod}
-                      />
-                    ) : (
-                      <NotificationGroupItem
-                        notificationGroup={notification}
-                        key={notification.groupedById + notification.timePeriod}
-                      />
-                    )
-                  )}
-                  {groupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
-                    <nav
-                      className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
-                      aria-label="Pagination"
-                    >
-                      <div className="hidden sm:block">
-                        <p className="text-sm text-gray-700">
-                          Showing{' '}
-                          <span className="font-medium">
-                            {page === 1
-                              ? page
-                              : (page - 1) * NOTIFICATIONS_PER_PAGE}
-                          </span>{' '}
-                          to{' '}
-                          <span className="font-medium">
-                            {page * NOTIFICATIONS_PER_PAGE}
-                          </span>{' '}
-                          of{' '}
-                          <span className="font-medium">
-                            {groupedNotifications.length}
-                          </span>{' '}
-                          results
-                        </p>
-                      </div>
-                      <div className="flex flex-1 justify-between sm:justify-end">
-                        <a
-                          href="#"
-                          className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                          onClick={() => page > 1 && setPage(page - 1)}
-                        >
-                          Previous
-                        </a>
-                        <a
-                          href="#"
-                          className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                          onClick={() =>
-                            page <
-                              groupedNotifications?.length /
-                                NOTIFICATIONS_PER_PAGE && setPage(page + 1)
-                          }
-                        >
-                          Next
-                        </a>
-                      </div>
-                    </nav>
-                  )}
-                </div>
-              ) : (
-                <LoadingIndicator />
-              ),
-            },
-            {
-              title: 'Settings',
-              content: (
-                <div className={''}>
-                  <NotificationSettings />
-                </div>
-              ),
-            },
-          ]}
-        />
+        <div>
+          <Tabs
+            currentPageForAnalytics={'notifications'}
+            labelClassName={'pb-2 pt-1 '}
+            className={'mb-0 sm:mb-2'}
+            defaultIndex={0}
+            tabs={[
+              {
+                title: 'Notifications',
+                content: privateUser ? (
+                  <NotificationsList privateUser={privateUser} />
+                ) : (
+                  <LoadingIndicator />
+                ),
+              },
+              {
+                title: 'Settings',
+                content: (
+                  <div className={''}>
+                    <NotificationSettings />
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </div>
       </div>
     </Page>
   )
 }
 
-export const setNotificationsAsSeen = (notifications: Notification[]) => {
-  notifications.forEach((notification) => {
-    if (!notification.isSeen)
-      updateDoc(
-        doc(db, `users/${notification.userId}/notifications/`, notification.id),
-        {
-          isSeen: true,
-          viewTime: new Date(),
-        }
-      )
-  })
-  return notifications
+function NotificationsList(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
+  const [page, setPage] = useState(0)
+  const allGroupedNotifications = usePreferredGroupedNotifications(privateUser)
+  const [paginatedGroupedNotifications, setPaginatedGroupedNotifications] =
+    useState<NotificationGroup[] | undefined>(undefined)
+
+  useEffect(() => {
+    if (!allGroupedNotifications) return
+    const start = page * NOTIFICATIONS_PER_PAGE
+    const end = start + NOTIFICATIONS_PER_PAGE
+    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
+    const remainingNotification = allGroupedNotifications.slice(end)
+    for (const notification of remainingNotification) {
+      if (notification.isSeen) break
+      else setNotificationsAsSeen(notification.notifications)
+    }
+    setPaginatedGroupedNotifications(maxNotificationsToShow)
+  }, [allGroupedNotifications, page])
+
+  if (!paginatedGroupedNotifications || !allGroupedNotifications)
+    return <LoadingIndicator />
+
+  return (
+    <div className={'min-h-[100vh]'}>
+      {paginatedGroupedNotifications.length === 0 && (
+        <div className={'mt-2'}>
+          You don't have any notifications. Try changing your settings to see
+          more.
+        </div>
+      )}
+
+      {paginatedGroupedNotifications.map((notification) =>
+        notification.type === 'income' ? (
+          <IncomeNotificationGroupItem
+            notificationGroup={notification}
+            key={notification.groupedById + notification.timePeriod}
+          />
+        ) : notification.notifications.length === 1 ? (
+          <NotificationItem
+            notification={notification.notifications[0]}
+            key={notification.notifications[0].id}
+          />
+        ) : (
+          <NotificationGroupItem
+            notificationGroup={notification}
+            key={notification.groupedById + notification.timePeriod}
+          />
+        )
+      )}
+      {paginatedGroupedNotifications.length > 0 &&
+        allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
+          <Pagination
+            page={page}
+            itemsPerPage={NOTIFICATIONS_PER_PAGE}
+            totalItems={allGroupedNotifications.length}
+            setPage={setPage}
+            scrollToTop
+          />
+        )}
+    </div>
+  )
 }
 
 function IncomeNotificationGroupItem(props: {
@@ -187,16 +151,12 @@ function IncomeNotificationGroupItem(props: {
   const { notificationGroup, className } = props
   const { notifications } = notificationGroup
   const numSummaryLines = 3
-
   const [expanded, setExpanded] = useState(false)
-  const [highlighted, setHighlighted] = useState(false)
+  const [highlighted, setHighlighted] = useState(
+    notifications.some((n) => !n.isSeen)
+  )
+
   useEffect(() => {
-    if (notifications.some((n) => !n.isSeen)) {
-      setHighlighted(true)
-      setTimeout(() => {
-        setHighlighted(false)
-      }, HIGHLIGHT_DURATION)
-    }
     setNotificationsAsSeen(notifications)
   }, [notifications])
 
@@ -204,51 +164,63 @@ function IncomeNotificationGroupItem(props: {
     if (expanded) setHighlighted(false)
   }, [expanded])
 
-  const totalIncome = notifications.reduce(
-    (acc, notification) =>
-      acc +
-      (notification.sourceType &&
-      notification.sourceText &&
-      notification.sourceType === 'bonus'
-        ? parseInt(notification.sourceText)
-        : 0),
-    0
+  const totalIncome = sum(
+    notifications.map((notification) =>
+      notification.sourceText ? parseInt(notification.sourceText) : 0
+    )
   )
-  // loop through the contracts and combine the notification items into one
-  function combineNotificationsByAddingSourceTextsAndReturningTheRest(
+  // Loop through the contracts and combine the notification items into one
+  function combineNotificationsByAddingNumericSourceTexts(
     notifications: Notification[]
   ) {
     const newNotifications = []
-    const groupedNotificationsByContractId = groupBy(
+    const groupedNotificationsBySourceType = groupBy(
       notifications,
-      (notification) => {
-        return notification.sourceContractId
-      }
+      (n) => n.sourceType
     )
-    for (const contractId in groupedNotificationsByContractId) {
-      const notificationsForContractId =
-        groupedNotificationsByContractId[contractId]
-      let sum = 0
-      notificationsForContractId.forEach(
-        (notification) =>
-          notification.sourceText &&
-          (sum = parseInt(notification.sourceText) + sum)
+    for (const sourceType in groupedNotificationsBySourceType) {
+      // Source title splits by contracts and groups
+      const groupedNotificationsBySourceTitle = groupBy(
+        groupedNotificationsBySourceType[sourceType],
+        (notification) => {
+          return notification.sourceTitle
+        }
       )
+      for (const contractId in groupedNotificationsBySourceTitle) {
+        const notificationsForContractId =
+          groupedNotificationsBySourceTitle[contractId]
+        if (notificationsForContractId.length === 1) {
+          newNotifications.push(notificationsForContractId[0])
+          continue
+        }
+        let sum = 0
+        notificationsForContractId.forEach(
+          (notification) =>
+            notification.sourceText &&
+            (sum = parseInt(notification.sourceText) + sum)
+        )
+        const uniqueUsers = uniq(
+          notificationsForContractId.map((notification) => {
+            return notification.sourceUserUsername
+          })
+        )
 
-      const newNotification =
-        notificationsForContractId.length === 1
-          ? notificationsForContractId[0]
-          : {
-              ...notificationsForContractId[0],
-              sourceText: sum.toString(),
-            }
-      newNotifications.push(newNotification)
+        const newNotification = {
+          ...notificationsForContractId[0],
+          sourceText: sum.toString(),
+          sourceUserUsername:
+            uniqueUsers.length > 1
+              ? MULTIPLE_USERS_KEY
+              : notificationsForContractId[0].sourceType,
+        }
+        newNotifications.push(newNotification)
+      }
     }
     return newNotifications
   }
 
   const combinedNotifs =
-    combineNotificationsByAddingSourceTextsAndReturningTheRest(notifications)
+    combineNotificationsByAddingNumericSourceTexts(notifications)
 
   return (
     <div
@@ -267,37 +239,46 @@ function IncomeNotificationGroupItem(props: {
         />
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
-        <TrendingUpIcon className={'text-primary h-7 w-7'} />
-        <div className={'flex-1 overflow-hidden pl-2 sm:flex'}>
-          <div
-            onClick={() => setExpanded(!expanded)}
-            className={'line-clamp-1 cursor-pointer pl-1  sm:pl-0'}
-          >
-            <span>
+        <TrendingUpIcon
+          className={'text-primary ml-1 h-7 w-7 flex-shrink-0 sm:ml-2'}
+        />
+        <div
+          className={'ml-2 flex w-full flex-row flex-wrap truncate'}
+          onClick={() => setExpanded(!expanded)}
+        >
+          <div className={'flex w-full flex-row justify-between'}>
+            <div>
               {'Daily Income Summary: '}
-              <span className={'text-primary'}>{formatMoney(totalIncome)}</span>
-            </span>
+              <span className={'text-primary'}>
+                {'+' + formatMoney(totalIncome)}
+              </span>
+            </div>
+            <div className={'inline-block'}>
+              <RelativeTimestamp time={notifications[0].createdTime} />
+            </div>
           </div>
-          <RelativeTimestamp time={notifications[0].createdTime} />
         </div>
       </Row>
       <div>
         <div className={clsx('mt-1 md:text-base', expanded ? 'pl-4' : '')}>
           {' '}
-          <div className={'line-clamp-4 mt-1 ml-1 gap-1 whitespace-pre-line'}>
+          <div
+            className={clsx(
+              'mt-1 ml-1 gap-1 whitespace-pre-line',
+              !expanded ? 'line-clamp-4' : ''
+            )}
+          >
             {!expanded ? (
               <>
                 {combinedNotifs
                   .slice(0, numSummaryLines)
-                  .map((notification) => {
-                    return (
-                      <NotificationItem
-                        notification={notification}
-                        justSummary={true}
-                        key={notification.id}
-                      />
-                    )
-                  })}
+                  .map((notification) => (
+                    <IncomeNotificationItem
+                      notification={notification}
+                      justSummary={true}
+                      key={notification.id}
+                    />
+                  ))}
                 <div className={'text-sm text-gray-500 hover:underline '}>
                   {combinedNotifs.length - numSummaryLines > 0
                     ? 'And ' +
@@ -309,7 +290,7 @@ function IncomeNotificationGroupItem(props: {
             ) : (
               <>
                 {combinedNotifs.map((notification) => (
-                  <NotificationItem
+                  <IncomeNotificationItem
                     notification={notification}
                     key={notification.id}
                     justSummary={false}
@@ -326,28 +307,112 @@ function IncomeNotificationGroupItem(props: {
   )
 }
 
+function IncomeNotificationItem(props: {
+  notification: Notification
+  justSummary?: boolean
+}) {
+  const { notification, justSummary } = props
+  const { sourceType, sourceUserName, sourceUserUsername } = notification
+  const [highlighted] = useState(!notification.isSeen)
+
+  useEffect(() => {
+    setNotificationsAsSeen([notification])
+  }, [notification])
+
+  function getReasonForShowingIncomeNotification(simple: boolean) {
+    const { sourceText } = notification
+    let reasonText = ''
+    if (sourceType === 'bonus' && sourceText) {
+      reasonText = !simple
+        ? `Bonus for ${
+            parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
+          } unique bettors`
+        : 'bonus on'
+    } else if (sourceType === 'tip') {
+      reasonText = !simple ? `tipped you` : `in tips on`
+    }
+    return reasonText
+  }
+
+  if (justSummary) {
+    return (
+      <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
+        <div className={'line-clamp-1 flex-1 overflow-hidden sm:flex'}>
+          <div className={'flex pl-1 sm:pl-0'}>
+            <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
+              <div className={'mr-1 text-black'}>
+                <NotificationTextLabel
+                  className={'line-clamp-1'}
+                  notification={notification}
+                  justSummary={true}
+                />
+              </div>
+              <span className={'flex truncate'}>
+                {getReasonForShowingIncomeNotification(true)}
+                <QuestionOrGroupLink
+                  notification={notification}
+                  ignoreClick={true}
+                />
+              </span>
+            </div>
+          </div>
+        </div>
+      </Row>
+    )
+  }
+
+  return (
+    <div
+      className={clsx(
+        'bg-white px-2 pt-6 text-sm sm:px-4',
+        highlighted && 'bg-indigo-200 hover:bg-indigo-100'
+      )}
+    >
+      <a href={getSourceUrl(notification)}>
+        <Row className={'items-center text-gray-500 sm:justify-start'}>
+          <div className={'line-clamp-2 flex max-w-xl shrink '}>
+            <div className={'inline'}>
+              <span className={'mr-1'}>
+                <NotificationTextLabel notification={notification} />
+              </span>
+            </div>
+            <span>
+              {sourceType != 'bonus' &&
+                (sourceUserUsername === MULTIPLE_USERS_KEY ? (
+                  <span className={'mr-1 truncate'}>Multiple users</span>
+                ) : (
+                  <UserLink
+                    name={sourceUserName || ''}
+                    username={sourceUserUsername || ''}
+                    className={'mr-1 flex-shrink-0'}
+                    justFirstName={true}
+                  />
+                ))}
+              {getReasonForShowingIncomeNotification(false)} {' on'}
+              <QuestionOrGroupLink notification={notification} />
+            </span>
+          </div>
+        </Row>
+        <div className={'mt-4 border-b border-gray-300'} />
+      </a>
+    </div>
+  )
+}
+
 function NotificationGroupItem(props: {
   notificationGroup: NotificationGroup
   className?: string
 }) {
   const { notificationGroup, className } = props
   const { notifications } = notificationGroup
-  const {
-    sourceContractTitle,
-    sourceContractSlug,
-    sourceContractCreatorUsername,
-  } = notifications[0]
+  const { sourceContractTitle } = notifications[0]
   const numSummaryLines = 3
 
   const [expanded, setExpanded] = useState(false)
-  const [highlighted, setHighlighted] = useState(false)
+  const [highlighted, setHighlighted] = useState(
+    notifications.some((n) => !n.isSeen)
+  )
   useEffect(() => {
-    if (notifications.some((n) => !n.isSeen)) {
-      setHighlighted(true)
-      setTimeout(() => {
-        setHighlighted(false)
-      }, HIGHLIGHT_DURATION)
-    }
     setNotificationsAsSeen(notifications)
   }, [notifications])
 
@@ -373,38 +438,37 @@ function NotificationGroupItem(props: {
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <EmptyAvatar multi />
-        <div className={'flex-1 overflow-hidden pl-2 sm:flex'}>
-          <div
-            onClick={() => setExpanded(!expanded)}
-            className={'line-clamp-1 cursor-pointer pl-1  sm:pl-0'}
-          >
-            {sourceContractTitle ? (
-              <span>
-                {'Activity on '}
-                <a
-                  href={
-                    sourceContractCreatorUsername
-                      ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-                      : ''
-                  }
-                  className={
-                    'font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2'
-                  }
-                >
-                  {sourceContractTitle}
-                </a>
-              </span>
-            ) : (
-              'Other activity'
-            )}
-          </div>
-          <RelativeTimestamp time={notifications[0].createdTime} />
+        <div
+          className={'line-clamp-2 flex w-full flex-row flex-wrap pl-1 sm:pl-0'}
+        >
+          {sourceContractTitle ? (
+            <div className={'flex w-full flex-row justify-between'}>
+              <div className={'ml-2'}>
+                Activity on
+                <QuestionOrGroupLink notification={notifications[0]} />
+              </div>
+              <div className={'hidden sm:inline-block'}>
+                <RelativeTimestamp time={notifications[0].createdTime} />
+              </div>
+            </div>
+          ) : (
+            <span>
+              Other activity
+              <RelativeTimestamp time={notifications[0].createdTime} />
+            </span>
+          )}
         </div>
       </Row>
       <div>
         <div className={clsx('mt-1 md:text-base', expanded ? 'pl-4' : '')}>
           {' '}
-          <div className={'line-clamp-4 mt-1 ml-1 gap-1 whitespace-pre-line'}>
+          <div
+            className={clsx(
+              'mt-1 ml-1 gap-1 whitespace-pre-line',
+              !expanded ? 'line-clamp-4' : ''
+            )}
+          >
+            {' '}
             {!expanded ? (
               <>
                 {notifications.slice(0, numSummaryLines).map((notification) => {
@@ -431,6 +495,7 @@ function NotificationGroupItem(props: {
                     notification={notification}
                     key={notification.id}
                     justSummary={false}
+                    isChildOfGroup={true}
                   />
                 ))}
               </>
@@ -442,6 +507,377 @@ function NotificationGroupItem(props: {
       </div>
     </div>
   )
+}
+
+function NotificationItem(props: {
+  notification: Notification
+  justSummary?: boolean
+  isChildOfGroup?: boolean
+}) {
+  const { notification, justSummary, isChildOfGroup } = props
+  const {
+    sourceType,
+    sourceUserName,
+    sourceUserAvatarUrl,
+    sourceUpdateType,
+    reasonText,
+    reason,
+    sourceUserUsername,
+    sourceText,
+  } = notification
+
+  const [highlighted] = useState(!notification.isSeen)
+
+  useEffect(() => {
+    setNotificationsAsSeen([notification])
+  }, [notification])
+
+  if (justSummary) {
+    return (
+      <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
+        <div className={'line-clamp-1 flex-1 overflow-hidden sm:flex'}>
+          <div className={'flex pl-1 sm:pl-0'}>
+            <UserLink
+              name={sourceUserName || ''}
+              username={sourceUserUsername || ''}
+              className={'mr-0 flex-shrink-0'}
+              justFirstName={true}
+            />
+            <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
+              <span className={'flex-shrink-0'}>
+                {sourceType &&
+                  reason &&
+                  getReasonForShowingNotification(notification, true, true)}
+              </span>
+              <div className={'ml-1 text-black'}>
+                <NotificationTextLabel
+                  className={'line-clamp-1'}
+                  notification={notification}
+                  justSummary={true}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </Row>
+    )
+  }
+
+  return (
+    <div
+      className={clsx(
+        'bg-white px-2 pt-6 text-sm sm:px-4',
+        highlighted && 'bg-indigo-200 hover:bg-indigo-100'
+      )}
+    >
+      <a
+        href={getSourceUrl(notification)}
+        onClick={() =>
+          track('Notification Clicked', {
+            type: 'notification item',
+            sourceType,
+            sourceUserName,
+            sourceUserAvatarUrl,
+            sourceUpdateType,
+            reasonText,
+            reason,
+            sourceUserUsername,
+            sourceText,
+          })
+        }
+      >
+        <Row className={'items-center text-gray-500 sm:justify-start'}>
+          <Avatar
+            avatarUrl={sourceUserAvatarUrl}
+            size={'sm'}
+            className={'mr-2'}
+            username={sourceUserName}
+          />
+          <div className={'flex w-full flex-row pl-1 sm:pl-0'}>
+            <div
+              className={
+                'line-clamp-2 sm:line-clamp-none flex w-full flex-row justify-between'
+              }
+            >
+              <div>
+                {sourceUpdateType != 'closed' && (
+                  <UserLink
+                    name={sourceUserName || ''}
+                    username={sourceUserUsername || ''}
+                    className={'mr-1 flex-shrink-0'}
+                    justFirstName={true}
+                  />
+                )}
+                {getReasonForShowingNotification(
+                  notification,
+                  false,
+                  isChildOfGroup
+                )}
+                {isChildOfGroup ? (
+                  <RelativeTimestamp time={notification.createdTime} />
+                ) : (
+                  <QuestionOrGroupLink notification={notification} />
+                )}
+              </div>
+            </div>
+            {!isChildOfGroup && (
+              <div className={'hidden sm:inline-block'}>
+                <RelativeTimestamp time={notification.createdTime} />
+              </div>
+            )}
+          </div>
+        </Row>
+        <div className={'mt-1 ml-1 md:text-base'}>
+          <NotificationTextLabel notification={notification} />
+        </div>
+
+        <div className={'mt-6 border-b border-gray-300'} />
+      </a>
+    </div>
+  )
+}
+
+export const setNotificationsAsSeen = (notifications: Notification[]) => {
+  notifications.forEach((notification) => {
+    if (!notification.isSeen)
+      updateDoc(
+        doc(db, `users/${notification.userId}/notifications/`, notification.id),
+        {
+          isSeen: true,
+          viewTime: new Date(),
+        }
+      )
+  })
+  return notifications
+}
+
+function QuestionOrGroupLink(props: {
+  notification: Notification
+  ignoreClick?: boolean
+}) {
+  const { notification, ignoreClick } = props
+  const {
+    sourceType,
+    sourceContractTitle,
+    sourceContractCreatorUsername,
+    sourceContractSlug,
+    sourceSlug,
+    sourceTitle,
+  } = notification
+
+  if (ignoreClick)
+    return (
+      <span className={'ml-1 font-bold '}>
+        {sourceContractTitle || sourceTitle}
+      </span>
+    )
+  return (
+    <a
+      className={
+        'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2 '
+      }
+      href={
+        sourceContractCreatorUsername
+          ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
+          : (sourceType === 'group' || sourceType === 'tip') && sourceSlug
+          ? `${groupPath(sourceSlug)}`
+          : ''
+      }
+      onClick={() =>
+        track('Notification Clicked', {
+          type: 'question title',
+          sourceType,
+          sourceContractTitle,
+          sourceContractCreatorUsername,
+          sourceContractSlug,
+          sourceSlug,
+          sourceTitle,
+        })
+      }
+    >
+      {sourceContractTitle || sourceTitle}
+    </a>
+  )
+}
+
+function getSourceUrl(notification: Notification) {
+  const {
+    sourceType,
+    sourceId,
+    sourceUserUsername,
+    sourceContractCreatorUsername,
+    sourceContractSlug,
+    sourceSlug,
+  } = notification
+  if (sourceType === 'follow') return `/${sourceUserUsername}`
+  if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
+  if (
+    sourceContractCreatorUsername &&
+    sourceContractSlug &&
+    sourceType === 'user'
+  )
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
+  if (sourceType === 'tip' && sourceContractSlug)
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
+  if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
+  if (sourceContractCreatorUsername && sourceContractSlug)
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
+      sourceId ?? '',
+      sourceType
+    )}`
+}
+
+function getSourceIdForLinkComponent(
+  sourceId: string,
+  sourceType?: notification_source_types
+) {
+  switch (sourceType) {
+    case 'answer':
+      return `answer-${sourceId}`
+    case 'comment':
+      return sourceId
+    case 'contract':
+      return ''
+    case 'bet':
+      return ''
+    default:
+      return sourceId
+  }
+}
+
+function NotificationTextLabel(props: {
+  notification: Notification
+  className?: string
+  justSummary?: boolean
+}) {
+  const { className, notification, justSummary } = props
+  const {
+    sourceUpdateType,
+    sourceType,
+    sourceText,
+    sourceContractTitle,
+    reasonText,
+  } = notification
+  const defaultText = sourceText ?? reasonText ?? ''
+  if (sourceType === 'contract') {
+    if (justSummary) return <span>{sourceContractTitle}</span>
+    if (!sourceText) return <div />
+    // Resolved contracts
+    if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
+      {
+        if (sourceText === 'YES' || sourceText == 'NO') {
+          return <BinaryOutcomeLabel outcome={sourceText as any} />
+        }
+        if (sourceText.includes('%'))
+          return (
+            <ProbPercentLabel prob={parseFloat(sourceText.replace('%', ''))} />
+          )
+        if (sourceText === 'CANCEL') return <CancelLabel />
+        if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
+        // Numeric market
+        return <NumericValueLabel value={parseFloat(sourceText)} />
+      }
+    }
+    // Close date will be a number - it looks better without it
+    if (sourceUpdateType === 'closed') {
+      return <div />
+    }
+    // Updated contracts
+    // Description will be in default text
+    if (parseInt(sourceText) > 0) {
+      return (
+        <span>
+          Updated close time: {new Date(parseInt(sourceText)).toLocaleString()}
+        </span>
+      )
+    }
+  } else if (sourceType === 'user' && sourceText) {
+    return (
+      <span>
+        As a thank you, we sent you{' '}
+        <span className="text-primary">
+          {formatMoney(parseInt(sourceText))}
+        </span>
+        !
+      </span>
+    )
+  } else if (sourceType === 'liquidity' && sourceText) {
+    return (
+      <span className="text-blue-400">{formatMoney(parseInt(sourceText))}</span>
+    )
+  } else if ((sourceType === 'bonus' || sourceType === 'tip') && sourceText) {
+    return (
+      <span className="text-primary">
+        {'+' + formatMoney(parseInt(sourceText))}
+      </span>
+    )
+  } else if (sourceType === 'bet' && sourceText) {
+    return (
+      <>
+        <span className="text-primary">
+          {formatMoney(parseInt(sourceText))}
+        </span>{' '}
+        <span>of your limit bet was filled</span>
+      </>
+    )
+  }
+  return (
+    <div className={className ? className : 'line-clamp-4 whitespace-pre-line'}>
+      <Linkify text={defaultText} />
+    </div>
+  )
+}
+
+function getReasonForShowingNotification(
+  notification: Notification,
+  simple?: boolean,
+  replaceOn?: boolean
+) {
+  const { sourceType, sourceUpdateType, reason, sourceSlug } = notification
+  let reasonText: string
+  switch (sourceType) {
+    case 'comment':
+      if (reason === 'reply_to_users_answer')
+        reasonText = !simple ? 'replied to you on' : 'replied'
+      else if (reason === 'tagged_user')
+        reasonText = !simple ? 'tagged you on' : 'tagged you'
+      else if (reason === 'reply_to_users_comment')
+        reasonText = !simple ? 'replied to you on' : 'replied'
+      else reasonText = `commented on`
+      break
+    case 'contract':
+      if (reason === 'you_follow_user') reasonText = 'asked'
+      else if (sourceUpdateType === 'resolved') reasonText = `resolved`
+      else if (sourceUpdateType === 'closed')
+        reasonText = `Please resolve your question`
+      else reasonText = `updated`
+      break
+    case 'answer':
+      if (reason === 'on_users_contract') reasonText = `answered your question `
+      else reasonText = `answered`
+      break
+    case 'follow':
+      reasonText = 'followed you'
+      break
+    case 'liquidity':
+      reasonText = 'added liquidity to your question'
+      break
+    case 'group':
+      reasonText = 'added you to the group'
+      break
+    case 'user':
+      if (sourceSlug && reason === 'user_joined_to_bet_on_your_market')
+        reasonText = 'joined to bet on your market'
+      else if (sourceSlug) reasonText = 'joined because you shared'
+      else reasonText = 'joined because of you'
+      break
+    case 'bet':
+      reasonText = 'bet against you'
+      break
+    default:
+      reasonText = ''
+  }
+  return replaceOn ? reasonText.replace(' on', '') : reasonText
 }
 
 // TODO: where should we put referral bonus notifications?
@@ -529,6 +965,10 @@ function NotificationSettings() {
     newValue: notification_subscribe_types
   ) {
     if (!privateUser) return
+    track('In-App Notification Preferences Changed', {
+      newPreference: newValue,
+      oldPreference: privateUser.notificationPreferences,
+    })
     toast.promise(
       updatePrivateUser(privateUser.id, {
         notificationPreferences: newValue,
@@ -638,341 +1078,4 @@ function NotificationSettings() {
       </div>
     </div>
   )
-}
-
-function NotificationItem(props: {
-  notification: Notification
-  justSummary?: boolean
-}) {
-  const { notification, justSummary } = props
-  const {
-    sourceType,
-    sourceId,
-    sourceUserName,
-    sourceUserAvatarUrl,
-    sourceUpdateType,
-    reasonText,
-    reason,
-    sourceUserUsername,
-    createdTime,
-    sourceText,
-    sourceContractTitle,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
-    sourceSlug,
-    sourceTitle,
-  } = notification
-
-  const [defaultNotificationText, setDefaultNotificationText] =
-    useState<string>('')
-
-  useEffect(() => {
-    if (sourceText) {
-      setDefaultNotificationText(sourceText)
-    } else if (reasonText) {
-      // Handle arbitrary notifications with reason text here.
-      setDefaultNotificationText(reasonText)
-    }
-  }, [reasonText, sourceText])
-
-  const [highlighted, setHighlighted] = useState(false)
-  useEffect(() => {
-    if (!notification.isSeen) {
-      setHighlighted(true)
-      setTimeout(() => {
-        setHighlighted(false)
-      }, HIGHLIGHT_DURATION)
-    }
-  }, [notification.isSeen])
-
-  useEffect(() => {
-    setNotificationsAsSeen([notification])
-  }, [notification])
-
-  function getSourceUrl() {
-    if (sourceType === 'follow') return `/${sourceUserUsername}`
-    if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
-    if (
-      sourceContractCreatorUsername &&
-      sourceContractSlug &&
-      sourceType === 'user'
-    )
-      return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-    if (sourceContractCreatorUsername && sourceContractSlug)
-      return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
-        sourceId ?? ''
-      )}`
-  }
-
-  function getSourceIdForLinkComponent(sourceId: string) {
-    switch (sourceType) {
-      case 'answer':
-        return `answer-${sourceId}`
-      case 'comment':
-        return sourceId
-      case 'contract':
-        return ''
-      default:
-        return sourceId
-    }
-  }
-
-  if (justSummary) {
-    return (
-      <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
-        <div className={'line-clamp-1 flex-1 overflow-hidden sm:flex'}>
-          <div className={'flex pl-1 sm:pl-0'}>
-            {sourceType != 'bonus' && (
-              <UserLink
-                name={sourceUserName || ''}
-                username={sourceUserUsername || ''}
-                className={'mr-0 flex-shrink-0'}
-              />
-            )}
-            <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
-              <span className={'flex-shrink-0'}>
-                {sourceType &&
-                  reason &&
-                  getReasonForShowingNotification(notification, true).replace(
-                    ' on',
-                    ''
-                  )}
-              </span>
-              <div className={'ml-1 text-black'}>
-                <NotificationTextLabel
-                  contract={null}
-                  defaultText={defaultNotificationText}
-                  className={'line-clamp-1'}
-                  notification={notification}
-                  justSummary={true}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Row>
-    )
-  }
-
-  return (
-    <div
-      className={clsx(
-        'bg-white px-2 pt-6 text-sm sm:px-4',
-        highlighted && 'bg-indigo-200 hover:bg-indigo-100'
-      )}
-    >
-      <a href={getSourceUrl()}>
-        <Row className={'items-center text-gray-500 sm:justify-start'}>
-          {sourceType != 'bonus' ? (
-            <Avatar
-              avatarUrl={sourceUserAvatarUrl}
-              size={'sm'}
-              className={'mr-2'}
-              username={sourceUserName}
-            />
-          ) : (
-            <TrendingUpIcon className={'text-primary h-7 w-7'} />
-          )}
-          <div className={'flex-1 overflow-hidden sm:flex'}>
-            <div
-              className={
-                'flex max-w-xl shrink overflow-hidden text-ellipsis pl-1 sm:pl-0'
-              }
-            >
-              {sourceType != 'bonus' && sourceUpdateType != 'closed' && (
-                <UserLink
-                  name={sourceUserName || ''}
-                  username={sourceUserUsername || ''}
-                  className={'mr-0 flex-shrink-0'}
-                />
-              )}
-              <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
-                {sourceType && reason && (
-                  <div className={'inline truncate'}>
-                    {getReasonForShowingNotification(notification, false)}
-                    <a
-                      href={
-                        sourceContractCreatorUsername
-                          ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-                          : sourceType === 'group' && sourceSlug
-                          ? `${groupPath(sourceSlug)}`
-                          : ''
-                      }
-                      className={
-                        'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2'
-                      }
-                    >
-                      {sourceContractTitle || sourceTitle}
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
-            {sourceId && sourceContractSlug && sourceContractCreatorUsername ? (
-              <CopyLinkDateTimeComponent
-                prefix={sourceContractCreatorUsername}
-                slug={sourceContractSlug}
-                createdTime={createdTime}
-                elementId={getSourceIdForLinkComponent(sourceId)}
-                className={'-mx-1 inline-flex sm:inline-block'}
-              />
-            ) : (
-              <RelativeTimestamp time={createdTime} />
-            )}
-          </div>
-        </Row>
-        <div className={'mt-1 ml-1 md:text-base'}>
-          <NotificationTextLabel
-            contract={null}
-            defaultText={defaultNotificationText}
-            notification={notification}
-          />
-        </div>
-
-        <div className={'mt-6 border-b border-gray-300'} />
-      </a>
-    </div>
-  )
-}
-
-function NotificationTextLabel(props: {
-  defaultText: string
-  contract?: Contract | null
-  notification: Notification
-  className?: string
-  justSummary?: boolean
-}) {
-  const { contract, className, defaultText, notification, justSummary } = props
-  const { sourceUpdateType, sourceType, sourceText, sourceContractTitle } =
-    notification
-  if (sourceType === 'contract') {
-    if (justSummary)
-      return <span>{contract?.question || sourceContractTitle}</span>
-    if (!sourceText) return <div />
-    // Resolved contracts
-    if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
-      {
-        if (sourceText === 'YES' || sourceText == 'NO') {
-          return <BinaryOutcomeLabel outcome={sourceText as any} />
-        }
-        if (sourceText.includes('%'))
-          return (
-            <ProbPercentLabel prob={parseFloat(sourceText.replace('%', ''))} />
-          )
-        if (sourceText === 'CANCEL') return <CancelLabel />
-        if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
-      }
-    }
-    // Close date will be a number - it looks better without it
-    if (sourceUpdateType === 'closed') {
-      return <div />
-    }
-    // Updated contracts
-    // Description will be in default text
-    if (parseInt(sourceText) > 0) {
-      return (
-        <span>
-          Updated close time: {new Date(parseInt(sourceText)).toLocaleString()}
-        </span>
-      )
-    }
-  } else if (sourceType === 'user' && sourceText) {
-    return (
-      <span>
-        As a thank you, we sent you{' '}
-        <span className="text-primary">
-          {formatMoney(parseInt(sourceText))}
-        </span>
-        !
-      </span>
-    )
-  } else if (sourceType === 'liquidity' && sourceText) {
-    return (
-      <span className="text-blue-400">{formatMoney(parseInt(sourceText))}</span>
-    )
-  } else if (sourceType === 'bonus' && sourceText) {
-    return (
-      <span className="text-primary">
-        {'+' + formatMoney(parseInt(sourceText))}
-      </span>
-    )
-  }
-  // return default text
-  return (
-    <div className={className ? className : 'line-clamp-4 whitespace-pre-line'}>
-      <Linkify text={defaultText} />
-    </div>
-  )
-}
-
-function getReasonForShowingNotification(
-  notification: Notification,
-  simple?: boolean
-) {
-  const { sourceType, sourceUpdateType, sourceText, reason, sourceSlug } =
-    notification
-  let reasonText: string
-  switch (sourceType) {
-    case 'comment':
-      if (reason === 'reply_to_users_answer')
-        reasonText = !simple ? 'replied to your answer on' : 'replied'
-      else if (reason === 'tagged_user')
-        reasonText = !simple ? 'tagged you in a comment on' : 'tagged you'
-      else if (reason === 'reply_to_users_comment')
-        reasonText = !simple ? 'replied to your comment on' : 'replied'
-      else if (reason === 'on_users_contract')
-        reasonText = !simple ? `commented on your question` : 'commented'
-      else if (reason === 'on_contract_with_users_comment')
-        reasonText = `commented on`
-      else if (reason === 'on_contract_with_users_answer')
-        reasonText = `commented on`
-      else if (reason === 'on_contract_with_users_shares_in')
-        reasonText = `commented`
-      else reasonText = `commented on`
-      break
-    case 'contract':
-      if (reason === 'you_follow_user') reasonText = 'created a new question'
-      else if (sourceUpdateType === 'resolved') reasonText = `resolved`
-      else if (sourceUpdateType === 'closed')
-        reasonText = `Please resolve your question`
-      else reasonText = `updated`
-      break
-    case 'answer':
-      if (reason === 'on_users_contract') reasonText = `answered your question `
-      else if (reason === 'on_contract_with_users_comment')
-        reasonText = `answered`
-      else if (reason === 'on_contract_with_users_answer')
-        reasonText = `answered`
-      else if (reason === 'on_contract_with_users_shares_in')
-        reasonText = `answered`
-      else reasonText = `answered`
-      break
-    case 'follow':
-      reasonText = 'followed you'
-      break
-    case 'liquidity':
-      reasonText = 'added liquidity to your question'
-      break
-    case 'group':
-      reasonText = 'added you to the group'
-      break
-    case 'user':
-      if (sourceSlug && reason === 'user_joined_to_bet_on_your_market')
-        reasonText = 'joined to bet on your market'
-      else if (sourceSlug) reasonText = 'joined because you shared'
-      else reasonText = 'joined because of you'
-      break
-    case 'bonus':
-      if (reason === 'unique_bettors_on_your_contract' && sourceText)
-        reasonText = !simple
-          ? `You had ${
-              parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-            } unique bettors on`
-          : 'You earned Mana for unique bettors:'
-      else reasonText = 'You earned your daily manna'
-      break
-    default:
-      reasonText = ''
-  }
-  return reasonText
 }

@@ -34,3 +34,17 @@ export function median(xs: number[]) {
 export function average(xs: number[]) {
   return sum(xs) / xs.length
 }
+
+const EPSILON = 0.00000001
+
+export function floatingEqual(a: number, b: number, epsilon = EPSILON) {
+  return Math.abs(a - b) < epsilon
+}
+
+export function floatingGreaterEqual(a: number, b: number, epsilon = EPSILON) {
+  return a + epsilon >= b
+}
+
+export function floatingLesserEqual(a: number, b: number, epsilon = EPSILON) {
+  return a - epsilon <= b
+}

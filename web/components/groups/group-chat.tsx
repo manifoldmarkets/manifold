@@ -18,13 +18,18 @@ import { UserLink } from 'web/components/user-page'
 
 import { groupPath } from 'web/lib/firebase/groups'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
+import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
+import { Tipper } from 'web/components/tipper'
+import { sum } from 'lodash'
+import { formatMoney } from 'common/util/format'
 
 export function GroupChat(props: {
   messages: Comment[]
   user: User | null | undefined
   group: Group
+  tips: CommentTipMap
 }) {
-  const { messages, user, group } = props
+  const { messages, user, group, tips } = props
   const [messageText, setMessageText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollToBottomRef, setScrollToBottomRef] =
@@ -36,6 +41,7 @@ export function GroupChat(props: {
   const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
   const [groupedMessages, setGroupedMessages] = useState<Comment[]>([])
   const router = useRouter()
+  const isMember = user && group.memberIds.includes(user?.id)
 
   useMemo(() => {
     // Group messages with createdTime within 2 minutes of each other.
@@ -96,7 +102,7 @@ export function GroupChat(props: {
   }
 
   return (
-    <Col className={'flex-1'}>
+    <Col className={'mt-2 flex-1'}>
       <Col
         className={
           'max-h-[65vh] w-full space-y-2 overflow-x-hidden overflow-y-scroll'
@@ -116,11 +122,12 @@ export function GroupChat(props: {
                 ? setScrollToMessageRef
                 : undefined
             }
+            tips={tips[message.id] ?? {}}
           />
         ))}
         {messages.length === 0 && (
           <div className="p-2 text-gray-500">
-            No messages yet. Why not{' '}
+            No messages yet. Why not{isMember ? ` ` : ' join and '}
             <button
               className={'cursor-pointer font-bold text-gray-700'}
               onClick={() => focusInput()}
@@ -165,8 +172,9 @@ const GroupMessage = memo(function GroupMessage_(props: {
   onReplyClick?: (comment: Comment) => void
   setRef?: (ref: HTMLDivElement) => void
   highlight?: boolean
+  tips: CommentTips
 }) {
-  const { comment, onReplyClick, group, setRef, highlight, user } = props
+  const { comment, onReplyClick, group, setRef, highlight, user, tips } = props
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
   const isCreatorsComment = user && comment.userId === user.id
   return (
@@ -208,16 +216,24 @@ const GroupMessage = memo(function GroupMessage_(props: {
           shouldTruncate={false}
         />
       </Row>
-      {!isCreatorsComment && onReplyClick && (
-        <button
-          className={
-            'self-start py-1 text-xs font-bold text-gray-500 hover:underline'
-          }
-          onClick={() => onReplyClick(comment)}
-        >
-          Reply
-        </button>
-      )}
+      <Row>
+        {!isCreatorsComment && onReplyClick && (
+          <button
+            className={
+              'self-start py-1 text-xs font-bold text-gray-500 hover:underline'
+            }
+            onClick={() => onReplyClick(comment)}
+          >
+            Reply
+          </button>
+        )}
+        {isCreatorsComment && sum(Object.values(tips)) > 0 && (
+          <span className={'text-primary'}>
+            {formatMoney(sum(Object.values(tips)))}
+          </span>
+        )}
+        {!isCreatorsComment && <Tipper comment={comment} tips={tips} />}
+      </Row>
     </Col>
   )
 })

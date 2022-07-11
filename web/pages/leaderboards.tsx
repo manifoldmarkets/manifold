@@ -126,6 +126,7 @@ export default function Leaderboards(props: {
     <Page>
       <Title text={'Leaderboards'} className={'hidden md:block'} />
       <Tabs
+        currentPageForAnalytics={'leaderboards'}
         defaultIndex={0}
         onClick={(title, index) => {
           const period = ['allTime', 'monthly', 'weekly', 'daily'][index]

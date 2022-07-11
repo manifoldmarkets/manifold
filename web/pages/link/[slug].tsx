@@ -2,7 +2,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
-import { claimManalink } from 'web/lib/firebase/fn-call'
+import { claimManalink } from 'web/lib/firebase/api'
 import { useManalink } from 'web/lib/firebase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'
 import { useUser } from 'web/hooks/use-user'
@@ -42,10 +42,7 @@ export default function ClaimPage() {
               if (user == null) {
                 await firebaseLogin()
               }
-              const result = await claimManalink(manalink.slug)
-              if (result.data.status == 'error') {
-                throw new Error(result.data.message)
-              }
+              await claimManalink({ slug: manalink.slug })
               user && router.push(`/${user.username}?claimed-mana=yes`)
             } catch (e) {
               console.log(e)
