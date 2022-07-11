@@ -13,9 +13,10 @@ import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from './outcome-label'
 export function LimitBets(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   bets: LimitBet[]
+  hideLabel?: boolean
   className?: string
 }) {
-  const { contract, bets, className } = props
+  const { contract, bets, hideLabel, className } = props
   const recentBets = sortBy(
     bets,
     (bet) => -1 * bet.limitProb,
@@ -24,18 +25,19 @@ export function LimitBets(props: {
 
   return (
     <Col
-      className={clsx(className, 'gap-2 overflow-hidden rounded bg-white py-3')}
+      className={clsx(
+        className,
+        'gap-2 overflow-hidden rounded bg-white px-4 py-3'
+      )}
     >
-      <div className="px-6 py-3 text-2xl">Your limit bets</div>
-      <div className="px-4">
-        <table className="table-compact table w-full rounded text-gray-500">
-          <tbody>
-            {recentBets.map((bet) => (
-              <LimitBet key={bet.id} bet={bet} contract={contract} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {!hideLabel && <div className="px-2 py-3 text-2xl">Your limit bets</div>}
+      <table className="table-compact table w-full rounded text-gray-500">
+        <tbody>
+          {recentBets.map((bet) => (
+            <LimitBet key={bet.id} bet={bet} contract={contract} />
+          ))}
+        </tbody>
+      </table>
     </Col>
   )
 }

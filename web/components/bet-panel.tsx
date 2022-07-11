@@ -124,10 +124,9 @@ export function SimpleBetPanel(props: {
     <Col className={className}>
       <Col className={clsx('rounded-b-md rounded-t-md bg-white px-8 py-6')}>
         <Row className="justify-between">
-          <Title
-            className={clsx('!mt-0')}
-            text={isLimitOrder ? 'Limit bet' : 'Place a trade'}
-          />
+          <div className="mb-6 text-2xl">
+            {isLimitOrder ? <>Limit bet</> : <>Place your bet</>}
+          </div>
 
           <button
             className="btn btn-ghost btn-sm text-sm normal-case"

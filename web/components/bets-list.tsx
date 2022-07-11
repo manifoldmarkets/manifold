@@ -45,6 +45,7 @@ import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { Pagination } from './pagination'
+import { LimitBets } from './limit-bets'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -256,6 +257,9 @@ function ContractBets(props: {
   const { bets, contract, metric, isYourBets } = props
   const { resolution, outcomeType } = contract
 
+  const limitBets = bets.filter(
+    (bet) => bet.limitProb !== undefined
+  ) as LimitBet[]
   const resolutionValue = (contract as NumericContract).resolutionValue
 
   const [collapsed, setCollapsed] = useState(true)
@@ -350,7 +354,21 @@ function ContractBets(props: {
           isYourBets={isYourBets}
         />
 
-        <Spacer h={8} />
+        <Spacer h={4} />
+
+        {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
+          <>
+            <div className="bg-gray-50 px-4 py-2">Your limit bets</div>
+            <LimitBets
+              className="max-w-md px-2 py-0 sm:px-4"
+              contract={contract}
+              bets={limitBets}
+              hideLabel
+            />
+          </>
+        )}
+
+        <Spacer h={4} />
 
         <ContractBetsTable
           contract={contract}
