@@ -22,6 +22,7 @@ import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { Tipper } from 'web/components/tipper'
 import { sum } from 'lodash'
 import { formatMoney } from 'common/util/format'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function GroupChat(props: {
   messages: Comment[]
@@ -101,11 +102,20 @@ export function GroupChat(props: {
     inputRef?.focus()
   }
 
+  const { width, height } = useWindowSize()
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
+  // Subtract bottom bar when it's showing (less than lg screen)
+  const bottomBarHeight = (width ?? 0) < 1024 ? 58 : 0
+  const remainingHeight =
+    (height ?? window.innerHeight) -
+    (containerRef?.offsetTop ?? 0) -
+    bottomBarHeight
+
   return (
-    <Col className={'mt-2 flex-1'}>
+    <Col ref={setContainerRef} style={{ height: remainingHeight }}>
       <Col
         className={
-          'max-h-[65vh] min-h-[65vh] w-full space-y-2 overflow-x-hidden overflow-y-scroll'
+          'w-full flex-1 space-y-2 overflow-x-hidden overflow-y-scroll pt-2'
         }
         ref={setScrollToBottomRef}
       >
@@ -138,7 +148,7 @@ export function GroupChat(props: {
         )}
       </Col>
       {user && group.memberIds.includes(user.id) && (
-        <div className=" flex w-full justify-start gap-2 p-2">
+        <div className="flex w-full justify-start gap-2 p-2">
           <div className="mt-1">
             <Avatar
               username={user?.username}

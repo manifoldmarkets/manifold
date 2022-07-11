@@ -18,7 +18,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -29,6 +29,7 @@ import { Spacer } from '../layout/spacer'
 import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
 import { PrivateUser } from 'common/user'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 function getNavigation() {
   return [
@@ -199,7 +200,7 @@ export default function Sidebar(props: { className?: string }) {
 
   return (
     <nav aria-label="Sidebar" className={className}>
-      <ManifoldLogo className="pb-6" twoLine />
+      <ManifoldLogo className="py-6" twoLine />
 
       <CreateQuestionButton user={user} />
       <Spacer h={4} />
@@ -282,6 +283,11 @@ function GroupsList(props: {
     })
   }, [currentPage, preferredNotifications])
 
+  const { height } = useWindowSize()
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
+  const remainingHeight =
+    (height ?? window.innerHeight) - (containerRef?.offsetTop ?? 0)
+
   return (
     <>
       <SidebarItem
@@ -289,7 +295,11 @@ function GroupsList(props: {
         currentPage={currentPage}
       />
 
-      <div className="mt-1 space-y-0.5">
+      <div
+        className="flex-1 space-y-0.5 overflow-y-scroll"
+        style={{ height: remainingHeight }}
+        ref={setContainerRef}
+      >
         {memberItems.map((item) => (
           <a
             key={item.href}
