@@ -5,12 +5,13 @@ import Textarea from 'react-expanding-textarea'
 import { CATEGORY_LIST } from '../../../common/categories'
 
 import { Contract } from 'common/contract'
-import { parseTags, richTextToString } from 'common/util/parse'
+import { parseTags, exhibitExts } from 'common/util/parse'
 import { useAdmin } from 'web/hooks/use-admin'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { TagsList } from '../tags-list'
 import { Content } from '../editor'
+import { Editor } from '@tiptap/react'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -21,24 +22,33 @@ export function ContractDescription(props: {
   const descriptionTimestamp = () => `${dayjs().format('MMM D, h:mma')}: `
   const isAdmin = useAdmin()
 
+  const desc = contract.description ?? ''
+
   // Append the new description (after a newline)
   async function saveDescription(newText: string) {
-    // TODO: implement appending rich text description
-    const textDescription = richTextToString(contract.description)
-    const newDescription = `${textDescription}\n\n${newText}`.trim()
+    console.log(desc, exhibitExts)
+
+    const editor = new Editor({ content: desc, extensions: exhibitExts })
+    editor
+      .chain()
+      .focus('end')
+      .insertContent('<br /><br />')
+      .insertContent(newText.trim())
+      .run()
+
     const tags = parseTags(
-      `${newDescription} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
+      `${editor.getText()} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
     )
     const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
     await updateContract(contract.id, {
-      description: newDescription,
+      description: editor.getJSON(),
       tags,
       lowercaseTags,
     })
   }
 
-  if (!isCreator && !contract.description) return null
+  if (!isCreator) return null
 
   const { tags } = contract
   const categories = tags.filter((tag) =>
@@ -52,7 +62,7 @@ export function ContractDescription(props: {
         className
       )}
     >
-      <Content content={contract.description} />
+      <Content content={desc} />
 
       {categories.length > 0 && (
         <div className="mt-4">

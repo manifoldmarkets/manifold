@@ -195,7 +195,7 @@ export function ContractPageContent(
       {ogCardProps && (
         <SEO
           title={question}
-          description={richTextToString(ogCardProps.description)}
+          description={ogCardProps.description}
           url={`/${props.username}/${props.slug}`}
           ogCardProps={ogCardProps}
         />
@@ -392,15 +392,18 @@ const getOpenGraphProps = (contract: Contract) => {
     creatorUsername,
     outcomeType,
     creatorAvatarUrl,
+    description: desc,
   } = contract
   const probPercent =
     outcomeType === 'BINARY' ? getBinaryProbPercent(contract) : undefined
 
+  const stringDesc = typeof desc === 'string' ? desc : richTextToString(desc)
+
   const description = resolution
-    ? `Resolved ${resolution}. ${contract.description}`
+    ? `Resolved ${resolution}. ${stringDesc}`
     : probPercent
-    ? `${probPercent} chance. ${contract.description}`
-    : contract.description
+    ? `${probPercent} chance. ${stringDesc}`
+    : stringDesc
 
   return {
     question,

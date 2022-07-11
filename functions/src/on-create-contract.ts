@@ -3,6 +3,7 @@ import { getUser } from './utils'
 import { createNotification } from './create-notification'
 import { Contract } from '../../common/contract'
 import { richTextToString } from '../../common/util/parse'
+import { JSONContent } from '@tiptap/core'
 
 export const onCreateContract = functions.firestore
   .document('contracts/{contractId}')
@@ -19,7 +20,7 @@ export const onCreateContract = functions.firestore
       'created',
       contractCreator,
       eventId,
-      richTextToString(contract.description),
+      richTextToString(contract.description as JSONContent),
       contract
     )
   })

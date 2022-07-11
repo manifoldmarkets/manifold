@@ -8,6 +8,7 @@ import { useEffect } from 'react'
 import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
+import { exhibitExts } from 'common/util/parse'
 
 const proseClass =
   'prose prose-sm prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none'
@@ -80,10 +81,12 @@ function RichContent(props: { content: JSONContent }) {
   const { content } = props
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },
-    extensions: [StarterKit, Image],
+    extensions: exhibitExts,
     content,
     editable: false,
   })
+  useEffect(() => void editor?.commands?.setContent(content), [editor, content])
+
   return <EditorContent editor={editor} />
 }
 
