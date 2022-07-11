@@ -99,12 +99,12 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
   }
 }
 
-interface EndpointOptions extends HttpsOptions {
-  methods?: string[]
+export interface EndpointOptions extends HttpsOptions {
+  method?: string
 }
 
 const DEFAULT_OPTS = {
-  methods: ['POST'],
+  method: 'POST',
   minInstances: 1,
   concurrency: 100,
   memory: '2GiB',
@@ -117,9 +117,8 @@ export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
   return onRequest(opts, async (req, res) => {
     log('Request processing started.')
     try {
-      if (!opts.methods.includes(req.method)) {
-        const allowed = opts.methods.join(', ')
-        throw new APIError(405, `This endpoint supports only ${allowed}.`)
+      if (opts.method !== req.method) {
+        throw new APIError(405, `This endpoint supports only ${opts.method}.`)
       }
       const authedUser = await lookupUser(await parseCredentials(req))
       log('User credentials processed.')
