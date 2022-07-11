@@ -342,8 +342,6 @@ function IncomeNotificationItem(props: {
             <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
               <div className={'mr-1 text-black'}>
                 <NotificationTextLabel
-                  contract={null}
-                  defaultText={notification.sourceText ?? ''}
                   className={'line-clamp-1'}
                   notification={notification}
                   justSummary={true}
@@ -375,11 +373,7 @@ function IncomeNotificationItem(props: {
           <div className={'line-clamp-2 flex max-w-xl shrink '}>
             <div className={'inline'}>
               <span className={'mr-1'}>
-                <NotificationTextLabel
-                  contract={null}
-                  defaultText={notification.sourceText ?? ''}
-                  notification={notification}
-                />
+                <NotificationTextLabel notification={notification} />
               </span>
             </div>
             <span>
@@ -532,18 +526,6 @@ function NotificationItem(props: {
     sourceText,
   } = notification
 
-  const [defaultNotificationText, setDefaultNotificationText] =
-    useState<string>('')
-
-  useEffect(() => {
-    if (sourceText) {
-      setDefaultNotificationText(sourceText)
-    } else if (reasonText) {
-      // Handle arbitrary notifications with reason text here.
-      setDefaultNotificationText(reasonText)
-    }
-  }, [reasonText, sourceText])
-
   const [highlighted] = useState(!notification.isSeen)
 
   useEffect(() => {
@@ -569,8 +551,6 @@ function NotificationItem(props: {
               </span>
               <div className={'ml-1 text-black'}>
                 <NotificationTextLabel
-                  contract={null}
-                  defaultText={defaultNotificationText}
                   className={'line-clamp-1'}
                   notification={notification}
                   justSummary={true}
@@ -648,11 +628,7 @@ function NotificationItem(props: {
           </div>
         </Row>
         <div className={'mt-1 ml-1 md:text-base'}>
-          <NotificationTextLabel
-            contract={null}
-            defaultText={defaultNotificationText}
-            notification={notification}
-          />
+          <NotificationTextLabel notification={notification} />
         </div>
 
         <div className={'mt-6 border-b border-gray-300'} />
@@ -770,18 +746,21 @@ function getSourceIdForLinkComponent(
 }
 
 function NotificationTextLabel(props: {
-  defaultText: string
-  contract?: Contract | null
   notification: Notification
   className?: string
   justSummary?: boolean
 }) {
-  const { contract, className, defaultText, notification, justSummary } = props
-  const { sourceUpdateType, sourceType, sourceText, sourceContractTitle } =
-    notification
+  const { className, notification, justSummary } = props
+  const {
+    sourceUpdateType,
+    sourceType,
+    sourceText,
+    sourceContractTitle,
+    reasonText,
+  } = notification
+  const defaultText = sourceText ?? reasonText ?? ''
   if (sourceType === 'contract') {
-    if (justSummary)
-      return <span>{contract?.question || sourceContractTitle}</span>
+    if (justSummary) return <span>{sourceContractTitle}</span>
     if (!sourceText) return <div />
     // Resolved contracts
     if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
@@ -795,9 +774,8 @@ function NotificationTextLabel(props: {
           )
         if (sourceText === 'CANCEL') return <CancelLabel />
         if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
-        if (contract?.outcomeType === 'PSEUDO_NUMERIC') {
-          return <NumericValueLabel value={parseFloat(sourceText)} />
-        }
+        // Numeric market
+        return <NumericValueLabel value={parseFloat(sourceText)} />
       }
     }
     // Close date will be a number - it looks better without it
