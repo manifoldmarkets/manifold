@@ -36,7 +36,6 @@ import { FollowersButton, FollowingButton } from './following-button'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
 import { PortfolioMetrics } from 'common/user'
-import { ReferralsButton } from 'web/components/referrals-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { filterDefined } from 'common/util/array'
@@ -205,7 +204,7 @@ export function UserPage(props: {
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
-            <ReferralsButton user={user} currentUser={currentUser} />
+            {/* <ReferralsButton user={user} currentUser={currentUser} /> */}
             <GroupsButton user={user} />
           </Row>
 
