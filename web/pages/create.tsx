@@ -101,7 +101,7 @@ export function NewContract(props: {
     (params?.outcomeType as outcomeType) ?? 'BINARY'
   )
   const [initialProb] = useState(50)
-
+  const [bottomRef, setBottomRef] = useState<HTMLDivElement | null>(null)
   const [minString, setMinString] = useState(params?.min ?? '')
   const [maxString, setMaxString] = useState(params?.max ?? '')
   const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
@@ -185,7 +185,6 @@ export function NewContract(props: {
     if (!creator || !isValid) return
 
     setIsSubmitting(true)
-    // TODO: add contract id to the group contractIds
     try {
       const result = await createMarket(
         removeUndefinedProps({
@@ -410,8 +409,12 @@ export function NewContract(props: {
           value={description}
           disabled={isSubmitting}
           onClick={(e) => e.stopPropagation()}
-          onChange={(e) => setDescription(e.target.value || '')}
+          onChange={(e) => {
+            setDescription(e.target.value || '')
+            bottomRef?.scrollIntoView()
+          }}
         />
+        <div ref={setBottomRef} />
       </div>
 
       <Spacer h={6} />
