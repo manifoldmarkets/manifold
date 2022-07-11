@@ -9,16 +9,25 @@ import { UserLink } from './user-page'
 import { User } from 'common/user'
 import { Col } from './layout/col'
 import { Linkify } from './linkify'
+import { groupBy } from 'lodash'
 
 export function UserCommentsList(props: {
   user: User
-  commentsByUniqueContracts: Map<Contract, Comment[]>
+  comments: Comment[]
+  contractsById: { [id: string]: Contract }
 }) {
-  const { commentsByUniqueContracts } = props
+  const { comments, contractsById } = props
+  const commentsByContract = groupBy(comments, 'contractId')
+
+  const contractCommentPairs = Object.entries(commentsByContract)
+    .map(
+      ([contractId, comments]) => [contractsById[contractId], comments] as const
+    )
+    .filter(([contract]) => contract)
 
   return (
     <Col className={'bg-white'}>
-      {Array.from(commentsByUniqueContracts).map(([contract, comments]) => (
+      {contractCommentPairs.map(([contract, comments]) => (
         <div key={contract.id} className={'border-width-1 border-b p-5'}>
           <div className={'mb-2 text-sm text-indigo-700'}>
             <SiteLink href={contractPath(contract)}>

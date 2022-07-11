@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { uniq } from 'lodash'
+import { Dictionary, keyBy, uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
@@ -39,6 +39,7 @@ import { PortfolioMetrics } from 'common/user'
 import { ReferralsButton } from 'web/components/referrals-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
+import { filterDefined } from 'common/util/array'
 
 export function UserLink(props: {
   name: string
@@ -72,7 +73,7 @@ export function UserPage(props: {
   const router = useRouter()
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
-  const [usersComments, setUsersComments] = useState<Comment[]>([] as Comment[])
+  const [usersComments, setUsersComments] = useState<Comment[] | undefined>()
   const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
     'loading'
   )
@@ -85,9 +86,9 @@ export function UserPage(props: {
   const [portfolioHistory, setUsersPortfolioHistory] = useState<
     PortfolioMetrics[]
   >([])
-  const [commentsByContract, setCommentsByContract] = useState<
-    Map<Contract, Comment[]> | 'loading'
-  >('loading')
+  const [contractsById, setContractsById] = useState<
+    Dictionary<Contract> | undefined
+  >()
   const [showConfetti, setShowConfetti] = useState(false)
   const { width, height } = useWindowSize()
 
@@ -106,25 +107,21 @@ export function UserPage(props: {
 
   // TODO: display comments on groups
   useEffect(() => {
-    const uniqueContractIds = uniq(
-      usersComments.map((comment) => comment.contractId)
-    )
-    Promise.all(
-      uniqueContractIds.map(
-        (contractId) => contractId && getContractFromId(contractId)
-      )
-    ).then((contracts) => {
-      const commentsByContract = new Map<Contract, Comment[]>()
-      contracts.forEach((contract) => {
-        if (!contract) return
-        commentsByContract.set(
-          contract,
-          usersComments.filter((comment) => comment.contractId === contract.id)
+    if (usersComments && userBets) {
+      const uniqueContractIds = uniq([
+        ...usersComments.map((comment) => comment.contractId),
+        ...(userBets?.map((bet) => bet.contractId) ?? []),
+      ])
+      Promise.all(
+        uniqueContractIds.map((contractId) =>
+          contractId ? getContractFromId(contractId) : undefined
         )
+      ).then((contracts) => {
+        const contractsById = keyBy(filterDefined(contracts), 'id')
+        setContractsById(contractsById)
       })
-      setCommentsByContract(commentsByContract)
-    })
-  }, [usersComments])
+    }
+  }, [userBets, usersComments])
 
   const yourFollows = useFollows(currentUser?.id)
   const isFollowing = yourFollows?.includes(user.id)
@@ -265,7 +262,7 @@ export function UserPage(props: {
 
         <Spacer h={10} />
 
-        {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
+        {usersContracts !== 'loading' && contractsById && usersComments ? (
           <Tabs
             currentPageForAnalytics={'profile'}
             labelClassName={'pb-2 pt-1 '}
@@ -296,7 +293,8 @@ export function UserPage(props: {
                 content: (
                   <UserCommentsList
                     user={user}
-                    commentsByUniqueContracts={commentsByContract}
+                    contractsById={contractsById}
+                    comments={usersComments}
                   />
                 ),
                 tabIcon: (
@@ -314,6 +312,7 @@ export function UserPage(props: {
                       user={user}
                       bets={userBets}
                       hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
+                      contractsById={contractsById}
                     />
                   </div>
                 ),
