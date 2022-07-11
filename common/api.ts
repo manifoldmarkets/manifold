@@ -1,4 +1,4 @@
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG } from './envs/constants'
 
 export class APIError extends Error {
   code: number
