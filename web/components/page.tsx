@@ -27,7 +27,7 @@ export function Page(props: {
         <Sidebar className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:block" />
         <main
           className={clsx(
-            'pt-6 lg:col-span-8',
+            'lg:col-span-8 lg:pt-6',
             rightSidebar ? 'xl:col-span-7' : 'xl:col-span-8'
           )}
         >
