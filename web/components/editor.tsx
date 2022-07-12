@@ -16,7 +16,7 @@ import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { exhibitExts } from 'common/util/parse'
-import { FileButton } from './file-button'
+import { FileUploadButton } from './file-upload-button'
 
 const proseClass =
   'prose prose-sm prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none'
@@ -93,9 +93,12 @@ export function TextEditor(props: {
             className="w-full text-sm text-slate-300"
           >
             Type <em>*anything*</em> or even paste or{' '}
-            <FileButton className="link text-blue-300" onFiles={upload.mutate}>
+            <FileUploadButton
+              className="link text-blue-300"
+              onFiles={upload.mutate}
+            >
               upload an image
-            </FileButton>
+            </FileUploadButton>
           </FloatingMenu>
         )}
         <EditorContent editor={editor} />

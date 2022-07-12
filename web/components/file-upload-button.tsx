@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 
 /** button that opens file upload window */
-export function FileButton(props: {
+export function FileUploadButton(props: {
   onFiles: (files: File[]) => void
   className?: string
   children?: React.ReactNode
