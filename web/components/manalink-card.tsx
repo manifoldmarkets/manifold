@@ -96,12 +96,12 @@ export function ManalinkCardPreview(props: {
       </Col>
 
       <img
-        className="my-4 block h-1/2 w-1/2 self-center transition-all group-hover:rotate-12"
+        className="my-2 block h-1/3 w-1/3 self-center transition-all group-hover:rotate-12"
         src="/logo-white.svg"
       />
-      <Row className="rounded-b-lg bg-white p-4">
-        <Col className="text-sm">
-          <div className="mb-1 text-lg text-indigo-500">
+      <Row className="rounded-b-lg bg-white p-2">
+        <Col className="text-xs">
+          <div className="mb-1 text-sm text-indigo-500">
             {formatMoney(amount)}
           </div>
           <div>{message || defaultMessage}</div>
