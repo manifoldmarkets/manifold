@@ -54,6 +54,10 @@ export function BetPanel(props: {
   const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
 
   const [isLimitOrder, setIsLimitOrder] = useState(false)
+  const toggleLimitOrder = () => {
+    setIsLimitOrder(!isLimitOrder)
+    track('toggle limit order')
+  }
 
   return (
     <Col className={className}>
@@ -75,7 +79,7 @@ export function BetPanel(props: {
           </div>
           <button
             className="btn btn-ghost btn-sm text-sm normal-case"
-            onClick={() => setIsLimitOrder(!isLimitOrder)}
+            onClick={toggleLimitOrder}
           >
             <SwitchHorizontalIcon className="inline h-6 w-6" />
           </button>
@@ -242,6 +246,8 @@ function BuyPanel(props: {
       contractId: contract.id,
       amount: betAmount,
       outcome: betChoice,
+      isLimitOrder,
+      limitProb: limitProbScaled,
     })
   }
 
