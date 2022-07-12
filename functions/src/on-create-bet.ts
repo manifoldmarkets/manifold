@@ -76,9 +76,9 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
 
   const allUniqueBettors = uniq(contractBets.map((bet) => bet.userId)).length
 
-  // Filter for users only present in the above list
   const newUniqueBettors = allUniqueBettors - oldUniqueBettors
-  // update contract unique bettor number with new number
+
+  // Update contract unique bettors
   if (newUniqueBettors > 0 || !contract.uniqueBettors)
     log(`Got ${newUniqueBettors} new unique bettors`)
   await firestore.collection(`contracts`).doc(contractId).update({

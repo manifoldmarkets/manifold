@@ -10,7 +10,7 @@ export type Sort =
   | 'newest'
   | 'oldest'
   | 'most-traded'
-  | 'most-bettors'
+  | 'most-popular'
   | '24-hour-vol'
   | 'close-date'
   | 'resolve-date'
@@ -36,7 +36,7 @@ export function useInitialQueryAndSort(options?: {
   shouldLoadFromStorage?: boolean
 }) {
   const { defaultSort, shouldLoadFromStorage } = defaults(options, {
-    defaultSort: 'most-bettors',
+    defaultSort: 'most-popular',
     shouldLoadFromStorage: true,
   })
   const router = useRouter()

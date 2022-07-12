@@ -32,7 +32,7 @@ const Home = () => {
           <ContractSearch
             querySortOptions={{
               shouldLoadFromStorage: true,
-              defaultSort: getSavedSort() ?? 'most-bettors',
+              defaultSort: getSavedSort() ?? 'most-popular',
             }}
             onContractClick={(c) => {
               // Show contract without navigating to contract page.
