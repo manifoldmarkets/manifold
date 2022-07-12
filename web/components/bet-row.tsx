@@ -24,6 +24,9 @@ export default function BetRow(props: {
   const { yesShares, noShares, hasYesShares, hasNoShares } =
     useSaveBinaryShares(contract, userBets)
 
+  const { outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+
   return (
     <>
       <Col className={clsx('items-center', className)}>
@@ -39,9 +42,9 @@ export default function BetRow(props: {
 
         <div className={'mt-1 w-24 text-center text-sm text-gray-500'}>
           {hasYesShares
-            ? `(${Math.floor(yesShares)} YES)`
+            ? `(${Math.floor(yesShares)} ${isPseudoNumeric ? 'HIGHER' : 'YES'})`
             : hasNoShares
-            ? `(${Math.floor(noShares)} NO)`
+            ? `(${Math.floor(noShares)} ${isPseudoNumeric ? 'LOWER' : 'YES'})`
             : ''}
         </div>
       </Col>
