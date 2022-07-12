@@ -17,7 +17,7 @@ import { OrderedList } from '@tiptap/extension-ordered-list'
 import { Paragraph } from '@tiptap/extension-paragraph'
 import { Strike } from '@tiptap/extension-strike'
 import { Text } from '@tiptap/extension-text'
-// import * as StarterKit from '@tiptap/starter-kit'
+// other tiptap extensions
 import { Image } from '@tiptap/extension-image'
 
 export function parseTags(text: string) {
@@ -48,8 +48,7 @@ export function parseWordsAsTags(text: string) {
   return parseTags(taggedText)
 }
 
-// can't just do [StarterKit, Image...] because it doesn't work with some imports
-// see
+// can't just do [StarterKit, Image...] because it doesn't work with cjs imports
 export const exhibitExts = [
   Blockquote,
   Bold,

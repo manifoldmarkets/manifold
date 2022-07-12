@@ -26,8 +26,6 @@ export function ContractDescription(props: {
 
   // Append the new description (after a newline)
   async function saveDescription(newText: string) {
-    console.log(desc, exhibitExts)
-
     const editor = new Editor({ content: desc, extensions: exhibitExts })
     editor
       .chain()

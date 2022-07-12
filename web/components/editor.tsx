@@ -34,7 +34,6 @@ export function useTextEditor(props: {
     'box-content min-h-[6em] textarea textarea-bordered'
   )
 
-
   const editor = useEditor({
     editorProps: { attributes: { class: editorClass } },
     extensions: [
@@ -52,12 +51,12 @@ export function useTextEditor(props: {
     content: defaultValue,
   })
 
-  const upload = useUploadMutation(editor);
+  const upload = useUploadMutation(editor)
 
   editor?.setOptions({
     editorProps: {
       handlePaste(view, event) {
-          const imageFiles = Array.from(event.clipboardData?.files ?? []).filter(
+        const imageFiles = Array.from(event.clipboardData?.files ?? []).filter(
           (file) => file.type.startsWith('image')
         )
 
@@ -67,8 +66,8 @@ export function useTextEditor(props: {
 
         event.preventDefault()
         upload.mutate(imageFiles)
-      }
-    }
+      },
+    },
   })
 
   useEffect(() => {
@@ -87,14 +86,16 @@ export function TextEditor(props: {
   return (
     <>
       {/* hide placeholder when focused */}
-      <div className="[&:focus-within_p.is-empty]:before:content-none w-full">
+      <div className="w-full [&:focus-within_p.is-empty]:before:content-none">
         {editor && (
           <FloatingMenu
             editor={editor}
             className="w-full text-sm text-slate-300"
           >
             Type <em>*anything*</em> or even paste or{' '}
-            <FileButton className="link text-blue-300" onFiles={upload.mutate}>upload an image</FileButton>
+            <FileButton className="link text-blue-300" onFiles={upload.mutate}>
+              upload an image
+            </FileButton>
           </FloatingMenu>
         )}
         <EditorContent editor={editor} />
@@ -107,8 +108,10 @@ export function TextEditor(props: {
   )
 }
 
-const useUploadMutation = (editor: Editor | null) => useMutation((files: File[]) =>
-    Promise.all(files.map((file) => uploadImage('default', file))),
+const useUploadMutation = (editor: Editor | null) =>
+  useMutation(
+    (files: File[]) =>
+      Promise.all(files.map((file) => uploadImage('default', file))),
     {
       onSuccess(urls) {
         if (!editor) return
@@ -118,7 +121,7 @@ const useUploadMutation = (editor: Editor | null) => useMutation((files: File[])
           trans = trans.insert(editor.view.state.selection.to, node)
         })
         editor.view.dispatch(trans)
-      }
+      },
     }
   )
 
