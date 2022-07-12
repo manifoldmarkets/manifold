@@ -184,8 +184,8 @@ function LinkSummaryRow(props: {
 }) {
   const { link, highlight, expanded, onToggle } = props
   const className = clsx(
-    'whitespace-nowrap text-sm hover:cursor-pointer',
-    highlight ? 'bg-primary' : 'text-gray-500 hover:bg-sky-50 bg-white'
+    'whitespace-nowrap text-sm hover:cursor-pointer text-gray-500 hover:bg-sky-50 bg-white',
+    highlight ? 'bg-indigo-100 rounded-lg animate-pulse' : ''
   )
   return (
     <tr id={link.slug} key={link.slug} className={className}>
