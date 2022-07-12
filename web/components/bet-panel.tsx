@@ -109,9 +109,10 @@ export function SimpleBetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
   selected?: 'YES' | 'NO'
+  hasShares?: boolean
   onBetSuccess?: () => void
 }) {
-  const { contract, className, selected, onBetSuccess } = props
+  const { contract, className, selected, hasShares, onBetSuccess } = props
 
   const user = useUser()
   const [isLimitOrder, setIsLimitOrder] = useState(false)
@@ -121,7 +122,17 @@ export function SimpleBetPanel(props: {
 
   return (
     <Col className={className}>
-      <Col className={clsx('rounded-b-md rounded-t-md bg-white px-8 py-6')}>
+      <SellRow
+        contract={contract}
+        user={user}
+        className={'rounded-t-md bg-gray-100 px-4 py-5'}
+      />
+      <Col
+        className={clsx(
+          !hasShares && 'rounded-t-md',
+          'rounded-b-md bg-white px-8 py-6'
+        )}
+      >
         <Row className="justify-between">
           <div className="mb-6 text-2xl">
             {isLimitOrder ? <>Limit order</> : <>Place your bet</>}
