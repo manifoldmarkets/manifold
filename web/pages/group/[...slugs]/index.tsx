@@ -1,4 +1,4 @@
-import { take, sortBy, debounce, slice } from 'lodash'
+import { take, sortBy, debounce } from 'lodash'
 
 import { Group } from 'common/group'
 import { Page } from 'web/components/page'

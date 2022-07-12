@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore'
 import { sortBy, uniq } from 'lodash'
 import { Group } from 'common/group'
-import { contracts, getContractFromId, updateContract } from './contracts'
+import { getContractFromId, updateContract } from './contracts'
 import {
   coll,
   getValue,
