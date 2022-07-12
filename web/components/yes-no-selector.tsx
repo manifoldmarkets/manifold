@@ -43,7 +43,7 @@ export function YesNoSelector(props: {
           )}
           onClick={() => onSelect('YES')}
         >
-          {isPseudoNumeric ? 'HIGHER' : 'Bet YES'}
+          {isPseudoNumeric ? 'HIGHER' : 'YES'}
         </button>
       )}
       {replaceNoButton ? (
@@ -60,7 +60,7 @@ export function YesNoSelector(props: {
           )}
           onClick={() => onSelect('NO')}
         >
-          {isPseudoNumeric ? 'LOWER' : 'Bet NO'}
+          {isPseudoNumeric ? 'LOWER' : 'NO'}
         </button>
       )}
     </Row>
