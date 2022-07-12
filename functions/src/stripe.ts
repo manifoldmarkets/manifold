@@ -1,7 +1,7 @@
-import { onRequest } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 
+import { EndpointDefinition } from './api'
 import { getPrivateUser, getUser, isProd, payUser } from './utils'
 import { sendThankYouEmail } from './emails'
 import { track } from './analytics'
@@ -42,9 +42,9 @@ const manticDollarStripePrice = isProd()
       10000: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
     }
 
-export const createcheckoutsession = onRequest(
-  { minInstances: 1, secrets: ['STRIPE_APIKEY'] },
-  async (req, res) => {
+export const createcheckoutsession: EndpointDefinition = {
+  opts: { method: 'POST', minInstances: 1, secrets: ['STRIPE_APIKEY'] },
+  handler: async (req, res) => {
     const userId = req.query.userId?.toString()
 
     const manticDollarQuantity = req.query.manticDollarQuantity?.toString()
@@ -86,21 +86,23 @@ export const createcheckoutsession = onRequest(
     })
 
     res.redirect(303, session.url || '')
-  }
-)
+  },
+}
 
-export const stripewebhook = onRequest(
-  {
+export const stripewebhook: EndpointDefinition = {
+  opts: {
+    method: 'POST',
     minInstances: 1,
     secrets: ['MAILGUN_KEY', 'STRIPE_APIKEY', 'STRIPE_WEBHOOKSECRET'],
   },
-  async (req, res) => {
+  handler: async (req, res) => {
     const stripe = initStripe()
     let event
 
     try {
+      console.log(typeof req.body, req.body)
       event = stripe.webhooks.constructEvent(
-        req.rawBody,
+        req.body,
         req.headers['stripe-signature'] as string,
         process.env.STRIPE_WEBHOOKSECRET as string
       )
@@ -116,8 +118,8 @@ export const stripewebhook = onRequest(
     }
 
     res.status(200).send('success')
-  }
-)
+  },
+}
 
 const issueMoneys = async (session: StripeSession) => {
   const { id: sessionId } = session
