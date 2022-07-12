@@ -1,6 +1,6 @@
 import { difference } from 'lodash'
 
-export const CATEGORIES_POST_FIX = '-default'
+export const CATEGORIES_POST_FIX = '-default-test'
 export const CATEGORIES = {
   politics: 'Politics',
   technology: 'Technology',
