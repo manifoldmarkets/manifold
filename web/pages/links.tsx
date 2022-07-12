@@ -4,9 +4,11 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { Claim, Manalink } from 'common/manalink'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
+import { Subtitle } from 'web/components/subtitle'
 import { useUser } from 'web/hooks/use-user'
 import { createManalink, useUserManalinks } from 'web/lib/firebase/manalinks'
 import { fromNow } from 'web/lib/util/time'
@@ -18,16 +20,14 @@ import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
 import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
+import { CreateLinksButton } from 'web/components/links/create-links-button'
+import getLinkUrl from 'functions/src/get-manalink-url'
 
 import Textarea from 'react-expanding-textarea'
 
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 dayjs.extend(customParseFormat)
-
-function getLinkUrl(slug: string) {
-  return `${location.protocol}//${location.host}/link/${slug}`
-}
 
 // TODO: incredibly gross, but the tab component is wrongly designed and
 // keeps the tab state inside of itself, so this seems like the only
@@ -62,159 +62,24 @@ export default function LinkPage() {
         url="/send"
       />
       <Col className="w-full px-8">
-        <Title text="Manalinks" />
-        <Tabs
-          labelClassName={'pb-2 pt-1 '}
-          defaultIndex={0}
-          tabs={[
-            {
-              title: 'Create a link',
-              content: (
-                <CreateManalinkForm
-                  user={user}
-                  onCreate={async (newManalink) => {
-                    const slug = await createManalink({
-                      fromId: user.id,
-                      amount: newManalink.amount,
-                      expiresTime: newManalink.expiresTime,
-                      maxUses: newManalink.maxUses,
-                      message: newManalink.message,
-                    })
-                    setTabIndex(1)
-                    setHighlightedSlug(slug || '')
-                  }}
-                />
-              ),
-            },
-            {
-              title: 'Unclaimed links',
-              content: (
-                <LinksTable
-                  links={unclaimedLinks}
-                  highlightedSlug={highlightedSlug}
-                />
-              ),
-            },
-            // TODO: we have no use case for this atm and it's also really inefficient
-            // {
-            //   title: 'Claimed',
-            //   content: <ClaimsList txns={manalinkTxns} />,
-            // },
-          ]}
-        />
+        <Row className="items-center justify-between">
+          <Title text="Manalinks" />
+          {user && (
+            <CreateLinksButton
+              user={user}
+              highlightedSlug={highlightedSlug}
+              setHighlightedSlug={setHighlightedSlug}
+            />
+          )}
+        </Row>
+        <p>
+          You can use manalinks to send mana to other people, even if they
+          don&apos;t yet have a Manifold account.
+        </p>
+        <Subtitle text="Your Manalinks" />
+        <LinksTable links={unclaimedLinks} highlightedSlug={highlightedSlug} />
       </Col>
     </Page>
-  )
-}
-
-function CreateManalinkForm(props: {
-  user: User
-  onCreate: (m: ManalinkInfo) => Promise<void>
-}) {
-  const { user, onCreate } = props
-  const [isCreating, setIsCreating] = useState(false)
-  const [newManalink, setNewManalink] = useState<ManalinkInfo>({
-    expiresTime: null,
-    amount: 100,
-    maxUses: 1,
-    uses: 0,
-    message: '',
-  })
-  return (
-    <>
-      <p>
-        You can use manalinks to send mana to other people, even if they
-        don&apos;t yet have a Manifold account.
-      </p>
-      <form
-        className="my-5"
-        onSubmit={(e) => {
-          e.preventDefault()
-          setIsCreating(true)
-          onCreate(newManalink).finally(() => setIsCreating(false))
-        }}
-      >
-        <div className="flex flex-row flex-wrap gap-x-5 gap-y-2">
-          <div className="form-control flex-auto">
-            <label className="label">Amount</label>
-            <input
-              className="input"
-              type="number"
-              value={newManalink.amount}
-              onChange={(e) =>
-                setNewManalink((m) => {
-                  return { ...m, amount: parseInt(e.target.value) }
-                })
-              }
-            ></input>
-          </div>
-          <div className="form-control flex-auto">
-            <label className="label">Uses</label>
-            <input
-              className="input"
-              type="number"
-              value={newManalink.maxUses ?? ''}
-              onChange={(e) =>
-                setNewManalink((m) => {
-                  return { ...m, maxUses: parseInt(e.target.value) }
-                })
-              }
-            ></input>
-          </div>
-          <div className="form-control flex-auto">
-            <label className="label">Expires at</label>
-            <input
-              value={
-                newManalink.expiresTime != null
-                  ? dayjs(newManalink.expiresTime).format('YYYY-MM-DDTHH:mm')
-                  : ''
-              }
-              className="input"
-              type="datetime-local"
-              onChange={(e) => {
-                setNewManalink((m) => {
-                  return {
-                    ...m,
-                    expiresTime: e.target.value
-                      ? dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
-                      : null,
-                  }
-                })
-              }}
-            ></input>
-          </div>
-        </div>
-        <div className="form-control w-full">
-          <label className="label">Message</label>
-          <Textarea
-            placeholder={`From ${user.name}`}
-            className="input input-bordered resize-none"
-            autoFocus
-            value={newManalink.message}
-            onChange={(e) =>
-              setNewManalink((m) => {
-                return { ...m, message: e.target.value }
-              })
-            }
-          />
-        </div>
-        <button
-          type="submit"
-          className={clsx('btn mt-5', isCreating ? 'loading disabled' : '')}
-        >
-          {isCreating ? '' : 'Create'}
-        </button>
-      </form>
-
-      <Title text="Preview" />
-      <p>This is what the person you send the link to will see:</p>
-      <ManalinkCard
-        className="my-5"
-        defaultMessage={`From ${user.name}`}
-        info={newManalink}
-        isClaiming={false}
-      />
-    </>
   )
 }
 
@@ -365,22 +230,27 @@ function LinksTable(props: { links: Manalink[]; highlightedSlug?: string }) {
   return links.length == 0 ? (
     <p>You don&apos;t currently have any outstanding manalinks.</p>
   ) : (
-    <table className="w-full divide-y divide-gray-300 rounded-lg border border-gray-200">
-      <thead className="bg-gray-50 text-left text-sm font-semibold text-gray-900">
-        <tr>
-          <th></th>
-          <th className="px-5 py-3.5">Amount</th>
-          <th className="px-5 py-3.5">Link</th>
-          <th className="px-5 py-3.5">Uses</th>
-          <th className="px-5 py-3.5">Max Uses</th>
-          <th className="px-5 py-3.5">Expires</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-200 bg-white">
-        {links.map((link) => (
-          <LinkTableRow link={link} highlight={link.slug === highlightedSlug} />
-        ))}
-      </tbody>
-    </table>
+    <div className="overflow-scroll">
+      <table className="w-full divide-y divide-gray-300 rounded-lg border border-gray-200">
+        <thead className="bg-gray-50 text-left text-sm font-semibold text-gray-900">
+          <tr>
+            <th></th>
+            <th className="px-5 py-3.5">Amount</th>
+            <th className="px-5 py-3.5">Link</th>
+            <th className="px-5 py-3.5">Uses</th>
+            <th className="px-5 py-3.5">Max Uses</th>
+            <th className="px-5 py-3.5">Expires</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200 bg-white">
+          {links.map((link) => (
+            <LinkTableRow
+              link={link}
+              highlight={link.slug === highlightedSlug}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
