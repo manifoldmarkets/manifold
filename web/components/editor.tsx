@@ -1,6 +1,13 @@
 import CharacterCount from '@tiptap/extension-character-count'
 import Placeholder from '@tiptap/extension-placeholder'
-import { useEditor, EditorContent, JSONContent, Content } from '@tiptap/react'
+import {
+  useEditor,
+  EditorContent,
+  FloatingMenu,
+  JSONContent,
+  Content,
+  Editor,
+} from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import clsx from 'clsx'
@@ -9,6 +16,7 @@ import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { exhibitExts } from 'common/util/parse'
+import { FileButton } from './file-button'
 
 const proseClass =
   'prose prose-sm prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none'
@@ -26,35 +34,9 @@ export function useTextEditor(props: {
     'box-content min-h-[6em] textarea textarea-bordered'
   )
 
-  const upload = useMutation((files: File[]) =>
-    Promise.all(files.map((file) => uploadImage('default', file)))
-  )
 
   const editor = useEditor({
-    editorProps: {
-      attributes: { class: editorClass },
-      handlePaste(view, event) {
-        const imageFiles = Array.from(event.clipboardData?.files ?? []).filter(
-          (file) => file.type.startsWith('image')
-        )
-
-        if (!imageFiles.length) {
-          return // if no files pasted, use default paste handler
-        }
-
-        event.preventDefault()
-        upload.mutate(imageFiles, {
-          onSuccess: (urls) => {
-            let trans = view.state.tr
-            urls.forEach((src: any) => {
-              const node = view.state.schema.nodes.image.create({ src })
-              trans = trans.insert(view.state.selection.to, node)
-            })
-            view.dispatch(trans)
-          },
-        })
-      },
-    },
+    editorProps: { attributes: { class: editorClass } },
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
@@ -70,12 +52,75 @@ export function useTextEditor(props: {
     content: defaultValue,
   })
 
+  const upload = useUploadMutation(editor);
+
+  editor?.setOptions({
+    editorProps: {
+      handlePaste(view, event) {
+          const imageFiles = Array.from(event.clipboardData?.files ?? []).filter(
+          (file) => file.type.startsWith('image')
+        )
+
+        if (!imageFiles.length) {
+          return // if no files pasted, use default paste handler
+        }
+
+        event.preventDefault()
+        upload.mutate(imageFiles)
+      }
+    }
+  })
+
   useEffect(() => {
     editor?.setEditable(!disabled)
   }, [editor, disabled])
 
   return { editor, upload }
 }
+
+export function TextEditor(props: {
+  editor: Editor | null
+  upload: ReturnType<typeof useUploadMutation>
+}) {
+  const { editor, upload } = props
+
+  return (
+    <>
+      {/* hide placeholder when focused */}
+      <div className="[&:focus-within_p.is-empty]:before:content-none w-full">
+        {editor && (
+          <FloatingMenu
+            editor={editor}
+            className="w-full text-sm text-slate-300"
+          >
+            Type <em>*anything*</em> or even paste or{' '}
+            <FileButton className="link text-blue-300" onFiles={upload.mutate}>upload an image</FileButton>
+          </FloatingMenu>
+        )}
+        <EditorContent editor={editor} />
+      </div>
+      {upload.isLoading && <span className="text-xs">Uploading image...</span>}
+      {upload.isError && (
+        <span className="text-error text-xs">Error uploading image :(</span>
+      )}
+    </>
+  )
+}
+
+const useUploadMutation = (editor: Editor | null) => useMutation((files: File[]) =>
+    Promise.all(files.map((file) => uploadImage('default', file))),
+    {
+      onSuccess(urls) {
+        if (!editor) return
+        let trans = editor.view.state.tr
+        urls.forEach((src: any) => {
+          const node = editor.view.state.schema.nodes.image.create({ src })
+          trans = trans.insert(editor.view.state.selection.to, node)
+        })
+        editor.view.dispatch(trans)
+      }
+    }
+  )
 
 function RichContent(props: { content: JSONContent }) {
   const { content } = props

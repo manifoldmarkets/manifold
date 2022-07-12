@@ -26,8 +26,7 @@ import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
-import { useTextEditor } from 'web/components/editor'
-import { EditorContent } from '@tiptap/react'
+import { TextEditor, useTextEditor } from 'web/components/editor'
 
 type NewQuestionParams = {
   groupId?: string
@@ -407,13 +406,7 @@ export function NewContract(props: {
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
-        <EditorContent editor={editor} className="w-full" />
-        {upload.isLoading && (
-          <span className="text-xs">Uploading image...</span>
-        )}
-        {upload.isError && (
-          <span className="text-error text-xs">Error uploading image :(</span>
-        )}
+        <TextEditor editor={editor} upload={upload} />
       </div>
 
       <Spacer h={6} />
