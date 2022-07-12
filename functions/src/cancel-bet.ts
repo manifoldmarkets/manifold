@@ -21,7 +21,7 @@ export const cancelbet = newEndpoint({}, async (req, auth) => {
     if (bet.userId !== auth.uid)
       throw new APIError(400, 'Not authorized to cancel bet.')
     if (bet.limitProb === undefined)
-      throw new APIError(400, 'Not a limit bet: Cannot cancel.')
+      throw new APIError(400, 'Not a limit order: Cannot cancel.')
     if (bet.isCancelled) throw new APIError(400, 'Bet already cancelled.')
 
     trans.update(betDoc.ref, { isCancelled: true })
