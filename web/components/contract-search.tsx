@@ -20,6 +20,13 @@ import { Row } from './layout/row'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { useUser } from 'web/hooks/use-user'
+import { useFollows } from 'web/hooks/use-follows'
+import { EditCategoriesButton } from './feed/category-selector'
+import { CATEGORIES, category } from 'common/categories'
+import { Tabs } from './layout/tabs'
+import { EditFollowingButton } from './following-button'
+import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 
@@ -53,6 +60,7 @@ export function ContractSearch(props: {
     tag?: string
     excludeContractIds?: string[]
   }
+  showCategorySelector: boolean
   onContractClick?: (contract: Contract) => void
   showPlaceHolder?: boolean
   hideOrderSelector?: boolean
@@ -62,12 +70,17 @@ export function ContractSearch(props: {
   const {
     querySortOptions,
     additionalFilter,
+    showCategorySelector,
     onContractClick,
     overrideGridClassName,
     hideOrderSelector,
     showPlaceHolder,
     hideQuickBet,
   } = props
+
+  const user = useUser()
+  const followedCategories = user?.followedCategories
+  const follows = useFollows(user?.id)
 
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
@@ -81,11 +94,18 @@ export function ContractSearch(props: {
     querySortOptions?.defaultFilter ?? 'open'
   )
 
+  const [mode, setMode] = useState<'categories' | 'following'>('categories')
+
   const { filters, numericFilters } = useMemo(() => {
     let filters = [
       filter === 'open' ? 'isResolved:false' : '',
       filter === 'closed' ? 'isResolved:false' : '',
       filter === 'resolved' ? 'isResolved:true' : '',
+      showCategorySelector
+        ? mode === 'categories'
+          ? followedCategories?.map((cat) => `lowercaseTags:${cat}`) ?? ''
+          : follows?.map((creatorId) => `creatorId:${creatorId}`) ?? ''
+        : '',
       additionalFilter?.creatorId
         ? `creatorId:${additionalFilter.creatorId}`
         : '',
@@ -100,7 +120,14 @@ export function ContractSearch(props: {
     ].filter((f) => f)
 
     return { filters, numericFilters }
-  }, [filter, Object.values(additionalFilter ?? {}).join(',')])
+  }, [
+    filter,
+    showCategorySelector,
+    mode,
+    Object.values(additionalFilter ?? {}).join(','),
+    (followedCategories ?? []).join(','),
+    (follows ?? []).join(','),
+  ])
 
   const indexName = `${indexPrefix}contracts-${sort}`
 
@@ -155,13 +182,28 @@ export function ContractSearch(props: {
 
       <Spacer h={3} />
 
-      <ContractSearchInner
-        querySortOptions={querySortOptions}
-        onContractClick={onContractClick}
-        overrideGridClassName={overrideGridClassName}
-        hideQuickBet={hideQuickBet}
-        excludeContractIds={additionalFilter?.excludeContractIds}
-      />
+      {showCategorySelector && (
+        <CategoryFollowSelector
+          mode={mode}
+          setMode={setMode}
+          followedCategories={followedCategories ?? []}
+          follows={follows ?? []}
+        />
+      )}
+
+      <Spacer h={4} />
+
+      {mode === 'following' && (follows ?? []).length === 0 ? (
+        <>You're not following anyone yet.</>
+      ) : (
+        <ContractSearchInner
+          querySortOptions={querySortOptions}
+          onContractClick={onContractClick}
+          overrideGridClassName={overrideGridClassName}
+          hideQuickBet={hideQuickBet}
+          excludeContractIds={additionalFilter?.excludeContractIds}
+        />
+      )}
     </InstantSearch>
   )
 }
@@ -243,6 +285,71 @@ export function ContractSearchInner(props: {
       onContractClick={onContractClick}
       overrideGridClassName={overrideGridClassName}
       hideQuickBet={hideQuickBet}
+    />
+  )
+}
+
+function CategoryFollowSelector(props: {
+  mode: 'categories' | 'following'
+  setMode: (mode: 'categories' | 'following') => void
+  followedCategories: string[]
+  follows: string[]
+}) {
+  const { mode, setMode, followedCategories, follows } = props
+
+  const user = useUser()
+
+  const categoriesTitle = `${
+    followedCategories?.length ? followedCategories.length : 'All'
+  } Categories`
+  let categoriesDescription = `Showing all categories`
+
+  const followingTitle = `${follows?.length ? follows.length : 'All'} Following`
+
+  if (followedCategories.length) {
+    const categoriesLabel = followedCategories
+      .slice(0, 3)
+      .map((cat) => CATEGORIES[cat as category])
+      .join(', ')
+    const andMoreLabel =
+      followedCategories.length > 3
+        ? `, and ${followedCategories.length - 3} more`
+        : ''
+    categoriesDescription = `Showing ${categoriesLabel}${andMoreLabel}`
+  }
+
+  return (
+    <Tabs
+      defaultIndex={mode === 'categories' ? 0 : 1}
+      tabs={[
+        {
+          title: categoriesTitle,
+          content: user && (
+            <Row className="items-center gap-1 text-gray-500">
+              <div>{categoriesDescription}</div>
+              <EditCategoriesButton className="self-start" user={user} />
+            </Row>
+          ),
+        },
+        ...(user
+          ? [
+              {
+                title: followingTitle,
+                content: (
+                  <Row className="items-center gap-2 text-gray-500">
+                    <div>Showing markets by users you are following.</div>
+                    <EditFollowingButton className="self-start" user={user} />
+                  </Row>
+                ),
+              },
+            ]
+          : []),
+      ]}
+      onClick={(_, index) => {
+        const mode = index === 0 ? 'categories' : 'following'
+        setMode(mode)
+        track(`click ${mode} tab`)
+      }}
     />
   )
 }
