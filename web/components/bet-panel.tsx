@@ -54,6 +54,10 @@ export function BetPanel(props: {
   const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
 
   const [isLimitOrder, setIsLimitOrder] = useState(false)
+  const toggleLimitOrder = () => {
+    setIsLimitOrder(!isLimitOrder)
+    track('toggle limit order')
+  }
 
   return (
     <Col className={className}>
@@ -71,11 +75,11 @@ export function BetPanel(props: {
       >
         <Row className="align-center justify-between">
           <div className="mb-6 text-2xl">
-            {isLimitOrder ? <>Limit bet</> : <>Place your bet</>}
+            {isLimitOrder ? <>Limit order</> : <>Place your bet</>}
           </div>
           <button
             className="btn btn-ghost btn-sm text-sm normal-case"
-            onClick={() => setIsLimitOrder(!isLimitOrder)}
+            onClick={toggleLimitOrder}
           >
             <SwitchHorizontalIcon className="inline h-6 w-6" />
           </button>
@@ -105,9 +109,10 @@ export function SimpleBetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
   selected?: 'YES' | 'NO'
+  hasShares?: boolean
   onBetSuccess?: () => void
 }) {
-  const { contract, className, selected, onBetSuccess } = props
+  const { contract, className, selected, hasShares, onBetSuccess } = props
 
   const user = useUser()
   const [isLimitOrder, setIsLimitOrder] = useState(false)
@@ -117,10 +122,20 @@ export function SimpleBetPanel(props: {
 
   return (
     <Col className={className}>
-      <Col className={clsx('rounded-b-md rounded-t-md bg-white px-8 py-6')}>
+      <SellRow
+        contract={contract}
+        user={user}
+        className={'rounded-t-md bg-gray-100 px-4 py-5'}
+      />
+      <Col
+        className={clsx(
+          !hasShares && 'rounded-t-md',
+          'rounded-b-md bg-white px-8 py-6'
+        )}
+      >
         <Row className="justify-between">
           <div className="mb-6 text-2xl">
-            {isLimitOrder ? <>Limit bet</> : <>Place your bet</>}
+            {isLimitOrder ? <>Limit order</> : <>Place your bet</>}
           </div>
 
           <button
@@ -242,6 +257,8 @@ function BuyPanel(props: {
       contractId: contract.id,
       amount: betAmount,
       outcome: betChoice,
+      isLimitOrder,
+      limitProb: limitProbScaled,
     })
   }
 
@@ -385,7 +402,9 @@ function BuyPanel(props: {
         </button>
       )}
 
-      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
+      {wasSubmitted && (
+        <div className="mt-4">{isLimitOrder ? 'Order' : 'Bet'} submitted!</div>
+      )}
     </>
   )
 }

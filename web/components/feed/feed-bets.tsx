@@ -78,10 +78,20 @@ export function BetStatusText(props: {
   const { bet, contract, bettor, isSelf, hideOutcome } = props
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isFreeResponse = outcomeType === 'FREE_RESPONSE'
   const { amount, outcome, createdTime } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
+  const outOfTotalAmount =
+    bet.limitProb !== undefined && bet.orderAmount !== undefined
+      ? ` / ${formatMoney(bet.orderAmount)}`
+      : ''
   const money = formatMoney(Math.abs(amount))
+
+  const hadPoolMatch =
+    (bet.limitProb === undefined ||
+      bet.fills?.some((fill) => fill.matchedBetId === null)) ??
+    false
 
   return (
     <div className="text-sm text-gray-500">
@@ -91,6 +101,7 @@ export function BetStatusText(props: {
         <span>{isSelf ? 'You' : 'A trader'}</span>
       )}{' '}
       {bought} {money}
+      {outOfTotalAmount}
       {!hideOutcome && (
         <>
           {' '}
@@ -103,7 +114,12 @@ export function BetStatusText(props: {
           />{' '}
           {isPseudoNumeric
             ? ' than ' + formatNumericProbability(bet.probAfter, contract)
-            : ' at ' + formatPercent(bet.probAfter)}
+            : ' at ' +
+              formatPercent(
+                hadPoolMatch || isFreeResponse
+                  ? bet.probAfter
+                  : bet.limitProb ?? bet.probAfter
+              )}
         </>
       )}
       <RelativeTimestamp time={createdTime} />

@@ -47,7 +47,7 @@ export default function Notifications() {
   if (!user) return <Custom404 />
   return (
     <Page>
-      <div className={'p-2 sm:p-4'}>
+      <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
         <Title text={'Notifications'} className={'hidden md:block'} />
         <div>
           <Tabs
@@ -817,7 +817,7 @@ function NotificationTextLabel(props: {
         <span className="text-primary">
           {formatMoney(parseInt(sourceText))}
         </span>{' '}
-        <span>of your limit bet was filled</span>
+        <span>of your limit order was filled</span>
       </>
     )
   }

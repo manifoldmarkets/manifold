@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 
 import { Col } from './layout/col'
 import { User } from 'web/lib/firebase/users'
@@ -18,11 +18,6 @@ export function ResolutionPanel(props: {
   contract: BinaryContract
   className?: string
 }) {
-  useEffect(() => {
-    // warm up cloud function
-    resolveMarket({} as any).catch(() => {})
-  }, [])
-
   const { contract, className } = props
 
   const earnedFees =

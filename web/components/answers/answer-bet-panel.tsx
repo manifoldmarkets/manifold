@@ -25,6 +25,7 @@ import {
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
 import { SignUpPrompt } from '../sign-up-prompt'
+import { isIOS } from 'web/lib/util/device'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -44,6 +45,7 @@ export function AnswerBetPanel(props: {
 
   const inputRef = useRef<HTMLElement>(null)
   useEffect(() => {
+    if (isIOS()) window.scrollTo(0, window.scrollY + 200)
     inputRef.current && inputRef.current.focus()
   }, [])
 

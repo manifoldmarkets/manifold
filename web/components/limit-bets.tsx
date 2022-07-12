@@ -30,7 +30,9 @@ export function LimitBets(props: {
         'gap-2 overflow-hidden rounded bg-white px-4 py-3'
       )}
     >
-      {!hideLabel && <div className="px-2 py-3 text-2xl">Your limit bets</div>}
+      {!hideLabel && (
+        <div className="px-2 py-3 text-2xl">Your limit orders</div>
+      )}
       <table className="table-compact table w-full rounded text-gray-500">
         <tbody>
           {recentBets.map((bet) => (
