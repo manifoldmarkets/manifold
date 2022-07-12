@@ -10,34 +10,19 @@ import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
 import { Subtitle } from 'web/components/subtitle'
 import { useUser } from 'web/hooks/use-user'
-import { createManalink, useUserManalinks } from 'web/lib/firebase/manalinks'
+import { useUserManalinks } from 'web/lib/firebase/manalinks'
 import { fromNow } from 'web/lib/util/time'
 import { useUserById } from 'web/hooks/use-users'
 import { ManalinkTxn } from 'common/txn'
-import { User } from 'common/user'
-import { Tabs } from 'web/components/layout/tabs'
 import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
-import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
 import { CreateLinksButton } from 'web/components/links/create-links-button'
 import getLinkUrl from 'functions/src/get-manalink-url'
-
-import Textarea from 'react-expanding-textarea'
 
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 dayjs.extend(customParseFormat)
-
-// TODO: incredibly gross, but the tab component is wrongly designed and
-// keeps the tab state inside of itself, so this seems like the only
-// way we can tell it to switch tabs from outside after initial render.
-function setTabIndex(tabIndex: number) {
-  const tabHref = document.getElementById(`tab-${tabIndex}`)
-  if (tabHref) {
-    tabHref.click()
-  }
-}
 
 export default function LinkPage() {
   const user = useUser()

@@ -1,22 +1,11 @@
 import clsx from 'clsx'
-import { useRouter } from 'next/router'
-import { ReactNode, useState } from 'react'
-import { groupPath } from 'web/lib/firebase/groups'
-import { ConfirmationButton } from '../confirmation-button'
+import { useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import { Title } from '../title'
-import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { User } from 'common/user'
-import { MAX_GROUP_NAME_LENGTH } from 'common/group'
-import { createGroup } from 'web/lib/firebase/api'
-import {
-  ManalinkCard,
-  ManalinkCardPreview,
-  ManalinkInfo,
-} from 'web/components/manalink-card'
-import { createManalink, useUserManalinks } from 'web/lib/firebase/manalinks'
+import { ManalinkCardPreview, ManalinkInfo } from 'web/components/manalink-card'
+import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
 import Textarea from 'react-expanding-textarea'
 import dayjs from 'dayjs'
@@ -33,14 +22,6 @@ export function CreateLinksButton(props: {
   const { user, highlightedSlug, setHighlightedSlug } = props
 
   const [open, setOpen] = useState(false)
-
-  const [exManalink, setExManalink] = useState<ManalinkInfo>({
-    expiresTime: null,
-    amount: 100,
-    maxUses: 1,
-    uses: 0,
-    message: '',
-  })
 
   function updateOpen(newOpen: boolean) {
     setOpen(newOpen)
@@ -176,7 +157,10 @@ function CreateManalinkForm(props: {
           </div>
           <SubmitButton
             color={'indigo'}
-            className={clsx('mt-8 whitespace-nowrap drop-shadow-md')}
+            className={clsx(
+              'mt-8 whitespace-nowrap drop-shadow-md',
+              isCreating ? 'disabled' : ''
+            )}
           >
             Create
           </SubmitButton>
