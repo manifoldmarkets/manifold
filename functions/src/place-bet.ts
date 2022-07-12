@@ -186,7 +186,7 @@ export const updateMakers = (
     const totalAmount = sumBy(fills, 'amount')
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
-    log('Updated a matched limit bet.')
+    log('Updated a matched limit order.')
     trans.update(contractDoc.collection('bets').doc(bet.id), {
       fills,
       isFilled,

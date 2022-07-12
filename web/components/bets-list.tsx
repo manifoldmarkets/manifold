@@ -190,7 +190,7 @@ export function BetsList(props: {
             onChange={(e) => setFilter(e.target.value as BetFilter)}
           >
             <option value="open">Open</option>
-            <option value="limit_bet">Limit bets</option>
+            <option value="limit_bet">Limit orders</option>
             <option value="sold">Sold</option>
             <option value="closed">Closed</option>
             <option value="resolved">Resolved</option>
@@ -364,7 +364,7 @@ function ContractBets(props: {
 
         {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
           <>
-            <div className="bg-gray-50 px-4 py-2">Your limit bets</div>
+            <div className="bg-gray-50 px-4 py-2">Your limit orders</div>
             <LimitBets
               className="max-w-md px-2 py-0 sm:px-4"
               contract={contract}

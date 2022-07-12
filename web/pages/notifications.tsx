@@ -817,7 +817,7 @@ function NotificationTextLabel(props: {
         <span className="text-primary">
           {formatMoney(parseInt(sourceText))}
         </span>{' '}
-        <span>of your limit bet was filled</span>
+        <span>of your limit order was filled</span>
       </>
     )
   }

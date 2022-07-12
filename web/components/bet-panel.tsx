@@ -71,7 +71,7 @@ export function BetPanel(props: {
       >
         <Row className="align-center justify-between">
           <div className="mb-6 text-2xl">
-            {isLimitOrder ? <>Limit bet</> : <>Place your bet</>}
+            {isLimitOrder ? <>Limit order</> : <>Place your bet</>}
           </div>
           <button
             className="btn btn-ghost btn-sm text-sm normal-case"
@@ -120,7 +120,7 @@ export function SimpleBetPanel(props: {
       <Col className={clsx('rounded-b-md rounded-t-md bg-white px-8 py-6')}>
         <Row className="justify-between">
           <div className="mb-6 text-2xl">
-            {isLimitOrder ? <>Limit bet</> : <>Place your bet</>}
+            {isLimitOrder ? <>Limit order</> : <>Place your bet</>}
           </div>
 
           <button
@@ -385,7 +385,9 @@ function BuyPanel(props: {
         </button>
       )}
 
-      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
+      {wasSubmitted && (
+        <div className="mt-4">{isLimitOrder ? 'Order' : 'Bet'} submitted!</div>
+      )}
     </>
   )
 }
