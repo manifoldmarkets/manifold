@@ -492,25 +492,21 @@ function GroupMemberSearch(props: { group: Group }) {
 
 export function GroupMembersList(props: { group: Group }) {
   const { group } = props
-  const members = useMembers(group)
-  const maxMembersToShow = 5
+  const members = useMembers(group).filter((m) => m.id !== group.creatorId)
+  const maxMembersToShow = 3
   if (group.memberIds.length === 1) return <div />
   return (
-    <div>
-      <div>
-        <div className="text-neutral flex flex-wrap gap-1">
-          <span className={'text-gray-500'}>Other members</span>
-          {members.slice(0, maxMembersToShow).map((member, i) => (
-            <div key={member.id} className={'flex-shrink'}>
-              <UserLink name={member.name} username={member.username} />
-              {members.length > 1 && i !== members.length - 1 && <span>,</span>}
-            </div>
-          ))}
-          {members.length > maxMembersToShow && (
-            <span> & {members.length - maxMembersToShow} more</span>
-          )}
+    <div className="text-neutral flex flex-wrap gap-1">
+      <span className={'text-gray-500'}>Other members</span>
+      {members.slice(0, maxMembersToShow).map((member, i) => (
+        <div key={member.id} className={'flex-shrink'}>
+          <UserLink name={member.name} username={member.username} />
+          {members.length > 1 && i !== members.length - 1 && <span>,</span>}
         </div>
-      </div>
+      ))}
+      {members.length > maxMembersToShow && (
+        <span> & {members.length - maxMembersToShow} more</span>
+      )}
     </div>
   )
 }

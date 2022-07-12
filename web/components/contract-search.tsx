@@ -23,7 +23,11 @@ import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { EditCategoriesButton } from './feed/category-selector'
-import { CATEGORIES, CATEGORIES_POST_FIX, category } from 'common/categories'
+import {
+  CATEGORIES,
+  CATEGORIES_GROUP_SLUG_POSTFIX,
+  category,
+} from 'common/categories'
 import { Tabs } from './layout/tabs'
 import { EditFollowingButton } from './following-button'
 import { track } from '@amplitude/analytics-browser'
@@ -300,7 +304,9 @@ function CategoryFollowSelector(props: {
       .slice(0, 3)
       .map(
         (cat) =>
-          CATEGORIES[cat.replace(CATEGORIES_POST_FIX, '') as category] || cat
+          CATEGORIES[
+            cat.replace(CATEGORIES_GROUP_SLUG_POSTFIX, '') as category
+          ] || cat
       )
       .join(', ')
     const andMoreLabel =

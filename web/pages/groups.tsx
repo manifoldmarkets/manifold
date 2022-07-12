@@ -17,6 +17,8 @@ import { GroupMembersList } from 'web/pages/group/[...slugs]'
 import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 import { SiteLink } from 'web/components/site-link'
 import clsx from 'clsx'
+import { Avatar } from 'web/components/avatar'
+import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])
@@ -92,79 +94,75 @@ export default function Groups(props: {
   return (
     <Page>
       <Col className="items-center">
-        <Col className="w-full max-w-xl">
-          <Col className="px-4 sm:px-0">
-            <Row className="items-center justify-between">
-              <Title text="Explore groups" />
-              {user && (
-                <CreateGroupButton user={user} goToGroupOnSubmit={true} />
-              )}
-            </Row>
+        <Col className="w-full max-w-2xl px-4 sm:px-2">
+          <Row className="items-center justify-between">
+            <Title text="Explore groups" />
+            {user && <CreateGroupButton user={user} goToGroupOnSubmit={true} />}
+          </Row>
 
-            <div className="mb-6 text-gray-500">
-              Discuss and compete on questions with a group of friends.
-            </div>
+          <div className="mb-6 text-gray-500">
+            Discuss and compete on questions with a group of friends.
+          </div>
 
-            <Tabs
-              currentPageForAnalytics={'groups'}
-              tabs={[
-                ...(user && memberGroupIds.length > 0
-                  ? [
-                      {
-                        title: 'My Groups',
-                        content: (
-                          <Col>
-                            <input
-                              type="text"
-                              onChange={(e) => debouncedQuery(e.target.value)}
-                              placeholder="Search your groups"
-                              className="input input-bordered mb-4 w-full"
-                            />
-
-                            <Col className="gap-4">
-                              {matchesOrderedByRecentActivity
-                                .filter((match) =>
-                                  memberGroupIds.includes(match.id)
-                                )
-                                .map((group) => (
-                                  <GroupCard
-                                    key={group.id}
-                                    group={group}
-                                    creator={creatorsDict[group.creatorId]}
-                                  />
-                                ))}
-                            </Col>
-                          </Col>
-                        ),
-                      },
-                    ]
-                  : []),
-                {
-                  title: 'All',
-                  content: (
-                    <Col>
-                      <input
-                        type="text"
-                        onChange={(e) => debouncedQuery(e.target.value)}
-                        placeholder="Search groups"
-                        className="input input-bordered mb-4 w-full"
-                      />
-
-                      <Col className="gap-4">
-                        {matches.map((group) => (
-                          <GroupCard
-                            key={group.id}
-                            group={group}
-                            creator={creatorsDict[group.creatorId]}
+          <Tabs
+            currentPageForAnalytics={'groups'}
+            tabs={[
+              ...(user && memberGroupIds.length > 0
+                ? [
+                    {
+                      title: 'My Groups',
+                      content: (
+                        <Col>
+                          <input
+                            type="text"
+                            onChange={(e) => debouncedQuery(e.target.value)}
+                            placeholder="Search your groups"
+                            className="input input-bordered mb-4 w-full"
                           />
-                        ))}
-                      </Col>
-                    </Col>
-                  ),
-                },
-              ]}
-            />
-          </Col>
+
+                          <div className="flex flex-wrap justify-center gap-4">
+                            {matchesOrderedByRecentActivity
+                              .filter((match) =>
+                                memberGroupIds.includes(match.id)
+                              )
+                              .map((group) => (
+                                <GroupCard
+                                  key={group.id}
+                                  group={group}
+                                  creator={creatorsDict[group.creatorId]}
+                                />
+                              ))}
+                          </div>
+                        </Col>
+                      ),
+                    },
+                  ]
+                : []),
+              {
+                title: 'All',
+                content: (
+                  <Col>
+                    <input
+                      type="text"
+                      onChange={(e) => debouncedQuery(e.target.value)}
+                      placeholder="Search groups"
+                      className="input input-bordered mb-4 w-full"
+                    />
+
+                    <div className="flex flex-wrap justify-center gap-4">
+                      {matches.map((group) => (
+                        <GroupCard
+                          key={group.id}
+                          group={group}
+                          creator={creatorsDict[group.creatorId]}
+                        />
+                      ))}
+                    </div>
+                  </Col>
+                ),
+              },
+            ]}
+          />
         </Col>
       </Col>
     </Page>
@@ -176,32 +174,33 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
   return (
     <Col
       key={group.id}
-      className="relative gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100"
+      className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100"
     >
       <Link href={groupPath(group.slug)}>
         <a className="absolute left-0 right-0 top-0 bottom-0" />
       </Link>
+      <div>
+        <Avatar
+          className={'absolute top-2 right-2'}
+          username={creator?.username}
+          avatarUrl={creator?.avatarUrl}
+          noLink={false}
+          size={12}
+        />
+      </div>
       <Row className="items-center justify-between gap-2">
         <span className="text-xl">{group.name}</span>
       </Row>
-      <div className="flex flex-col items-start justify-start gap-2 text-sm text-gray-500 ">
-        <Row>
-          {group.contractIds.length} questions
-          <div className={'mx-2'}>•</div>
-          <div className="mr-1">Created by</div>
-          <UserLink
-            className="text-neutral"
-            name={creator?.name ?? ''}
-            username={creator?.username ?? ''}
-          />
-        </Row>
-        {group.memberIds.length > 1 && (
-          <Row>
-            <GroupMembersList group={group} />
-          </Row>
-        )}
-      </div>
-      <div className="text-sm text-gray-500">{group.about}</div>
+      <Row>{group.contractIds.length} questions</Row>
+      <Row className="text-sm text-gray-500">
+        <GroupMembersList group={group} />
+      </Row>
+      <Row>
+        <div className="text-sm text-gray-500">{group.about}</div>
+      </Row>
+      <Col className={'mt-2 h-full items-start justify-end'}>
+        <JoinOrLeaveGroupButton group={group} className={'w-24'} />
+      </Col>
     </Col>
   )
 }

@@ -9,7 +9,7 @@ import {
   listenForMemberGroups,
 } from 'web/lib/firebase/groups'
 import { getUser } from 'web/lib/firebase/users'
-import { CATEGORIES, CATEGORIES_POST_FIX } from 'common/categories'
+import { CATEGORIES, CATEGORIES_GROUP_SLUG_POSTFIX } from 'common/categories'
 import { filterDefined } from 'common/util/array'
 
 export const useGroup = (groupId: string | undefined) => {
@@ -37,7 +37,7 @@ export const useDefaultGroups = () => {
 
   useEffect(() => {
     const slugs = Object.values(CATEGORIES).map(
-      (category) => category + CATEGORIES_POST_FIX
+      (category) => category + CATEGORIES_GROUP_SLUG_POSTFIX
     )
     Promise.all(slugs.map((slug) => getGroupBySlug(slug))).then((groups) => {
       setGroups(filterDefined(groups))

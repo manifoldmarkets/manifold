@@ -16,7 +16,7 @@ import { sendWelcomeEmail } from './emails'
 import { isWhitelisted } from '../../common/envs/constants'
 import {
   CATEGORIES,
-  CATEGORIES_POST_FIX,
+  CATEGORIES_GROUP_SLUG_POSTFIX,
   DEFAULT_CATEGORIES,
 } from '../../common/categories'
 
@@ -119,7 +119,7 @@ const numberUsersWithIp = async (ipAddress: string) => {
 
 const addUserToDefaultGroups = async (user: User) => {
   for (const category of Object.values(CATEGORIES)) {
-    const slug = category.toLowerCase() + CATEGORIES_POST_FIX
+    const slug = category.toLowerCase() + CATEGORIES_GROUP_SLUG_POSTFIX
     const groups = await getValues<Group>(
       firestore.collection('groups').where('slug', '==', slug)
     )

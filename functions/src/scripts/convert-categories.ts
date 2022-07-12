@@ -4,7 +4,7 @@ import { initAdmin } from './script-init'
 initAdmin()
 
 import { getValues } from '../utils'
-import { CATEGORIES, CATEGORIES_POST_FIX } from 'common/categories'
+import { CATEGORIES, CATEGORIES_GROUP_SLUG_POSTFIX } from 'common/categories'
 import { Group } from 'common/group'
 import { uniq } from 'lodash'
 import { Contract } from 'common/contract'
@@ -47,7 +47,7 @@ async function convertCategoriesToGroups() {
         .collection('contracts')
         .where('lowercaseTags', 'array-contains', category.toLowerCase())
     )
-    const slug = category.toLowerCase() + CATEGORIES_POST_FIX
+    const slug = category.toLowerCase() + CATEGORIES_GROUP_SLUG_POSTFIX
     const oldGroup = await getValues<Group>(
       adminFirestore.collection('groups').where('slug', '==', slug)
     )
