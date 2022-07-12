@@ -32,21 +32,6 @@ export const useGroups = () => {
   return groups
 }
 
-export const useDefaultGroups = () => {
-  const [groups, setGroups] = useState<Group[]>([])
-
-  useEffect(() => {
-    const slugs = Object.values(CATEGORIES).map(
-      (category) => category + CATEGORIES_GROUP_SLUG_POSTFIX
-    )
-    Promise.all(slugs.map((slug) => getGroupBySlug(slug))).then((groups) => {
-      setGroups(filterDefined(groups))
-    })
-  }, [])
-
-  return groups
-}
-
 export const useMemberGroups = (
   userId: string | null | undefined,
   options?: { withChatEnabled: boolean }

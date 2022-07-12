@@ -22,15 +22,6 @@ import { Spacer } from './layout/spacer'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
-import { EditCategoriesButton } from './feed/category-selector'
-import {
-  CATEGORIES,
-  CATEGORIES_GROUP_SLUG_POSTFIX,
-  category,
-} from 'common/categories'
-import { Tabs } from './layout/tabs'
-import { EditFollowingButton } from './following-button'
-import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -278,76 +269,6 @@ export function ContractSearchInner(props: {
       onContractClick={onContractClick}
       overrideGridClassName={overrideGridClassName}
       hideQuickBet={hideQuickBet}
-    />
-  )
-}
-
-function CategoryFollowSelector(props: {
-  mode: 'categories' | 'following'
-  setMode: (mode: 'categories' | 'following') => void
-  followedCategories: string[]
-  follows: string[]
-}) {
-  const { mode, setMode, followedCategories, follows } = props
-
-  const user = useUser()
-
-  const categoriesTitle = `${
-    followedCategories?.length ? followedCategories.length : 'All'
-  } Categories`
-  let categoriesDescription = `Showing all categories`
-
-  const followingTitle = `${follows?.length ? follows.length : 'All'} Following`
-
-  if (followedCategories.length) {
-    const categoriesLabel = followedCategories
-      .slice(0, 3)
-      .map(
-        (cat) =>
-          CATEGORIES[
-            cat.replace(CATEGORIES_GROUP_SLUG_POSTFIX, '') as category
-          ] || cat
-      )
-      .join(', ')
-    const andMoreLabel =
-      followedCategories.length > 3
-        ? `, and ${followedCategories.length - 3} more`
-        : ''
-    categoriesDescription = `Showing ${categoriesLabel}${andMoreLabel}`
-  }
-
-  return (
-    <Tabs
-      defaultIndex={mode === 'categories' ? 0 : 1}
-      tabs={[
-        {
-          title: categoriesTitle,
-          content: user && (
-            <Row className="items-center gap-1 text-gray-500">
-              <div>{categoriesDescription}</div>
-              <EditCategoriesButton className="self-start" user={user} />
-            </Row>
-          ),
-        },
-        ...(user
-          ? [
-              {
-                title: followingTitle,
-                content: (
-                  <Row className="items-center gap-2 text-gray-500">
-                    <div>Showing markets by users you are following.</div>
-                    <EditFollowingButton className="self-start" user={user} />
-                  </Row>
-                ),
-              },
-            ]
-          : []),
-      ]}
-      onClick={(_, index) => {
-        const mode = index === 0 ? 'categories' : 'following'
-        setMode(mode)
-        track(`click ${mode} tab`)
-      }}
     />
   )
 }

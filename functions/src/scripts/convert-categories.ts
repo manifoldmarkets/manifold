@@ -3,24 +3,19 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { getValues } from '../utils'
+import { getValues, isProd } from '../utils'
 import { CATEGORIES, CATEGORIES_GROUP_SLUG_POSTFIX } from 'common/categories'
 import { Group } from 'common/group'
 import { uniq } from 'lodash'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/lib/antes'
 
 const adminFirestore = admin.firestore()
-
-// get the categories and make a group for each of them
-// set the group's chat to disabled
-// after creating a group for a category, add all markets assigned to that category
-// add a field to contract to indicate that it's in a group
-// upon adding a contract to a group, add that slug to the contract's field
-// add all users to the group
-// during the create market, allow users to add markets to default-public type groups
-// in the sidebar, check to make sure a group doesn't have chat disabled
 
 async function convertCategoriesToGroups() {
   const groups = await getValues<Group>(adminFirestore.collection('groups'))
@@ -67,20 +62,22 @@ async function convertCategoriesToGroups() {
       })
     )
 
+    const manifoldAccount = isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
     const newGroupRef = await adminFirestore.collection('groups').doc()
     const newGroup: Group = {
       id: newGroupRef.id,
       name: category,
       slug,
-      creatorId: '94YYTk1AFWfbWMpfYcvnnwI1veP2',
+      creatorId: manifoldAccount,
       createdTime: Date.now(),
       anyoneCanJoin: true,
-      memberIds: ['94YYTk1AFWfbWMpfYcvnnwI1veP2', ...groupUsers],
+      memberIds: [manifoldAccount, ...groupUsers],
       about: 'Official group for all things related to ' + category,
       mostRecentActivityTime: Date.now(),
       contractIds: markets.map((market) => market.id),
       chatDisabled: true,
-      type: 'default-public',
     }
 
     await adminFirestore.collection('groups').doc(newGroupRef.id).set(newGroup)
