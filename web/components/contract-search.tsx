@@ -23,12 +23,13 @@ import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { EditCategoriesButton } from './feed/category-selector'
-import { CATEGORIES, category } from 'common/categories'
+import { CATEGORIES, CATEGORIES_POST_FIX, category } from 'common/categories'
 import { Tabs } from './layout/tabs'
 import { EditFollowingButton } from './following-button'
 import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
+import { useMemberGroups } from 'web/hooks/use-group'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -47,7 +48,7 @@ const sortIndexes = [
   { label: 'Resolve date', value: indexPrefix + 'contracts-resolve-date' },
 ]
 
-type filter = 'open' | 'closed' | 'resolved' | 'all'
+type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
 export function ContractSearch(props: {
   querySortOptions?: {
@@ -60,7 +61,6 @@ export function ContractSearch(props: {
     tag?: string
     excludeContractIds?: string[]
   }
-  showCategorySelector: boolean
   onContractClick?: (contract: Contract) => void
   showPlaceHolder?: boolean
   hideOrderSelector?: boolean
@@ -70,7 +70,6 @@ export function ContractSearch(props: {
   const {
     querySortOptions,
     additionalFilter,
-    showCategorySelector,
     onContractClick,
     overrideGridClassName,
     hideOrderSelector,
@@ -79,7 +78,7 @@ export function ContractSearch(props: {
   } = props
 
   const user = useUser()
-  const followedCategories = user?.followedCategories
+  const memberGroupSlugs = useMemberGroups(user?.id)?.map((g) => g.slug)
   const follows = useFollows(user?.id)
 
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
@@ -94,22 +93,19 @@ export function ContractSearch(props: {
     querySortOptions?.defaultFilter ?? 'open'
   )
 
-  const [mode, setMode] = useState<'categories' | 'following'>('categories')
-
   const { filters, numericFilters } = useMemo(() => {
     let filters = [
       filter === 'open' ? 'isResolved:false' : '',
       filter === 'closed' ? 'isResolved:false' : '',
       filter === 'resolved' ? 'isResolved:true' : '',
-      showCategorySelector
-        ? mode === 'categories'
-          ? followedCategories?.map((cat) => `lowercaseTags:${cat}`) ?? ''
-          : follows?.map((creatorId) => `creatorId:${creatorId}`) ?? ''
+      filter === 'personal'
+        ? (memberGroupSlugs?.map((slug) => `groupSlugs:${slug}`) ?? []).concat(
+            follows?.map((creatorId) => `creatorId:${creatorId}`) ?? []
+          )
         : '',
       additionalFilter?.creatorId
         ? `creatorId:${additionalFilter.creatorId}`
         : '',
-      additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
     ].filter((f) => f)
     // Hack to make Algolia work.
     filters = ['', ...filters]
@@ -122,10 +118,8 @@ export function ContractSearch(props: {
     return { filters, numericFilters }
   }, [
     filter,
-    showCategorySelector,
-    mode,
     Object.values(additionalFilter ?? {}).join(','),
-    (followedCategories ?? []).join(','),
+    (memberGroupSlugs ?? []).join(','),
     (follows ?? []).join(','),
   ])
 
@@ -152,6 +146,7 @@ export function ContractSearch(props: {
             resetIcon: 'mt-2 hidden sm:flex',
           }}
         />
+        {/*// TODO track WHICH filter users are using*/}
         <select
           className="!select !select-bordered"
           value={filter}
@@ -161,6 +156,7 @@ export function ContractSearch(props: {
           <option value="open">Open</option>
           <option value="closed">Closed</option>
           <option value="resolved">Resolved</option>
+          <option value="personal">Personal</option>
           <option value="all">All</option>
         </select>
         {!hideOrderSelector && (
@@ -182,19 +178,12 @@ export function ContractSearch(props: {
 
       <Spacer h={3} />
 
-      {showCategorySelector && (
-        <CategoryFollowSelector
-          mode={mode}
-          setMode={setMode}
-          followedCategories={followedCategories ?? []}
-          follows={follows ?? []}
-        />
-      )}
+      {/*<Spacer h={4} />*/}
 
-      <Spacer h={4} />
-
-      {mode === 'following' && (follows ?? []).length === 0 ? (
-        <>You're not following anyone yet.</>
+      {filter === 'personal' &&
+      (follows ?? []).length === 0 &&
+      (memberGroupSlugs ?? []).length === 0 ? (
+        <>You're not following anyone, nor in any groups yet.</>
       ) : (
         <ContractSearchInner
           querySortOptions={querySortOptions}
@@ -309,7 +298,10 @@ function CategoryFollowSelector(props: {
   if (followedCategories.length) {
     const categoriesLabel = followedCategories
       .slice(0, 3)
-      .map((cat) => CATEGORIES[cat as category])
+      .map(
+        (cat) =>
+          CATEGORIES[cat.replace(CATEGORIES_POST_FIX, '') as category] || cat
+      )
       .join(', ')
     const andMoreLabel =
       followedCategories.length > 3

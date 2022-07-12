@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import {
+  getGroupBySlug,
   getGroupsWithContractId,
   listenForGroup,
   listenForGroups,
   listenForMemberGroups,
 } from 'web/lib/firebase/groups'
 import { getUser } from 'web/lib/firebase/users'
+import { CATEGORIES, CATEGORIES_POST_FIX } from 'common/categories'
+import { filterDefined } from 'common/util/array'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -29,11 +32,36 @@ export const useGroups = () => {
   return groups
 }
 
-export const useMemberGroups = (userId: string | null | undefined) => {
+export const useDefaultGroups = () => {
+  const [groups, setGroups] = useState<Group[]>([])
+
+  useEffect(() => {
+    const slugs = Object.values(CATEGORIES).map(
+      (category) => category + CATEGORIES_POST_FIX
+    )
+    Promise.all(slugs.map((slug) => getGroupBySlug(slug))).then((groups) => {
+      setGroups(filterDefined(groups))
+    })
+  }, [])
+
+  return groups
+}
+
+export const useMemberGroups = (
+  userId: string | null | undefined,
+  options?: { withChatEnabled: boolean }
+) => {
   const [memberGroups, setMemberGroups] = useState<Group[] | undefined>()
   useEffect(() => {
-    if (userId) return listenForMemberGroups(userId, setMemberGroups)
-  }, [userId])
+    if (userId)
+      return listenForMemberGroups(userId, (groups) => {
+        if (options?.withChatEnabled)
+          return setMemberGroups(
+            filterDefined(groups.filter((group) => group.chatDisabled !== true))
+          )
+        return setMemberGroups(groups)
+      })
+  }, [options?.withChatEnabled, userId])
   return memberGroups
 }
 

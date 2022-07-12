@@ -1,5 +1,6 @@
 import { difference } from 'lodash'
 
+export const CATEGORIES_POST_FIX = '-default'
 export const CATEGORIES = {
   politics: 'Politics',
   technology: 'Technology',
@@ -26,7 +27,4 @@ export const CATEGORY_LIST = Object.keys(CATEGORIES)
 
 export const EXCLUDED_CATEGORIES: category[] = ['fun', 'manifold', 'personal']
 
-export const DEFAULT_CATEGORIES = difference(
-  CATEGORY_LIST,
-  EXCLUDED_CATEGORIES
-)
+export const DEFAULT_CATEGORIES = difference(CATEGORY_LIST, EXCLUDED_CATEGORIES)

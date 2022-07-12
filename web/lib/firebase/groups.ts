@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore'
 import { sortBy, uniq } from 'lodash'
 import { Group } from 'common/group'
-import { getContractFromId } from './contracts'
+import { contracts, getContractFromId, updateContract } from './contracts'
 import {
   coll,
   getValue,
@@ -17,6 +17,7 @@ import {
   listenForValues,
 } from './utils'
 import { filterDefined } from 'common/util/array'
+import { Contract } from 'common/contract'
 
 export const groups = coll<Group>('groups')
 
@@ -129,7 +130,22 @@ export async function leaveGroup(group: Group, userId: string): Promise<Group> {
   return newGroup
 }
 
-export async function addContractToGroup(group: Group, contractId: string) {
+export async function addContractToGroup(group: Group, contract: Contract) {
+  await updateContract(contract.id, {
+    groupSlugs: [...(contract.groupSlugs ?? []), group.slug],
+  })
+  return await updateGroup(group, {
+    contractIds: uniq([...group.contractIds, contract.id]),
+  })
+    .then(() => group)
+    .catch((err) => {
+      console.error('error adding contract to group', err)
+      return err
+    })
+}
+
+export async function setContractGroupSlugs(group: Group, contractId: string) {
+  await updateContract(contractId, { groupSlugs: [group.slug] })
   return await updateGroup(group, {
     contractIds: uniq([...group.contractIds, contractId]),
   })
