@@ -10,17 +10,15 @@ import { Modal } from 'web/components/layout/modal'
 import Textarea from 'react-expanding-textarea'
 import dayjs from 'dayjs'
 import Button from '../button'
-import getManalinkUrl from 'web/get-manalink-url'
+import { getManalinkUrl } from 'web/pages/links'
 import { DuplicateIcon } from '@heroicons/react/outline'
 
 export function CreateLinksButton(props: {
   user: User
-
   highlightedSlug: string
   setHighlightedSlug: (slug: string) => void
 }) {
   const { user, highlightedSlug, setHighlightedSlug } = props
-
   const [open, setOpen] = useState(false)
 
   return (
@@ -63,6 +61,9 @@ function CreateManalinkForm(props: {
   const { user, onCreate, highlightedSlug } = props
   const [isCreating, setIsCreating] = useState(false)
   const [finishedCreating, setFinishedCreating] = useState(false)
+  const [copyPressed, setCopyPressed] = useState(false)
+  setTimeout(() => setCopyPressed(false), 300)
+
   const [newManalink, setNewManalink] = useState<ManalinkInfo>({
     expiresTime: null,
     amount: 100,
@@ -70,6 +71,7 @@ function CreateManalinkForm(props: {
     uses: 0,
     message: '',
   })
+
   return (
     <>
       {!finishedCreating && (
@@ -167,19 +169,25 @@ function CreateManalinkForm(props: {
         <>
           <Title className="!my-0" text="Manalink Created!" />
           <ManalinkCardPreview
-            className="my-4 mx-8"
+            className="my-4"
             defaultMessage={`From ${user.name}`}
             info={newManalink}
           />
-          <Row className="rounded border bg-gray-50 py-2 px-3 text-sm text-gray-500">
+          <Row
+            className={clsx(
+              'rounded border bg-gray-50 py-2 px-3 text-sm text-gray-500 transition-colors duration-700',
+              copyPressed ? 'bg-indigo-50 text-indigo-500 transition-none' : ''
+            )}
+          >
             <div className="w-full select-text truncate">
               {getManalinkUrl(highlightedSlug)}
             </div>
             <DuplicateIcon
               onClick={() => {
                 navigator.clipboard.writeText(getManalinkUrl(highlightedSlug))
+                setCopyPressed(true)
               }}
-              className="my-auto ml-2 h-5 w-5 cursor-copy"
+              className="my-auto ml-2 h-5 w-5 cursor-pointer transition hover:opacity-50"
             />
           </Row>
         </>

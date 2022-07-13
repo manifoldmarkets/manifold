@@ -8,7 +8,13 @@ export default function Button(props: {
   children?: ReactNode
   type?: 'button' | 'reset' | 'submit'
 }) {
-  const { className, onClick, children, color, type = 'button' } = props
+  const {
+    className,
+    onClick,
+    children,
+    color = 'indigo',
+    type = 'button',
+  } = props
 
   return (
     <button

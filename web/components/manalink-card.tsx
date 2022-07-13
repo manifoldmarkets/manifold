@@ -100,11 +100,9 @@ export function ManalinkCardPreview(props: {
         src="/logo-white.svg"
       />
       <Row className="rounded-b-lg bg-white p-2">
-        <Col className="text-xs">
-          <div className="mb-1 text-sm text-indigo-500">
-            {formatMoney(amount)}
-          </div>
-          <div>{message || defaultMessage}</div>
+        <Col className="text-md">
+          <div className="mb-1 text-indigo-500">{formatMoney(amount)}</div>
+          <div className="text-xs">{message || defaultMessage}</div>
         </Col>
       </Row>
     </div>

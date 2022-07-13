@@ -17,12 +17,15 @@ import { ManalinkTxn } from 'common/txn'
 import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
-import { CreateLinksButton } from 'web/components/links/create-links-button'
-import getManalinkUrl from 'web/get-manalink-url'
+import { CreateLinksButton } from 'web/components/manalinks/create-links-button'
 
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 dayjs.extend(customParseFormat)
+
+export function getManalinkUrl(slug: string) {
+  return `${location.protocol}//${location.host}/link/${slug}`
+}
 
 export default function LinkPage() {
   const user = useUser()
@@ -43,7 +46,7 @@ export default function LinkPage() {
     <Page>
       <SEO
         title="Manalinks"
-        description="Send mana to anyone via link!"
+        description="Send M$ to others with a link, even if they don't have a Manifold account yet!"
         url="/send"
       />
       <Col className="w-full px-8">
