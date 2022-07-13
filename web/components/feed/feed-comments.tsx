@@ -32,6 +32,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import useMediaQuery from 'react-query/types/devtools/useMediaQuery'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -487,7 +488,7 @@ export function CommentInputTextArea(props: {
     replyToUsername,
     enterToSubmitOnDesktop,
   } = props
-  const isMobile = innerWidth < 768
+  const { width } = useWindowSize()
   const memoizedSetComment = useEvent(setComment)
   useEffect(() => {
     if (!replyToUsername || !user || replyToUsername === user.username) return
@@ -520,7 +521,8 @@ export function CommentInputTextArea(props: {
               (enterToSubmitOnDesktop &&
                 e.key === 'Enter' &&
                 !e.shiftKey &&
-                !isMobile) ||
+                width &&
+                width > 768) ||
               (e.key === 'Enter' && (e.ctrlKey || e.metaKey))
             ) {
               e.preventDefault()
