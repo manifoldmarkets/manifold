@@ -31,7 +31,6 @@ import { track } from 'web/lib/service/analytics'
 import { useEvent } from 'web/hooks/use-event'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
-import useMediaQuery from 'react-query/types/devtools/useMediaQuery'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function FeedCommentThread(props: {
