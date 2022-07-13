@@ -59,6 +59,9 @@ export function BetPanel(props: {
     track('toggle limit order')
   }
 
+  const showLimitOrders =
+    (isLimitOrder && unfilledBets.length > 0) || yourUnfilledBets.length > 0
+
   return (
     <Col className={className}>
       <SellRow
@@ -94,12 +97,8 @@ export function BetPanel(props: {
 
         <SignUpPrompt />
       </Col>
-      {yourUnfilledBets.length > 0 && (
-        <LimitBets
-          className="mt-4"
-          contract={contract}
-          bets={yourUnfilledBets}
-        />
+      {showLimitOrders && (
+        <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
       )}
     </Col>
   )
@@ -119,6 +118,8 @@ export function SimpleBetPanel(props: {
 
   const unfilledBets = useUnfilledBets(contract.id) ?? []
   const yourUnfilledBets = unfilledBets.filter((bet) => bet.userId === user?.id)
+  const showLimitOrders =
+    (isLimitOrder && unfilledBets.length > 0) || yourUnfilledBets.length > 0
 
   return (
     <Col className={className}>
@@ -158,12 +159,8 @@ export function SimpleBetPanel(props: {
         <SignUpPrompt />
       </Col>
 
-      {yourUnfilledBets.length > 0 && (
-        <LimitBets
-          className="mt-4"
-          contract={contract}
-          bets={yourUnfilledBets}
-        />
+      {showLimitOrders && (
+        <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
       )}
     </Col>
   )
