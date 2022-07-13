@@ -317,6 +317,14 @@ Without sufficient public interest or research activity, solutions to the proble
 Wild Animal Initiative currently focuses on helping scientists, grantors, and decision-makers investigate important and understudied questions about wild animal welfare. Our work catalyzes research and applied projects that will open the door to a clearer picture of wild animals’ needs and how to enhance their well-being. Ultimately, we envision a world in which people actively choose to help wild animals — and have the knowledge they need to do so responsibly.`,
   },
   {
+    name: 'FYXX Foundation',
+    website: 'https://www.fyxxfoundation.org/',
+    photo: 'https://i.imgur.com/ROmWO7m.png',
+    preview:
+      'FYXX Foundation: wildlife population management, without killing.',
+    description: `The future of our planet depends on the innovations of today, and the health of our wildlife are the first indication of our successful stewardship, which we believe can be improved by safe population management utilizing fertility control instead of poison and culling.`,
+  },
+  {
     name: 'New Incentives',
     website: 'https://www.newincentives.org/',
     ein: '45-2368993',
