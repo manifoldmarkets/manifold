@@ -45,6 +45,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useRouter } from 'next/router'
 import { useLiquidity } from 'web/hooks/use-liquidity'
+import { richTextToString } from 'common/util/parse'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -396,15 +397,18 @@ const getOpenGraphProps = (contract: Contract) => {
     creatorUsername,
     outcomeType,
     creatorAvatarUrl,
+    description: desc,
   } = contract
   const probPercent =
     outcomeType === 'BINARY' ? getBinaryProbPercent(contract) : undefined
 
+  const stringDesc = typeof desc === 'string' ? desc : richTextToString(desc)
+
   const description = resolution
-    ? `Resolved ${resolution}. ${contract.description}`
+    ? `Resolved ${resolution}. ${stringDesc}`
     : probPercent
-    ? `${probPercent} chance. ${contract.description}`
-    : contract.description
+    ? `${probPercent} chance. ${stringDesc}`
+    : stringDesc
 
   return {
     question,

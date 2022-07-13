@@ -159,7 +159,6 @@ export default function GroupPage(props: {
       ? contracts.filter(
           (c) =>
             checkAgainstQuery(query, c.question) ||
-            checkAgainstQuery(query, c.description || '') ||
             checkAgainstQuery(query, c.creatorName) ||
             checkAgainstQuery(query, c.creatorUsername)
         )

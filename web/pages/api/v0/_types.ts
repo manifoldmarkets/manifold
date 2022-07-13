@@ -6,6 +6,7 @@ import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { JSONContent } from '@tiptap/core'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -20,7 +21,7 @@ export type LiteMarket = {
   // Market attributes. All times are in milliseconds since epoch
   closeTime?: number
   question: string
-  description: string
+  description: string | JSONContent
   tags: string[]
   url: string
   outcomeType: string
