@@ -75,19 +75,21 @@ export const useMemberGroupIds = (user: User | null | undefined) => {
   return memberGroupIds
 }
 
-export function useMembers(group: Group) {
+export function useMembers(group: Group, max?: number) {
   const [members, setMembers] = useState<User[]>([])
   useEffect(() => {
     const { memberIds } = group
     if (memberIds.length > 0) {
-      listMembers(group).then((members) => setMembers(members))
+      listMembers(group, max).then((members) => setMembers(members))
     }
-  }, [group])
+  }, [group, max])
   return members
 }
 
-export async function listMembers(group: Group) {
-  return await Promise.all(group.memberIds.map(getUser))
+export async function listMembers(group: Group, max?: number) {
+  return await Promise.all(
+    group.memberIds.slice(0, max ? max : group.memberIds.length).map(getUser)
+  )
 }
 
 export const useGroupsWithContract = (contractId: string | undefined) => {

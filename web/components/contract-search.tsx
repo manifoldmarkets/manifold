@@ -57,6 +57,7 @@ export function ContractSearch(props: {
     creatorId?: string
     tag?: string
     excludeContractIds?: string[]
+    groupSlug?: string
   }
   onContractClick?: (contract: Contract) => void
   showPlaceHolder?: boolean
@@ -79,7 +80,6 @@ export function ContractSearch(props: {
     ?.map((g) => g.slug)
     .filter((s) => !NEW_USER_GROUP_SLUGS.includes(s))
   const follows = useFollows(user?.id)
-  console.log(memberGroupSlugs, follows)
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
   const sort = sortIndexes
@@ -111,6 +111,9 @@ export function ContractSearch(props: {
         : '',
       additionalFilter?.creatorId
         ? `creatorId:${additionalFilter.creatorId}`
+        : '',
+      additionalFilter?.groupSlug
+        ? `groupSlugs:${additionalFilter.groupSlug}`
         : '',
     ].filter((f) => f)
     // Hack to make Algolia work.
