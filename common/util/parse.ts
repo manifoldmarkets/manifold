@@ -1,4 +1,24 @@
 import { MAX_TAG_LENGTH } from '../contract'
+import { generateText, JSONContent } from '@tiptap/core'
+// Tiptap starter extensions
+import { Blockquote } from '@tiptap/extension-blockquote'
+import { Bold } from '@tiptap/extension-bold'
+import { BulletList } from '@tiptap/extension-bullet-list'
+import { Code } from '@tiptap/extension-code'
+import { CodeBlock } from '@tiptap/extension-code-block'
+import { Document } from '@tiptap/extension-document'
+import { HardBreak } from '@tiptap/extension-hard-break'
+import { Heading } from '@tiptap/extension-heading'
+import { History } from '@tiptap/extension-history'
+import { HorizontalRule } from '@tiptap/extension-horizontal-rule'
+import { Italic } from '@tiptap/extension-italic'
+import { ListItem } from '@tiptap/extension-list-item'
+import { OrderedList } from '@tiptap/extension-ordered-list'
+import { Paragraph } from '@tiptap/extension-paragraph'
+import { Strike } from '@tiptap/extension-strike'
+import { Text } from '@tiptap/extension-text'
+// other tiptap extensions
+import { Image } from '@tiptap/extension-image'
 
 export function parseTags(text: string) {
   const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
@@ -26,4 +46,31 @@ export function parseWordsAsTags(text: string) {
     .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`))
     .join(' ')
   return parseTags(taggedText)
+}
+
+// can't just do [StarterKit, Image...] because it doesn't work with cjs imports
+export const exhibitExts = [
+  Blockquote,
+  Bold,
+  BulletList,
+  Code,
+  CodeBlock,
+  Document,
+  HardBreak,
+  Heading,
+  History,
+  HorizontalRule,
+  Italic,
+  ListItem,
+  OrderedList,
+  Paragraph,
+  Strike,
+  Text,
+
+  Image,
+]
+// export const exhibitExts = [StarterKit as unknown as Extension, Image]
+
+export function richTextToString(text?: JSONContent) {
+  return !text ? '' : generateText(text, exhibitExts)
 }

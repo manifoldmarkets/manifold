@@ -5,12 +5,13 @@ import Textarea from 'react-expanding-textarea'
 import { CATEGORY_LIST } from '../../../common/categories'
 
 import { Contract } from 'common/contract'
-import { parseTags } from 'common/util/parse'
+import { parseTags, exhibitExts } from 'common/util/parse'
 import { useAdmin } from 'web/hooks/use-admin'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
-import { Linkify } from '../linkify'
 import { TagsList } from '../tags-list'
+import { Content } from '../editor'
+import { Editor } from '@tiptap/react'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -21,22 +22,31 @@ export function ContractDescription(props: {
   const descriptionTimestamp = () => `${dayjs().format('MMM D, h:mma')}: `
   const isAdmin = useAdmin()
 
+  const desc = contract.description ?? ''
+
   // Append the new description (after a newline)
   async function saveDescription(newText: string) {
-    const newDescription = `${contract.description}\n\n${newText}`.trim()
+    const editor = new Editor({ content: desc, extensions: exhibitExts })
+    editor
+      .chain()
+      .focus('end')
+      .insertContent('<br /><br />')
+      .insertContent(newText.trim())
+      .run()
+
     const tags = parseTags(
-      `${newDescription} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
+      `${editor.getText()} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
     )
     const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
     await updateContract(contract.id, {
-      description: newDescription,
+      description: editor.getJSON(),
       tags,
       lowercaseTags,
     })
   }
 
-  if (!isCreator && !contract.description.trim()) return null
+  if (!isCreator) return null
 
   const { tags } = contract
   const categories = tags.filter((tag) =>
@@ -50,7 +60,7 @@ export function ContractDescription(props: {
         className
       )}
     >
-      <Linkify text={contract.description} />
+      <Content content={desc} />
 
       {categories.length > 0 && (
         <div className="mt-4">

@@ -26,6 +26,7 @@ import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
+import { TextEditor, useTextEditor } from 'web/components/editor'
 
 type NewQuestionParams = {
   groupId?: string
@@ -101,13 +102,11 @@ export function NewContract(props: {
     (params?.outcomeType as outcomeType) ?? 'BINARY'
   )
   const [initialProb] = useState(50)
-  const [bottomRef, setBottomRef] = useState<HTMLDivElement | null>(null)
   const [minString, setMinString] = useState(params?.min ?? '')
   const [maxString, setMaxString] = useState(params?.max ?? '')
   const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
   const [initialValueString, setInitialValueString] = useState(initValue)
 
-  const [description, setDescription] = useState(params?.description ?? '')
   useEffect(() => {
     if (groupId && creator)
       getGroup(groupId).then((group) => {
@@ -152,9 +151,6 @@ export function NewContract(props: {
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
-  const hasUnsavedChanges = !isSubmitting && Boolean(question || description)
-  useWarnUnsavedChanges(hasUnsavedChanges)
-
   const isValid =
     (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&
     question.length > 0 &&
@@ -175,6 +171,20 @@ export function NewContract(props: {
         min < initialValue &&
         initialValue < max))
 
+  const descriptionPlaceholder =
+    outcomeType === 'BINARY'
+      ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
+      : `e.g. I will choose the answer according to...`
+
+  const { editor, upload } = useTextEditor({
+    max: MAX_DESCRIPTION_LENGTH,
+    placeholder: descriptionPlaceholder,
+    disabled: isSubmitting,
+  })
+
+  const isEditorFilled = editor != null && !editor.isEmpty
+  useWarnUnsavedChanges(!isSubmitting && (Boolean(question) || isEditorFilled))
+
   function setCloseDateInDays(days: number) {
     const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
     setCloseDate(newCloseDate)
@@ -183,14 +193,13 @@ export function NewContract(props: {
   async function submit() {
     // TODO: Tell users why their contract is invalid
     if (!creator || !isValid) return
-
     setIsSubmitting(true)
     try {
       const result = await createMarket(
         removeUndefinedProps({
           question,
           outcomeType,
-          description,
+          description: editor?.getJSON(),
           initialProb,
           ante,
           closeTime,
@@ -213,14 +222,10 @@ export function NewContract(props: {
 
       await router.push(contractPath(result as Contract))
     } catch (e) {
-      console.log('error creating contract', e)
+      console.error('error creating contract', e, (e as any).details)
+      setIsSubmitting(false)
     }
   }
-
-  const descriptionPlaceholder =
-    outcomeType === 'BINARY'
-      ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
-      : `e.g. I will choose the answer according to...`
 
   if (!creator) return <></>
 
@@ -396,25 +401,12 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      <div className="form-control mb-1 items-start">
-        <label className="label mb-1 gap-2">
+      <div className="form-control mb-1 items-start gap-1">
+        <label className="label gap-2">
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
-        <Textarea
-          className="textarea textarea-bordered w-full resize-none"
-          rows={3}
-          maxLength={MAX_DESCRIPTION_LENGTH}
-          placeholder={descriptionPlaceholder}
-          value={description}
-          disabled={isSubmitting}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => {
-            setDescription(e.target.value || '')
-            bottomRef?.scrollIntoView()
-          }}
-        />
-        <div ref={setBottomRef} />
+        <TextEditor editor={editor} upload={upload} />
       </div>
 
       <Spacer h={6} />
@@ -451,7 +443,7 @@ export function NewContract(props: {
             'btn btn-primary normal-case',
             isSubmitting && 'loading disabled'
           )}
-          disabled={isSubmitting || !isValid}
+          disabled={isSubmitting || !isValid || upload.isLoading}
           onClick={(e) => {
             e.preventDefault()
             submit()

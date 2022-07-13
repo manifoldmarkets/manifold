@@ -31,6 +31,8 @@ import { DAY_MS } from 'common/util/time'
 import { useGroupsWithContract } from 'web/hooks/use-group'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { useUser } from 'web/hooks/use-user'
+import { Editor } from '@tiptap/react'
+import { exhibitExts } from 'common/util/parse'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -268,13 +270,20 @@ function EditableCloseDate(props: {
     const newCloseTime = dayjs(closeDate).valueOf()
     if (newCloseTime === closeTime) setIsEditingCloseTime(false)
     else if (newCloseTime > Date.now()) {
-      const { description } = contract
+      const content = contract.description
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
-      const newDescription = `${description}\n\nClose date updated to ${formattedCloseDate}`
+
+      const editor = new Editor({ content, extensions: exhibitExts })
+      editor
+        .chain()
+        .focus('end')
+        .insertContent('<br /><br />')
+        .insertContent(`Close date updated to ${formattedCloseDate}`)
+        .run()
 
       updateContract(contract.id, {
         closeTime: newCloseTime,
-        description: newDescription,
+        description: editor.getJSON(),
       })
 
       setIsEditingCloseTime(false)

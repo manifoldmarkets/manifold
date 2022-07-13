@@ -10,8 +10,9 @@ import {
   PseudoNumeric,
 } from './contract'
 import { User } from './user'
-import { parseTags } from './util/parse'
+import { parseTags, richTextToString } from './util/parse'
 import { removeUndefinedProps } from './util/object'
+import { JSONContent } from '@tiptap/core'
 
 export function getNewContract(
   id: string,
@@ -19,7 +20,7 @@ export function getNewContract(
   creator: User,
   question: string,
   outcomeType: outcomeType,
-  description: string,
+  description: JSONContent,
   initialProb: number,
   ante: number,
   closeTime: number,
@@ -32,7 +33,11 @@ export function getNewContract(
   isLogScale: boolean
 ) {
   const tags = parseTags(
-    `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
+    [
+      question,
+      richTextToString(description),
+      ...extraTags.map((tag) => `#${tag}`),
+    ].join(' ')
   )
   const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
@@ -56,7 +61,7 @@ export function getNewContract(
     creatorAvatarUrl: creator.avatarUrl,
 
     question: question.trim(),
-    description: description.trim(),
+    description,
     tags,
     lowercaseTags,
     visibility: 'public',

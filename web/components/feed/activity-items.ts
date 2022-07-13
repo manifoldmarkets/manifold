@@ -37,7 +37,6 @@ export type DescriptionItem = BaseActivityItem & {
 
 export type QuestionItem = BaseActivityItem & {
   type: 'question'
-  showDescription: boolean
   contractPath?: string
 }
 

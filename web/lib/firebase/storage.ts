@@ -7,6 +7,7 @@ import {
 
 const storage = getStorage()
 
+// TODO: compress large images
 export const uploadImage = async (
   username: string,
   file: File,
