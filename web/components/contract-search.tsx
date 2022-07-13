@@ -95,9 +95,16 @@ export function ContractSearch(props: {
       filter === 'closed' ? 'isResolved:false' : '',
       filter === 'resolved' ? 'isResolved:true' : '',
       filter === 'personal'
-        ? (memberGroupSlugs?.map((slug) => `groupSlugs:${slug}`) ?? []).concat(
-            follows?.map((creatorId) => `creatorId:${creatorId}`) ?? []
-          )
+        ? // Show contracts in groups that the user is a member of
+          (memberGroupSlugs?.map((slug) => `groupSlugs:${slug}`) ?? [])
+            // Show contracts created by users the user follows
+            .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
+            // Show contracts bet on by users the user follows
+            .concat(
+              follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
+              // Show contracts bet on by the user
+            )
+            .concat(user ? `uniqueBettorIds:${user.id}` : [])
         : '',
       additionalFilter?.creatorId
         ? `creatorId:${additionalFilter.creatorId}`
