@@ -18,7 +18,7 @@ import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
 import { CreateLinksButton } from 'web/components/links/create-links-button'
-import getManalinkUrl from 'web/pages/get-manalink-url'
+import getManalinkUrl from 'web/get-manalink-url'
 
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'

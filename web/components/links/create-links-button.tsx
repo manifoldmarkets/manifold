@@ -10,7 +10,7 @@ import { Modal } from 'web/components/layout/modal'
 import Textarea from 'react-expanding-textarea'
 import dayjs from 'dayjs'
 import Button from '../button'
-import getManalinkUrl from 'web/pages/get-manalink-url'
+import getManalinkUrl from 'web/get-manalink-url'
 import { DuplicateIcon } from '@heroicons/react/outline'
 
 export function CreateLinksButton(props: {
