@@ -20,8 +20,12 @@ import { Row } from './layout/row'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { useUser } from 'web/hooks/use-user'
+import { useFollows } from 'web/hooks/use-follows'
 import { trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
+import { useMemberGroups } from 'web/hooks/use-group'
+import { NEW_USER_GROUP_SLUGS } from 'common/group'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -33,6 +37,7 @@ const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
 const sortIndexes = [
   { label: 'Newest', value: indexPrefix + 'contracts-newest' },
   { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
+  { label: 'Most popular', value: indexPrefix + 'contracts-most-popular' },
   { label: 'Most traded', value: indexPrefix + 'contracts-most-traded' },
   { label: '24h volume', value: indexPrefix + 'contracts-24-hour-vol' },
   { label: 'Last updated', value: indexPrefix + 'contracts-last-updated' },
@@ -40,7 +45,7 @@ const sortIndexes = [
   { label: 'Resolve date', value: indexPrefix + 'contracts-resolve-date' },
 ]
 
-type filter = 'open' | 'closed' | 'resolved' | 'all'
+type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
 export function ContractSearch(props: {
   querySortOptions?: {
@@ -69,13 +74,19 @@ export function ContractSearch(props: {
     hideQuickBet,
   } = props
 
+  const user = useUser()
+  const memberGroupSlugs = useMemberGroups(user?.id)
+    ?.map((g) => g.slug)
+    .filter((s) => !NEW_USER_GROUP_SLUGS.includes(s))
+  const follows = useFollows(user?.id)
+  console.log(memberGroupSlugs, follows)
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
   const sort = sortIndexes
     .map(({ value }) => value)
     .includes(`${indexPrefix}contracts-${initialSort ?? ''}`)
     ? initialSort
-    : querySortOptions?.defaultSort ?? '24-hour-vol'
+    : querySortOptions?.defaultSort ?? 'most-popular'
 
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
@@ -86,10 +97,21 @@ export function ContractSearch(props: {
       filter === 'open' ? 'isResolved:false' : '',
       filter === 'closed' ? 'isResolved:false' : '',
       filter === 'resolved' ? 'isResolved:true' : '',
+      filter === 'personal'
+        ? // Show contracts in groups that the user is a member of
+          (memberGroupSlugs?.map((slug) => `groupSlugs:${slug}`) ?? [])
+            // Show contracts created by users the user follows
+            .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
+            // Show contracts bet on by users the user follows
+            .concat(
+              follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
+              // Show contracts bet on by the user
+            )
+            .concat(user ? `uniqueBettorIds:${user.id}` : [])
+        : '',
       additionalFilter?.creatorId
         ? `creatorId:${additionalFilter.creatorId}`
         : '',
-      additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
     ].filter((f) => f)
     // Hack to make Algolia work.
     filters = ['', ...filters]
@@ -100,7 +122,12 @@ export function ContractSearch(props: {
     ].filter((f) => f)
 
     return { filters, numericFilters }
-  }, [filter, Object.values(additionalFilter ?? {}).join(',')])
+  }, [
+    filter,
+    Object.values(additionalFilter ?? {}).join(','),
+    (memberGroupSlugs ?? []).join(','),
+    (follows ?? []).join(','),
+  ])
 
   const indexName = `${indexPrefix}contracts-${sort}`
 
@@ -125,6 +152,7 @@ export function ContractSearch(props: {
             resetIcon: 'mt-2 hidden sm:flex',
           }}
         />
+        {/*// TODO track WHICH filter users are using*/}
         <select
           className="!select !select-bordered"
           value={filter}
@@ -134,6 +162,7 @@ export function ContractSearch(props: {
           <option value="open">Open</option>
           <option value="closed">Closed</option>
           <option value="resolved">Resolved</option>
+          <option value="personal">For you</option>
           <option value="all">All</option>
         </select>
         {!hideOrderSelector && (
@@ -155,13 +184,21 @@ export function ContractSearch(props: {
 
       <Spacer h={3} />
 
-      <ContractSearchInner
-        querySortOptions={querySortOptions}
-        onContractClick={onContractClick}
-        overrideGridClassName={overrideGridClassName}
-        hideQuickBet={hideQuickBet}
-        excludeContractIds={additionalFilter?.excludeContractIds}
-      />
+      {/*<Spacer h={4} />*/}
+
+      {filter === 'personal' &&
+      (follows ?? []).length === 0 &&
+      (memberGroupSlugs ?? []).length === 0 ? (
+        <>You're not following anyone, nor in any of your own groups yet.</>
+      ) : (
+        <ContractSearchInner
+          querySortOptions={querySortOptions}
+          onContractClick={onContractClick}
+          overrideGridClassName={overrideGridClassName}
+          hideQuickBet={hideQuickBet}
+          excludeContractIds={additionalFilter?.excludeContractIds}
+        />
+      )}
     </InstantSearch>
   )
 }

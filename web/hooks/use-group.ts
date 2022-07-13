@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import {
+  getGroupBySlug,
   getGroupsWithContractId,
   listenForGroup,
   listenForGroups,
   listenForMemberGroups,
 } from 'web/lib/firebase/groups'
 import { getUser } from 'web/lib/firebase/users'
+import { CATEGORIES, CATEGORIES_GROUP_SLUG_POSTFIX } from 'common/categories'
+import { filterDefined } from 'common/util/array'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -29,11 +32,21 @@ export const useGroups = () => {
   return groups
 }
 
-export const useMemberGroups = (userId: string | null | undefined) => {
+export const useMemberGroups = (
+  userId: string | null | undefined,
+  options?: { withChatEnabled: boolean }
+) => {
   const [memberGroups, setMemberGroups] = useState<Group[] | undefined>()
   useEffect(() => {
-    if (userId) return listenForMemberGroups(userId, setMemberGroups)
-  }, [userId])
+    if (userId)
+      return listenForMemberGroups(userId, (groups) => {
+        if (options?.withChatEnabled)
+          return setMemberGroups(
+            filterDefined(groups.filter((group) => group.chatDisabled !== true))
+          )
+        return setMemberGroups(groups)
+      })
+  }, [options?.withChatEnabled, userId])
   return memberGroups
 }
 

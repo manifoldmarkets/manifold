@@ -13,9 +13,12 @@ export function Leaderboard(props: {
     renderCell: (user: User) => any
   }[]
   className?: string
+  maxToShow?: number
 }) {
   // TODO: Ideally, highlight your own entry on the leaderboard
-  const { title, users, columns, className } = props
+  const { title, columns, className } = props
+  const maxToShow = props.maxToShow ?? props.users.length
+  const users = props.users.slice(0, maxToShow)
   return (
     <div className={clsx('w-full px-1', className)}>
       <Title text={title} className="!mt-0" />
