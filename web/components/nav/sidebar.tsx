@@ -193,7 +193,9 @@ export default function Sidebar(props: { className?: string }) {
   const mobileNavigationOptions = !user
     ? signedOutMobileNavigation
     : signedInMobileNavigation
-  const memberItems = (useMemberGroups(user?.id) ?? []).map((group: Group) => ({
+  const memberItems = (
+    useMemberGroups(user?.id, { withChatEnabled: true }) ?? []
+  ).map((group: Group) => ({
     name: group.name,
     href: groupPath(group.slug),
   }))

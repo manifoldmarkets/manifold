@@ -71,7 +71,7 @@ service cloud.firestore {
     match /contracts/{contractId} {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                                                                 .hasOnly(['tags', 'lowercaseTags']);
+                                                                 .hasOnly(['tags', 'lowercaseTags', 'groupSlugs']);
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['description', 'closeTime'])
                        && resource.data.creatorId == request.auth.uid;

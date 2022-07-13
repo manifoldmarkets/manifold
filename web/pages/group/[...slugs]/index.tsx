@@ -9,8 +9,8 @@ import {
   getGroupBySlug,
   getGroupContracts,
   updateGroup,
-  addContractToGroup,
   addUserToGroup,
+  addContractToGroup,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
@@ -54,6 +54,7 @@ import clsx from 'clsx'
 import { FollowList } from 'web/components/follow-list'
 import { SearchIcon } from '@heroicons/react/outline'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
+import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -145,7 +146,7 @@ export default function GroupPage(props: {
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
-  const page = (slugs?.[1] ?? 'chat') as typeof groupSubpages[number]
+  const page = slugs?.[1] as typeof groupSubpages[number]
 
   const group = useGroup(props.group?.id) ?? props.group
   const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
@@ -213,6 +214,75 @@ export default function GroupPage(props: {
       />
     </Col>
   )
+
+  const tabs = [
+    ...(group.chatDisabled
+      ? []
+      : [
+          {
+            title: 'Chat',
+            content: messages ? (
+              <GroupChat
+                messages={messages}
+                user={user}
+                group={group}
+                tips={tips}
+              />
+            ) : (
+              <LoadingIndicator />
+            ),
+            href: groupPath(group.slug, 'chat'),
+          },
+        ]),
+    {
+      title: 'Questions',
+      content: (
+        <div className={'mt-2 px-1'}>
+          {contracts ? (
+            contracts.length > 0 ? (
+              <>
+                <input
+                  type="text"
+                  onChange={(e) => debouncedQuery(e.target.value)}
+                  placeholder="Search the group's questions"
+                  className="input input-bordered mb-4 w-full"
+                />
+                <ContractsGrid
+                  contracts={query != '' ? filteredContracts : contracts}
+                  hasMore={false}
+                  loadMore={() => {}}
+                />
+              </>
+            ) : (
+              <div className="p-2 text-gray-500">
+                No questions yet. Why not{' '}
+                <SiteLink
+                  href={`/create/?groupId=${group.id}`}
+                  className={'font-bold text-gray-700'}
+                >
+                  add one?
+                </SiteLink>
+              </div>
+            )
+          ) : (
+            <LoadingIndicator />
+          )}
+        </div>
+      ),
+      href: groupPath(group.slug, 'questions'),
+    },
+    {
+      title: 'Rankings',
+      content: leaderboard,
+      href: groupPath(group.slug, 'rankings'),
+    },
+    {
+      title: 'About',
+      content: aboutTab,
+      href: groupPath(group.slug, 'about'),
+    },
+  ]
+  const tabIndex = tabs.map((t) => t.title).indexOf(page ?? 'chat')
   return (
     <Page rightSidebar={rightSidebar} className="!pb-0">
       <SEO
@@ -250,79 +320,9 @@ export default function GroupPage(props: {
 
       <Tabs
         currentPageForAnalytics={groupPath(group.slug)}
-        className={'mx-3 mb-0'}
-        defaultIndex={
-          page === 'rankings'
-            ? 2
-            : page === 'about'
-            ? 3
-            : page === 'questions'
-            ? 1
-            : 0
-        }
-        tabs={[
-          {
-            title: 'Chat',
-            content: messages ? (
-              <GroupChat
-                messages={messages}
-                user={user}
-                group={group}
-                tips={tips}
-              />
-            ) : (
-              <LoadingIndicator />
-            ),
-            href: groupPath(group.slug, 'chat'),
-          },
-          {
-            title: 'Questions',
-            content: (
-              <div className={'mt-2 px-1'}>
-                {contracts ? (
-                  contracts.length > 0 ? (
-                    <>
-                      <input
-                        type="text"
-                        onChange={(e) => debouncedQuery(e.target.value)}
-                        placeholder="Search the group's questions"
-                        className="input input-bordered mb-4 w-full"
-                      />
-                      <ContractsGrid
-                        contracts={query != '' ? filteredContracts : contracts}
-                        hasMore={false}
-                        loadMore={() => {}}
-                      />
-                    </>
-                  ) : (
-                    <div className="p-2 text-gray-500">
-                      No questions yet. Why not{' '}
-                      <SiteLink
-                        href={`/create/?groupId=${group.id}`}
-                        className={'font-bold text-gray-700'}
-                      >
-                        add one?
-                      </SiteLink>
-                    </div>
-                  )
-                ) : (
-                  <LoadingIndicator />
-                )}
-              </div>
-            ),
-            href: groupPath(group.slug, 'questions'),
-          },
-          {
-            title: 'Rankings',
-            content: leaderboard,
-            href: groupPath(group.slug, 'rankings'),
-          },
-          {
-            title: 'About',
-            content: aboutTab,
-            href: groupPath(group.slug, 'about'),
-          },
-        ]}
+        className={'mb-0 sm:mb-2'}
+        defaultIndex={tabIndex > 0 ? tabIndex : 0}
+        tabs={tabs}
       />
     </Page>
   )
@@ -391,7 +391,16 @@ function GroupOverview(props: {
               username={creator.username}
             />
           </div>
-          {isCreator && <EditGroupButton className={'ml-1'} group={group} />}
+          {isCreator ? (
+            <EditGroupButton className={'ml-1'} group={group} />
+          ) : (
+            user &&
+            group.memberIds.includes(user?.id) && (
+              <Row>
+                <JoinOrLeaveGroupButton group={group} />
+              </Row>
+            )
+          )}
         </Row>
         <div className={'block sm:hidden'}>
           <Linkify text={group.about} />
@@ -461,12 +470,19 @@ function GroupMemberSearch(props: { group: Group }) {
     (m) =>
       checkAgainstQuery(query, m.name) || checkAgainstQuery(query, m.username)
   )
+  const matchLimit = 25
+
   return (
     <div>
       <SearchBar setQuery={setQuery} />
       <Col className={'gap-2'}>
         {matches.length > 0 && (
-          <FollowList userIds={matches.map((m) => m.id)} />
+          <FollowList userIds={matches.slice(0, matchLimit).map((m) => m.id)} />
+        )}
+        {matches.length > 25 && (
+          <div className={'text-center'}>
+            And {matches.length - matchLimit} more...
+          </div>
         )}
       </Col>
     </div>
@@ -475,25 +491,21 @@ function GroupMemberSearch(props: { group: Group }) {
 
 export function GroupMembersList(props: { group: Group }) {
   const { group } = props
-  const members = useMembers(group)
-  const maxMambersToShow = 5
+  const members = useMembers(group).filter((m) => m.id !== group.creatorId)
+  const maxMembersToShow = 3
   if (group.memberIds.length === 1) return <div />
   return (
-    <div>
-      <div>
-        <div className="text-neutral flex flex-wrap gap-1">
-          <span className={'text-gray-500'}>Other members</span>
-          {members.slice(0, maxMambersToShow).map((member, i) => (
-            <div key={member.id} className={'flex-shrink'}>
-              <UserLink name={member.name} username={member.username} />
-              {members.length > 1 && i !== members.length - 1 && <span>,</span>}
-            </div>
-          ))}
-          {members.length > maxMambersToShow && (
-            <span> & {members.length - maxMambersToShow} more</span>
-          )}
+    <div className="text-neutral flex flex-wrap gap-1">
+      <span className={'text-gray-500'}>Other members</span>
+      {members.slice(0, maxMembersToShow).map((member, i) => (
+        <div key={member.id} className={'flex-shrink'}>
+          <UserLink name={member.name} username={member.username} />
+          {members.length > 1 && i !== members.length - 1 && <span>,</span>}
         </div>
-      </div>
+      ))}
+      {members.length > maxMembersToShow && (
+        <span> & {members.length - maxMembersToShow} more</span>
+      )}
     </div>
   )
 }
@@ -503,8 +515,9 @@ function SortedLeaderboard(props: {
   scoreFunction: (user: User) => number
   title: string
   header: string
+  maxToShow?: number
 }) {
-  const { users, scoreFunction, title, header } = props
+  const { users, scoreFunction, title, header, maxToShow } = props
   const sortedUsers = users.sort((a, b) => scoreFunction(b) - scoreFunction(a))
   return (
     <Leaderboard
@@ -514,6 +527,7 @@ function SortedLeaderboard(props: {
       columns={[
         { header, renderCell: (user) => formatMoney(scoreFunction(user)) },
       ]}
+      maxToShow={maxToShow}
     />
   )
 }
@@ -528,7 +542,7 @@ function GroupLeaderboards(props: {
 }) {
   const { traderScores, creatorScores, members, topTraders, topCreators } =
     props
-
+  const maxToShow = 50
   // Consider hiding M$0
   // If it's just one member (curator), show all bettors, otherwise just show members
   return (
@@ -541,12 +555,14 @@ function GroupLeaderboards(props: {
               scoreFunction={(user) => traderScores[user.id] ?? 0}
               title="🏅 Bettor rankings"
               header="Profit"
+              maxToShow={maxToShow}
             />
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => creatorScores[user.id] ?? 0}
               title="🏅 Creator rankings"
               header="Market volume"
+              maxToShow={maxToShow}
             />
           </>
         ) : (
@@ -561,6 +577,7 @@ function GroupLeaderboards(props: {
                   renderCell: (user) => formatMoney(traderScores[user.id] ?? 0),
                 },
               ]}
+              maxToShow={maxToShow}
             />
             <Leaderboard
               className="max-w-xl"
@@ -573,6 +590,7 @@ function GroupLeaderboards(props: {
                     formatMoney(creatorScores[user.id] ?? 0),
                 },
               ]}
+              maxToShow={maxToShow}
             />
           </>
         )}
@@ -586,7 +604,7 @@ function AddContractButton(props: { group: Group; user: User }) {
   const [open, setOpen] = useState(false)
 
   async function addContractToCurrentGroup(contract: Contract) {
-    await addContractToGroup(group, contract.id)
+    await addContractToGroup(group, contract)
     setOpen(false)
   }
 
