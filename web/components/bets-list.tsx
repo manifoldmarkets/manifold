@@ -417,8 +417,8 @@ export function BetsSummary(props: {
   const [showSellModal, setShowSellModal] = useState(false)
   const user = useUser()
 
-  const sharesOutcome = floatingEqual(totalShares.YES, 0)
-    ? floatingEqual(totalShares.NO, 0)
+  const sharesOutcome = floatingEqual(totalShares.YES ?? 0, 0)
+    ? floatingEqual(totalShares.NO ?? 0, 0)
       ? undefined
       : 'NO'
     : 'YES'
@@ -498,7 +498,7 @@ export function BetsSummary(props: {
             {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
             {isYourBets &&
               isCpmm &&
-              isBinary &&
+              (isBinary || isPseudoNumeric) &&
               !isClosed &&
               !resolution &&
               hasShares &&
