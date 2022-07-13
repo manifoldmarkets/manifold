@@ -53,7 +53,7 @@ export default function BetRow(props: {
         <SimpleBetPanel
           className={betPanelClassName}
           contract={contract}
-          selected={undefined}
+          selected="YES"
           onBetSuccess={() => setOpen(false)}
           hasShares={hasYesShares || hasNoShares}
         />
