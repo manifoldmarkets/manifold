@@ -300,10 +300,21 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Wild Animal Initiative',
     website: 'https://www.wildanimalinitiative.org/',
     ein: '82-2281466',
+    tags: ['Featured'] as CharityTag[],
     photo: 'https://i.imgur.com/bOVUnDm.png',
-    preview: 'We want to make life better for wild animals.',
-    description:
-      'Wild Animal Initiative (WAI) currently operates in the U.S., where they work to strengthen the animal advocacy movement through creating an academic field dedicated to wild animal welfare. They compile literature reviews, write theoretical and opinion articles, and publish research results on their website and/or in peer-reviewed journals. WAI focuses on identifying and sharing possible research avenues and connecting with more established fields. They also work with researchers from various academic and non-academic institutions to identify potential collaborators, and they recently launched a grant assistance program.',
+    preview:
+      'Our mission is to understand and improve the lives of wild animals.',
+    description: `Although the natural world is a source of great beauty and happiness, vast numbers of animals routinely face serious challenges such as disease, hunger, or natural disasters. There is no “one-size-fits-all” solution to these threats. However, even as we recognize that improving the welfare of free-ranging wild animals is difficult, we believe that humans have a responsibility to help whenever we can.
+
+Our staff explores how humans can beneficially coexist with animals through the lens of wild animal welfare. 
+
+We respect wild animals as individuals with their own needs and preferences, rather than seeing them as mere parts of ecosystems. But this approach demands a richer understanding of wild animals’ lives. 
+
+We want to take a proactive approach to managing the welfare benefits, threats, and uncertainties that are inherent to complex natural and urban environments. Yet, to take action safely, we must conduct research to understand the impacts of our actions. The transdisciplinary perspective of wild animal welfare draws upon ethics, ecology, and animal welfare science to gather the knowledge we need, facilitating evidence-based improvements to wild animals’ quality of life.
+
+Without sufficient public interest or research activity, solutions to the problems wild animals face will go undiscovered. 
+
+Wild Animal Initiative currently focuses on helping scientists, grantors, and decision-makers investigate important and understudied questions about wild animal welfare. Our work catalyzes research and applied projects that will open the door to a clearer picture of wild animals’ needs and how to enhance their well-being. Ultimately, we envision a world in which people actively choose to help wild animals — and have the knowledge they need to do so responsibly.`,
   },
   {
     name: 'New Incentives',
