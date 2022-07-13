@@ -18,12 +18,10 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { exhibitExts } from 'common/util/parse'
 import { FileUploadButton } from './file-upload-button'
+import { linkClass } from './site-link'
 
 const proseClass = clsx(
   'prose prose-sm prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none',
-  // link styles mostly copied from site-link.ts
-  'prose-a:no-underline prose-a:!text-indigo-700',
-  'prose-a:z-10 prose-a:break-words hover:prose-a:underline hover:prose-a:decoration-indigo-400 prose-a:hover:decoration-2'
 )
 
 export function useTextEditor(props: {
@@ -52,7 +50,7 @@ export function useTextEditor(props: {
       }),
       CharacterCount.configure({ limit: max }),
       Image,
-      Link,
+      Link.configure({ HTMLAttributes: { class: clsx('no-underline !text-indigo-700', linkClass)}}),
     ],
     content: defaultValue,
   })
