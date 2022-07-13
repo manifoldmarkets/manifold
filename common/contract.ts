@@ -45,7 +45,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   collectedFees: Fees
 
   groupSlugs?: string[]
-  uniqueBettors?: number
+  uniqueBettorIds?: string[]
+  uniqueBettorCount?: number
 } & T
 
 export type BinaryContract = Contract & Binary

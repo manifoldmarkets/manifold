@@ -20,7 +20,7 @@ import { APIError } from '../../common/api'
 import { User } from '../../common/user'
 
 const firestore = admin.firestore()
-const BONUS_START_DATE = new Date('2022-07-12T20:00:00.000Z').getTime()
+const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
 
 export const onCreateBet = functions.firestore
   .document('contracts/{contractId}/bets/{betId}')
@@ -39,12 +39,17 @@ export const onCreateBet = functions.firestore
       .update({ lastBetTime, lastUpdatedTime: Date.now() })
 
     await notifyFills(bet, contractId, eventId)
-    await updateUniqueBettorsAndGiveCreatorBonus(contractId, eventId)
+    await updateUniqueBettorsAndGiveCreatorBonus(
+      contractId,
+      eventId,
+      bet.userId
+    )
   })
 
 const updateUniqueBettorsAndGiveCreatorBonus = async (
   contractId: string,
-  eventId: string
+  eventId: string,
+  bettorId: string
 ) => {
   const userContractSnap = await firestore
     .collection(`contracts`)
@@ -55,41 +60,46 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     log(`Could not find contract ${contractId}`)
     return
   }
-  const contractBets = (
-    await firestore
-      .collection(`contracts/${contractId}/bets`)
-      .where('userId', '!=', contract.creatorId)
-      .get()
-  ).docs.map((doc) => doc.data() as Bet)
+  let previousUniqueBettorIds = contract.uniqueBettorIds
 
-  if (contractBets.length === 0) {
-    log(`No bets for contract ${contractId}`)
-    return
+  if (!previousUniqueBettorIds) {
+    const contractBets = (
+      await firestore
+        .collection(`contracts/${contractId}/bets`)
+        .where('userId', '!=', contract.creatorId)
+        .get()
+    ).docs.map((doc) => doc.data() as Bet)
+
+    if (contractBets.length === 0) {
+      log(`No bets for contract ${contractId}`)
+      return
+    }
+
+    previousUniqueBettorIds = uniq(
+      contractBets
+        .filter((bet) => bet.createdTime < BONUS_START_DATE)
+        .map((bet) => bet.userId)
+    )
   }
-  const oldUniqueBettors = contract.uniqueBettors
-    ? contract.uniqueBettors
-    : uniq(
-        contractBets
-          .filter((bet) => bet.createdTime < BONUS_START_DATE)
-          .map((bet) => bet.userId)
-      ).length
 
-  const allUniqueBettors = uniq(contractBets.map((bet) => bet.userId)).length
+  const isNewUniqueBettor = !previousUniqueBettorIds.includes(bettorId)
 
-  const newUniqueBettors = allUniqueBettors - oldUniqueBettors
-
+  const newUniqueBettorIds = uniq([...previousUniqueBettorIds, bettorId])
   // Update contract unique bettors
-  if (newUniqueBettors > 0 || !contract.uniqueBettors)
-    log(`Got ${newUniqueBettors} new unique bettors`)
-  await firestore.collection(`contracts`).doc(contractId).update({
-    uniqueBettors: allUniqueBettors,
-  })
-  if (newUniqueBettors <= 0) return
+  if (!contract.uniqueBettorIds || isNewUniqueBettor) {
+    log(`Got ${previousUniqueBettorIds} unique bettors`)
+    isNewUniqueBettor && log(`And a new unique bettor ${bettorId}`)
+    await firestore.collection(`contracts`).doc(contractId).update({
+      uniqueBettorIds: newUniqueBettorIds,
+      uniqueBettorCount: newUniqueBettorIds.length,
+    })
+  }
+  if (!isNewUniqueBettor) return
 
   // Create combined txn for all new unique bettors
   const bonusTxnDetails = {
     contractId: contractId,
-    uniqueBettors: newUniqueBettors,
+    uniqueBettorIds: newUniqueBettorIds,
   }
   const fromUserId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
@@ -103,7 +113,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       fromType: 'BANK',
       toId: contract.creatorId,
       toType: 'USER',
-      amount: UNIQUE_BETTOR_BONUS_AMOUNT * newUniqueBettors,
+      amount: UNIQUE_BETTOR_BONUS_AMOUNT,
       token: 'M$',
       category: 'UNIQUE_BETTOR_BONUS',
       description: JSON.stringify(bonusTxnDetails),

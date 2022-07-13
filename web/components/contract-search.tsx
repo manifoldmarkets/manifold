@@ -36,7 +36,7 @@ const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
 const sortIndexes = [
   { label: 'Newest', value: indexPrefix + 'contracts-newest' },
   { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
-  { label: 'Most popular', value: indexPrefix + 'contracts-most-bettors' },
+  { label: 'Most popular', value: indexPrefix + 'contracts-most-popular' },
   { label: 'Most traded', value: indexPrefix + 'contracts-most-traded' },
   { label: '24h volume', value: indexPrefix + 'contracts-24-hour-vol' },
   { label: 'Last updated', value: indexPrefix + 'contracts-last-updated' },
