@@ -15,14 +15,13 @@ import {
 import { sendWelcomeEmail } from './emails'
 import { isWhitelisted } from '../../common/envs/constants'
 import {
-  CATEGORIES,
   CATEGORIES_GROUP_SLUG_POSTFIX,
   DEFAULT_CATEGORIES,
 } from '../../common/categories'
 
 import { track } from './analytics'
 import { APIError, newEndpoint, validate } from './api'
-import { Group } from '../../common/group'
+import { Group, NEW_USER_GROUP_SLUGS } from '../../common/group'
 import { uniq } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -122,7 +121,7 @@ const numberUsersWithIp = async (ipAddress: string) => {
 }
 
 const addUserToDefaultGroups = async (user: User) => {
-  for (const category of Object.values(CATEGORIES)) {
+  for (const category of Object.values(DEFAULT_CATEGORIES)) {
     const slug = category.toLowerCase() + CATEGORIES_GROUP_SLUG_POSTFIX
     const groups = await getValues<Group>(
       firestore.collection('groups').where('slug', '==', slug)
@@ -135,8 +134,7 @@ const addUserToDefaultGroups = async (user: User) => {
       })
   }
 
-  const extraGroupSlugs = ['welcome', 'updates', 'bugs']
-  for (const slug of extraGroupSlugs) {
+  for (const slug of NEW_USER_GROUP_SLUGS) {
     const groups = await getValues<Group>(
       firestore.collection('groups').where('slug', '==', slug)
     )

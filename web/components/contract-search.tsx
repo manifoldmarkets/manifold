@@ -25,6 +25,7 @@ import { useFollows } from 'web/hooks/use-follows'
 import { trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
+import { NEW_USER_GROUP_SLUGS } from 'common/group'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -74,9 +75,11 @@ export function ContractSearch(props: {
   } = props
 
   const user = useUser()
-  const memberGroupSlugs = useMemberGroups(user?.id)?.map((g) => g.slug)
+  const memberGroupSlugs = useMemberGroups(user?.id)
+    ?.map((g) => g.slug)
+    .filter((s) => !NEW_USER_GROUP_SLUGS.includes(s))
   const follows = useFollows(user?.id)
-
+  console.log(memberGroupSlugs, follows)
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
   const sort = sortIndexes
@@ -159,7 +162,7 @@ export function ContractSearch(props: {
           <option value="open">Open</option>
           <option value="closed">Closed</option>
           <option value="resolved">Resolved</option>
-          <option value="personal">Personal</option>
+          <option value="personal">For you</option>
           <option value="all">All</option>
         </select>
         {!hideOrderSelector && (
@@ -186,7 +189,7 @@ export function ContractSearch(props: {
       {filter === 'personal' &&
       (follows ?? []).length === 0 &&
       (memberGroupSlugs ?? []).length === 0 ? (
-        <>You're not following anyone, nor in any groups yet.</>
+        <>You're not following anyone, nor in any of your own groups yet.</>
       ) : (
         <ContractSearchInner
           querySortOptions={querySortOptions}

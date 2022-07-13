@@ -176,7 +176,7 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
       className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100"
     >
       <Link href={groupPath(group.slug)}>
-        <a className="absolute left-0 right-0 top-0 bottom-0" />
+        <a className="absolute left-0 right-0 top-0 bottom-0 z-0" />
       </Link>
       <div>
         <Avatar
@@ -198,7 +198,7 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
         <div className="text-sm text-gray-500">{group.about}</div>
       </Row>
       <Col className={'mt-2 h-full items-start justify-end'}>
-        <JoinOrLeaveGroupButton group={group} className={'w-24'} />
+        <JoinOrLeaveGroupButton group={group} className={'z-10 w-24'} />
       </Col>
     </Col>
   )

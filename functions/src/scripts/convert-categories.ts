@@ -4,7 +4,10 @@ import { initAdmin } from './script-init'
 initAdmin()
 
 import { getValues, isProd } from '../utils'
-import { CATEGORIES, CATEGORIES_GROUP_SLUG_POSTFIX } from 'common/categories'
+import {
+  CATEGORIES_GROUP_SLUG_POSTFIX,
+  DEFAULT_CATEGORIES,
+} from 'common/categories'
 import { Group } from 'common/group'
 import { uniq } from 'lodash'
 import { Contract } from 'common/contract'
@@ -36,7 +39,7 @@ async function convertCategoriesToGroups() {
     }
   }
 
-  for (const category of Object.values(CATEGORIES)) {
+  for (const category of Object.values(DEFAULT_CATEGORIES)) {
     const markets = await getValues<Contract>(
       adminFirestore
         .collection('contracts')

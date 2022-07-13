@@ -25,6 +25,15 @@ export const TO_CATEGORY = Object.fromEntries(
 
 export const CATEGORY_LIST = Object.keys(CATEGORIES)
 
-export const EXCLUDED_CATEGORIES: category[] = ['fun', 'manifold', 'personal']
+export const EXCLUDED_CATEGORIES: category[] = [
+  'fun',
+  'manifold',
+  'personal',
+  'covid',
+  'culture',
+  'gaming',
+  'crypto',
+  'world',
+]
 
 export const DEFAULT_CATEGORIES = difference(CATEGORY_LIST, EXCLUDED_CATEGORIES)
