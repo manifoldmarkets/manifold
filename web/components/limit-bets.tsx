@@ -76,6 +76,13 @@ function LimitOrderTable(props: {
 
   return (
     <table className="table-compact table w-full rounded text-gray-500">
+      <thead>
+        {!isYou && <th>User</th>}
+        <th>Outcome</th>
+        <th>Amount</th>
+        <th>Prob</th>
+        {isYou && <th></th>}
+      </thead>
       <tbody>
         {limitBets.map((bet) => (
           <LimitBet key={bet.id} bet={bet} contract={contract} isYou={isYou} />
