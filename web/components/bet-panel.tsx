@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 import { partition, sum, sumBy } from 'lodash'
-import { SwitchHorizontalIcon } from '@heroicons/react/solid'
 
 import { useUser } from 'web/hooks/use-user'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
@@ -72,30 +71,10 @@ export function BetPanel(props: {
           className
         )}
       >
-        <Row className="align-center mb-4 justify-between">
-          <div className="text-4xl">Bet</div>
-          <Row className="mt-2 items-center gap-2">
-            <PillButton
-              selected={!isLimitOrder}
-              onSelect={() => {
-                setIsLimitOrder(false)
-                track('select quick order')
-              }}
-            >
-              Quick
-            </PillButton>
-            <PillButton
-              selected={isLimitOrder}
-              onSelect={() => {
-                setIsLimitOrder(true)
-                track('select limit order')
-              }}
-            >
-              Limit
-            </PillButton>
-          </Row>
-        </Row>
-
+        <QuickOrLimitBet
+          isLimitOrder={isLimitOrder}
+          setIsLimitOrder={setIsLimitOrder}
+        />
         <BuyPanel
           contract={contract}
           user={user}
@@ -142,19 +121,10 @@ export function SimpleBetPanel(props: {
           'rounded-b-md bg-white px-8 py-6'
         )}
       >
-        <Row className="justify-between">
-          <div className="mb-6 text-2xl">
-            {isLimitOrder ? <>Limit order</> : <>Place your bet</>}
-          </div>
-
-          <button
-            className="btn btn-ghost btn-sm text-sm normal-case"
-            onClick={() => setIsLimitOrder(!isLimitOrder)}
-          >
-            <SwitchHorizontalIcon className="inline h-6 w-6" />
-          </button>
-        </Row>
-
+        <QuickOrLimitBet
+          isLimitOrder={isLimitOrder}
+          setIsLimitOrder={setIsLimitOrder}
+        />
         <BuyPanel
           contract={contract}
           user={user}
@@ -424,6 +394,39 @@ function BuyPanel(props: {
         <div className="mt-4">{isLimitOrder ? 'Order' : 'Bet'} submitted!</div>
       )}
     </>
+  )
+}
+
+function QuickOrLimitBet(props: {
+  isLimitOrder: boolean
+  setIsLimitOrder: (isLimitOrder: boolean) => void
+}) {
+  const { isLimitOrder, setIsLimitOrder } = props
+
+  return (
+    <Row className="align-center mb-4 justify-between">
+      <div className="text-4xl">Bet</div>
+      <Row className="mt-2 items-center gap-2">
+        <PillButton
+          selected={!isLimitOrder}
+          onSelect={() => {
+            setIsLimitOrder(false)
+            track('select quick order')
+          }}
+        >
+          Quick
+        </PillButton>
+        <PillButton
+          selected={isLimitOrder}
+          onSelect={() => {
+            setIsLimitOrder(true)
+            track('select limit order')
+          }}
+        >
+          Limit
+        </PillButton>
+      </Row>
+    </Row>
   )
 }
 
