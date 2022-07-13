@@ -31,6 +31,7 @@ import { track } from 'web/lib/service/analytics'
 import { useEvent } from 'web/hooks/use-event'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
+import useMediaQuery from 'react-query/types/devtools/useMediaQuery'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -472,7 +473,7 @@ export function CommentInputTextArea(props: {
   isSubmitting: boolean
   setRef?: (ref: HTMLTextAreaElement) => void
   presetId?: string
-  enterToSubmit?: boolean
+  enterToSubmitOnDesktop?: boolean
 }) {
   const {
     isReply,
@@ -484,9 +485,9 @@ export function CommentInputTextArea(props: {
     presetId,
     isSubmitting,
     replyToUsername,
-    enterToSubmit,
+    enterToSubmitOnDesktop,
   } = props
-
+  const isMobile = innerWidth < 768
   const memoizedSetComment = useEvent(setComment)
   useEffect(() => {
     if (!replyToUsername || !user || replyToUsername === user.username) return
@@ -507,7 +508,7 @@ export function CommentInputTextArea(props: {
           placeholder={
             isReply
               ? 'Write a reply... '
-              : enterToSubmit
+              : enterToSubmitOnDesktop
               ? 'Send a message'
               : 'Write a comment...'
           }
@@ -516,7 +517,10 @@ export function CommentInputTextArea(props: {
           disabled={isSubmitting}
           onKeyDown={(e) => {
             if (
-              (enterToSubmit && e.key === 'Enter' && !e.shiftKey) ||
+              (enterToSubmitOnDesktop &&
+                e.key === 'Enter' &&
+                !e.shiftKey &&
+                !isMobile) ||
               (e.key === 'Enter' && (e.ctrlKey || e.metaKey))
             ) {
               e.preventDefault()
