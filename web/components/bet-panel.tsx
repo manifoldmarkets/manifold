@@ -250,6 +250,9 @@ function BuyPanel(props: {
   )
 
   const resultProb = getCpmmProbability(newPool, newP)
+  const probStayedSame =
+    formatPercent(resultProb) === formatPercent(initialProb)
+
   const remainingMatched = isLimitOrder
     ? ((newBet.orderAmount ?? 0) - newBet.amount) /
       (betChoice === 'YES' ? limitProbFrac : 1 - limitProbFrac)
@@ -339,11 +342,15 @@ function BuyPanel(props: {
             <div className="text-gray-500">
               {isPseudoNumeric ? 'Estimated value' : 'Probability'}
             </div>
-            <div>
-              {format(initialProb)}
-              <span className="mx-2">→</span>
-              {format(resultProb)}
-            </div>
+            {probStayedSame ? (
+              <div>{format(initialProb)}</div>
+            ) : (
+              <div>
+                {format(initialProb)}
+                <span className="mx-2">→</span>
+                {format(resultProb)}
+              </div>
+            )}
           </Row>
         )}
 
