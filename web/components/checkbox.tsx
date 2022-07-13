@@ -5,12 +5,13 @@ export function Checkbox(props: {
   checked: boolean
   toggle: (checked: boolean) => void
   className?: string
+  disabled?: boolean
 }) {
-  const { label, checked, toggle, className } = props
+  const { label, checked, toggle, className, disabled } = props
 
   return (
     <div className={clsx(className, 'space-y-5')}>
-      <div className="relative flex items-start">
+      <div className="relative flex items-center">
         <div className="flex h-6 items-center">
           <input
             id={label}
@@ -18,6 +19,7 @@ export function Checkbox(props: {
             className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
             checked={checked}
             onChange={(e) => toggle(!e.target.checked)}
+            disabled={disabled}
           />
         </div>
         <div className="ml-3">
