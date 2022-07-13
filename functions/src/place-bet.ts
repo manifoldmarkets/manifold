@@ -144,13 +144,20 @@ export const placebet = newEndpoint({}, async (req, auth) => {
     )
     log('Updated contract properties.')
 
-    return { betId: betDoc.id }
+    return { betId: betDoc.id, makers }
   })
 
   log('Main transaction finished.')
   await redeemShares(auth.uid, contractId)
+
+  const userIds = [
+    auth.uid,
+    ...(result.makers ?? []).map((maker) => maker.bet.userId),
+  ]
+  await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
   log('Share redemption transaction finished.')
-  return result
+
+  return { betId: result.betId }
 })
 
 const firestore = admin.firestore()
