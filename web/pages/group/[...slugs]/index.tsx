@@ -7,10 +7,10 @@ import { Contract } from 'web/lib/firebase/contracts'
 import {
   groupPath,
   getGroupBySlug,
-  getGroupContracts,
   updateGroup,
   addUserToGroup,
   addContractToGroup,
+  getGroupContracts,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
@@ -33,7 +33,6 @@ import { SEO } from 'web/components/SEO'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
-import { ContractsGrid } from 'web/components/contract/contracts-list'
 import {
   createButtonStyle,
   CreateQuestionButton,
@@ -42,13 +41,15 @@ import React, { useEffect, useState } from 'react'
 import { GroupChat } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
-import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
+import {
+  checkAgainstQuery,
+  getSavedSort,
+} from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { REFERRAL_AMOUNT } from 'common/user'
-import { SiteLink } from 'web/components/site-link'
 import { ContractSearch } from 'web/components/contract-search'
 import clsx from 'clsx'
 import { FollowList } from 'web/components/follow-list'
@@ -61,10 +62,14 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
   const group = await getGroupBySlug(slugs[0])
-  const members = group ? await listMembers(group) : []
+  const members =
+    group && group.memberIds.length < 100 ? await listMembers(group) : []
   const creatorPromise = group ? getUser(group.creatorId) : null
 
-  const contracts = group ? await getGroupContracts(group).catch((_) => []) : []
+  const contracts =
+    group && group.contractIds.length < 100
+      ? await getGroupContracts(group).catch((_) => [])
+      : []
 
   const bets = await Promise.all(
     contracts.map((contract: Contract) => listAllBets(contract.id))
@@ -149,26 +154,9 @@ export default function GroupPage(props: {
   const page = slugs?.[1] as typeof groupSubpages[number]
 
   const group = useGroup(props.group?.id) ?? props.group
-  const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
-  const [query, setQuery] = useState('')
   const tips = useTipTxns({ groupId: group?.id })
 
   const messages = useCommentsOnGroup(group?.id)
-  const debouncedQuery = debounce(setQuery, 50)
-  const filteredContracts =
-    query != '' && contracts
-      ? contracts.filter(
-          (c) =>
-            checkAgainstQuery(query, c.question) ||
-            checkAgainstQuery(query, c.creatorName) ||
-            checkAgainstQuery(query, c.creatorUsername)
-        )
-      : []
-
-  useEffect(() => {
-    if (group)
-      getGroupContracts(group).then((contracts) => setContracts(contracts))
-  }, [group])
 
   const user = useUser()
   useEffect(() => {
@@ -237,37 +225,14 @@ export default function GroupPage(props: {
     {
       title: 'Questions',
       content: (
-        <div className={'mt-2 px-1'}>
-          {contracts ? (
-            contracts.length > 0 ? (
-              <>
-                <input
-                  type="text"
-                  onChange={(e) => debouncedQuery(e.target.value)}
-                  placeholder="Search the group's questions"
-                  className="input input-bordered mb-4 w-full"
-                />
-                <ContractsGrid
-                  contracts={query != '' ? filteredContracts : contracts}
-                  hasMore={false}
-                  loadMore={() => {}}
-                />
-              </>
-            ) : (
-              <div className="p-2 text-gray-500">
-                No questions yet. Why not{' '}
-                <SiteLink
-                  href={`/create/?groupId=${group.id}`}
-                  className={'font-bold text-gray-700'}
-                >
-                  add one?
-                </SiteLink>
-              </div>
-            )
-          ) : (
-            <LoadingIndicator />
-          )}
-        </div>
+        <ContractSearch
+          querySortOptions={{
+            shouldLoadFromStorage: true,
+            defaultSort: getSavedSort() ?? 'newest',
+            defaultFilter: 'open',
+          }}
+          additionalFilter={{ groupSlug: group.slug }}
+        />
       ),
       href: groupPath(group.slug, 'questions'),
     },
@@ -491,8 +456,10 @@ function GroupMemberSearch(props: { group: Group }) {
 
 export function GroupMembersList(props: { group: Group }) {
   const { group } = props
-  const members = useMembers(group).filter((m) => m.id !== group.creatorId)
   const maxMembersToShow = 3
+  const members = useMembers(group, maxMembersToShow).filter(
+    (m) => m.id !== group.creatorId
+  )
   if (group.memberIds.length === 1) return <div />
   return (
     <div className="text-neutral flex flex-wrap gap-1">
@@ -503,8 +470,8 @@ export function GroupMembersList(props: { group: Group }) {
           {members.length > 1 && i !== members.length - 1 && <span>,</span>}
         </div>
       ))}
-      {members.length > maxMembersToShow && (
-        <span> & {members.length - maxMembersToShow} more</span>
+      {group.memberIds.length > maxMembersToShow && (
+        <span> & {group.memberIds.length - maxMembersToShow} more</span>
       )}
     </div>
   )
