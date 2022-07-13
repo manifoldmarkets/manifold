@@ -27,6 +27,7 @@ import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
 import { TextEditor, useTextEditor } from 'web/components/editor'
+import { Checkbox } from 'web/components/checkbox'
 
 type NewQuestionParams = {
   groupId?: string
@@ -294,15 +295,13 @@ export function NewContract(props: {
             </Row>
 
             {!(min !== undefined && min < 0) && (
-              <Row className="mt-1 ml-2 mb-2 items-center">
-                <span className="mr-2 text-sm">Log scale</span>{' '}
-                <input
-                  type="checkbox"
-                  checked={isLogScale}
-                  onChange={() => setIsLogScale(!isLogScale)}
-                  disabled={isSubmitting}
-                />
-              </Row>
+              <Checkbox
+                className="my-2 text-sm"
+                label="Log scale"
+                checked={isLogScale}
+                toggle={() => setIsLogScale(!isLogScale)}
+                disabled={isSubmitting}
+              />
             )}
 
             {min !== undefined && max !== undefined && min >= max && (

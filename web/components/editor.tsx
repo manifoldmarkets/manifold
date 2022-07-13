@@ -21,7 +21,7 @@ import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 
 const proseClass = clsx(
-  'prose prose-sm prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none',
+  'prose prose-sm prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none'
 )
 
 export function useTextEditor(props: {
@@ -50,7 +50,11 @@ export function useTextEditor(props: {
       }),
       CharacterCount.configure({ limit: max }),
       Image,
-      Link.configure({ HTMLAttributes: { class: clsx('no-underline !text-indigo-700', linkClass)}}),
+      Link.configure({
+        HTMLAttributes: {
+          class: clsx('no-underline !text-indigo-700', linkClass),
+        },
+      }),
     ],
     content: defaultValue,
   })
