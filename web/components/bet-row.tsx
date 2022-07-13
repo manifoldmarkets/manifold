@@ -44,7 +44,7 @@ export default function BetRow(props: {
           {hasYesShares
             ? `(${Math.floor(yesShares)} ${isPseudoNumeric ? 'HIGHER' : 'YES'})`
             : hasNoShares
-            ? `(${Math.floor(noShares)} ${isPseudoNumeric ? 'LOWER' : 'YES'})`
+            ? `(${Math.floor(noShares)} ${isPseudoNumeric ? 'LOWER' : 'NO'})`
             : ''}
         </div>
       </Col>
