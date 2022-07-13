@@ -296,7 +296,7 @@ function GroupsList(props: {
       />
 
       <div
-        className="flex-1 space-y-0.5 overflow-y-scroll"
+        className="flex-1 space-y-0.5 overflow-auto"
         style={{ height: remainingHeight }}
         ref={setContainerRef}
       >
