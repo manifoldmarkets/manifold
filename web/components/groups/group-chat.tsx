@@ -165,7 +165,7 @@ export function GroupChat(props: {
               replyToUsername={replyToUsername}
               submitComment={submitMessage}
               isSubmitting={isSubmitting}
-              enterToSubmitOnDesktop={true}
+              enterToSubmit={true}
               setRef={setInputRef}
             />
           </div>
