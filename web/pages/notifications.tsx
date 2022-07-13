@@ -774,8 +774,17 @@ function NotificationTextLabel(props: {
           )
         if (sourceText === 'CANCEL') return <CancelLabel />
         if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
+
         // Numeric market
-        return <NumericValueLabel value={parseFloat(sourceText)} />
+        if (parseFloat(sourceText))
+          return <NumericValueLabel value={parseFloat(sourceText)} />
+
+        // Free response market
+        return (
+          <div className={className ? className : 'line-clamp-1 text-blue-400'}>
+            <Linkify text={sourceText} />
+          </div>
+        )
       }
     }
     // Close date will be a number - it looks better without it
