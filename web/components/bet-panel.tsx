@@ -8,7 +8,6 @@ import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
-import { YesNoSelector } from './yes-no-selector'
 import {
   formatMoney,
   formatMoneyWithDecimals,
@@ -41,6 +40,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
 import { BucketInput } from './bucket-input'
+import { PillButton } from './buttons/pill-button'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -54,10 +54,6 @@ export function BetPanel(props: {
   const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
 
   const [isLimitOrder, setIsLimitOrder] = useState(false)
-  const toggleLimitOrder = () => {
-    setIsLimitOrder(!isLimitOrder)
-    track('toggle limit order')
-  }
 
   const showLimitOrders =
     (isLimitOrder && unfilledBets.length > 0) || yourUnfilledBets.length > 0
@@ -71,21 +67,33 @@ export function BetPanel(props: {
       />
       <Col
         className={clsx(
-          'relative rounded-b-md bg-white px-8 py-6',
+          'relative rounded-b-md bg-white px-6 py-6',
           !sharesOutcome && 'rounded-t-md',
           className
         )}
       >
-        <Row className="align-center justify-between">
-          <div className="mb-6 text-2xl">
-            {isLimitOrder ? <>Limit order</> : <>Place your bet</>}
-          </div>
-          <button
-            className="btn btn-ghost btn-sm text-sm normal-case"
-            onClick={toggleLimitOrder}
-          >
-            <SwitchHorizontalIcon className="inline h-6 w-6" />
-          </button>
+        <Row className="align-center mb-4 justify-between">
+          <div className="text-4xl">Bet</div>
+          <Row className="mt-2 items-center gap-2">
+            <PillButton
+              selected={!isLimitOrder}
+              onSelect={() => {
+                setIsLimitOrder(false)
+                track('select quick order')
+              }}
+            >
+              Quick
+            </PillButton>
+            <PillButton
+              selected={isLimitOrder}
+              onSelect={() => {
+                setIsLimitOrder(true)
+                track('select limit order')
+              }}
+            >
+              Limit
+            </PillButton>
+          </Row>
         </Row>
 
         <BuyPanel
@@ -287,13 +295,26 @@ function BuyPanel(props: {
 
   return (
     <>
-      <YesNoSelector
-        className="mb-4"
-        btnClassName="flex-1"
-        selected={betChoice}
-        onSelect={(choice) => onBetChoice(choice)}
-        isPseudoNumeric={isPseudoNumeric}
-      />
+      <div className="my-3 text-left text-sm text-gray-500">Direction</div>
+      <Row className="mb-4 items-center gap-2">
+        <PillButton
+          selected={betChoice === 'YES'}
+          onSelect={() => onBetChoice('YES')}
+          big
+          color="bg-primary"
+        >
+          {isPseudoNumeric ? 'Higher' : 'Yes'}
+        </PillButton>
+        <PillButton
+          selected={betChoice === 'NO'}
+          onSelect={() => onBetChoice('NO')}
+          big
+          color="bg-red-400"
+        >
+          {isPseudoNumeric ? 'Lower' : 'No'}
+        </PillButton>
+      </Row>
+
       <div className="my-3 text-left text-sm text-gray-500">Amount</div>
       <BuyAmountInput
         inputClassName="w-full max-w-none"
