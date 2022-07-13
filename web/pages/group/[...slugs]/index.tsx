@@ -428,7 +428,8 @@ function SearchBar(props: { setQuery: (query: string) => void }) {
 
 function GroupMemberSearch(props: { group: Group }) {
   const [query, setQuery] = useState('')
-  const members = useMembers(props.group)
+  const { group } = props
+  const members = useMembers(group, 100)
 
   // TODO use find-active-contracts to sort by?
   const matches = sortBy(members, [(member) => member.name]).filter(
