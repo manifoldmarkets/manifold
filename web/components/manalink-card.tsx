@@ -67,3 +67,44 @@ export function ManalinkCard(props: {
     </div>
   )
 }
+
+export function ManalinkCardPreview(props: {
+  className?: string
+  info: ManalinkInfo
+  defaultMessage: string
+}) {
+  const { className, defaultMessage, info } = props
+  const { expiresTime, maxUses, uses, amount, message } = info
+  return (
+    <div
+      className={clsx(
+        className,
+        ' group flex flex-col rounded-lg bg-gradient-to-br from-indigo-200 via-indigo-400 to-indigo-800 shadow-lg transition-all'
+      )}
+    >
+      <Col className="mx-4 mt-2 -mb-4 text-right text-xs text-gray-100">
+        <div>
+          {maxUses != null
+            ? `${maxUses - uses}/${maxUses} uses left`
+            : `Unlimited use`}
+        </div>
+        <div>
+          {expiresTime != null
+            ? `Expires ${fromNow(expiresTime)}`
+            : 'Never expires'}
+        </div>
+      </Col>
+
+      <img
+        className="my-2 block h-1/3 w-1/3 self-center transition-all group-hover:rotate-12"
+        src="/logo-white.svg"
+      />
+      <Row className="rounded-b-lg bg-white p-2">
+        <Col className="text-md">
+          <div className="mb-1 text-indigo-500">{formatMoney(amount)}</div>
+          <div className="text-xs">{message || defaultMessage}</div>
+        </Col>
+      </Row>
+    </div>
+  )
+}
