@@ -46,8 +46,6 @@ export function ContractDescription(props: {
     })
   }
 
-  if (!isCreator) return null
-
   const { tags } = contract
   const categories = tags.filter((tag) =>
     CATEGORY_LIST.includes(tag.toLowerCase())
