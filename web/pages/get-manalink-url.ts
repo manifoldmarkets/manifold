@@ -1,3 +1,3 @@
-export default function getLinkUrl(slug: string) {
+export default function getManalinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
 }

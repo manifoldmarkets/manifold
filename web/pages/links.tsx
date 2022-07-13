@@ -18,7 +18,7 @@ import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
 import { CreateLinksButton } from 'web/components/links/create-links-button'
-import getLinkUrl from 'functions/src/get-manalink-url'
+import getManalinkUrl from 'web/pages/get-manalink-url'
 
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
@@ -200,7 +200,7 @@ function LinkSummaryRow(props: {
       <td className="px-5 py-4 font-medium text-gray-900">
         {formatMoney(link.amount)}
       </td>
-      <td className="px-5 py-4">{getLinkUrl(link.slug)}</td>
+      <td className="px-5 py-4">{getManalinkUrl(link.slug)}</td>
       <td className="px-5 py-4">{link.claimedUserIds.length}</td>
       <td className="px-5 py-4">{link.maxUses == null ? '∞' : link.maxUses}</td>
       <td className="px-5 py-4">

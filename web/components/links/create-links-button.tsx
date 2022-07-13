@@ -9,27 +9,23 @@ import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
 import Textarea from 'react-expanding-textarea'
 import dayjs from 'dayjs'
-import Button, { SubmitButton } from '../button'
-import getLinkUrl from 'functions/src/get-manalink-url'
+import Button from '../button'
+import getManalinkUrl from 'web/pages/get-manalink-url'
 import { DuplicateIcon } from '@heroicons/react/outline'
 
 export function CreateLinksButton(props: {
   user: User
 
   highlightedSlug: string
-  setHighlightedSlug: any
+  setHighlightedSlug: (slug: string) => void
 }) {
   const { user, highlightedSlug, setHighlightedSlug } = props
 
   const [open, setOpen] = useState(false)
 
-  function updateOpen(newOpen: boolean) {
-    setOpen(newOpen)
-  }
-
   return (
     <>
-      <Modal open={open} setOpen={updateOpen}>
+      <Modal open={open} setOpen={(newOpen) => setOpen(newOpen)}>
         <Col className="gap-4 rounded-md bg-white px-8 py-6">
           <CreateManalinkForm
             highlightedSlug={highlightedSlug}
@@ -50,7 +46,7 @@ export function CreateLinksButton(props: {
 
       <Button
         color={'indigo'}
-        onClick={() => updateOpen(true)}
+        onClick={() => setOpen(true)}
         className={clsx('whitespace-nowrap')}
       >
         Create a Manalink
@@ -155,7 +151,8 @@ function CreateManalinkForm(props: {
               />
             </div>
           </div>
-          <SubmitButton
+          <Button
+            type="submit"
             color={'indigo'}
             className={clsx(
               'mt-8 whitespace-nowrap drop-shadow-md',
@@ -163,7 +160,7 @@ function CreateManalinkForm(props: {
             )}
           >
             Create
-          </SubmitButton>
+          </Button>
         </form>
       )}
       {finishedCreating && (
@@ -176,11 +173,11 @@ function CreateManalinkForm(props: {
           />
           <Row className="rounded border bg-gray-50 py-2 px-3 text-sm text-gray-500">
             <div className="w-full select-text truncate">
-              {getLinkUrl(highlightedSlug)}
+              {getManalinkUrl(highlightedSlug)}
             </div>
             <DuplicateIcon
               onClick={() => {
-                navigator.clipboard.writeText(getLinkUrl(highlightedSlug))
+                navigator.clipboard.writeText(getManalinkUrl(highlightedSlug))
               }}
               className="my-auto ml-2 h-5 w-5 cursor-copy"
             />
