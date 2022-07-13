@@ -6,7 +6,7 @@ import {
   SUS_STARTING_BALANCE,
   User,
 } from '../../common/user'
-import { getUser, getUserByUsername, getValues } from './utils'
+import { getUser, getUserByUsername, getValues, isProd } from './utils'
 import { randomString } from '../../common/util/random'
 import {
   cleanDisplayName,
@@ -24,6 +24,10 @@ import { track } from './analytics'
 import { APIError, newEndpoint, validate } from './api'
 import { Group } from '../../common/group'
 import { uniq } from 'lodash'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from '../../common/antes'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -129,5 +133,38 @@ const addUserToDefaultGroups = async (user: User) => {
       .update({
         memberIds: uniq(groups[0].memberIds.concat(user.id)),
       })
+  }
+
+  const extraGroupSlugs = ['welcome', 'updates', 'bugs']
+  for (const slug of extraGroupSlugs) {
+    const groups = await getValues<Group>(
+      firestore.collection('groups').where('slug', '==', slug)
+    )
+    const group = groups[0]
+    await firestore
+      .collection('groups')
+      .doc(group.id)
+      .update({
+        memberIds: uniq(group.memberIds.concat(user.id)),
+      })
+    const manifoldAccount = isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+
+    if (slug === 'welcome') {
+      const welcomeCommentDoc = firestore
+        .collection(`groups/${group.id}/comments`)
+        .doc()
+      await welcomeCommentDoc.create({
+        id: welcomeCommentDoc.id,
+        groupId: group.id,
+        userId: manifoldAccount,
+        text: `Welcome, ${user.name} (@${user.username})!`,
+        createdTime: Date.now(),
+        userName: 'Manifold Markets',
+        userUsername: 'ManifoldMarkets',
+        userAvatarUrl: 'https://manifold.markets/logo-bg-white.png',
+      })
+    }
   }
 }

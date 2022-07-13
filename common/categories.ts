@@ -1,6 +1,6 @@
 import { difference } from 'lodash'
 
-export const CATEGORIES_GROUP_SLUG_POSTFIX = '-default-test'
+export const CATEGORIES_GROUP_SLUG_POSTFIX = '-default'
 export const CATEGORIES = {
   politics: 'Politics',
   technology: 'Technology',

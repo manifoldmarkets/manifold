@@ -13,7 +13,7 @@ import { filterDefined } from 'common/util/array'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/lib/antes'
+} from 'common/antes'
 
 const adminFirestore = admin.firestore()
 
@@ -73,7 +73,7 @@ async function convertCategoriesToGroups() {
       creatorId: manifoldAccount,
       createdTime: Date.now(),
       anyoneCanJoin: true,
-      memberIds: [manifoldAccount, ...groupUsers],
+      memberIds: [manifoldAccount],
       about: 'Official group for all things related to ' + category,
       mostRecentActivityTime: Date.now(),
       contractIds: markets.map((market) => market.id),
@@ -81,6 +81,13 @@ async function convertCategoriesToGroups() {
     }
 
     await adminFirestore.collection('groups').doc(newGroupRef.id).set(newGroup)
+    // Update group with new memberIds to avoid notifying everyone
+    await adminFirestore
+      .collection('groups')
+      .doc(newGroupRef.id)
+      .update({
+        memberIds: uniq(groupUsers),
+      })
 
     for (const market of markets) {
       await adminFirestore
