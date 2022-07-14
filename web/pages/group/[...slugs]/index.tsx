@@ -1,6 +1,6 @@
 import { take, sortBy, debounce } from 'lodash'
 
-import { Group } from 'common/group'
+import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Page } from 'web/components/page'
 import { listAllBets } from 'web/lib/firebase/bets'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
@@ -114,7 +114,7 @@ export async function getStaticPaths() {
 }
 const groupSubpages = [
   undefined,
-  'chat',
+  GROUP_CHAT_SLUG,
   'questions',
   'rankings',
   'about',
@@ -218,7 +218,7 @@ export default function GroupPage(props: {
             ) : (
               <LoadingIndicator />
             ),
-            href: groupPath(group.slug, 'chat'),
+            href: groupPath(group.slug, GROUP_CHAT_SLUG),
           },
         ]),
     {
@@ -246,7 +246,7 @@ export default function GroupPage(props: {
       href: groupPath(group.slug, 'about'),
     },
   ]
-  const tabIndex = tabs.map((t) => t.title).indexOf(page ?? 'chat')
+  const tabIndex = tabs.map((t) => t.title).indexOf(page ?? GROUP_CHAT_SLUG)
   return (
     <Page rightSidebar={rightSidebar} className="!pb-0">
       <SEO
