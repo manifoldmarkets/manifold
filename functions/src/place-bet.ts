@@ -128,34 +128,38 @@ export const placebet = newEndpoint({}, async (req, auth) => {
       updateMakers(makers, betDoc.id, contractDoc, trans)
     }
 
-    trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
-    log('Updated user balance.')
-    trans.update(
-      contractDoc,
-      removeUndefinedProps({
-        pool: newPool,
-        p: newP,
-        totalShares: newTotalShares,
-        totalBets: newTotalBets,
-        totalLiquidity: newTotalLiquidity,
-        collectedFees: addObjects(newBet.fees, collectedFees),
-        volume: volume + newBet.amount,
-      })
-    )
-    log('Updated contract properties.')
+    if (newBet.amount !== 0) {
+      trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
+      log('Updated user balance.')
 
-    return { betId: betDoc.id, makers }
+      trans.update(
+        contractDoc,
+        removeUndefinedProps({
+          pool: newPool,
+          p: newP,
+          totalShares: newTotalShares,
+          totalBets: newTotalBets,
+          totalLiquidity: newTotalLiquidity,
+          collectedFees: addObjects(newBet.fees, collectedFees),
+          volume: volume + newBet.amount,
+        })
+      )
+      log('Updated contract properties.')
+    }
+
+    return { betId: betDoc.id, makers, newBet }
   })
 
   log('Main transaction finished.')
-  await redeemShares(auth.uid, contractId)
 
-  const userIds = [
-    auth.uid,
-    ...(result.makers ?? []).map((maker) => maker.bet.userId),
-  ]
-  await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
-  log('Share redemption transaction finished.')
+  if (result.newBet.amount !== 0) {
+    const userIds = [
+      auth.uid,
+      ...(result.makers ?? []).map((maker) => maker.bet.userId),
+    ]
+    await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
+    log('Share redemption transaction finished.')
+  }
 
   return { betId: result.betId }
 })
