@@ -82,7 +82,9 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     )
   }
 
-  const isNewUniqueBettor = !previousUniqueBettorIds.includes(bettorId)
+  const isNewUniqueBettor =
+    !previousUniqueBettorIds.includes(bettorId) &&
+    bettorId !== contract.creatorId
 
   const newUniqueBettorIds = uniq([...previousUniqueBettorIds, bettorId])
   // Update contract unique bettors
