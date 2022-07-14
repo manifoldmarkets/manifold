@@ -5,7 +5,7 @@ import { Group } from 'common/group'
 import { Contract } from 'common/contract'
 const firestore = admin.firestore()
 
-exports.onGroupDelete = functions.firestore
+export const onDeleteGroup = functions.firestore
   .document('groups/{groupId}')
   .onDelete(async (change) => {
     const group = change.data() as Group
