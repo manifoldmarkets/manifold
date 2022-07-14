@@ -36,6 +36,7 @@ import { groupBy, sum, uniq } from 'lodash'
 import Custom404 from 'web/pages/404'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -183,7 +184,7 @@ function IncomeNotificationGroupItem(props: {
       const groupedNotificationsBySourceTitle = groupBy(
         groupedNotificationsBySourceType[sourceType],
         (notification) => {
-          return notification.sourceTitle
+          return notification.sourceTitle ?? notification.sourceContractTitle
         }
       )
       for (const contractId in groupedNotificationsBySourceTitle) {
@@ -314,7 +315,8 @@ function IncomeNotificationItem(props: {
   const { notification, justSummary } = props
   const { sourceType, sourceUserName, sourceUserUsername } = notification
   const [highlighted] = useState(!notification.isSeen)
-
+  const { width } = useWindowSize()
+  const isMobile = (width && width < 768) || false
   useEffect(() => {
     setNotificationsAsSeen([notification])
   }, [notification])
@@ -351,7 +353,7 @@ function IncomeNotificationItem(props: {
                 {getReasonForShowingIncomeNotification(true)}
                 <QuestionOrGroupLink
                   notification={notification}
-                  ignoreClick={true}
+                  ignoreClick={isMobile}
                 />
               </span>
             </div>
@@ -406,6 +408,8 @@ function NotificationGroupItem(props: {
   const { notificationGroup, className } = props
   const { notifications } = notificationGroup
   const { sourceContractTitle } = notifications[0]
+  const { width } = useWindowSize()
+  const isMobile = (width && width < 768) || false
   const numSummaryLines = 3
 
   const [expanded, setExpanded] = useState(false)
@@ -445,7 +449,10 @@ function NotificationGroupItem(props: {
             <div className={'flex w-full flex-row justify-between'}>
               <div className={'ml-2'}>
                 Activity on
-                <QuestionOrGroupLink notification={notifications[0]} />
+                <QuestionOrGroupLink
+                  notification={notifications[0]}
+                  ignoreClick={!expanded && isMobile}
+                />
               </div>
               <div className={'hidden sm:inline-block'}>
                 <RelativeTimestamp time={notifications[0].createdTime} />
