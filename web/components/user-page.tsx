@@ -38,6 +38,7 @@ import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { filterDefined } from 'common/util/array'
 import { useUserBets } from 'web/hooks/use-user-bets'
+import { ReferralsButton } from 'web/components/referrals-button'
 
 export function UserLink(props: {
   name: string
@@ -202,7 +203,9 @@ export function UserPage(props: {
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
-            {/* <ReferralsButton user={user} currentUser={currentUser} /> */}
+            {currentUser?.username === 'Ian' && (
+              <ReferralsButton user={user} currentUser={currentUser} />
+            )}
             <GroupsButton user={user} />
           </Row>
 
