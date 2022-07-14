@@ -2,14 +2,12 @@ import { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import {
-  getGroupBySlug,
   getGroupsWithContractId,
   listenForGroup,
   listenForGroups,
   listenForMemberGroups,
 } from 'web/lib/firebase/groups'
 import { getUser } from 'web/lib/firebase/users'
-import { CATEGORIES, CATEGORIES_GROUP_SLUG_POSTFIX } from 'common/categories'
 import { filterDefined } from 'common/util/array'
 
 export const useGroup = (groupId: string | undefined) => {

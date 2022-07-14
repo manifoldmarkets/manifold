@@ -119,6 +119,7 @@ export async function addUserToGroup(
   await updateGroup(newGroup, { memberIds: uniq(newMemberIds) })
   return newGroup
 }
+
 export async function leaveGroup(group: Group, userId: string): Promise<Group> {
   const { memberIds } = group
   if (!memberIds.includes(userId)) {
