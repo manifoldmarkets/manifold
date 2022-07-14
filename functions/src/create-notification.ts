@@ -414,6 +414,7 @@ export const createGroupCommentNotification = async (
   const notificationRef = firestore
     .collection(`/users/${toUserId}/notifications`)
     .doc(idempotencyKey)
+  const sourceSlug = `/group/${group.slug}/${GROUP_CHAT_SLUG}`
   const notification: Notification = {
     id: idempotencyKey,
     userId: toUserId,
@@ -427,9 +428,9 @@ export const createGroupCommentNotification = async (
     sourceUserUsername: fromUser.username,
     sourceUserAvatarUrl: fromUser.avatarUrl,
     sourceText: comment.text,
-    sourceSlug: `/group/${group.slug}`,
+    sourceSlug,
     sourceTitle: `${group.name}`,
-    isSeenOnHref: `/group/${group.slug}/${GROUP_CHAT_SLUG}`,
+    isSeenOnHref: sourceSlug,
   }
   await notificationRef.set(removeUndefinedProps(notification))
 }
