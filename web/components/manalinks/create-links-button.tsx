@@ -63,6 +63,7 @@ function CreateManalinkForm(props: {
   const [finishedCreating, setFinishedCreating] = useState(false)
   const [copyPressed, setCopyPressed] = useState(false)
   setTimeout(() => setCopyPressed(false), 300)
+  const [expiresIn, setExpiresIn] = useState('Never')
 
   const [newManalink, setNewManalink] = useState<ManalinkInfo>({
     expiresTime: null,
@@ -71,6 +72,33 @@ function CreateManalinkForm(props: {
     uses: 0,
     message: '',
   })
+
+  const expireOptions = {
+    day: 'day',
+    week: 'week',
+    month: 'month',
+    never: 'never',
+  }
+
+  function getExpireTime(timeDelta: string) {
+    if (timeDelta in expireOptions && timeDelta != 'never') {
+      return dayjs().add(1, timeDelta)
+    } else {
+      return null
+    }
+  }
+
+  function setExpireTime(timeDelta: string) {
+    const expireTime = getExpireTime(timeDelta)
+    setNewManalink((m) => {
+      return {
+        ...m,
+        expiresTime: expireTime
+          ? dayjs(expireTime, 'YYYY-MM-DDTHH:mm').valueOf()
+          : null,
+      }
+    })
+  }
 
   return (
     <>
@@ -87,22 +115,27 @@ function CreateManalinkForm(props: {
           <div className="flex flex-col flex-wrap gap-x-5 gap-y-2">
             <div className="form-control flex-auto">
               <label className="label">Amount</label>
-              <input
-                className="input input-bordered"
-                type="number"
-                value={newManalink.amount}
-                onChange={(e) =>
-                  setNewManalink((m) => {
-                    return { ...m, amount: parseInt(e.target.value) }
-                  })
-                }
-              ></input>
+              <div className="relative">
+                <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
+                  M$
+                </span>
+                <input
+                  className="input input-bordered w-full pl-10"
+                  type="number"
+                  value={newManalink.amount}
+                  onChange={(e) =>
+                    setNewManalink((m) => {
+                      return { ...m, amount: parseInt(e.target.value) }
+                    })
+                  }
+                />
+              </div>
             </div>
             <div className="flex flex-col gap-2 md:flex-row">
-              <div className="form-control">
+              <div className="form-control w-full md:w-1/2">
                 <label className="label">Uses</label>
                 <input
-                  className="input input-bordered w-full"
+                  className="input input-bordered"
                   type="number"
                   value={newManalink.maxUses ?? ''}
                   onChange={(e) =>
@@ -112,29 +145,22 @@ function CreateManalinkForm(props: {
                   }
                 ></input>
               </div>
-              <div className="form-control">
+              <div className="form-control w-full md:w-1/2">
                 <label className="label">Expires in</label>
-                <input
-                  value={
-                    newManalink.expiresTime != null
-                      ? dayjs(newManalink.expiresTime).format(
-                          'YYYY-MM-DDTHH:mm'
-                        )
-                      : ''
-                  }
-                  className="input input-bordered"
-                  type="datetime-local"
+                <select
+                  className="!select !select-bordered"
+                  value={expiresIn}
                   onChange={(e) => {
-                    setNewManalink((m) => {
-                      return {
-                        ...m,
-                        expiresTime: e.target.value
-                          ? dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
-                          : null,
-                      }
-                    })
+                    setExpiresIn(e.target.value)
+                    setExpireTime(e.target.value)
                   }}
-                ></input>
+                  defaultValue={expireOptions.never}
+                >
+                  <option value={expireOptions.never}>Never</option>
+                  <option value={expireOptions.day}>1 Day</option>
+                  <option value={expireOptions.week}>1 Week</option>
+                  <option value={expireOptions.month}>1 Month</option>
+                </select>
               </div>
             </div>
             <div className="form-control w-full">
