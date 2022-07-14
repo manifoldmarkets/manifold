@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore'
 import { sortBy, uniq } from 'lodash'
 import { Group } from 'common/group'
-import { getContractFromId, updateContract } from './contracts'
+import { updateContract } from './contracts'
 import {
   coll,
   getValue,
@@ -16,7 +16,6 @@ import {
   listenForValue,
   listenForValues,
 } from './utils'
-import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
 
 export const groups = coll<Group>('groups')
@@ -52,21 +51,6 @@ export async function getGroupBySlug(slug: string) {
   const q = query(groups, where('slug', '==', slug))
   const docs = (await getDocs(q)).docs
   return docs.length === 0 ? null : docs[0].data()
-}
-
-export async function getGroupContracts(group: Group) {
-  const { contractIds } = group
-
-  const contracts =
-    filterDefined(
-      await Promise.all(
-        contractIds.map(async (contractId) => {
-          return await getContractFromId(contractId)
-        })
-      )
-    ) ?? []
-
-  return [...contracts]
 }
 
 export function listenForGroup(

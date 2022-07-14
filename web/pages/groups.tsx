@@ -1,23 +1,23 @@
 import { sortBy, debounce } from 'lodash'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
+import { useGroups, useMemberGroupIds, useMembers } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
-import { GroupMembersList } from 'web/pages/group/[...slugs]'
 import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 import { SiteLink } from 'web/components/site-link'
 import clsx from 'clsx'
 import { Avatar } from 'web/components/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
+import { UserLink } from 'web/components/user-page'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])
@@ -198,6 +198,29 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
         <JoinOrLeaveGroupButton group={group} className={'z-10 w-24'} />
       </Col>
     </Col>
+  )
+}
+
+function GroupMembersList(props: { group: Group }) {
+  const { group } = props
+  const maxMembersToShow = 3
+  const members = useMembers(group, maxMembersToShow).filter(
+    (m) => m.id !== group.creatorId
+  )
+  if (group.memberIds.length === 1) return <div />
+  return (
+    <div className="text-neutral flex flex-wrap gap-1">
+      <span className={'text-gray-500'}>Other members</span>
+      {members.slice(0, maxMembersToShow).map((member, i) => (
+        <div key={member.id} className={'flex-shrink'}>
+          <UserLink name={member.name} username={member.username} />
+          {members.length > 1 && i !== members.length - 1 && <span>,</span>}
+        </div>
+      ))}
+      {group.memberIds.length > maxMembersToShow && (
+        <span> & {group.memberIds.length - maxMembersToShow} more</span>
+      )}
+    </div>
   )
 }
 
