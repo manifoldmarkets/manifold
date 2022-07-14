@@ -3,7 +3,7 @@ import { Comment } from '../../common/comment'
 import * as admin from 'firebase-admin'
 import { Group } from '../../common/group'
 import { User } from '../../common/user'
-import { createNotification } from './create-notification'
+import { createGroupCommentNotification } from './create-notification'
 const firestore = admin.firestore()
 
 export const onCreateCommentOnGroup = functions.firestore
@@ -29,23 +29,17 @@ export const onCreateCommentOnGroup = functions.firestore
 
     const group = groupSnapshot.data() as Group
     await firestore.collection('groups').doc(groupId).update({
-      mostRecentActivityTime: comment.createdTime,
+      mostRecentChatActivityTime: comment.createdTime,
     })
 
     await Promise.all(
       group.memberIds.map(async (memberId) => {
-        return await createNotification(
-          comment.id,
-          'comment',
-          'created',
+        return await createGroupCommentNotification(
           creatorSnapshot.data() as User,
-          eventId,
-          comment.text,
-          undefined,
-          undefined,
           memberId,
-          `/group/${group.slug}`,
-          `${group.name}`
+          comment,
+          group,
+          eventId
         )
       })
     )
