@@ -32,19 +32,26 @@ export const useGroups = () => {
 
 export const useMemberGroups = (
   userId: string | null | undefined,
-  options?: { withChatEnabled: boolean }
+  options?: { withChatEnabled: boolean },
+  sort?: { by: 'mostRecentChatActivityTime' | 'mostRecentContractAddedTime' }
 ) => {
   const [memberGroups, setMemberGroups] = useState<Group[] | undefined>()
   useEffect(() => {
     if (userId)
-      return listenForMemberGroups(userId, (groups) => {
-        if (options?.withChatEnabled)
-          return setMemberGroups(
-            filterDefined(groups.filter((group) => group.chatDisabled !== true))
-          )
-        return setMemberGroups(groups)
-      })
-  }, [options?.withChatEnabled, userId])
+      return listenForMemberGroups(
+        userId,
+        (groups) => {
+          if (options?.withChatEnabled)
+            return setMemberGroups(
+              filterDefined(
+                groups.filter((group) => group.chatDisabled !== true)
+              )
+            )
+          return setMemberGroups(groups)
+        },
+        sort
+      )
+  }, [options?.withChatEnabled, sort, userId])
   return memberGroups
 }
 

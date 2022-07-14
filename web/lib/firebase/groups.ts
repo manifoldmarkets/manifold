@@ -62,12 +62,21 @@ export function listenForGroup(
 
 export function listenForMemberGroups(
   userId: string,
-  setGroups: (groups: Group[]) => void
+  setGroups: (groups: Group[]) => void,
+  sort?: { by: 'mostRecentChatActivityTime' | 'mostRecentContractAddedTime' }
 ) {
   const q = query(groups, where('memberIds', 'array-contains', userId))
-
+  const sorter = (group: Group) => {
+    if (sort?.by === 'mostRecentChatActivityTime') {
+      return group.mostRecentChatActivityTime ?? group.mostRecentActivityTime
+    }
+    if (sort?.by === 'mostRecentContractAddedTime') {
+      return group.mostRecentContractAddedTime ?? group.mostRecentActivityTime
+    }
+    return group.mostRecentActivityTime
+  }
   return listenForValues<Group>(q, (groups) => {
-    const sorted = sortBy(groups, [(group) => -group.mostRecentActivityTime])
+    const sorted = sortBy(groups, [(group) => -sorter(group)])
     setGroups(sorted)
   })
 }
