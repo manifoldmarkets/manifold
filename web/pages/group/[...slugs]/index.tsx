@@ -21,7 +21,7 @@ import {
 } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import { listMembers, useGroup } from 'web/hooks/use-group'
+import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
 import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
@@ -403,7 +403,7 @@ function GroupOverview(props: {
           </Row>
         )}
         <Col className={'mt-2'}>
-          <GroupMemberSearch members={members} />
+          <GroupMemberSearch members={members} group={group} />
         </Col>
       </Col>
     </>
@@ -426,9 +426,16 @@ function SearchBar(props: { setQuery: (query: string) => void }) {
   )
 }
 
-function GroupMemberSearch(props: { members: User[] }) {
+function GroupMemberSearch(props: { members: User[]; group: Group }) {
   const [query, setQuery] = useState('')
-  const { members } = props
+  const { group } = props
+  let { members } = props
+
+  // Use static members on load, but also listen to member changes:
+  const listenToMembers = useMembers(group)
+  if (listenToMembers) {
+    members = listenToMembers
+  }
 
   // TODO use find-active-contracts to sort by?
   const matches = sortBy(members, [(member) => member.name]).filter(

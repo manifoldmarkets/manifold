@@ -95,7 +95,7 @@ export async function listMembers(group: Group, max?: number) {
   const { memberIds } = group
   const numToRetrieve = max ?? memberIds.length
   if (memberIds.length === 0) return []
-  if (numToRetrieve)
+  if (numToRetrieve > 100)
     return (await getUsers()).filter((user) =>
       group.memberIds.includes(user.id)
     )
