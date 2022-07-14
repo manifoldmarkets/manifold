@@ -87,32 +87,23 @@ export async function addUserToGroupViaSlug(groupSlug: string, userId: string) {
     console.error(`Group not found: ${groupSlug}`)
     return
   }
-  return await addUserToGroup(group, userId)
+  return await joinGroup(group, userId)
 }
 
-export async function addUserToGroup(
-  group: Group,
-  userId: string
-): Promise<Group> {
+export async function joinGroup(group: Group, userId: string): Promise<void> {
   const { memberIds } = group
-  if (memberIds.includes(userId)) {
-    return group
-  }
+  if (memberIds.includes(userId)) return // already a member
+
   const newMemberIds = [...memberIds, userId]
-  const newGroup = { ...group, memberIds: newMemberIds }
-  await updateGroup(newGroup, { memberIds: uniq(newMemberIds) })
-  return newGroup
+  return await updateGroup(group, { memberIds: uniq(newMemberIds) })
 }
 
-export async function leaveGroup(group: Group, userId: string): Promise<Group> {
+export async function leaveGroup(group: Group, userId: string): Promise<void> {
   const { memberIds } = group
-  if (!memberIds.includes(userId)) {
-    return group
-  }
+  if (!memberIds.includes(userId)) return // not a member
+
   const newMemberIds = memberIds.filter((id) => id !== userId)
-  const newGroup = { ...group, memberIds: newMemberIds }
-  await updateGroup(newGroup, { memberIds: uniq(newMemberIds) })
-  return newGroup
+  return await updateGroup(group, { memberIds: uniq(newMemberIds) })
 }
 
 export async function addContractToGroup(group: Group, contract: Contract) {

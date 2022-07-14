@@ -8,7 +8,7 @@ import {
   groupPath,
   getGroupBySlug,
   updateGroup,
-  addUserToGroup,
+  joinGroup,
   addContractToGroup,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
@@ -604,19 +604,19 @@ function JoinGroupButton(props: {
   user: User | null | undefined
 }) {
   const { group, user } = props
-  function joinGroup() {
+  function addUserToGroup() {
     if (user && !group.memberIds.includes(user.id)) {
-      toast.promise(addUserToGroup(group, user.id), {
+      toast.promise(joinGroup(group, user.id), {
         loading: 'Joining group...',
         success: 'Joined group!',
-        error: "Couldn't join group",
+        error: "Couldn't join group, try again?",
       })
     }
   }
   return (
     <div>
       <button
-        onClick={user ? joinGroup : firebaseLogin}
+        onClick={user ? addUserToGroup : firebaseLogin}
         className={'btn-md btn-outline btn whitespace-nowrap normal-case'}
       >
         {user ? 'Join group' : 'Login to join group'}
