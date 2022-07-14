@@ -118,7 +118,7 @@ function CreateManalinkForm(props: {
                 <input
                   className="input input-bordered w-full pl-10"
                   type="number"
-                  min="0"
+                  min="1"
                   value={newManalink.amount}
                   onChange={(e) =>
                     setNewManalink((m) => {
@@ -134,6 +134,7 @@ function CreateManalinkForm(props: {
                 <input
                   className="input input-bordered"
                   type="number"
+                  min="1"
                   value={newManalink.maxUses ?? ''}
                   onChange={(e) =>
                     setNewManalink((m) => {
