@@ -63,39 +63,35 @@ function CreateManalinkForm(props: {
   const [finishedCreating, setFinishedCreating] = useState(false)
   const [copyPressed, setCopyPressed] = useState(false)
   setTimeout(() => setCopyPressed(false), 300)
-  const [expiresIn, setExpiresIn] = useState('Never')
+  const defaultExpire = 'week'
+  const [expiresIn, setExpiresIn] = useState(defaultExpire)
 
   const [newManalink, setNewManalink] = useState<ManalinkInfo>({
-    expiresTime: null,
+    expiresTime: dayjs().add(1, defaultExpire).valueOf(),
     amount: 100,
     maxUses: 1,
     uses: 0,
     message: '',
   })
 
-  const expireOptions = {
-    day: 'day',
-    week: 'week',
-    month: 'month',
-    never: 'never',
+  const EXPIRE_OPTIONS = {
+    day: '1 Day',
+    week: '1 Week',
+    month: '1 Month',
+    never: 'Never',
   }
 
-  function getExpireTime(timeDelta: string) {
-    if (timeDelta in expireOptions && timeDelta != 'never') {
-      return dayjs().add(1, timeDelta)
-    } else {
-      return null
-    }
-  }
+  const expireOptions = Object.entries(EXPIRE_OPTIONS).map(([key, value]) => {
+    return <option value={key}>{value}</option>
+  })
 
   function setExpireTime(timeDelta: string) {
-    const expireTime = getExpireTime(timeDelta)
+    const expiresTime =
+      timeDelta === 'never' ? null : dayjs().add(1, timeDelta).valueOf()
     setNewManalink((m) => {
       return {
         ...m,
-        expiresTime: expireTime
-          ? dayjs(expireTime, 'YYYY-MM-DDTHH:mm').valueOf()
-          : null,
+        expiresTime: expiresTime,
       }
     })
   }
@@ -122,6 +118,7 @@ function CreateManalinkForm(props: {
                 <input
                   className="input input-bordered w-full pl-10"
                   type="number"
+                  min="0"
                   value={newManalink.amount}
                   onChange={(e) =>
                     setNewManalink((m) => {
@@ -150,16 +147,13 @@ function CreateManalinkForm(props: {
                 <select
                   className="!select !select-bordered"
                   value={expiresIn}
+                  defaultValue={defaultExpire}
                   onChange={(e) => {
                     setExpiresIn(e.target.value)
                     setExpireTime(e.target.value)
                   }}
-                  defaultValue={expireOptions.never}
                 >
-                  <option value={expireOptions.never}>Never</option>
-                  <option value={expireOptions.day}>1 Day</option>
-                  <option value={expireOptions.week}>1 Week</option>
-                  <option value={expireOptions.month}>1 Month</option>
+                  {expireOptions}
                 </select>
               </div>
             </div>
