@@ -171,10 +171,7 @@ export default function Groups(props: {
 export function GroupCard(props: { group: Group; creator: User | undefined }) {
   const { group, creator } = props
   return (
-    <Col
-      key={group.id}
-      className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100"
-    >
+    <Col className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100">
       <Link href={groupPath(group.slug)}>
         <a className="absolute left-0 right-0 top-0 bottom-0 z-0" />
       </Link>
