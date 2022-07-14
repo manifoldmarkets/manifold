@@ -6,7 +6,7 @@ import { claimManalink } from 'web/lib/firebase/api'
 import { useManalink } from 'web/lib/firebase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'
 import { useUser } from 'web/hooks/use-user'
-import { useUserById } from 'web/hooks/use-users'
+import { useUserById } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
 export default function ClaimPage() {
@@ -17,7 +17,7 @@ export default function ClaimPage() {
   const [claiming, setClaiming] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
 
-  const fromUser = useUserById(manalink?.fromId)
+  const fromUser = useUserById(manalink?.fromId ?? '_loading')
   if (!manalink) {
     return <></>
   }
