@@ -124,6 +124,14 @@ export async function listContracts(creatorId: string): Promise<Contract[]> {
   return snapshot.docs.map((doc) => doc.data())
 }
 
+export async function listContractsByGroupSlug(
+  slug: string
+): Promise<Contract[]> {
+  const q = query(contracts, where('groupSlugs', 'array-contains', slug))
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((doc) => doc.data())
+}
+
 export async function listTaggedContractsCaseInsensitive(
   tag: string
 ): Promise<Contract[]> {

@@ -7,7 +7,7 @@ import {
   listenForGroups,
   listenForMemberGroups,
 } from 'web/lib/firebase/groups'
-import { getUser } from 'web/lib/firebase/users'
+import { getUser, getUsers } from 'web/lib/firebase/users'
 import { filterDefined } from 'common/util/array'
 
 export const useGroup = (groupId: string | undefined) => {
@@ -85,9 +85,14 @@ export function useMembers(group: Group, max?: number) {
 }
 
 export async function listMembers(group: Group, max?: number) {
-  return await Promise.all(
-    group.memberIds.slice(0, max ? max : group.memberIds.length).map(getUser)
-  )
+  const { memberIds } = group
+  const numToRetrieve = max ?? memberIds.length
+  if (memberIds.length === 0) return []
+  if (numToRetrieve)
+    return (await getUsers()).filter((user) =>
+      group.memberIds.includes(user.id)
+    )
+  return await Promise.all(group.memberIds.slice(0, numToRetrieve).map(getUser))
 }
 
 export const useGroupsWithContract = (contractId: string | undefined) => {

@@ -3,14 +3,13 @@ import { take, sortBy, debounce } from 'lodash'
 import { Group } from 'common/group'
 import { Page } from 'web/components/page'
 import { listAllBets } from 'web/lib/firebase/bets'
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
   groupPath,
   getGroupBySlug,
   updateGroup,
   addUserToGroup,
   addContractToGroup,
-  getGroupContracts,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
@@ -22,7 +21,7 @@ import {
 } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
+import { listMembers, useGroup } from 'web/hooks/use-group'
 import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
@@ -62,14 +61,11 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
   const group = await getGroupBySlug(slugs[0])
-  const members =
-    group && group.memberIds.length < 100 ? await listMembers(group) : []
+  const members = group && (await listMembers(group))
   const creatorPromise = group ? getUser(group.creatorId) : null
 
   const contracts =
-    group && group.contractIds.length < 100
-      ? await getGroupContracts(group).catch((_) => [])
-      : []
+    (group && (await listContractsByGroupSlug(group.slug))) ?? []
 
   const bets = await Promise.all(
     contracts.map((contract: Contract) => listAllBets(contract.id))
@@ -77,10 +73,12 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   const creatorScores = scoreCreators(contracts)
   const traderScores = scoreTraders(contracts, bets)
-  const [topCreators, topTraders] = await Promise.all([
-    toTopUsers(creatorScores),
-    toTopUsers(traderScores),
-  ])
+  const [topCreators, topTraders] =
+    (members && [
+      toTopUsers(creatorScores, members),
+      toTopUsers(traderScores, members),
+    ]) ??
+    []
 
   const creator = await creatorPromise
 
@@ -99,14 +97,14 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   }
 }
 
-async function toTopUsers(userScores: { [userId: string]: number }) {
+function toTopUsers(userScores: { [userId: string]: number }, users: User[]) {
   const topUserPairs = take(
     sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
     10
   ).filter(([_, score]) => score >= 0.5)
 
-  const topUsers = await Promise.all(
-    topUserPairs.map(([userId]) => getUser(userId))
+  const topUsers = topUserPairs.map(
+    ([userId]) => users.filter((user) => user.id === userId)[0]
   )
   return topUsers.filter((user) => user)
 }
@@ -199,6 +197,7 @@ export default function GroupPage(props: {
         creator={creator}
         isCreator={!!isCreator}
         user={user}
+        members={members}
       />
     </Col>
   )
@@ -327,8 +326,9 @@ function GroupOverview(props: {
   creator: User
   user: User | null | undefined
   isCreator: boolean
+  members: User[]
 }) {
-  const { group, creator, isCreator, user } = props
+  const { group, creator, isCreator, user, members } = props
   const anyoneCanJoinChoices: { [key: string]: string } = {
     Closed: 'false',
     Open: 'true',
@@ -403,7 +403,7 @@ function GroupOverview(props: {
           </Row>
         )}
         <Col className={'mt-2'}>
-          <GroupMemberSearch group={group} />
+          <GroupMemberSearch members={members} />
         </Col>
       </Col>
     </>
@@ -426,10 +426,9 @@ function SearchBar(props: { setQuery: (query: string) => void }) {
   )
 }
 
-function GroupMemberSearch(props: { group: Group }) {
+function GroupMemberSearch(props: { members: User[] }) {
   const [query, setQuery] = useState('')
-  const { group } = props
-  const members = useMembers(group, 100)
+  const { members } = props
 
   // TODO use find-active-contracts to sort by?
   const matches = sortBy(members, [(member) => member.name]).filter(
@@ -451,29 +450,6 @@ function GroupMemberSearch(props: { group: Group }) {
           </div>
         )}
       </Col>
-    </div>
-  )
-}
-
-export function GroupMembersList(props: { group: Group }) {
-  const { group } = props
-  const maxMembersToShow = 3
-  const members = useMembers(group, maxMembersToShow).filter(
-    (m) => m.id !== group.creatorId
-  )
-  if (group.memberIds.length === 1) return <div />
-  return (
-    <div className="text-neutral flex flex-wrap gap-1">
-      <span className={'text-gray-500'}>Other members</span>
-      {members.slice(0, maxMembersToShow).map((member, i) => (
-        <div key={member.id} className={'flex-shrink'}>
-          <UserLink name={member.name} username={member.username} />
-          {members.length > 1 && i !== members.length - 1 && <span>,</span>}
-        </div>
-      ))}
-      {group.memberIds.length > maxMembersToShow && (
-        <span> & {group.memberIds.length - maxMembersToShow} more</span>
-      )}
     </div>
   )
 }
