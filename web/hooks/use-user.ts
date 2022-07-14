@@ -53,6 +53,8 @@ export const useUserById = (userId = '_') => {
     { subscribe: true, includeMetadataChanges: true }
   )
 
+  if (userId === '_') return undefined
+
   return result.isLoading ? undefined : result.data
 }
 
