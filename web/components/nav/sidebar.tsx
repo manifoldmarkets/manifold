@@ -321,7 +321,10 @@ function GroupsList(props: {
             className={clsx(
               'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900',
               preferredNotifications.some(
-                (n) => !n.isSeen && n.isSeenOnHref === item.href
+                (n) =>
+                  !n.isSeen &&
+                  (n.isSeenOnHref === item.href ||
+                    n.isSeenOnHref === item.href.replace('/chat', ''))
               ) && 'font-bold'
             )}
           >
