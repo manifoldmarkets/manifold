@@ -17,7 +17,7 @@ export default function ClaimPage() {
   const [claiming, setClaiming] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
 
-  const fromUser = useUserById(manalink?.fromId ?? '')
+  const fromUser = useUserById(manalink?.fromId ?? '_loading')
   if (!manalink) {
     return <></>
   }
