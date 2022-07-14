@@ -157,6 +157,11 @@ function IncomeNotificationGroupItem(props: {
     notifications.some((n) => !n.isSeen)
   )
 
+  const onClickHandler = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.ctrlKey || event.metaKey) return
+    setExpanded(!expanded)
+  }
+
   useEffect(() => {
     setNotificationsAsSeen(notifications)
   }, [notifications])
@@ -231,7 +236,7 @@ function IncomeNotificationGroupItem(props: {
         !expanded ? 'hover:bg-gray-100' : '',
         highlighted && !expanded ? 'bg-indigo-200 hover:bg-indigo-100' : ''
       )}
-      onClick={() => setExpanded(!expanded)}
+      onClick={onClickHandler}
     >
       {expanded && (
         <span
@@ -245,7 +250,7 @@ function IncomeNotificationGroupItem(props: {
         />
         <div
           className={'ml-2 flex w-full flex-row flex-wrap truncate'}
-          onClick={() => setExpanded(!expanded)}
+          onClick={onClickHandler}
         >
           <div className={'flex w-full flex-row justify-between'}>
             <div>
@@ -416,6 +421,12 @@ function NotificationGroupItem(props: {
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )
+
+  const onClickHandler = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.ctrlKey || event.metaKey) return
+    setExpanded(!expanded)
+  }
+
   useEffect(() => {
     setNotificationsAsSeen(notifications)
   }, [notifications])
@@ -432,7 +443,7 @@ function NotificationGroupItem(props: {
         !expanded ? 'hover:bg-gray-100' : '',
         highlighted && !expanded ? 'bg-indigo-200 hover:bg-indigo-100' : ''
       )}
-      onClick={() => setExpanded(!expanded)}
+      onClick={onClickHandler}
     >
       {expanded && (
         <span
