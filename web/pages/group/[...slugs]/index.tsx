@@ -1,6 +1,6 @@
 import { take, sortBy, debounce } from 'lodash'
 
-import { Group } from 'common/group'
+import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Page } from 'web/components/page'
 import { listAllBets } from 'web/lib/firebase/bets'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
@@ -21,7 +21,7 @@ import {
 } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import { listMembers, useGroup } from 'web/hooks/use-group'
+import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
 import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
@@ -114,7 +114,7 @@ export async function getStaticPaths() {
 }
 const groupSubpages = [
   undefined,
-  'chat',
+  GROUP_CHAT_SLUG,
   'questions',
   'rankings',
   'about',
@@ -218,7 +218,7 @@ export default function GroupPage(props: {
             ) : (
               <LoadingIndicator />
             ),
-            href: groupPath(group.slug, 'chat'),
+            href: groupPath(group.slug, GROUP_CHAT_SLUG),
           },
         ]),
     {
@@ -246,7 +246,7 @@ export default function GroupPage(props: {
       href: groupPath(group.slug, 'about'),
     },
   ]
-  const tabIndex = tabs.map((t) => t.title).indexOf(page ?? 'chat')
+  const tabIndex = tabs.map((t) => t.title).indexOf(page ?? GROUP_CHAT_SLUG)
   return (
     <Page rightSidebar={rightSidebar} className="!pb-0">
       <SEO
@@ -403,7 +403,7 @@ function GroupOverview(props: {
           </Row>
         )}
         <Col className={'mt-2'}>
-          <GroupMemberSearch members={members} />
+          <GroupMemberSearch members={members} group={group} />
         </Col>
       </Col>
     </>
@@ -426,9 +426,16 @@ function SearchBar(props: { setQuery: (query: string) => void }) {
   )
 }
 
-function GroupMemberSearch(props: { members: User[] }) {
+function GroupMemberSearch(props: { members: User[]; group: Group }) {
   const [query, setQuery] = useState('')
-  const { members } = props
+  const { group } = props
+  let { members } = props
+
+  // Use static members on load, but also listen to member changes:
+  const listenToMembers = useMembers(group)
+  if (listenToMembers) {
+    members = listenToMembers
+  }
 
   // TODO use find-active-contracts to sort by?
   const matches = sortBy(members, [(member) => member.name]).filter(

@@ -79,7 +79,11 @@ export default function Groups(props: {
   )
 
   const matchesOrderedByRecentActivity = sortBy(groups, [
-    (group) => -1 * group.mostRecentActivityTime,
+    (group) =>
+      -1 *
+      (group.mostRecentChatActivityTime ??
+        group.mostRecentContractAddedTime ??
+        group.mostRecentActivityTime),
   ]).filter(
     (g) =>
       checkAgainstQuery(query, g.name) ||
