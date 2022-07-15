@@ -1,13 +1,15 @@
 import { Fragment, ReactNode } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
+import clsx from 'clsx'
 
 // From https://tailwindui.com/components/application-ui/overlays/modals
 export function Modal(props: {
   children: ReactNode
   open: boolean
   setOpen: (open: boolean) => void
+  className?: string
 }) {
-  const { children, open, setOpen } = props
+  const { children, open, setOpen, className } = props
 
   return (
     <Transition.Root show={open} as={Fragment}>
@@ -45,7 +47,12 @@ export function Modal(props: {
             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
-            <div className="inline-block transform overflow-hidden text-left align-bottom transition-all sm:my-8 sm:w-full sm:max-w-md sm:p-6 sm:align-middle">
+            <div
+              className={clsx(
+                'inline-block transform overflow-hidden text-left align-bottom transition-all sm:my-8 sm:w-full sm:max-w-md sm:p-6 sm:align-middle',
+                className
+              )}
+            >
               {children}
             </div>
           </Transition.Child>

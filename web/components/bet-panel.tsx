@@ -1,204 +1,168 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
-import { partition, sumBy } from 'lodash'
+import { partition, sum, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
-import { BinaryContract, CPMMBinaryContract } from 'common/contract'
+import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
-import { YesNoSelector } from './yes-no-selector'
 import {
   formatMoney,
   formatMoneyWithDecimals,
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
-import { Title } from './title'
+import { getBinaryCpmmBetInfo } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
-import { Bet } from 'common/bet'
-import { APIError, placeBet } from 'web/lib/firebase/api-call'
-import { sellShares } from 'web/lib/firebase/api-call'
+import { Bet, LimitBet } from 'common/bet'
+import { APIError, placeBet } from 'web/lib/firebase/api'
+import { sellShares } from 'web/lib/firebase/api'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel } from './outcome-label'
-import {
-  calculatePayoutAfterCorrectBet,
-  calculateShares,
-  getProbability,
-  getOutcomeProbabilityAfterBet,
-} from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import {
-  calculateCpmmSale,
-  getCpmmProbability,
-  getCpmmLiquidityFee,
-} from 'common/calculate-cpmm'
+  getFormattedMappedValue,
+  getPseudoProbability,
+} from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
-import { useSaveShares } from './use-save-shares'
+import { useSaveBinaryShares } from './use-save-binary-shares'
 import { SignUpPrompt } from './sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
+import { ProbabilityInput } from './probability-input'
 import { track } from 'web/lib/service/analytics'
+import { removeUndefinedProps } from 'common/util/object'
+import { useUnfilledBets } from 'web/hooks/use-bets'
+import { LimitBets } from './limit-bets'
+import { BucketInput } from './bucket-input'
+import { PillButton } from './buttons/pill-button'
 
 export function BetPanel(props: {
-  contract: BinaryContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
 }) {
   const { contract, className } = props
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
-  const { yesFloorShares, noFloorShares } = useSaveShares(contract, userBets)
-  const sharesOutcome = yesFloorShares
-    ? 'YES'
-    : noFloorShares
-    ? 'NO'
-    : undefined
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
+  const yourUnfilledBets = unfilledBets.filter((bet) => bet.userId === user?.id)
+  const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
+
+  const [isLimitOrder, setIsLimitOrder] = useState(false)
+
+  const showLimitOrders =
+    (isLimitOrder && unfilledBets.length > 0) || yourUnfilledBets.length > 0
 
   return (
     <Col className={className}>
       <SellRow
         contract={contract}
         user={user}
-        className={'rounded-t-md bg-gray-100 px-6 py-6'}
+        className={'rounded-t-md bg-gray-100 px-4 py-5'}
       />
       <Col
         className={clsx(
-          'rounded-b-md bg-white px-8 py-6',
+          'relative rounded-b-md bg-white px-6 py-6',
           !sharesOutcome && 'rounded-t-md',
           className
         )}
       >
-        <div className="mb-6 text-2xl">Place your bet</div>
-        {/* <Title className={clsx('!mt-0 text-neutral')} text="Place a trade" /> */}
-
-        <BuyPanel contract={contract} user={user} />
+        <QuickOrLimitBet
+          isLimitOrder={isLimitOrder}
+          setIsLimitOrder={setIsLimitOrder}
+        />
+        <BuyPanel
+          contract={contract}
+          user={user}
+          isLimitOrder={isLimitOrder}
+          unfilledBets={unfilledBets}
+        />
 
         <SignUpPrompt />
       </Col>
+      {showLimitOrders && (
+        <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
+      )}
     </Col>
   )
 }
 
-export function BetPanelSwitcher(props: {
-  contract: BinaryContract
+export function SimpleBetPanel(props: {
+  contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
-  title?: string // Set if BetPanel is on a feed modal
   selected?: 'YES' | 'NO'
+  hasShares?: boolean
   onBetSuccess?: () => void
 }) {
-  const { contract, className, title, selected, onBetSuccess } = props
-
-  const { mechanism } = contract
+  const { contract, className, selected, hasShares, onBetSuccess } = props
 
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const [isLimitOrder, setIsLimitOrder] = useState(false)
 
-  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
-
-  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
-    contract,
-    userBets
-  )
-
-  const floorShares = yesFloorShares || noFloorShares
-  const sharesOutcome = yesFloorShares
-    ? 'YES'
-    : noFloorShares
-    ? 'NO'
-    : undefined
-
-  useEffect(() => {
-    // Switch back to BUY if the user has sold all their shares.
-    if (tradeType === 'SELL' && sharesOutcome === undefined) {
-      setTradeType('BUY')
-    }
-  }, [tradeType, sharesOutcome])
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
+  const yourUnfilledBets = unfilledBets.filter((bet) => bet.userId === user?.id)
+  const showLimitOrders =
+    (isLimitOrder && unfilledBets.length > 0) || yourUnfilledBets.length > 0
 
   return (
     <Col className={className}>
-      {sharesOutcome && mechanism === 'cpmm-1' && (
-        <Col className="rounded-t-md bg-gray-100 px-6 py-6">
-          <Row className="items-center justify-between gap-2">
-            <div>
-              You have {formatWithCommas(floorShares)}{' '}
-              <BinaryOutcomeLabel outcome={sharesOutcome} /> shares
-            </div>
-
-            {tradeType === 'BUY' && (
-              <button
-                className="btn btn-sm"
-                style={{
-                  backgroundColor: 'white',
-                  border: '2px solid',
-                  color: '#3D4451',
-                }}
-                onClick={() =>
-                  tradeType === 'BUY'
-                    ? setTradeType('SELL')
-                    : setTradeType('BUY')
-                }
-              >
-                {tradeType === 'BUY' ? 'Sell' : 'Bet'}
-              </button>
-            )}
-          </Row>
-        </Col>
-      )}
-
+      <SellRow
+        contract={contract}
+        user={user}
+        className={'rounded-t-md bg-gray-100 px-4 py-5'}
+      />
       <Col
         className={clsx(
-          'rounded-b-md bg-white px-8 py-6',
-          !sharesOutcome && 'rounded-t-md'
+          !hasShares && 'rounded-t-md',
+          'rounded-b-md bg-white px-8 py-6'
         )}
       >
-        <Title
-          className={clsx(
-            '!mt-0',
-            tradeType === 'BUY' && title ? '!text-xl' : ''
-          )}
-          text={tradeType === 'BUY' ? title ?? 'Place a trade' : 'Sell shares'}
+        <QuickOrLimitBet
+          isLimitOrder={isLimitOrder}
+          setIsLimitOrder={setIsLimitOrder}
         />
-
-        {tradeType === 'SELL' &&
-          mechanism == 'cpmm-1' &&
-          user &&
-          sharesOutcome && (
-            <SellPanel
-              contract={contract}
-              shares={yesShares || noShares}
-              sharesOutcome={sharesOutcome}
-              user={user}
-              userBets={userBets ?? []}
-              onSellSuccess={onBetSuccess}
-            />
-          )}
-
-        {tradeType === 'BUY' && (
-          <BuyPanel
-            contract={contract}
-            user={user}
-            selected={selected}
-            onBuySuccess={onBetSuccess}
-          />
-        )}
+        <BuyPanel
+          contract={contract}
+          user={user}
+          unfilledBets={unfilledBets}
+          selected={selected}
+          onBuySuccess={onBetSuccess}
+          isLimitOrder={isLimitOrder}
+        />
 
         <SignUpPrompt />
       </Col>
+
+      {showLimitOrders && (
+        <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
+      )}
     </Col>
   )
 }
 
 function BuyPanel(props: {
-  contract: BinaryContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
+  unfilledBets: Bet[]
+  isLimitOrder?: boolean
   selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
 }) {
-  const { contract, user, selected, onBuySuccess } = props
+  const { contract, user, unfilledBets, isLimitOrder, selected, onBuySuccess } =
+    props
+
+  const initialProb = getProbability(contract)
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const [limitProb, setLimitProb] = useState<number | undefined>(
+    Math.round(100 * initialProb)
+  )
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -228,15 +192,22 @@ function BuyPanel(props: {
 
   async function submitBet() {
     if (!user || !betAmount) return
+    if (isLimitOrder && limitProb === undefined) return
+
+    const limitProbScaled =
+      isLimitOrder && limitProb !== undefined ? limitProb / 100 : undefined
 
     setError(undefined)
     setIsSubmitting(true)
 
-    placeBet({
-      amount: betAmount,
-      outcome: betChoice,
-      contractId: contract.id,
-    })
+    placeBet(
+      removeUndefinedProps({
+        amount: betAmount,
+        outcome: betChoice,
+        contractId: contract.id,
+        limitProb: limitProbScaled,
+      })
+    )
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
@@ -261,55 +232,62 @@ function BuyPanel(props: {
       contractId: contract.id,
       amount: betAmount,
       outcome: betChoice,
+      isLimitOrder,
+      limitProb: limitProbScaled,
     })
   }
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getProbability(contract)
+  const limitProbFrac = (limitProb ?? 0) / 100
 
-  const outcomeProb = getOutcomeProbabilityAfterBet(
+  const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
+    betChoice ?? 'YES',
+    betAmount ?? 0,
     contract,
-    betChoice || 'YES',
-    betAmount ?? 0
+    isLimitOrder ? limitProbFrac : undefined,
+    unfilledBets as LimitBet[]
   )
-  const resultProb = betChoice === 'NO' ? 1 - outcomeProb : outcomeProb
 
-  const shares = calculateShares(contract, betAmount ?? 0, betChoice || 'YES')
+  const resultProb = getCpmmProbability(newPool, newP)
+  const probStayedSame =
+    formatPercent(resultProb) === formatPercent(initialProb)
 
-  const currentPayout = betAmount
-    ? calculatePayoutAfterCorrectBet(contract, {
-        outcome: betChoice,
-        amount: betAmount,
-        shares,
-      } as Bet)
+  const remainingMatched = isLimitOrder
+    ? ((newBet.orderAmount ?? 0) - newBet.amount) /
+      (betChoice === 'YES' ? limitProbFrac : 1 - limitProbFrac)
     : 0
+  const currentPayout = newBet.shares + remainingMatched
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const cpmmFees =
-    contract.mechanism === 'cpmm-1' &&
-    getCpmmLiquidityFee(contract, betAmount ?? 0, betChoice ?? 'YES').totalFees
+  const totalFees = sum(Object.values(newBet.fees))
 
-  const dpmTooltip =
-    contract.mechanism === 'dpm-2'
-      ? `Current payout for ${formatWithCommas(shares)} / ${formatWithCommas(
-          shares +
-            contract.totalShares[betChoice ?? 'YES'] -
-            (contract.phantomShares
-              ? contract.phantomShares[betChoice ?? 'YES']
-              : 0)
-        )} ${betChoice ?? 'YES'} shares`
-      : undefined
+  const format = getFormattedMappedValue(contract)
+
   return (
     <>
-      <YesNoSelector
-        className="mb-4"
-        btnClassName="flex-1"
-        selected={betChoice}
-        onSelect={(choice) => onBetChoice(choice)}
-      />
+      <div className="my-3 text-left text-sm text-gray-500">Direction</div>
+      <Row className="mb-4 items-center gap-2">
+        <PillButton
+          selected={betChoice === 'YES'}
+          onSelect={() => onBetChoice('YES')}
+          big
+          color="bg-primary"
+        >
+          {isPseudoNumeric ? 'Higher' : 'Yes'}
+        </PillButton>
+        <PillButton
+          selected={betChoice === 'NO'}
+          onSelect={() => onBetChoice('NO')}
+          big
+          color="bg-red-400"
+        >
+          {isPseudoNumeric ? 'Lower' : 'No'}
+        </PillButton>
+      </Row>
+
       <div className="my-3 text-left text-sm text-gray-500">Amount</div>
       <BuyAmountInput
         inputClassName="w-full max-w-none"
@@ -320,40 +298,76 @@ function BuyPanel(props: {
         disabled={isSubmitting}
         inputRef={inputRef}
       />
-
+      {isLimitOrder && (
+        <>
+          <Row className="my-3 items-center gap-2 text-left text-sm text-gray-500">
+            Limit {isPseudoNumeric ? 'value' : 'probability'}
+            <InfoTooltip
+              text={`Bet ${betChoice === 'NO' ? 'down' : 'up'} to this ${
+                isPseudoNumeric ? 'value' : 'probability'
+              } and wait to match other bets.`}
+            />
+          </Row>
+          {isPseudoNumeric ? (
+            <BucketInput
+              contract={contract}
+              onBucketChange={(value) =>
+                setLimitProb(
+                  value === undefined
+                    ? undefined
+                    : 100 *
+                        getPseudoProbability(
+                          value,
+                          contract.min,
+                          contract.max,
+                          contract.isLogScale
+                        )
+                )
+              }
+              isSubmitting={isSubmitting}
+            />
+          ) : (
+            <ProbabilityInput
+              inputClassName="w-full max-w-none"
+              prob={limitProb}
+              onChange={setLimitProb}
+              disabled={isSubmitting}
+            />
+          )}
+        </>
+      )}
       <Col className="mt-3 w-full gap-3">
-        <Row className="items-center justify-between text-sm">
-          <div className="text-gray-500">Probability</div>
-          <div>
-            {formatPercent(initialProb)}
-            <span className="mx-2">→</span>
-            {formatPercent(resultProb)}
-          </div>
-        </Row>
+        {!isLimitOrder && (
+          <Row className="items-center justify-between text-sm">
+            <div className="text-gray-500">
+              {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+            </div>
+            {probStayedSame ? (
+              <div>{format(initialProb)}</div>
+            ) : (
+              <div>
+                {format(initialProb)}
+                <span className="mx-2">→</span>
+                {format(resultProb)}
+              </div>
+            )}
+          </Row>
+        )}
 
         <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
             <div>
-              {contract.mechanism === 'dpm-2' ? (
-                <>
-                  Estimated
-                  <br /> payout if{' '}
-                  <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
-                </>
+              {isPseudoNumeric ? (
+                'Max payout'
               ) : (
                 <>
                   Payout if <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
                 </>
               )}
             </div>
-
-            {cpmmFees !== false && (
-              <InfoTooltip
-                text={`Includes ${formatMoneyWithDecimals(cpmmFees)} in fees`}
-              />
-            )}
-
-            {dpmTooltip && <InfoTooltip text={dpmTooltip} />}
+            <InfoTooltip
+              text={`Includes ${formatMoneyWithDecimals(totalFees)} in fees`}
+            />
           </Row>
           <div>
             <span className="mr-2 whitespace-nowrap">
@@ -383,13 +397,48 @@ function BuyPanel(props: {
         </button>
       )}
 
-      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
+      {wasSubmitted && (
+        <div className="mt-4">{isLimitOrder ? 'Order' : 'Bet'} submitted!</div>
+      )}
     </>
   )
 }
 
+function QuickOrLimitBet(props: {
+  isLimitOrder: boolean
+  setIsLimitOrder: (isLimitOrder: boolean) => void
+}) {
+  const { isLimitOrder, setIsLimitOrder } = props
+
+  return (
+    <Row className="align-center mb-4 justify-between">
+      <div className="text-4xl">Bet</div>
+      <Row className="mt-2 items-center gap-2">
+        <PillButton
+          selected={!isLimitOrder}
+          onSelect={() => {
+            setIsLimitOrder(false)
+            track('select quick order')
+          }}
+        >
+          Quick
+        </PillButton>
+        <PillButton
+          selected={isLimitOrder}
+          onSelect={() => {
+            setIsLimitOrder(true)
+            track('select limit order')
+          }}
+        >
+          Limit
+        </PillButton>
+      </Row>
+    </Row>
+  )
+}
+
 export function SellPanel(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'
@@ -404,7 +453,12 @@ export function SellPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
+
   const betDisabled = isSubmitting || !amount || error
+
+  // Sell all shares if remaining shares would be < 1
+  const sellQuantity = amount === Math.floor(shares) ? shares : amount
 
   async function submitSell() {
     if (!user || !amount) return
@@ -412,11 +466,8 @@ export function SellPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    // Sell all shares if remaining shares would be < 1
-    const sellAmount = amount === Math.floor(shares) ? shares : amount
-
     await sellShares({
-      shares: sellAmount,
+      shares: sellQuantity,
       outcome: sharesOutcome,
       contractId: contract.id,
     })
@@ -441,18 +492,19 @@ export function SellPanel(props: {
       outcomeType: contract.outcomeType,
       slug: contract.slug,
       contractId: contract.id,
-      shares: sellAmount,
+      shares: sellQuantity,
       outcome: sharesOutcome,
     })
   }
 
   const initialProb = getProbability(contract)
-  const { newPool } = calculateCpmmSale(
+  const { cpmmState, saleValue } = calculateCpmmSale(
     contract,
-    Math.min(amount ?? 0, shares),
-    sharesOutcome
+    sellQuantity ?? 0,
+    sharesOutcome,
+    unfilledBets
   )
-  const resultProb = getCpmmProbability(newPool, contract.p)
+  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
   const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
   const [yesBets, noBets] = partition(
@@ -464,16 +516,7 @@ export function SellPanel(props: {
     sumBy(noBets, (bet) => bet.shares),
   ]
 
-  const sellOutcome = yesShares ? 'YES' : noShares ? 'NO' : undefined
   const ownedShares = Math.round(yesShares) || Math.round(noShares)
-
-  const sharesSold = Math.min(amount ?? 0, ownedShares)
-
-  const { saleValue } = calculateCpmmSale(
-    contract,
-    sharesSold,
-    sellOutcome as 'YES' | 'NO'
-  )
 
   const onAmountChange = (amount: number | undefined) => {
     setAmount(amount)
@@ -487,6 +530,10 @@ export function SellPanel(props: {
       }
     }
   }
+
+  const { outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const format = getFormattedMappedValue(contract)
 
   return (
     <>
@@ -511,11 +558,13 @@ export function SellPanel(props: {
           <span className="text-neutral">{formatMoney(saleValue)}</span>
         </Row>
         <Row className="items-center justify-between">
-          <div className="text-gray-500">Probability</div>
+          <div className="text-gray-500">
+            {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+          </div>
           <div>
-            {formatPercent(initialProb)}
+            {format(initialProb)}
             <span className="mx-2">→</span>
-            {formatPercent(resultProb)}
+            {format(resultProb)}
           </div>
         </Row>
       </Col>

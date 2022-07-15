@@ -9,7 +9,7 @@ import {
   FreeResponseContract,
   resolution,
 } from 'common/contract'
-import { formatPercent } from 'common/util/format'
+import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { ClientRender } from './client-render'
 
 export function OutcomeLabel(props: {
@@ -19,11 +19,15 @@ export function OutcomeLabel(props: {
   value?: number
 }) {
   const { outcome, contract, truncate, value } = props
+  const { outcomeType } = contract
 
-  if (contract.outcomeType === 'BINARY')
+  if (outcomeType === 'PSEUDO_NUMERIC')
+    return <PseudoNumericOutcomeLabel outcome={outcome as any} />
+
+  if (outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
 
-  if (contract.outcomeType === 'NUMERIC')
+  if (outcomeType === 'NUMERIC')
     return (
       <span className="text-blue-500">
         {value ?? getValueFromBucket(outcome, contract)}
@@ -45,6 +49,15 @@ export function BinaryOutcomeLabel(props: { outcome: resolution }) {
 
   if (outcome === 'YES') return <YesLabel />
   if (outcome === 'NO') return <NoLabel />
+  if (outcome === 'MKT') return <ProbLabel />
+  return <CancelLabel />
+}
+
+export function PseudoNumericOutcomeLabel(props: { outcome: resolution }) {
+  const { outcome } = props
+
+  if (outcome === 'YES') return <HigherLabel />
+  if (outcome === 'NO') return <LowerLabel />
   if (outcome === 'MKT') return <ProbLabel />
   return <CancelLabel />
 }
@@ -74,7 +87,7 @@ export function FreeResponseOutcomeLabel(props: {
   if (resolution === 'CANCEL') return <CancelLabel />
   if (resolution === 'MKT') return <MultiLabel />
 
-  const chosen = contract.answers.find((answer) => answer.id === resolution)
+  const chosen = contract.answers?.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
     <FreeResponseAnswerToolTip text={chosen.text}>
@@ -98,6 +111,14 @@ export function YesLabel() {
   return <span className="text-primary">YES</span>
 }
 
+export function HigherLabel() {
+  return <span className="text-primary">HIGHER</span>
+}
+
+export function LowerLabel() {
+  return <span className="text-red-400">LOWER</span>
+}
+
 export function NoLabel() {
   return <span className="text-red-400">NO</span>
 }
@@ -117,6 +138,11 @@ export function MultiLabel() {
 export function ProbPercentLabel(props: { prob: number }) {
   const { prob } = props
   return <span className="text-blue-400">{formatPercent(prob)}</span>
+}
+
+export function NumericValueLabel(props: { value: number }) {
+  const { value } = props
+  return <span className="text-blue-400">{formatLargeNumber(value)}</span>
 }
 
 export function AnswerNumberLabel(props: { number: string }) {

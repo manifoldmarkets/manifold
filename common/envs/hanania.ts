@@ -11,16 +11,11 @@ export const HANANIA_CONFIG: EnvConfig = {
     appId: '1:319008991675:web:d2dc5e72b95cdcec96fc9e',
     measurementId: 'G-VCXVKYGKTC',
   },
-  // TODO replace
-  functionEndpoints: {
-    placebet: 'https://placebet-45jazbrfja-uc.a.run.app',
-    sellshares: 'https://sellshares-45jazbrfja-uc.a.run.app',
-    sellbet: 'https://sellbet-45jazbrfja-uc.a.run.app',
-    createmarket: 'https://createmarket-45jazbrfja-uc.a.run.app',
-    creategroup: 'https://creategroup-45jazbrfja-uc.a.run.app',
-  },
+  cloudRunId: '45jazbrfja', // TODO: fill in real ID for T1
+  cloudRunRegion: 'uc',
   adminEmails: [...PROD_CONFIG.adminEmails],
   whitelistEmail: '',
   moneyMoniker: 'H$',
   visibility: 'PRIVATE',
+  newQuestionPlaceholders: [],
 }

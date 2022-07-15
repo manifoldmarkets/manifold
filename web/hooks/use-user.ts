@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useFirestoreDocumentData } from '@react-query-firebase/firestore'
 import { QueryClient } from 'react-query'
 
-import { DocumentData } from 'firebase/firestore'
+import { doc, DocumentData } from 'firebase/firestore'
 import { PrivateUser } from 'common/user'
 import {
   getUser,
@@ -10,7 +10,7 @@ import {
   listenForPrivateUser,
   listenForUser,
   User,
-  userDocRef,
+  users,
 } from 'web/lib/firebase/users'
 import { useStateCheckEquality } from './use-state-check-equality'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
@@ -46,12 +46,14 @@ export const usePrivateUser = (userId?: string) => {
   return privateUser
 }
 
-export const useUserById = (userId: string) => {
+export const useUserById = (userId = '_') => {
   const result = useFirestoreDocumentData<DocumentData, User>(
     ['users', userId],
-    userDocRef(userId),
+    doc(users, userId),
     { subscribe: true, includeMetadataChanges: true }
   )
+
+  if (userId === '_') return undefined
 
   return result.isLoading ? undefined : result.data
 }

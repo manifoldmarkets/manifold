@@ -8,15 +8,17 @@ import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
+import { LiquidityProvision } from 'common/liquidity-provision'
 
 export function ContractTabs(props: {
   contract: Contract
   user: User | null | undefined
   bets: Bet[]
+  liquidityProvisions: LiquidityProvision[]
   comments: Comment[]
   tips: CommentTipMap
 }) {
-  const { contract, user, bets, comments, tips } = props
+  const { contract, user, bets, comments, tips, liquidityProvisions } = props
   const { outcomeType } = contract
 
   const userBets = user && bets.filter((bet) => bet.userId === user.id)
@@ -25,6 +27,7 @@ export function ContractTabs(props: {
     <ContractActivity
       contract={contract}
       bets={bets}
+      liquidityProvisions={liquidityProvisions}
       comments={comments}
       tips={tips}
       user={user}
@@ -38,6 +41,7 @@ export function ContractTabs(props: {
       <ContractActivity
         contract={contract}
         bets={bets}
+        liquidityProvisions={liquidityProvisions}
         comments={comments}
         tips={tips}
         user={user}
@@ -55,6 +59,7 @@ export function ContractTabs(props: {
           <ContractActivity
             contract={contract}
             bets={bets}
+            liquidityProvisions={liquidityProvisions}
             comments={comments}
             tips={tips}
             user={user}
@@ -82,6 +87,7 @@ export function ContractTabs(props: {
 
   return (
     <Tabs
+      currentPageForAnalytics={'contract'}
       tabs={[
         { title: 'Comments', content: commentActivity },
         { title: 'Bets', content: betActivity },

@@ -3,6 +3,7 @@ import { User } from '../../lib/firebase/users'
 import { Col } from '../layout/col'
 import { SiteLink } from '../site-link'
 import { ContractCard } from './contract-card'
+import { ShowTime } from './contract-details'
 import { ContractSearch } from '../contract-search'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useEffect, useState } from 'react'
@@ -12,14 +13,14 @@ export function ContractsGrid(props: {
   contracts: Contract[]
   loadMore: () => void
   hasMore: boolean
-  showCloseTime?: boolean
+  showTime?: ShowTime
   onContractClick?: (contract: Contract) => void
   overrideGridClassName?: string
   hideQuickBet?: boolean
 }) {
   const {
     contracts,
-    showCloseTime,
+    showTime,
     hasMore,
     loadMore,
     onContractClick,
@@ -60,7 +61,7 @@ export function ContractsGrid(props: {
           <ContractCard
             contract={contract}
             key={contract.id}
-            showCloseTime={showCloseTime}
+            showTime={showTime}
             onClick={
               onContractClick ? () => onContractClick(contract) : undefined
             }
@@ -86,7 +87,6 @@ export function CreatorContractsList(props: { creator: User }) {
       additionalFilter={{
         creatorId: creator.id,
       }}
-      showCategorySelector={false}
     />
   )
 }

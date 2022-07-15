@@ -9,6 +9,8 @@ import {
   useInitialQueryAndSort,
 } from 'web/hooks/use-sort-and-query-params'
 
+const MAX_CONTRACTS_RENDERED = 100
+
 export default function ContractSearchFirestore(props: {
   querySortOptions?: {
     defaultSort: Sort
@@ -34,7 +36,6 @@ export default function ContractSearchFirestore(props: {
   let matches = (contracts ?? []).filter(
     (c) =>
       check(c.question) ||
-      check(c.description) ||
       check(c.creatorName) ||
       check(c.creatorUsername) ||
       check(c.lowercaseTags.map((tag) => `#${tag}`).join(' ')) ||
@@ -60,6 +61,10 @@ export default function ContractSearchFirestore(props: {
     )
   } else if (sort === 'most-traded') {
     matches.sort((a, b) => b.volume - a.volume)
+  } else if (sort === 'most-popular') {
+    matches.sort(
+      (a, b) => (b.uniqueBettorCount ?? 0) - (a.uniqueBettorCount ?? 0)
+    )
   } else if (sort === '24-hour-vol') {
     // Use lodash for stable sort, so previous sort breaks all ties.
     matches = sortBy(matches, ({ volume7Days }) => -1 * volume7Days)
@@ -80,6 +85,14 @@ export default function ContractSearchFirestore(props: {
     }
   }
 
+  matches = matches.slice(0, MAX_CONTRACTS_RENDERED)
+
+  const showTime = ['close-date', 'closed'].includes(sort)
+    ? 'close-date'
+    : sort === 'resolve-date'
+    ? 'resolve-date'
+    : undefined
+
   return (
     <div>
       {/* Show a search input next to a sort dropdown */}
@@ -98,12 +111,12 @@ export default function ContractSearchFirestore(props: {
         >
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
+          <option value="most-popular">Most popular</option>
           <option value="most-traded">Most traded</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
         </select>
       </div>
-
       {contracts === undefined ? (
         <LoadingIndicator />
       ) : (
@@ -111,7 +124,7 @@ export default function ContractSearchFirestore(props: {
           contracts={matches}
           loadMore={() => {}}
           hasMore={false}
-          showCloseTime={['close-date', 'closed'].includes(sort)}
+          showTime={showTime}
         />
       )}
     </div>

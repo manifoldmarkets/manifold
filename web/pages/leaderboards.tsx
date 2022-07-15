@@ -4,8 +4,8 @@ import { Page } from 'web/components/page'
 import {
   getTopCreators,
   getTopTraders,
-  LeaderboardPeriod,
   getTopFollowed,
+  Period,
   User,
 } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
@@ -20,7 +20,7 @@ export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz() {
   return queryLeaderboardUsers('allTime')
 }
-const queryLeaderboardUsers = async (period: LeaderboardPeriod) => {
+const queryLeaderboardUsers = async (period: Period) => {
   const [topTraders, topCreators, topFollowed] = await Promise.all([
     getTopTraders(period).catch(() => {}),
     getTopCreators(period).catch(() => {}),
@@ -50,7 +50,7 @@ export default function Leaderboards(props: {
   const [topTradersState, setTopTraders] = useState(props.topTraders)
   const [topCreatorsState, setTopCreators] = useState(props.topCreators)
   const [isLoading, setLoading] = useState(false)
-  const [period, setPeriod] = useState<LeaderboardPeriod>('allTime')
+  const [period, setPeriod] = useState<Period>('allTime')
 
   useEffect(() => {
     setLoading(true)
@@ -61,13 +61,15 @@ export default function Leaderboards(props: {
     })
   }, [period])
 
-  const LeaderboardWithPeriod = (period: LeaderboardPeriod) => {
+  const LeaderboardWithPeriod = (period: Period) => {
     return (
       <>
         <Col className="mx-4 items-center gap-10 lg:flex-row">
           {!isLoading ? (
             <>
-              {period === 'allTime' ? ( //TODO: show other periods once they're available
+              {period === 'allTime' ||
+              period == 'weekly' ||
+              period === 'daily' ? ( //TODO: show other periods once they're available
                 <Leaderboard
                   title="🏅 Top bettors"
                   users={topTradersState}
@@ -124,10 +126,11 @@ export default function Leaderboards(props: {
     <Page>
       <Title text={'Leaderboards'} className={'hidden md:block'} />
       <Tabs
+        currentPageForAnalytics={'leaderboards'}
         defaultIndex={0}
         onClick={(title, index) => {
           const period = ['allTime', 'monthly', 'weekly', 'daily'][index]
-          setPeriod(period as LeaderboardPeriod)
+          setPeriod(period as Period)
         }}
         tabs={[
           {

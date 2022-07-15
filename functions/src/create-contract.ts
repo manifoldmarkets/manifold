@@ -5,7 +5,6 @@ import {
   CPMMBinaryContract,
   Contract,
   FreeResponseContract,
-  MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
   NumericContract,
@@ -22,17 +21,41 @@ import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getNumericAnte,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, MAX_ID_LENGTH } from '../../common/group'
+import { getPseudoProbability } from '../../common/pseudo-numeric'
+import { JSONContent } from '@tiptap/core'
+
+const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
+  z.intersection(
+    z.record(z.any()),
+    z.object({
+      type: z.string().optional(),
+      attrs: z.record(z.any()).optional(),
+      content: z.array(descScehma).optional(),
+      marks: z
+        .array(
+          z.intersection(
+            z.record(z.any()),
+            z.object({
+              type: z.string(),
+              attrs: z.record(z.any()).optional(),
+            })
+          )
+        )
+        .optional(),
+      text: z.string().optional(),
+    })
+  )
+)
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
-  description: z.string().max(MAX_DESCRIPTION_LENGTH),
+  description: descScehma.optional(),
   tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
   closeTime: zTimestamp().refine(
     (date) => date.getTime() > new Date().getTime(),
@@ -46,29 +69,38 @@ const binarySchema = z.object({
   initialProb: z.number().min(1).max(99),
 })
 
+const finite = () =>
+  z.number().gte(Number.MIN_SAFE_INTEGER).lte(Number.MAX_SAFE_INTEGER)
+
 const numericSchema = z.object({
-  min: z.number(),
-  max: z.number(),
+  min: finite(),
+  max: finite(),
+  initialValue: finite(),
+  isLogScale: z.boolean().optional(),
 })
 
-export const createmarket = newEndpoint(['POST'], async (req, auth) => {
+export const createmarket = newEndpoint({}, async (req, auth) => {
   const { question, description, tags, closeTime, outcomeType, groupId } =
     validate(bodySchema, req.body)
 
-  let min, max, initialProb
-  if (outcomeType === 'NUMERIC') {
-    ;({ min, max } = validate(numericSchema, req.body))
-    if (max - min <= 0.01) throw new APIError(400, 'Invalid range.')
+  let min, max, initialProb, isLogScale
+
+  if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
+    let initialValue
+    ;({ min, max, initialValue, isLogScale } = validate(
+      numericSchema,
+      req.body
+    ))
+    if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
+      throw new APIError(400, 'Invalid range.')
+
+    initialProb = getPseudoProbability(initialValue, min, max, isLogScale) * 100
+
+    if (initialProb < 1 || initialProb > 99)
+      throw new APIError(400, 'Invalid initial value.')
   }
   if (outcomeType === 'BINARY') {
     ;({ initialProb } = validate(binarySchema, req.body))
-  }
-
-  // Uses utc time on server:
-  const today = new Date()
-  let freeMarketResetTime = new Date().setUTCHours(16, 0, 0, 0)
-  if (today.getTime() < freeMarketResetTime) {
-    freeMarketResetTime = freeMarketResetTime - 24 * 60 * 60 * 1000
   }
 
   const userDoc = await firestore.collection('users').doc(auth.uid).get()
@@ -77,18 +109,10 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
   }
   const user = userDoc.data() as User
 
-  const userContractsCreatedTodaySnapshot = await firestore
-    .collection(`contracts`)
-    .where('creatorId', '==', auth.uid)
-    .where('createdTime', '>=', freeMarketResetTime)
-    .get()
-  console.log('free market reset time: ', freeMarketResetTime)
-  const isFree = userContractsCreatedTodaySnapshot.size === 0
-
   const ante = FIXED_ANTE
 
   // TODO: this is broken because it's not in a transaction
-  if (ante > user.balance && !isFree)
+  if (ante > user.balance)
     throw new APIError(400, `Balance must be at least ${ante}.`)
 
   const slug = await getSlug(question)
@@ -130,23 +154,24 @@ export const createmarket = newEndpoint(['POST'], async (req, auth) => {
     user,
     question,
     outcomeType,
-    description,
+    description ?? {},
     initialProb ?? 0,
     ante,
     closeTime.getTime(),
     tags ?? [],
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
-    max ?? 0
+    max ?? 0,
+    isLogScale ?? false
   )
 
-  if (!isFree && ante) await chargeUser(user.id, ante, true)
+  if (ante) await chargeUser(user.id, ante, true)
 
   await contractRef.create(contract)
 
-  const providerId = isFree ? HOUSE_LIQUIDITY_PROVIDER_ID : user.id
+  const providerId = user.id
 
-  if (outcomeType === 'BINARY') {
+  if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)
       .doc()

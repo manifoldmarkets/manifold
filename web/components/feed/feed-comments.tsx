@@ -31,6 +31,7 @@ import { track } from 'web/lib/service/analytics'
 import { useEvent } from 'web/hooks/use-event'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -224,7 +225,7 @@ export function FeedComment(props: {
   return (
     <Row
       className={clsx(
-        'flex space-x-1.5 transition-all duration-1000 sm:space-x-3',
+        'flex space-x-1.5 sm:space-x-3',
         highlighted ? `-m-1 rounded bg-indigo-500/[0.2] p-2` : ''
       )}
     >
@@ -472,7 +473,7 @@ export function CommentInputTextArea(props: {
   isSubmitting: boolean
   setRef?: (ref: HTMLTextAreaElement) => void
   presetId?: string
-  enterToSubmit?: boolean
+  enterToSubmitOnDesktop?: boolean
 }) {
   const {
     isReply,
@@ -484,9 +485,9 @@ export function CommentInputTextArea(props: {
     presetId,
     isSubmitting,
     replyToUsername,
-    enterToSubmit,
+    enterToSubmitOnDesktop,
   } = props
-
+  const { width } = useWindowSize()
   const memoizedSetComment = useEvent(setComment)
   useEffect(() => {
     if (!replyToUsername || !user || replyToUsername === user.username) return
@@ -507,7 +508,7 @@ export function CommentInputTextArea(props: {
           placeholder={
             isReply
               ? 'Write a reply... '
-              : enterToSubmit
+              : enterToSubmitOnDesktop
               ? 'Send a message'
               : 'Write a comment...'
           }
@@ -516,7 +517,11 @@ export function CommentInputTextArea(props: {
           disabled={isSubmitting}
           onKeyDown={(e) => {
             if (
-              (enterToSubmit && e.key === 'Enter' && !e.shiftKey) ||
+              (enterToSubmitOnDesktop &&
+                e.key === 'Enter' &&
+                !e.shiftKey &&
+                width &&
+                width > 768) ||
               (e.key === 'Enter' && (e.ctrlKey || e.metaKey))
             ) {
               e.preventDefault()
@@ -530,8 +535,7 @@ export function CommentInputTextArea(props: {
           {user && !isSubmitting && (
             <button
               className={clsx(
-                'btn btn-ghost btn-sm absolute right-2 flex-row pl-2 capitalize',
-                isReply ? ' bottom-4' : ' bottom-2',
+                'btn btn-ghost btn-sm absolute right-2 bottom-2 flex-row pl-2 capitalize',
                 !commentText && 'pointer-events-none text-gray-500'
               )}
               onClick={() => {

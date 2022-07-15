@@ -1,4 +1,4 @@
-import { CPMMBinaryContract } from 'common/contract'
+import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { User } from 'common/user'
 import { Modal } from './layout/modal'
@@ -11,7 +11,7 @@ import clsx from 'clsx'
 
 export function SellSharesModal(props: {
   className?: string
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | PseudoNumericContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'

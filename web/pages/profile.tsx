@@ -9,7 +9,7 @@ import { Title } from 'web/components/title'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { changeUserInfo } from 'web/lib/firebase/fn-call'
+import { changeUserInfo } from 'web/lib/firebase/api'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -85,12 +85,9 @@ export default function ProfilePage() {
 
     if (newName) {
       setName(newName)
-
-      await changeUserInfo({ name: newName })
-        .catch(() => ({ status: 'error' }))
-        .then((r) => {
-          if (r.status === 'error') setName(user?.name || '')
-        })
+      await changeUserInfo({ name: newName }).catch((_) =>
+        setName(user?.name || '')
+      )
     } else {
       setName(user?.name || '')
     }
@@ -101,11 +98,9 @@ export default function ProfilePage() {
 
     if (newUsername) {
       setUsername(newUsername)
-      await changeUserInfo({ username: newUsername })
-        .catch(() => ({ status: 'error' }))
-        .then((r) => {
-          if (r.status === 'error') setUsername(user?.username || '')
-        })
+      await changeUserInfo({ username: newUsername }).catch((_) =>
+        setUsername(user?.username || '')
+      )
     } else {
       setUsername(user?.username || '')
     }

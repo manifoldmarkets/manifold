@@ -1,15 +1,12 @@
-export type V2CloudFunction =
-  | 'placebet'
-  | 'sellbet'
-  | 'sellshares'
-  | 'createmarket'
-  | 'creategroup'
-
 export type EnvConfig = {
   domain: string
   firebaseConfig: FirebaseConfig
-  functionEndpoints: Record<V2CloudFunction, string>
   amplitudeApiKey?: string
+
+  // IDs for v2 cloud functions -- find these by deploying a cloud function and
+  // examining the URL, https://[name]-[cloudRunId]-[cloudRunRegion].a.run.app
+  cloudRunId: string
+  cloudRunRegion: string
 
   // Access controls
   adminEmails: string[]
@@ -20,14 +17,18 @@ export type EnvConfig = {
   moneyMoniker: string // e.g. 'M$'
   faviconPath?: string // Should be a file in /public
   navbarLogoPath?: string
-  newQuestionPlaceholders?: string[] // TODO remove
+  newQuestionPlaceholders: string[]
+
+  // Currency controls
+  fixedAnte?: number
+  startingBalance?: number
 }
 
 type FirebaseConfig = {
   apiKey: string
   authDomain: string
   projectId: string
-  region?: string // TODO remove
+  region?: string
   storageBucket: string
   messagingSenderId: string
   appId: string
@@ -48,13 +49,8 @@ export const PROD_CONFIG: EnvConfig = {
     appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
     measurementId: 'G-SSFK1Q138D',
   },
-  functionEndpoints: {
-    placebet: 'https://placebet-nggbo3neva-uc.a.run.app',
-    sellshares: 'https://sellshares-nggbo3neva-uc.a.run.app',
-    sellbet: 'https://sellbet-nggbo3neva-uc.a.run.app',
-    createmarket: 'https://createmarket-nggbo3neva-uc.a.run.app',
-    creategroup: 'https://creategroup-nggbo3neva-uc.a.run.app',
-  },
+  cloudRunId: 'nggbo3neva',
+  cloudRunRegion: 'uc',
   adminEmails: [
     'akrolsmir@gmail.com', // Austin
     'jahooma@gmail.com', // James

@@ -1,12 +1,7 @@
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from 'firebase/storage'
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import { storage } from './init'
 
-const storage = getStorage()
-
+// TODO: compress large images
 export const uploadImage = async (
   username: string,
   file: File,

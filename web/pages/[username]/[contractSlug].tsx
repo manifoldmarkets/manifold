@@ -10,7 +10,7 @@ import { useUser } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
-import { listUsers, User } from 'web/lib/firebase/users'
+import { listUsers, User, writeReferralInfo } from 'web/lib/firebase/users'
 import {
   Contract,
   getContractFromSlug,
@@ -27,7 +27,7 @@ import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Leaderboard } from 'web/components/leaderboard'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
-import { useUserById } from 'web/hooks/use-users'
+import { useUserById } from 'web/hooks/use-user'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { contractTextDetails } from 'web/components/contract/contract-details'
 import { useWindowSize } from 'web/hooks/use-window-size'
@@ -39,9 +39,13 @@ import { FeedBet } from 'web/components/feed/feed-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
+import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
+import { useRouter } from 'next/router'
+import { useLiquidity } from 'web/hooks/use-liquidity'
+import { richTextToString } from 'common/util/parse'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -61,8 +65,9 @@ export async function getStaticPropz(props: {
       contract,
       username,
       slug: contractSlug,
-      bets,
-      comments,
+      // Limit the data sent to the client. Client will still load all bets and comments directly.
+      bets: bets.slice(0, 5000),
+      comments: comments.slice(0, 1000),
     },
 
     revalidate: 60, // regenerate after a minute
@@ -117,12 +122,15 @@ export function ContractPageContent(
   })
 
   const bets = useBets(contract.id) ?? props.bets
+  const liquidityProvisions =
+    useLiquidity(contract.id)?.filter((l) => !l.isAnte && l.amount > 0) ?? []
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
-  const tips = useTipTxns(contract.id)
+  const tips = useTipTxns({ contractId: contract.id })
 
   const user = useUser()
+
   const { width, height } = useWindowSize()
 
   const [showConfetti, setShowConfetti] = useState(false)
@@ -140,12 +148,24 @@ export function ContractPageContent(
 
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
-  const hasSidePanel = (isBinary || isNumeric) && (allowTrade || allowResolve)
+  const hasSidePanel =
+    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
 
   const ogCardProps = getOpenGraphProps(contract)
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const { referrer } = router.query as {
+      referrer?: string
+    }
+    if (!user && router.isReady)
+      writeReferralInfo(contract.creatorUsername, contract.id, referrer)
+  }, [user, contract, router])
 
   const rightSidebar = hasSidePanel ? (
     <Col className="gap-4">
@@ -153,10 +173,13 @@ export function ContractPageContent(
         (isNumeric ? (
           <NumericBetPanel className="hidden xl:flex" contract={contract} />
         ) : (
-          <BetPanel className="hidden xl:flex" contract={contract} />
+          <BetPanel
+            className="hidden xl:flex"
+            contract={contract as CPMMBinaryContract}
+          />
         ))}
       {allowResolve &&
-        (isNumeric ? (
+        (isNumeric || isPseudoNumeric ? (
           <NumericResolutionPanel creator={user} contract={contract} />
         ) : (
           <ResolutionPanel creator={user} contract={contract} />
@@ -196,10 +219,11 @@ export function ContractPageContent(
         )}
 
         <ContractOverview contract={contract} bets={bets} />
+
         {isNumeric && (
           <AlertBox
             title="Warning"
-            text="Numeric markets were introduced as an experimental feature and are now deprecated."
+            text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
           />
         )}
 
@@ -233,6 +257,7 @@ export function ContractPageContent(
         <ContractTabs
           contract={contract}
           user={user}
+          liquidityProvisions={liquidityProvisions}
           bets={bets}
           tips={tips}
           comments={comments}
@@ -373,15 +398,18 @@ const getOpenGraphProps = (contract: Contract) => {
     creatorUsername,
     outcomeType,
     creatorAvatarUrl,
+    description: desc,
   } = contract
   const probPercent =
     outcomeType === 'BINARY' ? getBinaryProbPercent(contract) : undefined
 
+  const stringDesc = typeof desc === 'string' ? desc : richTextToString(desc)
+
   const description = resolution
-    ? `Resolved ${resolution}. ${contract.description}`
+    ? `Resolved ${resolution}. ${stringDesc}`
     : probPercent
-    ? `${probPercent} chance. ${contract.description}`
-    : contract.description
+    ? `${probPercent} chance. ${stringDesc}`
+    : stringDesc
 
   return {
     question,

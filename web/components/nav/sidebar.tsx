@@ -5,25 +5,18 @@ import {
   DotsHorizontalIcon,
   CashIcon,
   HeartIcon,
-  PresentationChartLineIcon,
-  SparklesIcon,
   UserGroupIcon,
-  ChevronDownIcon,
   TrendingUpIcon,
+  ChatIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
-import {
-  getUtcFreeMarketResetTime,
-  useHasCreatedContractToday,
-} from 'web/hooks/use-has-created-contract-today'
-import { Row } from '../layout/row'
 import NotificationsIcon from 'web/components/notifications-icon'
 import React, { useEffect, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
@@ -32,15 +25,15 @@ import { useMemberGroups } from 'web/hooks/use-group'
 import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Group } from 'common/group'
+import { Spacer } from '../layout/spacer'
+import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
+import { setNotificationsAsSeen } from 'web/pages/notifications'
+import { PrivateUser } from 'common/user'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
-function getNavigation(username: string) {
+function getNavigation() {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    {
-      name: 'Portfolio',
-      href: `/${username}?tab=bets`,
-      icon: PresentationChartLineIcon,
-    },
     {
       name: 'Notifications',
       href: `/notifications`,
@@ -88,10 +81,7 @@ function getMoreNavigation(user?: User | null) {
   return [
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Charity', href: '/charity' },
-    { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
-    { name: 'Statistics', href: '/stats' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     {
       name: 'Sign out',
@@ -113,8 +103,18 @@ const signedOutNavigation = [
 ]
 
 const signedOutMobileNavigation = [
-  { name: 'Charity', href: '/charity', icon: HeartIcon },
+  {
+    name: 'About',
+    href: 'https://docs.manifold.markets/$how-to',
+    icon: BookOpenIcon,
+  },
   { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+]
+
+const signedInMobileNavigation = [
+  ...(IS_PRIVATE_MANIFOLD
+    ? []
+    : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   {
     name: 'About',
     href: 'https://docs.manifold.markets/$how-to',
@@ -122,17 +122,22 @@ const signedOutMobileNavigation = [
   },
 ]
 
-const signedInMobileNavigation = [
-  ...(IS_PRIVATE_MANIFOLD
-    ? []
-    : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
-  ...signedOutMobileNavigation,
-]
+function getMoreMobileNav() {
+  return [
+    { name: 'Leaderboards', href: '/leaderboards' },
+    {
+      name: 'Sign out',
+      href: '#',
+      onClick: withTracking(firebaseLogout, 'sign out'),
+    },
+  ]
+}
 
 export type Item = {
   name: string
+  trackingEventName?: string
   href: string
-  icon: React.ComponentType<{ className?: string }>
+  icon?: React.ComponentType<{ className?: string }>
 }
 
 function SidebarItem(props: { item: Item; currentPage: string }) {
@@ -149,15 +154,17 @@ function SidebarItem(props: { item: Item; currentPage: string }) {
         )}
         aria-current={item.href == currentPage ? 'page' : undefined}
       >
-        <item.icon
-          className={clsx(
-            item.href == currentPage
-              ? 'text-gray-500'
-              : 'text-gray-400 group-hover:text-gray-500',
-            '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
-          )}
-          aria-hidden="true"
-        />
+        {item.icon && (
+          <item.icon
+            className={clsx(
+              item.href == currentPage
+                ? 'text-gray-500'
+                : 'text-gray-400 group-hover:text-gray-500',
+              '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
+            )}
+            aria-hidden="true"
+          />
+        )}
         <span className="truncate">{item.name}</span>
       </a>
     </Link>
@@ -186,168 +193,146 @@ function MoreButton() {
   return <SidebarButton text={'More'} icon={DotsHorizontalIcon} />
 }
 
-function GroupsButton() {
-  return (
-    <SidebarButton icon={UserGroupIcon} text={'Groups'}>
-      <ChevronDownIcon className=" mt-0.5 ml-2 h-5 w-5" aria-hidden="true" />
-    </SidebarButton>
-  )
-}
-
 export default function Sidebar(props: { className?: string }) {
   const { className } = props
   const router = useRouter()
   const currentPage = router.pathname
-  const [countdown, setCountdown] = useState('...')
-  useEffect(() => {
-    const nextUtcResetTime = getUtcFreeMarketResetTime({ previousTime: false })
-    const interval = setInterval(() => {
-      const now = new Date().getTime()
-      const timeUntil = nextUtcResetTime - now
-      const hoursUntil = timeUntil / 1000 / 60 / 60
-      const minutesUntil = (hoursUntil * 60) % 60
-      const secondsUntil = Math.round((hoursUntil * 60 * 60) % 60)
-      const timeString =
-        hoursUntil < 1 && minutesUntil < 1
-          ? `${secondsUntil}s`
-          : hoursUntil < 1
-          ? `${Math.round(minutesUntil)}m`
-          : `${Math.floor(hoursUntil)}h`
-      setCountdown(timeString)
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [])
 
   const user = useUser()
-  const mustWaitForFreeMarketStatus = useHasCreatedContractToday(user)
-  const navigationOptions = !user
-    ? signedOutNavigation
-    : getNavigation(user?.username || 'error')
+  const privateUser = usePrivateUser(user?.id)
+  const navigationOptions = !user ? signedOutNavigation : getNavigation()
   const mobileNavigationOptions = !user
     ? signedOutMobileNavigation
     : signedInMobileNavigation
-  const memberItems = (useMemberGroups(user) ?? []).map((group: Group) => ({
+  const memberItems = (
+    useMemberGroups(user?.id, { withChatEnabled: true }) ?? []
+  ).map((group: Group) => ({
     name: group.name,
     href: groupPath(group.slug),
   }))
 
   return (
     <nav aria-label="Sidebar" className={className}>
-      <ManifoldLogo className="pb-6" twoLine />
+      <ManifoldLogo className="py-6" twoLine />
+
+      {user?.username === 'RichardHanania' && (
+        <CreateQuestionButton user={user} />
+      )}
+      <Spacer h={4} />
       {user && (
-        <div className="mb-2" style={{ minHeight: 80 }}>
+        <div className="w-full" style={{ minHeight: 80 }}>
           <ProfileSummary user={user} />
         </div>
       )}
 
       {/* Mobile navigation */}
       <div className="space-y-1 lg:hidden">
-        {user && (
-          <MenuButton
-            buttonContent={<GroupsButton />}
-            menuItems={[{ name: 'Explore', href: '/groups' }, ...memberItems]}
-            className={'relative z-50 flex-shrink-0'}
-          />
-        )}
         {mobileNavigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
-        {!user && (
-          <SidebarItem
-            key={'Groups'}
-            item={{ name: 'Groups', href: '/groups', icon: UserGroupIcon }}
-            currentPage={currentPage}
-          />
-        )}
 
         {user && (
           <MenuButton
-            menuItems={[
-              {
-                name: 'Blog',
-                href: 'https://news.manifold.markets',
-              },
-              {
-                name: 'Discord',
-                href: 'https://discord.gg/eHQBNBqXuh',
-              },
-              {
-                name: 'Twitter',
-                href: 'https://twitter.com/ManifoldMarkets',
-              },
-              {
-                name: 'Statistics',
-                href: '/stats',
-              },
-              {
-                name: 'Sign out',
-                href: '#',
-                onClick: withTracking(firebaseLogout, 'sign out'),
-              },
-            ]}
+            menuItems={getMoreMobileNav()}
             buttonContent={<MoreButton />}
+          />
+        )}
+
+        {privateUser && (
+          <GroupsList
+            currentPage={router.asPath}
+            memberItems={memberItems}
+            privateUser={privateUser}
           />
         )}
       </div>
 
       {/* Desktop navigation */}
       <div className="hidden space-y-1 lg:block">
-        {navigationOptions.map((item) =>
-          item.name === 'Notifications' ? (
-            <div key={item.href}>
-              <SidebarItem item={item} currentPage={currentPage} />
-              {user && (
-                <MenuButton
-                  key={'groupsdropdown'}
-                  buttonContent={<GroupsButton />}
-                  menuItems={[
-                    { name: 'Explore', href: '/groups' },
-                    ...memberItems,
-                  ]}
-                  className={'relative z-50 flex-shrink-0'}
-                />
-              )}
-            </div>
-          ) : (
-            <SidebarItem
-              key={item.href}
-              item={item}
-              currentPage={currentPage}
-            />
-          )
-        )}
-
+        {navigationOptions.map((item) => (
+          <SidebarItem key={item.href} item={item} currentPage={currentPage} />
+        ))}
         <MenuButton
           menuItems={getMoreNavigation(user)}
           buttonContent={<MoreButton />}
         />
       </div>
-      {user?.username === 'RichardHanania' && (
-        <div>
-          <CreateQuestionButton user={user} />
 
-          {user &&
-          mustWaitForFreeMarketStatus != 'loading' &&
-          mustWaitForFreeMarketStatus ? (
-            <Row className="mt-2 justify-center">
-              <Row className="gap-1 text-sm text-gray-400">
-                Next free question in {countdown}
-              </Row>
-            </Row>
-          ) : (
-            user &&
-            mustWaitForFreeMarketStatus != 'loading' &&
-            !mustWaitForFreeMarketStatus && (
-              <Row className="mt-2 justify-center">
-                <Row className="gap-1 text-sm text-indigo-400">
-                  Daily free question
-                  <SparklesIcon className="mt-0.5 h-4 w-4" aria-hidden="true" />
-                </Row>
-              </Row>
-            )
-          )}
+      {/* Spacer if there are any groups */}
+      {memberItems.length > 0 && (
+        <div className="py-3">
+          <div className="h-[1px] bg-gray-300" />
         </div>
       )}
+      {privateUser && (
+        <GroupsList
+          currentPage={router.asPath}
+          memberItems={memberItems}
+          privateUser={privateUser}
+        />
+      )}
     </nav>
+  )
+}
+
+function GroupsList(props: {
+  currentPage: string
+  memberItems: Item[]
+  privateUser: PrivateUser
+}) {
+  const { currentPage, memberItems, privateUser } = props
+  const preferredNotifications = useUnseenPreferredNotifications(
+    privateUser,
+    {
+      customHref: '/group/',
+    },
+    memberItems.length > 0 ? memberItems.length : undefined
+  )
+
+  // Set notification as seen if our current page is equal to the isSeenOnHref property
+  useEffect(() => {
+    preferredNotifications.forEach((notification) => {
+      if (notification.isSeenOnHref === currentPage) {
+        setNotificationsAsSeen([notification])
+      }
+    })
+  }, [currentPage, preferredNotifications])
+
+  const { height } = useWindowSize()
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
+  const remainingHeight =
+    (height ?? window.innerHeight) - (containerRef?.offsetTop ?? 0)
+
+  return (
+    <>
+      <SidebarItem
+        item={{ name: 'Groups', href: '/groups', icon: UserGroupIcon }}
+        currentPage={currentPage}
+      />
+
+      <div
+        className="flex-1 space-y-0.5 overflow-auto"
+        style={{ height: remainingHeight }}
+        ref={setContainerRef}
+      >
+        {memberItems.map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            className={clsx(
+              'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+              preferredNotifications.some(
+                (n) =>
+                  !n.isSeen &&
+                  (n.isSeenOnHref === item.href ||
+                    n.isSeenOnHref === item.href.replace('/chat', ''))
+              ) && 'font-bold'
+            )}
+          >
+            <span className="truncate">{item.name}</span>
+          </a>
+        ))}
+      </div>
+    </>
   )
 }

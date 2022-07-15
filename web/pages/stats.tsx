@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import { zip, uniq, sumBy, concat, countBy, sortBy, sum } from 'lodash'
+import { useEffect, useState } from 'react'
 import {
   DailyCountChart,
   DailyPercentChart,
@@ -9,273 +9,27 @@ import { Spacer } from 'web/components/layout/spacer'
 import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { getDailyBets } from 'web/lib/firebase/bets'
-import { getDailyComments } from 'web/lib/firebase/comments'
-import { getDailyContracts } from 'web/lib/firebase/contracts'
-import { getDailyNewUsers } from 'web/lib/firebase/users'
 import { SiteLink } from 'web/components/site-link'
 import { Linkify } from 'web/components/linkify'
-import { average } from 'common/util/math'
+import { getStats } from 'web/lib/firebase/stats'
+import { Stats } from 'common/stats'
 
-export const getStaticProps = fromPropz(getStaticPropz)
-export async function getStaticPropz() {
-  const numberOfDays = 90
-  const today = dayjs(dayjs().format('YYYY-MM-DD'))
-    // Convert from UTC midnight to PT midnight.
-    .add(7, 'hours')
-
-  const startDate = today.subtract(numberOfDays, 'day')
-
-  const [dailyBets, dailyContracts, dailyComments, dailyNewUsers] =
-    await Promise.all([
-      getDailyBets(startDate.valueOf(), numberOfDays),
-      getDailyContracts(startDate.valueOf(), numberOfDays),
-      getDailyComments(startDate.valueOf(), numberOfDays),
-      getDailyNewUsers(startDate.valueOf(), numberOfDays),
-    ])
-
-  const dailyBetCounts = dailyBets.map((bets) => bets.length)
-  const dailyContractCounts = dailyContracts.map(
-    (contracts) => contracts.length
-  )
-  const dailyCommentCounts = dailyComments.map((comments) => comments.length)
-
-  const dailyUserIds = zip(dailyContracts, dailyBets, dailyComments).map(
-    ([contracts, bets, comments]) => {
-      const creatorIds = (contracts ?? []).map((c) => c.creatorId)
-      const betUserIds = (bets ?? []).map((bet) => bet.userId)
-      const commentUserIds = (comments ?? []).map((comment) => comment.userId)
-      return uniq([...creatorIds, ...betUserIds, ...commentUserIds])
-    }
-  )
-
-  const dailyActiveUsers = dailyUserIds.map((userIds) => userIds.length)
-
-  const weeklyActiveUsers = dailyUserIds.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i
-    const uniques = new Set<string>()
-    for (let j = start; j <= end; j++)
-      dailyUserIds[j].forEach((userId) => uniques.add(userId))
-    return uniques.size
-  })
-
-  const monthlyActiveUsers = dailyUserIds.map((_, i) => {
-    const start = Math.max(0, i - 29)
-    const end = i
-    const uniques = new Set<string>()
-    for (let j = start; j <= end; j++)
-      dailyUserIds[j].forEach((userId) => uniques.add(userId))
-    return uniques.size
-  })
-
-  const weekOnWeekRetention = dailyUserIds.map((_userId, i) => {
-    const twoWeeksAgo = {
-      start: Math.max(0, i - 13),
-      end: Math.max(0, i - 7),
-    }
-    const lastWeek = {
-      start: Math.max(0, i - 6),
-      end: i,
-    }
-
-    const activeTwoWeeksAgo = new Set<string>()
-    for (let j = twoWeeksAgo.start; j <= twoWeeksAgo.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeTwoWeeksAgo.add(userId))
-    }
-    const activeLastWeek = new Set<string>()
-    for (let j = lastWeek.start; j <= lastWeek.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeLastWeek.add(userId))
-    }
-    const retainedCount = sumBy(Array.from(activeTwoWeeksAgo), (userId) =>
-      activeLastWeek.has(userId) ? 1 : 0
-    )
-    const retainedFrac = retainedCount / activeTwoWeeksAgo.size
-    return Math.round(retainedFrac * 100 * 100) / 100
-  })
-
-  const monthlyRetention = dailyUserIds.map((_userId, i) => {
-    const twoMonthsAgo = {
-      start: Math.max(0, i - 60),
-      end: Math.max(0, i - 30),
-    }
-    const lastMonth = {
-      start: Math.max(0, i - 30),
-      end: i,
-    }
-
-    const activeTwoMonthsAgo = new Set<string>()
-    for (let j = twoMonthsAgo.start; j <= twoMonthsAgo.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeTwoMonthsAgo.add(userId))
-    }
-    const activeLastMonth = new Set<string>()
-    for (let j = lastMonth.start; j <= lastMonth.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeLastMonth.add(userId))
-    }
-    const retainedCount = sumBy(Array.from(activeTwoMonthsAgo), (userId) =>
-      activeLastMonth.has(userId) ? 1 : 0
-    )
-    const retainedFrac = retainedCount / activeTwoMonthsAgo.size
-    return Math.round(retainedFrac * 100 * 100) / 100
-  })
-
-  const firstBetDict: { [userId: string]: number } = {}
-  for (let i = 0; i < dailyBets.length; i++) {
-    const bets = dailyBets[i]
-    for (const bet of bets) {
-      if (bet.userId in firstBetDict) continue
-      firstBetDict[bet.userId] = i
-    }
-  }
-  const weeklyActivationRate = dailyNewUsers.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i
-    let activatedCount = 0
-    let newUsers = 0
-    for (let j = start; j <= end; j++) {
-      const userIds = dailyNewUsers[j].map((user) => user.id)
-      newUsers += userIds.length
-      for (const userId of userIds) {
-        const dayIndex = firstBetDict[userId]
-        if (dayIndex !== undefined && dayIndex <= end) {
-          activatedCount++
-        }
-      }
-    }
-    const frac = activatedCount / (newUsers || 1)
-    return Math.round(frac * 100 * 100) / 100
-  })
-  const dailySignups = dailyNewUsers.map((users) => users.length)
-
-  const dailyTopTenthActions = zip(
-    dailyContracts,
-    dailyBets,
-    dailyComments
-  ).map(([contracts, bets, comments]) => {
-    const userIds = concat(
-      contracts?.map((c) => c.creatorId) ?? [],
-      bets?.map((b) => b.userId) ?? [],
-      comments?.map((c) => c.userId) ?? []
-    )
-    const counts = Object.values(countBy(userIds))
-    const sortedCounts = sortBy(counts, (count) => count).reverse()
-    if (sortedCounts.length === 0) return 0
-    const tenthPercentile = sortedCounts[Math.floor(sortedCounts.length * 0.1)]
-    return tenthPercentile
-  })
-  const weeklyTopTenthActions = dailyTopTenthActions.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i
-    return average(dailyTopTenthActions.slice(start, end))
-  })
-  const monthlyTopTenthActions = dailyTopTenthActions.map((_, i) => {
-    const start = Math.max(0, i - 29)
-    const end = i
-    return average(dailyTopTenthActions.slice(start, end))
-  })
-
-  // Total mana divided by 100.
-  const dailyManaBet = dailyBets.map((bets) => {
-    return Math.round(sumBy(bets, (bet) => bet.amount) / 100)
-  })
-  const weeklyManaBet = dailyManaBet.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i
-    const total = sum(dailyManaBet.slice(start, end))
-    if (end - start < 7) return (total * 7) / (end - start)
-    return total
-  })
-  const monthlyManaBet = dailyManaBet.map((_, i) => {
-    const start = Math.max(0, i - 29)
-    const end = i
-    const total = sum(dailyManaBet.slice(start, end))
-    const range = end - start + 1
-    if (range < 30) return (total * 30) / range
-    return total
-  })
-
-  return {
-    props: {
-      startDate: startDate.valueOf(),
-      dailyActiveUsers,
-      weeklyActiveUsers,
-      monthlyActiveUsers,
-      dailyBetCounts,
-      dailyContractCounts,
-      dailyCommentCounts,
-      dailySignups,
-      weekOnWeekRetention,
-      weeklyActivationRate,
-      monthlyRetention,
-      topTenthActions: {
-        daily: dailyTopTenthActions,
-        weekly: weeklyTopTenthActions,
-        monthly: monthlyTopTenthActions,
-      },
-      manaBet: {
-        daily: dailyManaBet,
-        weekly: weeklyManaBet,
-        monthly: monthlyManaBet,
-      },
-    },
-    revalidate: 60 * 60, // Regenerate after an hour
-  }
-}
-
-export default function Analytics(props: {
-  startDate: number
-  dailyActiveUsers: number[]
-  weeklyActiveUsers: number[]
-  monthlyActiveUsers: number[]
-  dailyBetCounts: number[]
-  dailyContractCounts: number[]
-  dailyCommentCounts: number[]
-  dailySignups: number[]
-  weekOnWeekRetention: number[]
-  monthlyRetention: number[]
-  weeklyActivationRate: number[]
-  topTenthActions: {
-    daily: number[]
-    weekly: number[]
-    monthly: number[]
-  }
-  manaBet: {
-    daily: number[]
-    weekly: number[]
-    monthly: number[]
-  }
-}) {
-  props = usePropz(props, getStaticPropz) ?? {
-    startDate: 0,
-    dailyActiveUsers: [],
-    weeklyActiveUsers: [],
-    monthlyActiveUsers: [],
-    dailyBetCounts: [],
-    dailyContractCounts: [],
-    dailyCommentCounts: [],
-    dailySignups: [],
-    weekOnWeekRetention: [],
-    monthlyRetention: [],
-    weeklyActivationRate: [],
-    topTenthActions: {
-      daily: [],
-      weekly: [],
-      monthly: [],
-    },
-    manaBet: {
-      daily: [],
-      weekly: [],
-      monthly: [],
-    },
+export default function Analytics() {
+  const [stats, setStats] = useState<Stats | undefined>(undefined)
+  useEffect(() => {
+    getStats().then(setStats)
+  }, [])
+  if (stats == null) {
+    return <></>
   }
   return (
     <Page>
       <Tabs
+        currentPageForAnalytics={'stats'}
         tabs={[
           {
             title: 'Activity',
-            content: <CustomAnalytics {...props} />,
+            content: <CustomAnalytics {...stats} />,
           },
           {
             title: 'Market Stats',

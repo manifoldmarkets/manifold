@@ -12,13 +12,26 @@ service cloud.firestore {
              || request.auth.uid == 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // Manifold
     }
 
+    match /stats/stats {
+      allow read;
+    }
+
     match /users/{userId} {
       allow read;
       allow update: if resource.data.id == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories']);
+                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'referredByContractId']);
+          allow update: if resource.data.id == request.auth.uid
+                             && request.resource.data.diff(resource.data).affectedKeys()
+                              .hasOnly(['referredByUserId'])
+                              // only one referral allowed per user
+                              && !("referredByUserId" in resource.data)
+                              // user can't refer themselves
+                              && !(resource.data.id == request.resource.data.referredByUserId);
+                              // quid pro quos enabled (only once though so nbd) - bc I can't make this work:
+                              // && (get(/databases/$(database)/documents/users/$(request.resource.data.referredByUserId)).referredByUserId == resource.data.id);
     }
-    
+
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
       allow read;
     }
@@ -58,7 +71,7 @@ service cloud.firestore {
     match /contracts/{contractId} {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                                                                 .hasOnly(['tags', 'lowercaseTags']);
+                                                                 .hasOnly(['tags', 'lowercaseTags', 'groupSlugs']);
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['description', 'closeTime'])
                        && resource.data.creatorId == request.auth.uid;
@@ -102,6 +115,16 @@ service cloud.firestore {
 
     match /txns/{txnId} {
       allow read;
+    }
+
+    // Note: `resource` = existing doc, `request.resource` = incoming doc
+    match /manalinks/{slug} {
+      // Anyone can view any manalink
+      allow get;
+      // Only you can create a manalink with your fromId
+      allow create: if request.auth.uid == request.resource.data.fromId;
+      // Only you can list and change your own manalinks
+      allow list, update: if request.auth.uid == resource.data.fromId;
     }
 
     match /users/{userId}/notifications/{notificationId} {

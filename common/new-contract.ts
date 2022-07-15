@@ -7,10 +7,12 @@ import {
   FreeResponse,
   Numeric,
   outcomeType,
+  PseudoNumeric,
 } from './contract'
 import { User } from './user'
-import { parseTags } from './util/parse'
+import { parseTags, richTextToString } from './util/parse'
 import { removeUndefinedProps } from './util/object'
+import { JSONContent } from '@tiptap/core'
 
 export function getNewContract(
   id: string,
@@ -18,7 +20,7 @@ export function getNewContract(
   creator: User,
   question: string,
   outcomeType: outcomeType,
-  description: string,
+  description: JSONContent,
   initialProb: number,
   ante: number,
   closeTime: number,
@@ -27,16 +29,23 @@ export function getNewContract(
   // used for numeric markets
   bucketCount: number,
   min: number,
-  max: number
+  max: number,
+  isLogScale: boolean
 ) {
   const tags = parseTags(
-    `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
+    [
+      question,
+      richTextToString(description),
+      ...extraTags.map((tag) => `#${tag}`),
+    ].join(' ')
   )
   const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
   const propsByOutcomeType =
     outcomeType === 'BINARY'
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
+      : outcomeType === 'PSEUDO_NUMERIC'
+      ? getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale)
       : outcomeType === 'NUMERIC'
       ? getNumericProps(ante, bucketCount, min, max)
       : getFreeAnswerProps(ante)
@@ -52,7 +61,7 @@ export function getNewContract(
     creatorAvatarUrl: creator.avatarUrl,
 
     question: question.trim(),
-    description: description.trim(),
+    description,
     tags,
     lowercaseTags,
     visibility: 'public',
@@ -106,6 +115,24 @@ const getBinaryCpmmProps = (initialProb: number, ante: number) => {
     initialProbability: p,
     p,
     pool: pool,
+  }
+
+  return system
+}
+
+const getPseudoNumericCpmmProps = (
+  initialProb: number,
+  ante: number,
+  min: number,
+  max: number,
+  isLogScale: boolean
+) => {
+  const system: CPMM & PseudoNumeric = {
+    ...getBinaryCpmmProps(initialProb, ante),
+    outcomeType: 'PSEUDO_NUMERIC',
+    min,
+    max,
+    isLogScale,
   }
 
   return system

@@ -13,7 +13,7 @@ const bodySchema = z.object({
   betId: z.string(),
 })
 
-export const sellbet = newEndpoint(['POST'], async (req, auth) => {
+export const sellbet = newEndpoint({}, async (req, auth) => {
   const { contractId, betId } = validate(bodySchema, req.body)
 
   // run as transaction to prevent race conditions
@@ -21,11 +21,11 @@ export const sellbet = newEndpoint(['POST'], async (req, auth) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const betDoc = firestore.doc(`contracts/${contractId}/bets/${betId}`)
-    const [contractSnap, userSnap, betSnap] = await Promise.all([
-      transaction.get(contractDoc),
-      transaction.get(userDoc),
-      transaction.get(betDoc),
-    ])
+    const [contractSnap, userSnap, betSnap] = await transaction.getAll(
+      contractDoc,
+      userDoc,
+      betDoc
+    )
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
     if (!betSnap.exists) throw new APIError(400, 'Bet not found.')

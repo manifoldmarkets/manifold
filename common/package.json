@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "verify": "(cd .. && yarn verify)"
+    "verify": "(cd .. && yarn verify)",
+    "verify:dir": "npx eslint . --max-warnings 0"
   },
   "sideEffects": false,
   "dependencies": {
+    "@tiptap/extension-image": "2.0.0-beta.30",
+    "@tiptap/extension-link": "2.0.0-beta.43",
+    "@tiptap/starter-kit": "2.0.0-beta.190",
     "lodash": "4.17.21"
   },
   "devDependencies": {

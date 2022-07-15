@@ -36,5 +36,9 @@ export const IS_PRIVATE_MANIFOLD = ENV_CONFIG.visibility === 'PRIVATE'
 export const CORS_ORIGIN_MANIFOLD = new RegExp(
   '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.domain) + '$'
 )
+// Vercel deployments, used for testing.
+export const CORS_ORIGIN_VERCEL = new RegExp(
+  '^https?://[a-zA-Z0-9\\-]+' + escapeRegExp('mantic.vercel.app') + '$'
+)
 // Any localhost server on any port
 export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/

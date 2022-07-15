@@ -1,5 +1,5 @@
 import { maxBy } from 'lodash'
-import { Bet } from './bet'
+import { Bet, LimitBet } from './bet'
 import {
   calculateCpmmSale,
   getCpmmProbability,
@@ -18,15 +18,25 @@ import {
   getDpmProbabilityAfterSale,
 } from './calculate-dpm'
 import { calculateFixedPayout } from './calculate-fixed-payouts'
-import { Contract, BinaryContract, FreeResponseContract } from './contract'
+import {
+  Contract,
+  BinaryContract,
+  FreeResponseContract,
+  PseudoNumericContract,
+} from './contract'
+import { floatingEqual } from './util/math'
 
-export function getProbability(contract: BinaryContract) {
+export function getProbability(
+  contract: BinaryContract | PseudoNumericContract
+) {
   return contract.mechanism === 'cpmm-1'
     ? getCpmmProbability(contract.pool, contract.p)
     : getDpmProbability(contract.totalShares)
 }
 
-export function getInitialProbability(contract: BinaryContract) {
+export function getInitialProbability(
+  contract: BinaryContract | PseudoNumericContract
+) {
   if (contract.initialProbability) return contract.initialProbability
 
   if (contract.mechanism === 'dpm-2' || (contract as any).totalShares)
@@ -64,9 +74,20 @@ export function calculateShares(
     : calculateDpmShares(contract.totalShares, bet, betChoice)
 }
 
-export function calculateSaleAmount(contract: Contract, bet: Bet) {
-  return contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY'
-    ? calculateCpmmSale(contract, Math.abs(bet.shares), bet.outcome).saleValue
+export function calculateSaleAmount(
+  contract: Contract,
+  bet: Bet,
+  unfilledBets: LimitBet[]
+) {
+  return contract.mechanism === 'cpmm-1' &&
+    (contract.outcomeType === 'BINARY' ||
+      contract.outcomeType === 'PSEUDO_NUMERIC')
+    ? calculateCpmmSale(
+        contract,
+        Math.abs(bet.shares),
+        bet.outcome as 'YES' | 'NO',
+        unfilledBets
+      ).saleValue
     : calculateDpmSaleAmount(contract, bet)
 }
 
@@ -79,15 +100,23 @@ export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
 export function getProbabilityAfterSale(
   contract: Contract,
   outcome: string,
-  shares: number
+  shares: number,
+  unfilledBets: LimitBet[]
 ) {
   return contract.mechanism === 'cpmm-1'
-    ? getCpmmProbabilityAfterSale(contract, shares, outcome as 'YES' | 'NO')
+    ? getCpmmProbabilityAfterSale(
+        contract,
+        shares,
+        outcome as 'YES' | 'NO',
+        unfilledBets
+      )
     : getDpmProbabilityAfterSale(contract.totalShares, outcome, shares)
 }
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
-  return contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY'
+  return contract.mechanism === 'cpmm-1' &&
+    (contract.outcomeType === 'BINARY' ||
+      contract.outcomeType === 'PSEUDO_NUMERIC')
     ? calculateFixedPayout(contract, bet, outcome)
     : calculateDpmPayout(contract, bet, outcome)
 }
@@ -96,7 +125,9 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
   const outcome = contract.resolution
   if (!outcome) throw new Error('Contract not resolved')
 
-  return contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY'
+  return contract.mechanism === 'cpmm-1' &&
+    (contract.outcomeType === 'BINARY' ||
+      contract.outcomeType === 'PSEUDO_NUMERIC')
     ? calculateFixedPayout(contract, bet, outcome)
     : calculateDpmPayout(contract, bet, outcome)
 }
@@ -143,7 +174,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const profitPercent = (profit / totalInvested) * 100
 
   const hasShares = Object.values(totalShares).some(
-    (shares) => shares > 0
+    (shares) => !floatingEqual(shares, 0)
   )
 
   return {

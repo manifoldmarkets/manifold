@@ -1,9 +1,17 @@
 import clsx from 'clsx'
-import { uniq } from 'lodash'
+import { Dictionary, keyBy, uniq } from 'lodash'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
 import { PencilIcon } from '@heroicons/react/outline'
+import Confetti from 'react-confetti'
 
-import { follow, unfollow, User } from 'web/lib/firebase/users'
+import {
+  follow,
+  unfollow,
+  User,
+  getPortfolioHistory,
+} from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
 import { Page } from './page'
@@ -16,33 +24,36 @@ import { Row } from './layout/row'
 import { genHash } from 'common/util/random'
 import { Tabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
-import { useEffect, useState } from 'react'
+import { useWindowSize } from 'web/hooks/use-window-size'
 import { Comment, getUsersComments } from 'web/lib/firebase/comments'
 import { Contract } from 'common/contract'
 import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
 import { LoadingIndicator } from './loading-indicator'
 import { BetsList } from './bets-list'
-import { Bet } from 'common/bet'
-import { getUserBets } from 'web/lib/firebase/bets'
 import { FollowersButton, FollowingButton } from './following-button'
 import { useFollows } from 'web/hooks/use-follows'
 import { FollowButton } from './follow-button'
-import { useRouter } from 'next/router'
+import { PortfolioMetrics } from 'common/user'
+import { GroupsButton } from 'web/components/groups/groups-button'
+import { PortfolioValueSection } from './portfolio/portfolio-value-section'
+import { filterDefined } from 'common/util/array'
+import { useUserBets } from 'web/hooks/use-user-bets'
 
 export function UserLink(props: {
   name: string
   username: string
   showUsername?: boolean
   className?: string
+  justFirstName?: boolean
 }) {
-  const { name, username, showUsername, className } = props
+  const { name, username, showUsername, className, justFirstName } = props
 
   return (
     <SiteLink
       href={`/${username}`}
       className={clsx('z-10 truncate', className)}
     >
-      {name}
+      {justFirstName ? name.split(' ')[0] : name}
       {showUsername && ` (@${username})`}
     </SiteLink>
   )
@@ -57,46 +68,57 @@ export function UserPage(props: {
   defaultTabTitle?: string | undefined
 }) {
   const { user, currentUser, defaultTabTitle } = props
+  const router = useRouter()
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
-  const [usersComments, setUsersComments] = useState<Comment[]>([] as Comment[])
+  const [usersComments, setUsersComments] = useState<Comment[] | undefined>()
   const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
     'loading'
   )
-  const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
-  const [commentsByContract, setCommentsByContract] = useState<
-    Map<Contract, Comment[]> | 'loading'
-  >('loading')
-  const router = useRouter()
+  const userBets = useUserBets(user.id, { includeRedemptions: true })
+  const betCount =
+    userBets === undefined
+      ? 0
+      : userBets.filter((bet) => !bet.isRedemption && bet.amount !== 0).length
+
+  const [portfolioHistory, setUsersPortfolioHistory] = useState<
+    PortfolioMetrics[]
+  >([])
+  const [contractsById, setContractsById] = useState<
+    Dictionary<Contract> | undefined
+  >()
+  const [showConfetti, setShowConfetti] = useState(false)
+  const { width, height } = useWindowSize()
+
+  useEffect(() => {
+    const claimedMana = router.query['claimed-mana'] === 'yes'
+    setShowConfetti(claimedMana)
+  }, [router])
 
   useEffect(() => {
     if (!user) return
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
-    getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
+    getPortfolioHistory(user.id).then(setUsersPortfolioHistory)
   }, [user])
 
   // TODO: display comments on groups
   useEffect(() => {
-    const uniqueContractIds = uniq(
-      usersComments.map((comment) => comment.contractId)
-    )
-    Promise.all(
-      uniqueContractIds.map(
-        (contractId) => contractId && getContractFromId(contractId)
-      )
-    ).then((contracts) => {
-      const commentsByContract = new Map<Contract, Comment[]>()
-      contracts.forEach((contract) => {
-        if (!contract) return
-        commentsByContract.set(
-          contract,
-          usersComments.filter((comment) => comment.contractId === contract.id)
+    if (usersComments && userBets) {
+      const uniqueContractIds = uniq([
+        ...usersComments.map((comment) => comment.contractId),
+        ...(userBets?.map((bet) => bet.contractId) ?? []),
+      ])
+      Promise.all(
+        uniqueContractIds.map((contractId) =>
+          contractId ? getContractFromId(contractId) : undefined
         )
+      ).then((contracts) => {
+        const contractsById = keyBy(filterDefined(contracts), 'id')
+        setContractsById(contractsById)
       })
-      setCommentsByContract(commentsByContract)
-    })
-  }, [usersComments])
+    }
+  }, [userBets, usersComments])
 
   const yourFollows = useFollows(currentUser?.id)
   const isFollowing = yourFollows?.includes(user.id)
@@ -117,7 +139,14 @@ export function UserPage(props: {
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
-
+      {showConfetti && (
+        <Confetti
+          width={width ? width : 500}
+          height={height ? height : 500}
+          recycle={false}
+          numberOfPieces={300}
+        />
+      )}
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
         className="h-32 w-full bg-cover bg-center sm:h-40"
@@ -130,7 +159,7 @@ export function UserPage(props: {
           <Avatar
             username={user.username}
             avatarUrl={user.avatarUrl}
-            size={20}
+            size={24}
             className="bg-white ring-4 ring-white"
           />
         </div>
@@ -169,10 +198,12 @@ export function UserPage(props: {
           </>
         )}
 
-        <Col className="gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <Col className="flex-wrap gap-2 sm:flex-row sm:items-center sm:gap-4">
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
+            {/* <ReferralsButton user={user} currentUser={currentUser} /> */}
+            <GroupsButton user={user} />
           </Row>
 
           {user.website && (
@@ -227,9 +258,11 @@ export function UserPage(props: {
         </Col>
 
         <Spacer h={10} />
-        {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
+
+        {usersContracts !== 'loading' && contractsById && usersComments ? (
           <Tabs
-            className={'pb-2 pt-1 '}
+            currentPageForAnalytics={'profile'}
+            labelClassName={'pb-2 pt-1 '}
             defaultIndex={
               defaultTabTitle ? TAB_IDS.indexOf(defaultTabTitle) : 0
             }
@@ -257,7 +290,8 @@ export function UserPage(props: {
                 content: (
                   <UserCommentsList
                     user={user}
-                    commentsByUniqueContracts={commentsByContract}
+                    contractsById={contractsById}
+                    comments={usersComments}
                   />
                 ),
                 tabIcon: (
@@ -268,15 +302,18 @@ export function UserPage(props: {
                 title: 'Bets',
                 content: (
                   <div>
+                    <PortfolioValueSection
+                      portfolioHistory={portfolioHistory}
+                    />
                     <BetsList
                       user={user}
+                      bets={userBets}
                       hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
+                      contractsById={contractsById}
                     />
                   </div>
                 ),
-                tabIcon: (
-                  <div className="px-0.5 font-bold">{usersBets.length}</div>
-                ),
+                tabIcon: <div className="px-0.5 font-bold">{betCount}</div>,
               },
             ]}
           />

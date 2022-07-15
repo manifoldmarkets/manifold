@@ -3,7 +3,10 @@ import { Answer } from 'common/answer'
 import { getOutcomeProbability, getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
+import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { JSONContent } from '@tiptap/core'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -18,13 +21,13 @@ export type LiteMarket = {
   // Market attributes. All times are in milliseconds since epoch
   closeTime?: number
   question: string
-  description: string
+  description: string | JSONContent
   tags: string[]
   url: string
   outcomeType: string
   mechanism: string
 
-  pool: number
+  pool: { [outcome: string]: number }
   probability?: number
   p?: number
   totalLiquidity?: number
@@ -51,6 +54,18 @@ export type FullMarket = LiteMarket & {
 
 export type ApiError = {
   error: string
+}
+
+type ValidationErrorDetail = {
+  field: string | null
+  error: string
+}
+export class ValidationError {
+  details: ValidationErrorDetail[]
+
+  constructor(details: ValidationErrorDetail[]) {
+    this.details = details
+  }
 }
 
 export function toLiteMarket(contract: Contract): LiteMarket {
@@ -96,7 +111,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     description,
     tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
-    pool: pool.YES + pool.NO,
+    pool,
     probability,
     p,
     totalLiquidity,
@@ -142,4 +157,74 @@ function augmentAnswerWithProbability(
     ...answer,
     probability,
   }
+}
+
+export type LiteUser = {
+  id: string
+  createdTime: number
+
+  name: string
+  username: string
+  url: string
+  avatarUrl?: string
+
+  bio?: string
+  bannerUrl?: string
+  website?: string
+  twitterHandle?: string
+  discordHandle?: string
+
+  balance: number
+  totalDeposits: number
+
+  profitCached: {
+    daily: number
+    weekly: number
+    monthly: number
+    allTime: number
+  }
+
+  creatorVolumeCached: {
+    daily: number
+    weekly: number
+    monthly: number
+    allTime: number
+  }
+}
+
+export function toLiteUser(user: User): LiteUser {
+  const {
+    id,
+    createdTime,
+    name,
+    username,
+    avatarUrl,
+    bio,
+    bannerUrl,
+    website,
+    twitterHandle,
+    discordHandle,
+    balance,
+    totalDeposits,
+    profitCached,
+    creatorVolumeCached,
+  } = user
+
+  return removeUndefinedProps({
+    id,
+    createdTime,
+    name,
+    username,
+    url: `https://${ENV_CONFIG.domain}/${username}`,
+    avatarUrl,
+    bio,
+    bannerUrl,
+    website,
+    twitterHandle,
+    discordHandle,
+    balance,
+    totalDeposits,
+    profitCached,
+    creatorVolumeCached,
+  })
 }

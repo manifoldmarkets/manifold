@@ -10,14 +10,12 @@ import {
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
+import { ENV_CONFIG } from './envs/constants'
 
-export const FIXED_ANTE = 100
-
-// deprecated
-export const PHANTOM_ANTE = 0.001
-export const MINIMUM_ANTE = 50
+export const FIXED_ANTE = ENV_CONFIG.fixedAnte ?? 100
 
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
+export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldMarkets' id
 
 export function getCpmmInitialLiquidity(
   providerId: string,

@@ -4,16 +4,17 @@ import { Bet } from 'common/bet'
 import { User } from 'common/user'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/avatar'
+import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import clsx from 'clsx'
-import { UserIcon, UsersIcon } from '@heroicons/react/solid'
-import { formatMoney } from 'common/util/format'
+import { UsersIcon } from '@heroicons/react/solid'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import React, { Fragment } from 'react'
 import { uniqBy, partition, sumBy, groupBy } from 'lodash'
 import { JoinSpans } from 'web/components/join-spans'
 import { UserLink } from '../user-page'
+import { formatNumericProbability } from 'common/pseudo-numeric'
 
 export function FeedBet(props: {
   contract: Contract
@@ -50,9 +51,7 @@ export function FeedBet(props: {
           />
         ) : (
           <div className="relative px-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-              <UserIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
-            </div>
+            <EmptyAvatar />
           </div>
         )}
         <div className={'min-w-0 flex-1 py-1.5'}>
@@ -77,10 +76,22 @@ export function BetStatusText(props: {
   hideOutcome?: boolean
 }) {
   const { bet, contract, bettor, isSelf, hideOutcome } = props
+  const { outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isFreeResponse = outcomeType === 'FREE_RESPONSE'
   const { amount, outcome, createdTime } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
+  const outOfTotalAmount =
+    bet.limitProb !== undefined && bet.orderAmount !== undefined
+      ? ` / ${formatMoney(bet.orderAmount)}`
+      : ''
   const money = formatMoney(Math.abs(amount))
+
+  const hadPoolMatch =
+    (bet.limitProb === undefined ||
+      bet.fills?.some((fill) => fill.matchedBetId === null)) ??
+    false
 
   return (
     <div className="text-sm text-gray-500">
@@ -90,6 +101,7 @@ export function BetStatusText(props: {
         <span>{isSelf ? 'You' : 'A trader'}</span>
       )}{' '}
       {bought} {money}
+      {outOfTotalAmount}
       {!hideOutcome && (
         <>
           {' '}
@@ -99,7 +111,15 @@ export function BetStatusText(props: {
             value={(bet as any).value}
             contract={contract}
             truncate="short"
-          />
+          />{' '}
+          {isPseudoNumeric
+            ? ' than ' + formatNumericProbability(bet.probAfter, contract)
+            : ' at ' +
+              formatPercent(
+                hadPoolMatch || isFreeResponse
+                  ? bet.probAfter
+                  : bet.limitProb ?? bet.probAfter
+              )}
         </>
       )}
       <RelativeTimestamp time={createdTime} />

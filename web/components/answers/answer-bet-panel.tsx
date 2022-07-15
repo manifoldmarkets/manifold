@@ -6,7 +6,7 @@ import { Answer } from 'common/answer'
 import { FreeResponseContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
-import { APIError, placeBet } from 'web/lib/firebase/api-call'
+import { APIError, placeBet } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import {
@@ -25,6 +25,7 @@ import {
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
 import { SignUpPrompt } from '../sign-up-prompt'
+import { isIOS } from 'web/lib/util/device'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -44,6 +45,7 @@ export function AnswerBetPanel(props: {
 
   const inputRef = useRef<HTMLElement>(null)
   useEffect(() => {
+    if (isIOS()) window.scrollTo(0, window.scrollY + 200)
     inputRef.current && inputRef.current.focus()
   }, [])
 

@@ -1,17 +1,6 @@
 import { auth } from './users'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { V2CloudFunction } from 'common/envs/prod'
-
-export class APIError extends Error {
-  code: number
-  details?: string
-  constructor(code: number, message: string, details?: string) {
-    super(message)
-    this.code = code
-    this.name = 'APIError'
-    this.details = details
-  }
-}
+import { APIError, getFunctionUrl } from 'common/api'
+export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
   const user = auth.currentUser
@@ -36,21 +25,44 @@ export async function call(url: string, method: string, params: any) {
   })
 }
 
-// Our users access the API through the Vercel proxy routes at /api/v0/blah,
-// but right now at least until we get performance under control let's have the
-// app just hit the cloud functions directly -- there's no difference and it's
-// one less hop
+export function createAnswer(params: any) {
+  return call(getFunctionUrl('createanswer'), 'POST', params)
+}
 
-export function getFunctionUrl(name: V2CloudFunction) {
-  return ENV_CONFIG.functionEndpoints[name]
+export function transact(params: any) {
+  return call(getFunctionUrl('transact'), 'POST', params)
+}
+
+export function createUser(params: any) {
+  return call(getFunctionUrl('createuser'), 'POST', params)
+}
+
+export function changeUserInfo(params: any) {
+  return call(getFunctionUrl('changeuserinfo'), 'POST', params)
+}
+
+export function addLiquidity(params: any) {
+  return call(getFunctionUrl('addliquidity'), 'POST', params)
+}
+
+export function withdrawLiquidity(params: any) {
+  return call(getFunctionUrl('withdrawliquidity'), 'POST', params)
 }
 
 export function createMarket(params: any) {
   return call(getFunctionUrl('createmarket'), 'POST', params)
 }
 
+export function resolveMarket(params: any) {
+  return call(getFunctionUrl('resolvemarket'), 'POST', params)
+}
+
 export function placeBet(params: any) {
   return call(getFunctionUrl('placebet'), 'POST', params)
+}
+
+export function cancelBet(params: { betId: string }) {
+  return call(getFunctionUrl('cancelbet'), 'POST', params)
 }
 
 export function sellShares(params: any) {
@@ -59,6 +71,10 @@ export function sellShares(params: any) {
 
 export function sellBet(params: any) {
   return call(getFunctionUrl('sellbet'), 'POST', params)
+}
+
+export function claimManalink(params: any) {
+  return call(getFunctionUrl('claimmanalink'), 'POST', params)
 }
 
 export function createGroup(params: any) {

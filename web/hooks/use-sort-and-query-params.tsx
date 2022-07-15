@@ -10,6 +10,7 @@ export type Sort =
   | 'newest'
   | 'oldest'
   | 'most-traded'
+  | 'most-popular'
   | '24-hour-vol'
   | 'close-date'
   | 'resolve-date'
@@ -20,12 +21,22 @@ export function checkAgainstQuery(query: string, corpus: string) {
   return queryWords.every((word) => corpus.toLowerCase().includes(word))
 }
 
+export function getSavedSort() {
+  // TODO: this obviously doesn't work with SSR, common sense would suggest
+  // that we should save things like this in cookies so the server has them
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(MARKETS_SORT) as Sort | null
+  } else {
+    return null
+  }
+}
+
 export function useInitialQueryAndSort(options?: {
   defaultSort: Sort
   shouldLoadFromStorage?: boolean
 }) {
   const { defaultSort, shouldLoadFromStorage } = defaults(options, {
-    defaultSort: '24-hour-vol',
+    defaultSort: 'most-popular',
     shouldLoadFromStorage: true,
   })
   const router = useRouter()
@@ -45,7 +56,7 @@ export function useInitialQueryAndSort(options?: {
 
       if (!sort && shouldLoadFromStorage) {
         console.log('ready loading from storage ', sort ?? defaultSort)
-        const localSort = localStorage.getItem(MARKETS_SORT) as Sort
+        const localSort = getSavedSort()
         if (localSort) {
           router.query.s = localSort
           // Use replace to not break navigating back.

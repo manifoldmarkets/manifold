@@ -1,5 +1,5 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { z } from 'zod'
 
 import { CPMMContract } from '../../common/contract'
 import { User } from '../../common/user'
@@ -10,129 +10,112 @@ import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
 import { noFees } from '../../common/fees'
 
-import { APIError } from './api'
+import { APIError, newEndpoint, validate } from './api'
 import { redeemShares } from './redeem-shares'
 
-export const withdrawLiquidity = functions
-  .runWith({ minInstances: 1 })
-  .https.onCall(
-    async (
-      data: {
-        contractId: string
-      },
-      context
-    ) => {
-      const userId = context?.auth?.uid
-      if (!userId) return { status: 'error', message: 'Not authorized' }
+const bodySchema = z.object({
+  contractId: z.string(),
+})
 
-      const { contractId } = data
-      if (!contractId)
-        return { status: 'error', message: 'Missing contract id' }
+export const withdrawliquidity = newEndpoint({}, async (req, auth) => {
+  const { contractId } = validate(bodySchema, req.body)
 
-      return await firestore
-        .runTransaction(async (trans) => {
-          const lpDoc = firestore.doc(`users/${userId}`)
-          const lpSnap = await trans.get(lpDoc)
-          if (!lpSnap.exists) throw new APIError(400, 'User not found.')
-          const lp = lpSnap.data() as User
+  return await firestore
+    .runTransaction(async (trans) => {
+      const lpDoc = firestore.doc(`users/${auth.uid}`)
+      const lpSnap = await trans.get(lpDoc)
+      if (!lpSnap.exists) throw new APIError(400, 'User not found.')
+      const lp = lpSnap.data() as User
 
-          const contractDoc = firestore.doc(`contracts/${contractId}`)
-          const contractSnap = await trans.get(contractDoc)
-          if (!contractSnap.exists)
-            throw new APIError(400, 'Contract not found.')
-          const contract = contractSnap.data() as CPMMContract
+      const contractDoc = firestore.doc(`contracts/${contractId}`)
+      const contractSnap = await trans.get(contractDoc)
+      if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
+      const contract = contractSnap.data() as CPMMContract
 
-          const liquidityCollection = firestore.collection(
-            `contracts/${contractId}/liquidity`
-          )
+      const liquidityCollection = firestore.collection(
+        `contracts/${contractId}/liquidity`
+      )
 
-          const liquiditiesSnap = await trans.get(liquidityCollection)
+      const liquiditiesSnap = await trans.get(liquidityCollection)
 
-          const liquidities = liquiditiesSnap.docs.map(
-            (doc) => doc.data() as LiquidityProvision
-          )
+      const liquidities = liquiditiesSnap.docs.map(
+        (doc) => doc.data() as LiquidityProvision
+      )
 
-          const userShares = getUserLiquidityShares(
-            userId,
-            contract,
-            liquidities
-          )
+      const userShares = getUserLiquidityShares(
+        auth.uid,
+        contract,
+        liquidities,
+        true
+      )
 
-          // zero all added amounts for now
-          // can add support for partial withdrawals in the future
-          liquiditiesSnap.docs
-            .filter(
-              (_, i) =>
-                !liquidities[i].isAnte && liquidities[i].userId === userId
-            )
-            .forEach((doc) => trans.update(doc.ref, { amount: 0 }))
+      // zero all added amounts for now
+      // can add support for partial withdrawals in the future
+      liquiditiesSnap.docs
+        .filter(
+          (_, i) => !liquidities[i].isAnte && liquidities[i].userId === auth.uid
+        )
+        .forEach((doc) => trans.update(doc.ref, { amount: 0 }))
 
-          const payout = Math.min(...Object.values(userShares))
-          if (payout <= 0) return {}
+      const payout = Math.min(...Object.values(userShares))
+      if (payout <= 0) return {}
 
-          const newBalance = lp.balance + payout
-          const newTotalDeposits = lp.totalDeposits + payout
-          trans.update(lpDoc, {
-            balance: newBalance,
-            totalDeposits: newTotalDeposits,
-          } as Partial<User>)
+      const newBalance = lp.balance + payout
+      const newTotalDeposits = lp.totalDeposits + payout
+      trans.update(lpDoc, {
+        balance: newBalance,
+        totalDeposits: newTotalDeposits,
+      } as Partial<User>)
 
-          const newPool = subtractObjects(contract.pool, userShares)
+      const newPool = subtractObjects(contract.pool, userShares)
 
-          const minPoolShares = Math.min(...Object.values(newPool))
-          const adjustedTotal = contract.totalLiquidity - payout
+      const minPoolShares = Math.min(...Object.values(newPool))
+      const adjustedTotal = contract.totalLiquidity - payout
 
-          // total liquidity is a bogus number; use minPoolShares to prevent from going negative
-          const newTotalLiquidity = Math.max(adjustedTotal, minPoolShares)
+      // total liquidity is a bogus number; use minPoolShares to prevent from going negative
+      const newTotalLiquidity = Math.max(adjustedTotal, minPoolShares)
 
-          trans.update(contractDoc, {
-            pool: newPool,
-            totalLiquidity: newTotalLiquidity,
-          })
+      trans.update(contractDoc, {
+        pool: newPool,
+        totalLiquidity: newTotalLiquidity,
+      })
 
-          const prob = getProbability(contract)
+      const prob = getProbability(contract)
 
-          // surplus shares become user's bets
-          const bets = Object.entries(userShares)
-            .map(([outcome, shares]) =>
-              shares - payout < 1 // don't create bet if less than 1 share
-                ? undefined
-                : ({
-                    userId: userId,
-                    contractId: contract.id,
-                    amount:
-                      (outcome === 'YES' ? prob : 1 - prob) * (shares - payout),
-                    shares: shares - payout,
-                    outcome,
-                    probBefore: prob,
-                    probAfter: prob,
-                    createdTime: Date.now(),
-                    isLiquidityProvision: true,
-                    fees: noFees,
-                  } as Omit<Bet, 'id'>)
-            )
-            .filter((x) => x !== undefined)
+      // surplus shares become user's bets
+      const bets = Object.entries(userShares)
+        .map(([outcome, shares]) =>
+          shares - payout < 1 // don't create bet if less than 1 share
+            ? undefined
+            : ({
+                userId: auth.uid,
+                contractId: contract.id,
+                amount:
+                  (outcome === 'YES' ? prob : 1 - prob) * (shares - payout),
+                shares: shares - payout,
+                outcome,
+                probBefore: prob,
+                probAfter: prob,
+                createdTime: Date.now(),
+                isLiquidityProvision: true,
+                fees: noFees,
+              } as Omit<Bet, 'id'>)
+        )
+        .filter((x) => x !== undefined)
 
-          for (const bet of bets) {
-            const doc = firestore
-              .collection(`contracts/${contract.id}/bets`)
-              .doc()
-            trans.create(doc, { id: doc.id, ...bet })
-          }
+      for (const bet of bets) {
+        const doc = firestore.collection(`contracts/${contract.id}/bets`).doc()
+        trans.create(doc, { id: doc.id, ...bet })
+      }
 
-          return userShares
-        })
-        .then(async (result) => {
-          // redeem surplus bet with pre-existing bets
-          await redeemShares(userId, contractId)
-
-          console.log('userid', userId, 'withdraws', result)
-          return { status: 'success', userShares: result }
-        })
-        .catch((e) => {
-          return { status: 'error', message: e.message }
-        })
-    }
-  )
+      return userShares
+    })
+    .then(async (result) => {
+      // redeem surplus bet with pre-existing bets
+      await redeemShares(auth.uid, contractId)
+      console.log('userid', auth.uid, 'withdraws', result)
+      return result
+    })
+})
 
 const firestore = admin.firestore()

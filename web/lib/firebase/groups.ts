@@ -1,81 +1,70 @@
 import {
-  collection,
   deleteDoc,
   doc,
+  getDocs,
   query,
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { sortBy } from 'lodash'
+import { sortBy, uniq } from 'lodash'
 import { Group } from 'common/group'
-import { getContractFromId } from './contracts'
-import { db } from './init'
-import { getValue, getValues, listenForValue, listenForValues } from './utils'
-import { filterDefined } from 'common/util/array'
+import { updateContract } from './contracts'
+import {
+  coll,
+  getValue,
+  getValues,
+  listenForValue,
+  listenForValues,
+} from './utils'
+import { Contract } from 'common/contract'
 
-const groupCollection = collection(db, 'groups')
+export const groups = coll<Group>('groups')
 
 export function groupPath(
   groupSlug: string,
-  subpath?: 'edit' | 'questions' | 'details' | 'discussion'
+  subpath?: 'edit' | 'questions' | 'about' | 'chat' | 'rankings'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }
 
 export function updateGroup(group: Group, updates: Partial<Group>) {
-  return updateDoc(doc(groupCollection, group.id), updates)
+  return updateDoc(doc(groups, group.id), updates)
 }
 
 export function deleteGroup(group: Group) {
-  return deleteDoc(doc(groupCollection, group.id))
+  return deleteDoc(doc(groups, group.id))
 }
 
 export async function listAllGroups() {
-  return getValues<Group>(groupCollection)
+  return getValues<Group>(groups)
 }
 
 export function listenForGroups(setGroups: (groups: Group[]) => void) {
-  return listenForValues(groupCollection, setGroups)
+  return listenForValues(groups, setGroups)
 }
 
 export function getGroup(groupId: string) {
-  return getValue<Group>(doc(groupCollection, groupId))
+  return getValue<Group>(doc(groups, groupId))
 }
 
 export async function getGroupBySlug(slug: string) {
-  const q = query(groupCollection, where('slug', '==', slug))
-  const groups = await getValues<Group>(q)
-
-  return groups.length === 0 ? null : groups[0]
-}
-
-export async function getGroupContracts(group: Group) {
-  const { contractIds } = group
-
-  const contracts =
-    filterDefined(
-      await Promise.all(
-        contractIds.map(async (contractId) => {
-          return await getContractFromId(contractId)
-        })
-      )
-    ) ?? []
-
-  return [...contracts]
+  const q = query(groups, where('slug', '==', slug))
+  const docs = (await getDocs(q)).docs
+  return docs.length === 0 ? null : docs[0].data()
 }
 
 export function listenForGroup(
   groupId: string,
   setGroup: (group: Group | null) => void
 ) {
-  return listenForValue(doc(groupCollection, groupId), setGroup)
+  return listenForValue(doc(groups, groupId), setGroup)
 }
 
 export function listenForMemberGroups(
   userId: string,
   setGroups: (groups: Group[]) => void
 ) {
-  const q = query(groupCollection, where('memberIds', 'array-contains', userId))
+  const q = query(groups, where('memberIds', 'array-contains', userId))
 
   return listenForValues<Group>(q, (groups) => {
     const sorted = sortBy(groups, [(group) => -group.mostRecentActivityTime])
@@ -87,10 +76,58 @@ export async function getGroupsWithContractId(
   contractId: string,
   setGroups: (groups: Group[]) => void
 ) {
-  const q = query(
-    groupCollection,
-    where('contractIds', 'array-contains', contractId)
-  )
-  const groups = await getValues<Group>(q)
-  setGroups(groups)
+  const q = query(groups, where('contractIds', 'array-contains', contractId))
+  setGroups(await getValues<Group>(q))
+}
+
+export async function addUserToGroupViaSlug(groupSlug: string, userId: string) {
+  // get group to get the member ids
+  const group = await getGroupBySlug(groupSlug)
+  if (!group) {
+    console.error(`Group not found: ${groupSlug}`)
+    return
+  }
+  return await joinGroup(group, userId)
+}
+
+export async function joinGroup(group: Group, userId: string): Promise<void> {
+  const { memberIds } = group
+  if (memberIds.includes(userId)) return // already a member
+
+  const newMemberIds = [...memberIds, userId]
+  return await updateGroup(group, { memberIds: uniq(newMemberIds) })
+}
+
+export async function leaveGroup(group: Group, userId: string): Promise<void> {
+  const { memberIds } = group
+  if (!memberIds.includes(userId)) return // not a member
+
+  const newMemberIds = memberIds.filter((id) => id !== userId)
+  return await updateGroup(group, { memberIds: uniq(newMemberIds) })
+}
+
+export async function addContractToGroup(group: Group, contract: Contract) {
+  await updateContract(contract.id, {
+    groupSlugs: [...(contract.groupSlugs ?? []), group.slug],
+  })
+  return await updateGroup(group, {
+    contractIds: uniq([...group.contractIds, contract.id]),
+  })
+    .then(() => group)
+    .catch((err) => {
+      console.error('error adding contract to group', err)
+      return err
+    })
+}
+
+export async function setContractGroupSlugs(group: Group, contractId: string) {
+  await updateContract(contractId, { groupSlugs: [group.slug] })
+  return await updateGroup(group, {
+    contractIds: uniq([...group.contractIds, contractId]),
+  })
+    .then(() => group)
+    .catch((err) => {
+      console.error('error adding contract to group', err)
+      return err
+    })
 }

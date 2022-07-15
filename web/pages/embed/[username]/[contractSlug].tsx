@@ -1,5 +1,5 @@
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { AnswersGraph } from 'web/components/answers/answers-graph'
 import BetRow from 'web/components/bet-row'
@@ -7,6 +7,7 @@ import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
+  PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
 import { ContractDetails } from 'web/components/contract/contract-details'
 import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
@@ -21,6 +22,7 @@ import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { listAllBets } from 'web/lib/firebase/bets'
 import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
+import { tradingAllowed } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -79,6 +81,7 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
@@ -110,10 +113,22 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
           {isBinary && (
             <Row className="items-center gap-4">
-              {/* this fails typechecking, but it doesn't explode because we will
-              never */}
-              <BetRow contract={contract as any} betPanelClassName="scale-75" />
+              {tradingAllowed(contract) && (
+                <BetRow
+                  contract={contract as CPMMBinaryContract}
+                  betPanelClassName="scale-75"
+                />
+              )}
               <BinaryResolutionOrChance contract={contract} />
+            </Row>
+          )}
+
+          {isPseudoNumeric && (
+            <Row className="items-center gap-4">
+              {tradingAllowed(contract) && (
+                <BetRow contract={contract} betPanelClassName="scale-75" />
+              )}
+              <PseudoNumericResolutionOrExpectation contract={contract} />
             </Row>
           )}
 
@@ -133,7 +148,7 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
       </div>
 
       <div className="mx-1" style={{ paddingBottom }}>
-        {isBinary && (
+        {(isBinary || isPseudoNumeric) && (
           <ContractProbGraph
             contract={contract}
             bets={bets}

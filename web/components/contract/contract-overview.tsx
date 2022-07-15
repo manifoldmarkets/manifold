@@ -11,11 +11,12 @@ import {
   FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
+  PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
 import BetRow from '../bet-row'
 import { AnswersGraph } from '../answers/answers-graph'
-import { Contract } from 'common/contract'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { ShareMarket } from '../share-market'
@@ -32,6 +33,7 @@ export const ContractOverview = (props: {
   const user = useUser()
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   return (
     <Col className={clsx('mb-6', className)}>
@@ -49,6 +51,13 @@ export const ContractOverview = (props: {
             />
           )}
 
+          {isPseudoNumeric && (
+            <PseudoNumericResolutionOrExpectation
+              contract={contract}
+              className="hidden items-end xl:flex"
+            />
+          )}
+
           {outcomeType === 'NUMERIC' && (
             <NumericResolutionOrExpectation
               contract={contract}
@@ -61,6 +70,18 @@ export const ContractOverview = (props: {
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
 
+            {tradingAllowed(contract) && (
+              <BetRow contract={contract as CPMMBinaryContract} />
+            )}
+          </Row>
+        ) : isPseudoNumeric ? (
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <PseudoNumericResolutionOrExpectation contract={contract} />
+            {tradingAllowed(contract) && <BetRow contract={contract} />}
+          </Row>
+        ) : isPseudoNumeric ? (
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <PseudoNumericResolutionOrExpectation contract={contract} />
             {tradingAllowed(contract) && <BetRow contract={contract} />}
           </Row>
         ) : (
@@ -86,7 +107,9 @@ export const ContractOverview = (props: {
         />
       </Col>
       <Spacer h={4} />
-      {isBinary && <ContractProbGraph contract={contract} bets={bets} />}{' '}
+      {(isBinary || isPseudoNumeric) && (
+        <ContractProbGraph contract={contract} bets={bets} />
+      )}{' '}
       {outcomeType === 'FREE_RESPONSE' && (
         <AnswersGraph contract={contract} bets={bets} />
       )}

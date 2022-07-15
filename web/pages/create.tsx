@@ -6,8 +6,8 @@ import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
 import { useUser } from 'web/hooks/use-user'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
-import { createMarket } from 'web/lib/firebase/api-call'
-import { FIXED_ANTE, MINIMUM_ANTE } from 'common/antes'
+import { createMarket } from 'web/lib/firebase/api'
+import { FIXED_ANTE } from 'common/antes'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
 import { Row } from 'web/components/layout/row'
@@ -17,24 +17,50 @@ import {
   outcomeType,
 } from 'common/contract'
 import { formatMoney } from 'common/util/format'
-import { useHasCreatedContractToday } from 'web/hooks/use-has-created-contract-today'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { getGroup, updateGroup } from 'web/lib/firebase/groups'
+import { setContractGroupSlugs, getGroup } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
-import { CATEGORIES } from 'common/categories'
+import { User } from 'common/user'
+import { TextEditor, useTextEditor } from 'web/components/editor'
+import { Checkbox } from 'web/components/checkbox'
+
+type NewQuestionParams = {
+  groupId?: string
+  q: string
+  type: string
+  description: string
+  closeTime: string
+  outcomeType: string
+  // Params for PSEUDO_NUMERIC outcomeType
+  min?: string
+  max?: string
+  isLogScale?: string
+  initValue?: string
+}
 
 export default function Create() {
-  const [question, setQuestion] = useState('')
-  // get query params:
-  const router = useRouter()
-  const { groupId } = router.query as { groupId: string }
   useTracking('view create page')
-  if (!router.isReady) return <div />
+  const router = useRouter()
+  const params = router.query as NewQuestionParams
+  // TODO: Not sure why Question is pulled out as its own component;
+  // Maybe merge into newContract and then we don't need useEffect here.
+  const [question, setQuestion] = useState('')
+  useEffect(() => {
+    setQuestion(params.q ?? '')
+  }, [params.q])
+
+  const creator = useUser()
+  useEffect(() => {
+    if (creator === null) router.push('/')
+    if (creator && creator.username !== 'RichardHanania') router.push('/')
+  }, [creator, router])
+
+  if (!router.isReady || !creator) return <div />
 
   return (
     <Page>
@@ -59,7 +85,7 @@ export default function Create() {
             </div>
           </form>
           <Spacer h={6} />
-          <NewContract question={question} groupId={groupId} />
+          <NewContract question={question} params={params} creator={creator} />
         </div>
       </div>
     </Page>
@@ -67,22 +93,22 @@ export default function Create() {
 }
 
 // Allow user to create a new contract
-export function NewContract(props: { question: string; groupId?: string }) {
-  const { question, groupId } = props
-  const creator = useUser()
-
-  useEffect(() => {
-    if (creator === null) router.push('/')
-    if (creator && creator.username !== 'RichardHanania') router.push('/')
-  }, [creator])
-
-  const [outcomeType, setOutcomeType] = useState<outcomeType>('BINARY')
+export function NewContract(props: {
+  creator: User
+  question: string
+  params?: NewQuestionParams
+}) {
+  const { creator, question, params } = props
+  const { groupId, initValue } = params ?? {}
+  const [outcomeType, setOutcomeType] = useState<outcomeType>(
+    (params?.outcomeType as outcomeType) ?? 'BINARY'
+  )
   const [initialProb] = useState(50)
-  const [minString, setMinString] = useState('')
-  const [maxString, setMaxString] = useState('')
-  const [description, setDescription] = useState('')
-  // const [tagText, setTagText] = useState<string>(tag ?? '')
-  // const tags = parseWordsAsTags(tagText)
+  const [minString, setMinString] = useState(params?.min ?? '')
+  const [maxString, setMaxString] = useState(params?.max ?? '')
+  const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
+  const [initialValueString, setInitialValueString] = useState(initValue)
+
   useEffect(() => {
     if (groupId && creator)
       getGroup(groupId).then((group) => {
@@ -94,30 +120,23 @@ export function NewContract(props: { question: string; groupId?: string }) {
   }, [creator, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
-  const mustWaitForDailyFreeMarketStatus = useHasCreatedContractToday(creator)
-  const isFree =
-    mustWaitForDailyFreeMarketStatus != 'loading' &&
-    !mustWaitForDailyFreeMarketStatus
-
-  // useEffect(() => {
-  //   if (ante === null && creator) {
-  //     const initialAnte = creator.balance < 100 ? MINIMUM_ANTE : 100
-  //     setAnte(initialAnte)
-  //   }
-  // }, [ante, creator])
-
-  // const [anteError, setAnteError] = useState<string | undefined>()
+  // If params.closeTime is set, extract out the specified date and time
   // By default, close the market a week from today
   const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
-  const [closeDate, setCloseDate] = useState<undefined | string>(weekFromToday)
-  const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>('23:59')
+  const timeInMs = Number(params?.closeTime ?? 0)
+  const initDate = timeInMs
+    ? dayjs(timeInMs).format('YYYY-MM-DD')
+    : weekFromToday
+  const initTime = timeInMs ? dayjs(timeInMs).format('HH:mm') : '23:59'
+  const [closeDate, setCloseDate] = useState<undefined | string>(initDate)
+  const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>(initTime)
+
   const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(
     undefined
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
-  const [category, setCategory] = useState<string>('')
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -127,31 +146,46 @@ export function NewContract(props: { question: string; groupId?: string }) {
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
+  const initialValue = initialValueString
+    ? parseFloat(initialValueString)
+    : undefined
+
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
-
-  const hasUnsavedChanges = !isSubmitting && Boolean(question || description)
-  useWarnUnsavedChanges(hasUnsavedChanges)
 
   const isValid =
     (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&
     question.length > 0 &&
     ante !== undefined &&
     ante !== null &&
-    ante >= MINIMUM_ANTE &&
-    (ante <= balance ||
-      (mustWaitForDailyFreeMarketStatus != 'loading' &&
-        !mustWaitForDailyFreeMarketStatus)) &&
+    ante <= balance &&
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now() &&
-    (outcomeType !== 'NUMERIC' ||
+    (outcomeType !== 'PSEUDO_NUMERIC' ||
       (min !== undefined &&
         max !== undefined &&
+        initialValue !== undefined &&
         isFinite(min) &&
         isFinite(max) &&
         min < max &&
-        max - min > 0.01))
+        max - min > 0.01 &&
+        min < initialValue &&
+        initialValue < max))
+
+  const descriptionPlaceholder =
+    outcomeType === 'BINARY'
+      ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
+      : `e.g. I will choose the answer according to...`
+
+  const { editor, upload } = useTextEditor({
+    max: MAX_DESCRIPTION_LENGTH,
+    placeholder: descriptionPlaceholder,
+    disabled: isSubmitting,
+  })
+
+  const isEditorFilled = editor != null && !editor.isEmpty
+  useWarnUnsavedChanges(!isSubmitting && (Boolean(question) || isEditorFilled))
 
   function setCloseDateInDays(days: number) {
     const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
@@ -161,20 +195,20 @@ export function NewContract(props: { question: string; groupId?: string }) {
   async function submit() {
     // TODO: Tell users why their contract is invalid
     if (!creator || !isValid) return
-
     setIsSubmitting(true)
-    // TODO: add contract id to the group contractIds
     try {
       const result = await createMarket(
         removeUndefinedProps({
           question,
           outcomeType,
-          description,
+          description: editor?.getJSON(),
           initialProb,
           ante,
           closeTime,
           min,
           max,
+          initialValue,
+          isLogScale: (min ?? 0) < 0 ? false : isLogScale,
           groupId: selectedGroup?.id,
         })
       )
@@ -182,24 +216,18 @@ export function NewContract(props: { question: string; groupId?: string }) {
         slug: result.slug,
         initialProb,
         selectedGroup: selectedGroup?.id,
-        isFree,
+        isFree: false,
       })
       if (result && selectedGroup) {
-        await updateGroup(selectedGroup, {
-          contractIds: [...selectedGroup.contractIds, result.id],
-        })
+        await setContractGroupSlugs(selectedGroup, result.id)
       }
 
       await router.push(contractPath(result as Contract))
     } catch (e) {
-      console.log('error creating contract', e)
+      console.error('error creating contract', e, (e as any).details)
+      setIsSubmitting(false)
     }
   }
-
-  const descriptionPlaceholder =
-    outcomeType === 'BINARY'
-      ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
-      : `e.g. I will choose the answer according to...`
 
   if (!creator) return <></>
 
@@ -221,6 +249,7 @@ export function NewContract(props: { question: string; groupId?: string }) {
         choicesMap={{
           'Yes / No': 'BINARY',
           'Free response': 'FREE_RESPONSE',
+          Numeric: 'PSEUDO_NUMERIC',
         }}
         isSubmitting={isSubmitting}
         className={'col-span-4'}
@@ -233,61 +262,86 @@ export function NewContract(props: { question: string; groupId?: string }) {
 
       <Spacer h={6} />
 
-      {outcomeType === 'NUMERIC' && (
-        <div className="form-control items-start">
-          <label className="label gap-2">
-            <span className="mb-1">Range</span>
-            <InfoTooltip text="The minimum and maximum numbers across the numeric range." />
-          </label>
+      {outcomeType === 'PSEUDO_NUMERIC' && (
+        <>
+          <div className="form-control mb-2 items-start">
+            <label className="label gap-2">
+              <span className="mb-1">Range</span>
+              <InfoTooltip text="The minimum and maximum numbers across the numeric range." />
+            </label>
 
-          <Row className="gap-2">
-            <input
-              type="number"
-              className="input input-bordered"
-              placeholder="MIN"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setMinString(e.target.value)}
-              min={Number.MIN_SAFE_INTEGER}
-              max={Number.MAX_SAFE_INTEGER}
-              disabled={isSubmitting}
-              value={minString ?? ''}
-            />
-            <input
-              type="number"
-              className="input input-bordered"
-              placeholder="MAX"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setMaxString(e.target.value)}
-              min={Number.MIN_SAFE_INTEGER}
-              max={Number.MAX_SAFE_INTEGER}
-              disabled={isSubmitting}
-              value={maxString}
-            />
-          </Row>
-        </div>
+            <Row className="gap-2">
+              <input
+                type="number"
+                className="input input-bordered"
+                placeholder="MIN"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setMinString(e.target.value)}
+                min={Number.MIN_SAFE_INTEGER}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={minString ?? ''}
+              />
+              <input
+                type="number"
+                className="input input-bordered"
+                placeholder="MAX"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setMaxString(e.target.value)}
+                min={Number.MIN_SAFE_INTEGER}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={maxString}
+              />
+            </Row>
+
+            {!(min !== undefined && min < 0) && (
+              <Checkbox
+                className="my-2 text-sm"
+                label="Log scale"
+                checked={isLogScale}
+                toggle={() => setIsLogScale(!isLogScale)}
+                disabled={isSubmitting}
+              />
+            )}
+
+            {min !== undefined && max !== undefined && min >= max && (
+              <div className="mt-2 mb-2 text-sm text-red-500">
+                The maximum value must be greater than the minimum.
+              </div>
+            )}
+          </div>
+          <div className="form-control mb-2 items-start">
+            <label className="label gap-2">
+              <span className="mb-1">Initial value</span>
+              <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
+            </label>
+
+            <Row className="gap-2">
+              <input
+                type="number"
+                className="input input-bordered"
+                placeholder="Initial value"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setInitialValueString(e.target.value)}
+                max={Number.MAX_SAFE_INTEGER}
+                disabled={isSubmitting}
+                value={initialValueString ?? ''}
+              />
+            </Row>
+
+            {initialValue !== undefined &&
+              min !== undefined &&
+              max !== undefined &&
+              min < max &&
+              (initialValue <= min || initialValue >= max) && (
+                <div className="mt-2 mb-2 text-sm text-red-500">
+                  Initial value must be in between {min} and {max}.{' '}
+                </div>
+              )}
+          </div>
+        </>
       )}
-
-      <div className="form-control max-w-[265px] items-start">
-        <label className="label gap-2">
-          <span className="mb-1">Category</span>
-        </label>
-
-        <select
-          className={clsx(
-            'select select-bordered w-full text-sm',
-            category === '' ? 'font-normal text-gray-500' : ''
-          )}
-          value={category}
-          onChange={(e) => setCategory(e.currentTarget.value ?? '')}
-        >
-          <option value={''}>None</option>
-          {Object.entries(CATEGORIES).map(([id, name]) => (
-            <option key={id} value={id}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <div className={'mt-2'}>
         <GroupSelector
@@ -347,21 +401,12 @@ export function NewContract(props: { question: string; groupId?: string }) {
 
       <Spacer h={6} />
 
-      <div className="form-control mb-1 items-start">
-        <label className="label mb-1 gap-2">
+      <div className="form-control mb-1 items-start gap-1">
+        <label className="label gap-2">
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
-        <Textarea
-          className="textarea textarea-bordered w-full resize-none"
-          rows={3}
-          maxLength={MAX_DESCRIPTION_LENGTH}
-          placeholder={descriptionPlaceholder}
-          value={description}
-          disabled={isSubmitting}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => setDescription(e.target.value || '')}
-        />
+        <TextEditor editor={editor} upload={upload} />
       </div>
 
       <Spacer h={6} />
@@ -370,41 +415,26 @@ export function NewContract(props: { question: string; groupId?: string }) {
         <div className="form-control mb-1 items-start">
           <label className="label mb-1 gap-2">
             <span>Cost</span>
-            {mustWaitForDailyFreeMarketStatus != 'loading' &&
-              mustWaitForDailyFreeMarketStatus && (
-                <InfoTooltip
-                  text={`Cost to create your question. This amount is used to subsidize betting.`}
-                />
-              )}
+            <InfoTooltip
+              text={`Cost to create your question. This amount is used to subsidize betting.`}
+            />
           </label>
-          {mustWaitForDailyFreeMarketStatus != 'loading' &&
-          !mustWaitForDailyFreeMarketStatus ? (
-            <div className="label-text text-primary pl-1">
-              <span className={'label-text text-neutral line-through '}>
-                {formatMoney(ante)}
-              </span>{' '}
-              FREE
+
+          <div className="label-text text-neutral pl-1">
+            {formatMoney(ante)}
+          </div>
+
+          {ante > balance && (
+            <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+              <span className="mr-2 text-red-500">Insufficient balance</span>
+              <button
+                className="btn btn-xs btn-primary"
+                onClick={() => (window.location.href = '/add-funds')}
+              >
+                Get M$
+              </button>
             </div>
-          ) : (
-            mustWaitForDailyFreeMarketStatus != 'loading' && (
-              <div className="label-text text-neutral pl-1">
-                {formatMoney(ante)}
-              </div>
-            )
           )}
-          {mustWaitForDailyFreeMarketStatus != 'loading' &&
-            mustWaitForDailyFreeMarketStatus &&
-            ante > balance && (
-              <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-                <span className="mr-2 text-red-500">Insufficient balance</span>
-                <button
-                  className="btn btn-xs btn-primary"
-                  onClick={() => (window.location.href = '/add-funds')}
-                >
-                  Get M$
-                </button>
-              </div>
-            )}
         </div>
 
         <button
@@ -413,7 +443,7 @@ export function NewContract(props: { question: string; groupId?: string }) {
             'btn btn-primary normal-case',
             isSubmitting && 'loading disabled'
           )}
-          disabled={isSubmitting || !isValid}
+          disabled={isSubmitting || !isValid || upload.isLoading}
           onClick={(e) => {
             e.preventDefault()
             submit()

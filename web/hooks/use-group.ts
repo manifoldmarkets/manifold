@@ -7,7 +7,8 @@ import {
   listenForGroups,
   listenForMemberGroups,
 } from 'web/lib/firebase/groups'
-import { getUser } from 'web/lib/firebase/users'
+import { getUser, getUsers } from 'web/lib/firebase/users'
+import { filterDefined } from 'common/util/array'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -29,11 +30,21 @@ export const useGroups = () => {
   return groups
 }
 
-export const useMemberGroups = (user: User | null | undefined) => {
+export const useMemberGroups = (
+  userId: string | null | undefined,
+  options?: { withChatEnabled: boolean }
+) => {
   const [memberGroups, setMemberGroups] = useState<Group[] | undefined>()
   useEffect(() => {
-    if (user) return listenForMemberGroups(user.id, setMemberGroups)
-  }, [user])
+    if (userId)
+      return listenForMemberGroups(userId, (groups) => {
+        if (options?.withChatEnabled)
+          return setMemberGroups(
+            filterDefined(groups.filter((group) => group.chatDisabled !== true))
+          )
+        return setMemberGroups(groups)
+      })
+  }, [options?.withChatEnabled, userId])
   return memberGroups
 }
 
@@ -62,20 +73,26 @@ export const useMemberGroupIds = (user: User | null | undefined) => {
   return memberGroupIds
 }
 
-export function useMembers(group: Group) {
+export function useMembers(group: Group, max?: number) {
   const [members, setMembers] = useState<User[]>([])
   useEffect(() => {
-    const { memberIds, creatorId } = group
-    if (memberIds.length > 1)
-      // get users via their user ids:
-      Promise.all(
-        memberIds.filter((mId) => mId !== creatorId).map(getUser)
-      ).then((users) => {
-        const members = users.filter((user) => user)
-        setMembers(members)
-      })
-  }, [group])
+    const { memberIds } = group
+    if (memberIds.length > 0) {
+      listMembers(group, max).then((members) => setMembers(members))
+    }
+  }, [group, max])
   return members
+}
+
+export async function listMembers(group: Group, max?: number) {
+  const { memberIds } = group
+  const numToRetrieve = max ?? memberIds.length
+  if (memberIds.length === 0) return []
+  if (numToRetrieve)
+    return (await getUsers()).filter((user) =>
+      group.memberIds.includes(user.id)
+    )
+  return await Promise.all(group.memberIds.slice(0, numToRetrieve).map(getUser))
 }
 
 export const useGroupsWithContract = (contractId: string | undefined) => {

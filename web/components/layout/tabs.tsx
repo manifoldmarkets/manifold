@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
 import { Row } from './row'
+import { track } from '@amplitude/analytics-browser'
 
 type Tab = {
   title: string
@@ -14,22 +15,37 @@ type Tab = {
 export function Tabs(props: {
   tabs: Tab[]
   defaultIndex?: number
-  className?: string
+  labelClassName?: string
   onClick?: (tabTitle: string, index: number) => void
+  className?: string
+  currentPageForAnalytics?: string
 }) {
-  const { tabs, defaultIndex, className, onClick } = props
+  const {
+    tabs,
+    defaultIndex,
+    labelClassName,
+    onClick,
+    className,
+    currentPageForAnalytics,
+  } = props
   const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
   const activeTab = tabs[activeIndex] as Tab | undefined // can be undefined in weird case
 
   return (
-    <div>
-      <div className="border-b border-gray-200">
+    <>
+      <div className={clsx('mb-4 border-b border-gray-200', className)}>
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           {tabs.map((tab, i) => (
             <Link href={tab.href ?? '#'} key={tab.title} shallow={!!tab.href}>
               <a
+                id={`tab-${i}`}
                 key={tab.title}
                 onClick={(e) => {
+                  track('Clicked Tab', {
+                    title: tab.title,
+                    href: tab.href,
+                    currentPage: currentPageForAnalytics,
+                  })
                   if (!tab.href) {
                     e.preventDefault()
                   }
@@ -41,7 +57,7 @@ export function Tabs(props: {
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
                   'cursor-pointer whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium',
-                  className
+                  labelClassName
                 )}
                 aria-current={activeIndex === i ? 'page' : undefined}
               >
@@ -55,7 +71,7 @@ export function Tabs(props: {
         </nav>
       </div>
 
-      <div className="mt-4">{activeTab?.content}</div>
-    </div>
+      {activeTab?.content}
+    </>
   )
 }

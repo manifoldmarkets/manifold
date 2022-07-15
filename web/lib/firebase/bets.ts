@@ -4,11 +4,18 @@ import {
   query,
   where,
   orderBy,
+  QueryConstraint,
+  limit,
+  startAfter,
+  doc,
+  getDocs,
+  getDoc,
+  DocumentSnapshot,
 } from 'firebase/firestore'
-import { range, uniq } from 'lodash'
+import { uniq } from 'lodash'
 
 import { db } from './init'
-import { Bet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { getValues, listenForValues } from './utils'
 import { getContractFromId } from './contracts'
@@ -78,6 +85,43 @@ export async function getUserBets(
     .catch((reason) => reason)
 }
 
+export async function getBets(options: {
+  userId?: string
+  contractId?: string
+  before?: string
+  limit: number
+}) {
+  const { userId, contractId, before } = options
+
+  const queryParts: QueryConstraint[] = [
+    orderBy('createdTime', 'desc'),
+    limit(options.limit),
+  ]
+  if (userId) {
+    queryParts.push(where('userId', '==', userId))
+  }
+  if (before) {
+    let beforeSnap: DocumentSnapshot
+    if (contractId) {
+      beforeSnap = await getDoc(
+        doc(db, 'contracts', contractId, 'bets', before)
+      )
+    } else {
+      beforeSnap = (
+        await getDocs(
+          query(collectionGroup(db, 'bets'), where('id', '==', before))
+        )
+      ).docs[0]
+    }
+    queryParts.push(startAfter(beforeSnap))
+  }
+
+  const querySource = contractId
+    ? collection(db, 'contracts', contractId, 'bets')
+    : collectionGroup(db, 'bets')
+  return await getValues<Bet>(query(querySource, ...queryParts))
+}
+
 export async function getContractsOfUserBets(userId: string) {
   const bets: Bet[] = await getUserBets(userId, { includeRedemptions: false })
   const contractIds = uniq(bets.map((bet) => bet.contractId))
@@ -122,6 +166,21 @@ export function listenForUserContractBets(
   })
 }
 
+export function listenForUnfilledBets(
+  contractId: string,
+  setBets: (bets: LimitBet[]) => void
+) {
+  const betsQuery = query(
+    collection(db, 'contracts', contractId, 'bets'),
+    where('isFilled', '==', false),
+    where('isCancelled', '==', false)
+  )
+  return listenForValues<LimitBet>(betsQuery, (bets) => {
+    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
+    setBets(bets)
+  })
+}
+
 export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
   const { createdTime } = contract
 
@@ -135,25 +194,4 @@ export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
   }
 
   return bets?.filter((bet) => !bet.isAnte) ?? []
-}
-
-const getBetsQuery = (startTime: number, endTime: number) =>
-  query(
-    collectionGroup(db, 'bets'),
-    where('createdTime', '>=', startTime),
-    where('createdTime', '<', endTime),
-    orderBy('createdTime', 'asc')
-  )
-
-export async function getDailyBets(startTime: number, numberOfDays: number) {
-  const query = getBetsQuery(startTime, startTime + DAY_IN_MS * numberOfDays)
-  const bets = await getValues<Bet>(query)
-
-  const betsByDay = range(0, numberOfDays).map(() => [] as Bet[])
-  for (const bet of bets) {
-    const dayIndex = Math.floor((bet.createdTime - startTime) / DAY_IN_MS)
-    betsByDay[dayIndex].push(bet)
-  }
-
-  return betsByDay
 }
