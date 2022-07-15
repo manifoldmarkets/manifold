@@ -34,6 +34,18 @@ response was a 4xx or 5xx.)
 
 ## Endpoints
 
+### `GET /v0/user/[username]`
+
+Gets a user by their username. Remember that usernames may change.
+
+Requires no authorization.
+
+### `GET /v0/user/by-id/[id]`
+
+Gets a user by their unique ID. Many other API endpoints return this as the `userId`.
+
+Requires no authorization.
+
 ### `GET /v0/markets`
 
 Lists all markets, ordered by creation date descending.
@@ -627,6 +639,7 @@ Requires no authorization.
 
 ## Changelog
 
+- 2022-07-15: Add user by username and user by ID APIs
 - 2022-06-08: Add paging to markets endpoint
 - 2022-06-05: Add new authorized write endpoints
 - 2022-02-28: Add `resolutionTime` to markets, change `closeTime` definition
