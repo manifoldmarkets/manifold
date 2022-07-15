@@ -203,7 +203,7 @@ export function UserPage(props: {
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
-            {currentUser?.username === 'Ian' && (
+            {currentUser?.username === 'ian' && (
               <ReferralsButton user={user} currentUser={currentUser} />
             )}
             <GroupsButton user={user} />
