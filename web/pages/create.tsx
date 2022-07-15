@@ -57,6 +57,7 @@ export default function Create() {
   const creator = useUser()
   useEffect(() => {
     if (creator === null) router.push('/')
+    if (creator && creator.username !== 'RichardHanania') router.push('/')
   }, [creator, router])
 
   if (!router.isReady || !creator) return <div />

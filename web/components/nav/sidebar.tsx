@@ -13,7 +13,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { firebaseLogout, User } from 'web/lib/firebase/users'
+import { firebaseLogin, firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
@@ -41,16 +41,33 @@ function getNavigation() {
     },
 
     ...(IS_PRIVATE_MANIFOLD
-      ? []
+      ? [
+          {
+            name: 'Leaderboards',
+            href: '/leaderboards',
+            icon: TrendingUpIcon,
+          },
+        ]
       : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ]
 }
 
 function getMoreNavigation(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards' }]
+    return [
+      user
+        ? {
+            name: 'Sign out',
+            href: '#',
+            onClick: withTracking(firebaseLogout, 'sign out'),
+          }
+        : {
+            name: 'Sign in',
+            href: '#',
+            onClick: withTracking(firebaseLogin, 'sign in'),
+          },
+    ]
   }
-
   if (!user) {
     return [
       { name: 'Leaderboards', href: '/leaderboards' },
@@ -62,7 +79,6 @@ function getMoreNavigation(user?: User | null) {
   }
 
   return [
-    { name: 'Send M$', href: '/links' },
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Charity', href: '/charity' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -92,9 +108,7 @@ const signedOutMobileNavigation = [
     href: 'https://docs.manifold.markets/$how-to',
     icon: BookOpenIcon,
   },
-  { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
-  { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
 ]
 
 const signedInMobileNavigation = [
@@ -110,9 +124,6 @@ const signedInMobileNavigation = [
 
 function getMoreMobileNav() {
   return [
-    { name: 'Send M$', href: '/links' },
-    { name: 'Charity', href: '/charity' },
-    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Leaderboards', href: '/leaderboards' },
     {
       name: 'Sign out',
@@ -204,7 +215,9 @@ export default function Sidebar(props: { className?: string }) {
     <nav aria-label="Sidebar" className={className}>
       <ManifoldLogo className="py-6" twoLine />
 
-      <CreateQuestionButton user={user} />
+      {user?.username === 'RichardHanania' && (
+        <CreateQuestionButton user={user} />
+      )}
       <Spacer h={4} />
       {user && (
         <div className="w-full" style={{ minHeight: 80 }}>
@@ -243,21 +256,21 @@ export default function Sidebar(props: { className?: string }) {
           menuItems={getMoreNavigation(user)}
           buttonContent={<MoreButton />}
         />
-
-        {/* Spacer if there are any groups */}
-        {memberItems.length > 0 && (
-          <div className="py-3">
-            <div className="h-[1px] bg-gray-300" />
-          </div>
-        )}
-        {privateUser && (
-          <GroupsList
-            currentPage={router.asPath}
-            memberItems={memberItems}
-            privateUser={privateUser}
-          />
-        )}
       </div>
+
+      {/* Spacer if there are any groups */}
+      {memberItems.length > 0 && (
+        <div className="py-3">
+          <div className="h-[1px] bg-gray-300" />
+        </div>
+      )}
+      {privateUser && (
+        <GroupsList
+          currentPage={router.asPath}
+          memberItems={memberItems}
+          privateUser={privateUser}
+        />
+      )}
     </nav>
   )
 }

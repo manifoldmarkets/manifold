@@ -161,7 +161,7 @@ export default function GroupPage(props: {
     const { referrer } = router.query as {
       referrer?: string
     }
-    if (!user && router.isReady)
+    if (!user && router.isReady && creator)
       writeReferralInfo(creator.username, undefined, referrer, group?.slug)
   }, [user, creator, group, router])
 
@@ -269,13 +269,15 @@ export default function GroupPage(props: {
               <Linkify text={group.about} />
             </div>
           </div>
-          <div className="hidden sm:block xl:hidden">
-            <JoinOrCreateButton
-              group={group}
-              user={user}
-              isMember={!!isMember}
-            />
-          </div>
+          {isMember && user?.username === 'RichardHanania' && (
+            <div className="hidden sm:block xl:hidden">
+              <JoinOrCreateButton
+                group={group}
+                user={user}
+                isMember={!!isMember}
+              />
+            </div>
+          )}
         </Row>
         <div className="block sm:hidden">
           <JoinOrCreateButton group={group} user={user} isMember={!!isMember} />
