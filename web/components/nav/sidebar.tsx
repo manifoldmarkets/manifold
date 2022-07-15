@@ -41,7 +41,13 @@ function getNavigation() {
     },
 
     ...(IS_PRIVATE_MANIFOLD
-      ? []
+      ? [
+          {
+            name: 'Leaderboards',
+            href: `/leaderboards`,
+            icon: TrendingUpIcon,
+          },
+        ]
       : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ]
 }
@@ -245,10 +251,6 @@ export default function Sidebar(props: { className?: string }) {
         {navigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
-        <MenuButton
-          menuItems={getMoreNavigation(user)}
-          buttonContent={<MoreButton />}
-        />
 
         {/* Spacer if there are any groups */}
         {memberItems.length > 0 && (
