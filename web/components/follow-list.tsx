@@ -2,11 +2,9 @@ import clsx from 'clsx'
 import { useFollows } from 'web/hooks/use-follows'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
-import { Avatar } from './avatar'
 import { FollowButton } from './follow-button'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { UserLink } from './user-page'
 import { OnlineUserAvatar } from 'web/components/online-user-list'
 
 export function FollowList(props: { userIds: string[] }) {
