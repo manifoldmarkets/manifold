@@ -204,7 +204,9 @@ export default function Sidebar(props: { className?: string }) {
     <nav aria-label="Sidebar" className={className}>
       <ManifoldLogo className="py-6" twoLine />
 
-      <CreateQuestionButton user={user} />
+      {user?.username === 'RichardHanania' && (
+        <CreateQuestionButton user={user} />
+      )}
       <Spacer h={4} />
       {user && (
         <div className="w-full" style={{ minHeight: 80 }}>
