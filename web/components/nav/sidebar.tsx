@@ -210,7 +210,6 @@ export default function Sidebar(props: { className?: string }) {
 
   useEffect(() => {
     if (!user) return
-    // set ping time to now every 60 seconds to indicate that the user is active
     const pingInterval = setInterval(() => {
       updateUser(user.id, {
         lastPingTime: Date.now(),
