@@ -12,7 +12,7 @@ export const SALEM_CENTER_CONFIG: EnvConfig = {
     appId: '1:522400938664:web:300eaedb8446818d61a09d',
     measurementId: 'G-Y3EZ1WNT6E',
   },
-  cloudRunId: 'nggbo3neva', // TODO: fill in real ID for T1
+  cloudRunId: 'fm35sk365q', // TODO: fill in real ID for T1
   cloudRunRegion: 'uc',
   adminEmails: [...PROD_CONFIG.adminEmails, 'richardh0828@gmail.com'],
   moneyMoniker: 'S$',
