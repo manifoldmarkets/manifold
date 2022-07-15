@@ -55,6 +55,7 @@ import { FollowList } from 'web/components/follow-list'
 import { SearchIcon } from '@heroicons/react/outline'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
+import { OnlineUserList } from 'web/components/online-user-list'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -174,7 +175,12 @@ export default function GroupPage(props: {
 
   const rightSidebar = (
     <Col className="mt-6 hidden xl:block">
-      <JoinOrCreateButton group={group} user={user} isMember={!!isMember} />
+      <JoinOrAddQuestionsButtons
+        group={group}
+        user={user}
+        isMember={!!isMember}
+      />
+      <OnlineUserList users={members} />
     </Col>
   )
   const leaderboard = (
@@ -254,7 +260,6 @@ export default function GroupPage(props: {
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
-
       <Col className="px-3">
         <Row className={'items-center justify-between gap-4'}>
           <div className={'sm:mb-1'}>
@@ -270,7 +275,7 @@ export default function GroupPage(props: {
             </div>
           </div>
           <div className="hidden sm:block xl:hidden">
-            <JoinOrCreateButton
+            <JoinOrAddQuestionsButtons
               group={group}
               user={user}
               isMember={!!isMember}
@@ -278,10 +283,13 @@ export default function GroupPage(props: {
           </div>
         </Row>
         <div className="block sm:hidden">
-          <JoinOrCreateButton group={group} user={user} isMember={!!isMember} />
+          <JoinOrAddQuestionsButtons
+            group={group}
+            user={user}
+            isMember={!!isMember}
+          />
         </div>
       </Col>
-
       <Tabs
         currentPageForAnalytics={groupPath(group.slug)}
         className={'mb-0 sm:mb-2'}
@@ -292,7 +300,7 @@ export default function GroupPage(props: {
   )
 }
 
-function JoinOrCreateButton(props: {
+function JoinOrAddQuestionsButtons(props: {
   group: Group
   user: User | null | undefined
   isMember: boolean
