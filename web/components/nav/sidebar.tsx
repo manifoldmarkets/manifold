@@ -54,7 +54,13 @@ function getNavigation() {
 
 function getMoreNavigation(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards' }]
+    return [
+      {
+        name: 'Sign out',
+        href: '#',
+        onClick: withTracking(firebaseLogout, 'sign out'),
+      },
+    ]
   }
 
   if (!user) {
@@ -251,6 +257,12 @@ export default function Sidebar(props: { className?: string }) {
         {navigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
+        {user && (
+          <MenuButton
+            menuItems={getMoreNavigation(user)}
+            buttonContent={<MoreButton />}
+          />
+        )}
 
         {/* Spacer if there are any groups */}
         {memberItems.length > 0 && (
