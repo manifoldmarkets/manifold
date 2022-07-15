@@ -28,6 +28,7 @@ import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Checkbox } from 'web/components/checkbox'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 type NewQuestionParams = {
   groupId?: string
@@ -57,7 +58,12 @@ export default function Create() {
   const creator = useUser()
   useEffect(() => {
     if (creator === null) router.push('/')
-    if (creator?.username !== 'RichardHanania') router.push('/')
+    if (
+      ENV_CONFIG.whitelistCreators &&
+      !ENV_CONFIG.whitelistCreators?.includes(creator?.username ?? '')
+    ) {
+      router.push('/')
+    }
   }, [creator, router])
 
   if (!router.isReady || !creator) return <div />

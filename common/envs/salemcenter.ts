@@ -20,4 +20,5 @@ export const SALEM_CENTER_CONFIG: EnvConfig = {
   faviconPath: '/salem-center/logo.ico',
   navbarLogoPath: '/salem-center/salem-center-logo.svg',
   newQuestionPlaceholders: [],
+  whitelistCreators: ['RichardHanania', 'SalemCenter'],
 }
