@@ -3,6 +3,8 @@ import { formatMoney } from 'common/util/format'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import {User} from 'web/lib/firebase/users'
+import Button from './button'
 
 export type ManalinkInfo = {
   expiresTime: number | null
@@ -13,13 +15,15 @@ export type ManalinkInfo = {
 }
 
 export function ManalinkCard(props: {
+  user: User | null | undefined
   className?: string
   info: ManalinkInfo
   defaultMessage: string
   isClaiming: boolean
   onClaim?: () => void
-}) {
-  const { className, defaultMessage, isClaiming, info, onClaim } = props
+}) 
+{
+  const { user, className, defaultMessage, isClaiming, info, onClaim } = props
   const { expiresTime, maxUses, uses, amount, message } = info
   return (
     <div
@@ -56,12 +60,12 @@ export function ManalinkCard(props: {
         </Col>
 
         <div className="ml-auto">
-          <button
-            className={clsx('btn', isClaiming ? 'loading disabled' : '')}
+          <Button
             onClick={onClaim}
+            disabled={isClaiming}
           >
-            {isClaiming ? '' : 'Claim'}
-          </button>
+            {user ? 'Claim' : 'Login'}
+          </Button>
         </div>
       </Row>
     </div>

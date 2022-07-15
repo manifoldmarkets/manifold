@@ -4,9 +4,10 @@ import clsx from 'clsx'
 export default function Button(props: {
   className?: string
   onClick?: () => void
-  color: 'green' | 'red' | 'blue' | 'indigo' | 'yellow' | 'gray'
+  color?: 'green' | 'red' | 'blue' | 'indigo' | 'yellow' | 'gray'
   children?: ReactNode
   type?: 'button' | 'reset' | 'submit'
+  disabled?: boolean
 }) {
   const {
     className,
@@ -14,13 +15,14 @@ export default function Button(props: {
     children,
     color = 'indigo',
     type = 'button',
+    disabled = false
   } = props
 
   return (
     <button
       type={type}
       className={clsx(
-        'font-md items-center justify-center rounded-md border border-transparent px-4 py-2 shadow-sm hover:transition-colors',
+        'font-md items-center justify-center rounded-md border border-transparent px-4 py-2 shadow-sm hover:transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
         color === 'green' && 'btn-primary text-white',
         color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
@@ -29,6 +31,7 @@ export default function Button(props: {
         color === 'gray' && 'bg-gray-200 text-gray-700 hover:bg-gray-300',
         className
       )}
+      disabled={disabled}
       onClick={onClick}
     >
       {children}

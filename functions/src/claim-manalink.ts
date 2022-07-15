@@ -28,6 +28,9 @@ export const claimmanalink = newEndpoint({}, async (req, auth) => {
     if (amount <= 0 || isNaN(amount) || !isFinite(amount))
       throw new APIError(500, 'Invalid amount')
 
+    if (auth.uid === fromId)
+      throw new APIError(400, `You can't claim your own manalink`)
+
     const fromDoc = firestore.doc(`users/${fromId}`)
     const fromSnap = await transaction.get(fromDoc)
     if (!fromSnap.exists) {

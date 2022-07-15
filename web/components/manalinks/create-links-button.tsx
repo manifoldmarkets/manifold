@@ -191,7 +191,7 @@ function CreateManalinkForm(props: {
           <Title className="!my-0" text="Manalink Created!" />
           <ManalinkCardPreview
             className="my-4"
-            defaultMessage={`From ${user.name}`}
+            defaultMessage={`from ${user.name}`}
             info={newManalink}
           />
           <Row

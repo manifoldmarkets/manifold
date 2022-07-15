@@ -33,7 +33,8 @@ export default function ClaimPage() {
       <div className="mx-auto max-w-xl">
         <Title text={`Claim M$${manalink.amount} mana`} />
         <ManalinkCard
-          defaultMessage={fromUser?.name || 'Enjoy this mana!'}
+          user={user}
+          defaultMessage={`from ${fromUser?.name}`}
           info={info}
           isClaiming={claiming}
           onClaim={async () => {
@@ -41,6 +42,11 @@ export default function ClaimPage() {
             try {
               if (user == null) {
                 await firebaseLogin()
+                setClaiming(false)
+                return
+              }
+              if (user?.id == manalink.fromId) {
+                throw new Error("You can't claim your own manalink.")
               }
               await claimManalink({ slug: manalink.slug })
               user && router.push(`/${user.username}?claimed-mana=yes`)
