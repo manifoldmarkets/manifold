@@ -32,26 +32,19 @@ export const useGroups = () => {
 
 export const useMemberGroups = (
   userId: string | null | undefined,
-  options?: { withChatEnabled: boolean },
-  sort?: { by: 'mostRecentChatActivityTime' | 'mostRecentContractAddedTime' }
+  options?: { withChatEnabled: boolean }
 ) => {
   const [memberGroups, setMemberGroups] = useState<Group[] | undefined>()
   useEffect(() => {
     if (userId)
-      return listenForMemberGroups(
-        userId,
-        (groups) => {
-          if (options?.withChatEnabled)
-            return setMemberGroups(
-              filterDefined(
-                groups.filter((group) => group.chatDisabled !== true)
-              )
-            )
-          return setMemberGroups(groups)
-        },
-        sort
-      )
-  }, [options?.withChatEnabled, sort, userId])
+      return listenForMemberGroups(userId, (groups) => {
+        if (options?.withChatEnabled)
+          return setMemberGroups(
+            filterDefined(groups.filter((group) => group.chatDisabled !== true))
+          )
+        return setMemberGroups(groups)
+      })
+  }, [options?.withChatEnabled, userId])
   return memberGroups
 }
 
@@ -95,7 +88,7 @@ export async function listMembers(group: Group, max?: number) {
   const { memberIds } = group
   const numToRetrieve = max ?? memberIds.length
   if (memberIds.length === 0) return []
-  if (numToRetrieve > 100)
+  if (numToRetrieve)
     return (await getUsers()).filter((user) =>
       group.memberIds.includes(user.id)
     )

@@ -12,15 +12,7 @@ export const onUpdateGroup = functions.firestore
     // ignore the update we just made
     if (prevGroup.mostRecentActivityTime !== group.mostRecentActivityTime)
       return
-
-    if (prevGroup.contractIds.length < group.contractIds.length) {
-      await firestore
-        .collection('groups')
-        .doc(group.id)
-        .update({ mostRecentContractAddedTime: Date.now() })
-      //TODO: create notification with isSeeOnHref set to the group's /group/slug/questions url
-      // but first, let the new /group/slug/chat notification permeate so that we can differentiate between the two
-    }
+    // TODO: create notification with isSeeOnHref set to the group's /group/questions url
 
     await firestore
       .collection('groups')

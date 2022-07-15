@@ -17,9 +17,7 @@ import toast from 'react-hot-toast'
 export function GroupsButton(props: { user: User }) {
   const { user } = props
   const [isOpen, setIsOpen] = useState(false)
-  const groups = useMemberGroups(user.id, undefined, {
-    by: 'mostRecentChatActivityTime',
-  })
+  const groups = useMemberGroups(user.id)
 
   return (
     <>
