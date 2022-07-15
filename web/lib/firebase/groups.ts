@@ -7,7 +7,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { sortBy, uniq } from 'lodash'
-import { Group } from 'common/group'
+import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { updateContract } from './contracts'
 import {
   coll,
@@ -22,7 +22,7 @@ export const groups = coll<Group>('groups')
 
 export function groupPath(
   groupSlug: string,
-  subpath?: 'edit' | 'questions' | 'about' | 'chat' | 'rankings'
+  subpath?: 'edit' | 'questions' | 'about' | typeof GROUP_CHAT_SLUG | 'rankings'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }
@@ -62,12 +62,21 @@ export function listenForGroup(
 
 export function listenForMemberGroups(
   userId: string,
-  setGroups: (groups: Group[]) => void
+  setGroups: (groups: Group[]) => void,
+  sort?: { by: 'mostRecentChatActivityTime' | 'mostRecentContractAddedTime' }
 ) {
   const q = query(groups, where('memberIds', 'array-contains', userId))
-
+  const sorter = (group: Group) => {
+    if (sort?.by === 'mostRecentChatActivityTime') {
+      return group.mostRecentChatActivityTime ?? group.mostRecentActivityTime
+    }
+    if (sort?.by === 'mostRecentContractAddedTime') {
+      return group.mostRecentContractAddedTime ?? group.mostRecentActivityTime
+    }
+    return group.mostRecentActivityTime
+  }
   return listenForValues<Group>(q, (groups) => {
-    const sorted = sortBy(groups, [(group) => -group.mostRecentActivityTime])
+    const sorted = sortBy(groups, [(group) => -sorter(group)])
     setGroups(sorted)
   })
 }
