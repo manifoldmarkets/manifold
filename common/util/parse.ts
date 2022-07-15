@@ -20,6 +20,7 @@ import { Text } from '@tiptap/extension-text'
 // other tiptap extensions
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
+import { Mention } from '@tiptap/extension-mention'
 
 export function parseTags(text: string) {
   const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
@@ -80,8 +81,8 @@ export const exhibitExts = [
 
   Image,
   Link,
+  Mention,
 ]
-// export const exhibitExts = [StarterKit as unknown as Extension, Image]
 
 export function richTextToString(text?: JSONContent) {
   return !text ? '' : generateText(text, exhibitExts)

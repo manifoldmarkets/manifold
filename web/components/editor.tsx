@@ -7,18 +7,23 @@ import {
   JSONContent,
   Content,
   Editor,
+  ReactRenderer,
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
+import { Mention } from '@tiptap/extension-mention'
 import clsx from 'clsx'
 import { useEffect } from 'react'
 import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
-import { exhibitExts } from 'common/util/parse'
+import { exhibitExts, searchInAny } from 'common/util/parse'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
+import { useUsers } from 'web/hooks/use-users'
+import { MentionList } from './editor/mention-list'
+import tippy from 'tippy.js'
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
@@ -32,6 +37,8 @@ export function useTextEditor(props: {
   disabled?: boolean
 }) {
   const { placeholder, max, defaultValue = '', disabled } = props
+
+  const users = useUsers()
 
   const editorClass = clsx(
     proseClass,
@@ -54,6 +61,71 @@ export function useTextEditor(props: {
       Link.configure({
         HTMLAttributes: {
           class: clsx('no-underline !text-indigo-700', linkClass),
+        },
+      }),
+      Mention.configure({
+        HTMLAttributes: {
+          class: clsx('not-prose text-indigo-700', linkClass),
+        },
+        // TODO: do a Next link instead of raw <a>
+        renderLabel: ({ options, node }) =>
+          [
+            'a',
+            { href: node.attrs.label },
+            `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`,
+          ] as any,
+        suggestion: {
+          items: ({ query }) =>
+            users
+              .filter((u) => searchInAny(query, u.username, u.name))
+              .slice(0, 5),
+          render: () => {
+            let component: any
+            let popup: any
+            return {
+              onStart: (props) => {
+                component = new ReactRenderer(MentionList, {
+                  props,
+                  editor: props.editor,
+                })
+                if (!props.clientRect) {
+                  return
+                }
+
+                popup = tippy('body', {
+                  getReferenceClientRect: props.clientRect as any,
+                  appendTo: () => document.body,
+                  content: component.element,
+                  showOnCreate: true,
+                  interactive: true,
+                  trigger: 'manual',
+                  placement: 'bottom-start',
+                })
+              },
+              onUpdate(props) {
+                component.updateProps(props)
+
+                if (!props.clientRect) {
+                  return
+                }
+
+                popup[0].setProps({
+                  getReferenceClientRect: props.clientRect,
+                })
+              },
+              onKeyDown(props) {
+                if (props.event.key === 'Escape') {
+                  popup[0].hide()
+                  return true
+                }
+                return component.ref?.onKeyDown(props)
+              },
+              onExit() {
+                popup[0].destroy()
+                component.destroy()
+              },
+            }
+          },
         },
       }),
     ],
