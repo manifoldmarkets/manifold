@@ -17,7 +17,7 @@ export const SALEM_CENTER_CONFIG: EnvConfig = {
   adminEmails: [...PROD_CONFIG.adminEmails, 'richardh0828@gmail.com'],
   moneyMoniker: 'S$',
   visibility: 'PRIVATE',
-  faviconPath: '/theoremone/logo.ico',
-  navbarLogoPath: '/theoremone/TheoremOne-Logo.svg',
+  faviconPath: '/salem-center/logo.ico',
+  navbarLogoPath: '/salem-center/salem-center-logo.svg',
   newQuestionPlaceholders: [],
 }
