@@ -91,7 +91,7 @@ function CreateManalinkForm(props: {
     setNewManalink((m) => {
       return {
         ...m,
-        expiresTime: expiresTime,
+        expiresTime,
       }
     })
   }
