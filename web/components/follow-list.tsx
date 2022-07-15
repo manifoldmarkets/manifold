@@ -7,6 +7,7 @@ import { FollowButton } from './follow-button'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
+import { OnlineUserAvatar } from 'web/components/online-user-list'
 
 export function FollowList(props: { userIds: string[] }) {
   const { userIds } = props
@@ -63,10 +64,7 @@ function UserFollowItem(props: {
 
   return (
     <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
-      <Row className="items-center gap-2">
-        <Avatar username={user?.username} avatarUrl={user?.avatarUrl} />
-        {user && <UserLink name={user.name} username={user.username} />}
-      </Row>
+      <OnlineUserAvatar user={user} />
       {!hideFollowButton && (
         <FollowButton
           isFollowing={isFollowing}

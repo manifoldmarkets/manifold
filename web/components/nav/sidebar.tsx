@@ -13,7 +13,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { firebaseLogout, User } from 'web/lib/firebase/users'
+import { firebaseLogout, updateUser, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
@@ -207,6 +207,17 @@ export default function Sidebar(props: { className?: string }) {
     name: group.name,
     href: `${groupPath(group.slug)}/${GROUP_CHAT_SLUG}`,
   }))
+
+  useEffect(() => {
+    if (!user) return
+    // set ping time to now every 60 seconds to indicate that the user is active
+    const pingInterval = setInterval(() => {
+      updateUser(user.id, {
+        lastPingTime: Date.now(),
+      })
+    }, 1000 * 30)
+    return () => clearInterval(pingInterval)
+  }, [user])
 
   return (
     <nav aria-label="Sidebar" className={className}>
