@@ -9,7 +9,7 @@ import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
 import Textarea from 'react-expanding-textarea'
 import dayjs from 'dayjs'
-import Button from '../button'
+import { Button } from '../button'
 import { getManalinkUrl } from 'web/pages/links'
 import { DuplicateIcon } from '@heroicons/react/outline'
 
