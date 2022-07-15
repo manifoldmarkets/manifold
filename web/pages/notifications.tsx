@@ -46,6 +46,7 @@ import Router from 'next/router'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
+const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
 export default function Notifications() {
   const user = useUser()
@@ -240,7 +241,7 @@ function IncomeNotificationGroupItem(props: {
         'relative cursor-pointer bg-white px-2 pt-6 text-sm',
         className,
         !expanded ? 'hover:bg-gray-100' : '',
-        highlighted && !expanded ? 'bg-indigo-200 hover:bg-indigo-100' : ''
+        highlighted && !expanded ? HIGHLIGHT_CLASS : ''
       )}
       onClick={onClickHandler}
     >
@@ -378,7 +379,7 @@ function IncomeNotificationItem(props: {
     <div
       className={clsx(
         'bg-white px-2 pt-6 text-sm sm:px-4',
-        highlighted && 'bg-indigo-200 hover:bg-indigo-100'
+        highlighted && HIGHLIGHT_CLASS
       )}
     >
       <a href={getSourceUrl(notification)}>
@@ -447,7 +448,7 @@ function NotificationGroupItem(props: {
         'relative cursor-pointer bg-white px-2 pt-6 text-sm',
         className,
         !expanded ? 'hover:bg-gray-100' : '',
-        highlighted && !expanded ? 'bg-indigo-200 hover:bg-indigo-100' : ''
+        highlighted && !expanded ? HIGHLIGHT_CLASS : ''
       )}
       onClick={onClickHandler}
     >
@@ -593,7 +594,7 @@ function NotificationItem(props: {
     <div
       className={clsx(
         'bg-white px-2 pt-6 text-sm sm:px-4',
-        highlighted && 'bg-indigo-200 hover:bg-indigo-100'
+        highlighted && HIGHLIGHT_CLASS
       )}
     >
       <div
