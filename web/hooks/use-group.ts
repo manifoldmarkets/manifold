@@ -51,7 +51,8 @@ export const useMemberGroups = (
         },
         sort
       )
-  }, [options?.withChatEnabled, sort, userId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options?.withChatEnabled, sort?.by, userId])
   return memberGroups
 }
 
