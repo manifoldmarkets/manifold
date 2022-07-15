@@ -46,9 +46,7 @@ export default function Leaderboards(props: {
     topCreators: [],
     topFollowed: [],
   }
-  const { topFollowed } = props
   const [topTradersState, setTopTraders] = useState(props.topTraders)
-  const [topCreatorsState, setTopCreators] = useState(props.topCreators)
   const [isLoading, setLoading] = useState(false)
   const [period, setPeriod] = useState<Period>('allTime')
 
@@ -56,7 +54,6 @@ export default function Leaderboards(props: {
     setLoading(true)
     queryLeaderboardUsers(period).then((res) => {
       setTopTraders(res.props.topTraders as User[])
-      setTopCreators(res.props.topCreators as User[])
       setLoading(false)
     })
   }, [period])
@@ -84,39 +81,11 @@ export default function Leaderboards(props: {
               ) : (
                 <></>
               )}
-
-              <Leaderboard
-                title="🏅 Top creators"
-                users={topCreatorsState}
-                columns={[
-                  {
-                    header: 'Total bet',
-                    renderCell: (user) =>
-                      formatMoney(user.creatorVolumeCached[period]),
-                  },
-                ]}
-              />
             </>
           ) : (
             <LoadingIndicator spinnerClassName={'border-gray-500'} />
           )}
         </Col>
-        {period === 'allTime' ? (
-          <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-1/2 lg:flex-row">
-            <Leaderboard
-              title="🏅 Top followed"
-              users={topFollowed}
-              columns={[
-                {
-                  header: 'Total followers',
-                  renderCell: (user) => user.followerCountCached,
-                },
-              ]}
-            />
-          </Col>
-        ) : (
-          <></>
-        )}
       </>
     )
   }
