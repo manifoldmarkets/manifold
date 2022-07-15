@@ -7,6 +7,7 @@ import { Menu, Transition } from '@headlessui/react'
 import { Avatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
+import { searchInAny } from 'common/util/parse'
 
 export function FilterSelectUsers(props: {
   setSelectedUsers: (users: User[]) => void
@@ -35,8 +36,7 @@ export function FilterSelectUsers(props: {
           return (
             !selectedUsers.map((user) => user.name).includes(user.name) &&
             !ignoreUserIds.includes(user.id) &&
-            (user.name.toLowerCase().includes(query.toLowerCase()) ||
-              user.username.toLowerCase().includes(query.toLowerCase()))
+            searchInAny(query, user.name, user.username)
           )
         })
       )

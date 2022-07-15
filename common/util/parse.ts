@@ -49,6 +49,16 @@ export function parseWordsAsTags(text: string) {
   return parseTags(taggedText)
 }
 
+// TODO: fuzzy matching
+export const wordIn = (word: string, corpus: string) =>
+  corpus.toLocaleLowerCase().includes(word.toLocaleLowerCase())
+
+const checkAgainstQuery = (query: string, corpus: string) =>
+  query.split(' ').every((word) => wordIn(word, corpus))
+
+export const searchInAny = (query: string, ...fields: string[]) =>
+  fields.some((field) => checkAgainstQuery(query, field))
+
 // can't just do [StarterKit, Image...] because it doesn't work with cjs imports
 export const exhibitExts = [
   Blockquote,

@@ -40,10 +40,7 @@ import React, { useEffect, useState } from 'react'
 import { GroupChat } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
-import {
-  checkAgainstQuery,
-  getSavedSort,
-} from 'web/hooks/use-sort-and-query-params'
+import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
@@ -56,6 +53,7 @@ import { SearchIcon } from '@heroicons/react/outline'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { OnlineUserList } from 'web/components/online-user-list'
+import { searchInAny } from 'common/util/parse'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -446,9 +444,8 @@ function GroupMemberSearch(props: { members: User[]; group: Group }) {
   }
 
   // TODO use find-active-contracts to sort by?
-  const matches = sortBy(members, [(member) => member.name]).filter(
-    (m) =>
-      checkAgainstQuery(query, m.name) || checkAgainstQuery(query, m.username)
+  const matches = sortBy(members, [(member) => member.name]).filter((m) =>
+    searchInAny(query, m.name, m.username)
   )
   const matchLimit = 25
 
