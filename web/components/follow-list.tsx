@@ -2,10 +2,11 @@ import clsx from 'clsx'
 import { useFollows } from 'web/hooks/use-follows'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
+import { Avatar } from './avatar'
 import { FollowButton } from './follow-button'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { OnlineUserAvatar } from 'web/components/online-user-list'
+import { UserLink } from './user-page'
 
 export function FollowList(props: { userIds: string[] }) {
   const { userIds } = props
@@ -62,7 +63,10 @@ function UserFollowItem(props: {
 
   return (
     <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
-      <OnlineUserAvatar user={user} />
+      <Row className="items-center gap-2">
+        <Avatar username={user?.username} avatarUrl={user?.avatarUrl} />
+        {user && <UserLink name={user.name} username={user.username} />}
+      </Row>
       {!hideFollowButton && (
         <FollowButton
           isFollowing={isFollowing}
