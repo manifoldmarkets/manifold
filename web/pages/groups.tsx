@@ -12,12 +12,12 @@ import { useUser } from 'web/hooks/use-user'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
-import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 import { SiteLink } from 'web/components/site-link'
 import clsx from 'clsx'
 import { Avatar } from 'web/components/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { UserLink } from 'web/components/user-page'
+import { searchInAny } from 'common/util/parse'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])
@@ -71,11 +71,13 @@ export default function Groups(props: {
   const matches = sortBy(groups, [
     (group) => -1 * group.contractIds.length,
     (group) => -1 * group.memberIds.length,
-  ]).filter(
-    (g) =>
-      checkAgainstQuery(query, g.name) ||
-      checkAgainstQuery(query, g.about || '') ||
-      checkAgainstQuery(query, creatorsDict[g.creatorId].username)
+  ]).filter((g) =>
+    searchInAny(
+      query,
+      g.name,
+      g.about || '',
+      creatorsDict[g.creatorId].username
+    )
   )
 
   const matchesOrderedByRecentActivity = sortBy(groups, [
@@ -84,11 +86,13 @@ export default function Groups(props: {
       (group.mostRecentChatActivityTime ??
         group.mostRecentContractAddedTime ??
         group.mostRecentActivityTime),
-  ]).filter(
-    (g) =>
-      checkAgainstQuery(query, g.name) ||
-      checkAgainstQuery(query, g.about || '') ||
-      checkAgainstQuery(query, creatorsDict[g.creatorId].username)
+  ]).filter((g) =>
+    searchInAny(
+      query,
+      g.name,
+      g.about || '',
+      creatorsDict[g.creatorId].username
+    )
   )
 
   // Not strictly necessary, but makes the "hold delete" experience less laggy

@@ -1,4 +1,5 @@
 import { Answer } from 'common/answer'
+import { searchInAny } from 'common/util/parse'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
 import { ContractsGrid } from 'web/components/contract/contracts-list'
@@ -28,22 +29,14 @@ export default function ContractSearchFirestore(props: {
   const [sort, setSort] = useState(initialSort || 'newest')
   const [query, setQuery] = useState(initialQuery)
 
-  const queryWords = query.toLowerCase().split(' ')
-  function check(corpus: string) {
-    return queryWords.every((word) => corpus.toLowerCase().includes(word))
-  }
-
-  let matches = (contracts ?? []).filter(
-    (c) =>
-      check(c.question) ||
-      check(c.creatorName) ||
-      check(c.creatorUsername) ||
-      check(c.lowercaseTags.map((tag) => `#${tag}`).join(' ')) ||
-      check(
-        ((c as any).answers ?? [])
-          .map((answer: Answer) => answer.text)
-          .join(' ')
-      )
+  let matches = (contracts ?? []).filter((c) =>
+    searchInAny(
+      query,
+      c.question,
+      c.creatorName,
+      c.lowercaseTags.map((tag) => `#${tag}`).join(' '),
+      ((c as any).answers ?? []).map((answer: Answer) => answer.text).join(' ')
+    )
   )
 
   if (sort === 'newest') {
