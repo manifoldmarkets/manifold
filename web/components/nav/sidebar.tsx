@@ -19,7 +19,7 @@ import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
 import React, { useEffect, useState } from 'react'
-import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { ENV_CONFIG, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { groupPath } from 'web/lib/firebase/groups'
@@ -41,14 +41,26 @@ function getNavigation() {
     },
 
     ...(IS_PRIVATE_MANIFOLD
-      ? []
+      ? [
+          {
+            name: 'Leaderboards',
+            href: `/leaderboards`,
+            icon: TrendingUpIcon,
+          },
+        ]
       : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ]
 }
 
 function getMoreNavigation(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards' }]
+    return [
+      {
+        name: 'Sign out',
+        href: '#',
+        onClick: withTracking(firebaseLogout, 'sign out'),
+      },
+    ]
   }
 
   if (!user) {
@@ -222,7 +234,9 @@ export default function Sidebar(props: { className?: string }) {
     <nav aria-label="Sidebar" className={className}>
       <ManifoldLogo className="py-6" twoLine />
 
-      <CreateQuestionButton user={user} />
+      {ENV_CONFIG.whitelistCreators?.includes(user?.username ?? '') && (
+        <CreateQuestionButton user={user} />
+      )}
       <Spacer h={4} />
       {user && (
         <div className="w-full" style={{ minHeight: 80 }}>
@@ -257,10 +271,12 @@ export default function Sidebar(props: { className?: string }) {
         {navigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
-        <MenuButton
-          menuItems={getMoreNavigation(user)}
-          buttonContent={<MoreButton />}
-        />
+        {user && (
+          <MenuButton
+            menuItems={getMoreNavigation(user)}
+            buttonContent={<MoreButton />}
+          />
+        )}
 
         {/* Spacer if there are any groups */}
         {memberItems.length > 0 && (

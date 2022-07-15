@@ -18,6 +18,7 @@ export type EnvConfig = {
   faviconPath?: string // Should be a file in /public
   navbarLogoPath?: string
   newQuestionPlaceholders: string[]
+  whitelistCreators?: string[]
 
   // Currency controls
   fixedAnte?: number
