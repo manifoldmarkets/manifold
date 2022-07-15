@@ -69,3 +69,6 @@ export type PortfolioMetrics = {
   timestamp: number
   userId: string
 }
+
+export const MANIFOLD_USERNAME = 'ManifoldMarkets'
+export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'

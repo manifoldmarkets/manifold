@@ -9,7 +9,12 @@ import { Title } from 'web/components/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { UserLink } from 'web/components/user-page'
-import { notification_subscribe_types, PrivateUser } from 'common/user'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USERNAME,
+  notification_subscribe_types,
+  PrivateUser,
+} from 'common/user'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { listenForPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
 import { LoadingIndicator } from 'web/components/loading-indicator'
@@ -37,6 +42,7 @@ import Custom404 from 'web/pages/404'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import Router from 'next/router'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -550,6 +556,8 @@ function NotificationItem(props: {
     setNotificationsAsSeen([notification])
   }, [notification])
 
+  const questionNeedsResolution = sourceUpdateType == 'closed'
+
   if (justSummary) {
     return (
       <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
@@ -565,7 +573,7 @@ function NotificationItem(props: {
               <span className={'flex-shrink-0'}>
                 {sourceType &&
                   reason &&
-                  getReasonForShowingNotification(notification, true, true)}
+                  getReasonForShowingNotification(notification, true)}
               </span>
               <div className={'ml-1 text-black'}>
                 <NotificationTextLabel
@@ -588,9 +596,11 @@ function NotificationItem(props: {
         highlighted && 'bg-indigo-200 hover:bg-indigo-100'
       )}
     >
-      <a
-        href={getSourceUrl(notification)}
-        onClick={() =>
+      <div
+        className={'cursor-pointer'}
+        onClick={(event) => {
+          event.stopPropagation()
+          Router.push(getSourceUrl(notification) ?? '')
           track('Notification Clicked', {
             type: 'notification item',
             sourceType,
@@ -602,14 +612,20 @@ function NotificationItem(props: {
             sourceUserUsername,
             sourceText,
           })
-        }
+        }}
       >
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <Avatar
-            avatarUrl={sourceUserAvatarUrl}
+            avatarUrl={
+              questionNeedsResolution
+                ? MANIFOLD_AVATAR_URL
+                : sourceUserAvatarUrl
+            }
             size={'sm'}
             className={'mr-2'}
-            username={sourceUserName}
+            username={
+              questionNeedsResolution ? MANIFOLD_USERNAME : sourceUserUsername
+            }
           />
           <div className={'flex w-full flex-row pl-1 sm:pl-0'}>
             <div
@@ -618,7 +634,7 @@ function NotificationItem(props: {
               }
             >
               <div>
-                {sourceUpdateType != 'closed' && (
+                {!questionNeedsResolution && (
                   <UserLink
                     name={sourceUserName || ''}
                     username={sourceUserUsername || ''}
@@ -628,8 +644,7 @@ function NotificationItem(props: {
                 )}
                 {getReasonForShowingNotification(
                   notification,
-                  false,
-                  isChildOfGroup
+                  isChildOfGroup ?? false
                 )}
                 {isChildOfGroup ? (
                   <RelativeTimestamp time={notification.createdTime} />
@@ -650,7 +665,7 @@ function NotificationItem(props: {
         </div>
 
         <div className={'mt-6 border-b border-gray-300'} />
-      </a>
+      </div>
     </div>
   )
 }
@@ -769,17 +784,10 @@ function NotificationTextLabel(props: {
   justSummary?: boolean
 }) {
   const { className, notification, justSummary } = props
-  const {
-    sourceUpdateType,
-    sourceType,
-    sourceText,
-    sourceContractTitle,
-    reasonText,
-  } = notification
+  const { sourceUpdateType, sourceType, sourceText, reasonText } = notification
   const defaultText = sourceText ?? reasonText ?? ''
   if (sourceType === 'contract') {
-    if (justSummary) return <span>{sourceContractTitle}</span>
-    if (!sourceText) return <div />
+    if (justSummary || !sourceText) return <div />
     // Resolved contracts
     if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
       {
@@ -857,27 +865,27 @@ function NotificationTextLabel(props: {
 
 function getReasonForShowingNotification(
   notification: Notification,
-  simple?: boolean,
-  replaceOn?: boolean
+  justSummary: boolean
 ) {
   const { sourceType, sourceUpdateType, reason, sourceSlug } = notification
   let reasonText: string
   switch (sourceType) {
     case 'comment':
       if (reason === 'reply_to_users_answer')
-        reasonText = !simple ? 'replied to you on' : 'replied'
+        reasonText = justSummary ? 'replied' : 'replied to you on'
       else if (reason === 'tagged_user')
-        reasonText = !simple ? 'tagged you on' : 'tagged you'
+        reasonText = justSummary ? 'tagged you' : 'tagged you on'
       else if (reason === 'reply_to_users_comment')
-        reasonText = !simple ? 'replied to you on' : 'replied'
-      else reasonText = `commented on`
+        reasonText = justSummary ? 'replied' : 'replied to you on'
+      else reasonText = justSummary ? `commented` : `commented on`
       break
     case 'contract':
-      if (reason === 'you_follow_user') reasonText = 'asked'
-      else if (sourceUpdateType === 'resolved') reasonText = `resolved`
-      else if (sourceUpdateType === 'closed')
-        reasonText = `Please resolve your question`
-      else reasonText = `updated`
+      if (reason === 'you_follow_user')
+        reasonText = justSummary ? 'asked the question' : 'asked'
+      else if (sourceUpdateType === 'resolved')
+        reasonText = justSummary ? `resolved the question` : `resolved`
+      else if (sourceUpdateType === 'closed') reasonText = `Please resolve`
+      else reasonText = justSummary ? 'updated the question' : `updated`
       break
     case 'answer':
       if (reason === 'on_users_contract') reasonText = `answered your question `
@@ -904,7 +912,7 @@ function getReasonForShowingNotification(
     default:
       reasonText = ''
   }
-  return replaceOn ? reasonText.replace(' on', '') : reasonText
+  return reasonText
 }
 
 // TODO: where should we put referral bonus notifications?
