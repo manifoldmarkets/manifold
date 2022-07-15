@@ -9,7 +9,7 @@ import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
 import Textarea from 'react-expanding-textarea'
 import dayjs from 'dayjs'
-import Button from '../button'
+import { Button } from '../button'
 import { getManalinkUrl } from 'web/pages/links'
 import { DuplicateIcon } from '@heroicons/react/outline'
 
@@ -63,14 +63,38 @@ function CreateManalinkForm(props: {
   const [finishedCreating, setFinishedCreating] = useState(false)
   const [copyPressed, setCopyPressed] = useState(false)
   setTimeout(() => setCopyPressed(false), 300)
+  const defaultExpire = 'week'
+  const [expiresIn, setExpiresIn] = useState(defaultExpire)
 
   const [newManalink, setNewManalink] = useState<ManalinkInfo>({
-    expiresTime: null,
+    expiresTime: dayjs().add(1, defaultExpire).valueOf(),
     amount: 100,
     maxUses: 1,
     uses: 0,
     message: '',
   })
+
+  const EXPIRE_OPTIONS = {
+    day: '1 Day',
+    week: '1 Week',
+    month: '1 Month',
+    never: 'Never',
+  }
+
+  const expireOptions = Object.entries(EXPIRE_OPTIONS).map(([key, value]) => {
+    return <option value={key}>{value}</option>
+  })
+
+  function setExpireTime(timeDelta: string) {
+    const expiresTime =
+      timeDelta === 'never' ? null : dayjs().add(1, timeDelta).valueOf()
+    setNewManalink((m) => {
+      return {
+        ...m,
+        expiresTime,
+      }
+    })
+  }
 
   return (
     <>
@@ -87,23 +111,30 @@ function CreateManalinkForm(props: {
           <div className="flex flex-col flex-wrap gap-x-5 gap-y-2">
             <div className="form-control flex-auto">
               <label className="label">Amount</label>
-              <input
-                className="input input-bordered"
-                type="number"
-                value={newManalink.amount}
-                onChange={(e) =>
-                  setNewManalink((m) => {
-                    return { ...m, amount: parseInt(e.target.value) }
-                  })
-                }
-              ></input>
+              <div className="relative">
+                <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
+                  M$
+                </span>
+                <input
+                  className="input input-bordered w-full pl-10"
+                  type="number"
+                  min="1"
+                  value={newManalink.amount}
+                  onChange={(e) =>
+                    setNewManalink((m) => {
+                      return { ...m, amount: parseInt(e.target.value) }
+                    })
+                  }
+                />
+              </div>
             </div>
             <div className="flex flex-col gap-2 md:flex-row">
-              <div className="form-control">
+              <div className="form-control w-full md:w-1/2">
                 <label className="label">Uses</label>
                 <input
-                  className="input input-bordered w-full"
+                  className="input input-bordered"
                   type="number"
+                  min="1"
                   value={newManalink.maxUses ?? ''}
                   onChange={(e) =>
                     setNewManalink((m) => {
@@ -112,29 +143,19 @@ function CreateManalinkForm(props: {
                   }
                 ></input>
               </div>
-              <div className="form-control">
+              <div className="form-control w-full md:w-1/2">
                 <label className="label">Expires in</label>
-                <input
-                  value={
-                    newManalink.expiresTime != null
-                      ? dayjs(newManalink.expiresTime).format(
-                          'YYYY-MM-DDTHH:mm'
-                        )
-                      : ''
-                  }
-                  className="input input-bordered"
-                  type="datetime-local"
+                <select
+                  className="!select !select-bordered"
+                  value={expiresIn}
+                  defaultValue={defaultExpire}
                   onChange={(e) => {
-                    setNewManalink((m) => {
-                      return {
-                        ...m,
-                        expiresTime: e.target.value
-                          ? dayjs(e.target.value, 'YYYY-MM-DDTHH:mm').valueOf()
-                          : null,
-                      }
-                    })
+                    setExpiresIn(e.target.value)
+                    setExpireTime(e.target.value)
                   }}
-                ></input>
+                >
+                  {expireOptions}
+                </select>
               </div>
             </div>
             <div className="form-control w-full">

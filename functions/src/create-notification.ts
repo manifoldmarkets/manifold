@@ -15,11 +15,11 @@ import { Answer } from '../../common/answer'
 import { getContractBetMetrics } from '../../common/calculate'
 import { removeUndefinedProps } from '../../common/util/object'
 import { TipTxn } from '../../common/txn'
-import { Group } from '../../common/group'
+import { Group, GROUP_CHAT_SLUG } from '../../common/group'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
-  [userId: string]: { reason: notification_reason_types; isSeeOnHref?: string }
+  [userId: string]: { reason: notification_reason_types }
 }
 
 export const createNotification = async (
@@ -72,7 +72,6 @@ export const createNotification = async (
           sourceContractSlug: sourceContract?.slug,
           sourceSlug: sourceSlug ? sourceSlug : sourceContract?.slug,
           sourceTitle: sourceTitle ? sourceTitle : sourceContract?.question,
-          isSeenOnHref: userToReasonTexts[userId].isSeeOnHref,
         }
         await notificationRef.set(removeUndefinedProps(notification))
       })
@@ -277,17 +276,6 @@ export const createNotification = async (
     }
   }
 
-  const notifyOtherGroupMembersOfComment = async (
-    userToReasons: user_to_reason_texts,
-    userId: string
-  ) => {
-    if (shouldGetNotification(userId, userToReasons))
-      userToReasons[userId] = {
-        reason: 'on_group_you_are_member_of',
-        isSeeOnHref: sourceSlug,
-      }
-  }
-
   const getUsersToNotify = async () => {
     const userToReasonTexts: user_to_reason_texts = {}
     // The following functions modify the userToReasonTexts object in place.
@@ -298,8 +286,6 @@ export const createNotification = async (
         await notifyUserAddedToGroup(userToReasonTexts, relatedUserId)
     } else if (sourceType === 'user' && relatedUserId) {
       await notifyUserReceivedReferralBonus(userToReasonTexts, relatedUserId)
-    } else if (sourceType === 'comment' && !sourceContract && relatedUserId) {
-      await notifyOtherGroupMembersOfComment(userToReasonTexts, relatedUserId)
     }
 
     // The following functions need sourceContract to be defined.
@@ -416,4 +402,35 @@ export const createBetFillNotification = async (
     sourceContractId: contract.id,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export const createGroupCommentNotification = async (
+  fromUser: User,
+  toUserId: string,
+  comment: Comment,
+  group: Group,
+  idempotencyKey: string
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${toUserId}/notifications`)
+    .doc(idempotencyKey)
+  const sourceSlug = `/group/${group.slug}/${GROUP_CHAT_SLUG}`
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUserId,
+    reason: 'on_group_you_are_member_of',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: comment.id,
+    sourceType: 'comment',
+    sourceUpdateType: 'created',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: comment.text,
+    sourceSlug,
+    sourceTitle: `${group.name}`,
+    isSeenOnHref: sourceSlug,
+  }
+  await notificationRef.set(removeUndefinedProps(notification))
 }

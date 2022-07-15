@@ -1,6 +1,8 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USERNAME,
   PrivateUser,
   STARTING_BALANCE,
   SUS_STARTING_BALANCE,
@@ -160,8 +162,8 @@ const addUserToDefaultGroups = async (user: User) => {
         text: `Welcome, ${user.name} (@${user.username})!`,
         createdTime: Date.now(),
         userName: 'Manifold Markets',
-        userUsername: 'ManifoldMarkets',
-        userAvatarUrl: 'https://manifold.markets/logo-bg-white.png',
+        userUsername: MANIFOLD_USERNAME,
+        userAvatarUrl: MANIFOLD_AVATAR_URL,
       })
     }
   }
