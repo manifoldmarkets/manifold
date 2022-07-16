@@ -3,6 +3,8 @@ import { formatMoney } from 'common/util/format'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { User } from 'web/lib/firebase/users'
+import { Button } from './button'
 
 export type ManalinkInfo = {
   expiresTime: number | null
@@ -13,13 +15,13 @@ export type ManalinkInfo = {
 }
 
 export function ManalinkCard(props: {
+  user: User | null | undefined
   className?: string
   info: ManalinkInfo
-  defaultMessage: string
   isClaiming: boolean
   onClaim?: () => void
 }) {
-  const { className, defaultMessage, isClaiming, info, onClaim } = props
+  const { user, className, isClaiming, info, onClaim } = props
   const { expiresTime, maxUses, uses, amount, message } = info
   return (
     <div
@@ -52,16 +54,13 @@ export function ManalinkCard(props: {
           <div className="mb-1 text-xl text-indigo-500">
             {formatMoney(amount)}
           </div>
-          <div>{message || defaultMessage}</div>
+          <div>{message}</div>
         </Col>
 
         <div className="ml-auto">
-          <button
-            className={clsx('btn', isClaiming ? 'loading disabled' : '')}
-            onClick={onClaim}
-          >
-            {isClaiming ? '' : 'Claim'}
-          </button>
+          <Button onClick={onClaim} disabled={isClaiming}>
+            {user ? 'Claim' : 'Login'}
+          </Button>
         </div>
       </Row>
     </div>
@@ -71,9 +70,8 @@ export function ManalinkCard(props: {
 export function ManalinkCardPreview(props: {
   className?: string
   info: ManalinkInfo
-  defaultMessage: string
 }) {
-  const { className, defaultMessage, info } = props
+  const { className, info } = props
   const { expiresTime, maxUses, uses, amount, message } = info
   return (
     <div
@@ -102,7 +100,7 @@ export function ManalinkCardPreview(props: {
       <Row className="rounded-b-lg bg-white p-2">
         <Col className="text-md">
           <div className="mb-1 text-indigo-500">{formatMoney(amount)}</div>
-          <div className="text-xs">{message || defaultMessage}</div>
+          <div className="text-xs">{message}</div>
         </Col>
       </Row>
     </div>
