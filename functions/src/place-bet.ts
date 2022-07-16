@@ -6,7 +6,7 @@ import {
   Query,
   Transaction,
 } from 'firebase-admin/firestore'
-import { groupBy, mapValues, sumBy } from 'lodash'
+import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 
 import { APIError, newEndpoint, validate } from './api'
 import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
@@ -153,10 +153,10 @@ export const placebet = newEndpoint({}, async (req, auth) => {
   log('Main transaction finished.')
 
   if (result.newBet.amount !== 0) {
-    const userIds = [
+    const userIds = uniq([
       auth.uid,
       ...(result.makers ?? []).map((maker) => maker.bet.userId),
-    ]
+    ])
     await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
     log('Share redemption transaction finished.')
   }
