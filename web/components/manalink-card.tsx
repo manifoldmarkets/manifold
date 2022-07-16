@@ -21,8 +21,7 @@ export function ManalinkCard(props: {
   defaultMessage: string
   isClaiming: boolean
   onClaim?: () => void
-}) 
-{
+}) {
   const { user, className, defaultMessage, isClaiming, info, onClaim } = props
   const { expiresTime, maxUses, uses, amount, message } = info
   return (
@@ -60,10 +59,7 @@ export function ManalinkCard(props: {
         </Col>
 
         <div className="ml-auto">
-          <Button
-            onClick={onClaim}
-            disabled={isClaiming}
-          >
+          <Button onClick={onClaim} disabled={isClaiming}>
             {user ? 'Claim' : 'Login'}
           </Button>
         </div>

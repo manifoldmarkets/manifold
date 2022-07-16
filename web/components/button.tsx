@@ -14,10 +14,10 @@ export function Button(props: {
     children,
     className,
     onClick,
-    size='md',
+    size = 'md',
     color = 'indigo',
     type = 'button',
-    disabled = false
+    disabled = false,
   } = props
 
   const sizeClasses = {
@@ -32,7 +32,7 @@ export function Button(props: {
     <button
       type={type}
       className={clsx(
-        'font-md items-center justify-center rounded-md border border-transparent shadow-sm hover:transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+        'font-md items-center justify-center rounded-md border border-transparent shadow-sm hover:transition-colors disabled:cursor-not-allowed disabled:opacity-50',
         sizeClasses,
         color === 'green' && 'btn-primary text-white',
         color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
