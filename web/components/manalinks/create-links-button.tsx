@@ -20,7 +20,6 @@ export function CreateLinksButton(props: {
 }) {
   const { user, highlightedSlug, setHighlightedSlug } = props
   const [open, setOpen] = useState(false)
-  console.log('open', open)
 
   return (
     <>
