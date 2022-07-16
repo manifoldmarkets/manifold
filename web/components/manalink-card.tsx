@@ -18,11 +18,10 @@ export function ManalinkCard(props: {
   user: User | null | undefined
   className?: string
   info: ManalinkInfo
-  defaultMessage: string
   isClaiming: boolean
   onClaim?: () => void
 }) {
-  const { user, className, defaultMessage, isClaiming, info, onClaim } = props
+  const { user, className, isClaiming, info, onClaim } = props
   const { expiresTime, maxUses, uses, amount, message } = info
   return (
     <div
@@ -55,7 +54,7 @@ export function ManalinkCard(props: {
           <div className="mb-1 text-xl text-indigo-500">
             {formatMoney(amount)}
           </div>
-          <div>{message || defaultMessage}</div>
+          <div>{message}</div>
         </Col>
 
         <div className="ml-auto">
@@ -71,9 +70,8 @@ export function ManalinkCard(props: {
 export function ManalinkCardPreview(props: {
   className?: string
   info: ManalinkInfo
-  defaultMessage: string
 }) {
-  const { className, defaultMessage, info } = props
+  const { className, info } = props
   const { expiresTime, maxUses, uses, amount, message } = info
   return (
     <div
@@ -102,7 +100,7 @@ export function ManalinkCardPreview(props: {
       <Row className="rounded-b-lg bg-white p-2">
         <Col className="text-md">
           <div className="mb-1 text-indigo-500">{formatMoney(amount)}</div>
-          <div className="text-xs">{message || defaultMessage}</div>
+          <div className="text-xs">{message}</div>
         </Col>
       </Row>
     </div>

@@ -17,7 +17,6 @@ export default function ClaimPage() {
   const [claiming, setClaiming] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
 
-  const fromUser = useUserById(manalink?.fromId)
   if (!manalink) {
     return <></>
   }
@@ -34,7 +33,6 @@ export default function ClaimPage() {
         <Title text={`Claim M$${manalink.amount} mana`} />
         <ManalinkCard
           user={user}
-          defaultMessage={`from ${fromUser?.name}`}
           info={info}
           isClaiming={claiming}
           onClaim={async () => {
