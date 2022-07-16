@@ -21,7 +21,7 @@ import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 
 const proseClass = clsx(
-  'prose prose-sm prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none'
+  'prose prose-sm prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless'
 )
 
 export function useTextEditor(props: {
@@ -94,7 +94,7 @@ export function TextEditor(props: {
   return (
     <>
       {/* hide placeholder when focused */}
-      <div className="w-full [&:focus-within_p.is-empty]:before:content-none">
+      <div className="[&:focus-within_p.is-empty]:before:content-none w-full">
         {editor && (
           <FloatingMenu
             editor={editor}
