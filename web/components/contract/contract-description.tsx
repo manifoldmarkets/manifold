@@ -2,14 +2,12 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
-import { CATEGORY_LIST } from '../../../common/categories'
 
 import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { exhibitExts, parseTags } from 'common/util/parse'
 import { useAdmin } from 'web/hooks/use-admin'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
-import { TagsList } from '../tags-list'
 import { Content } from '../editor'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Button } from '../button'
@@ -23,19 +21,8 @@ export function ContractDescription(props: {
 }) {
   const { contract, isCreator, className } = props
   const isAdmin = useAdmin()
-
-  const { tags } = contract
-  const categories = tags.filter((tag) =>
-    CATEGORY_LIST.includes(tag.toLowerCase())
-  )
-
   return (
     <div className={clsx('mt-2 text-gray-700', className)}>
-      {categories.length > 0 && (
-        <div className="mt-4">
-          <TagsList tags={categories} noLabel />
-        </div>
-      )}
 
       {isCreator ? (
         <RichEditContract contract={contract} />
