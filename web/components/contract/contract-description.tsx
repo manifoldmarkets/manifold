@@ -5,7 +5,7 @@ import Textarea from 'react-expanding-textarea'
 import { CATEGORY_LIST } from '../../../common/categories'
 
 import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { parseTags } from 'common/util/parse'
+import { exhibitExts, parseTags } from 'common/util/parse'
 import { useAdmin } from 'web/hooks/use-admin'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
@@ -14,6 +14,7 @@ import { Content } from '../editor'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Button } from '../button'
 import { Spacer } from '../layout/spacer'
+import { Editor, Content as ContentType } from '@tiptap/react'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -44,7 +45,15 @@ export function ContractDescription(props: {
       {isAdmin && (
         <EditContract
           text={contract.question}
-          onSave={(question) => updateContract(contract.id, { question })}
+          onSave={(question) =>
+            updateContract(contract.id, {
+              question,
+              description: joinContent(
+                contract.description,
+                questionChanged(contract.question, question)
+              ),
+            })
+          }
           buttonText="ADMIN: Edit question"
         />
       )}
@@ -52,12 +61,24 @@ export function ContractDescription(props: {
   )
 }
 
+function questionChanged(oldQ: string, newQ: string) {
+  return `<p>${editTimestamp()}<s>${oldQ}</s> → ${newQ}</p>`
+}
+
+function joinContent(oldContent: ContentType, markdown: string) {
+  const editor = new Editor({ content: oldContent, extensions: exhibitExts })
+  editor.chain().focus('end').insertContent(markdown).run()
+  return editor.getJSON()
+}
+
+function editTimestamp() {
+  return `${dayjs().format('MMM D, h:mma')}: `
+}
+
 function RichEditContract(props: { contract: Contract }) {
   const { contract } = props
   const [editing, setEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const descriptionTimestamp = () => `${dayjs().format('MMM D, h:mma')}: `
 
   const { editor, upload } = useTextEditor({
     max: MAX_DESCRIPTION_LENGTH,
@@ -113,8 +134,7 @@ function RichEditContract(props: { contract: Contract }) {
             ?.chain()
             .setContent(contract.description)
             .focus('end')
-            .insertContent('<br />')
-            .insertContent(descriptionTimestamp())
+            .insertContent(`<p>${editTimestamp()}</p>`)
             .run()
         }}
       >
