@@ -6,7 +6,6 @@ import { claimManalink } from 'web/lib/firebase/api'
 import { useManalink } from 'web/lib/firebase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'
 import { useUser } from 'web/hooks/use-user'
-import { useUserById } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
 export default function ClaimPage() {
@@ -17,7 +16,6 @@ export default function ClaimPage() {
   const [claiming, setClaiming] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
 
-  const fromUser = useUserById(manalink?.fromId)
   if (!manalink) {
     return <></>
   }
@@ -33,7 +31,7 @@ export default function ClaimPage() {
       <div className="mx-auto max-w-xl">
         <Title text={`Claim M$${manalink.amount} mana`} />
         <ManalinkCard
-          defaultMessage={fromUser?.name || 'Enjoy this mana!'}
+          user={user}
           info={info}
           isClaiming={claiming}
           onClaim={async () => {
@@ -41,6 +39,11 @@ export default function ClaimPage() {
             try {
               if (user == null) {
                 await firebaseLogin()
+                setClaiming(false)
+                return
+              }
+              if (user?.id == manalink.fromId) {
+                throw new Error("You can't claim your own manalink.")
               }
               await claimManalink({ slug: manalink.slug })
               user && router.push(`/${user.username}?claimed-mana=yes`)

@@ -2,12 +2,13 @@ import { ReactNode } from 'react'
 import clsx from 'clsx'
 
 export function Button(props: {
-  children: ReactNode
   className?: string
   onClick?: () => void
+  children?: ReactNode
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   color?: 'green' | 'red' | 'blue' | 'indigo' | 'yellow' | 'gray'
   type?: 'button' | 'reset' | 'submit'
+  disabled?: boolean
 }) {
   const {
     children,
@@ -16,6 +17,7 @@ export function Button(props: {
     size = 'md',
     color = 'indigo',
     type = 'button',
+    disabled = false,
   } = props
 
   const sizeClasses = {
@@ -30,7 +32,7 @@ export function Button(props: {
     <button
       type={type}
       className={clsx(
-        'font-md items-center justify-center rounded-md border border-transparent shadow-sm hover:transition-colors',
+        'font-md items-center justify-center rounded-md border border-transparent shadow-sm hover:transition-colors disabled:cursor-not-allowed disabled:opacity-50',
         sizeClasses,
         color === 'green' && 'btn-primary text-white',
         color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
@@ -40,6 +42,7 @@ export function Button(props: {
         color === 'gray' && 'bg-gray-200 text-gray-700 hover:bg-gray-300',
         className
       )}
+      disabled={disabled}
       onClick={onClick}
     >
       {children}
