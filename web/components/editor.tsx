@@ -94,7 +94,7 @@ export function TextEditor(props: {
   return (
     <>
       {/* hide placeholder when focused */}
-      <div className="[&:focus-within_p.is-empty]:before:content-none w-full">
+      <div className="w-full [&:focus-within_p.is-empty]:before:content-none">
         {editor && (
           <FloatingMenu
             editor={editor}
