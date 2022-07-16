@@ -405,7 +405,7 @@ function QuickOrLimitBet(props: {
   return (
     <Row className="align-center mb-4 justify-between">
       <div className="text-4xl">Bet</div>
-      <Row className="mt-2 items-center gap-2">
+      <Row className="mt-1 items-center gap-2">
         <PillButton
           selected={!isLimitOrder}
           onSelect={() => {

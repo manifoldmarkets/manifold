@@ -7,9 +7,17 @@ export function Modal(props: {
   children: ReactNode
   open: boolean
   setOpen: (open: boolean) => void
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
 }) {
-  const { children, open, setOpen, className } = props
+  const { children, open, setOpen, size = 'md', className } = props
+
+  const sizeClass = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-2xl',
+    xl: 'max-w-5xl',
+  }[size]
 
   return (
     <Transition.Root show={open} as={Fragment}>
@@ -49,7 +57,8 @@ export function Modal(props: {
           >
             <div
               className={clsx(
-                'inline-block transform overflow-hidden text-left align-bottom transition-all sm:my-8 sm:w-full sm:max-w-md sm:p-6 sm:align-middle',
+                'my-8 mx-6 inline-block w-full transform overflow-hidden text-left align-bottom transition-all sm:align-middle',
+                sizeClass,
                 className
               )}
             >
