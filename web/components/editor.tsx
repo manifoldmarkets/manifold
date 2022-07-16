@@ -21,7 +21,7 @@ import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 
 const proseClass = clsx(
-  'prose prose-sm prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless'
+  'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless font-light'
 )
 
 export function useTextEditor(props: {
