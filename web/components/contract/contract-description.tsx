@@ -4,14 +4,16 @@ import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 import { CATEGORY_LIST } from '../../../common/categories'
 
-import { Contract } from 'common/contract'
-import { parseTags, exhibitExts } from 'common/util/parse'
+import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { parseTags } from 'common/util/parse'
 import { useAdmin } from 'web/hooks/use-admin'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { TagsList } from '../tags-list'
 import { Content } from '../editor'
-import { Editor } from '@tiptap/react'
+import { TextEditor, useTextEditor } from 'web/components/editor'
+import { Button } from '../button'
+import { Spacer } from '../layout/spacer'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -19,20 +21,52 @@ export function ContractDescription(props: {
   className?: string
 }) {
   const { contract, isCreator, className } = props
-  const descriptionTimestamp = () => `${dayjs().format('MMM D, h:mma')}: `
   const isAdmin = useAdmin()
 
-  const desc = contract.description ?? ''
+  const { tags } = contract
+  const categories = tags.filter((tag) =>
+    CATEGORY_LIST.includes(tag.toLowerCase())
+  )
 
-  // Append the new description (after a newline)
-  async function saveDescription(newText: string) {
-    const editor = new Editor({ content: desc, extensions: exhibitExts })
-    editor
-      .chain()
-      .focus('end')
-      .insertContent('<br /><br />')
-      .insertContent(newText.trim())
-      .run()
+  return (
+    <div className={clsx('mt-2 text-gray-700', className)}>
+      {categories.length > 0 && (
+        <div className="mt-4">
+          <TagsList tags={categories} noLabel />
+        </div>
+      )}
+
+      {isCreator ? (
+        <RichEditContract contract={contract} />
+      ) : (
+        <Content content={contract.description} />
+      )}
+      {isAdmin && (
+        <EditContract
+          text={contract.question}
+          onSave={(question) => updateContract(contract.id, { question })}
+          buttonText="ADMIN: Edit question"
+        />
+      )}
+    </div>
+  )
+}
+
+function RichEditContract(props: { contract: Contract }) {
+  const { contract } = props
+  const [editing, setEditing] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const descriptionTimestamp = () => `${dayjs().format('MMM D, h:mma')}: `
+
+  const { editor, upload } = useTextEditor({
+    max: MAX_DESCRIPTION_LENGTH,
+    defaultValue: contract.description,
+    disabled: isSubmitting,
+  })
+
+  async function saveDescription() {
+    if (!editor) return
 
     const tags = parseTags(
       `${editor.getText()} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
@@ -46,55 +80,47 @@ export function ContractDescription(props: {
     })
   }
 
-  const { tags } = contract
-  const categories = tags.filter((tag) =>
-    CATEGORY_LIST.includes(tag.toLowerCase())
-  )
-
-  return (
-    <div
-      className={clsx(
-        'mt-2 whitespace-pre-line break-words text-gray-700',
-        className
-      )}
-    >
-      <Content content={desc} />
-
-      {categories.length > 0 && (
-        <div className="mt-4">
-          <TagsList tags={categories} noLabel />
-        </div>
-      )}
-
-      <br />
-
-      {isCreator && (
-        <EditContract
-          // Note: Because descriptionTimestamp is called once, later edits use
-          // a stale timestamp. Ideally this is a function that gets called when
-          // isEditing is set to true.
-          text={descriptionTimestamp()}
-          onSave={saveDescription}
-          buttonText="Add to description"
-        />
-      )}
-      {isAdmin && (
-        <EditContract
-          text={contract.question}
-          onSave={(question) => updateContract(contract.id, { question })}
-          buttonText="ADMIN: Edit question"
-        />
-      )}
-      {/* {isAdmin && (
-        <EditContract
-          text={contract.createdTime.toString()}
-          onSave={(time) =>
-            updateContract(contract.id, { createdTime: Number(time) })
-          }
-          buttonText="ADMIN: Edit createdTime"
-        />
-      )} */}
-    </div>
+  return editing ? (
+    <>
+      <TextEditor editor={editor} upload={upload} />
+      <Spacer h={2} />
+      <Row className="gap-2">
+        <Button
+          onClick={async () => {
+            setIsSubmitting(true)
+            await saveDescription()
+            setEditing(false)
+            setIsSubmitting(false)
+          }}
+        >
+          Save
+        </Button>
+        <Button color="gray" onClick={() => setEditing(false)}>
+          Cancel
+        </Button>
+      </Row>
+    </>
+  ) : (
+    <>
+      <Content content={contract.description} />
+      <Spacer h={2} />
+      <Button
+        color="gray"
+        onClick={() => {
+          setEditing(true)
+          // Add a newline and a timestamp to the bottom of the description
+          editor
+            ?.chain()
+            .setContent(contract.description)
+            .focus('end')
+            .insertContent('<br />')
+            .insertContent(descriptionTimestamp())
+            .run()
+        }}
+      >
+        Edit description
+      </Button>
+    </>
   )
 }
 
@@ -145,13 +171,8 @@ function EditContract(props: {
       </Row>
     </div>
   ) : (
-    <Row>
-      <button
-        className="btn btn-neutral btn-outline btn-xs mt-4"
-        onClick={() => setEditing(true)}
-      >
-        {props.buttonText}
-      </button>
+    <Row className="mt-2">
+      <Button onClick={() => setEditing(true)}>{props.buttonText}</Button>
     </Row>
   )
 }

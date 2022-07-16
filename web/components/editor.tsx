@@ -21,7 +21,7 @@ import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 
 const proseClass = clsx(
-  'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless font-light'
+  'prose prose-p:my-2 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless font-light'
 )
 
 export function useTextEditor(props: {
@@ -155,7 +155,9 @@ function RichContent(props: { content: JSONContent }) {
 export function Content(props: { content: JSONContent | string }) {
   const { content } = props
   return typeof content === 'string' ? (
-    <Linkify text={content} />
+    <div className="whitespace-pre-line break-words">
+      <Linkify text={content} />
+    </div>
   ) : (
     <RichContent content={content} />
   )
