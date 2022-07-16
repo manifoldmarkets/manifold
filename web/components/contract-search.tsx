@@ -121,6 +121,7 @@ export function ContractSearch(props: {
       additionalFilter?.creatorId
         ? `creatorId:${additionalFilter.creatorId}`
         : '',
+      additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
       additionalFilter?.groupSlug
         ? `groupSlugs:${additionalFilter.groupSlug}`
         : '',
