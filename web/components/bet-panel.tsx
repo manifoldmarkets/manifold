@@ -40,6 +40,7 @@ import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
 import { BucketInput } from './bucket-input'
 import { PillButton } from './buttons/pill-button'
+import { YesNoSelector } from './yes-no-selector'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -268,25 +269,16 @@ function BuyPanel(props: {
 
   return (
     <>
-      <div className="my-3 text-left text-sm text-gray-500">Direction</div>
-      <Row className="mb-4 items-center gap-2">
-        <PillButton
-          selected={betChoice === 'YES'}
-          onSelect={() => onBetChoice('YES')}
-          big
-          color="bg-primary"
-        >
-          {isPseudoNumeric ? 'Higher' : 'Yes'}
-        </PillButton>
-        <PillButton
-          selected={betChoice === 'NO'}
-          onSelect={() => onBetChoice('NO')}
-          big
-          color="bg-red-400"
-        >
-          {isPseudoNumeric ? 'Lower' : 'No'}
-        </PillButton>
-      </Row>
+      <div className="my-3 text-left text-sm text-gray-500">
+        {isPseudoNumeric ? 'Direction' : 'Outcome'}
+      </div>
+      <YesNoSelector
+        className="mb-4"
+        btnClassName="flex-1"
+        selected={betChoice}
+        onSelect={(choice) => onBetChoice(choice)}
+        isPseudoNumeric={isPseudoNumeric}
+      />
 
       <div className="my-3 text-left text-sm text-gray-500">Amount</div>
       <BuyAmountInput

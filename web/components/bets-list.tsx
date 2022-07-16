@@ -45,7 +45,7 @@ import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { Pagination } from './pagination'
-import { LimitBets } from './limit-bets'
+import { LimitOrderTable } from './limit-bets'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -364,18 +364,20 @@ function ContractBets(props: {
 
         {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
           <>
-            <div className="bg-gray-50 px-4 py-2">Your limit orders</div>
-            <LimitBets
-              className="max-w-md px-2 py-0 sm:px-4"
-              contract={contract}
-              bets={limitBets}
-              hideLabel
-            />
+            <div className="max-w-md">
+              <div className="bg-gray-50 px-4 py-2">Limit orders</div>
+              <LimitOrderTable
+                contract={contract}
+                limitBets={limitBets}
+                isYou={true}
+              />
+            </div>
           </>
         )}
 
         <Spacer h={4} />
 
+        <div className="bg-gray-50 px-4 py-2">Bets</div>
         <ContractBetsTable
           contract={contract}
           bets={bets}

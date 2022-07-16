@@ -46,12 +46,14 @@ export const usePrivateUser = (userId?: string) => {
   return privateUser
 }
 
-export const useUserById = (userId: string) => {
+export const useUserById = (userId = '_') => {
   const result = useFirestoreDocumentData<DocumentData, User>(
     ['users', userId],
     doc(users, userId),
     { subscribe: true, includeMetadataChanges: true }
   )
+
+  if (userId === '_') return undefined
 
   return result.isLoading ? undefined : result.data
 }

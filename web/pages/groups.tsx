@@ -1,23 +1,23 @@
 import { sortBy, debounce } from 'lodash'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
+import { useGroups, useMemberGroupIds, useMembers } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
-import { GroupMembersList } from 'web/pages/group/[...slugs]'
-import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 import { SiteLink } from 'web/components/site-link'
 import clsx from 'clsx'
 import { Avatar } from 'web/components/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
+import { UserLink } from 'web/components/user-page'
+import { searchInAny } from 'common/util/parse'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])
@@ -71,20 +71,28 @@ export default function Groups(props: {
   const matches = sortBy(groups, [
     (group) => -1 * group.contractIds.length,
     (group) => -1 * group.memberIds.length,
-  ]).filter(
-    (g) =>
-      checkAgainstQuery(query, g.name) ||
-      checkAgainstQuery(query, g.about || '') ||
-      checkAgainstQuery(query, creatorsDict[g.creatorId].username)
+  ]).filter((g) =>
+    searchInAny(
+      query,
+      g.name,
+      g.about || '',
+      creatorsDict[g.creatorId].username
+    )
   )
 
   const matchesOrderedByRecentActivity = sortBy(groups, [
-    (group) => -1 * group.mostRecentActivityTime,
-  ]).filter(
-    (g) =>
-      checkAgainstQuery(query, g.name) ||
-      checkAgainstQuery(query, g.about || '') ||
-      checkAgainstQuery(query, creatorsDict[g.creatorId].username)
+    (group) =>
+      -1 *
+      (group.mostRecentChatActivityTime ??
+        group.mostRecentContractAddedTime ??
+        group.mostRecentActivityTime),
+  ]).filter((g) =>
+    searchInAny(
+      query,
+      g.name,
+      g.about || '',
+      creatorsDict[g.creatorId].username
+    )
   )
 
   // Not strictly necessary, but makes the "hold delete" experience less laggy
@@ -171,10 +179,7 @@ export default function Groups(props: {
 export function GroupCard(props: { group: Group; creator: User | undefined }) {
   const { group, creator } = props
   return (
-    <Col
-      key={group.id}
-      className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100"
-    >
+    <Col className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100">
       <Link href={groupPath(group.slug)}>
         <a className="absolute left-0 right-0 top-0 bottom-0 z-0" />
       </Link>
@@ -201,6 +206,29 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
         <JoinOrLeaveGroupButton group={group} className={'z-10 w-24'} />
       </Col>
     </Col>
+  )
+}
+
+function GroupMembersList(props: { group: Group }) {
+  const { group } = props
+  const maxMembersToShow = 3
+  const members = useMembers(group, maxMembersToShow).filter(
+    (m) => m.id !== group.creatorId
+  )
+  if (group.memberIds.length === 1) return <div />
+  return (
+    <div className="text-neutral flex flex-wrap gap-1">
+      <span className={'text-gray-500'}>Other members</span>
+      {members.slice(0, maxMembersToShow).map((member, i) => (
+        <div key={member.id} className={'flex-shrink'}>
+          <UserLink name={member.name} username={member.username} />
+          {members.length > 1 && i !== members.length - 1 && <span>,</span>}
+        </div>
+      ))}
+      {group.memberIds.length > maxMembersToShow && (
+        <span> & {group.memberIds.length - maxMembersToShow} more</span>
+      )}
+    </div>
   )
 }
 

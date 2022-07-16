@@ -16,7 +16,6 @@ import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from './outcome-label'
 export function LimitBets(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   bets: LimitBet[]
-  hideLabel?: boolean
   className?: string
 }) {
   const { contract, bets, className } = props
@@ -67,20 +66,21 @@ export function LimitBets(props: {
   )
 }
 
-function LimitOrderTable(props: {
+export function LimitOrderTable(props: {
   limitBets: LimitBet[]
   contract: CPMMBinaryContract | PseudoNumericContract
   isYou: boolean
 }) {
   const { limitBets, contract, isYou } = props
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   return (
     <table className="table-compact table w-full rounded text-gray-500">
       <thead>
-        {!isYou && <th>User</th>}
+        {!isYou && <th></th>}
         <th>Outcome</th>
         <th>Amount</th>
-        <th>Prob</th>
+        <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
         {isYou && <th></th>}
       </thead>
       <tbody>

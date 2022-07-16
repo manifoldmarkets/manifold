@@ -20,6 +20,7 @@ import { manaToUSD } from 'common/util/format'
 import { quadraticMatches } from 'common/quadratic-funding'
 import { Txn } from 'common/txn'
 import { useTracking } from 'web/hooks/use-tracking'
+import { searchInAny } from 'common/util/parse'
 
 export async function getStaticProps() {
   const txns = await getAllCharityTxns()
@@ -88,10 +89,12 @@ export default function Charity(props: {
     () =>
       charities.filter(
         (charity) =>
-          charity.name.toLowerCase().includes(query.toLowerCase()) ||
-          charity.preview.toLowerCase().includes(query.toLowerCase()) ||
-          charity.description.toLowerCase().includes(query.toLowerCase()) ||
-          (charity.tags as string[])?.includes(query.toLowerCase())
+          searchInAny(
+            query,
+            charity.name,
+            charity.preview,
+            charity.description
+          ) || (charity.tags as string[])?.includes(query.toLowerCase())
       ),
     [charities, query]
   )

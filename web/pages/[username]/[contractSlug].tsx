@@ -65,8 +65,9 @@ export async function getStaticPropz(props: {
       contract,
       username,
       slug: contractSlug,
-      bets,
-      comments,
+      // Limit the data sent to the client. Client will still load all bets and comments directly.
+      bets: bets.slice(0, 5000),
+      comments: comments.slice(0, 1000),
     },
 
     revalidate: 60, // regenerate after a minute

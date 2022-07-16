@@ -16,11 +16,6 @@ export type Sort =
   | 'resolve-date'
   | 'last-updated'
 
-export function checkAgainstQuery(query: string, corpus: string) {
-  const queryWords = query.toLowerCase().split(' ')
-  return queryWords.every((word) => corpus.toLowerCase().includes(word))
-}
-
 export function getSavedSort() {
   // TODO: this obviously doesn't work with SSR, common sense would suggest
   // that we should save things like this in cookies so the server has them
