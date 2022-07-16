@@ -45,7 +45,7 @@ export function LimitBets(props: {
           className={'mt-4 gap-2 overflow-hidden rounded bg-white px-4 py-3'}
         >
           <Row className="mt-2 mb-4 items-center justify-between">
-            <Subtitle className="!mt-0 !mb-0" text="Your limit orders" />
+            <Subtitle className="!mt-0 !mb-0" text="Your orders" />
 
             <OrderBookButton
               className="self-end"

@@ -385,7 +385,11 @@ function BuyPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit bet'}
+          {isSubmitting
+            ? 'Submitting...'
+            : isLimitOrder
+            ? 'Submit order'
+            : 'Submit bet'}
         </button>
       )}
 
