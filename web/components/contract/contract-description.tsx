@@ -23,39 +23,16 @@ export function ContractDescription(props: {
   const isAdmin = useAdmin()
   return (
     <div className={clsx('mt-2 text-gray-700', className)}>
-
-      {isCreator ? (
+      {isCreator || isAdmin ? (
         <RichEditContract contract={contract} />
       ) : (
         <Content content={contract.description} />
       )}
-      {isAdmin && (
-        <EditContract
-          text={contract.question}
-          onSave={(question) =>
-            updateContract(contract.id, {
-              question,
-              description: joinContent(
-                contract.description,
-                questionChanged(contract.question, question)
-              ),
-            })
-          }
-          buttonText="ADMIN: Edit question"
-        />
+      {isAdmin && !isCreator && (
+        <div className="mt-2 text-red-400">(👆 admin powers)</div>
       )}
     </div>
   )
-}
-
-function questionChanged(oldQ: string, newQ: string) {
-  return `<p>${editTimestamp()}<s>${oldQ}</s> → ${newQ}</p>`
-}
-
-function joinContent(oldContent: ContentType, markdown: string) {
-  const editor = new Editor({ content: oldContent, extensions: exhibitExts })
-  editor.chain().focus('end').insertContent(markdown).run()
-  return editor.getJSON()
 }
 
 function editTimestamp() {
@@ -65,6 +42,7 @@ function editTimestamp() {
 function RichEditContract(props: { contract: Contract }) {
   const { contract } = props
   const [editing, setEditing] = useState(false)
+  const [editingQ, setEditingQ] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { editor, upload } = useTextEditor({
@@ -112,43 +90,68 @@ function RichEditContract(props: { contract: Contract }) {
     <>
       <Content content={contract.description} />
       <Spacer h={2} />
-      <Button
-        color="gray"
-        onClick={() => {
-          setEditing(true)
-          // Add a newline and a timestamp to the bottom of the description
-          editor
-            ?.chain()
-            .setContent(contract.description)
-            .focus('end')
-            .insertContent(`<p>${editTimestamp()}</p>`)
-            .run()
-        }}
-      >
-        Edit description
-      </Button>
+      <Row className="gap-2">
+        <Button
+          color="gray"
+          onClick={() => {
+            setEditing(true)
+            editor
+              ?.chain()
+              .setContent(contract.description)
+              .focus('end')
+              .insertContent(`<p>${editTimestamp()}</p>`)
+              .run()
+          }}
+        >
+          Edit description
+        </Button>
+        <Button color="gray" onClick={() => setEditingQ(true)}>
+          Edit question
+        </Button>
+      </Row>
+      <EditQuestion
+        contract={contract}
+        editing={editingQ}
+        setEditing={setEditingQ}
+      />
     </>
   )
 }
 
-function EditContract(props: {
-  text: string
-  onSave: (newText: string) => void
-  buttonText: string
+function EditQuestion(props: {
+  contract: Contract
+  editing: boolean
+  setEditing: (editing: boolean) => void
 }) {
-  const [text, setText] = useState(props.text)
-  const [editing, setEditing] = useState(false)
-  const onSave = (newText: string) => {
+  const { contract, editing, setEditing } = props
+  const [text, setText] = useState(contract.question)
+
+  function questionChanged(oldQ: string, newQ: string) {
+    return `<p>${editTimestamp()}<s>${oldQ}</s> → ${newQ}</p>`
+  }
+
+  function joinContent(oldContent: ContentType, newContent: string) {
+    const editor = new Editor({ content: oldContent, extensions: exhibitExts })
+    editor.chain().focus('end').insertContent(newContent).run()
+    return editor.getJSON()
+  }
+
+  const onSave = async (newText: string) => {
     setEditing(false)
-    setText(props.text) // Reset to original text
-    props.onSave(newText)
+    await updateContract(contract.id, {
+      question: newText,
+      description: joinContent(
+        contract.description,
+        questionChanged(contract.question, newText)
+      ),
+    })
   }
 
   return editing ? (
     <div className="mt-4">
       <Textarea
         className="textarea textarea-bordered mb-1 h-24 w-full resize-none"
-        rows={3}
+        rows={2}
         value={text}
         onChange={(e) => setText(e.target.value || '')}
         autoFocus
@@ -163,23 +166,11 @@ function EditContract(props: {
         }}
       />
       <Row className="gap-2">
-        <button
-          className="btn btn-neutral btn-outline btn-sm"
-          onClick={() => onSave(text)}
-        >
-          Save
-        </button>
-        <button
-          className="btn btn-error btn-outline btn-sm"
-          onClick={() => setEditing(false)}
-        >
+        <Button onClick={() => onSave(text)}>Save</Button>
+        <Button color="gray" onClick={() => setEditing(false)}>
           Cancel
-        </button>
+        </Button>
       </Row>
     </div>
-  ) : (
-    <Row className="mt-2">
-      <Button onClick={() => setEditing(true)}>{props.buttonText}</Button>
-    </Row>
-  )
+  ) : null
 }
