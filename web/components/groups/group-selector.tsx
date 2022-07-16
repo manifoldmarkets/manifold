@@ -11,6 +11,7 @@ import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { useState } from 'react'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { User } from 'common/user'
+import { searchInAny } from 'common/util/parse'
 
 export function GroupSelector(props: {
   selectedGroup?: Group
@@ -22,14 +23,10 @@ export function GroupSelector(props: {
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
 
   const [query, setQuery] = useState('')
-  const memberGroups = useMemberGroups(creator?.id)
-  const filteredGroups = memberGroups
-    ? query === ''
-      ? memberGroups
-      : memberGroups.filter((group) => {
-          return group.name.toLowerCase().includes(query.toLowerCase())
-        })
-    : []
+  const memberGroups = useMemberGroups(creator?.id) ?? []
+  const filteredGroups = memberGroups.filter((group) =>
+    searchInAny(query, group.name)
+  )
 
   if (!showSelector || !creator) {
     return (

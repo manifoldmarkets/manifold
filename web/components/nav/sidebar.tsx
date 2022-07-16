@@ -13,7 +13,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { firebaseLogout, User } from 'web/lib/firebase/users'
+import { firebaseLogout, updateUser, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
@@ -24,7 +24,7 @@ import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
-import { Group } from 'common/group'
+import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Spacer } from '../layout/spacer'
 import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
@@ -110,9 +110,13 @@ const signedInMobileNavigation = [
 
 function getMoreMobileNav() {
   return [
-    { name: 'Send M$', href: '/links' },
-    { name: 'Charity', href: '/charity' },
-    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    ...(IS_PRIVATE_MANIFOLD
+      ? []
+      : [
+          { name: 'Send M$', href: '/links' },
+          { name: 'Charity', href: '/charity' },
+          { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+        ]),
     { name: 'Leaderboards', href: '/leaderboards' },
     {
       name: 'Sign out',
@@ -194,11 +198,25 @@ export default function Sidebar(props: { className?: string }) {
     ? signedOutMobileNavigation
     : signedInMobileNavigation
   const memberItems = (
-    useMemberGroups(user?.id, { withChatEnabled: true }) ?? []
+    useMemberGroups(
+      user?.id,
+      { withChatEnabled: true },
+      { by: 'mostRecentChatActivityTime' }
+    ) ?? []
   ).map((group: Group) => ({
     name: group.name,
-    href: groupPath(group.slug),
+    href: `${groupPath(group.slug)}/${GROUP_CHAT_SLUG}`,
   }))
+
+  useEffect(() => {
+    if (!user) return
+    const pingInterval = setInterval(() => {
+      updateUser(user.id, {
+        lastPingTime: Date.now(),
+      })
+    }, 1000 * 30)
+    return () => clearInterval(pingInterval)
+  }, [user])
 
   return (
     <nav aria-label="Sidebar" className={className}>
@@ -278,8 +296,16 @@ function GroupsList(props: {
 
   // Set notification as seen if our current page is equal to the isSeenOnHref property
   useEffect(() => {
+    const currentPageGroupSlug = currentPage.split('/')[2]
     preferredNotifications.forEach((notification) => {
-      if (notification.isSeenOnHref === currentPage) {
+      if (
+        notification.isSeenOnHref === currentPage ||
+        // Old chat style group chat notif ended just with the group slug
+        notification.isSeenOnHref?.endsWith(currentPageGroupSlug) ||
+        // They're on the home page, so if they've a chat notif, they're seeing the chat
+        (notification.isSeenOnHref?.endsWith(GROUP_CHAT_SLUG) &&
+          currentPage.endsWith(currentPageGroupSlug))
+      ) {
         setNotificationsAsSeen([notification])
       }
     })
@@ -309,7 +335,10 @@ function GroupsList(props: {
             className={clsx(
               'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900',
               preferredNotifications.some(
-                (n) => !n.isSeen && n.isSeenOnHref === item.href
+                (n) =>
+                  !n.isSeen &&
+                  (n.isSeenOnHref === item.href ||
+                    n.isSeenOnHref === item.href.replace('/chat', ''))
               ) && 'font-bold'
             )}
           >

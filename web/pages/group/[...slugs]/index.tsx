@@ -1,16 +1,15 @@
 import { take, sortBy, debounce } from 'lodash'
 
-import { Group } from 'common/group'
+import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Page } from 'web/components/page'
 import { listAllBets } from 'web/lib/firebase/bets'
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
   groupPath,
   getGroupBySlug,
   updateGroup,
-  addUserToGroup,
+  joinGroup,
   addContractToGroup,
-  getGroupContracts,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
@@ -41,10 +40,7 @@ import React, { useEffect, useState } from 'react'
 import { GroupChat } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
-import {
-  checkAgainstQuery,
-  getSavedSort,
-} from 'web/hooks/use-sort-and-query-params'
+import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
@@ -56,20 +52,19 @@ import { FollowList } from 'web/components/follow-list'
 import { SearchIcon } from '@heroicons/react/outline'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
+import { OnlineUserList } from 'web/components/online-user-list'
+import { searchInAny } from 'common/util/parse'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
   const group = await getGroupBySlug(slugs[0])
-  const members =
-    group && group.memberIds.length < 100 ? await listMembers(group) : []
+  const members = group && (await listMembers(group))
   const creatorPromise = group ? getUser(group.creatorId) : null
 
   const contracts =
-    group && group.contractIds.length < 100
-      ? await getGroupContracts(group).catch((_) => [])
-      : []
+    (group && (await listContractsByGroupSlug(group.slug))) ?? []
 
   const bets = await Promise.all(
     contracts.map((contract: Contract) => listAllBets(contract.id))
@@ -77,10 +72,12 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   const creatorScores = scoreCreators(contracts)
   const traderScores = scoreTraders(contracts, bets)
-  const [topCreators, topTraders] = await Promise.all([
-    toTopUsers(creatorScores),
-    toTopUsers(traderScores),
-  ])
+  const [topCreators, topTraders] =
+    (members && [
+      toTopUsers(creatorScores, members),
+      toTopUsers(traderScores, members),
+    ]) ??
+    []
 
   const creator = await creatorPromise
 
@@ -99,14 +96,14 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   }
 }
 
-async function toTopUsers(userScores: { [userId: string]: number }) {
+function toTopUsers(userScores: { [userId: string]: number }, users: User[]) {
   const topUserPairs = take(
     sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
     10
   ).filter(([_, score]) => score >= 0.5)
 
-  const topUsers = await Promise.all(
-    topUserPairs.map(([userId]) => getUser(userId))
+  const topUsers = topUserPairs.map(
+    ([userId]) => users.filter((user) => user.id === userId)[0]
   )
   return topUsers.filter((user) => user)
 }
@@ -116,7 +113,7 @@ export async function getStaticPaths() {
 }
 const groupSubpages = [
   undefined,
-  'chat',
+  GROUP_CHAT_SLUG,
   'questions',
   'rankings',
   'about',
@@ -176,7 +173,12 @@ export default function GroupPage(props: {
 
   const rightSidebar = (
     <Col className="mt-6 hidden xl:block">
-      <JoinOrCreateButton group={group} user={user} isMember={!!isMember} />
+      <JoinOrAddQuestionsButtons
+        group={group}
+        user={user}
+        isMember={!!isMember}
+      />
+      <OnlineUserList users={members} />
     </Col>
   )
   const leaderboard = (
@@ -199,6 +201,7 @@ export default function GroupPage(props: {
         creator={creator}
         isCreator={!!isCreator}
         user={user}
+        members={members}
       />
     </Col>
   )
@@ -219,7 +222,7 @@ export default function GroupPage(props: {
             ) : (
               <LoadingIndicator />
             ),
-            href: groupPath(group.slug, 'chat'),
+            href: groupPath(group.slug, GROUP_CHAT_SLUG),
           },
         ]),
     {
@@ -247,7 +250,7 @@ export default function GroupPage(props: {
       href: groupPath(group.slug, 'about'),
     },
   ]
-  const tabIndex = tabs.map((t) => t.title).indexOf(page ?? 'chat')
+  const tabIndex = tabs.map((t) => t.title).indexOf(page ?? GROUP_CHAT_SLUG)
   return (
     <Page rightSidebar={rightSidebar} className="!pb-0">
       <SEO
@@ -255,7 +258,6 @@ export default function GroupPage(props: {
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
-
       <Col className="px-3">
         <Row className={'items-center justify-between gap-4'}>
           <div className={'sm:mb-1'}>
@@ -271,7 +273,7 @@ export default function GroupPage(props: {
             </div>
           </div>
           <div className="hidden sm:block xl:hidden">
-            <JoinOrCreateButton
+            <JoinOrAddQuestionsButtons
               group={group}
               user={user}
               isMember={!!isMember}
@@ -279,10 +281,13 @@ export default function GroupPage(props: {
           </div>
         </Row>
         <div className="block sm:hidden">
-          <JoinOrCreateButton group={group} user={user} isMember={!!isMember} />
+          <JoinOrAddQuestionsButtons
+            group={group}
+            user={user}
+            isMember={!!isMember}
+          />
         </div>
       </Col>
-
       <Tabs
         currentPageForAnalytics={groupPath(group.slug)}
         className={'mb-0 sm:mb-2'}
@@ -293,7 +298,7 @@ export default function GroupPage(props: {
   )
 }
 
-function JoinOrCreateButton(props: {
+function JoinOrAddQuestionsButtons(props: {
   group: Group
   user: User | null | undefined
   isMember: boolean
@@ -327,8 +332,9 @@ function GroupOverview(props: {
   creator: User
   user: User | null | undefined
   isCreator: boolean
+  members: User[]
 }) {
-  const { group, creator, isCreator, user } = props
+  const { group, creator, isCreator, user, members } = props
   const anyoneCanJoinChoices: { [key: string]: string } = {
     Closed: 'false',
     Open: 'true',
@@ -403,7 +409,7 @@ function GroupOverview(props: {
           </Row>
         )}
         <Col className={'mt-2'}>
-          <GroupMemberSearch group={group} />
+          <GroupMemberSearch members={members} group={group} />
         </Col>
       </Col>
     </>
@@ -426,15 +432,20 @@ function SearchBar(props: { setQuery: (query: string) => void }) {
   )
 }
 
-function GroupMemberSearch(props: { group: Group }) {
+function GroupMemberSearch(props: { members: User[]; group: Group }) {
   const [query, setQuery] = useState('')
   const { group } = props
-  const members = useMembers(group, 100)
+  let { members } = props
+
+  // Use static members on load, but also listen to member changes:
+  const listenToMembers = useMembers(group)
+  if (listenToMembers) {
+    members = listenToMembers
+  }
 
   // TODO use find-active-contracts to sort by?
-  const matches = sortBy(members, [(member) => member.name]).filter(
-    (m) =>
-      checkAgainstQuery(query, m.name) || checkAgainstQuery(query, m.username)
+  const matches = sortBy(members, [(member) => member.name]).filter((m) =>
+    searchInAny(query, m.name, m.username)
   )
   const matchLimit = 25
 
@@ -451,29 +462,6 @@ function GroupMemberSearch(props: { group: Group }) {
           </div>
         )}
       </Col>
-    </div>
-  )
-}
-
-export function GroupMembersList(props: { group: Group }) {
-  const { group } = props
-  const maxMembersToShow = 3
-  const members = useMembers(group, maxMembersToShow).filter(
-    (m) => m.id !== group.creatorId
-  )
-  if (group.memberIds.length === 1) return <div />
-  return (
-    <div className="text-neutral flex flex-wrap gap-1">
-      <span className={'text-gray-500'}>Other members</span>
-      {members.slice(0, maxMembersToShow).map((member, i) => (
-        <div key={member.id} className={'flex-shrink'}>
-          <UserLink name={member.name} username={member.username} />
-          {members.length > 1 && i !== members.length - 1 && <span>,</span>}
-        </div>
-      ))}
-      {group.memberIds.length > maxMembersToShow && (
-        <span> & {group.memberIds.length - maxMembersToShow} more</span>
-      )}
     </div>
   )
 }
@@ -628,19 +616,19 @@ function JoinGroupButton(props: {
   user: User | null | undefined
 }) {
   const { group, user } = props
-  function joinGroup() {
+  function addUserToGroup() {
     if (user && !group.memberIds.includes(user.id)) {
-      toast.promise(addUserToGroup(group, user.id), {
+      toast.promise(joinGroup(group, user.id), {
         loading: 'Joining group...',
         success: 'Joined group!',
-        error: "Couldn't join group",
+        error: "Couldn't join group, try again?",
       })
     }
   }
   return (
     <div>
       <button
-        onClick={user ? joinGroup : firebaseLogin}
+        onClick={user ? addUserToGroup : firebaseLogin}
         className={'btn-md btn-outline btn whitespace-nowrap normal-case'}
       >
         {user ? 'Join group' : 'Login to join group'}

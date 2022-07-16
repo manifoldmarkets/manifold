@@ -4,7 +4,7 @@ import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { User } from 'web/lib/firebase/users'
-import Button from './button'
+import { Button } from './button'
 
 export type ManalinkInfo = {
   expiresTime: number | null

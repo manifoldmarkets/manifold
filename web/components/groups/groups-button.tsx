@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
@@ -9,14 +9,17 @@ import { TextButton } from 'web/components/text-button'
 import { Group } from 'common/group'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { addUserToGroup, leaveGroup } from 'web/lib/firebase/groups'
+import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { GroupLink } from 'web/pages/groups'
+import toast from 'react-hot-toast'
 
 export function GroupsButton(props: { user: User }) {
   const { user } = props
   const [isOpen, setIsOpen] = useState(false)
-  const groups = useMemberGroups(user.id)
+  const groups = useMemberGroups(user.id, undefined, {
+    by: 'mostRecentChatActivityTime',
+  })
 
   return (
     <>
@@ -88,22 +91,34 @@ export function JoinOrLeaveGroupButton(props: {
 }) {
   const { group, small, className } = props
   const currentUser = useUser()
-  const isFollowing = currentUser
-    ? group.memberIds.includes(currentUser.id)
-    : false
+  const [isMember, setIsMember] = useState<boolean>(false)
+  useEffect(() => {
+    if (currentUser && group.memberIds.includes(currentUser.id)) {
+      setIsMember(group.memberIds.includes(currentUser.id))
+    }
+  }, [currentUser, group])
+
   const onJoinGroup = () => {
     if (!currentUser) return
-    addUserToGroup(group, currentUser.id)
+    setIsMember(true)
+    joinGroup(group, currentUser.id).catch(() => {
+      setIsMember(false)
+      toast.error('Failed to join group')
+    })
   }
   const onLeaveGroup = () => {
     if (!currentUser) return
-    leaveGroup(group, currentUser.id)
+    setIsMember(false)
+    leaveGroup(group, currentUser.id).catch(() => {
+      setIsMember(true)
+      toast.error('Failed to leave group')
+    })
   }
 
   const smallStyle =
     'btn !btn-xs border-2 border-gray-500 bg-white normal-case text-gray-500 hover:border-gray-500 hover:bg-white hover:text-gray-500'
 
-  if (!currentUser || isFollowing === undefined) {
+  if (!currentUser || isMember === undefined) {
     if (!group.anyoneCanJoin)
       return <div className={clsx(className, 'text-gray-500')}>Closed</div>
     return (
@@ -116,7 +131,7 @@ export function JoinOrLeaveGroupButton(props: {
     )
   }
 
-  if (isFollowing) {
+  if (isMember) {
     return (
       <button
         className={clsx(

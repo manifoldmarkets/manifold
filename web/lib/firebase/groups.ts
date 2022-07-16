@@ -7,8 +7,8 @@ import {
   where,
 } from 'firebase/firestore'
 import { sortBy, uniq } from 'lodash'
-import { Group } from 'common/group'
-import { getContractFromId, updateContract } from './contracts'
+import { Group, GROUP_CHAT_SLUG } from 'common/group'
+import { updateContract } from './contracts'
 import {
   coll,
   getValue,
@@ -16,14 +16,13 @@ import {
   listenForValue,
   listenForValues,
 } from './utils'
-import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
 
 export const groups = coll<Group>('groups')
 
 export function groupPath(
   groupSlug: string,
-  subpath?: 'edit' | 'questions' | 'about' | 'chat' | 'rankings'
+  subpath?: 'edit' | 'questions' | 'about' | typeof GROUP_CHAT_SLUG | 'rankings'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }
@@ -54,21 +53,6 @@ export async function getGroupBySlug(slug: string) {
   return docs.length === 0 ? null : docs[0].data()
 }
 
-export async function getGroupContracts(group: Group) {
-  const { contractIds } = group
-
-  const contracts =
-    filterDefined(
-      await Promise.all(
-        contractIds.map(async (contractId) => {
-          return await getContractFromId(contractId)
-        })
-      )
-    ) ?? []
-
-  return [...contracts]
-}
-
 export function listenForGroup(
   groupId: string,
   setGroup: (group: Group | null) => void
@@ -78,12 +62,21 @@ export function listenForGroup(
 
 export function listenForMemberGroups(
   userId: string,
-  setGroups: (groups: Group[]) => void
+  setGroups: (groups: Group[]) => void,
+  sort?: { by: 'mostRecentChatActivityTime' | 'mostRecentContractAddedTime' }
 ) {
   const q = query(groups, where('memberIds', 'array-contains', userId))
-
+  const sorter = (group: Group) => {
+    if (sort?.by === 'mostRecentChatActivityTime') {
+      return group.mostRecentChatActivityTime ?? group.mostRecentActivityTime
+    }
+    if (sort?.by === 'mostRecentContractAddedTime') {
+      return group.mostRecentContractAddedTime ?? group.mostRecentActivityTime
+    }
+    return group.mostRecentActivityTime
+  }
   return listenForValues<Group>(q, (groups) => {
-    const sorted = sortBy(groups, [(group) => -group.mostRecentActivityTime])
+    const sorted = sortBy(groups, [(group) => -sorter(group)])
     setGroups(sorted)
   })
 }
@@ -103,31 +96,23 @@ export async function addUserToGroupViaSlug(groupSlug: string, userId: string) {
     console.error(`Group not found: ${groupSlug}`)
     return
   }
-  return await addUserToGroup(group, userId)
+  return await joinGroup(group, userId)
 }
 
-export async function addUserToGroup(
-  group: Group,
-  userId: string
-): Promise<Group> {
+export async function joinGroup(group: Group, userId: string): Promise<void> {
   const { memberIds } = group
-  if (memberIds.includes(userId)) {
-    return group
-  }
+  if (memberIds.includes(userId)) return // already a member
+
   const newMemberIds = [...memberIds, userId]
-  const newGroup = { ...group, memberIds: newMemberIds }
-  await updateGroup(newGroup, { memberIds: uniq(newMemberIds) })
-  return newGroup
+  return await updateGroup(group, { memberIds: uniq(newMemberIds) })
 }
-export async function leaveGroup(group: Group, userId: string): Promise<Group> {
+
+export async function leaveGroup(group: Group, userId: string): Promise<void> {
   const { memberIds } = group
-  if (!memberIds.includes(userId)) {
-    return group
-  }
+  if (!memberIds.includes(userId)) return // not a member
+
   const newMemberIds = memberIds.filter((id) => id !== userId)
-  const newGroup = { ...group, memberIds: newMemberIds }
-  await updateGroup(newGroup, { memberIds: uniq(newMemberIds) })
-  return newGroup
+  return await updateGroup(group, { memberIds: uniq(newMemberIds) })
 }
 
 export async function addContractToGroup(group: Group, contract: Contract) {

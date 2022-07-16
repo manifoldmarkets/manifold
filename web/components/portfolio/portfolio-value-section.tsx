@@ -16,7 +16,7 @@ export const PortfolioValueSection = memo(
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('allTime')
 
     if (portfolioHistory.length === 0 || !lastPortfolioMetrics) {
-      return <div> No portfolio history data yet </div>
+      return <></>
     }
 
     return (

@@ -26,6 +26,8 @@ import { trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { NEW_USER_GROUP_SLUGS } from 'common/group'
+import { PillButton } from './buttons/pill-button'
+import { toPairs } from 'lodash'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -46,6 +48,13 @@ const sortIndexes = [
 ]
 
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
+const filterOptions: { [label: string]: filter } = {
+  All: 'all',
+  Open: 'open',
+  Closed: 'closed',
+  Resolved: 'resolved',
+  'For you': 'personal',
+}
 
 export function ContractSearch(props: {
   querySortOptions?: {
@@ -156,18 +165,6 @@ export function ContractSearch(props: {
           }}
         />
         {/*// TODO track WHICH filter users are using*/}
-        <select
-          className="!select !select-bordered"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as filter)}
-          onBlur={trackCallback('select search filter')}
-        >
-          <option value="open">Open</option>
-          <option value="closed">Closed</option>
-          <option value="resolved">Resolved</option>
-          <option value="personal">For you</option>
-          <option value="all">All</option>
-        </select>
         {!hideOrderSelector && (
           <SortBy
             items={sortIndexes}
@@ -187,7 +184,17 @@ export function ContractSearch(props: {
 
       <Spacer h={3} />
 
-      {/*<Spacer h={4} />*/}
+      <Row className="gap-2">
+        {toPairs<filter>(filterOptions).map(([label, f]) => {
+          return (
+            <PillButton selected={filter === f} onSelect={() => setFilter(f)}>
+              {label}
+            </PillButton>
+          )
+        })}
+      </Row>
+
+      <Spacer h={3} />
 
       {filter === 'personal' &&
       (follows ?? []).length === 0 &&

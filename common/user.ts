@@ -38,6 +38,7 @@ export type User = {
 
   referredByUserId?: string
   referredByContractId?: string
+  lastPingTime?: number
 }
 
 export const STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 1000
@@ -57,7 +58,6 @@ export type PrivateUser = {
   initialIpAddress?: string
   apiKey?: string
   notificationPreferences?: notification_subscribe_types
-  lastTimeCheckedBonuses?: number
 }
 
 export type notification_subscribe_types = 'all' | 'less' | 'none'
@@ -69,3 +69,6 @@ export type PortfolioMetrics = {
   timestamp: number
   userId: string
 }
+
+export const MANIFOLD_USERNAME = 'ManifoldMarkets'
+export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'

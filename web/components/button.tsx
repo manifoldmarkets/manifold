@@ -1,12 +1,12 @@
 import { ReactNode } from 'react'
 import clsx from 'clsx'
 
-export default function Button(props: {
+export function Button(props: {
   className?: string
   onClick?: () => void
+  children?: ReactNode
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   color?: 'green' | 'red' | 'blue' | 'indigo' | 'yellow' | 'gray'
-  children?: ReactNode
   type?: 'button' | 'reset' | 'submit'
   disabled?: boolean
 }) {
@@ -20,11 +20,20 @@ export default function Button(props: {
     disabled = false
   } = props
 
+  const sizeClasses = {
+    xs: 'px-2.5 py-1.5 text-sm',
+    sm: 'px-3 py-2 text-sm',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-4 py-2 text-base',
+    xl: 'px-6 py-3 text-base',
+  }[size]
+
   return (
     <button
       type={type}
       className={clsx(
-        'font-md items-center justify-center rounded-md border border-transparent px-4 py-2 shadow-sm hover:transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+        'font-md items-center justify-center rounded-md border border-transparent shadow-sm hover:transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+        sizeClasses,
         color === 'green' && 'btn-primary text-white',
         color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
