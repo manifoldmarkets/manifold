@@ -161,7 +161,7 @@ function CreateManalinkForm(props: {
             <div className="form-control w-full">
               <label className="label">Message</label>
               <Textarea
-                placeholder={`From ${user.name}`}
+                placeholder={`from ${user.name}`}
                 className="input input-bordered resize-none"
                 autoFocus
                 value={newManalink.message}
