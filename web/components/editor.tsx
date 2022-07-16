@@ -123,6 +123,7 @@ export function TextEditor(props: {
 const useUploadMutation = (editor: Editor | null) =>
   useMutation(
     (files: File[]) =>
+      // TODO: Images should be uploaded under a particular username
       Promise.all(files.map((file) => uploadImage('default', file))),
     {
       onSuccess(urls) {

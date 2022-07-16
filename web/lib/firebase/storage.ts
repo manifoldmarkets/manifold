@@ -1,4 +1,5 @@
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import { nanoid } from 'nanoid'
 import { storage } from './init'
 
 // TODO: compress large images
@@ -7,7 +8,10 @@ export const uploadImage = async (
   file: File,
   onProgress?: (progress: number, isRunning: boolean) => void
 ) => {
-  const storageRef = ref(storage, `user-images/${username}/${file.name}`)
+  // Replace filename with a nanoid to avoid collisions
+  const [, ext] = file.name.split('.')
+  const filename = `${nanoid(10)}.${ext}`
+  const storageRef = ref(storage, `user-images/${username}/${filename}`)
   const uploadTask = uploadBytesResumable(storageRef, file)
 
   let resolvePromise: (url: string) => void
