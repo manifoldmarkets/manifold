@@ -4,15 +4,17 @@ import clsx from 'clsx'
 export default function Button(props: {
   className?: string
   onClick?: () => void
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   color?: 'green' | 'red' | 'blue' | 'indigo' | 'yellow' | 'gray'
   children?: ReactNode
   type?: 'button' | 'reset' | 'submit'
   disabled?: boolean
 }) {
   const {
+    children,
     className,
     onClick,
-    children,
+    size='md',
     color = 'indigo',
     type = 'button',
     disabled = false
