@@ -98,15 +98,16 @@ export function TextEditor(props: {
         {editor && (
           <FloatingMenu
             editor={editor}
-            className="w-full text-sm text-slate-300"
+            className="-ml-2 mr-2 w-full text-sm text-slate-300"
           >
-            Type <em>*anything*</em> or even paste or{' '}
+            Type <em>*markdown*</em>. Paste or{' '}
             <FileUploadButton
               className="link text-blue-300"
               onFiles={upload.mutate}
             >
-              upload an image
-            </FileUploadButton>
+              upload
+            </FileUploadButton>{' '}
+            images!
           </FloatingMenu>
         )}
         <EditorContent editor={editor} />
