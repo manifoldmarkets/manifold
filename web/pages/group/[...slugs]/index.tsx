@@ -52,8 +52,8 @@ import { FollowList } from 'web/components/follow-list'
 import { SearchIcon } from '@heroicons/react/outline'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
-import { OnlineUserList } from 'web/components/online-user-list'
 import { searchInAny } from 'common/util/parse'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -164,6 +164,9 @@ export default function GroupPage(props: {
       writeReferralInfo(creator.username, undefined, referrer, group?.slug)
   }, [user, creator, group, router])
 
+  const { width } = useWindowSize()
+  const showChatSidebar = (width ?? 1280) >= 1280
+
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
   }
@@ -171,16 +174,6 @@ export default function GroupPage(props: {
   const isCreator = user && group && user.id === group.creatorId
   const isMember = user && memberIds.includes(user.id)
 
-  const rightSidebar = (
-    <Col className="mt-6 hidden xl:block">
-      <JoinOrAddQuestionsButtons
-        group={group}
-        user={user}
-        isMember={!!isMember}
-      />
-      {/* <OnlineUserList users={members} /> */}
-    </Col>
-  )
   const leaderboard = (
     <Col>
       <GroupLeaderboards
@@ -206,22 +199,25 @@ export default function GroupPage(props: {
     </Col>
   )
 
+  const chatTab = group.chatDisabled ? (
+    <></>
+  ) : (
+    <Col className="">
+      {messages ? (
+        <GroupChat messages={messages} user={user} group={group} tips={tips} />
+      ) : (
+        <LoadingIndicator />
+      )}
+    </Col>
+  )
+
   const tabs = [
-    ...(group.chatDisabled
+    ...(group.chatDisabled || showChatSidebar
       ? []
       : [
           {
             title: 'Chat',
-            content: messages ? (
-              <GroupChat
-                messages={messages}
-                user={user}
-                group={group}
-                tips={tips}
-              />
-            ) : (
-              <LoadingIndicator />
-            ),
+            content: chatTab,
             href: groupPath(group.slug, GROUP_CHAT_SLUG),
           },
         ]),
@@ -251,8 +247,13 @@ export default function GroupPage(props: {
     },
   ]
   const tabIndex = tabs.map((t) => t.title).indexOf(page ?? GROUP_CHAT_SLUG)
+
   return (
-    <Page rightSidebar={rightSidebar} className="!pb-0">
+    <Page
+      rightSidebar={showChatSidebar ? chatTab : undefined}
+      rightSidebarClassName="!top-0"
+      className="!max-w-none !pb-0"
+    >
       <SEO
         title={group.name}
         description={`Created by ${creator.name}. ${group.about}`}
