@@ -13,7 +13,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { firebaseLogout, updateUser, User } from 'web/lib/firebase/users'
+import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
@@ -193,10 +193,13 @@ export default function Sidebar(props: { className?: string }) {
 
   const user = useUser()
   const privateUser = usePrivateUser(user?.id)
+  // usePing(user?.id)
+
   const navigationOptions = !user ? signedOutNavigation : getNavigation()
   const mobileNavigationOptions = !user
     ? signedOutMobileNavigation
     : signedInMobileNavigation
+
   const memberItems = (
     useMemberGroups(
       user?.id,
@@ -207,16 +210,6 @@ export default function Sidebar(props: { className?: string }) {
     name: group.name,
     href: `${groupPath(group.slug)}/${GROUP_CHAT_SLUG}`,
   }))
-
-  useEffect(() => {
-    if (!user) return
-    const pingInterval = setInterval(() => {
-      updateUser(user.id, {
-        lastPingTime: Date.now(),
-      })
-    }, 1000 * 30)
-    return () => clearInterval(pingInterval)
-  }, [user])
 
   return (
     <nav aria-label="Sidebar" className={className}>
