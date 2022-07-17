@@ -8,9 +8,11 @@ export function Page(props: {
   rightSidebar?: ReactNode
   suspend?: boolean
   className?: string
+  rightSidebarClassName?: string
   children?: ReactNode
 }) {
-  const { children, rightSidebar, suspend, className } = props
+  const { children, rightSidebar, suspend, className, rightSidebarClassName } =
+    props
 
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
   return (
@@ -37,7 +39,11 @@ export function Page(props: {
           <div className="block xl:hidden">{rightSidebar}</div>
         </main>
         <aside className="hidden xl:col-span-3 xl:block">
-          <div className="sticky top-4 space-y-4">{rightSidebar}</div>
+          <div
+            className={clsx('sticky top-4 space-y-4', rightSidebarClassName)}
+          >
+            {rightSidebar}
+          </div>
         </aside>
       </div>
 
