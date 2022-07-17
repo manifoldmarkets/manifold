@@ -13,7 +13,7 @@ import {
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
-import { getBinaryCpmmBetInfo } from 'common/new-bet'
+import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
 import { Bet, LimitBet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api'
@@ -33,7 +33,10 @@ import { SellRow } from './sell-row'
 import { useSaveBinaryShares } from './use-save-binary-shares'
 import { SignUpPrompt } from './sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
-import { ProbabilityInput } from './probability-input'
+import {
+  ProbabilityInput,
+  ProbabilityOrNumericInput,
+} from './probability-input'
 import { track } from 'web/lib/service/analytics'
 import { removeUndefinedProps } from 'common/util/object'
 import { useUnfilledBets } from 'web/hooks/use-bets'
@@ -76,12 +79,20 @@ export function BetPanel(props: {
           isLimitOrder={isLimitOrder}
           setIsLimitOrder={setIsLimitOrder}
         />
-        <BuyPanel
-          contract={contract}
-          user={user}
-          isLimitOrder={isLimitOrder}
-          unfilledBets={unfilledBets}
-        />
+        {isLimitOrder ? (
+          <RangeOrderPanel
+            contract={contract}
+            user={user}
+            unfilledBets={unfilledBets}
+          />
+        ) : (
+          <BuyPanel
+            contract={contract}
+            user={user}
+            isLimitOrder={isLimitOrder}
+            unfilledBets={unfilledBets}
+          />
+        )}
 
         <SignUpPrompt />
       </Col>
@@ -396,6 +407,219 @@ function BuyPanel(props: {
       {wasSubmitted && (
         <div className="mt-4">{isLimitOrder ? 'Order' : 'Bet'} submitted!</div>
       )}
+    </>
+  )
+}
+
+function RangeOrderPanel(props: {
+  contract: CPMMBinaryContract | PseudoNumericContract
+  user: User | null | undefined
+  unfilledBets: Bet[]
+  onBuySuccess?: () => void
+}) {
+  const { contract, user, unfilledBets, onBuySuccess } = props
+
+  const initialProb = getProbability(contract)
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+
+  const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const [lowLimitProb, setLowLimitProb] = useState<number | undefined>()
+  const [highLimitProb, setHighLimitProb] = useState<number | undefined>()
+  const betChoice = 'YES'
+  const [error, setError] = useState<string | undefined>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wasSubmitted, setWasSubmitted] = useState(false)
+
+  function onBetChange(newAmount: number | undefined) {
+    setWasSubmitted(false)
+    setBetAmount(newAmount)
+  }
+
+  async function submitBet() {
+    if (!user || !betAmount) return
+
+    const limitProbScaled =
+      lowLimitProb !== undefined ? lowLimitProb / 100 : undefined
+
+    setError(undefined)
+    setIsSubmitting(true)
+
+    placeBet(
+      removeUndefinedProps({
+        amount: betAmount,
+        outcome: betChoice,
+        contractId: contract.id,
+        limitProb: limitProbScaled,
+      })
+    )
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        setWasSubmitted(true)
+        setBetAmount(undefined)
+        if (onBuySuccess) onBuySuccess()
+      })
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.toString())
+        } else {
+          console.error(e)
+          setError('Error placing bet')
+        }
+        setIsSubmitting(false)
+      })
+
+    track('bet', {
+      location: 'bet panel',
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount: betAmount,
+      outcome: betChoice,
+      isLimitOrder: true,
+      limitProb: limitProbScaled,
+    })
+  }
+
+  const betDisabled = isSubmitting || !betAmount || error
+
+  const lowProbFrac = (lowLimitProb ?? initialProb * 100) / 100
+  const {
+    currentPayout: lowPayout,
+    currentReturn: lowReturn,
+    totalFees: lowFees,
+  } = getBinaryBetStats(
+    'YES',
+    betAmount ?? 0,
+    contract,
+    lowProbFrac,
+    unfilledBets as LimitBet[]
+  )
+  const lowReturnPercent = formatPercent(lowReturn)
+
+  const highProbFrac = (highLimitProb ?? initialProb * 100) / 100
+  const {
+    currentPayout: highPayout,
+    currentReturn: highReturn,
+    totalFees: highFees,
+  } = getBinaryBetStats(
+    'NO',
+    betAmount ?? 0,
+    contract,
+    highProbFrac,
+    unfilledBets as LimitBet[]
+  )
+  const highReturnPercent = formatPercent(highReturn)
+
+  return (
+    <>
+      <div className="my-3 text-sm text-gray-500">
+        Trigger when the {isPseudoNumeric ? 'value' : 'probability'} reaches low
+        or high limit.
+      </div>
+
+      <Row className="items-center gap-4">
+        <Col className="gap-2">
+          <div className="ml-1 text-sm text-gray-500">Low</div>
+          <ProbabilityOrNumericInput
+            contract={contract}
+            prob={lowLimitProb}
+            setProb={setLowLimitProb}
+            isSubmitting={isSubmitting}
+            placeholder={''}
+          />
+        </Col>
+        <Col className="gap-2">
+          <div className="ml-1 text-sm text-gray-500">High</div>
+          <ProbabilityOrNumericInput
+            contract={contract}
+            prob={highLimitProb}
+            setProb={setHighLimitProb}
+            isSubmitting={isSubmitting}
+            placeholder={''}
+          />
+        </Col>
+      </Row>
+
+      <div className="my-3 text-left text-sm text-gray-500">
+        Max amount<span className="ml-1 text-red-500">*</span>
+      </div>
+      <BuyAmountInput
+        inputClassName="w-full max-w-none"
+        amount={betAmount}
+        onChange={onBetChange}
+        error={error}
+        setError={setError}
+        disabled={isSubmitting}
+      />
+
+      <Col className="mt-3 w-full gap-3">
+        <Row className="items-center justify-between gap-2 text-sm">
+          <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+            <div>
+              {isPseudoNumeric ? (
+                'Max payout'
+              ) : (
+                <>
+                  Max <BinaryOutcomeLabel outcome={'YES'} /> payout
+                </>
+              )}
+            </div>
+            <InfoTooltip
+              text={`Includes ${formatMoneyWithDecimals(lowFees)} in fees`}
+            />
+          </Row>
+          <div>
+            <span className="mr-2 whitespace-nowrap">
+              {formatMoney(lowPayout)}
+            </span>
+            (+{lowReturnPercent})
+          </div>
+        </Row>
+        <Row className="items-center justify-between gap-2 text-sm">
+          <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+            <div>
+              {isPseudoNumeric ? (
+                'Max payout'
+              ) : (
+                <>
+                  Max <BinaryOutcomeLabel outcome={'NO'} /> payout
+                </>
+              )}
+            </div>
+            <InfoTooltip
+              text={`Includes ${formatMoneyWithDecimals(highFees)} in fees`}
+            />
+          </Row>
+          <div>
+            <span className="mr-2 whitespace-nowrap">
+              {formatMoney(highPayout)}
+            </span>
+            (+{highReturnPercent})
+          </div>
+        </Row>
+      </Col>
+
+      <Spacer h={8} />
+
+      {user && (
+        <button
+          className={clsx(
+            'btn flex-1',
+            betDisabled
+              ? 'btn-disabled'
+              : betChoice === 'YES'
+              ? 'btn-primary'
+              : 'border-none bg-red-400 hover:bg-red-500',
+            isSubmitting ? 'loading' : ''
+          )}
+          onClick={betDisabled ? undefined : submitBet}
+        >
+          {isSubmitting ? 'Submitting...' : 'Submit order'}
+        </button>
+      )}
+
+      {wasSubmitted && <div className="mt-4">Order submitted!</div>}
     </>
   )
 }

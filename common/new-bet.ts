@@ -1,4 +1,4 @@
-import { sortBy, sumBy } from 'lodash'
+import { sortBy, sum, sumBy } from 'lodash'
 
 import { Bet, fill, LimitBet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
 import {
@@ -237,6 +237,32 @@ export const getBinaryCpmmBetInfo = (
     newTotalLiquidity,
     makers,
   }
+}
+
+export const getBinaryBetStats = (
+  outcome: 'YES' | 'NO',
+  betAmount: number,
+  contract: CPMMBinaryContract | PseudoNumericContract,
+  limitProb: number,
+  unfilledBets: LimitBet[]
+) => {
+  const { newBet } = getBinaryCpmmBetInfo(
+    outcome,
+    betAmount ?? 0,
+    contract,
+    limitProb,
+    unfilledBets as LimitBet[]
+  )
+  const remainingMatched =
+    ((newBet.orderAmount ?? 0) - newBet.amount) /
+    (outcome === 'YES' ? limitProb : 1 - limitProb)
+  const currentPayout = newBet.shares + remainingMatched
+
+  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
+
+  const totalFees = sum(Object.values(newBet.fees))
+
+  return { currentPayout, currentReturn, totalFees }
 }
 
 export const getNewBinaryDpmBetInfo = (

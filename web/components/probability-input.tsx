@@ -1,4 +1,7 @@
 import clsx from 'clsx'
+import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import { getPseudoProbability } from 'common/pseudo-numeric'
+import { BucketInput } from './bucket-input'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 
@@ -6,10 +9,12 @@ export function ProbabilityInput(props: {
   prob: number | undefined
   onChange: (newProb: number | undefined) => void
   disabled?: boolean
+  placeholder?: string
   className?: string
   inputClassName?: string
 }) {
-  const { prob, onChange, disabled, className, inputClassName } = props
+  const { prob, onChange, disabled, placeholder, className, inputClassName } =
+    props
 
   const onProbChange = (str: string) => {
     let prob = parseInt(str.replace(/\D/g, ''))
@@ -35,7 +40,7 @@ export function ProbabilityInput(props: {
           min={1}
           pattern="[0-9]*"
           inputMode="numeric"
-          placeholder="0"
+          placeholder={placeholder ?? '0'}
           maxLength={2}
           value={prob ?? ''}
           disabled={disabled}
@@ -45,5 +50,44 @@ export function ProbabilityInput(props: {
       </label>
       <Spacer h={4} />
     </Col>
+  )
+}
+
+export function ProbabilityOrNumericInput(props: {
+  contract: CPMMBinaryContract | PseudoNumericContract
+  prob: number | undefined
+  setProb: (prob: number | undefined) => void
+  isSubmitting: boolean
+  placeholder?: string
+}) {
+  const { contract, prob, setProb, isSubmitting, placeholder } = props
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+
+  return isPseudoNumeric ? (
+    <BucketInput
+      contract={contract}
+      onBucketChange={(value) =>
+        setProb(
+          value === undefined
+            ? undefined
+            : 100 *
+                getPseudoProbability(
+                  value,
+                  contract.min,
+                  contract.max,
+                  contract.isLogScale
+                )
+        )
+      }
+      isSubmitting={isSubmitting}
+    />
+  ) : (
+    <ProbabilityInput
+      inputClassName="w-full max-w-none"
+      prob={prob}
+      onChange={setProb}
+      disabled={isSubmitting}
+      placeholder={placeholder}
+    />
   )
 }
