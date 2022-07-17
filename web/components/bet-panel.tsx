@@ -554,53 +554,59 @@ function RangeOrderPanel(props: {
       />
 
       <Col className="mt-3 w-full gap-3">
-        <Row className="items-center justify-between gap-2 text-sm">
-          <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+        {lowLimitProb !== undefined && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+              <div>
+                {isPseudoNumeric ? (
+                  'Max payout'
+                ) : (
+                  <>
+                    Max <BinaryOutcomeLabel outcome={'YES'} /> payout
+                  </>
+                )}
+              </div>
+              <InfoTooltip
+                text={`Includes ${formatMoneyWithDecimals(lowFees)} in fees`}
+              />
+            </Row>
             <div>
-              {isPseudoNumeric ? (
-                'Max payout'
-              ) : (
-                <>
-                  Max <BinaryOutcomeLabel outcome={'YES'} /> payout
-                </>
-              )}
+              <span className="mr-2 whitespace-nowrap">
+                {formatMoney(lowPayout)}
+              </span>
+              (+{lowReturnPercent})
             </div>
-            <InfoTooltip
-              text={`Includes ${formatMoneyWithDecimals(lowFees)} in fees`}
-            />
           </Row>
-          <div>
-            <span className="mr-2 whitespace-nowrap">
-              {formatMoney(lowPayout)}
-            </span>
-            (+{lowReturnPercent})
-          </div>
-        </Row>
-        <Row className="items-center justify-between gap-2 text-sm">
-          <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+        )}
+        {highLimitProb !== undefined && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+              <div>
+                {isPseudoNumeric ? (
+                  'Max payout'
+                ) : (
+                  <>
+                    Max <BinaryOutcomeLabel outcome={'NO'} /> payout
+                  </>
+                )}
+              </div>
+              <InfoTooltip
+                text={`Includes ${formatMoneyWithDecimals(highFees)} in fees`}
+              />
+            </Row>
             <div>
-              {isPseudoNumeric ? (
-                'Max payout'
-              ) : (
-                <>
-                  Max <BinaryOutcomeLabel outcome={'NO'} /> payout
-                </>
-              )}
+              <span className="mr-2 whitespace-nowrap">
+                {formatMoney(highPayout)}
+              </span>
+              (+{highReturnPercent})
             </div>
-            <InfoTooltip
-              text={`Includes ${formatMoneyWithDecimals(highFees)} in fees`}
-            />
           </Row>
-          <div>
-            <span className="mr-2 whitespace-nowrap">
-              {formatMoney(highPayout)}
-            </span>
-            (+{highReturnPercent})
-          </div>
-        </Row>
+        )}
       </Col>
 
-      <Spacer h={8} />
+      {(lowLimitProb !== undefined || highLimitProb !== undefined) && (
+        <Spacer h={8} />
+      )}
 
       {user && (
         <button
