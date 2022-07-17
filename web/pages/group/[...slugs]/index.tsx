@@ -178,7 +178,7 @@ export default function GroupPage(props: {
         user={user}
         isMember={!!isMember}
       />
-      <OnlineUserList users={members} />
+      {/* <OnlineUserList users={members} /> */}
     </Col>
   )
   const leaderboard = (
