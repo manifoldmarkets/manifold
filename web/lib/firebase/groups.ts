@@ -89,11 +89,11 @@ export async function getGroupsWithContractId(
   setGroups(await getValues<Group>(q))
 }
 
-export async function addUserToGroupViaSlug(groupSlug: string, userId: string) {
+export async function addUserToGroupViaId(groupId: string, userId: string) {
   // get group to get the member ids
-  const group = await getGroupBySlug(groupSlug)
+  const group = await getGroup(groupId)
   if (!group) {
-    console.error(`Group not found: ${groupSlug}`)
+    console.error(`Group not found: ${groupId}`)
     return
   }
   return await joinGroup(group, userId)

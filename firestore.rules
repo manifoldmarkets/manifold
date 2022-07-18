@@ -22,11 +22,11 @@ service cloud.firestore {
       allow read;
       allow update: if resource.data.id == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'referredByContractId', 'lastPingTime']);
+                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime']);
       // User referral rules
       allow update: if resource.data.id == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['referredByUserId'])
+                          .hasOnly(['referredByUserId', 'referredByContractId', 'referredByGroupId'])
                           // only one referral allowed per user
                           && !("referredByUserId" in resource.data)
                           // user can't refer themselves
