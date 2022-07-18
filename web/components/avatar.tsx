@@ -31,6 +31,7 @@ export function Avatar(props: {
         !noLink && 'cursor-pointer',
         className
       )}
+      style={{ maxWidth: `${s * 0.25}rem` }}
       src={avatarUrl}
       onClick={onClick}
       alt={username}
