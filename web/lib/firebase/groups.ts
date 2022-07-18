@@ -68,10 +68,10 @@ export function listenForMemberGroups(
   const q = query(groups, where('memberIds', 'array-contains', userId))
   const sorter = (group: Group) => {
     if (sort?.by === 'mostRecentChatActivityTime') {
-      return group.mostRecentChatActivityTime ?? group.mostRecentActivityTime
+      return group.mostRecentChatActivityTime ?? group.createdTime
     }
     if (sort?.by === 'mostRecentContractAddedTime') {
-      return group.mostRecentContractAddedTime ?? group.mostRecentActivityTime
+      return group.mostRecentContractAddedTime ?? group.createdTime
     }
     return group.mostRecentActivityTime
   }
