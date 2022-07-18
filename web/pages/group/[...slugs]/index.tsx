@@ -165,7 +165,9 @@ export default function GroupPage(props: {
   }, [user, creator, group, router])
 
   const { width } = useWindowSize()
-  const showChatSidebar = (width ?? 1280) >= 1280
+  const chatDisabled = !group || group.chatDisabled
+  const showChatSidebar = !chatDisabled && (width ?? 1280) >= 1280
+  const showChatTab = !chatDisabled && !showChatSidebar
 
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
@@ -199,9 +201,7 @@ export default function GroupPage(props: {
     </Col>
   )
 
-  const chatTab = group.chatDisabled ? (
-    <></>
-  ) : (
+  const chatTab = (
     <Col className="">
       {messages ? (
         <GroupChat messages={messages} user={user} group={group} tips={tips} />
@@ -211,8 +211,19 @@ export default function GroupPage(props: {
     </Col>
   )
 
+  const questionsTab = (
+    <ContractSearch
+      querySortOptions={{
+        shouldLoadFromStorage: true,
+        defaultSort: getSavedSort() ?? 'newest',
+        defaultFilter: 'open',
+      }}
+      additionalFilter={{ groupSlug: group.slug }}
+    />
+  )
+
   const tabs = [
-    ...(group.chatDisabled || showChatSidebar
+    ...(!showChatTab
       ? []
       : [
           {
@@ -223,16 +234,7 @@ export default function GroupPage(props: {
         ]),
     {
       title: 'Questions',
-      content: (
-        <ContractSearch
-          querySortOptions={{
-            shouldLoadFromStorage: true,
-            defaultSort: getSavedSort() ?? 'newest',
-            defaultFilter: 'open',
-          }}
-          additionalFilter={{ groupSlug: group.slug }}
-        />
-      ),
+      content: questionsTab,
       href: groupPath(group.slug, 'questions'),
     },
     {
@@ -251,8 +253,8 @@ export default function GroupPage(props: {
   return (
     <Page
       rightSidebar={showChatSidebar ? chatTab : undefined}
-      rightSidebarClassName="!top-0"
-      className="!max-w-none !pb-0"
+      rightSidebarClassName={showChatSidebar ? '!top-0' : ''}
+      className={showChatSidebar ? '!max-w-none !pb-0' : ''}
     >
       <SEO
         title={group.name}
