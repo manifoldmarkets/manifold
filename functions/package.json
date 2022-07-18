@@ -12,6 +12,7 @@
     "start": "yarn shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
+    "dev": "nodemon src/serve.ts",
     "serve": "firebase use dev && yarn build && firebase emulators:start --only functions,firestore --import=./firestore_export",
     "db:update-local-from-remote": "yarn db:backup-remote && gsutil rsync -r gs://$npm_package_config_firestore/firestore_export ./firestore_export",
     "db:backup-local": "firebase emulators:export --force ./firestore_export",
