@@ -123,7 +123,7 @@ export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
   return {
     opts,
     handler: async (req: Request, res: Response) => {
-      log('Request processing started.')
+      log(`${req.method} ${req.url} ${JSON.stringify(req.body)}`)
       try {
         if (opts.method !== req.method) {
           throw new APIError(405, `This endpoint supports only ${opts.method}.`)
