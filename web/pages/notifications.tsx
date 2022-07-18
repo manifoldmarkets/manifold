@@ -713,8 +713,12 @@ function QuestionOrGroupLink(props: {
       href={
         sourceContractCreatorUsername
           ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-          : (sourceType === 'group' || sourceType === 'tip') && sourceSlug
+          : // User's added to group or received a tip there
+          (sourceType === 'group' || sourceType === 'tip') && sourceSlug
           ? `${groupPath(sourceSlug)}`
+          : // User referral via group
+          sourceSlug?.includes('/group/')
+          ? `${sourceSlug}`
           : ''
       }
       onClick={() =>
@@ -745,12 +749,16 @@ function getSourceUrl(notification: Notification) {
   } = notification
   if (sourceType === 'follow') return `/${sourceUserUsername}`
   if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
+  // User referral via contract:
   if (
     sourceContractCreatorUsername &&
     sourceContractSlug &&
     sourceType === 'user'
   )
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
+  // User referral:
+  if (sourceType === 'user' && !sourceContractSlug)
+    return `/${sourceUserUsername}`
   if (sourceType === 'tip' && sourceContractSlug)
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
   if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`

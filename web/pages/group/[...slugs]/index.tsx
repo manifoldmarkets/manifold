@@ -161,7 +161,7 @@ export default function GroupPage(props: {
       referrer?: string
     }
     if (!user && router.isReady)
-      writeReferralInfo(creator.username, undefined, referrer, group?.slug)
+      writeReferralInfo(creator.username, undefined, referrer, group?.id)
   }, [user, creator, group, router])
 
   const { width } = useWindowSize()
