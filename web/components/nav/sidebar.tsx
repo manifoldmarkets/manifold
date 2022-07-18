@@ -289,15 +289,17 @@ function GroupsList(props: {
 
   // Set notification as seen if our current page is equal to the isSeenOnHref property
   useEffect(() => {
-    const currentPageGroupSlug = currentPage.split('/')[2]
+    const currentPageWithoutQuery = currentPage.split('?')[0]
+    const currentPageGroupSlug = currentPageWithoutQuery.split('/')[2]
     preferredNotifications.forEach((notification) => {
       if (
         notification.isSeenOnHref === currentPage ||
-        // Old chat style group chat notif ended just with the group slug
-        notification.isSeenOnHref?.includes(currentPageGroupSlug) ||
+        // Old chat style group chat notif was just /group/slug
+        (notification.isSeenOnHref &&
+          currentPageWithoutQuery.includes(notification.isSeenOnHref)) ||
         // They're on the home page, so if they've a chat notif, they're seeing the chat
         (notification.isSeenOnHref?.endsWith(GROUP_CHAT_SLUG) &&
-          currentPage.endsWith(currentPageGroupSlug))
+          currentPageWithoutQuery.endsWith(currentPageGroupSlug))
       ) {
         setNotificationsAsSeen([notification])
       }
