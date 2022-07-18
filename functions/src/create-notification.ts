@@ -411,6 +411,7 @@ export const createGroupCommentNotification = async (
   group: Group,
   idempotencyKey: string
 ) => {
+  if (toUserId === fromUser.id) return
   const notificationRef = firestore
     .collection(`/users/${toUserId}/notifications`)
     .doc(idempotencyKey)

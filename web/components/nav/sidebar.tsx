@@ -294,7 +294,7 @@ function GroupsList(props: {
       if (
         notification.isSeenOnHref === currentPage ||
         // Old chat style group chat notif ended just with the group slug
-        notification.isSeenOnHref?.endsWith(currentPageGroupSlug) ||
+        notification.isSeenOnHref?.includes(currentPageGroupSlug) ||
         // They're on the home page, so if they've a chat notif, they're seeing the chat
         (notification.isSeenOnHref?.endsWith(GROUP_CHAT_SLUG) &&
           currentPage.endsWith(currentPageGroupSlug))
