@@ -379,12 +379,10 @@ export function NewContract(props: {
             type={'date'}
             className="input input-bordered mt-4"
             onClick={(e) => e.stopPropagation()}
-            onChange={(e) =>
-              setCloseDate(dayjs(e.target.value).format('YYYY-MM-DD') || '')
-            }
+            onChange={(e) => setCloseDate(e.target.value)}
             min={Date.now()}
             disabled={isSubmitting}
-            value={dayjs(closeDate).format('YYYY-MM-DD')}
+            value={closeDate}
           />
           <input
             type={'time'}
