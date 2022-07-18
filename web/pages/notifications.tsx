@@ -1,6 +1,6 @@
 import { Tabs } from 'web/components/layout/tabs'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -43,6 +43,7 @@ import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Router from 'next/router'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -51,6 +52,15 @@ const HIGHLIGHT_CLASS = 'bg-indigo-50'
 export default function Notifications() {
   const user = useUser()
   const privateUser = usePrivateUser(user?.id)
+  const local = safeLocalStorage()
+  const localSavedNotifications = local?.getItem('notifications')
+  let localNotifications = [] as Notification[]
+  if (localSavedNotifications)
+    localNotifications = JSON.parse(localSavedNotifications)
+  const localSavedNotificationGroups = local?.getItem('notification-groups')
+  let localNotificationGroups = [] as NotificationGroup[]
+  if (localSavedNotificationGroups)
+    localNotificationGroups = JSON.parse(localSavedNotificationGroups)
 
   if (!user) return <Custom404 />
   return (
@@ -67,7 +77,16 @@ export default function Notifications() {
               {
                 title: 'Notifications',
                 content: privateUser ? (
-                  <NotificationsList privateUser={privateUser} />
+                  <NotificationsList
+                    privateUser={privateUser}
+                    cachedNotifications={localNotifications}
+                  />
+                ) : localNotifications && localNotifications.length > 0 ? (
+                  <div>
+                    <RenderNotificationGroups
+                      notificationGroups={localNotificationGroups}
+                    />
+                  </div>
                 ) : (
                   <LoadingIndicator />
                 ),
@@ -88,39 +107,13 @@ export default function Notifications() {
   )
 }
 
-function NotificationsList(props: { privateUser: PrivateUser }) {
-  const { privateUser } = props
-  const [page, setPage] = useState(0)
-  const allGroupedNotifications = usePreferredGroupedNotifications(privateUser)
-  const [paginatedGroupedNotifications, setPaginatedGroupedNotifications] =
-    useState<NotificationGroup[] | undefined>(undefined)
-
-  useEffect(() => {
-    if (!allGroupedNotifications) return
-    const start = page * NOTIFICATIONS_PER_PAGE
-    const end = start + NOTIFICATIONS_PER_PAGE
-    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
-    const remainingNotification = allGroupedNotifications.slice(end)
-    for (const notification of remainingNotification) {
-      if (notification.isSeen) break
-      else setNotificationsAsSeen(notification.notifications)
-    }
-    setPaginatedGroupedNotifications(maxNotificationsToShow)
-  }, [allGroupedNotifications, page])
-
-  if (!paginatedGroupedNotifications || !allGroupedNotifications)
-    return <LoadingIndicator />
-
+function RenderNotificationGroups(props: {
+  notificationGroups: NotificationGroup[]
+}) {
+  const { notificationGroups } = props
   return (
-    <div className={'min-h-[100vh]'}>
-      {paginatedGroupedNotifications.length === 0 && (
-        <div className={'mt-2'}>
-          You don't have any notifications. Try changing your settings to see
-          more.
-        </div>
-      )}
-
-      {paginatedGroupedNotifications.map((notification) =>
+    <>
+      {notificationGroups.map((notification) =>
         notification.type === 'income' ? (
           <IncomeNotificationGroupItem
             notificationGroup={notification}
@@ -138,6 +131,56 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
           />
         )
       )}
+    </>
+  )
+}
+
+function NotificationsList(props: {
+  privateUser: PrivateUser
+  cachedNotifications: Notification[]
+}) {
+  const { privateUser, cachedNotifications } = props
+  const [page, setPage] = useState(0)
+  const allGroupedNotifications = usePreferredGroupedNotifications(
+    privateUser,
+    cachedNotifications
+  )
+
+  const [paginatedGroupedNotifications, setPaginatedGroupedNotifications] =
+    useState<NotificationGroup[] | undefined>(undefined)
+
+  useMemo(() => {
+    if (!allGroupedNotifications) return
+    const start = page * NOTIFICATIONS_PER_PAGE
+    const end = start + NOTIFICATIONS_PER_PAGE
+    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
+    const remainingNotification = allGroupedNotifications.slice(end)
+    for (const notification of remainingNotification) {
+      if (notification.isSeen) break
+      else setNotificationsAsSeen(notification.notifications)
+    }
+    setPaginatedGroupedNotifications(maxNotificationsToShow)
+    const local = safeLocalStorage()
+    local?.setItem(
+      'notification-groups',
+      JSON.stringify(maxNotificationsToShow)
+    )
+  }, [allGroupedNotifications, page])
+
+  if (!paginatedGroupedNotifications || !allGroupedNotifications) return <div />
+
+  return (
+    <div className={'min-h-[100vh]'}>
+      {paginatedGroupedNotifications.length === 0 && (
+        <div className={'mt-2'}>
+          You don't have any notifications. Try changing your settings to see
+          more.
+        </div>
+      )}
+
+      <RenderNotificationGroups
+        notificationGroups={paginatedGroupedNotifications}
+      />
       {paginatedGroupedNotifications.length > 0 &&
         allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
           <Pagination

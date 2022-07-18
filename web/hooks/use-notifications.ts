@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { notification_subscribe_types, PrivateUser } from 'common/user'
 import { Notification } from 'common/notification'
 import {
@@ -6,8 +6,9 @@ import {
   listenForNotifications,
 } from 'web/lib/firebase/notifications'
 import { groupBy, map } from 'lodash'
-import { useFirestoreQuery } from '@react-query-firebase/firestore'
+import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -19,31 +20,47 @@ export type NotificationGroup = {
 
 // For some reason react-query subscriptions don't actually listen for notifications
 // Use useUnseenPreferredNotificationGroups to listen for new notifications
-export function usePreferredGroupedNotifications(privateUser: PrivateUser) {
+export function usePreferredGroupedNotifications(
+  privateUser: PrivateUser,
+  cachedNotifications?: Notification[]
+) {
   const [notificationGroups, setNotificationGroups] = useState<
     NotificationGroup[] | undefined
   >(undefined)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const key = `notifications-${privateUser.id}-all`
+  const [notifications, setNotifications] = useState<Notification[]>(
+    cachedNotifications ?? []
+  )
 
-  const result = useFirestoreQuery([key], getNotificationsQuery(privateUser.id))
-  useEffect(() => {
+  const result = useFirestoreQueryData(
+    ['notifications-all', privateUser.id],
+    getNotificationsQuery(privateUser.id)
+  )
+  useMemo(() => {
     if (result.isLoading) return
-    if (!result.data) return setNotifications([])
-    const notifications = result.data.docs.map(
-      (doc) => doc.data() as Notification
-    )
+    if (!result.data) return
+    const notifications = result.data as Notification[]
 
     const notificationsToShow = getAppropriateNotifications(
       notifications,
       privateUser.notificationPreferences
     ).filter((n) => !n.isSeenOnHref)
-    setNotifications(notificationsToShow)
-  }, [privateUser.notificationPreferences, result.data, result.isLoading])
+    const cachedIds = cachedNotifications?.map((n) => n.id)
+    if (notificationsToShow.some((n) => !cachedIds?.includes(n.id))) {
+      setNotifications(notificationsToShow)
+    }
+  }, [
+    cachedNotifications,
+    privateUser.notificationPreferences,
+    result.data,
+    result.isLoading,
+  ])
 
-  useEffect(() => {
+  useMemo(() => {
     if (!notifications) return
-
+    if (notifications.length > 0) {
+      const local = safeLocalStorage()
+      local?.setItem('notifications', JSON.stringify(notifications))
+    }
     const groupedNotifications = groupNotifications(notifications)
     setNotificationGroups(groupedNotifications)
   }, [notifications])
