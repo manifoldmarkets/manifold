@@ -3,7 +3,7 @@ import * as express from 'express'
 import { Express } from 'express'
 import { EndpointDefinition } from './api'
 
-const PORT = 8080
+const PORT = 8088
 
 import { initAdmin } from './scripts/script-init'
 initAdmin()
