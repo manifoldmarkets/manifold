@@ -37,10 +37,6 @@ class Application {
             this.currentProbability = 90 + (10 * Math.random());
         }, 2000);
 
-        // this.addTransaction("FoolRxN", 10, true);
-        // this.addTransaction("Akrolsmir", 100, false);
-        // this.addTransaction("SirSalty", 1000, true);
-
         const addRandomTransaction = () => {
             const customConfig: Config = {
                 dictionaries: [adjectives, colors, animals, countries],
@@ -73,8 +69,6 @@ class Application {
                     }
                     this.addTransaction(t.name, t.amount, t.yes);
                     lastAddedTimestamp = t.timestamp;
-
-                    // this.chart.data = this.chart.produceData();
                 }
             });
         }, 500);
@@ -83,7 +77,7 @@ class Application {
     }
 
     loadBettingHistory() {
-        const marketName = "will-elon-musk-buy-twitter-this-yea";//"test-d5dea0b38bbe";//
+        const marketName = "will-china-invade-taiwan-in-2022";//"test-d5dea0b38bbe";//
         fetch(`https://manifold.markets/api/v0/bets?market=${marketName}&limit=1000`)
         .then(r => <Promise<Bet[]>> r.json())
         .then(r => {
