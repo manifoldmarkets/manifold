@@ -36,8 +36,8 @@ export default class Chart {
     }
 
     resize() {
-        this.canvasElement.width = this.canvasElement.parentElement.clientWidth;
-        this.canvasElement.height = this.canvasElement.parentElement.clientHeight;
+        this.canvasElement.width = this.canvasElement.clientWidth;
+        this.canvasElement.height = this.canvasElement.clientHeight;
         console.log("Resize")
     }
 
@@ -62,8 +62,10 @@ export default class Chart {
 
         let grd = this.ctx.createLinearGradient(0, 0, 0, height);
         grd.addColorStop(0, "rgba(73, 201, 159, 0.8)");
+        // grd.addColorStop(0.5, "rgba(73, 201, 159, 0.2)");
         grd.addColorStop(1, "rgba(73, 201, 159, 0.0)");
 
+        const padding = 10;
         const numDataPoints = this.data.length;
         let minX = Number.MAX_VALUE;
         let maxX = -Number.MAX_VALUE;
@@ -87,17 +89,18 @@ export default class Chart {
 
         ctx.strokeStyle = "#49C99F";
         ctx.fillStyle = grd;//"rgba(73, 201, 159, 0.3)";
-        ctx.lineWidth = 8;
+        ctx.lineWidth = 5;
         ctx.beginPath();
         for (let i = 0; i < numDataPoints; i++) {
             let p = this.data[i];
-            let transformedX = ((p.x - minX) / (maxX - minX)) * width;
-            let transformedY = ((p.y - minY) / (maxY - minY)) * height;
+            let transformedX = ((p.x - minX) / (maxX - minX)) * (width - 2 * padding) + padding;
+            let transformedY = ((p.y - minY) / (maxY - minY)) * (height - 2 * padding) + padding;
+            // let transformedY = ((p.y - minY + padding) / (maxY - minY + 2 * padding)) * height;
             ctx.lineTo(transformedX, transformedY);
         }
         ctx.stroke();
-        ctx.lineTo(width, height);
-        ctx.lineTo(0, height);
+        ctx.lineTo(width - padding, height);
+        ctx.lineTo(padding, height);
         ctx.fill();
     }
 }

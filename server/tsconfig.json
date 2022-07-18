@@ -1,7 +1,46 @@
+// {
+//   "compilerOptions": {
+//     "module": "ES2020",
+//     "moduleResolution": "Node",
+//     "outDir": "./dist",
+//     "allowSyntheticDefaultImports": true,
+//     "rootDir": "src"
+//   },
+//   "references": [
+//     {
+//       "path": "../common",
+//       // add 'prepend' if you want to include the referenced project in your output file
+//       // "prepend": true,
+//     }
+//   ]
+// }
 {
+  "extends": "@tsconfig/node16/tsconfig.json",
   "compilerOptions": {
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "target": "es6",
-    "module": "commonjs",
-    "esModuleInterop": true
-  }
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "*": [
+        "node_modules/*",
+        "src/types/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "references": [
+    {
+      "path": "../common",
+      // add 'prepend' if you want to include the referenced project in your output file
+      // "prepend": true,
+    }
+  ]
 }

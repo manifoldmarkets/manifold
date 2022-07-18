@@ -3,10 +3,12 @@
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev:old": "npx nodemon --watch src src/index.mts",
-    "dev": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
+    "dev:old2": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
+    "dev": "nodemon --watch src --watch ../common --exec \"node --experimental-specifier-resolution=node --loader ts-node/esm\" src/index.ts",
     "start": "npm run dev"
   },
   "keywords": [],
@@ -14,12 +16,16 @@
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.1",
+    "moment": "^2.29.4",
+    "node-fetch": "^3.2.7",
     "tmi.js": "^1.5.0"
   },
   "devDependencies": {
+    "@tsconfig/node16": "^1.0.3",
     "@types/express": "^4.17.13",
     "@types/node": "^18.0.3",
     "@types/tmi.js": "^1.8.1",
+    "nodemon": "^2.0.19",
     "ts-node": "^10.8.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^4.7.4"

@@ -1,0 +1,126 @@
+/**
+ * COPYRIGHT 2022 Phil Bladen www.philbladen.co.uk
+ */
+
+$borderWidth: 8px;
+
+html,
+body {
+    // width: 100%;
+    margin: 0;
+    padding: 0;
+    
+    font-family: 'Readex Pro', sans-serif;
+    // font-family: 'Roboto Condensed', sans-serif;
+    
+    // overflow: hidden;
+    
+    font-size: calc(min(70px, 5.5vw));
+}
+
+body {
+    height: calc(100vh - 2*$borderWidth);
+    border: $borderWidth white solid;
+    border-radius: $borderWidth;
+
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    // justify-content: stretch;
+    
+    color: white;
+    // text-align: center;
+
+    // background-color: #212121;
+}
+
+.content {
+    width: 100%;
+    // max-height: 100%;
+    background-color: #212121;
+
+    // overflow: hidden;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+}
+
+#test {
+    width: 100%;
+    // height: calc(100% - 20px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+
+    // border: 10px white solid;
+    // border-radius: 10px;
+//     background: 
+//     linear-gradient(var(--color-bg), var(--color-bg)) padding-box,
+//     linear-gradient(to right, darkblue, darkorchid) border-box;
+//   border-radius: 50em;
+//   border: 4px solid transparent;
+
+
+}
+
+#chance {
+    &::after {
+        content: "%";
+    }
+}
+
+.transaction {
+    // display: flex;
+    // flex-direction: row;
+
+    transition: all 0.5s ease-in-out;
+    height: 0;
+    overflow: hidden;
+
+    font-family: 'Roboto Condensed', sans-serif;
+
+
+    font-size: 0.7em;
+
+    &.show {
+        height: 1.2em;
+    }
+
+    & > p {
+        white-space: pre-wrap;
+        margin: 0px;
+    }
+
+    .name {
+        display: inline;
+        color: #5682E7;
+    }
+
+    .yes {
+        display: inline;
+        color: #46C935;
+        &::after {
+            content: "YES";
+        }
+    }
+
+    .no {
+        display: inline;
+        color: #DE3434;
+        &::after {
+            content: "NO";
+        }
+    }
+
+    .amount {
+        display: inline;
+    }
+}
