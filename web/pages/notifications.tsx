@@ -47,12 +47,12 @@ import Custom404 from 'web/pages/404'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import Router from 'next/router'
 import { safeLocalStorage } from 'web/lib/util/local'
 import {
   getServerAuthenticatedUid,
   redirectIfLoggedOut,
 } from 'web/lib/firebase/server-auth'
+import { SiteLink } from 'web/components/site-link'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -100,7 +100,8 @@ export default function Notifications(props: { user: User }) {
                     privateUser={privateUser}
                     cachedNotifications={localNotifications}
                   />
-                ) : localNotifications && localNotifications.length > 0 ? (
+                ) : localNotificationGroups &&
+                  localNotificationGroups.length > 0 ? (
                   <div className={'min-h-[100vh]'}>
                     <RenderNotificationGroups
                       notificationGroups={localNotificationGroups}
@@ -440,7 +441,11 @@ function IncomeNotificationItem(props: {
         highlighted && HIGHLIGHT_CLASS
       )}
     >
-      <a href={getSourceUrl(notification)}>
+      <div className={'relative'}>
+        <SiteLink
+          href={getSourceUrl(notification) ?? ''}
+          className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
+        />
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <div className={'line-clamp-2 flex max-w-xl shrink '}>
             <div className={'inline'}>
@@ -466,7 +471,7 @@ function IncomeNotificationItem(props: {
           </div>
         </Row>
         <div className={'mt-4 border-b border-gray-300'} />
-      </a>
+      </div>
     </div>
   )
 }
@@ -655,24 +660,24 @@ function NotificationItem(props: {
         highlighted && HIGHLIGHT_CLASS
       )}
     >
-      <div
-        className={'cursor-pointer'}
-        onClick={(event) => {
-          event.stopPropagation()
-          Router.push(getSourceUrl(notification) ?? '')
-          track('Notification Clicked', {
-            type: 'notification item',
-            sourceType,
-            sourceUserName,
-            sourceUserAvatarUrl,
-            sourceUpdateType,
-            reasonText,
-            reason,
-            sourceUserUsername,
-            sourceText,
-          })
-        }}
-      >
+      <div className={'relative cursor-pointer'}>
+        <SiteLink
+          href={getSourceUrl(notification) ?? ''}
+          className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
+          onClick={() =>
+            track('Notification Clicked', {
+              type: 'notification item',
+              sourceType,
+              sourceUserName,
+              sourceUserAvatarUrl,
+              sourceUpdateType,
+              reasonText,
+              reason,
+              sourceUserUsername,
+              sourceText,
+            })
+          }
+        />
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <Avatar
             avatarUrl={
@@ -681,7 +686,7 @@ function NotificationItem(props: {
                 : sourceUserAvatarUrl
             }
             size={'sm'}
-            className={'mr-2'}
+            className={'z-10 mr-2'}
             username={
               questionNeedsResolution ? MANIFOLD_USERNAME : sourceUserUsername
             }
@@ -697,7 +702,7 @@ function NotificationItem(props: {
                   <UserLink
                     name={sourceUserName || ''}
                     username={sourceUserUsername || ''}
-                    className={'mr-1 flex-shrink-0'}
+                    className={'relative mr-1 flex-shrink-0'}
                     justFirstName={true}
                   />
                 )}
@@ -764,10 +769,8 @@ function QuestionOrGroupLink(props: {
       </span>
     )
   return (
-    <a
-      className={
-        'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2 '
-      }
+    <SiteLink
+      className={'relative ml-1 font-bold'}
       href={
         sourceContractCreatorUsername
           ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
@@ -792,7 +795,7 @@ function QuestionOrGroupLink(props: {
       }
     >
       {sourceContractTitle || sourceTitle}
-    </a>
+    </SiteLink>
   )
 }
 
