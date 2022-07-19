@@ -58,7 +58,7 @@ export default function Create() {
   }, [params.q])
 
   const creator = useUser()
-  if (!router.isReady || creator) return <div />
+  if (!router.isReady || !creator) return <div />
 
   return (
     <Page>
