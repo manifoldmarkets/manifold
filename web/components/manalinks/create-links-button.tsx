@@ -4,11 +4,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Title } from '../title'
 import { User } from 'common/user'
-import {
-  ManalinkCard,
-  ManalinkCardPreview,
-  ManalinkInfo,
-} from 'web/components/manalink-card'
+import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
 import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
 import Textarea from 'react-expanding-textarea'
