@@ -1,6 +1,6 @@
 import { Tabs } from 'web/components/layout/tabs'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -14,9 +14,14 @@ import {
   MANIFOLD_USERNAME,
   notification_subscribe_types,
   PrivateUser,
+  User,
 } from 'common/user'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { listenForPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
+import {
+  getUser,
+  listenForPrivateUser,
+  updatePrivateUser,
+} from 'web/lib/firebase/users'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -43,14 +48,38 @@ import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Router from 'next/router'
+import { safeLocalStorage } from 'web/lib/util/local'
+import {
+  getServerAuthenticatedUid,
+  redirectIfLoggedOut,
+} from 'web/lib/firebase/server-auth'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
-export default function Notifications() {
-  const user = useUser()
+export const getServerSideProps = redirectIfLoggedOut('/', async (ctx) => {
+  const uid = await getServerAuthenticatedUid(ctx)
+  if (!uid) {
+    return { props: { user: null } }
+  }
+  const user = await getUser(uid)
+  return { props: { user } }
+})
+
+export default function Notifications(props: { user: User }) {
+  const { user } = props
   const privateUser = usePrivateUser(user?.id)
+  const local = safeLocalStorage()
+  let localNotifications = [] as Notification[]
+  const localSavedNotificationGroups = local?.getItem('notification-groups')
+  let localNotificationGroups = [] as NotificationGroup[]
+  if (localSavedNotificationGroups) {
+    localNotificationGroups = JSON.parse(localSavedNotificationGroups)
+    localNotifications = localNotificationGroups
+      .map((g) => g.notifications)
+      .flat()
+  }
 
   if (!user) return <Custom404 />
   return (
@@ -67,7 +96,16 @@ export default function Notifications() {
               {
                 title: 'Notifications',
                 content: privateUser ? (
-                  <NotificationsList privateUser={privateUser} />
+                  <NotificationsList
+                    privateUser={privateUser}
+                    cachedNotifications={localNotifications}
+                  />
+                ) : localNotifications && localNotifications.length > 0 ? (
+                  <div className={'min-h-[100vh]'}>
+                    <RenderNotificationGroups
+                      notificationGroups={localNotificationGroups}
+                    />
+                  </div>
                 ) : (
                   <LoadingIndicator />
                 ),
@@ -88,39 +126,13 @@ export default function Notifications() {
   )
 }
 
-function NotificationsList(props: { privateUser: PrivateUser }) {
-  const { privateUser } = props
-  const [page, setPage] = useState(0)
-  const allGroupedNotifications = usePreferredGroupedNotifications(privateUser)
-  const [paginatedGroupedNotifications, setPaginatedGroupedNotifications] =
-    useState<NotificationGroup[] | undefined>(undefined)
-
-  useEffect(() => {
-    if (!allGroupedNotifications) return
-    const start = page * NOTIFICATIONS_PER_PAGE
-    const end = start + NOTIFICATIONS_PER_PAGE
-    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
-    const remainingNotification = allGroupedNotifications.slice(end)
-    for (const notification of remainingNotification) {
-      if (notification.isSeen) break
-      else setNotificationsAsSeen(notification.notifications)
-    }
-    setPaginatedGroupedNotifications(maxNotificationsToShow)
-  }, [allGroupedNotifications, page])
-
-  if (!paginatedGroupedNotifications || !allGroupedNotifications)
-    return <LoadingIndicator />
-
+function RenderNotificationGroups(props: {
+  notificationGroups: NotificationGroup[]
+}) {
+  const { notificationGroups } = props
   return (
-    <div className={'min-h-[100vh]'}>
-      {paginatedGroupedNotifications.length === 0 && (
-        <div className={'mt-2'}>
-          You don't have any notifications. Try changing your settings to see
-          more.
-        </div>
-      )}
-
-      {paginatedGroupedNotifications.map((notification) =>
+    <>
+      {notificationGroups.map((notification) =>
         notification.type === 'income' ? (
           <IncomeNotificationGroupItem
             notificationGroup={notification}
@@ -138,6 +150,52 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
           />
         )
       )}
+    </>
+  )
+}
+
+function NotificationsList(props: {
+  privateUser: PrivateUser
+  cachedNotifications: Notification[]
+}) {
+  const { privateUser, cachedNotifications } = props
+  const [page, setPage] = useState(0)
+  const allGroupedNotifications = usePreferredGroupedNotifications(
+    privateUser,
+    cachedNotifications
+  )
+  const paginatedGroupedNotifications = useMemo(() => {
+    if (!allGroupedNotifications) return
+    const start = page * NOTIFICATIONS_PER_PAGE
+    const end = start + NOTIFICATIONS_PER_PAGE
+    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
+    const remainingNotification = allGroupedNotifications.slice(end)
+    for (const notification of remainingNotification) {
+      if (notification.isSeen) break
+      else setNotificationsAsSeen(notification.notifications)
+    }
+    const local = safeLocalStorage()
+    local?.setItem(
+      'notification-groups',
+      JSON.stringify(maxNotificationsToShow)
+    )
+    return maxNotificationsToShow
+  }, [allGroupedNotifications, page])
+
+  if (!paginatedGroupedNotifications || !allGroupedNotifications) return <div />
+
+  return (
+    <div className={'min-h-[100vh]'}>
+      {paginatedGroupedNotifications.length === 0 && (
+        <div className={'mt-2'}>
+          You don't have any notifications. Try changing your settings to see
+          more.
+        </div>
+      )}
+
+      <RenderNotificationGroups
+        notificationGroups={paginatedGroupedNotifications}
+      />
       {paginatedGroupedNotifications.length > 0 &&
         allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
           <Pagination
