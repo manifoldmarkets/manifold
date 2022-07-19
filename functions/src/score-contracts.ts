@@ -14,8 +14,8 @@ const firestore = admin.firestore()
 
 async function scoreContractsInternal() {
   const now = Date.now()
-  const lastHour = now - 3600000
-  const last3Days = now - 2592000000
+  const lastHour = now - 60 * 60 * 1000
+  const last3Days = now - 1000 * 60 * 60 * 24 * 3
   const activeContractsSnap = await firestore
     .collection('contracts')
     .where('lastUpdatedTime', '>', lastHour)
