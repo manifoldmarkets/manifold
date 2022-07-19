@@ -54,10 +54,8 @@ export default function ContractSearchFirestore(props: {
     )
   } else if (sort === 'most-traded') {
     matches.sort((a, b) => b.volume - a.volume)
-  } else if (sort === 'most-popular') {
-    matches.sort(
-      (a, b) => (b.uniqueBettorCount ?? 0) - (a.uniqueBettorCount ?? 0)
-    )
+  } else if (sort === 'score') {
+    matches.sort((a, b) => (b.popularityScore ?? 0) - (a.popularityScore ?? 0))
   } else if (sort === '24-hour-vol') {
     // Use lodash for stable sort, so previous sort breaks all ties.
     matches = sortBy(matches, ({ volume7Days }) => -1 * volume7Days)
@@ -104,7 +102,7 @@ export default function ContractSearchFirestore(props: {
         >
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
-          <option value="most-popular">Most popular</option>
+          <option value="score">Most popular</option>
           <option value="most-traded">Most traded</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>

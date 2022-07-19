@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchBox } from 'react-instantsearch-hooks-web'
 import { track } from 'web/lib/service/analytics'
+import { DEFAULT_SORT } from 'web/components/contract-search'
 
 const MARKETS_SORT = 'markets_sort'
 
@@ -10,11 +11,11 @@ export type Sort =
   | 'newest'
   | 'oldest'
   | 'most-traded'
-  | 'most-popular'
   | '24-hour-vol'
   | 'close-date'
   | 'resolve-date'
   | 'last-updated'
+  | 'score'
 
 export function getSavedSort() {
   // TODO: this obviously doesn't work with SSR, common sense would suggest
@@ -31,7 +32,7 @@ export function useInitialQueryAndSort(options?: {
   shouldLoadFromStorage?: boolean
 }) {
   const { defaultSort, shouldLoadFromStorage } = defaults(options, {
-    defaultSort: 'most-popular',
+    defaultSort: DEFAULT_SORT,
     shouldLoadFromStorage: true,
   })
   const router = useRouter()
