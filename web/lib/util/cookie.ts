@@ -23,5 +23,11 @@ export const setCookie = (name: string, val: string, opts?: CookieOptions) => {
 
 // Note that this intentionally ignores the case where multiple cookies have
 // the same name but different paths. Hopefully we never need to think about it.
-export const getCookies = (cookies: string) =>
-  Object.fromEntries(cookies.split(';').map(decodeCookie))
+export const getCookies = (cookies: string) => {
+  const data = cookies.trim()
+  if (!data) {
+    return {}
+  } else {
+    return Object.fromEntries(data.split(';').map(decodeCookie))
+  }
+}
