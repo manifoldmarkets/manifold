@@ -1,6 +1,6 @@
 import { Tabs } from 'web/components/layout/tabs'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -164,11 +164,7 @@ function NotificationsList(props: {
     privateUser,
     cachedNotifications
   )
-
-  const [paginatedGroupedNotifications, setPaginatedGroupedNotifications] =
-    useState<NotificationGroup[] | undefined>(undefined)
-
-  useEffect(() => {
+  const paginatedGroupedNotifications = useMemo(() => {
     if (!allGroupedNotifications) return
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
@@ -178,12 +174,12 @@ function NotificationsList(props: {
       if (notification.isSeen) break
       else setNotificationsAsSeen(notification.notifications)
     }
-    setPaginatedGroupedNotifications(maxNotificationsToShow)
     const local = safeLocalStorage()
     local?.setItem(
       'notification-groups',
-      JSON.stringify(allGroupedNotifications)
+      JSON.stringify(maxNotificationsToShow)
     )
+    return maxNotificationsToShow
   }, [allGroupedNotifications, page])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications) return <div />
