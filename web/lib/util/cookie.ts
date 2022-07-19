@@ -6,10 +6,11 @@ const encodeCookie = (name: string, val: string) => {
 
 const decodeCookie = (cookie: string) => {
   const parts = cookie.trim().split('=')
-  if (parts.length != 2) {
+  if (parts.length < 2) {
     throw new Error(`Invalid cookie contents: ${cookie}`)
   }
-  return [parts[0], decodeURIComponent(parts[1])] as const
+  const rest = parts.slice(1).join('') // there may be more = in the value
+  return [parts[0], decodeURIComponent(rest)] as const
 }
 
 export const setCookie = (name: string, val: string, opts?: CookieOptions) => {
