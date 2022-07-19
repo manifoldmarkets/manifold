@@ -126,7 +126,7 @@ export default function Leaderboards(_props: {
       <Title text={'Leaderboards'} className={'hidden md:block'} />
       <Tabs
         currentPageForAnalytics={'leaderboards'}
-        defaultIndex={0}
+        defaultIndex={1}
         tabs={[
           {
             title: 'All Time',
