@@ -1,7 +1,7 @@
 import { EnvConfig } from './prod'
 
 export const ATLAS3_CONFIG: EnvConfig = {
-  domain: 'atlas2.manifold.markets',
+  domain: 'atlas3.manifold.markets',
   firebaseConfig: {
     apiKey: 'AIzaSyAAsJPN_4HAvmWtsdW2EIY2iRRbyTxEZQI',
     authDomain: 'atlas3-manifold.firebaseapp.com',
