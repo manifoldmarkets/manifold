@@ -22,6 +22,7 @@ export type EnvConfig = {
   // Currency controls
   fixedAnte?: number
   startingBalance?: number
+  referralBonus?: number
 }
 
 type FirebaseConfig = {
