@@ -28,7 +28,7 @@ export default function ClaimPage() {
         description="Send mana to anyone via link!"
         url="/send"
       />
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-xl px-2">
         <Title text={`Claim M$${manalink.amount} mana`} />
         <ManalinkCard
           user={user}
