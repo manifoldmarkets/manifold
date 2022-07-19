@@ -82,7 +82,7 @@ export function useUpdateQueryAndSort(props: {
   const setSort = (sort: Sort | undefined) => {
     if (sort !== router.query.s) {
       router.query.s = sort
-      router.push({ query: { ...router.query, s: sort } }, undefined, {
+      router.replace({ query: { ...router.query, s: sort } }, undefined, {
         shallow: true,
       })
       if (shouldLoadFromStorage) {
@@ -102,7 +102,7 @@ export function useUpdateQueryAndSort(props: {
         } else {
           delete router.query.q
         }
-        router.push({ query: router.query }, undefined, {
+        router.replace({ query: router.query }, undefined, {
           shallow: true,
         })
         track('search', { query })
