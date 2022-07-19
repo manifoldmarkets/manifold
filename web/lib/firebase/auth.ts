@@ -6,7 +6,7 @@ const TOKEN_KINDS = ['refresh', 'id'] as const
 type TokenKind = typeof TOKEN_KINDS[number]
 
 const getAuthCookieName = (kind: TokenKind) => {
-  const suffix = `${PROJECT_ID}_${kind}`.toUpperCase()
+  const suffix = `${PROJECT_ID}_${kind}`.toUpperCase().replaceAll('-', '_')
   return `FIREBASE_TOKEN_${suffix}`
 }
 
