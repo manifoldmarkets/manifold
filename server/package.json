@@ -1,7 +1,7 @@
 {
-  "name": "twitch-chat-bot",
+  "name": "server",
   "version": "0.0.1",
-  "description": "",
+  "private": true,
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -9,7 +9,6 @@
     "dev": "nodemon --config nodemon.json",
     "lint": "eslint src --ext ts"
   },
-  "keywords": [],
   "author": "Phil Bladen",
   "license": "MIT",
   "dependencies": {

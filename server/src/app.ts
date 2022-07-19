@@ -4,8 +4,8 @@ import fetch from "node-fetch";
 import { Client } from "tmi.js";
 import moment from "moment";
 
-import { Bet, LiteUser } from "../../common/defs";//"common/defs";
-import Transaction from "../../common/transaction";
+import { Bet, LiteUser } from "common/defs";//"common/defs";
+import Transaction from "common/transaction";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 

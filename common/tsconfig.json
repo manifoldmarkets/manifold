@@ -1,13 +1,14 @@
-// lib/tsconfig.json
 {
   "compilerOptions": {
-    /* Truncated compiler options to list only relevant options */
-    "module": "esnext",
-    "declaration": true, 
-    "declarationMap": true,
-    "rootDir": ".",   
+    "baseUrl": "../",
     "composite": true,
-    "outDir": "dist"
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noImplicitReturns": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2017"
   },
-  "references": []  // * Any project that is referenced must itself have a `references` array (which may be empty).
+  "include": ["**/*.ts"]
 }

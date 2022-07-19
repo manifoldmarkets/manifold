@@ -1,0 +1,17 @@
+{
+  "name": "twitch-chat-bot",
+  "private": true,
+  "workspaces": [
+    "common",
+    "server"
+  ],
+  "scripts": {
+  },
+  "keywords": [],
+  "author": "Phil Bladen",
+  "license": "MIT",
+  "dependencies": {
+  },
+  "devDependencies": {
+  }
+}
