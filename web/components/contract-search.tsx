@@ -39,13 +39,14 @@ const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
 const sortIndexes = [
   { label: 'Newest', value: indexPrefix + 'contracts-newest' },
   { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
-  { label: 'Most popular', value: indexPrefix + 'contracts-most-popular' },
+  { label: 'Most popular', value: indexPrefix + 'contracts-score' },
   { label: 'Most traded', value: indexPrefix + 'contracts-most-traded' },
   { label: '24h volume', value: indexPrefix + 'contracts-24-hour-vol' },
   { label: 'Last updated', value: indexPrefix + 'contracts-last-updated' },
   { label: 'Close date', value: indexPrefix + 'contracts-close-date' },
   { label: 'Resolve date', value: indexPrefix + 'contracts-resolve-date' },
 ]
+export const DEFAULT_SORT = 'score'
 
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 const filterOptions: { [label: string]: filter } = {
@@ -95,7 +96,7 @@ export function ContractSearch(props: {
     .map(({ value }) => value)
     .includes(`${indexPrefix}contracts-${initialSort ?? ''}`)
     ? initialSort
-    : querySortOptions?.defaultSort ?? 'most-popular'
+    : querySortOptions?.defaultSort ?? DEFAULT_SORT
 
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
