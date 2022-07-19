@@ -1,6 +1,6 @@
 import { useUser } from 'web/hooks/use-user'
 import React, { useEffect, useState } from 'react'
-import { notification_subscribe_types, PrivateUser } from 'common/lib/user'
+import { notification_subscribe_types, PrivateUser } from 'common/user'
 import { listenForPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
 import toast from 'react-hot-toast'
 import { track } from '@amplitude/analytics-browser'
