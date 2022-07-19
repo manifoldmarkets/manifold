@@ -1,4 +1,5 @@
 import { escapeRegExp } from 'lodash'
+import { ATLAS3_CONFIG } from './atlas3'
 import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 import { THEOREMONE_CONFIG } from './theoremone'
@@ -9,6 +10,7 @@ const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
   THEOREMONE: THEOREMONE_CONFIG,
+  ATLAS3: ATLAS3_CONFIG,
 }
 
 export const ENV_CONFIG = CONFIGS[ENV]

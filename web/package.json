@@ -6,6 +6,7 @@
     "dev": "concurrently -n NEXT,TS -c magenta,cyan \"next dev -p 3000\" \"yarn ts --watch\"",
     "devdev": "cross-env NEXT_PUBLIC_FIREBASE_ENV=DEV concurrently -n NEXT,TS -c magenta,cyan \"cross-env FIREBASE_ENV=DEV next dev -p 3000\" \"cross-env FIREBASE_ENV=DEV yarn ts --watch\"",
     "dev:dev": "yarn devdev",
+    "dev:atlas3": "cross-env NEXT_PUBLIC_FIREBASE_ENV=ATLAS3 concurrently -n NEXT,TS -c magenta,cyan \"cross-env FIREBASE_ENV=ATLAS3 next dev -p 3000\" \"cross-env FIREBASE_ENV=ATLAS3 yarn ts --watch\"",
     "dev:the": "cross-env NEXT_PUBLIC_FIREBASE_ENV=THEOREMONE concurrently -n NEXT,TS -c magenta,cyan \"cross-env FIREBASE_ENV=THEOREMONE next dev -p 3000\" \"cross-env FIREBASE_ENV=THEOREMONE yarn ts --watch\"",
     "dev:emulate": "cross-env NEXT_PUBLIC_FIREBASE_EMULATE=TRUE yarn devdev",
     "ts": "tsc --noEmit --incremental --preserveWatchOutput --pretty",
