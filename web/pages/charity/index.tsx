@@ -13,7 +13,6 @@ import { CharityCard } from 'web/components/charity/charity-card'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/page'
-import { SiteLink } from 'web/components/site-link'
 import { Title } from 'web/components/title'
 import { getAllCharityTxns } from 'web/lib/firebase/txns'
 import { manaToUSD } from 'common/util/format'
@@ -21,6 +20,9 @@ import { quadraticMatches } from 'common/quadratic-funding'
 import { Txn } from 'common/txn'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
+import { getUser } from 'web/lib/firebase/users'
+import { SiteLink } from 'web/components/site-link'
+import { User } from 'common/user'
 
 export async function getStaticProps() {
   const txns = await getAllCharityTxns()
@@ -34,6 +36,7 @@ export async function getStaticProps() {
   ])
   const matches = quadraticMatches(txns, totalRaised)
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
+  const mostRecentDonor = await getUser(txns[txns.length - 1].fromId)
 
   return {
     props: {
@@ -42,6 +45,7 @@ export async function getStaticProps() {
       matches,
       txns,
       numDonors,
+      mostRecentDonor,
     },
     revalidate: 60,
   }
@@ -50,22 +54,28 @@ export async function getStaticProps() {
 type Stat = {
   name: string
   stat: string
+  url?: string
 }
 
 function DonatedStats(props: { stats: Stat[] }) {
   const { stats } = props
   return (
     <dl className="mt-3 grid grid-cols-1 gap-5 rounded-lg bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-4 sm:grid-cols-3">
-      {stats.map((item) => (
+      {stats.map((stat) => (
         <div
-          key={item.name}
+          key={stat.name}
           className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6"
         >
           <dt className="truncate text-sm font-medium text-gray-500">
-            {item.name}
+            {stat.name}
           </dt>
+
           <dd className="mt-1 text-3xl font-semibold text-gray-900">
-            {item.stat}
+            {stat.url ? (
+              <SiteLink href={stat.url}>{stat.stat}</SiteLink>
+            ) : (
+              <span>{stat.stat}</span>
+            )}
           </dd>
         </div>
       ))}
@@ -79,8 +89,9 @@ export default function Charity(props: {
   matches: { [charityId: string]: number }
   txns: Txn[]
   numDonors: number
+  mostRecentDonor: User
 }) {
-  const { totalRaised, charities, matches, numDonors } = props
+  const { totalRaised, charities, matches, numDonors, mostRecentDonor } = props
 
   const [query, setQuery] = useState('')
   const debouncedQuery = debounce(setQuery, 50)
@@ -106,7 +117,7 @@ export default function Charity(props: {
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
           <Title className="!mt-0" text="Manifold for Charity" />
-          <span className="text-gray-600">
+          {/* <span className="text-gray-600">
             Through July 15, up to $25k of donations will be matched via{' '}
             <SiteLink href="https://wtfisqf.com/" className="font-bold">
               quadratic funding
@@ -116,7 +127,7 @@ export default function Charity(props: {
               the FTX Future Fund
             </SiteLink>
             !
-          </span>
+          </span> */}
           <DonatedStats
             stats={[
               {
@@ -128,8 +139,9 @@ export default function Charity(props: {
                 stat: `${numDonors}`,
               },
               {
-                name: 'Matched via quadratic funding',
-                stat: manaToUSD(sum(Object.values(matches))),
+                name: 'Most recent donor',
+                stat: mostRecentDonor.name ?? 'Nobody',
+                url: `/${mostRecentDonor.username}`,
               },
             ]}
           />

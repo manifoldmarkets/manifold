@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { RefreshIcon } from '@heroicons/react/outline'
-import Router from 'next/router'
 
 import { AddFundsButton } from 'web/components/add-funds-button'
 import { Page } from 'web/components/page'
@@ -18,6 +17,9 @@ import { updateUser, updatePrivateUser } from 'web/lib/firebase/users'
 import { defaultBannerUrl } from 'web/components/user-page'
 import { SiteLink } from 'web/components/site-link'
 import Textarea from 'react-expanding-textarea'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+
+export const getServerSideProps = redirectIfLoggedOut('/')
 
 function EditUserField(props: {
   user: User
@@ -134,8 +136,7 @@ export default function ProfilePage() {
       })
   }
 
-  if (user === null) {
-    Router.replace('/')
+  if (user == null) {
     return <></>
   }
 
