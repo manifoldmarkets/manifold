@@ -8,7 +8,7 @@ import { Button } from './button'
 import { Claim, Manalink } from 'common/manalink'
 import { useState } from 'react'
 import { ShareIconButton } from './share-icon-button'
-import { DotsHorizontalIcon, XCircleIcon } from '@heroicons/react/solid'
+import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import { contractDetailsButtonClassName } from './contract/contract-info-dialog'
 import { useUserById } from 'web/hooks/use-user'
 export type ManalinkInfo = {
