@@ -94,15 +94,12 @@ export default function Notifications(props: { user: User }) {
                     privateUser={privateUser}
                     cachedNotifications={localNotifications}
                   />
-                ) : localNotificationGroups &&
-                  localNotificationGroups.length > 0 ? (
+                ) : (
                   <div className={'min-h-[100vh]'}>
                     <RenderNotificationGroups
                       notificationGroups={localNotificationGroups}
                     />
                   </div>
-                ) : (
-                  <LoadingIndicator />
                 ),
               },
               {
