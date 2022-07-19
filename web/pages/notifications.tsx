@@ -177,7 +177,7 @@ function NotificationsList(props: {
     const local = safeLocalStorage()
     local?.setItem(
       'notification-groups',
-      JSON.stringify(maxNotificationsToShow)
+      JSON.stringify(allGroupedNotifications)
     )
     return maxNotificationsToShow
   }, [allGroupedNotifications, page])
