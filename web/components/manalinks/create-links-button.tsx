@@ -37,6 +37,7 @@ export function CreateLinksButton(props: {
                 message: newManalink.message,
               })
               setHighlightedSlug(slug || '')
+              setTimeout(() => setHighlightedSlug(''), 3700)
             }}
           />
         </Col>

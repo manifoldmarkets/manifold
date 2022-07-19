@@ -20,65 +20,56 @@ export type ManalinkInfo = {
 }
 
 export function ManalinkCard(props: {
-  user?: User | null | undefined
-  className?: string
   info: ManalinkInfo
-  isClaiming?: boolean
-  onClaim?: () => void
+  className?: string
   preview?: boolean
 }) {
-  const { user, className, isClaiming, info, onClaim, preview = false } = props
+  const { className, info, preview = false } = props
   const { expiresTime, maxUses, uses, amount, message } = info
   return (
-    <div
-      className={clsx(
-        className,
-        'min-h-20 group flex flex-col rounded-xl bg-gradient-to-br shadow-lg transition-all',
-        getManalinkGradient(info.amount)
-      )}
-    >
-      <Col className="mx-4 mt-2 -mb-4 text-right text-sm text-gray-100">
-        <div>
-          {maxUses != null
-            ? `${maxUses - uses}/${maxUses} uses left`
-            : `Unlimited use`}
-        </div>
-        <div>
-          {expiresTime != null
-            ? `Expires ${fromNow(expiresTime)}`
-            : 'Never expires'}
-        </div>
-      </Col>
-
-      <img
+    <Col>
+      <div
         className={clsx(
-          'ransition-all block h-1/3 w-1/3 self-center group-hover:rotate-12',
-          preview ? 'my-2' : 'w-1/2 md:mb-6 md:h-1/2'
-        )}
-        src="/logo-white.svg"
-      />
-      <Row
-        className={clsx(
-          'rounded-b-xl bg-white p-4',
-          preview ? '' : 'justify-end'
+          className,
+          'min-h-20 group flex flex-col rounded-xl bg-gradient-to-br shadow-lg transition-all',
+          getManalinkGradient(info.amount)
         )}
       >
-        <Col>
-          <div className="mb-1 text-xl text-indigo-500">
-            {formatMoney(amount)}
+        <Col className="mx-4 mt-2 -mb-4 text-right text-sm text-gray-100">
+          <div>
+            {maxUses != null
+              ? `${maxUses - uses}/${maxUses} uses left`
+              : `Unlimited use`}
           </div>
-          <div>{message}</div>
+          <div>
+            {expiresTime != null
+              ? `Expires ${fromNow(expiresTime)}`
+              : 'Never expires'}
+          </div>
         </Col>
 
-        {!preview && (
-          <div className="ml-auto">
-            <Button onClick={onClaim} disabled={isClaiming}>
-              {user ? 'Claim' : 'Login'}
-            </Button>
-          </div>
-        )}
-      </Row>
-    </div>
+        <img
+          className={clsx(
+            'block h-1/3 w-1/3 self-center transition-all group-hover:rotate-12',
+            preview ? 'my-2' : 'w-1/2 md:mb-6 md:h-1/2'
+          )}
+          src="/logo-white.svg"
+        />
+        <Row className="rounded-b-xl bg-white p-4">
+          <Col>
+            <div
+              className={clsx(
+                'mb-1 text-xl text-indigo-500',
+                getManalinkAmountColor(amount)
+              )}
+            >
+              {formatMoney(amount)}
+            </div>
+            <div>{message}</div>
+          </Col>
+        </Row>
+      </div>
+    </Col>
   )
 }
 
@@ -89,81 +80,79 @@ export function ManalinkCardFromView(props: {
 }) {
   const { className, link, highlightedSlug } = props
   const { message, amount, expiresTime, maxUses, claims } = link
-
   const [details, setDetails] = useState(false)
 
   return (
-    <>
-      <Col
+    <Col
+      className={clsx(
+        'group z-10 rounded-lg drop-shadow-sm transition-all hover:drop-shadow-lg',
+        className,
+        link.slug === highlightedSlug ? 'animate-pulse' : ''
+      )}
+    >
+      <div
         className={clsx(
-          'group z-10 rounded-lg drop-shadow-sm transition-all hover:drop-shadow-lg',
-          className,
-          link.slug === highlightedSlug
-            ? 'shadow-lg shadow-indigo-500 transition-none'
-            : ''
+          'relative flex flex-col rounded-t-lg bg-gradient-to-br transition-all',
+          getManalinkGradient(link.amount)
         )}
+        onClick={() => setDetails(!details)}
       >
-        <div
-          className={clsx(
-            'relative flex flex-col rounded-t-lg bg-gradient-to-br transition-all',
-            getManalinkGradient(link.amount)
-          )}
-        >
-          {details && (
-            <ClaimsList
-              className="absolute h-full w-full bg-white opacity-90"
-              link={link}
-            />
-          )}
-          <Col className="mx-4 mt-2 -mb-4 text-right text-xs text-gray-100">
-            <div>
-              {maxUses != null
-                ? `${maxUses - claims.length}/${maxUses} uses left`
-                : `Unlimited use`}
-            </div>
-            <div>
-              {expiresTime != null
-                ? `Expires ${fromNow(expiresTime)}`
-                : 'Never expires'}
-            </div>
-          </Col>
-          <img
-            className={clsx(
-              'my-auto block w-1/3 self-center py-3 transition-all',
-              details ? '' : 'group-hover:rotate-12'
-            )}
-            src="/logo-white.svg"
+        {details && (
+          <ClaimsList
+            className="absolute h-full w-full bg-white opacity-90"
+            link={link}
           />
-        </div>
-        <Col className="w-full rounded-b-lg bg-white px-4 py-2 text-lg">
-          <Row className="relative gap-1">
-            <div className="my-auto mb-1 w-full text-indigo-500">
-              {formatMoney(amount)}
-            </div>
-            <ShareIconButton
-              manalink={link}
-              toastClassName={'-left-48 min-w-[250%]'}
-              buttonClassName={'transition-colors'}
-              onCopyButtonClassName={
-                'bg-indigo-100 text-indigo-500 transition-none hover:bg-indigo-100 hover:text-indigo-500'
-              }
-            />
-            <button
-              onClick={() => setDetails(!details)}
-              className={clsx(
-                contractDetailsButtonClassName,
-                details
-                  ? 'bg-indigo-100 text-indigo-500 hover:bg-indigo-100 hover:text-indigo-500'
-                  : ''
-              )}
-            >
-              <DotsHorizontalIcon className="h-[24px] w-5" />
-            </button>
-          </Row>
-          <div className="my-2 text-xs md:text-sm">{message || '\n\n'}</div>
+        )}
+        <Col className="mx-4 mt-2 -mb-4 text-right text-xs text-gray-100">
+          <div>
+            {maxUses != null
+              ? `${maxUses - claims.length}/${maxUses} uses left`
+              : `Unlimited use`}
+          </div>
+          <div>
+            {expiresTime != null
+              ? `Expires ${fromNow(expiresTime)}`
+              : 'Never expires'}
+          </div>
         </Col>
+        <img
+          className={clsx('my-auto block w-1/3 select-none self-center py-3')}
+          src="/logo-white.svg"
+        />
+      </div>
+      <Col className="w-full rounded-b-lg bg-white px-4 py-2 text-lg">
+        <Row className="relative gap-1">
+          <div
+            className={clsx(
+              'my-auto mb-1 w-full',
+              getManalinkAmountColor(amount)
+            )}
+          >
+            {formatMoney(amount)}
+          </div>
+          <ShareIconButton
+            manalink={link}
+            toastClassName={'-left-48 min-w-[250%]'}
+            buttonClassName={'transition-colors'}
+            onCopyButtonClassName={
+              'bg-gray-200 text-gray-600 transition-none hover:bg-gray-200 hover:text-gray-600'
+            }
+          />
+          <button
+            onClick={() => setDetails(!details)}
+            className={clsx(
+              contractDetailsButtonClassName,
+              details
+                ? 'bg-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-600'
+                : ''
+            )}
+          >
+            <DotsHorizontalIcon className="h-[24px] w-5" />
+          </button>
+        </Row>
+        <div className="my-2 text-xs md:text-sm">{message || '\n\n'}</div>
       </Col>
-    </>
+    </Col>
   )
 }
 
@@ -179,7 +168,7 @@ function ClaimsList(props: { link: Manalink; className: string }) {
           {link.claims.length > 0 ? (
             <>
               {link.claims.map((claim) => (
-                <Row>
+                <Row key={claim.txnId}>
                   <Claim claim={claim} />
                 </Row>
               ))}
@@ -209,12 +198,24 @@ function Claim(props: { claim: Claim }) {
 
 function getManalinkGradient(amount: number) {
   if (amount < 20) {
-    return 'from-slate-300 via-slate-500 to-slate-800'
+    return 'from-indigo-200 via-indigo-500 to-indigo-800'
   } else if (amount >= 20 && amount < 50) {
-    return 'from-indigo-300 via-indigo-500 to-indigo-800'
+    return 'from-fuchsia-200 via-fuchsia-500 to-fuchsia-800'
   } else if (amount >= 50 && amount < 100) {
-    return 'from-violet-300 via-violet-500 to-violet-800'
+    return 'from-rose-100 via-rose-400 to-rose-700'
   } else if (amount >= 100) {
-    return 'from-indigo-300 via-violet-500 to-rose-400'
+    return 'from-amber-200 via-amber-500 to-amber-700'
+  }
+}
+
+function getManalinkAmountColor(amount: number) {
+  if (amount < 20) {
+    return 'text-indigo-500'
+  } else if (amount >= 20 && amount < 50) {
+    return 'text-fuchsia-600'
+  } else if (amount >= 50 && amount < 100) {
+    return 'text-rose-600'
+  } else if (amount >= 100) {
+    return 'text-amber-600'
   }
 }
