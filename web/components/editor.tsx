@@ -21,7 +21,8 @@ import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 
 const proseClass = clsx(
-  'prose prose-p:my-2 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless font-light'
+  'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
+  'font-light prose-a:font-light prose-blockquote:font-light'
 )
 
 export function useTextEditor(props: {
@@ -34,7 +35,7 @@ export function useTextEditor(props: {
 
   const editorClass = clsx(
     proseClass,
-    'box-content min-h-[6em] textarea textarea-bordered'
+    'box-content min-h-[6em] textarea textarea-bordered text-base'
   )
 
   const editor = useEditor({
@@ -98,7 +99,7 @@ export function TextEditor(props: {
         {editor && (
           <FloatingMenu
             editor={editor}
-            className="-ml-2 mr-2 w-full text-sm text-slate-300"
+            className={clsx(proseClass, '-ml-2 mr-2 w-full text-slate-300 ')}
           >
             Type <em>*markdown*</em>. Paste or{' '}
             <FileUploadButton
@@ -155,7 +156,7 @@ function RichContent(props: { content: JSONContent }) {
 export function Content(props: { content: JSONContent | string }) {
   const { content } = props
   return typeof content === 'string' ? (
-    <div className="whitespace-pre-line break-words">
+    <div className="whitespace-pre-line font-light leading-relaxed">
       <Linkify text={content} />
     </div>
   ) : (
