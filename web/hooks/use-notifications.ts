@@ -32,15 +32,10 @@ export function usePreferredGroupedNotifications(
     if (!result.data) return cachedNotifications ?? []
     const notifications = result.data as Notification[]
 
-    const notificationsToShow = getAppropriateNotifications(
+    return getAppropriateNotifications(
       notifications,
       privateUser.notificationPreferences
     ).filter((n) => !n.isSeenOnHref)
-    const cachedIds = cachedNotifications?.map((n) => n.id)
-    if (notificationsToShow.some((n) => !cachedIds?.includes(n.id))) {
-      return notificationsToShow
-    }
-    return cachedNotifications
   }, [
     cachedNotifications,
     privateUser.notificationPreferences,
