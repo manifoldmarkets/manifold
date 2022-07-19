@@ -2,9 +2,26 @@ import express, { Express } from "express";
 import { AddressInfo } from "net";
 import fetch from "node-fetch";
 import { Client } from "tmi.js";
-import { Bet, LiteUser } from "../../common/defs";
 import moment from "moment";
+
+import { Bet, LiteUser } from "../../common/defs";//"common/defs";
 import Transaction from "../../common/transaction";
+
+const APIBase = "https://dev.manifold.markets/api/v0/";
+
+// class Transaction {
+//     name: string;
+//     amount: number;
+//     yes: boolean;
+//     timestamp: number;
+
+//     constructor(name: string, amount: number, yes: boolean, timestamp: number) {
+//         this.name = name;
+//         this.amount = amount;
+//         this.yes = yes;
+//         this.timestamp = timestamp;
+//     }
+// }
 
 const regexpCommand = new RegExp(/!([a-zA-Z0-9]+)\s?(\S*)?/);
 
@@ -17,14 +34,42 @@ export default class App {
     constructor() {
         this.app = express();
 
+        moment.locale("en", {
+            relativeTime: {
+                future: "in %s",
+                past: "%s ago",
+                s: "<1m",
+                ss: "%ss",
+                m: "1m",
+                mm: "%dm",
+                h: "1h",
+                hh: "%dh",
+                d: "1d",
+                dd: "%dd",
+                M: "1m",
+                MM: "%dM",
+                y: "1y",
+                yy: "%dY",
+            },
+        });
+
         // Load all users:
-        fetch("https://dev.manifold.markets/api/v0/users")
+        fetch(`${APIBase}users`)
             .then((r) => <Promise<LiteUser[]>>r.json())
             .then((r) => {
                 for (const user of r) {
                     this.userIdToNameMap[user.id] = user.name;
                 }
                 console.log("Loaded users.");
+            });
+    }
+
+    loadUser(userId: string) {
+        fetch(`${APIBase}user/by-id/${userId}`)
+            .then((r) => <Promise<LiteUser>>r.json())
+            .then((user) => {
+                console.log(`Loaded user ${user.name}.`);
+                this.userIdToNameMap[user.id] = user.name;
             });
     }
 
@@ -89,9 +134,8 @@ export default class App {
 
         setInterval(() => {
             const numUsers = 3;
-            const useDevBackend = true;
             const marketSlug = "this-is-a-local-market"; //will-elon-musk-buy-twitter-this-yea
-            fetch(`https://${useDevBackend ? "dev." : ""}manifold.markets/api/v0/bets?market=${marketSlug}&limit=${numUsers}`)
+            fetch(`${APIBase}bets?market=${marketSlug}&limit=${numUsers}`)
                 .then((r) => <Promise<Bet[]>>r.json())
                 .then((r) => {
                     this.latestTransactions.splice(0, this.latestTransactions.length);
@@ -99,6 +143,10 @@ export default class App {
                         const t = r[i];
                         try {
                             const amount = t.amount;
+
+                            if (!this.userIdToNameMap[t.userId]) {
+                                this.loadUser(t.userId);
+                            }
 
                             const dummyObject: Record<string, string | number> = {};
                             dummyObject["userId"] = t.userId;
@@ -160,12 +208,12 @@ export default class App {
             const argument: string = found[2];
 
             console.log(`Command: ${command}`);
-            const response: (a: string,  b: string) => string | null = commands[command as keyof typeof commands].response || {};
+            const response: (a: string, b: string) => string | null = commands[command as keyof typeof commands].response;
             console.log(response);
 
             let responseMessage;
 
-            if (typeof responseMessage === "function" && tags.username) {
+            if (tags.username) {
                 responseMessage = response(tags.username, argument);
             }
 

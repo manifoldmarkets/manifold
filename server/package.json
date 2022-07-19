@@ -6,10 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev:old": "npx nodemon --watch src src/index.mts",
-    "dev:old2": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
-    "dev": "nodemon --watch src --watch ../common --exec \"node --experimental-specifier-resolution=node --loader ts-node/esm\" src/index.ts",
-    "start": "npm run dev"
+    "dev": "nodemon --config nodemon.json",
+    "lint": "eslint src --ext ts"
   },
   "keywords": [],
   "author": "Phil Bladen",
