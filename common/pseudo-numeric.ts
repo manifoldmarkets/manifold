@@ -16,8 +16,8 @@ export const getMappedValue =
     const { min, max, isLogScale } = contract
 
     if (isLogScale) {
-      const logValue = p * Math.log10(max - min)
-      return 10 ** logValue + min
+      const logValue = p * Math.log10(max - min + 1)
+      return 10 ** logValue + min - 1
     }
 
     return p * (max - min) + min
@@ -38,7 +38,7 @@ export const getPseudoProbability = (
   isLogScale = false
 ) => {
   if (isLogScale) {
-    return Math.log10(value - min) / Math.log10(max - min)
+    return Math.log10(value - min + 1) / Math.log10(max - min + 1)
   }
 
   return (value - min) / (max - min)
