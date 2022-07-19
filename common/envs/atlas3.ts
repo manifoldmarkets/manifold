@@ -12,7 +12,7 @@ export const ATLAS3_CONFIG: EnvConfig = {
     measurementId: 'G-0F3F5X37YN',
   },
 
-  cloudRunId: 'todo',
+  cloudRunId: 'o7zdjo5hka',
   cloudRunRegion: 'uc',
 
   adminEmails: [
