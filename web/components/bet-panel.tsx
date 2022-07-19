@@ -50,13 +50,9 @@ export function BetPanel(props: {
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
   const unfilledBets = useUnfilledBets(contract.id) ?? []
-  const yourUnfilledBets = unfilledBets.filter((bet) => bet.userId === user?.id)
   const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
 
   const [isLimitOrder, setIsLimitOrder] = useState(false)
-
-  const showLimitOrders =
-    (isLimitOrder && unfilledBets.length > 0) || yourUnfilledBets.length > 0
 
   return (
     <Col className={className}>
@@ -85,7 +81,7 @@ export function BetPanel(props: {
 
         <SignUpPrompt />
       </Col>
-      {showLimitOrders && (
+      {unfilledBets.length > 0 && (
         <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
       )}
     </Col>
@@ -105,9 +101,6 @@ export function SimpleBetPanel(props: {
   const [isLimitOrder, setIsLimitOrder] = useState(false)
 
   const unfilledBets = useUnfilledBets(contract.id) ?? []
-  const yourUnfilledBets = unfilledBets.filter((bet) => bet.userId === user?.id)
-  const showLimitOrders =
-    (isLimitOrder && unfilledBets.length > 0) || yourUnfilledBets.length > 0
 
   return (
     <Col className={className}>
@@ -138,7 +131,7 @@ export function SimpleBetPanel(props: {
         <SignUpPrompt />
       </Col>
 
-      {showLimitOrders && (
+      {unfilledBets.length > 0 && (
         <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
       )}
     </Col>

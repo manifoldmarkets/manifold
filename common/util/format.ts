@@ -33,20 +33,24 @@ export function formatPercent(zeroToOne: number) {
   return (zeroToOne * 100).toFixed(decimalPlaces) + '%'
 }
 
+const showPrecision = (x: number, sigfigs: number) =>
+  // convert back to number for weird formatting reason
+  `${Number(x.toPrecision(sigfigs))}`
+
 // Eg 1234567.89 => 1.23M; 5678 => 5.68K
 export function formatLargeNumber(num: number, sigfigs = 2): string {
   const absNum = Math.abs(num)
-  if (absNum < 1) return num.toPrecision(sigfigs)
+  if (absNum < 1) return showPrecision(num, sigfigs)
 
-  if (absNum < 100) return num.toPrecision(2)
-  if (absNum < 1000) return num.toPrecision(3)
-  if (absNum < 10000) return num.toPrecision(4)
+  if (absNum < 100) return showPrecision(num, 2)
+  if (absNum < 1000) return showPrecision(num, 3)
+  if (absNum < 10000) return showPrecision(num, 4)
 
   const suffix = ['', 'K', 'M', 'B', 'T', 'Q']
   const i = Math.floor(Math.log10(absNum) / 3)
 
-  const numStr = (num / Math.pow(10, 3 * i)).toPrecision(sigfigs)
-  return `${numStr}${suffix[i]}`
+  const numStr = showPrecision(num / Math.pow(10, 3 * i), sigfigs)
+  return `${numStr}${suffix[i] ?? ''}`
 }
 
 export function toCamelCase(words: string) {

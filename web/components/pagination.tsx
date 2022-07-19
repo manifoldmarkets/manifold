@@ -7,9 +7,19 @@ export function Pagination(props: {
   setPage: (page: number) => void
   scrollToTop?: boolean
   className?: string
+  nextTitle?: string
+  prevTitle?: string
 }) {
-  const { page, itemsPerPage, totalItems, setPage, scrollToTop, className } =
-    props
+  const {
+    page,
+    itemsPerPage,
+    totalItems,
+    setPage,
+    scrollToTop,
+    nextTitle,
+    prevTitle,
+    className
+  } = props
 
   const maxPage = Math.ceil(totalItems / itemsPerPage) - 1
 
@@ -32,19 +42,21 @@ export function Pagination(props: {
         </p>
       </div>
       <div className="flex flex-1 justify-between sm:justify-end">
-        <a
-          href={scrollToTop ? '#' : undefined}
-          className="relative inline-flex cursor-pointer select-none items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          onClick={() => page > 0 && setPage(page - 1)}
-        >
-          Previous
-        </a>
+        {page > 0 && (
+          <a
+            href={scrollToTop ? '#' : undefined}
+            className="relative inline-flex cursor-pointer select-none items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            onClick={() => page > 0 && setPage(page - 1)}
+          >
+            {prevTitle ?? 'Previous'}
+          </a>
+        )}
         <a
           href={scrollToTop ? '#' : undefined}
           className="relative ml-3 inline-flex cursor-pointer select-none items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           onClick={() => page < maxPage && setPage(page + 1)}
         >
-          Next
+          {nextTitle ?? 'Next'}
         </a>
       </div>
     </nav>
