@@ -14,9 +14,14 @@ import {
   MANIFOLD_USERNAME,
   notification_subscribe_types,
   PrivateUser,
+  User,
 } from 'common/user'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { listenForPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
+import {
+  getUser,
+  listenForPrivateUser,
+  updatePrivateUser,
+} from 'web/lib/firebase/users'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -44,23 +49,40 @@ import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Router from 'next/router'
 import { safeLocalStorage } from 'web/lib/util/local'
+import {
+  getServerAuthenticatedUid,
+  redirectIfLoggedOut,
+} from 'web/lib/firebase/server-auth'
+import { useQueryClient } from 'react-query'
+import { getNotificationsQuery } from 'web/lib/firebase/notifications'
+import { getValues } from 'web/lib/firebase/utils'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
-export default function Notifications() {
-  const user = useUser()
+export const getServerSideProps = redirectIfLoggedOut('/', async (ctx) => {
+  const uid = await getServerAuthenticatedUid(ctx)
+  if (!uid) {
+    return { props: { user: null } }
+  }
+  const user = await getUser(uid)
+  return { props: { user } }
+})
+
+export default function Notifications(props: { user: User }) {
+  const { user } = props
   const privateUser = usePrivateUser(user?.id)
   const local = safeLocalStorage()
-  const localSavedNotifications = local?.getItem('notifications')
   let localNotifications = [] as Notification[]
-  if (localSavedNotifications)
-    localNotifications = JSON.parse(localSavedNotifications)
   const localSavedNotificationGroups = local?.getItem('notification-groups')
   let localNotificationGroups = [] as NotificationGroup[]
-  if (localSavedNotificationGroups)
+  if (localSavedNotificationGroups) {
     localNotificationGroups = JSON.parse(localSavedNotificationGroups)
+    localNotifications = localNotificationGroups
+      .map((g) => g.notifications)
+      .flat()
+  }
 
   if (!user) return <Custom404 />
   return (
@@ -149,7 +171,7 @@ function NotificationsList(props: {
   const [paginatedGroupedNotifications, setPaginatedGroupedNotifications] =
     useState<NotificationGroup[] | undefined>(undefined)
 
-  useMemo(() => {
+  useEffect(() => {
     if (!allGroupedNotifications) return
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE

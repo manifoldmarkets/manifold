@@ -24,20 +24,13 @@ export function usePreferredGroupedNotifications(
   privateUser: PrivateUser,
   cachedNotifications?: Notification[]
 ) {
-  const [notificationGroups, setNotificationGroups] = useState<
-    NotificationGroup[] | undefined
-  >(undefined)
-  const [notifications, setNotifications] = useState<Notification[]>(
-    cachedNotifications ?? []
-  )
-
   const result = useFirestoreQueryData(
     ['notifications-all', privateUser.id],
     getNotificationsQuery(privateUser.id)
   )
-  useMemo(() => {
-    if (result.isLoading) return
-    if (!result.data) return
+  const notifications = useMemo(() => {
+    if (result.isLoading) return cachedNotifications ?? []
+    if (!result.data) return cachedNotifications ?? []
     const notifications = result.data as Notification[]
 
     const notificationsToShow = getAppropriateNotifications(
@@ -46,8 +39,9 @@ export function usePreferredGroupedNotifications(
     ).filter((n) => !n.isSeenOnHref)
     const cachedIds = cachedNotifications?.map((n) => n.id)
     if (notificationsToShow.some((n) => !cachedIds?.includes(n.id))) {
-      setNotifications(notificationsToShow)
+      return notificationsToShow
     }
+    return cachedNotifications
   }, [
     cachedNotifications,
     privateUser.notificationPreferences,
@@ -55,17 +49,9 @@ export function usePreferredGroupedNotifications(
     result.isLoading,
   ])
 
-  useMemo(() => {
-    if (!notifications) return
-    if (notifications.length > 0) {
-      const local = safeLocalStorage()
-      local?.setItem('notifications', JSON.stringify(notifications))
-    }
-    const groupedNotifications = groupNotifications(notifications)
-    setNotificationGroups(groupedNotifications)
+  return useMemo(() => {
+    if (notifications) return groupNotifications(notifications)
   }, [notifications])
-
-  return notificationGroups
 }
 
 export function useUnseenPreferredNotificationGroups(privateUser: PrivateUser) {
