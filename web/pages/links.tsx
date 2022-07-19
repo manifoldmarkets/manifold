@@ -18,6 +18,7 @@ import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
 import { CreateLinksButton } from 'web/components/manalinks/create-links-button'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
@@ -26,6 +27,7 @@ import { Pagination } from 'web/components/pagination'
 dayjs.extend(customParseFormat)
 
 const LINKS_PER_PAGE = 24
+export const getServerSideProps = redirectIfLoggedOut('/')
 
 export function getManalinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`

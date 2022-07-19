@@ -188,7 +188,11 @@ export function ContractSearch(props: {
       <Row className="gap-2">
         {toPairs<filter>(filterOptions).map(([label, f]) => {
           return (
-            <PillButton selected={filter === f} onSelect={() => setFilter(f)}>
+            <PillButton
+              key={f}
+              selected={filter === f}
+              onSelect={() => setFilter(f)}
+            >
               {label}
             </PillButton>
           )

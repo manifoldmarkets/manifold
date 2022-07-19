@@ -16,7 +16,7 @@ import {
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
 import {
-  onAuthStateChanged,
+  onIdTokenChanged,
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth'
@@ -43,6 +43,7 @@ import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 
 import { track } from '@amplitude/analytics-browser'
+import { deleteAuthCookies, setAuthCookies } from './auth'
 
 export const users = coll<User>('users')
 export const privateUsers = coll<PrivateUser>('private-users')
@@ -188,10 +189,9 @@ export function listenForLogin(onUser: (user: User | null) => void) {
   const cachedUser = local?.getItem(CACHED_USER_KEY)
   onUser(cachedUser && JSON.parse(cachedUser))
 
-  return onAuthStateChanged(auth, async (fbUser) => {
+  return onIdTokenChanged(auth, async (fbUser) => {
     if (fbUser) {
       let user: User | null = await getUser(fbUser.uid)
-
       if (!user) {
         if (createUserPromise == null) {
           const local = safeLocalStorage()
@@ -204,17 +204,19 @@ export function listenForLogin(onUser: (user: User | null) => void) {
         }
         user = await createUserPromise
       }
-
       onUser(user)
 
       // Persist to local storage, to reduce login blink next time.
       // Note: Cap on localStorage size is ~5mb
       local?.setItem(CACHED_USER_KEY, JSON.stringify(user))
       setCachedReferralInfoForUser(user)
+      setAuthCookies(await fbUser.getIdToken(), fbUser.refreshToken)
     } else {
       // User logged out; reset to null
       onUser(null)
+      createUserPromise = undefined
       local?.removeItem(CACHED_USER_KEY)
+      deleteAuthCookies()
     }
   })
 }

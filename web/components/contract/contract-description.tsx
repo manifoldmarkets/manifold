@@ -24,12 +24,9 @@ export function ContractDescription(props: {
   return (
     <div className={clsx('mt-2 text-gray-700', className)}>
       {isCreator || isAdmin ? (
-        <RichEditContract contract={contract} />
+        <RichEditContract contract={contract} isAdmin={isAdmin && !isCreator} />
       ) : (
         <Content content={contract.description} />
-      )}
-      {isAdmin && !isCreator && (
-        <div className="mt-2 text-red-400">(👆 admin powers)</div>
       )}
     </div>
   )
@@ -39,8 +36,8 @@ function editTimestamp() {
   return `${dayjs().format('MMM D, h:mma')}: `
 }
 
-function RichEditContract(props: { contract: Contract }) {
-  const { contract } = props
+function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
+  const { contract, isAdmin } = props
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -90,9 +87,11 @@ function RichEditContract(props: { contract: Contract }) {
     <>
       <Content content={contract.description} />
       <Spacer h={2} />
-      <Row className="gap-2">
+      <Row className="items-center gap-2">
+        {isAdmin && 'Admin: '}
         <Button
           color="gray"
+          size="xs"
           onClick={() => {
             setEditing(true)
             editor
@@ -105,7 +104,7 @@ function RichEditContract(props: { contract: Contract }) {
         >
           Edit description
         </Button>
-        <Button color="gray" onClick={() => setEditingQ(true)}>
+        <Button color="gray" size="xs" onClick={() => setEditingQ(true)}>
           Edit question
         </Button>
       </Row>
