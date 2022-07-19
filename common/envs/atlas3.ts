@@ -25,6 +25,7 @@ export const ATLAS3_CONFIG: EnvConfig = {
   moneyMoniker: '📎',
   fixedAnte: 250,
   startingBalance: 500,
+  referralBonus: 0,
   visibility: 'PRIVATE',
   navbarLogoPath: '/atlas/atlas-logo-white.svg',
   newQuestionPlaceholders: [
