@@ -53,9 +53,8 @@ export function GroupSelector(props: {
         nullable={true}
         className={'text-sm'}
       >
-        {({ open }) => (
+        {() => (
           <>
-            {!open && setQuery('')}
             <Combobox.Label className="label justify-start gap-2 text-base">
               Add to Group
               <InfoTooltip text="Question will be displayed alongside the other questions in the group." />
