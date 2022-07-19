@@ -150,7 +150,8 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
         enableSlices="x"
         enableGridX={!!width && width >= 800}
         enableArea
-        margin={{ top: 20, right: 20, bottom: 25, left: 40 }}
+        areaBaselineValue={isBinary ? 0 : contract.min}
+        margin={{ top: 20, right: 20, bottom: 65, left: 40 }}
         animate={false}
         sliceTooltip={SliceTooltip}
       />
