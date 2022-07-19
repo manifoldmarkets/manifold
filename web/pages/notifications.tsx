@@ -205,6 +205,8 @@ function NotificationsList(props: {
             totalItems={allGroupedNotifications.length}
             setPage={setPage}
             scrollToTop
+            nextTitle={'Older'}
+            prevTitle={'Newer'}
           />
         )}
     </div>
