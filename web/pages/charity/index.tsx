@@ -6,6 +6,7 @@ import {
   sortBy,
   debounce,
   uniqBy,
+  last,
 } from 'lodash'
 import { useState, useMemo } from 'react'
 import { charities, Charity as CharityType } from 'common/charity'
@@ -36,7 +37,8 @@ export async function getStaticProps() {
   ])
   const matches = quadraticMatches(txns, totalRaised)
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
-  const mostRecentDonor = await getUser(txns[txns.length - 1].fromId)
+  const donorId = last(txns)?.fromId
+  const mostRecentDonor = donorId ? await getUser(donorId) : undefined
 
   return {
     props: {
@@ -89,7 +91,7 @@ export default function Charity(props: {
   matches: { [charityId: string]: number }
   txns: Txn[]
   numDonors: number
-  mostRecentDonor: User
+  mostRecentDonor?: User
 }) {
   const { totalRaised, charities, matches, numDonors, mostRecentDonor } = props
 
@@ -140,8 +142,8 @@ export default function Charity(props: {
               },
               {
                 name: 'Most recent donor',
-                stat: mostRecentDonor.name ?? 'Nobody',
-                url: `/${mostRecentDonor.username}`,
+                stat: mostRecentDonor?.name ?? 'Nobody',
+                url: `/${mostRecentDonor?.username}`,
               },
             ]}
           />
