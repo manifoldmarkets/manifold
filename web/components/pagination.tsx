@@ -18,7 +18,7 @@ export function Pagination(props: {
     scrollToTop,
     nextTitle,
     prevTitle,
-    className
+    className,
   } = props
 
   const maxPage = Math.ceil(totalItems / itemsPerPage) - 1
