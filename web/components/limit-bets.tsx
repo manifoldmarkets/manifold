@@ -78,8 +78,8 @@ export function LimitOrderTable(props: {
       <thead>
         {!isYou && <th></th>}
         <th>Outcome</th>
-        <th>Amount</th>
         <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
+        <th>Amount</th>
         {isYou && <th></th>}
       </thead>
       <tbody>
@@ -129,12 +129,12 @@ function LimitBet(props: {
           )}
         </div>
       </td>
-      <td>{formatMoney(orderAmount - amount)}</td>
       <td>
         {isPseudoNumeric
           ? getFormattedMappedValue(contract)(limitProb)
           : formatPercent(limitProb)}
       </td>
+      <td>{formatMoney(orderAmount - amount)}</td>
       {isYou && (
         <td>
           {isCancelling ? (
