@@ -6,10 +6,9 @@ import { Charity } from 'common/charity'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { manaToUSD } from '../../../common/util/format'
 import { Row } from '../layout/row'
-import { Col } from '../layout/col'
 
 export function CharityCard(props: { charity: Charity; match?: number }) {
-  const { charity, match } = props
+  const { charity } = props
   const { slug, photo, preview, id, tags } = charity
 
   const txns = useCharityTxns(id)
@@ -36,18 +35,18 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
           {raised > 0 && (
             <>
               <Row className="mt-4 flex-1 items-end justify-center gap-6 text-gray-900">
-                <Col>
+                <Row className="items-baseline gap-1">
                   <span className="text-3xl font-semibold">
                     {formatUsd(raised)}
                   </span>
-                  <span>raised</span>
-                </Col>
-                {match && (
+                  raised
+                </Row>
+                {/* {match && (
                   <Col className="text-gray-500">
                     <span className="text-xl">+{formatUsd(match)}</span>
                     <span className="">match</span>
                   </Col>
-                )}
+                )} */}
               </Row>
             </>
           )}

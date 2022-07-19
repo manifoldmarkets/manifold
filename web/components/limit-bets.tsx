@@ -178,7 +178,7 @@ export function OrderBookButton(props: {
       <Modal open={open} setOpen={setOpen} size="lg">
         <Col className="rounded bg-white p-4 py-6">
           <Title className="!mt-0" text="Order book" />
-          <Col className="justify-start gap-2 lg:flex-row lg:items-start">
+          <Row className="hidden items-start justify-start gap-2 md:flex">
             <LimitOrderTable
               limitBets={yesBets}
               contract={contract}
@@ -186,6 +186,13 @@ export function OrderBookButton(props: {
             />
             <LimitOrderTable
               limitBets={noBets}
+              contract={contract}
+              isYou={false}
+            />
+          </Row>
+          <Col className="md:hidden">
+            <LimitOrderTable
+              limitBets={limitBets}
               contract={contract}
               isYou={false}
             />
