@@ -21,8 +21,8 @@ import { Txn } from 'common/txn'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
-import { User } from 'common/lib/user'
 import { SiteLink } from 'web/components/site-link'
+import { User } from 'common/user'
 
 export async function getStaticProps() {
   const txns = await getAllCharityTxns()
