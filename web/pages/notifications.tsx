@@ -101,7 +101,7 @@ export default function Notifications(props: { user: User }) {
                     cachedNotifications={localNotifications}
                   />
                 ) : localNotifications && localNotifications.length > 0 ? (
-                  <div>
+                  <div className={'min-h-[100vh]'}>
                     <RenderNotificationGroups
                       notificationGroups={localNotificationGroups}
                     />
@@ -182,7 +182,7 @@ function NotificationsList(props: {
     const local = safeLocalStorage()
     local?.setItem(
       'notification-groups',
-      JSON.stringify(maxNotificationsToShow)
+      JSON.stringify(allGroupedNotifications)
     )
   }, [allGroupedNotifications, page])
 
