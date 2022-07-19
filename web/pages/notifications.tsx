@@ -1,6 +1,6 @@
 import { Tabs } from 'web/components/layout/tabs'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -53,9 +53,6 @@ import {
   getServerAuthenticatedUid,
   redirectIfLoggedOut,
 } from 'web/lib/firebase/server-auth'
-import { useQueryClient } from 'react-query'
-import { getNotificationsQuery } from 'web/lib/firebase/notifications'
-import { getValues } from 'web/lib/firebase/utils'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'

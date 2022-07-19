@@ -8,7 +8,6 @@ import {
 import { groupBy, map } from 'lodash'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
-import { safeLocalStorage } from 'web/lib/util/local'
 
 export type NotificationGroup = {
   notifications: Notification[]
