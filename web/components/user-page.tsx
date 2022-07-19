@@ -189,17 +189,22 @@ export function UserPage(props: {
       <Col className="mx-4 -mt-6">
         <span className="text-2xl font-bold">{user.name}</span>
         <span className="text-gray-500">@{user.username}</span>
-        <span className="text-gray-500">
-          <span
-            className={clsx(
-              'text-md',
-              profit >= 0 ? 'text-green-600' : 'text-red-400'
-            )}
-          >
-            {formatMoney(profit)}
-          </span>{' '}
-          profit
-        </span>
+        <Row className="mt-1 gap-4 text-gray-500">
+          <div>
+            <span
+              className={clsx(profit >= 0 ? 'text-green-600' : 'text-red-400')}
+            >
+              {formatMoney(profit)}
+            </span>{' '}
+            profit
+          </div>
+          <div>
+            <span className={'text-green-600'}>
+              {formatMoney(user.creatorVolumeCached.allTime)}
+            </span>{' '}
+            created volume
+          </div>
+        </Row>
 
         <Spacer h={4} />
 
