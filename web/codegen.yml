@@ -1,0 +1,25 @@
+overwrite: true
+schema: lib/api/graphql/**/**.graphql
+documents: null
+
+generates:
+  generated/graphql_api.ts:
+    config:
+      useIndexSignature: true
+
+      inputMaybeValue: undefined | T
+      maybeValue: undefined | T
+
+      strictScalars: true
+
+    plugins:
+      - 'typescript'
+      - 'typescript-resolvers'
+
+  generated/schema.graphql:
+    plugins:
+      - 'schema-ast'
+
+hooks:
+  afterAllFileWrite:
+    - prettier --write
