@@ -6,13 +6,24 @@ generates:
   generated/graphql_api.ts:
     config:
       useIndexSignature: true
+      contextType: web/lib/api/graphql/types#contextType
 
       inputMaybeValue: undefined | T
       maybeValue: undefined | T
 
       strictScalars: true
+      mappers:
+        Comment: web/lib/api/graphql/types#CommentModel
+        MarketAnswer: web/lib/api/graphql/types#AnswerModel
+        Market: web/lib/api/graphql/types#MarketModel
+        Bet: web/lib/api/graphql/types#BetModel
       scalars:
         MarketID: 'string'
+        MarketAnswerID: 'string'
+        BetID: 'string'
+        CommentID: 'string'
+        UserID: 'string'
+        Timestamp: 'number'
 
     plugins:
       - 'typescript'

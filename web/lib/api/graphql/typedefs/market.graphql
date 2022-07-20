@@ -1,9 +1,155 @@
 scalar MarketID
 
 type Market {
-  id: MarketID
+  id: MarketID!
+
+  creator: User!
+  bets: [Bet!]!
+  comments: [Comment!]!
+  outcome: MarketOutcome!
+
+  createdTime: Timestamp!
+  # Min of creator's chosen date, and resolutionTime
+  closeTime: Timestamp
+  question: String!
+  description: String!
+  tags: [String!]
+  url: String!
+  pool: Float
+  volume: Float!
+  volume7Days: Float!
+  volume24Hours: Float!
+  isResolved: Boolean!
+  resolutionTime: Int
+  resolution: String
+
+  p: Float
+
+  totalLiquidity: Float
+
+  # Method of market making (cpmm, dpm, etc)
+  # ... TODO: This should be a enum
+  mechanism: String!
 }
 
+type MarketOutcomeBinary {
+  probability: Float!
+}
+input MarketOutcomeBinaryInput {
+  probability: Float!
+}
+
+scalar MarketAnswerID
+type MarketAnswer {
+  id: MarketAnswerID!
+  text: String!
+  market: Market
+  creator: User!
+  createdTime: Timestamp!
+  number: Int!
+  probability: Float!
+}
+type MarketOutcomeFreeResponse {
+  answers: [MarketAnswer!]!
+}
+
+type MarketOutcomeNumeric {
+  min: Float!
+  max: Float!
+}
+input MarketOutcomeNumericInput {
+  min: Float!
+  max: Float!
+}
+
+enum MarketType {
+  BINARY
+  FREE_RESPONSE
+  NUMERIC
+}
+
+union MarketOutcome =
+    MarketOutcomeFreeResponse
+  | MarketOutcomeNumeric
+  | MarketOutcomeBinary
+
 type Query {
-  markets(before: MarketID, limit: Int): [Market]
+  """
+  Lists all markets, ordered by creation date descending.
+  """
+  markets(
+    """
+    The ID of the market before which the list will start.
+    For example, if you ask for the most recent 10 markets, and then perform a second query for 10 more markets with before=[the id of the 10th market], you will get markets 11 through 20.
+    """
+    before: MarketID
+
+    """
+    How many markets to return. The maximum and the default is 1000.
+    """
+    limit: Int = 1000
+  ): [Market!]!
+
+  """
+  Gets information about a single market by ID.
+
+  Example request: https://manifold.markets/api/v0/market/3zspH9sSzMlbFQLn9GKR
+  """
+  market(id: MarketID!): Market!
+
+  """
+  Gets information about a single market by slug (the portion of the URL path after the username).
+  """
+  slug(url: String!): Market!
+}
+
+input MarketInput {
+  """
+  The headline question for the market.
+  """
+  question: String!
+
+  """
+  A long description describing the rules for the market.
+  """
+  description: String!
+
+  """
+  The time at which the market will close, represented as milliseconds since the epoch.
+  """
+  closeTime: Timestamp
+
+  """
+  An array of string tags for the market.
+  """
+  tags: [String!]
+}
+
+type Mutation {
+  """
+  Creates a new binary market on behalf of the authorized user.
+  """
+  createMarketBinary(
+    """
+    Condition of market at creation
+    """
+    initial: MarketOutcomeBinaryInput
+
+    input: MarketInput
+  ): Market
+  """
+  Creates a new free response market on behalf of the authorized user.
+  """
+  createMarketFreeResponse(input: MarketInput): Market
+  """
+  Creates a new numeric market on behalf of the authorized user.
+  """
+  createMarketNumeric(
+    """
+    Condition of market at creation
+    """
+    initial: MarketOutcomeNumericInput
+
+    input: MarketInput
+  ): Market
 }

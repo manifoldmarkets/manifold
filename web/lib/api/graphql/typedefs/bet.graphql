@@ -1,0 +1,51 @@
+scalar BetID
+
+type Sale {
+  # amount user makes from sale
+  amount: Int
+}
+
+type Bet {
+  id: BetID!
+  user: User
+  market: Market!
+
+  # bet size; negative if SELL bet
+  amount: Int!
+  outcome: String!
+  # dynamic parimutuel pool weight; negative if SELL bet
+  shares: Float!
+
+  probBefore: Float!
+  probAfter: Float!
+
+  sale: Sale
+
+  # true if this BUY bet has been sold
+  isSold: Boolean
+  isAnte: Boolean
+
+  createdTime: Timestamp
+}
+
+type Mutation {
+  """
+  Places a new bet on behalf of the authorized user.
+  """
+  placeBet(
+    """
+    The amount to bet, in M$, before fees.
+    """
+    amount: Int!
+
+    """
+    The ID of the contract (market) to bet on.
+    """
+    contractId: MarketID!
+
+    """
+    The outcome to bet on. For binary markets, this is YES or NO. For free response markets, this is the ID of the free response answer. For numeric markets, this is a string representing the target bucket, and an additional value parameter is required which is a number representing the target value. (Bet on numeric markets at your own peril.)
+    """
+    outcome: String!
+  ): Bet
+}

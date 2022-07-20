@@ -1,0 +1,8 @@
+scalar UserID
+
+type User {
+  id: UserID!
+  username: String!
+  name: String!
+  avatarUrl: String
+}
