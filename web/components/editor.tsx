@@ -45,92 +45,95 @@ export function useTextEditor(props: {
     'box-content min-h-[6em] textarea textarea-bordered text-base'
   )
 
-  const editor = useEditor({
-    editorProps: { attributes: { class: editorClass } },
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-      }),
-      Placeholder.configure({
-        placeholder,
-        emptyEditorClass:
-          'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0',
-      }),
-      CharacterCount.configure({ limit: max }),
-      Image,
-      Link.configure({
-        HTMLAttributes: {
-          class: clsx('no-underline !text-indigo-700', linkClass),
-        },
-      }),
-      Mention.configure({
-        HTMLAttributes: {
-          class: clsx('not-prose text-indigo-700', linkClass),
-        },
-        // TODO: do a Next link instead of raw <a>
-        renderLabel: ({ options, node }) =>
-          [
-            'a',
-            { href: node.attrs.label },
-            `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`,
-          ] as any,
-        suggestion: {
-          items: ({ query }) =>
-            users
-              .filter((u) => searchInAny(query, u.username, u.name))
-              .slice(0, 5),
-          render: () => {
-            let component: any
-            let popup: any
-            return {
-              onStart: (props) => {
-                component = new ReactRenderer(MentionList, {
-                  props,
-                  editor: props.editor,
-                })
-                if (!props.clientRect) {
-                  return
-                }
-
-                popup = tippy('body', {
-                  getReferenceClientRect: props.clientRect as any,
-                  appendTo: () => document.body,
-                  content: component.element,
-                  showOnCreate: true,
-                  interactive: true,
-                  trigger: 'manual',
-                  placement: 'bottom-start',
-                })
-              },
-              onUpdate(props) {
-                component.updateProps(props)
-
-                if (!props.clientRect) {
-                  return
-                }
-
-                popup[0].setProps({
-                  getReferenceClientRect: props.clientRect,
-                })
-              },
-              onKeyDown(props) {
-                if (props.event.key === 'Escape') {
-                  popup[0].hide()
-                  return true
-                }
-                return component.ref?.onKeyDown(props)
-              },
-              onExit() {
-                popup[0].destroy()
-                component.destroy()
-              },
-            }
+  const editor = useEditor(
+    {
+      editorProps: { attributes: { class: editorClass } },
+      extensions: [
+        StarterKit.configure({
+          heading: { levels: [1, 2, 3] },
+        }),
+        Placeholder.configure({
+          placeholder,
+          emptyEditorClass:
+            'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0',
+        }),
+        CharacterCount.configure({ limit: max }),
+        Image,
+        Link.configure({
+          HTMLAttributes: {
+            class: clsx('no-underline !text-indigo-700', linkClass),
           },
-        },
-      }),
-    ],
-    content: defaultValue,
-  })
+        }),
+        Mention.configure({
+          HTMLAttributes: {
+            class: clsx('not-prose text-indigo-700', linkClass),
+          },
+          // TODO: do a Next link instead of raw <a>
+          renderLabel: ({ options, node }) =>
+            [
+              'a',
+              { href: node.attrs.label },
+              `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`,
+            ] as any,
+          suggestion: {
+            items: ({ query }) =>
+              users
+                .filter((u) => searchInAny(query, u.username, u.name))
+                .slice(0, 5),
+            render: () => {
+              let component: any
+              let popup: any
+              return {
+                onStart: (props) => {
+                  component = new ReactRenderer(MentionList, {
+                    props,
+                    editor: props.editor,
+                  })
+                  if (!props.clientRect) {
+                    return
+                  }
+
+                  popup = tippy('body', {
+                    getReferenceClientRect: props.clientRect as any,
+                    appendTo: () => document.body,
+                    content: component.element,
+                    showOnCreate: true,
+                    interactive: true,
+                    trigger: 'manual',
+                    placement: 'bottom-start',
+                  })
+                },
+                onUpdate(props) {
+                  component.updateProps(props)
+
+                  if (!props.clientRect) {
+                    return
+                  }
+
+                  popup[0].setProps({
+                    getReferenceClientRect: props.clientRect,
+                  })
+                },
+                onKeyDown(props) {
+                  if (props.event.key === 'Escape') {
+                    popup[0].hide()
+                    return true
+                  }
+                  return component.ref?.onKeyDown(props)
+                },
+                onExit() {
+                  popup[0].destroy()
+                  component.destroy()
+                },
+              }
+            },
+          },
+        }),
+      ],
+      content: defaultValue,
+    },
+    [!users.length] // passed as useEffect dependency. (re-render editor when users load, to update mention menu)
+  )
 
   const upload = useUploadMutation(editor)
 
