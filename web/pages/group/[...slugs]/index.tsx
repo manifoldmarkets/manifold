@@ -113,7 +113,7 @@ const groupSubpages = [
   undefined,
   GROUP_CHAT_SLUG,
   'questions',
-  'rankings',
+  'leaderboards',
   'about',
 ] as const
 
@@ -236,9 +236,9 @@ export default function GroupPage(props: {
       href: groupPath(group.slug, 'questions'),
     },
     {
-      title: 'Rankings',
+      title: 'Leaderboards',
       content: leaderboard,
-      href: groupPath(group.slug, 'rankings'),
+      href: groupPath(group.slug, 'leaderboards'),
     },
     {
       title: 'About',
@@ -487,14 +487,14 @@ function GroupLeaderboards(props: {
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => traderScores[user.id] ?? 0}
-              title="🏅 Bettor rankings"
+              title="🏅 Top bettors"
               header="Profit"
               maxToShow={maxToShow}
             />
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => creatorScores[user.id] ?? 0}
-              title="🏅 Creator rankings"
+              title="🏅 Top creators"
               header="Market volume"
               maxToShow={maxToShow}
             />
