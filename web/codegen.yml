@@ -11,6 +11,8 @@ generates:
       maybeValue: undefined | T
 
       strictScalars: true
+      scalars:
+        MarketID: 'string'
 
     plugins:
       - 'typescript'

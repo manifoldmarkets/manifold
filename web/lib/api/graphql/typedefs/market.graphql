@@ -1,0 +1,9 @@
+scalar MarketID
+
+type Market {
+  id: MarketID
+}
+
+type Query {
+  markets(before: MarketID, limit: Int): [Market]
+}
