@@ -99,7 +99,7 @@ export function ContractSearch(props: {
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
   )
-  const [pillFilter, setPillFilter] = useState<string | undefined>()
+  const [pillFilter, setPillFilter] = useState<string | undefined>('personal')
 
   const { filters, numericFilters } = useMemo(() => {
     let filters = [
@@ -201,7 +201,7 @@ export function ContractSearch(props: {
 
       <Spacer h={3} />
 
-      {!additionalFilter?.creatorId && !additionalFilter?.groupSlug && (
+      {!additionalFilter && (
         <Row className="scrollbar-hide items-start gap-2 overflow-x-auto">
           <PillButton
             key={'all'}
