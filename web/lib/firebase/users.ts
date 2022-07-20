@@ -258,16 +258,6 @@ export async function listAllUsers() {
   return docs.map((doc) => doc.data())
 }
 
-export function listenForAllUsers(setUsers: (users: User[]) => void) {
-  listenForValues(users, setUsers)
-}
-
-export function listenForPrivateUsers(
-  setUsers: (users: PrivateUser[]) => void
-) {
-  listenForValues(privateUsers, setUsers)
-}
-
 export function getTopTraders(period: Period) {
   const topTraders = query(
     users,
