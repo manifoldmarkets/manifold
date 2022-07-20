@@ -16,7 +16,6 @@ import { ShareEmbedButton } from '../share-embed-button'
 import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
 import { InfoTooltip } from '../info-tooltip'
-import { TagsInput } from 'web/components/tags-input'
 import { DuplicateContractButton } from '../copy-contract-button'
 
 export const contractDetailsButtonClassName =
@@ -140,10 +139,6 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
               </tr>
             </tbody>
           </table>
-
-          {/* <div>Tags</div>
-          <TagsInput contract={contract} />
-          <div /> */}
 
           {contract.mechanism === 'cpmm-1' && !contract.resolution && (
             <LiquidityPanel contract={contract} />
