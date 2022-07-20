@@ -103,7 +103,7 @@ export function FeedAnswerCommentGroup(props: {
   }, [answerElementId, router.asPath])
 
   return (
-    <Col className={'relative flex-1 gap-2'} key={answer.id + 'comment'}>
+    <Col className={'relative flex-1 gap-3'} key={answer.id + 'comment'}>
       <Modal open={open} setOpen={setOpen}>
         <AnswerBetPanel
           answer={answer}
