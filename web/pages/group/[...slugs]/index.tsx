@@ -52,6 +52,8 @@ import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { CopyLinkButton } from 'web/components/copy-link-button'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -328,6 +330,11 @@ function GroupOverview(props: {
     })
   }
 
+  const postFix = user ? '?referrer=' + user.username : ''
+  const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
+    group.slug
+  )}${postFix}`
+
   return (
     <>
       <Col className="gap-2 rounded-b bg-white p-2">
@@ -372,21 +379,26 @@ function GroupOverview(props: {
             </span>
           )}
         </Row>
+
         {anyoneCanJoin && user && (
-          <Row className={'flex-wrap items-center gap-1'}>
-            <span className={'text-gray-500'}>Share</span>
-            <ShareIconButton
-              group={group}
-              username={user.username}
-              buttonClassName={'hover:bg-gray-300 mt-1 !text-gray-700'}
-            >
-              <span className={'mx-2'}>
-                Invite a friend and get M${REFERRAL_AMOUNT} if they sign up!
-              </span>
-            </ShareIconButton>
-          </Row>
+          <Col className="my-4 px-2">
+            <div className="text-lg">Invite</div>
+            <div className={'mb-2 text-gray-500'}>
+              Invite a friend to this group and get M${REFERRAL_AMOUNT} if they
+              sign up!
+            </div>
+
+            <CopyLinkButton
+              url={shareUrl}
+              tracking="copy group share link"
+              buttonClassName="btn-md rounded-l-none"
+              toastClassName={'-left-28 mt-1'}
+            />
+          </Col>
         )}
+
         <Col className={'mt-2'}>
+          <div className="mb-2 text-lg">Members</div>
           <GroupMemberSearch members={members} group={group} />
         </Col>
       </Col>
