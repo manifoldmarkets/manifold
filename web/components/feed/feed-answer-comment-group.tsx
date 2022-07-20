@@ -1,7 +1,6 @@
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
-import { formatPercent } from 'common/util/format'
 import React, { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -11,8 +10,6 @@ import { Avatar } from 'web/components/avatar'
 import { UserLink } from 'web/components/user-page'
 import { Linkify } from 'web/components/linkify'
 import clsx from 'clsx'
-import { tradingAllowed } from 'web/lib/firebase/contracts'
-import { BuyButton } from 'web/components/yes-no-selector'
 import {
   CommentInput,
   CommentRepliesList,
@@ -23,7 +20,6 @@ import { useRouter } from 'next/router'
 import { groupBy } from 'lodash'
 import { User } from 'common/user'
 import { useEvent } from 'web/hooks/use-event'
-import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 
 export function FeedAnswerCommentGroup(props: {
@@ -50,11 +46,6 @@ export function FeedAnswerCommentGroup(props: {
   const commentsList = comments.filter(
     (comment) => comment.answerOutcome === answer.number.toString()
   )
-  const thisAnswerProb = getDpmOutcomeProbability(
-    contract.totalShares,
-    answer.id
-  )
-  const probPercent = formatPercent(thisAnswerProb)
   const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
   const isFreeResponseContractPage = !!commentsByCurrentUser
@@ -125,7 +116,7 @@ export function FeedAnswerCommentGroup(props: {
 
       <Row
         className={clsx(
-          'my-4 flex gap-3 space-x-3 transition-all duration-1000',
+          'mt-4 flex gap-3 space-x-3 transition-all duration-1000',
           highlighted ? `-m-2 my-3 rounded bg-indigo-500/[0.2] p-2` : ''
         )}
         id={answerElementId}
@@ -162,24 +153,6 @@ export function FeedAnswerCommentGroup(props: {
                   </button>
                 </div>
               )}
-
-              <div className={'align-items flex w-full justify-end gap-4 '}>
-                <span
-                  className={clsx(
-                    'text-2xl',
-                    tradingAllowed(contract) ? 'text-primary' : 'text-gray-500'
-                  )}
-                >
-                  {probPercent}
-                </span>
-                <BuyButton
-                  className={clsx(
-                    'btn-sm flex-initial !px-6 sm:flex',
-                    tradingAllowed(contract) ? '' : '!hidden'
-                  )}
-                  onClick={() => setOpen(true)}
-                />
-              </div>
             </Row>
           </Col>
           {isFreeResponseContractPage && (
