@@ -1,6 +1,7 @@
 import { difference } from 'lodash'
 
 export const CATEGORIES_GROUP_SLUG_POSTFIX = '-default'
+
 export const CATEGORIES = {
   politics: 'Politics',
   technology: 'Technology',
@@ -37,3 +38,8 @@ export const EXCLUDED_CATEGORIES: category[] = [
 ]
 
 export const DEFAULT_CATEGORIES = difference(CATEGORY_LIST, EXCLUDED_CATEGORIES)
+
+export const DEFAULT_CATEGORY_GROUPS = DEFAULT_CATEGORIES.map((c) => ({
+  slug: c.toLowerCase() + CATEGORIES_GROUP_SLUG_POSTFIX,
+  name: CATEGORIES[c as category],
+}))
