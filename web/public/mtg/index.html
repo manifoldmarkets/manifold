@@ -66,6 +66,14 @@
         background-size: 220px;
         background-repeat: no-repeat;
         transition: height 1s, background-image 1s, border 0.4s 0.6s;
+        background-position-y: calc(50% - 20px);
+      }
+
+      .card:not([data-name^='name'])::after {
+        content: '';
+        height: 34px;
+        background: white;
+        width: 100%;
       }
 
       .answer-page .card {
