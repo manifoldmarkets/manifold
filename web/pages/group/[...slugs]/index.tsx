@@ -253,7 +253,7 @@ export default function GroupPage(props: {
     <Page
       rightSidebar={showChatSidebar ? chatTab : undefined}
       rightSidebarClassName={showChatSidebar ? '!top-0' : ''}
-      className={showChatSidebar ? '!max-w-none !pb-0' : ''}
+      className={showChatSidebar ? '!max-w-7xl !pb-0' : ''}
     >
       <SEO
         title={group.name}
