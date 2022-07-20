@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -n NEXT,TS -c magenta,cyan \"next dev -p 3000\" \"yarn ts --watch\"",
-    "devdev": "cross-env NEXT_PUBLIC_FIREBASE_ENV=DEV concurrently -n NEXT,TS -c magenta,cyan \"cross-env FIREBASE_ENV=DEV next dev -p 3000\" \"cross-env FIREBASE_ENV=DEV yarn ts --watch\"",
+    "devdev": "cross-env NEXT_PUBLIC_FIREBASE_ENV=DEV concurrently -n NEXT,TS,GRAPHQL -c magenta,cyan,yellow \"cross-env FIREBASE_ENV=DEV next dev -p 3000\" \"cross-env FIREBASE_ENV=DEV yarn ts --watch\" \"yarn generate --watch lib/api/graphql/**/**.graphql --watch lib/api/graphql/types.ts \"",
     "dev:dev": "yarn devdev",
     "dev:the": "cross-env NEXT_PUBLIC_FIREBASE_ENV=THEOREMONE concurrently -n NEXT,TS -c magenta,cyan \"cross-env FIREBASE_ENV=THEOREMONE next dev -p 3000\" \"cross-env FIREBASE_ENV=THEOREMONE yarn ts --watch\"",
     "dev:emulate": "cross-env NEXT_PUBLIC_FIREBASE_EMULATE=TRUE yarn devdev",
@@ -15,7 +15,12 @@
     "format": "npx prettier --write .",
     "postbuild": "next-sitemap",
     "verify": "(cd .. && yarn verify)",
-    "verify:dir": "npx prettier --check .; yarn lint --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit"
+    "verify:dir": "npx prettier --check .; yarn lint --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit",
+    "generate": "graphql-codegen --config codegen.yml",
+    "predev": "yarn generate",
+    "prebuild": "yarn generate",
+    "prets": "yarn generate",
+    "prelint": "yarn generate"
   },
   "dependencies": {
     "@amplitude/analytics-browser": "0.4.1",
@@ -31,14 +36,19 @@
     "@tiptap/react": "2.0.0-beta.114",
     "@tiptap/starter-kit": "2.0.0-beta.190",
     "algoliasearch": "4.13.0",
+    "apollo-server-caching": "3.3.0",
+    "apollo-server-micro": "3.10.0",
     "clsx": "1.1.1",
     "cors": "2.8.5",
     "daisyui": "1.16.4",
     "dayjs": "1.10.7",
     "firebase": "9.6.0",
+    "graphql": "16.5.0",
+    "graphql-scalars": "1.17.0",
     "gridjs": "5.0.2",
     "gridjs-react": "5.0.2",
     "lodash": "4.17.21",
+    "micro": "9.4.0",
     "nanoid": "^3.3.4",
     "next": "12.1.2",
     "node-fetch": "3.2.4",
@@ -52,6 +62,9 @@
     "string-similarity": "^4.0.4"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "2.6.2",
+    "@graphql-codegen/typescript": "2.5.1",
+    "@graphql-codegen/typescript-resolvers": "2.6.6",
     "@tailwindcss/forms": "0.4.0",
     "@tailwindcss/line-clamp": "^0.3.1",
     "@tailwindcss/typography": "^0.5.1",

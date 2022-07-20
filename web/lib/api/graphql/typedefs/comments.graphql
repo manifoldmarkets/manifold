@@ -1,0 +1,12 @@
+scalar CommentID
+
+type Comment {
+  id: CommentID!
+  market: Market!
+  answerOutcome: Int
+  text: String!
+  createdTime: Timestamp!
+  replyTo: Comment
+  answers: [Comment!]!
+  user: User!
+}
