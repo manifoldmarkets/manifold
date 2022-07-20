@@ -25,9 +25,10 @@ import { useFollows } from 'web/hooks/use-follows'
 import { trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
-import { NEW_USER_GROUP_SLUGS } from 'common/group'
+import { Group, NEW_USER_GROUP_SLUGS } from 'common/group'
 import { PillButton } from './buttons/pill-button'
 import { sortBy } from 'lodash'
+import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -82,11 +83,21 @@ export function ContractSearch(props: {
   const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
     (group) => !NEW_USER_GROUP_SLUGS.includes(group.slug)
   )
-  const memberGroupSlugs = memberGroups.map((g) => g.slug)
-  const pillGroups = sortBy(
+  const memberGroupSlugs =
+    memberGroups.length > 0
+      ? memberGroups.map((g) => g.slug)
+      : DEFAULT_CATEGORY_GROUPS.map((g) => g.slug)
+
+  const memberPillGroups = sortBy(
     memberGroups.filter((group) => group.contractIds.length > 0),
     (group) => group.contractIds.length
   ).reverse()
+
+  const defaultPillGroups = DEFAULT_CATEGORY_GROUPS as Group[]
+
+  const pillGroups =
+    memberPillGroups.length > 0 ? memberPillGroups : defaultPillGroups
+
   const follows = useFollows(user?.id)
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
@@ -113,9 +124,7 @@ export function ContractSearch(props: {
       additionalFilter?.groupSlug
         ? `groupSlugs:${additionalFilter.groupSlug}`
         : '',
-      pillFilter && pillFilter !== 'personal'
-        ? `groupSlugs:${pillFilter}`
-        : '',
+      pillFilter && pillFilter !== 'personal' ? `groupSlugs:${pillFilter}` : '',
       pillFilter === 'personal'
         ? // Show contracts in groups that the user is a member of
           memberGroupSlugs
@@ -217,6 +226,7 @@ export function ContractSearch(props: {
           >
             For you
           </PillButton>
+
           {pillGroups.map(({ name, slug }) => {
             return (
               <PillButton
