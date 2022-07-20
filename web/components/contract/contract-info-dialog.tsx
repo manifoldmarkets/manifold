@@ -141,9 +141,10 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
             </tbody>
           </table>
 
-          <div>Tags</div>
+          {/* <div>Tags</div>
           <TagsInput contract={contract} />
-          <div />
+          <div /> */}
+
           {contract.mechanism === 'cpmm-1' && !contract.resolution && (
             <LiquidityPanel contract={contract} />
           )}
