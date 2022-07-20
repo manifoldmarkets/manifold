@@ -9,97 +9,96 @@ import {
   User,
 } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
-import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { useEffect, useState } from 'react'
-import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Title } from 'web/components/title'
 import { Tabs } from 'web/components/layout/tabs'
 import { useTracking } from 'web/hooks/use-tracking'
 
-export const getStaticProps = fromPropz(getStaticPropz)
-export async function getStaticPropz() {
-  return queryLeaderboardUsers('allTime')
-}
-const queryLeaderboardUsers = async (period: Period) => {
-  const [topTraders, topCreators, topFollowed] = await Promise.all([
-    getTopTraders(period).catch(() => {}),
-    getTopCreators(period).catch(() => {}),
-    getTopFollowed().catch(() => {}),
-  ])
+export async function getStaticProps() {
+  const props = await fetchProps()
+
   return {
-    props: {
-      topTraders,
-      topCreators,
-      topFollowed,
-    },
+    props,
     revalidate: 60, // regenerate after a minute
   }
 }
 
-export default function Leaderboards(props: {
+const fetchProps = async () => {
+  const [allTime, monthly, weekly, daily] = await Promise.all([
+    queryLeaderboardUsers('allTime'),
+    queryLeaderboardUsers('monthly'),
+    queryLeaderboardUsers('weekly'),
+    queryLeaderboardUsers('daily'),
+  ])
+  const topFollowed = await getTopFollowed()
+
+  return {
+    allTime,
+    monthly,
+    weekly,
+    daily,
+    topFollowed,
+  }
+}
+
+const queryLeaderboardUsers = async (period: Period) => {
+  const [topTraders, topCreators] = await Promise.all([
+    getTopTraders(period),
+    getTopCreators(period),
+  ])
+  return {
+    topTraders,
+    topCreators,
+  }
+}
+
+type leaderboard = {
   topTraders: User[]
   topCreators: User[]
+}
+
+export default function Leaderboards(_props: {
+  allTime: leaderboard
+  monthly: leaderboard
+  weekly: leaderboard
+  daily: leaderboard
   topFollowed: User[]
 }) {
-  props = usePropz(props, getStaticPropz) ?? {
-    topTraders: [],
-    topCreators: [],
-    topFollowed: [],
-  }
-  const { topFollowed } = props
-  const [topTradersState, setTopTraders] = useState(props.topTraders)
-  const [topCreatorsState, setTopCreators] = useState(props.topCreators)
-  const [isLoading, setLoading] = useState(false)
-  const [period, setPeriod] = useState<Period>('allTime')
-
+  const [props, setProps] = useState<Parameters<typeof Leaderboards>[0]>(_props)
   useEffect(() => {
-    setLoading(true)
-    queryLeaderboardUsers(period).then((res) => {
-      setTopTraders(res.props.topTraders as User[])
-      setTopCreators(res.props.topCreators as User[])
-      setLoading(false)
-    })
-  }, [period])
+    fetchProps().then((props) => setProps(props))
+  }, [])
+
+  const { topFollowed } = props
 
   const LeaderboardWithPeriod = (period: Period) => {
+    const { topTraders, topCreators } = props[period]
+
     return (
       <>
         <Col className="mx-4 items-center gap-10 lg:flex-row">
-          {!isLoading ? (
-            <>
-              {period === 'allTime' ||
-              period == 'weekly' ||
-              period === 'daily' ? ( //TODO: show other periods once they're available
-                <Leaderboard
-                  title="🏅 Top bettors"
-                  users={topTradersState}
-                  columns={[
-                    {
-                      header: 'Total profit',
-                      renderCell: (user) =>
-                        formatMoney(user.profitCached[period]),
-                    },
-                  ]}
-                />
-              ) : (
-                <></>
-              )}
+          <Leaderboard
+            title="🏅 Top bettors"
+            users={topTraders}
+            columns={[
+              {
+                header: 'Total profit',
+                renderCell: (user) => formatMoney(user.profitCached[period]),
+              },
+            ]}
+          />
 
-              <Leaderboard
-                title="🏅 Top creators"
-                users={topCreatorsState}
-                columns={[
-                  {
-                    header: 'Total bet',
-                    renderCell: (user) =>
-                      formatMoney(user.creatorVolumeCached[period]),
-                  },
-                ]}
-              />
-            </>
-          ) : (
-            <LoadingIndicator spinnerClassName={'border-gray-500'} />
-          )}
+          <Leaderboard
+            title="🏅 Top creators"
+            users={topCreators}
+            columns={[
+              {
+                header: 'Total bet',
+                renderCell: (user) =>
+                  formatMoney(user.creatorVolumeCached[period]),
+              },
+            ]}
+          />
         </Col>
         {period === 'allTime' ? (
           <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-1/2 lg:flex-row">
@@ -127,20 +126,17 @@ export default function Leaderboards(props: {
       <Title text={'Leaderboards'} className={'hidden md:block'} />
       <Tabs
         currentPageForAnalytics={'leaderboards'}
-        defaultIndex={0}
-        onClick={(title, index) => {
-          const period = ['allTime', 'monthly', 'weekly', 'daily'][index]
-          setPeriod(period as Period)
-        }}
+        defaultIndex={1}
         tabs={[
           {
             title: 'All Time',
             content: LeaderboardWithPeriod('allTime'),
           },
-          {
-            title: 'Monthly',
-            content: LeaderboardWithPeriod('monthly'),
-          },
+          // TODO: Enable this near the end of July!
+          // {
+          //   title: 'Monthly',
+          //   content: LeaderboardWithPeriod('monthly'),
+          // },
           {
             title: 'Weekly',
             content: LeaderboardWithPeriod('weekly'),

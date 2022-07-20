@@ -76,11 +76,13 @@ export function LimitOrderTable(props: {
   return (
     <table className="table-compact table w-full rounded text-gray-500">
       <thead>
-        {!isYou && <th></th>}
-        <th>Outcome</th>
-        <th>Amount</th>
-        <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
-        {isYou && <th></th>}
+        <tr>
+          {!isYou && <th></th>}
+          <th>Outcome</th>
+          <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
+          <th>Amount</th>
+          {isYou && <th></th>}
+        </tr>
       </thead>
       <tbody>
         {limitBets.map((bet) => (
@@ -129,12 +131,12 @@ function LimitBet(props: {
           )}
         </div>
       </td>
-      <td>{formatMoney(orderAmount - amount)}</td>
       <td>
         {isPseudoNumeric
           ? getFormattedMappedValue(contract)(limitProb)
           : formatPercent(limitProb)}
       </td>
+      <td>{formatMoney(orderAmount - amount)}</td>
       {isYou && (
         <td>
           {isCancelling ? (
@@ -178,7 +180,7 @@ export function OrderBookButton(props: {
       <Modal open={open} setOpen={setOpen} size="lg">
         <Col className="rounded bg-white p-4 py-6">
           <Title className="!mt-0" text="Order book" />
-          <Col className="justify-start gap-2 lg:flex-row lg:items-start">
+          <Row className="hidden items-start justify-start gap-2 md:flex">
             <LimitOrderTable
               limitBets={yesBets}
               contract={contract}
@@ -186,6 +188,13 @@ export function OrderBookButton(props: {
             />
             <LimitOrderTable
               limitBets={noBets}
+              contract={contract}
+              isYou={false}
+            />
+          </Row>
+          <Col className="md:hidden">
+            <LimitOrderTable
+              limitBets={limitBets}
               contract={contract}
               isYou={false}
             />

@@ -7,7 +7,6 @@ import { Bet } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
 import { BinaryContract, PseudoNumericContract } from 'common/contract'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { getMappedValue } from 'common/pseudo-numeric'
 import { formatLargeNumber } from 'common/util/format'
 
 export const ContractProbGraph = memo(function ContractProbGraph(props: {
@@ -29,7 +28,11 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
     ...bets.map((bet) => bet.createdTime),
   ].map((time) => new Date(time))
 
-  const f = getMappedValue(contract)
+  const f: (p: number) => number = isBinary
+    ? (p) => p
+    : isLogScale
+    ? (p) => p * Math.log10(contract.max - contract.min + 1)
+    : (p) => p * (contract.max - contract.min) + contract.min
 
   const probs = [startProb, ...bets.map((bet) => bet.probAfter)].map(f)
 
@@ -69,10 +72,9 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
 
   const points: { x: Date; y: number }[] = []
   const s = isBinary ? 100 : 1
-  const c = isLogScale && contract.min === 0 ? 1 : 0
 
   for (let i = 0; i < times.length - 1; i++) {
-    points[points.length] = { x: times[i], y: s * probs[i] + c }
+    points[points.length] = { x: times[i], y: s * probs[i] }
     const numPoints: number = Math.floor(
       dayjs(times[i + 1]).diff(dayjs(times[i]), 'ms') / timeStep
     )
@@ -84,7 +86,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
           x: dayjs(times[i])
             .add(thisTimeStep * n, 'ms')
             .toDate(),
-          y: s * probs[i] + c,
+          y: s * probs[i],
         }
       }
     }
@@ -99,6 +101,9 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
 
   const formatter = isBinary
     ? formatPercent
+    : isLogScale
+    ? (x: DatumValue) =>
+        formatLargeNumber(10 ** +x.valueOf() + contract.min - 1)
     : (x: DatumValue) => formatLargeNumber(+x.valueOf())
 
   return (
@@ -111,11 +116,13 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
         yScale={
           isBinary
             ? { min: 0, max: 100, type: 'linear' }
-            : {
-                min: contract.min + c,
-                max: contract.max + c,
-                type: contract.isLogScale ? 'log' : 'linear',
+            : isLogScale
+            ? {
+                min: 0,
+                max: Math.log10(contract.max - contract.min + 1),
+                type: 'linear',
               }
+            : { min: contract.min, max: contract.max, type: 'linear' }
         }
         yFormat={formatter}
         gridYValues={yTickValues}
@@ -143,7 +150,8 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
         enableSlices="x"
         enableGridX={!!width && width >= 800}
         enableArea
-        margin={{ top: 20, right: 20, bottom: 25, left: 40 }}
+        areaBaselineValue={isBinary || isLogScale ? 0 : contract.min}
+        margin={{ top: 20, right: 20, bottom: 65, left: 40 }}
         animate={false}
         sliceTooltip={SliceTooltip}
       />

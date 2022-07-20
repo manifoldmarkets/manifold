@@ -16,7 +16,7 @@ import {
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
 import {
-  onAuthStateChanged,
+  onIdTokenChanged,
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth'
@@ -35,7 +35,7 @@ import { feed } from 'common/feed'
 import { CATEGORY_LIST } from 'common/categories'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
-import { addUserToGroupViaSlug } from 'web/lib/firebase/groups'
+import { addUserToGroupViaId } from 'web/lib/firebase/groups'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import dayjs from 'dayjs'
@@ -43,6 +43,7 @@ import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 
 import { track } from '@amplitude/analytics-browser'
+import { deleteAuthCookies, setAuthCookies } from './auth'
 
 export const users = coll<User>('users')
 export const privateUsers = coll<PrivateUser>('private-users')
@@ -99,13 +100,13 @@ export function listenForPrivateUser(
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
 const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
 const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
-const CACHED_REFERRAL_GROUP_SLUG_KEY = 'CACHED_REFERRAL_GROUP_KEY'
+const CACHED_REFERRAL_GROUP_ID_KEY = 'CACHED_REFERRAL_GROUP_KEY'
 
 export function writeReferralInfo(
   defaultReferrerUsername: string,
   contractId?: string,
   referralUsername?: string,
-  groupSlug?: string
+  groupId?: string
 ) {
   const local = safeLocalStorage()
   const cachedReferralUser = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
@@ -121,7 +122,7 @@ export function writeReferralInfo(
     local?.setItem(CACHED_REFERRAL_USERNAME_KEY, referralUsername)
 
   // Always write the most recent explicit group invite query value
-  if (groupSlug) local?.setItem(CACHED_REFERRAL_GROUP_SLUG_KEY, groupSlug)
+  if (groupId) local?.setItem(CACHED_REFERRAL_GROUP_ID_KEY, groupId)
 
   // Write the first contract id that we see.
   const cachedReferralContract = local?.getItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
@@ -134,14 +135,14 @@ async function setCachedReferralInfoForUser(user: User | null) {
   // if the user wasn't created in the last minute, don't bother
   const now = dayjs().utc()
   const userCreatedTime = dayjs(user.createdTime)
-  if (now.diff(userCreatedTime, 'minute') > 1) return
+  if (now.diff(userCreatedTime, 'minute') > 5) return
 
   const local = safeLocalStorage()
   const cachedReferralUsername = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
   const cachedReferralContractId = local?.getItem(
     CACHED_REFERRAL_CONTRACT_ID_KEY
   )
-  const cachedReferralGroupSlug = local?.getItem(CACHED_REFERRAL_GROUP_SLUG_KEY)
+  const cachedReferralGroupId = local?.getItem(CACHED_REFERRAL_GROUP_ID_KEY)
 
   // get user via username
   if (cachedReferralUsername)
@@ -155,6 +156,9 @@ async function setCachedReferralInfoForUser(user: User | null) {
           referredByContractId: cachedReferralContractId
             ? cachedReferralContractId
             : undefined,
+          referredByGroupId: cachedReferralGroupId
+            ? cachedReferralGroupId
+            : undefined,
         })
       )
         .catch((err) => {
@@ -165,15 +169,14 @@ async function setCachedReferralInfoForUser(user: User | null) {
             userId: user.id,
             referredByUserId: referredByUser.id,
             referredByContractId: cachedReferralContractId,
-            referredByGroupSlug: cachedReferralGroupSlug,
+            referredByGroupId: cachedReferralGroupId,
           })
         })
     })
 
-  if (cachedReferralGroupSlug)
-    addUserToGroupViaSlug(cachedReferralGroupSlug, user.id)
+  if (cachedReferralGroupId) addUserToGroupViaId(cachedReferralGroupId, user.id)
 
-  local?.removeItem(CACHED_REFERRAL_GROUP_SLUG_KEY)
+  local?.removeItem(CACHED_REFERRAL_GROUP_ID_KEY)
   local?.removeItem(CACHED_REFERRAL_USERNAME_KEY)
   local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
 }
@@ -186,10 +189,9 @@ export function listenForLogin(onUser: (user: User | null) => void) {
   const cachedUser = local?.getItem(CACHED_USER_KEY)
   onUser(cachedUser && JSON.parse(cachedUser))
 
-  return onAuthStateChanged(auth, async (fbUser) => {
+  return onIdTokenChanged(auth, async (fbUser) => {
     if (fbUser) {
       let user: User | null = await getUser(fbUser.uid)
-
       if (!user) {
         if (createUserPromise == null) {
           const local = safeLocalStorage()
@@ -202,17 +204,19 @@ export function listenForLogin(onUser: (user: User | null) => void) {
         }
         user = await createUserPromise
       }
-
       onUser(user)
 
       // Persist to local storage, to reduce login blink next time.
       // Note: Cap on localStorage size is ~5mb
       local?.setItem(CACHED_USER_KEY, JSON.stringify(user))
       setCachedReferralInfoForUser(user)
+      setAuthCookies(await fbUser.getIdToken(), fbUser.refreshToken)
     } else {
       // User logged out; reset to null
       onUser(null)
+      createUserPromise = undefined
       local?.removeItem(CACHED_USER_KEY)
+      deleteAuthCookies()
     }
   })
 }
@@ -271,7 +275,7 @@ export function getTopTraders(period: Period) {
     limit(20)
   )
 
-  return getValues(topTraders)
+  return getValues<User>(topTraders)
 }
 
 export function getTopCreators(period: Period) {
@@ -280,7 +284,7 @@ export function getTopCreators(period: Period) {
     orderBy('creatorVolumeCached.' + period, 'desc'),
     limit(20)
   )
-  return getValues(topCreators)
+  return getValues<User>(topCreators)
 }
 
 export async function getTopFollowed() {

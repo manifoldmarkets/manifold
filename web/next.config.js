@@ -4,6 +4,7 @@ const API_DOCS_URL = 'https://docs.manifold.markets/api'
 module.exports = {
   staticPageGenerationTimeout: 600, // e.g. stats page
   reactStrictMode: true,
+  optimizeFonts: false,
   experimental: {
     externalDir: true,
     optimizeCss: true,

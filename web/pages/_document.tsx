@@ -6,16 +6,15 @@ export default function Document() {
     <Html data-theme="mantic" className="min-h-screen">
       <Head>
         <link rel="icon" href={ENV_CONFIG.faviconPath} />
-
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
           href="https://fonts.gstatic.com"
-          crossOrigin="true"
+          crossOrigin="anonymous"
         />
         <link
           href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Readex+Pro:wght@300;400;600;700&display=swap"
           rel="stylesheet"
+          crossOrigin="anonymous"
         />
         <link
           rel="stylesheet"
@@ -24,7 +23,6 @@ export default function Document() {
           crossOrigin="anonymous"
         />
       </Head>
-
       <body className="font-readex-pro bg-base-200 min-h-screen">
         <Main />
         <NextScript />

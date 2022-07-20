@@ -22,7 +22,12 @@ export const groups = coll<Group>('groups')
 
 export function groupPath(
   groupSlug: string,
-  subpath?: 'edit' | 'questions' | 'about' | typeof GROUP_CHAT_SLUG | 'rankings'
+  subpath?:
+    | 'edit'
+    | 'questions'
+    | 'about'
+    | typeof GROUP_CHAT_SLUG
+    | 'leaderboards'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }
@@ -68,10 +73,10 @@ export function listenForMemberGroups(
   const q = query(groups, where('memberIds', 'array-contains', userId))
   const sorter = (group: Group) => {
     if (sort?.by === 'mostRecentChatActivityTime') {
-      return group.mostRecentChatActivityTime ?? group.mostRecentActivityTime
+      return group.mostRecentChatActivityTime ?? group.createdTime
     }
     if (sort?.by === 'mostRecentContractAddedTime') {
-      return group.mostRecentContractAddedTime ?? group.mostRecentActivityTime
+      return group.mostRecentContractAddedTime ?? group.createdTime
     }
     return group.mostRecentActivityTime
   }
@@ -89,11 +94,11 @@ export async function getGroupsWithContractId(
   setGroups(await getValues<Group>(q))
 }
 
-export async function addUserToGroupViaSlug(groupSlug: string, userId: string) {
+export async function addUserToGroupViaId(groupId: string, userId: string) {
   // get group to get the member ids
-  const group = await getGroupBySlug(groupSlug)
+  const group = await getGroup(groupId)
   if (!group) {
-    console.error(`Group not found: ${groupSlug}`)
+    console.error(`Group not found: ${groupId}`)
     return
   }
   return await joinGroup(group, userId)

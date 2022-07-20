@@ -135,7 +135,7 @@ export function JoinOrLeaveGroupButton(props: {
     return (
       <button
         className={clsx(
-          'btn btn-outline btn-sm',
+          'btn btn-outline btn-xs',
           small && smallStyle,
           className
         )}

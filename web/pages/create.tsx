@@ -28,6 +28,9 @@ import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Checkbox } from 'web/components/checkbox'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+
+export const getServerSideProps = redirectIfLoggedOut('/')
 
 type NewQuestionParams = {
   groupId?: string
@@ -55,10 +58,6 @@ export default function Create() {
   }, [params.q])
 
   const creator = useUser()
-  useEffect(() => {
-    if (creator === null) router.push('/')
-  }, [creator, router])
-
   if (!router.isReady || !creator) return <div />
 
   return (
@@ -93,7 +92,7 @@ export default function Create() {
 
 // Allow user to create a new contract
 export function NewContract(props: {
-  creator: User
+  creator?: User | null
   question: string
   params?: NewQuestionParams
 }) {
@@ -207,7 +206,7 @@ export function NewContract(props: {
           min,
           max,
           initialValue,
-          isLogScale: (min ?? 0) < 0 ? false : isLogScale,
+          isLogScale,
           groupId: selectedGroup?.id,
         })
       )
@@ -294,15 +293,13 @@ export function NewContract(props: {
               />
             </Row>
 
-            {!(min !== undefined && min < 0) && (
-              <Checkbox
-                className="my-2 text-sm"
-                label="Log scale"
-                checked={isLogScale}
-                toggle={() => setIsLogScale(!isLogScale)}
-                disabled={isSubmitting}
-              />
-            )}
+            <Checkbox
+              className="my-2 text-sm"
+              label="Log scale"
+              checked={isLogScale}
+              toggle={() => setIsLogScale(!isLogScale)}
+              disabled={isSubmitting}
+            />
 
             {min !== undefined && max !== undefined && min >= max && (
               <div className="mt-2 mb-2 text-sm text-red-500">
@@ -379,12 +376,10 @@ export function NewContract(props: {
             type={'date'}
             className="input input-bordered mt-4"
             onClick={(e) => e.stopPropagation()}
-            onChange={(e) =>
-              setCloseDate(dayjs(e.target.value).format('YYYY-MM-DD') || '')
-            }
+            onChange={(e) => setCloseDate(e.target.value)}
             min={Date.now()}
             disabled={isSubmitting}
-            value={dayjs(closeDate).format('YYYY-MM-DD')}
+            value={closeDate}
           />
           <input
             type={'time'}
