@@ -93,6 +93,24 @@ export function BetStatusText(props: {
       bet.fills?.some((fill) => fill.matchedBetId === null)) ??
     false
 
+  const fromProb =
+    hadPoolMatch || isFreeResponse
+      ? isPseudoNumeric
+        ? formatNumericProbability(bet.probBefore, contract)
+        : formatPercent(bet.probBefore)
+      : isPseudoNumeric
+      ? formatNumericProbability(bet.limitProb ?? bet.probBefore, contract)
+      : formatPercent(bet.limitProb ?? bet.probBefore)
+
+  const toProb =
+    hadPoolMatch || isFreeResponse
+      ? isPseudoNumeric
+        ? formatNumericProbability(bet.probAfter, contract)
+        : formatPercent(bet.probAfter)
+      : isPseudoNumeric
+      ? formatNumericProbability(bet.limitProb ?? bet.probAfter, contract)
+      : formatPercent(bet.limitProb ?? bet.probAfter)
+
   return (
     <div className="text-sm text-gray-500">
       {bettor ? (
@@ -112,22 +130,9 @@ export function BetStatusText(props: {
             contract={contract}
             truncate="short"
           />{' '}
-          {isPseudoNumeric
-            ? ' from ' + formatNumericProbability(bet.probBefore, contract)
-            : ' from ' +
-              formatPercent(
-                hadPoolMatch || isFreeResponse
-                  ? bet.probBefore
-                  : bet.limitProb ?? bet.probBefore
-              )}
-          {isPseudoNumeric
-            ? ' to ' + formatNumericProbability(bet.probAfter, contract)
-            : ' to ' +
-              formatPercent(
-                hadPoolMatch || isFreeResponse
-                  ? bet.probAfter
-                  : bet.limitProb ?? bet.probAfter
-              )}
+          {fromProb === toProb
+            ? `at ${fromProb}`
+            : `from ${fromProb} to ${toProb}`}
         </>
       )}
       <RelativeTimestamp time={createdTime} />
