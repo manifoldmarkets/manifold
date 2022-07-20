@@ -16,7 +16,6 @@ import {
   User,
 } from 'common/user'
 import { getUser } from 'web/lib/firebase/users'
-import { LoadingIndicator } from 'web/components/loading-indicator'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
