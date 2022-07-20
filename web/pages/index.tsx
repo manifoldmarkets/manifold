@@ -1,5 +1,6 @@
-import React from 'react'
-
+import React, { useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { useUser } from 'web/hooks/use-user'
 import { Contract, getContractsBySlugs } from 'web/lib/firebase/contracts'
 import { Page } from 'web/components/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
@@ -26,6 +27,17 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
 
 export default function Home(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
+
+  // for now this redirect in the component is how we handle the case where they are
+  // on this page and they log in -- in the future we will make some cleaner way
+  const user = useUser()
+  const router = useRouter()
+  useEffect(() => {
+    if (user != null) {
+      router.replace('/home')
+    }
+  }, [router, user])
+
   return (
     <Page>
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
