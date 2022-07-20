@@ -125,7 +125,9 @@ export function ContractSearch(props: {
       additionalFilter?.groupSlug
         ? `groupSlugs:${additionalFilter.groupSlug}`
         : '',
-      pillFilter && pillFilter !== 'personal' ? `groupSlugs:${pillFilter}` : '',
+      pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
+        ? `groupSlugs:${pillFilter}`
+        : '',
       pillFilter === 'personal'
         ? // Show contracts in groups that the user is a member of
           memberGroupSlugs
@@ -135,9 +137,13 @@ export function ContractSearch(props: {
             // Show contracts bet on by users the user follows
             .concat(
               follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
-              // Show contracts bet on by the user
             )
-            .concat(user ? `uniqueBettorIds:${user.id}` : [])
+        : '',
+      // Subtract contracts you bet on from For you.
+      pillFilter === 'personal' && user ? `uniqueBettorIds:-${user.id}` : '',
+      pillFilter === 'your-bets' && user
+        ? // Show contracts bet on by the user
+          `uniqueBettorIds:${user.id}`
         : '',
     ].filter((f) => f)
     // Hack to make Algolia work.
@@ -226,6 +232,14 @@ export function ContractSearch(props: {
             onSelect={() => setPillFilter('personal')}
           >
             For you
+          </PillButton>
+
+          <PillButton
+            key={'your-bets'}
+            selected={pillFilter === 'your-bets'}
+            onSelect={() => setPillFilter('your-bets')}
+          >
+            Your bets
           </PillButton>
 
           {pillGroups.map(({ name, slug }) => {
