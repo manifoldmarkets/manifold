@@ -235,7 +235,10 @@ export default function Sidebar(props: { className?: string }) {
             buttonContent={<MoreButton />}
           />
         )}
-
+        {/* Spacer if there are any groups */}
+        {memberItems.length > 0 && (
+          <hr className="!my-4 mr-2 border-gray-300" />
+        )}
         {privateUser && (
           <GroupsList
             currentPage={router.asPath}
@@ -256,11 +259,7 @@ export default function Sidebar(props: { className?: string }) {
         />
 
         {/* Spacer if there are any groups */}
-        {memberItems.length > 0 && (
-          <div className="py-3">
-            <div className="h-[1px] bg-gray-300" />
-          </div>
-        )}
+        {memberItems.length > 0 && <hr className="!my-4 border-gray-300" />}
         {privateUser && (
           <GroupsList
             currentPage={router.asPath}
