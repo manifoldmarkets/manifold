@@ -111,9 +111,7 @@ export function ContractSearch(props: {
     querySortOptions?.defaultFilter ?? 'open'
   )
   const pillsEnabled = !additionalFilter
-  const [pillFilter, setPillFilter] = useState<string | undefined>(
-    pillsEnabled ? 'personal' : undefined
-  )
+  const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
 
   const { filters, numericFilters } = useMemo(() => {
     let filters = [
