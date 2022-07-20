@@ -142,7 +142,7 @@ export function CommentRepliesList(props: {
           id={comment.id}
           className={clsx(
             'relative',
-            !treatFirstIndexEqually && commentIdx === 0 ? '' : 'mt-3 ml-6'
+            !treatFirstIndexEqually && commentIdx === 0 ? '' : 'ml-6'
           )}
         >
           {/*draw a gray line from the comment to the left:*/}
