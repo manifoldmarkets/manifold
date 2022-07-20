@@ -423,13 +423,18 @@ function RangeOrderPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
+  const rangeError =
+    lowLimitProb !== undefined &&
+    highLimitProb !== undefined &&
+    lowLimitProb >= highLimitProb
+
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
   }
 
   async function submitBet() {
-    if (!user || !betAmount) return
+    if (!user || !betAmount || rangeError) return
 
     const limitProbScaled =
       lowLimitProb !== undefined ? lowLimitProb / 100 : undefined
@@ -474,7 +479,7 @@ function RangeOrderPanel(props: {
     })
   }
 
-  const betDisabled = isSubmitting || !betAmount || error
+  const betDisabled = isSubmitting || !betAmount || rangeError || error
 
   const lowProbFrac = (lowLimitProb ?? initialProb * 100) / 100
   const {
@@ -507,8 +512,8 @@ function RangeOrderPanel(props: {
   return (
     <>
       <div className="my-3 text-sm text-gray-500">
-        Trigger when the {isPseudoNumeric ? 'value' : 'probability'} reaches low
-        or high limit.
+        Bet only when the {isPseudoNumeric ? 'value' : 'probability'} reaches
+        low or high limit.
       </div>
 
       <Row className="items-center gap-4">
@@ -533,6 +538,12 @@ function RangeOrderPanel(props: {
           />
         </Col>
       </Row>
+
+      {rangeError && (
+        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+          Low limit must be less than high limit
+        </div>
+      )}
 
       <div className="my-3 text-left text-sm text-gray-500">
         Max amount<span className="ml-1 text-red-500">*</span>
