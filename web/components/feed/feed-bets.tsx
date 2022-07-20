@@ -113,8 +113,16 @@ export function BetStatusText(props: {
             truncate="short"
           />{' '}
           {isPseudoNumeric
-            ? ' than ' + formatNumericProbability(bet.probAfter, contract)
-            : ' at ' +
+            ? ' from ' + formatNumericProbability(bet.probBefore, contract)
+            : ' from ' +
+              formatPercent(
+                hadPoolMatch || isFreeResponse
+                  ? bet.probBefore
+                  : bet.limitProb ?? bet.probBefore
+              )}
+          {isPseudoNumeric
+            ? ' to ' + formatNumericProbability(bet.probAfter, contract)
+            : ' to ' +
               formatPercent(
                 hadPoolMatch || isFreeResponse
                   ? bet.probAfter
