@@ -1,7 +1,6 @@
 import { createContext, useEffect } from 'react'
 import { User } from 'common/user'
 import { onIdTokenChanged } from 'firebase/auth'
-
 import {
   auth,
   listenForUser,
@@ -16,25 +15,32 @@ import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
 
+const ensureDeviceToken = () => {
+  let deviceToken = localStorage.getItem('device-token')
+  if (!deviceToken) {
+    deviceToken = randomString()
+    localStorage.setItem('device-token', deviceToken)
+  }
+  return deviceToken
+}
+
 export const AuthContext = createContext<User | null>(null)
 
 export function AuthProvider({ children }: any) {
   const [currentUser, setCurrentUser] = useStateCheckEquality<User | null>(null)
+
   useEffect(() => {
     const cachedUser = localStorage.getItem(CACHED_USER_KEY)
     setCurrentUser(cachedUser && JSON.parse(cachedUser))
   }, [setCurrentUser])
+
   useEffect(() => {
     return onIdTokenChanged(auth, async (fbUser) => {
       if (fbUser) {
-        let user: User | null = await getUser(fbUser.uid)
+        let user = await getUser(fbUser.uid)
         if (!user) {
-          let deviceToken = localStorage.getItem('device-token')
-          if (!deviceToken) {
-            deviceToken = randomString()
-            localStorage.setItem('device-token', deviceToken)
-          }
-          user = await createUser({ deviceToken }).then((r) => r as User)
+          const deviceToken = ensureDeviceToken()
+          user = (await createUser({ deviceToken })) as User
         }
         setCurrentUser(user)
         // Persist to local storage, to reduce login blink next time.
@@ -55,7 +61,6 @@ export function AuthProvider({ children }: any) {
     if (currentUser) {
       identifyUser(currentUser.id)
       setUserProperty('username', currentUser.username)
-
       return listenForUser(currentUser.id, setCurrentUser)
     }
   }, [currentUser, setCurrentUser])
