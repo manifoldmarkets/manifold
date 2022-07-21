@@ -4,7 +4,7 @@ import { User } from 'common/user'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { Avatar } from '../avatar'
 
-// copied from https://tiptap.dev/api/nodes/mention
+// copied from https://tiptap.dev/api/nodes/mention#usage
 export const MentionList = forwardRef((props: SuggestionProps<User>, ref) => {
   const { items: users, command } = props
 
