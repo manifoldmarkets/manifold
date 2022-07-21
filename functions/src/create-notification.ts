@@ -16,7 +16,7 @@ import { getContractBetMetrics } from '../../common/calculate'
 import { removeUndefinedProps } from '../../common/util/object'
 import { TipTxn } from '../../common/txn'
 import { Group, GROUP_CHAT_SLUG } from '../../common/group'
-import { Challenge } from 'common/lib/challenge'
+import { Challenge } from '../../common/challenge'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {

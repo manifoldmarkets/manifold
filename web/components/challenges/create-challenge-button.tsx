@@ -11,7 +11,7 @@ import { DuplicateIcon } from '@heroicons/react/outline'
 import { createChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Contract } from 'common/contract'
 import { CopyLinkButton } from 'web/components/copy-link-button'
-import { getOutcomeProbability } from 'common/lib/calculate'
+import { getOutcomeProbability } from 'common/calculate'
 import { SiteLink } from 'web/components/site-link'
 
 type challengeInfo = {
