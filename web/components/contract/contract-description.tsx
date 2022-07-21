@@ -99,9 +99,6 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
               .setContent(contract.description)
               .focus('end')
               .insertContent(`<p>${editTimestamp()}</p>`)
-              .insertContent(
-                `<iframe src="https://manifold.markets/embed/Austin/how-many-upvotes-will-the-new-versi" frameborder="0"></iframe>`
-              )
               .run()
           }}
         >

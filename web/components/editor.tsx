@@ -71,12 +71,20 @@ export function useTextEditor(props: {
           (file) => file.type.startsWith('image')
         )
 
-        if (!imageFiles.length) {
-          return // if no files pasted, use default paste handler
+        if (imageFiles.length) {
+          event.preventDefault()
+          upload.mutate(imageFiles)
         }
 
-        event.preventDefault()
-        upload.mutate(imageFiles)
+        // If the pasted content is iframe code, directly inject it
+        const text = event.clipboardData?.getData('text/plain').trim() ?? ''
+        const isValidIframe = /^<iframe.*<\/iframe>$/.test(text)
+        if (isValidIframe) {
+          editor.chain().insertContent(text).run()
+          return true // Prevent the code from getting pasted as text
+        }
+
+        return // Otherwise, use default paste handler
       },
     },
   })
