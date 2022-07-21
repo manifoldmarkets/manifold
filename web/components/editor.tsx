@@ -66,7 +66,6 @@ export function useTextEditor(props: {
           HTMLAttributes: {
             class: clsx('not-prose text-indigo-700', linkClass),
           },
-          // TODO: do a Next link instead of raw <a>
           renderLabel: ({ options, node }) =>
             [
               'a',
