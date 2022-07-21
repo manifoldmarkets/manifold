@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react'
 import { useFirestoreDocumentData } from '@react-query-firebase/firestore'
 import { QueryClient } from 'react-query'
 
-import { doc, DocumentData } from 'firebase/firestore'
+import { doc, DocumentData, where } from 'firebase/firestore'
 import { PrivateUser } from 'common/user'
 import {
   getUser,

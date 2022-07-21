@@ -41,6 +41,7 @@ import { LimitBets } from './limit-bets'
 import { BucketInput } from './bucket-input'
 import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
+import { CreateChallengeButton } from 'web/components/challenges/create-challenge-button'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -366,24 +367,27 @@ function BuyPanel(props: {
       <Spacer h={8} />
 
       {user && (
-        <button
-          className={clsx(
-            'btn flex-1',
-            betDisabled
-              ? 'btn-disabled'
-              : betChoice === 'YES'
-              ? 'btn-primary'
-              : 'border-none bg-red-400 hover:bg-red-500',
-            isSubmitting ? 'loading' : ''
-          )}
-          onClick={betDisabled ? undefined : submitBet}
-        >
-          {isSubmitting
-            ? 'Submitting...'
-            : isLimitOrder
-            ? 'Submit order'
-            : 'Submit bet'}
-        </button>
+        <Col>
+          <button
+            className={clsx(
+              'btn mb-2 flex-1',
+              betDisabled
+                ? 'btn-disabled'
+                : betChoice === 'YES'
+                ? 'btn-primary'
+                : 'border-none bg-red-400 hover:bg-red-500',
+              isSubmitting ? 'loading' : ''
+            )}
+            onClick={betDisabled ? undefined : submitBet}
+          >
+            {isSubmitting
+              ? 'Submitting...'
+              : isLimitOrder
+              ? 'Submit order'
+              : 'Submit bet'}
+          </button>
+          <CreateChallengeButton user={user} contract={contract} />
+        </Col>
       )}
 
       {wasSubmitted && (
@@ -400,29 +404,41 @@ function QuickOrLimitBet(props: {
   const { isLimitOrder, setIsLimitOrder } = props
 
   return (
-    <Row className="align-center mb-4 justify-between">
-      <div className="text-4xl">Bet</div>
-      <Row className="mt-1 items-center gap-2">
-        <PillButton
-          selected={!isLimitOrder}
-          onSelect={() => {
-            setIsLimitOrder(false)
-            track('select quick order')
-          }}
-        >
-          Quick
-        </PillButton>
-        <PillButton
-          selected={isLimitOrder}
-          onSelect={() => {
-            setIsLimitOrder(true)
-            track('select limit order')
-          }}
-        >
-          Limit
-        </PillButton>
+    <Col className="align-center mb-4 justify-between">
+      <Row>
+        <div className="text-4xl">Bet</div>
+        <Row className="mt-1 w-full items-center justify-end gap-0.5">
+          <PillButton
+            selected={!isLimitOrder}
+            onSelect={() => {
+              setIsLimitOrder(false)
+              track('select quick order')
+            }}
+          >
+            Quick
+          </PillButton>
+          <PillButton
+            selected={isLimitOrder}
+            onSelect={() => {
+              setIsLimitOrder(true)
+              track('select limit order')
+            }}
+          >
+            Limit
+          </PillButton>
+          <PillButton
+            selected={isLimitOrder}
+            onSelect={() => {
+              setIsLimitOrder(true)
+              track('select limit order')
+            }}
+          >
+            Peer
+          </PillButton>
+        </Row>
       </Row>
-    </Row>
+      <Row className={'mt-2 justify-end'}></Row>
+    </Col>
   )
 }
 

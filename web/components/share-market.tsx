@@ -1,7 +1,5 @@
 import clsx from 'clsx'
-
 import { ENV_CONFIG } from 'common/envs/constants'
-
 import { Contract, contractPath, contractUrl } from 'web/lib/firebase/contracts'
 import { CopyLinkButton } from './copy-link-button'
 import { Col } from './layout/col'

@@ -2,7 +2,6 @@ import React, { Fragment } from 'react'
 import { LinkIcon } from '@heroicons/react/outline'
 import { Menu, Transition } from '@headlessui/react'
 import clsx from 'clsx'
-
 import { copyToClipboard } from 'web/lib/util/copy'
 import { ToastClipboard } from 'web/components/toast-clipboard'
 import { track } from 'web/lib/service/analytics'
@@ -14,6 +13,8 @@ export function CopyLinkButton(props: {
   tracking?: string
   buttonClassName?: string
   toastClassName?: string
+  icon?: React.ComponentType<{ className?: string }>
+  label?: string
 }) {
   const { url, displayUrl, tracking, buttonClassName, toastClassName } = props
 

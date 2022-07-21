@@ -76,8 +76,12 @@ export default function ContractEmbedPage(props: {
   return <ContractEmbed contract={contract} bets={bets} />
 }
 
-function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
-  const { contract, bets } = props
+export function ContractEmbed(props: {
+  contract: Contract
+  bets: Bet[]
+  height?: number
+}) {
+  const { contract, bets, height } = props
   const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
@@ -89,10 +93,11 @@ function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   const { setElem, height: topSectionHeight } = useMeasureSize()
   const paddingBottom = 8
 
-  const graphHeight =
-    windowHeight && topSectionHeight
+  const graphHeight = !height
+    ? windowHeight && topSectionHeight
       ? windowHeight - topSectionHeight - paddingBottom
       : 0
+    : height
 
   return (
     <Col className="w-full flex-1 bg-white">

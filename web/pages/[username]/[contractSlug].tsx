@@ -168,10 +168,12 @@ export function ContractPageContent(
         (isNumeric ? (
           <NumericBetPanel className="hidden xl:flex" contract={contract} />
         ) : (
-          <BetPanel
-            className="hidden xl:flex"
-            contract={contract as CPMMBinaryContract}
-          />
+          <div>
+            <BetPanel
+              className="hidden xl:flex"
+              contract={contract as CPMMBinaryContract}
+            />
+          </div>
         ))}
       {allowResolve &&
         (isNumeric || isPseudoNumeric ? (
