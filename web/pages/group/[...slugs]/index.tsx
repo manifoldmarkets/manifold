@@ -393,6 +393,7 @@ function GroupOverview(props: {
               buttonClassName="btn-md rounded-l-none"
               toastClassName={'-left-28 mt-1'}
             />
+          </Col>
         )}
 
         <Col className={'mt-2'}>
