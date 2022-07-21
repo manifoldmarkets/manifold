@@ -29,26 +29,16 @@ const bodySchema = z.object({
   amount: z.number().gte(1),
 })
 
-const binarySchema = z
-  .union([
-    z.object({
-      outcome: z.enum(['YES', 'NO']),
-      limitProb: z.number().gte(0.001).lte(0.999).optional(),
-    }),
-    z.object({
-      lowLimitProb: z.number().gte(0.001).lte(0.999),
-      highLimitProb: z.number().gte(0.001).lte(0.999),
-    }),
-  ])
-  .superRefine((data, ctx) => {
-    if ('lowLimitProb' in data && data.lowLimitProb >= data.highLimitProb) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['lowLimitProb'],
-        message: 'lowLimitProb should be less than highLimitProb',
-      })
-    }
-  })
+const binarySchema = z.union([
+  z.object({
+    outcome: z.enum(['YES', 'NO']),
+    limitProb: z.number().gte(0.001).lte(0.999).optional(),
+  }),
+  z.object({
+    lowLimitProb: z.number().gte(0.001).lte(0.999),
+    highLimitProb: z.number().gte(0.001).lte(0.999),
+  }),
+])
 
 const freeResponseSchema = z.object({
   outcome: z.string(),
