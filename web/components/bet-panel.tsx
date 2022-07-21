@@ -25,23 +25,15 @@ import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
-import {
-  getFormattedMappedValue,
-  getPseudoProbability,
-} from 'common/pseudo-numeric'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
 import { useSaveBinaryShares } from './use-save-binary-shares'
 import { SignUpPrompt } from './sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
-import {
-  ProbabilityInput,
-  ProbabilityOrNumericInput,
-} from './probability-input'
+import { ProbabilityOrNumericInput } from './probability-input'
 import { track } from 'web/lib/service/analytics'
-import { removeUndefinedProps } from 'common/util/object'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
-import { BucketInput } from './bucket-input'
 import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
 
@@ -75,21 +67,18 @@ export function BetPanel(props: {
           isLimitOrder={isLimitOrder}
           setIsLimitOrder={setIsLimitOrder}
         />
-        {isLimitOrder ? (
-          <RangeOrderPanel
-            contract={contract}
-            user={user}
-            unfilledBets={unfilledBets}
-          />
-        ) : (
-          <BuyPanel
-            contract={contract}
-            user={user}
-            isLimitOrder={isLimitOrder}
-            unfilledBets={unfilledBets}
-          />
-        )}
-
+        <BuyPanel
+          hidden={isLimitOrder}
+          contract={contract}
+          user={user}
+          unfilledBets={unfilledBets}
+        />
+        <LimitOrderPanel
+          hidden={!isLimitOrder}
+          contract={contract}
+          user={user}
+          unfilledBets={unfilledBets}
+        />
         <SignUpPrompt />
       </Col>
       {unfilledBets.length > 0 && (
@@ -131,14 +120,20 @@ export function SimpleBetPanel(props: {
           setIsLimitOrder={setIsLimitOrder}
         />
         <BuyPanel
+          hidden={isLimitOrder}
           contract={contract}
           user={user}
           unfilledBets={unfilledBets}
           selected={selected}
           onBuySuccess={onBetSuccess}
-          isLimitOrder={isLimitOrder}
         />
-
+        <LimitOrderPanel
+          hidden={!isLimitOrder}
+          contract={contract}
+          user={user}
+          unfilledBets={unfilledBets}
+          onBuySuccess={onBetSuccess}
+        />
         <SignUpPrompt />
       </Col>
 
@@ -153,21 +148,17 @@ function BuyPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
   unfilledBets: Bet[]
-  isLimitOrder?: boolean
+  hidden: boolean
   selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
 }) {
-  const { contract, user, unfilledBets, isLimitOrder, selected, onBuySuccess } =
-    props
+  const { contract, user, unfilledBets, hidden, selected, onBuySuccess } = props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
-  const [limitProb, setLimitProb] = useState<number | undefined>(
-    Math.round(100 * initialProb)
-  )
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -197,22 +188,15 @@ function BuyPanel(props: {
 
   async function submitBet() {
     if (!user || !betAmount) return
-    if (isLimitOrder && limitProb === undefined) return
-
-    const limitProbScaled =
-      isLimitOrder && limitProb !== undefined ? limitProb / 100 : undefined
 
     setError(undefined)
     setIsSubmitting(true)
 
-    placeBet(
-      removeUndefinedProps({
-        amount: betAmount,
-        outcome: betChoice,
-        contractId: contract.id,
-        limitProb: limitProbScaled,
-      })
-    )
+    placeBet({
+      amount: betAmount,
+      outcome: betChoice,
+      contractId: contract.id,
+    })
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
@@ -237,20 +221,17 @@ function BuyPanel(props: {
       contractId: contract.id,
       amount: betAmount,
       outcome: betChoice,
-      isLimitOrder,
-      limitProb: limitProbScaled,
+      isLimitOrder: false,
     })
   }
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const limitProbFrac = (limitProb ?? 0) / 100
-
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
     betChoice ?? 'YES',
     betAmount ?? 0,
     contract,
-    isLimitOrder ? limitProbFrac : undefined,
+    undefined,
     unfilledBets as LimitBet[]
   )
 
@@ -258,11 +239,7 @@ function BuyPanel(props: {
   const probStayedSame =
     formatPercent(resultProb) === formatPercent(initialProb)
 
-  const remainingMatched = isLimitOrder
-    ? ((newBet.orderAmount ?? 0) - newBet.amount) /
-      (betChoice === 'YES' ? limitProbFrac : 1 - limitProbFrac)
-    : 0
-  const currentPayout = newBet.shares + remainingMatched
+  const currentPayout = newBet.shares
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
@@ -272,7 +249,7 @@ function BuyPanel(props: {
   const format = getFormattedMappedValue(contract)
 
   return (
-    <>
+    <Col className={hidden ? 'hidden' : ''}>
       <div className="my-3 text-left text-sm text-gray-500">
         {isPseudoNumeric ? 'Direction' : 'Outcome'}
       </div>
@@ -294,61 +271,21 @@ function BuyPanel(props: {
         disabled={isSubmitting}
         inputRef={inputRef}
       />
-      {isLimitOrder && (
-        <>
-          <Row className="my-3 items-center gap-2 text-left text-sm text-gray-500">
-            Limit {isPseudoNumeric ? 'value' : 'probability'}
-            <InfoTooltip
-              text={`Bet ${betChoice === 'NO' ? 'down' : 'up'} to this ${
-                isPseudoNumeric ? 'value' : 'probability'
-              } and wait to match other bets.`}
-            />
-          </Row>
-          {isPseudoNumeric ? (
-            <BucketInput
-              contract={contract}
-              onBucketChange={(value) =>
-                setLimitProb(
-                  value === undefined
-                    ? undefined
-                    : 100 *
-                        getPseudoProbability(
-                          value,
-                          contract.min,
-                          contract.max,
-                          contract.isLogScale
-                        )
-                )
-              }
-              isSubmitting={isSubmitting}
-            />
-          ) : (
-            <ProbabilityInput
-              inputClassName="w-full max-w-none"
-              prob={limitProb}
-              onChange={setLimitProb}
-              disabled={isSubmitting}
-            />
-          )}
-        </>
-      )}
       <Col className="mt-3 w-full gap-3">
-        {!isLimitOrder && (
-          <Row className="items-center justify-between text-sm">
-            <div className="text-gray-500">
-              {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+        <Row className="items-center justify-between text-sm">
+          <div className="text-gray-500">
+            {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+          </div>
+          {probStayedSame ? (
+            <div>{format(initialProb)}</div>
+          ) : (
+            <div>
+              {format(initialProb)}
+              <span className="mx-2">→</span>
+              {format(resultProb)}
             </div>
-            {probStayedSame ? (
-              <div>{format(initialProb)}</div>
-            ) : (
-              <div>
-                {format(initialProb)}
-                <span className="mx-2">→</span>
-                {format(resultProb)}
-              </div>
-            )}
-          </Row>
-        )}
+          )}
+        </Row>
 
         <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
@@ -389,28 +326,23 @@ function BuyPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting
-            ? 'Submitting...'
-            : isLimitOrder
-            ? 'Submit order'
-            : 'Submit bet'}
+          {isSubmitting ? 'Submitting...' : 'Submit bet'}
         </button>
       )}
 
-      {wasSubmitted && (
-        <div className="mt-4">{isLimitOrder ? 'Order' : 'Bet'} submitted!</div>
-      )}
-    </>
+      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
+    </Col>
   )
 }
 
-function RangeOrderPanel(props: {
+function LimitOrderPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
   unfilledBets: Bet[]
+  hidden: boolean
   onBuySuccess?: () => void
 }) {
-  const { contract, user, unfilledBets, onBuySuccess } = props
+  const { contract, user, unfilledBets, hidden, onBuySuccess } = props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -554,7 +486,7 @@ function RangeOrderPanel(props: {
   const noReturnPercent = formatPercent(noReturn)
 
   return (
-    <>
+    <Col className={hidden ? 'hidden' : ''}>
       <div className="my-3 text-sm text-gray-500">
         Bet only when the {isPseudoNumeric ? 'value' : 'probability'} reaches
         Low or High limit.
@@ -717,7 +649,7 @@ function RangeOrderPanel(props: {
       )}
 
       {wasSubmitted && <div className="mt-4">Order submitted!</div>}
-    </>
+    </Col>
   )
 }
 
