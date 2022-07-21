@@ -20,6 +20,7 @@ import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/pagination'
+import { Manalink } from 'common/manalink'
 dayjs.extend(customParseFormat)
 
 const LINKS_PER_PAGE = 24
@@ -39,10 +40,6 @@ export default function LinkPage() {
       (l.maxUses == null || l.claimedUserIds.length < l.maxUses) &&
       (l.expiresTime == null || l.expiresTime > Date.now())
   )
-  const [page, setPage] = useState(0)
-  const start = page * LINKS_PER_PAGE
-  const end = start + LINKS_PER_PAGE
-  const displayedLinks = unclaimedLinks.slice(start, end)
 
   if (user == null) {
     return null
@@ -71,6 +68,35 @@ export default function LinkPage() {
           don&apos;t yet have a Manifold account.
         </p>
         <Subtitle text="Your Manalinks" />
+        <ManalinksDisplay
+          unclaimedLinks={unclaimedLinks}
+          highlightedSlug={highlightedSlug}
+        />
+      </Col>
+    </Page>
+  )
+}
+
+function ManalinksDisplay(props: {
+  unclaimedLinks: Manalink[]
+  highlightedSlug: string
+}) {
+  const { unclaimedLinks, highlightedSlug } = props
+
+  if (unclaimedLinks.length === 0) {
+    return (
+      <div>
+        You don't have any unclaimed manalinks. Send some more to spread the
+        wealth!
+      </div>
+    )
+  } else {
+    const [page, setPage] = useState(0)
+    const start = page * LINKS_PER_PAGE
+    const end = start + LINKS_PER_PAGE
+    const displayedLinks = unclaimedLinks.slice(start, end)
+    return (
+      <>
         <Col className="grid w-full gap-4 md:grid-cols-2">
           {displayedLinks.map((link) => {
             return (
@@ -89,9 +115,9 @@ export default function LinkPage() {
           className="mt-4 bg-transparent"
           scrollToTop
         />
-      </Col>
-    </Page>
-  )
+      </>
+    )
+  }
 }
 
 // TODO: either utilize this or get rid of it
