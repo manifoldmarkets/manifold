@@ -47,7 +47,7 @@ export default function ReferralsPage() {
 
           <InfoBox
             title="FYI"
-            className='mt-4 max-w-md'
+            className="mt-4 max-w-md"
             text="You can also earn the referral bonus from sharing the link to any market or group you've created!"
           />
         </Col>
