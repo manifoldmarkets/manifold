@@ -85,10 +85,10 @@ function ManalinksDisplay(props: {
 
   if (unclaimedLinks.length === 0) {
     return (
-      <div>
+      <p className="text-gray-500">
         You don't have any unclaimed manalinks. Send some more to spread the
         wealth!
-      </div>
+      </p>
     )
   } else {
     const [page, setPage] = useState(0)
