@@ -109,7 +109,7 @@ export async function getStaticPaths() {
 const groupSubpages = [
   undefined,
   GROUP_CHAT_SLUG,
-  'questions',
+  'markets',
   'leaderboards',
   'about',
 ] as const
@@ -226,9 +226,9 @@ export default function GroupPage(props: {
           },
         ]),
     {
-      title: 'Questions',
+      title: 'Markets',
       content: questionsTab,
-      href: groupPath(group.slug, 'questions'),
+      href: groupPath(group.slug, 'markets'),
     },
     {
       title: 'Leaderboards',
