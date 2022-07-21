@@ -13,6 +13,10 @@ import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 
+// Either we haven't looked up the logged in user yet (undefined), or we know
+// the user is not logged in (null), or we know the user is logged in (User).
+type AuthUser = undefined | null | User
+
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
 
 const ensureDeviceToken = () => {
@@ -24,15 +28,15 @@ const ensureDeviceToken = () => {
   return deviceToken
 }
 
-export const AuthContext = createContext<User | null>(null)
+export const AuthContext = createContext<AuthUser>(null)
 
 export function AuthProvider({ children }: any) {
-  const [currentUser, setCurrentUser] = useStateCheckEquality<User | null>(null)
+  const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(undefined)
 
   useEffect(() => {
     const cachedUser = localStorage.getItem(CACHED_USER_KEY)
-    setCurrentUser(cachedUser && JSON.parse(cachedUser))
-  }, [setCurrentUser])
+    setAuthUser(cachedUser && JSON.parse(cachedUser))
+  }, [setAuthUser])
 
   useEffect(() => {
     return onIdTokenChanged(auth, async (fbUser) => {
@@ -42,7 +46,7 @@ export function AuthProvider({ children }: any) {
           const deviceToken = ensureDeviceToken()
           user = (await createUser({ deviceToken })) as User
         }
-        setCurrentUser(user)
+        setAuthUser(user)
         // Persist to local storage, to reduce login blink next time.
         // Note: Cap on localStorage size is ~5mb
         localStorage.setItem(CACHED_USER_KEY, JSON.stringify(user))
@@ -50,22 +54,24 @@ export function AuthProvider({ children }: any) {
         setAuthCookies(await fbUser.getIdToken(), fbUser.refreshToken)
       } else {
         // User logged out; reset to null
-        setCurrentUser(null)
+        setAuthUser(null)
         localStorage.removeItem(CACHED_USER_KEY)
         deleteAuthCookies()
       }
     })
-  }, [setCurrentUser])
+  }, [setAuthUser])
 
+  const authUserId = authUser?.id
+  const authUsername = authUser?.username
   useEffect(() => {
-    if (currentUser) {
-      identifyUser(currentUser.id)
-      setUserProperty('username', currentUser.username)
-      return listenForUser(currentUser.id, setCurrentUser)
+    if (authUserId && authUsername) {
+      identifyUser(authUserId)
+      setUserProperty('username', authUsername)
+      return listenForUser(authUserId, setAuthUser)
     }
-  }, [currentUser, setCurrentUser])
+  }, [authUserId, authUsername, setAuthUser])
 
   return (
-    <AuthContext.Provider value={currentUser}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>
   )
 }
