@@ -265,53 +265,6 @@ export const getBinaryBetStats = (
   return { currentPayout, currentReturn, totalFees, newBet }
 }
 
-export const getBinaryRangeBetInfo = (
-  betAmount: number,
-  contract: CPMMBinaryContract | PseudoNumericContract,
-  lowLimitProb: number,
-  highLimitProb: number,
-  unfilledBets: LimitBet[]
-) => {
-  const shares = Math.min(
-    betAmount / lowLimitProb,
-    betAmount / (1 - highLimitProb)
-  )
-  const yesAmount = shares * lowLimitProb
-  const noAmount = shares * (1 - highLimitProb)
-
-  const yesResult = getBinaryCpmmBetInfo(
-    'YES',
-    yesAmount,
-    contract,
-    lowLimitProb,
-    unfilledBets
-  )
-  const noResult = getBinaryCpmmBetInfo(
-    'NO',
-    noAmount,
-    {
-      ...contract,
-      pool: yesResult.newPool,
-      p: yesResult.newP,
-      totalLiquidity: yesResult.newTotalLiquidity,
-    },
-    highLimitProb,
-    unfilledBets
-  )
-
-  const { newP, newPool, newTotalLiquidity } = noResult
-  const makers = [...yesResult.makers, ...noResult.makers]
-
-  return {
-    yesBet: yesResult.newBet,
-    noBet: noResult.newBet,
-    newP,
-    newPool,
-    newTotalLiquidity,
-    makers,
-  }
-}
-
 export const getNewBinaryDpmBetInfo = (
   outcome: 'YES' | 'NO',
   amount: number,

@@ -14,7 +14,6 @@ import { User } from '../../common/user'
 import {
   BetInfo,
   getBinaryCpmmBetInfo,
-  getBinaryRangeBetInfo,
   getNewMultiBetInfo,
   getNumericBetsInfo,
 } from '../../common/new-bet'
@@ -29,16 +28,10 @@ const bodySchema = z.object({
   amount: z.number().gte(1),
 })
 
-const binarySchema = z.union([
-  z.object({
-    outcome: z.enum(['YES', 'NO']),
-    limitProb: z.number().gte(0.001).lte(0.999).optional(),
-  }),
-  z.object({
-    lowLimitProb: z.number().gte(0.001).lte(0.999),
-    highLimitProb: z.number().gte(0.001).lte(0.999),
-  }),
-])
+const binarySchema = z.object({
+  outcome: z.enum(['YES', 'NO']),
+  limitProb: z.number().gte(0.001).lte(0.999).optional(),
+})
 
 const freeResponseSchema = z.object({
   outcome: z.string(),
@@ -89,32 +82,20 @@ export const placebet = newEndpoint({}, async (req, auth) => {
         (outcomeType == 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
         mechanism == 'cpmm-1'
       ) {
+        const { outcome, limitProb } = validate(binarySchema, req.body)
+
         const unfilledBetsSnap = await trans.get(
           getUnfilledBetsQuery(contractDoc)
         )
         const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
-        const data = validate(binarySchema, req.body)
-        if ('outcome' in data) {
-          const { outcome, limitProb } = data
 
-          return getBinaryCpmmBetInfo(
-            outcome,
-            amount,
-            contract,
-            limitProb,
-            unfilledBets
-          )
-        } else {
-          const { lowLimitProb, highLimitProb } = data
-          const result = getBinaryRangeBetInfo(
-            amount,
-            contract,
-            lowLimitProb,
-            highLimitProb,
-            unfilledBets
-          )
-          return { newBet: result.yesBet, ...result }
-        }
+        return getBinaryCpmmBetInfo(
+          outcome,
+          amount,
+          contract,
+          limitProb,
+          unfilledBets
+        )
       } else if (outcomeType == 'FREE_RESPONSE' && mechanism == 'dpm-2') {
         const { outcome } = validate(freeResponseSchema, req.body)
         const answerDoc = contractDoc.collection('answers').doc(outcome)
