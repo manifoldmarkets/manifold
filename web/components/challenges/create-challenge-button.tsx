@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Title } from '../title'
@@ -79,6 +79,7 @@ function CreateChallengeForm(props: {
   const [isCreating, setIsCreating] = useState(false)
   const [finishedCreating, setFinishedCreating] = useState(false)
   const [copyPressed, setCopyPressed] = useState(false)
+  const [error, setError] = useState<string>('')
   setTimeout(() => setCopyPressed(false), 300)
   const defaultExpire = 'week'
   const isBinary = contract.outcomeType === 'BINARY'
@@ -93,6 +94,9 @@ function CreateChallengeForm(props: {
     prob: Math.round(getOutcomeProbability(contract, 'YES') * 100),
     message: defaultMessage,
   })
+  useEffect(() => {
+    setError('')
+  }, [challengeInfo])
 
   return (
     <>
@@ -100,6 +104,10 @@ function CreateChallengeForm(props: {
         <form
           onSubmit={(e) => {
             e.preventDefault()
+            if (user.balance < challengeInfo.amount) {
+              setError('You do not have enough mana to create this challenge')
+              return
+            }
             setIsCreating(true)
             onCreate(challengeInfo).finally(() => setIsCreating(false))
             setFinishedCreating(true)
@@ -227,6 +235,7 @@ function CreateChallengeForm(props: {
               Create
             </Button>
           </Row>
+          <Row className={'text-error'}>{error} </Row>
         </form>
       )}
       {finishedCreating && (
