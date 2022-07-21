@@ -52,12 +52,19 @@ export const getServerAuthenticatedUid = async (ctx: RequestContext) => {
   if (idToken != null) {
     try {
       return (await auth.verifyIdToken(idToken))?.uid
+    } catch {
+      // plausibly expired; try the refresh token, if it's present
+    }
+  }
+  if (refreshToken != null) {
+    try {
+      const resp = await requestFirebaseIdToken(refreshToken)
+      setAuthCookies(resp.id_token, resp.refresh_token, ctx.res)
+      return (await auth.verifyIdToken(resp.id_token))?.uid
     } catch (e) {
-      if (refreshToken != null) {
-        const resp = await requestFirebaseIdToken(refreshToken)
-        setAuthCookies(resp.id_token, resp.refresh_token, ctx.res)
-        return (await auth.verifyIdToken(resp.id_token))?.uid
-      }
+      // this is a big unexpected problem -- either their cookies are corrupt
+      // or the refresh token API is down. functionally, they are not logged in
+      console.error(e)
     }
   }
   return undefined

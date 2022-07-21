@@ -48,6 +48,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   groupSlugs?: string[]
   uniqueBettorIds?: string[]
   uniqueBettorCount?: number
+  popularityScore?: number
 } & T
 
 export type BinaryContract = Contract & Binary

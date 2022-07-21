@@ -1,4 +1,5 @@
 import { take, sortBy, debounce } from 'lodash'
+import PlusSmIcon from '@heroicons/react/solid/PlusSmIcon'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Page } from 'web/components/page'
@@ -32,10 +33,7 @@ import { SEO } from 'web/components/SEO'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
-import {
-  createButtonStyle,
-  CreateQuestionButton,
-} from 'web/components/create-question-button'
+import { CreateQuestionButton } from 'web/components/create-question-button'
 import React, { useEffect, useState } from 'react'
 import { GroupChat } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
@@ -44,7 +42,6 @@ import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
-import { ShareIconButton } from 'web/components/share-icon-button'
 import { REFERRAL_AMOUNT } from 'common/user'
 import { ContractSearch } from 'web/components/contract-search'
 import clsx from 'clsx'
@@ -54,6 +51,7 @@ import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { CopyLinkButton } from 'web/components/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -116,7 +114,7 @@ const groupSubpages = [
   undefined,
   GROUP_CHAT_SLUG,
   'questions',
-  'rankings',
+  'leaderboards',
   'about',
 ] as const
 
@@ -239,9 +237,9 @@ export default function GroupPage(props: {
       href: groupPath(group.slug, 'questions'),
     },
     {
-      title: 'Rankings',
+      title: 'Leaderboards',
       content: leaderboard,
-      href: groupPath(group.slug, 'rankings'),
+      href: groupPath(group.slug, 'leaderboards'),
     },
     {
       title: 'About',
@@ -255,7 +253,7 @@ export default function GroupPage(props: {
     <Page
       rightSidebar={showChatSidebar ? chatTab : undefined}
       rightSidebarClassName={showChatSidebar ? '!top-0' : ''}
-      className={showChatSidebar ? '!max-w-none !pb-0' : ''}
+      className={showChatSidebar ? '!max-w-7xl !pb-0' : ''}
     >
       <SEO
         title={group.name}
@@ -266,9 +264,7 @@ export default function GroupPage(props: {
         <Row className={'items-center justify-between gap-4'}>
           <div className={'sm:mb-1'}>
             <div
-              className={
-                'line-clamp-1 my-1 text-lg text-indigo-700 sm:my-3 sm:text-2xl'
-              }
+              className={'line-clamp-1 my-2 text-2xl text-indigo-700 sm:my-3'}
             >
               {group.name}
             </div>
@@ -276,7 +272,7 @@ export default function GroupPage(props: {
               <Linkify text={group.about} />
             </div>
           </div>
-          <div className="hidden sm:block xl:hidden">
+          <div className="mt-2">
             <JoinOrAddQuestionsButtons
               group={group}
               user={user}
@@ -284,13 +280,6 @@ export default function GroupPage(props: {
             />
           </div>
         </Row>
-        <div className="block sm:hidden">
-          <JoinOrAddQuestionsButtons
-            group={group}
-            user={user}
-            isMember={!!isMember}
-          />
-        </div>
       </Col>
       <Tabs
         currentPageForAnalytics={groupPath(group.slug)}
@@ -309,21 +298,7 @@ function JoinOrAddQuestionsButtons(props: {
 }) {
   const { group, user, isMember } = props
   return user && isMember ? (
-    <Row
-      className={'-mt-2 justify-between sm:mt-0 sm:flex-col sm:justify-center'}
-    >
-      <CreateQuestionButton
-        user={user}
-        overrideText={'Add a new question'}
-        className={'hidden w-48 flex-shrink-0 sm:block'}
-        query={`?groupId=${group.id}`}
-      />
-      <CreateQuestionButton
-        user={user}
-        overrideText={'New question'}
-        className={'block w-40 flex-shrink-0 sm:hidden'}
-        query={`?groupId=${group.id}`}
-      />
+    <Row className={'mt-0 justify-end'}>
       <AddContractButton group={group} user={user} />
     </Row>
   ) : group.anyoneCanJoin ? (
@@ -353,6 +328,11 @@ function GroupOverview(props: {
       error: "Couldn't update group",
     })
   }
+
+  const postFix = user ? '?referrer=' + user.username : ''
+  const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
+    group.slug
+  )}${postFix}`
 
   return (
     <>
@@ -398,22 +378,25 @@ function GroupOverview(props: {
             </span>
           )}
         </Row>
+
         {anyoneCanJoin && user && (
-          <Row className={'flex-wrap items-center gap-1'}>
-            <span className={'text-gray-500'}>Share</span>
-            <ShareIconButton
-              copyPayload={`https://${ENV_CONFIG.domain}${groupPath(
-                group.slug
-              )}${user?.username ? '?referrer=' + user?.username : ''}`}
-              buttonClassName={'hover:bg-gray-300 mt-1 !text-gray-700'}
-            >
-              <span className={'mx-2'}>
-                Invite a friend and get M${REFERRAL_AMOUNT} if they sign up!
-              </span>
-            </ShareIconButton>
-          </Row>
+          <Col className="my-4 px-2">
+            <div className="text-lg">Invite</div>
+            <div className={'mb-2 text-gray-500'}>
+              Invite a friend to this group and get M${REFERRAL_AMOUNT} if they
+              sign up!
+            </div>
+
+            <CopyLinkButton
+              url={shareUrl}
+              tracking="copy group share link"
+              buttonClassName="btn-md rounded-l-none"
+              toastClassName={'-left-28 mt-1'}
+            />
         )}
+
         <Col className={'mt-2'}>
+          <div className="mb-2 text-lg">Members</div>
           <GroupMemberSearch members={members} group={group} />
         </Col>
       </Col>
@@ -514,14 +497,14 @@ function GroupLeaderboards(props: {
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => traderScores[user.id] ?? 0}
-              title="🏅 Bettor rankings"
+              title="🏅 Top bettors"
               header="Profit"
               maxToShow={maxToShow}
             />
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => creatorScores[user.id] ?? 0}
-              title="🏅 Creator rankings"
+              title="🏅 Top creators"
               header="Market volume"
               maxToShow={maxToShow}
             />
@@ -561,7 +544,7 @@ function GroupLeaderboards(props: {
 }
 
 function AddContractButton(props: { group: Group; user: User }) {
-  const { group } = props
+  const { group, user } = props
   const [open, setOpen] = useState(false)
 
   async function addContractToCurrentGroup(contract: Contract) {
@@ -571,16 +554,39 @@ function AddContractButton(props: { group: Group; user: User }) {
 
   return (
     <>
+      <div className={'flex justify-center'}>
+        <button
+          className={clsx('btn btn-sm btn-outline')}
+          onClick={() => setOpen(true)}
+        >
+          <PlusSmIcon className="h-6 w-6" aria-hidden="true" /> question
+        </button>
+      </div>
+
       <Modal open={open} setOpen={setOpen} className={'sm:p-0'}>
         <Col
           className={
-            'max-h-[60vh] min-h-[60vh] w-full gap-4 rounded-md bg-white p-8'
+            'max-h-[60vh] min-h-[60vh] w-full gap-4 rounded-md bg-white'
           }
         >
-          <div className={'text-lg text-indigo-700'}>
-            Add a question to your group
-          </div>
-          <div className={'overflow-y-scroll p-1'}>
+          <Col className="p-8 pb-0">
+            <div className={'text-xl text-indigo-700'}>
+              Add a question to your group
+            </div>
+
+            <Col className="items-center">
+              <CreateQuestionButton
+                user={user}
+                overrideText={'New question'}
+                className={'w-48 flex-shrink-0 '}
+                query={`?groupId=${group.id}`}
+              />
+
+              <div className={'mt-2 text-lg text-indigo-700'}>or</div>
+            </Col>
+          </Col>
+
+          <div className={'overflow-y-scroll sm:px-8'}>
             <ContractSearch
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
@@ -592,26 +598,6 @@ function AddContractButton(props: { group: Group; user: User }) {
           </div>
         </Col>
       </Modal>
-      <div className={'flex justify-center'}>
-        <button
-          className={clsx(
-            createButtonStyle,
-            'hidden w-48 whitespace-nowrap border border-black text-black hover:bg-black hover:text-white sm:block'
-          )}
-          onClick={() => setOpen(true)}
-        >
-          Add an old question
-        </button>
-        <button
-          className={clsx(
-            createButtonStyle,
-            'block w-40 whitespace-nowrap border border-black text-black hover:bg-black hover:text-white sm:hidden'
-          )}
-          onClick={() => setOpen(true)}
-        >
-          Old question
-        </button>
-      </div>
     </>
   )
 }
