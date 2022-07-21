@@ -33,7 +33,7 @@ export default function ReferralsPage() {
             height={200}
           />
 
-          <div className={'mb-4 text-gray-500'}>
+          <div className={'mb-4'}>
             Invite new users to Manifold and get M${REFERRAL_AMOUNT} if they
             sign up!
           </div>
