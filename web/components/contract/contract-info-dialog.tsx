@@ -19,7 +19,7 @@ import { InfoTooltip } from '../info-tooltip'
 import { DuplicateContractButton } from '../copy-contract-button'
 
 export const contractDetailsButtonClassName =
-  'group flex items-center rounded-md px-3 py-2 text-sm font-medium  cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
+  'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
 
 export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
