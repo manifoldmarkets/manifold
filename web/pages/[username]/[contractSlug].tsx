@@ -10,7 +10,7 @@ import { useUser } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
-import { listUsers, User, writeReferralInfo } from 'web/lib/firebase/users'
+import { listUsers, User } from 'web/lib/firebase/users'
 import {
   Contract,
   getContractFromSlug,
@@ -43,9 +43,9 @@ import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
-import { useRouter } from 'next/router'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { richTextToString } from 'common/util/parse'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -157,15 +157,10 @@ export function ContractPageContent(
 
   const ogCardProps = getOpenGraphProps(contract)
 
-  const router = useRouter()
-
-  useEffect(() => {
-    const { referrer } = router.query as {
-      referrer?: string
-    }
-    if (!user && router.isReady)
-      writeReferralInfo(contract.creatorUsername, contract.id, referrer)
-  }, [user, contract, router])
+  useSaveReferral(user, {
+    defaultReferrer: contract.creatorUsername,
+    contractId: contract.id,
+  })
 
   const rightSidebar = hasSidePanel ? (
     <Col className="gap-4">

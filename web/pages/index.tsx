@@ -7,6 +7,7 @@ import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   // These hardcoded markets will be shown in the frontpage for signed-out users:
@@ -32,6 +33,9 @@ export default function Home(props: { hotContracts: Contract[] }) {
   // on this page and they log in -- in the future we will make some cleaner way
   const user = useUser()
   const router = useRouter()
+
+  useSaveReferral()
+
   useEffect(() => {
     if (user != null) {
       router.replace('/home')

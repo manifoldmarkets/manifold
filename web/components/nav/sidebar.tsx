@@ -63,6 +63,7 @@ function getMoreNavigation(user?: User | null) {
 
   return [
     { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Referrals', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
     { name: 'Send M$', href: '/links' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -114,6 +115,7 @@ function getMoreMobileNav() {
     ...(IS_PRIVATE_MANIFOLD
       ? []
       : [
+          { name: 'Referrals', href: '/referrals' },
           { name: 'Charity', href: '/charity' },
           { name: 'Send M$', href: '/links' },
           { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
