@@ -16,9 +16,6 @@ import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY'
 
-// used to avoid weird race condition
-let createUserPromise: Promise<User> | undefined = undefined
-
 export const AuthContext = createContext<User | null>(null)
 
 export function AuthProvider({ children }: any) {
@@ -32,17 +29,12 @@ export function AuthProvider({ children }: any) {
       if (fbUser) {
         let user: User | null = await getUser(fbUser.uid)
         if (!user) {
-          if (createUserPromise == null) {
-            let deviceToken = localStorage.getItem('device-token')
-            if (!deviceToken) {
-              deviceToken = randomString()
-              localStorage.setItem('device-token', deviceToken)
-            }
-            createUserPromise = createUser({ deviceToken }).then(
-              (r) => r as User
-            )
+          let deviceToken = localStorage.getItem('device-token')
+          if (!deviceToken) {
+            deviceToken = randomString()
+            localStorage.setItem('device-token', deviceToken)
           }
-          user = await createUserPromise
+          user = await createUser({ deviceToken }).then((r) => r as User)
         }
         setCurrentUser(user)
         // Persist to local storage, to reduce login blink next time.
@@ -53,7 +45,6 @@ export function AuthProvider({ children }: any) {
       } else {
         // User logged out; reset to null
         setCurrentUser(null)
-        createUserPromise = undefined
         localStorage.removeItem(CACHED_USER_KEY)
         deleteAuthCookies()
       }
