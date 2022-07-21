@@ -8,10 +8,9 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
-import { formatMoney } from 'common/lib/util/format'
+import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/button'
 import clsx from 'clsx'
-import { InfoTooltip } from 'web/components/info-tooltip'
 
 export function AcceptChallengeButton(props: {
   user: User | null | undefined
