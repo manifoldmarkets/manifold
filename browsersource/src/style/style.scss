@@ -2,20 +2,17 @@
  * COPYRIGHT 2022 Phil Bladen www.philbladen.co.uk
  */
 
+@import "./spinner.scss";
+
 $borderWidth: 8px;
 
 html,
 body {
-    // width: 100%;
     margin: 0;
     padding: 0;
     
     font-family: 'Readex Pro', sans-serif;
-    // font-family: 'Roboto Condensed', sans-serif;
-    
-    // overflow: hidden;
-    
-    font-size: calc(min(70px, 5.5vw));
+    font-size: calc(min(70px, 4.5vw));
 }
 
 body {
@@ -26,20 +23,13 @@ body {
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    // justify-content: stretch;
     
     color: white;
-    // text-align: center;
-
-    // background-color: #212121;
 }
 
 .content {
     width: 100%;
-    // max-height: 100%;
     background-color: #212121;
-
-    // overflow: hidden;
 }
 
 .row {
@@ -52,35 +42,13 @@ body {
     flex-direction: column;
 }
 
-#test {
-    width: 100%;
-    // height: calc(100% - 20px);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-
-
-    // border: 10px white solid;
-    // border-radius: 10px;
-//     background: 
-//     linear-gradient(var(--color-bg), var(--color-bg)) padding-box,
-//     linear-gradient(to right, darkblue, darkorchid) border-box;
-//   border-radius: 50em;
-//   border: 4px solid transparent;
-
-
-}
-
 #chance {
     &::after {
         content: "%";
     }
 }
 
-.transaction {
-    // display: flex;
-    // flex-direction: row;
-
+.bet {
     transition: all 0.5s ease-in-out;
     height: 0;
     overflow: hidden;
@@ -121,6 +89,10 @@ body {
     }
 
     .amount {
+        display: inline;
+    }
+
+    .boughtSold {
         display: inline;
     }
 }

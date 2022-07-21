@@ -1,11 +1,13 @@
 {
   "name": "browser-source",
   "version": "0.0.1",
-  "description": "",
   "main": "main.js",
+  "private": true,
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "web:dev": "webpack-dev-server --config webpack.config.js"
+    "web:dev": "webpack-dev-server --config webpack.config.cjs",
+    "build": "webpack --mode=production"
   },
   "keywords": [],
   "author": "Phil Bladen",

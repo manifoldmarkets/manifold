@@ -51,22 +51,25 @@ export default class Chart {
 
     render() {
         const ctx = this.ctx;
-        const width = this.canvasElement.width >> 0;
-        const height = this.canvasElement.height >> 0;
+        const canvasWidth_px = this.canvasElement.width >> 0;
+        const canvasHeight_px = this.canvasElement.height >> 0;
+        const padding = 10;
+        const yAxisWidth = 45;
+        const numDataPoints = this.data.length;
+        const graphWidth_px = canvasWidth_px - padding * 2 - yAxisWidth;
+        const graphHeight_px = canvasHeight_px - padding * 2;
 
-        ctx.clearRect(0, 0, width, height);
+        ctx.clearRect(0, 0, canvasWidth_px, canvasHeight_px);
 
-        let grd = this.ctx.createLinearGradient(0, 0, 0, height);
+        let grd = this.ctx.createLinearGradient(0, 0, 0, canvasHeight_px);
         grd.addColorStop(0, "rgba(73, 201, 159, 0.8)");
         // grd.addColorStop(0.5, "rgba(73, 201, 159, 0.2)");
         grd.addColorStop(1, "rgba(73, 201, 159, 0.0)");
 
-        const padding = 10;
-        const numDataPoints = this.data.length;
         let minX = Number.MAX_VALUE;
         let maxX = -Number.MAX_VALUE;
-        let minY = Number.MAX_VALUE;
-        let maxY = -Number.MAX_VALUE;
+        let minY = 0;//Number.MAX_VALUE;
+        let maxY = 1;//-Number.MAX_VALUE;
         for (let dataIndex = 0; dataIndex < numDataPoints; dataIndex++) {
             let dataPoint = this.data[dataIndex];
             if (dataPoint.x < minX) {
@@ -75,63 +78,86 @@ export default class Chart {
             if (dataPoint.x > maxX) {
                 maxX = dataPoint.x;
             }
-            if (dataPoint.y < minY) {
-                minY = dataPoint.y;
-            }
-            if (dataPoint.y > maxY) {
-                maxY = dataPoint.y;
-            }
+            // if (dataPoint.y < minY) {
+            //     minY = dataPoint.y;
+            // }
+            // if (dataPoint.y > maxY) {
+            //     maxY = dataPoint.y;
+            // }
         }
 
-        ctx.translate(0.5, 0.5);
+        ctx.translate(padding + 0.5, padding + 0.5);
         {
-            ctx.lineWidth = 1;
+            // Draw Y-Axis labels:
+            ctx.fillStyle = "#FFF";
+            ctx.font = "15px Arial";
+            const numYAxisLines = 5;
+            for (let i = 0; i < numYAxisLines; i++) {
+                let y = graphHeight_px - (0.5 + (i * graphHeight_px / (numYAxisLines - 1)) >> 0);
 
+                let labelText = `${i * (100 / (numYAxisLines - 1))}%`;
+                let m = ctx.measureText(labelText);
+                ctx.fillText(labelText, yAxisWidth - m.width - 10, y + (m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) * 0.5);
+
+                // ctx.fillRect(yAxisWidth - 5.5, y - 1.5, 5, 3);
+            }
+
+            ctx.translate(yAxisWidth, 0);
+            
             // Render axis lines:
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.lineCap = "square";
+            ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+            ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.moveTo(padding, 0);
-            ctx.lineTo(padding, height);
+            // ctx.moveTo(0, 0);
+            // ctx.lineTo(0, graphHeight_px);
 
-            ctx.moveTo(padding, height - padding);
-            ctx.lineTo(padding + width, height - padding);
+            ctx.moveTo(0, graphHeight_px);
+            ctx.lineTo(graphWidth_px, graphHeight_px);
             ctx.stroke();
 
             // Render grid lines:
             ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            for (let i = 0 ; i < 5; i++) {
-                let x = (i * width / 5) >> 0;
-                ctx.moveTo(padding + x, 0.5);
-                ctx.lineTo(padding + x, height - padding - .5);
+            for (let i = 1; i < 5; i++) {
+                let x = (i * graphWidth_px / 5) >> 0;
+                ctx.moveTo(x, 0.5);
+                ctx.lineTo(x, graphHeight_px - .5);
             }
-            for (let i = 0 ; i < 4; i++) {
-                let y = 0.5 + (i * height / 4) >> 0;
-                ctx.moveTo(padding, y);
-                ctx.lineTo(padding + width, y);
+            for (let i = 0; i < numYAxisLines - 1; i++) {
+                let y = 0.5 + (i * graphHeight_px / 4) >> 0;
+                ctx.moveTo(0, y);
+                ctx.lineTo(0 + graphWidth_px, y);
             }
             ctx.stroke();
+
+            // Render data:
+            // ctx.translate(-0.5, -0.5);
+            ctx.save();
+            ctx.rect(1.5, 1.5, graphWidth_px + padding, graphHeight_px + padding);
+            ctx.clip();
+            {
+                ctx.strokeStyle = "#49C99F";
+                ctx.fillStyle = grd;//"rgba(73, 201, 159, 0.3)";
+                ctx.lineJoin = "round";
+                ctx.lineCap = "round";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for (let i = 0; i < numDataPoints; i++) {
+                    let p = this.data[i];
+                    let transformedX = ((p.x - minX) / (maxX - minX)) * graphWidth_px;
+                    let transformedY = canvasHeight_px - (((p.y - minY) / (maxY - minY)) * graphHeight_px);
+                    ctx.lineTo(transformedX, transformedY);
+                }
+                ctx.stroke();
+                ctx.lineTo(graphWidth_px, graphHeight_px);
+                ctx.lineTo(0, graphHeight_px);
+                ctx.fill();
+            }
+            ctx.restore();
         }
         ctx.resetTransform();
-
-        // Render data:
-        ctx.strokeStyle = "#49C99F";
-        ctx.fillStyle = grd;//"rgba(73, 201, 159, 0.3)";
-        ctx.lineJoin = "round";
-        ctx.lineCap = "round";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        for (let i = 0; i < numDataPoints; i++) {
-            let p = this.data[i];
-            let transformedX = ((p.x - minX) / (maxX - minX)) * (width - 2 * padding) + padding;
-            let transformedY = height - (((p.y - minY) / (maxY - minY)) * (height - 2 * padding) + padding);
-            // let transformedY = ((p.y - minY + padding) / (maxY - minY + 2 * padding)) * height;
-            ctx.lineTo(transformedX, transformedY);
-        }
-        ctx.stroke();
-        ctx.lineTo(width - padding, height);
-        ctx.lineTo(padding, height);
-        ctx.fill();
     }
 }
 

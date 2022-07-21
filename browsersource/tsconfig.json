@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "target": "es6",
-        "module": "ESNext",
+        "module": "ES6",
         "moduleResolution": "node",
         "noResolve": false,
         "noImplicitAny": false,
@@ -11,9 +11,5 @@
         "allowSyntheticDefaultImports": true,
         "lib": ["dom", "es6", "WebWorker"]
     },
-    "references": [
-        {
-            "path": "../common"
-        }
-    ]
+    "include": ["src/**/*", "../common/**/*"]
 }

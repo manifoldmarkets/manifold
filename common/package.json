@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-  },
+  "scripts": {},
   "dependencies": {
+    "moment": "^2.29.4"
   },
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }
