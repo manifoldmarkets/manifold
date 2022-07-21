@@ -1,7 +1,6 @@
 // Adopted from https://github.com/ueberdosis/tiptap/blob/main/demos/src/Experiments/Embeds/Vue/iframe.ts
 
 import { Node } from '@tiptap/core'
-import clsx from 'clsx'
 
 export interface IframeOptions {
   allowFullscreen: boolean
@@ -34,7 +33,7 @@ export default Node.create<IframeOptions>({
     return {
       allowFullscreen: true,
       HTMLAttributes: {
-        class: clsx('iframe-wrapper', wrapperClasses),
+        class: 'iframe-wrapper' + ' ' + wrapperClasses,
         // Tailwind JIT doesn't seem to pick up `pb-[20rem]`, so we hack this in:
         style: 'padding-bottom: 20rem;',
       },
@@ -68,7 +67,7 @@ export default Node.create<IframeOptions>({
         'iframe',
         {
           ...HTMLAttributes,
-          class: clsx(HTMLAttributes.class, iframeClasses),
+          class: HTMLAttributes.class + ' ' + iframeClasses,
         },
       ],
     ]
