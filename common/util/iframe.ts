@@ -13,14 +13,13 @@ export interface IframeOptions {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     iframe: {
-      /**
-       * Add an iframe
-       */
       setIframe: (options: { src: string }) => ReturnType
     }
   }
 }
 
+// These classes style the outer wrapper and the inner iframe;
+// Adopted from css in https://github.com/ueberdosis/tiptap/blob/main/demos/src/Experiments/Embeds/Vue/index.vue
 const wrapperClasses = 'relative h-auto w-full overflow-hidden'
 const iframeClasses = 'absolute top-0 left-0 h-full w-full'
 
@@ -58,11 +57,7 @@ export default Node.create<IframeOptions>({
   },
 
   parseHTML() {
-    return [
-      {
-        tag: 'iframe',
-      },
-    ]
+    return [{ tag: 'iframe' }]
   },
 
   renderHTML({ HTMLAttributes }) {
