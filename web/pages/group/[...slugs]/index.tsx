@@ -14,12 +14,7 @@ import {
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
-import {
-  firebaseLogin,
-  getUser,
-  User,
-  writeReferralInfo,
-} from 'web/lib/firebase/users'
+import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'

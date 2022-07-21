@@ -1,8 +1,7 @@
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
-import { User } from 'common/lib/user'
-import { writeReferralInfo } from 'web/lib/firebase/users'
+import { User, writeReferralInfo } from 'web/lib/firebase/users'
 
 export const useSaveReferral = (
   user?: User | null,
