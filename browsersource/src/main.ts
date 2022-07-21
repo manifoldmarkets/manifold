@@ -4,7 +4,8 @@
 
 import "./style/style.scss";
 
-import { uniqueNamesGenerator, Config, adjectives, colors, animals, countries } from 'unique-names-generator';
+import { uniqueNamesGenerator, Config, adjectives, colors, animals, countries } from "unique-names-generator";
+import moment from "moment";
 
 import Chart, { Point } from "./chart";
 
@@ -12,15 +13,22 @@ import Manifold from "common/manifold-defs";
 import { getCanvasFont, getCssStyle, getTextWidth } from "common/utils";
 import { FullBet } from "common/transaction";
 
+import io from "socket.io-client";
+
 const APIBase = "https://dev.manifold.markets/api/v0/";
+
+class BetElement {
+    bet: FullBet;
+    element: HTMLDivElement;
+}
 
 class Application {
     readonly transactionTemplate: HTMLElement;
     readonly chart: Chart;
 
-    transactions: HTMLElement[] = [];
+    betElements: BetElement[] = [];
 
-    currentProbability_percent: number = 99.1;
+    currentProbability_percent: number = 0;
     animatedProbability_percent: number = this.currentProbability_percent;
 
     currentMarket: Manifold.LiteMarket = null;
@@ -30,9 +38,27 @@ class Application {
         this.transactionTemplate.removeAttribute("id");
         this.transactionTemplate.parentElement.removeChild(this.transactionTemplate);
 
-        this.chart = new Chart(<HTMLCanvasElement> document.getElementById("chart"));
+        this.chart = new Chart(<HTMLCanvasElement>document.getElementById("chart"));
 
-        document.getElementById("question").innerHTML = "";
+        moment.relativeTimeThreshold("s", 60);
+        moment.updateLocale("en", {
+            relativeTime: {
+                future: "in %s",
+                past: "%s",
+                s: "%ds",
+                ss: "%ss",
+                m: "1m",
+                mm: "%dm",
+                h: "1h",
+                hh: "%dh",
+                d: "1d",
+                dd: "%dd",
+                M: "1m",
+                MM: "%dM",
+                y: "1y",
+                yy: "%dY",
+            },
+        });
 
         //!!! This all needs to move to another polling system for the market probability:
         let animationFrame = () => {
@@ -42,16 +68,16 @@ class Application {
             window.requestAnimationFrame(animationFrame);
         };
         window.requestAnimationFrame(animationFrame);
-        // setInterval(() => {
-        //     this.currentProbability_percent = 90 + (10 * Math.random());
-        // }, 2000);
+
+        // Update bet times:
+        setInterval(() => this.updateBetTimes(), 1000);
 
         const addRandomTransaction = () => {
             const customConfig: Config = {
                 dictionaries: [adjectives, colors, animals, countries],
-                separator: '',
+                separator: "",
                 length: 2,
-                style: "capital"
+                style: "capital",
             };
             let numWords = randomInt(2) + 1;
             while (customConfig.dictionaries.length > numWords) {
@@ -59,7 +85,7 @@ class Application {
             }
             customConfig.length = customConfig.dictionaries.length;
             let name = uniqueNamesGenerator(customConfig);
-            name = name.replace(/ /g,""); // Remove all whitespace
+            name = name.replace(/ /g, ""); // Remove all whitespace
             //!!! this.addBet(new Transaction(name, Math.ceil(Math.random() * 10) * Math.pow(10, Math.floor(3 * Math.random())), Math.random() > 0.5, Date.now()));
 
             setTimeout(addRandomTransaction, randomInt(5000));
@@ -67,62 +93,90 @@ class Application {
         // setTimeout(addRandomTransaction, 1000); !!!
 
         let lastAddedTimestamp = 0;
-        setInterval(() => {
-            fetch("/api/transactions")
-            .then(r => <Promise<FullBet[]>> r.json())
-            .then(bets => {
-                bets.reverse();
-                for (const bet of bets) {
-                    if (bet.createdTime <= lastAddedTimestamp) {
-                        continue;
-                    }
-                    this.addBet(bet);
-                    lastAddedTimestamp = bet.createdTime;
-                }
-            });
-        }, 500);
+        // setInterval(() => {
+        //     fetch("/api/transactions")
+        //     .then(r => <Promise<FullBet[]>> r.json())
+        //     .then(bets => {
+        //         bets.reverse();
+        //         for (const bet of bets) {
+        //             if (bet.createdTime <= lastAddedTimestamp) {
+        //                 continue;
+        //             }
+        //             this.addBet(bet);
+        //             lastAddedTimestamp = bet.createdTime;
+        //         }
+        //     });
+        // }, 500);
 
         this.loadMarket("this-is-a-local-market");
         // this.loadBettingHistory();
+
+        let socket = io();
+        socket.on("bets", (bets: FullBet[]) => {
+            // console.log(bet);
+            // bets.reverse();
+            for (const bet of bets) {
+                // if (bet.createdTime <= lastAddedTimestamp) {
+                //     continue;
+                // }
+                this.addBet(bet);
+                lastAddedTimestamp = bet.createdTime;
+            }
+        });
+        socket.on("clear", () => {
+            for (const bet of this.betElements) {
+                bet.element.parentElement.removeChild(bet.element);
+            }
+            this.betElements = [];
+        })
+    }
+
+    updateBetTimes() {
+        this.betElements.forEach((t) => {
+            t.element.querySelector(".time").innerHTML = moment(t.bet.createdTime).fromNow();
+        });
     }
 
     loadMarket(slug: string) {
         fetch(`${APIBase}slug/${slug}`)
-        .then(r => <Promise<Manifold.LiteMarket>> r.json())
-        .then(market => {
-            this.currentMarket = market;
-            this.currentMarket["slug"] = slug;
+            .then((r) => <Promise<Manifold.LiteMarket>>r.json())
+            .then((market) => {
+                this.currentMarket = market;
+                this.currentMarket["slug"] = slug;
 
-            document.getElementById("question").innerHTML = this.currentMarket.question;
-            this.currentProbability_percent = this.currentMarket.probability * 100;
-            this.animatedProbability_percent = this.currentProbability_percent;
-            console.log(market)
+                document.getElementById("question").innerHTML = this.currentMarket.question;
+                this.currentProbability_percent = this.currentMarket.probability * 100;
+                this.animatedProbability_percent = this.currentProbability_percent;
+                console.log(market);
 
-            document.getElementById("spinner").style.display = "none";
-            document.getElementById("chance").parentElement.querySelectorAll("div").forEach(r => r.style.visibility = "");
+                document.getElementById("spinner").style.display = "none";
+                document
+                    .getElementById("chance")
+                    .parentElement.querySelectorAll("div")
+                    .forEach((r) => (r.style.visibility = ""));
 
-            this.loadBettingHistory();
-        })
-        .catch(e => {
-            console.error(e);
-        });
+                this.loadBettingHistory();
+            })
+            .catch((e) => {
+                console.error(e);
+            });
     }
 
     loadBettingHistory() {
         fetch(`${APIBase}bets?market=${this.currentMarket["slug"]}&limit=1000`)
-        .then(r => <Promise<Manifold.Bet[]>> r.json())
-        .then(r => {
-            let data: Point[] = [];
-            r.reverse(); // Data is returned in newest-first fashion and must be pushed in oldest-first
-            for (let t of r) {
-                data.push(new Point(t.createdTime, t.probBefore));
-                data.push(new Point(t.createdTime, t.probAfter));
-            }
-            this.chart.data = data;
-        })
-        .catch(r => {
-            console.error(r);
-        });
+            .then((r) => <Promise<Manifold.Bet[]>>r.json())
+            .then((r) => {
+                let data: Point[] = [];
+                r.reverse(); // Data is returned in newest-first fashion and must be pushed in oldest-first
+                for (let t of r) {
+                    data.push(new Point(t.createdTime, t.probBefore));
+                    data.push(new Point(t.createdTime, t.probAfter));
+                }
+                this.chart.data = data;
+            })
+            .catch((r) => {
+                console.error(r);
+            });
     }
 
     addBet(bet: FullBet) {
@@ -133,12 +187,12 @@ class Application {
         //     name += "...";
         // }
 
-        let betAmountMagnitude = Math.abs(bet.amount);
+        let betAmountMagnitude = Math.abs(Math.ceil(bet.amount));
 
-        let t = <HTMLElement> this.transactionTemplate.cloneNode(true);
+        let t = <HTMLDivElement>this.transactionTemplate.cloneNode(true);
         document.getElementById("transactions").prepend(t);
         //
-        let nameDiv = <HTMLElement> t.querySelector(".name");
+        let nameDiv = <HTMLElement>t.querySelector(".name");
         let divFont = getCanvasFont(nameDiv);
         let isTruncated = false;
         while (getTextWidth(name + (isTruncated ? "..." : ""), divFont) > 400) {
@@ -156,20 +210,32 @@ class Application {
 
         // t.innerHTML = bet.displayText; //!!! REMOVE
 
+        let betElement = new BetElement();
+        betElement.element = t;
+        betElement.bet = bet;
 
-        this.transactions.push(t);
+        this.betElements.push(betElement);
         t.offsetLeft;
         setTimeout(() => {
             t.classList.add("show");
         }, 1);
 
-        if (this.transactions.length > 3) {
-            let transactionToRemove = this.transactions.shift();
+        if (this.betElements.length > 3) {
+            let transactionToRemove = this.betElements.shift().element;
             transactionToRemove.classList.remove("show");
             setTimeout(() => {
                 transactionToRemove.parentElement.removeChild(transactionToRemove);
             }, 500);
         }
+
+        if (this.currentMarket) {
+            this.currentMarket.probability = bet.probAfter;
+            this.currentProbability_percent = this.currentMarket.probability * 100;
+            this.chart.data.push(new Point(bet.createdTime, this.chart.data[this.chart.data.length - 1].y));
+            this.chart.data.push(new Point(bet.createdTime, bet.probAfter));
+        }
+
+        this.updateBetTimes();
     }
 }
 
@@ -177,8 +243,8 @@ function randomInt(maxInclusive: number): number {
     return Math.floor(Math.random() * (maxInclusive + 1));
 }
 
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js');
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
 }
 
 document.addEventListener("DOMContentLoaded", () => setTimeout(() => new Application(), 1));

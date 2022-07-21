@@ -49,22 +49,26 @@ body {
 }
 
 .bet {
+    $elementPadding: 0.0em;
+
     transition: all 0.5s ease-in-out;
     height: 0;
     overflow: hidden;
 
     font-family: 'Roboto Condensed', sans-serif;
-
-
     font-size: 0.7em;
+
+    // display: flex;
 
     &.show {
         height: 1.2em;
     }
 
-    & > p {
+    & p {
         white-space: pre-wrap;
         margin: 0px;
+        display: inline;
+        padding-right: $elementPadding;
     }
 
     .name {
@@ -76,6 +80,7 @@ body {
         display: inline;
         color: #46C935;
         &::after {
+            padding-left: $elementPadding;
             content: "YES";
         }
     }
@@ -84,6 +89,7 @@ body {
         display: inline;
         color: #DE3434;
         &::after {
+            padding-left: $elementPadding;
             content: "NO";
         }
     }
@@ -94,5 +100,20 @@ body {
 
     .boughtSold {
         display: inline;
+    }
+
+    .time {
+        // d
+        align-self: center;
+        justify-self: center;
+        font-size: 70%;
+        color: #ccc;
+        // font-style: italic;
+        // font-weight: 200;
+        // font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        // text-align: center;
+        
+        // margin-top: -10px;
+        transform: translate(0, -2px);
     }
 }

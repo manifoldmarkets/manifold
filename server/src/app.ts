@@ -3,6 +3,8 @@ import { AddressInfo } from "net";
 import fetch from "node-fetch";
 import { Client } from "tmi.js";
 import moment from "moment";
+import { Server } from "socket.io";
+import http from "http";
 
 import ManifoldAPI from "common/manifold-defs";
 import { FullBet } from "common/transaction";
@@ -14,6 +16,7 @@ const regexpCommand = new RegExp(/!([a-zA-Z0-9]+)\s?(\S*)?/);
 export default class App {
     readonly app: Express;
     readonly latestBets: FullBet[] = [];
+    readonly io: Server;
 
     pendingBets: ManifoldAPI.Bet[] = [];
     pendingFetches = {};
@@ -22,6 +25,18 @@ export default class App {
 
     constructor() {
         this.app = express();
+
+        const server = http.createServer(this.app);
+        this.io = new Server(server);
+        this.io.on("connection", (socket) => {
+            console.log("A client connected by websocket: " + socket.id);
+            socket.emit("clear");
+            socket.emit("bets", this.latestBets);
+        });
+        server.listen(3000, () => {
+            const address = <AddressInfo> server.address();
+            console.log(`Websocket listening on ${address.address}:${address.port}`);
+        });
 
         moment.updateLocale("en", {
             relativeTime: {
@@ -42,7 +57,7 @@ export default class App {
             },
         });
 
-        // // Load all users:
+        // Load all users:
         // fetch(`${APIBase}users`)
         //     .then((r) => <Promise<LiteUser[]>>r.json())
         //     .then((r) => {
@@ -59,8 +74,8 @@ export default class App {
         }
         this.pendingFetches[userId] = userId;
         fetch(`${APIBase}user/by-id/${userId}`)
-            .then(r => <Promise<ManifoldAPI.LiteUser>>r.json())
-            .then(user => {
+            .then((r) => <Promise<ManifoldAPI.LiteUser>>r.json())
+            .then((user) => {
                 console.log(`Loaded user ${user.name}.`);
                 delete this.pendingFetches[userId];
                 this.userIdToNameMap[user.id] = user.name;
@@ -76,12 +91,11 @@ export default class App {
                         betsToRemove.push(bet);
                     }
                 }
-                this.pendingBets = this.pendingBets.filter(e => {
+                this.pendingBets = this.pendingBets.filter((e) => {
                     return betsToRemove.indexOf(e) < 0;
                 });
             })
-            .catch(e => {
-                // Empty
+            .catch((e) => {
                 console.error(e);
             });
     }
@@ -91,8 +105,9 @@ export default class App {
             this.latestBets.shift();
         }
         this.latestBets.push(bet);
+        this.io.emit("bets", [bet]);
 
-        console.log(`${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
+        console.log(`[${new Date().toLocaleTimeString()}] ${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
     }
 
     launch() {
@@ -147,41 +162,49 @@ export default class App {
         };
 
         let latestLoadedBetId: string = null;
-        const pollLatestMarketBets = (numBetsToLoad = 3) => {
+        const pollLatestMarketBets = (numBetsToLoad = 10) => {
             // const numBetsToLoad = 3;
             const marketSlug = "this-is-a-local-market"; //will-elon-musk-buy-twitter-this-yea
 
             fetch(`${APIBase}bets?market=${marketSlug}&limit=${numBetsToLoad}`)
                 .then((r) => <Promise<ManifoldAPI.Bet[]>>r.json())
                 .then((bets) => {
+                    // bets.reverse();
                     if (bets.length == 0) {
                         return;
                     }
 
                     // this.latestBets.splice(0, this.latestBets.length); // Clear array
 
+                    let newBets: ManifoldAPI.Bet[] = [];
+
                     let foundPreviouslyLoadedBet = latestLoadedBetId == null;
                     for (const bet of bets) {
-                        try {                            
+                        try {
                             if (bet.id == latestLoadedBetId) {
                                 foundPreviouslyLoadedBet = true;
                                 break;
                             }
-                            
-                            const username = this.userIdToNameMap[bet.userId];
+
+                            newBets.push(bet);
+                        } catch (e) {
+                            // Empty
+                        }
+                    }
+                    newBets.reverse();
+                    for (const bet of newBets) {
+                        const username = this.userIdToNameMap[bet.userId];
+                        if (!bet.isRedemption) {
                             if (!username) {
                                 this.loadUser(bet.userId);
                                 this.pendingBets.push(bet);
-                            }
-                            else {
+                            } else {
                                 const fullBet: FullBet = {
                                     ...bet,
                                     username: username,
                                 };
                                 this.addBet(fullBet);
                             }
-                        } catch (e) {
-                            // Empty
                         }
                     }
                     if (!foundPreviouslyLoadedBet) {
@@ -194,9 +217,9 @@ export default class App {
         };
         setInterval(pollLatestMarketBets, 1000);
 
-        this.app.get("/transactions", (request, response) => {
-            response.json(this.latestBets);
-        });
+        // this.app.get("/transactions", (request, response) => {
+        //     response.json(this.latestBets);
+        // });
 
         const server = this.app.listen(9172, () => {
             const host = (<AddressInfo>server.address()).address;

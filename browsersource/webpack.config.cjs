@@ -12,7 +12,7 @@ let config = {
         https: false,
         port: 19823,
         static: path.resolve(__dirname, "dist"),
-        open: true,
+        open: false,
         watchFiles: ["src/**/*"],
         proxy: {
             "/api": {
@@ -20,6 +20,9 @@ let config = {
                 pathRewrite: {
                     "^/api": "",
                 },
+            },
+            "/socket.io": {
+                target: "http://localhost:3000",
             },
         },
     },

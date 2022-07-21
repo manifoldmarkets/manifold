@@ -66,15 +66,15 @@ export default class Chart {
         // grd.addColorStop(0.5, "rgba(73, 201, 159, 0.2)");
         grd.addColorStop(1, "rgba(73, 201, 159, 0.0)");
 
-        let minX = Number.MAX_VALUE;
+        let minX = Date.now() - 1000000;//Number.MAX_VALUE;
         let maxX = -Number.MAX_VALUE;
         let minY = 0;//Number.MAX_VALUE;
         let maxY = 1;//-Number.MAX_VALUE;
         for (let dataIndex = 0; dataIndex < numDataPoints; dataIndex++) {
             let dataPoint = this.data[dataIndex];
-            if (dataPoint.x < minX) {
-                minX = dataPoint.x;
-            }
+            // if (dataPoint.x < minX) {
+            //     minX = dataPoint.x;
+            // }
             if (dataPoint.x > maxX) {
                 maxX = dataPoint.x;
             }
@@ -135,7 +135,7 @@ export default class Chart {
             // Render data:
             // ctx.translate(-0.5, -0.5);
             ctx.save();
-            ctx.rect(1.5, 1.5, graphWidth_px + padding, graphHeight_px + padding);
+            ctx.rect(-0.5, 0.5, graphWidth_px + padding, graphHeight_px + padding);
             ctx.clip();
             {
                 ctx.strokeStyle = "#49C99F";

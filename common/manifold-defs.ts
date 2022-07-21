@@ -73,6 +73,7 @@ namespace Manifold {
 
         //!!! Added by Phil:
         userId: string;
+        isRedemption: boolean;
     };
 
     export type LiteUser = {
