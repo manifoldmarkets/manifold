@@ -10,7 +10,6 @@ import { Button } from '../button'
 import { DuplicateIcon } from '@heroicons/react/outline'
 import { createChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Contract } from 'common/contract'
-import { track } from 'web/lib/service/analytics'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { getOutcomeProbability } from 'common/lib/calculate'
 import { SiteLink } from 'web/components/site-link'
@@ -78,9 +77,7 @@ function CreateChallengeForm(props: {
   const { user, onCreate, contract, highlightedSlug } = props
   const [isCreating, setIsCreating] = useState(false)
   const [finishedCreating, setFinishedCreating] = useState(false)
-  const [copyPressed, setCopyPressed] = useState(false)
   const [error, setError] = useState<string>('')
-  setTimeout(() => setCopyPressed(false), 300)
   const defaultExpire = 'week'
   const isBinary = contract.outcomeType === 'BINARY'
   const isNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -241,28 +238,16 @@ function CreateChallengeForm(props: {
       {finishedCreating && (
         <>
           <Title className="!my-0" text="Challenge Created!" />
-          <Row
-            className={clsx(
-              'rounded border bg-gray-50 py-2 px-3 text-sm text-gray-500 transition-colors duration-700',
-              copyPressed ? 'bg-indigo-50 text-indigo-500 transition-none' : ''
-            )}
-          >
-            <div className="flex w-full select-text items-center truncate">
-              {highlightedSlug}
-            </div>
 
-            <CopyLinkButton
-              link={highlightedSlug}
-              onCopy={() => {
-                setCopyPressed(true)
-                track('copy share challenge')
-              }}
-              buttonClassName="btn-sm rounded-l-none"
-              toastClassName={'-left-40 -top-20 mt-1'}
-              icon={DuplicateIcon}
-              label={''}
-            />
-          </Row>
+          <CopyLinkButton
+            url={highlightedSlug}
+            buttonClassName="btn-md rounded-l-none"
+            displayUrl={
+              '...challenges/' + highlightedSlug.split('/challenges/')[1]
+            }
+            toastClassName={'-left-40 -top-20 mt-1'}
+            icon={DuplicateIcon}
+          />
           <Row className={'gap-1'}>
             See your other
             <SiteLink className={'font-bold'} href={'/challenges'}>
