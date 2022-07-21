@@ -11,8 +11,8 @@ import { DuplicateIcon } from '@heroicons/react/outline'
 import { createChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Contract } from 'common/contract'
 import { CopyLinkButton } from 'web/components/copy-link-button'
-import { getOutcomeProbability } from 'common/calculate'
 import { SiteLink } from 'web/components/site-link'
+import { getOutcomeProbability } from 'common/calculate'
 
 type challengeInfo = {
   amount: number
@@ -110,9 +110,9 @@ function CreateChallengeForm(props: {
             setFinishedCreating(true)
           }}
         >
-          <Title className="!my-2" text="Create a challenge bet" />
-          <Row className="label ">You're betting</Row>
-          <div className="flex flex-col flex-wrap gap-x-5 gap-y-2">
+          <Title className="!mt-2" text="Create a challenge bet" />
+          {/*<Row className="label ">How much?</Row>*/}
+          <div className="mt-2 flex flex-col flex-wrap gap-x-5 gap-y-2">
             <Row className={'form-control w-full justify-start gap-4'}>
               <Col>
                 <div className="relative">
@@ -173,32 +173,32 @@ function CreateChallengeForm(props: {
                 )}
               </Col>
             </Row>
-            <div className="form-control flex flex-row gap-8">
-              {/*<Col className={'mt-9 justify-center'}>at</Col>*/}
-              <Col>
-                <label className="label ">At</label>
-                <div className="relative">
-                  <input
-                    className="input input-bordered max-w-[5rem]"
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={challengeInfo.prob}
-                    onChange={(e) =>
-                      setChallengeInfo((m: challengeInfo) => {
-                        return {
-                          ...m,
-                          prob: parseFloat(e.target.value),
-                        }
-                      })
-                    }
-                  />
-                  <span className="absolute top-3.5 -right-5 text-sm text-gray-600">
-                    %
-                  </span>
-                </div>
-              </Col>
-            </div>
+            {/*<div className="form-control flex flex-row gap-8">*/}
+            {/*  /!*<Col className={'mt-9 justify-center'}>at</Col>*!/*/}
+            {/*  <Col>*/}
+            {/*    <label className="label ">At</label>*/}
+            {/*    <div className="relative">*/}
+            {/*      <input*/}
+            {/*        className="input input-bordered max-w-[5rem]"*/}
+            {/*        type="number"*/}
+            {/*        min={1}*/}
+            {/*        max={100}*/}
+            {/*        value={challengeInfo.prob}*/}
+            {/*        onChange={(e) =>*/}
+            {/*          setChallengeInfo((m: challengeInfo) => {*/}
+            {/*            return {*/}
+            {/*              ...m,*/}
+            {/*              prob: parseFloat(e.target.value),*/}
+            {/*            }*/}
+            {/*          })*/}
+            {/*        }*/}
+            {/*      />*/}
+            {/*      <span className="absolute top-3.5 -right-5 text-sm text-gray-600">*/}
+            {/*        %*/}
+            {/*      </span>*/}
+            {/*    </div>*/}
+            {/*  </Col>*/}
+            {/*</div>*/}
 
             {/*<div className="form-control w-full">*/}
             {/*  <label className="label">Message</label>*/}
