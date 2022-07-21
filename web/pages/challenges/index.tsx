@@ -24,6 +24,7 @@ import { ToastClipboard } from 'web/components/toast-clipboard'
 import { Tabs } from 'web/components/layout/tabs'
 import { SiteLink } from 'web/components/site-link'
 import { UserLink } from 'web/components/user-page'
+import { Avatar } from 'web/components/avatar'
 dayjs.extend(customParseFormat)
 
 export function getManalinkUrl(slug: string) {
@@ -271,7 +272,7 @@ function AllLinksTable(props: {
         <thead className="bg-gray-50 text-left text-sm font-semibold text-gray-900">
           <tr>
             <th className="px-5 py-3.5">Amount</th>
-            <th className="px-5 py-3.5">Link</th>
+            <th className="px-5 py-3.5">Challenge Link</th>
             <th className="px-5 py-3.5">Accepted By</th>
           </tr>
         </thead>
@@ -305,7 +306,7 @@ function PublicLinkSummaryRow(props: { link: Challenge; highlight: boolean }) {
       <td className="px-5 py-4 font-medium text-gray-900">
         {formatMoney(link.amount)}
       </td>
-      <td className="relative px-5 py-4">
+      <td className="relative px-2 py-4">
         <SiteLink href={getChallengeUrl(link)}>
           {getChallengeUrl(link)
             .replace('https://manifold.markets', '...')
@@ -313,11 +314,18 @@ function PublicLinkSummaryRow(props: { link: Challenge; highlight: boolean }) {
         </SiteLink>
       </td>
 
-      <td className="px-5 py-4">
-        <UserLink
-          name={link.acceptances[0].userName}
-          username={link.acceptances[0].userUsername}
-        />
+      <td className="px-2 py-4">
+        <Row className={'items-center justify-start gap-1'}>
+          <Avatar
+            username={link.acceptances[0].userUsername}
+            avatarUrl={link.acceptances[0].userAvatarUrl}
+            size={'sm'}
+          />
+          <UserLink
+            name={link.acceptances[0].userName}
+            username={link.acceptances[0].userUsername}
+          />
+        </Row>
       </td>
     </tr>
   )

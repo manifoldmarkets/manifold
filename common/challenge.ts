@@ -45,6 +45,7 @@ export type Acceptance = {
   userId: string
   userUsername: string
   userName: string
+  userAvatarUrl: string
   // The ID of the successful bet that tracks the money moved
   betId: string
 

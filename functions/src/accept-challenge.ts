@@ -155,6 +155,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
             createdTime: Date.now(),
             userUsername: user.username,
             userName: user.name,
+            userAvatarUrl: user.avatarUrl,
           } as Acceptance,
         ],
       })

@@ -54,6 +54,7 @@ function getMoreNavigation(user?: User | null) {
   if (!user) {
     return [
       { name: 'Leaderboards', href: '/leaderboards' },
+      { name: 'Challenges', href: '/challenges' },
       { name: 'Charity', href: '/charity' },
       { name: 'Blog', href: 'https://news.manifold.markets' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -64,6 +65,7 @@ function getMoreNavigation(user?: User | null) {
   return [
     { name: 'Send M$', href: '/links' },
     { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Challenges', href: '/challenges' },
     { name: 'Charity', href: '/charity' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
@@ -114,6 +116,7 @@ function getMoreMobileNav() {
       ? []
       : [
           { name: 'Send M$', href: '/links' },
+          { name: 'Challenges', href: '/challenges' },
           { name: 'Charity', href: '/charity' },
           { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
         ]),
