@@ -262,7 +262,7 @@ export const getBinaryBetStats = (
 
   const totalFees = sum(Object.values(newBet.fees))
 
-  return { currentPayout, currentReturn, totalFees }
+  return { currentPayout, currentReturn, totalFees, newBet }
 }
 
 export const getBinaryRangeBetInfo = (

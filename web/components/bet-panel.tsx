@@ -428,35 +428,58 @@ function RangeOrderPanel(props: {
     highLimitProb !== undefined &&
     lowLimitProb >= highLimitProb
 
+  const betDisabled = isSubmitting || !betAmount || rangeError || error
+
+  const hasYesLimitBet = lowLimitProb !== undefined && !!betAmount
+  const hasNoLimitBet = highLimitProb !== undefined && !!betAmount
+  const hasTwoBets = hasYesLimitBet && hasNoLimitBet
+
+  const yesLimitProb = (lowLimitProb ?? initialProb * 100) / 100
+  const noLimitProb = (highLimitProb ?? initialProb * 100) / 100
+
+  const shares = Math.min(
+    (betAmount ?? 0) / yesLimitProb,
+    (betAmount ?? 0) / (1 - noLimitProb)
+  )
+  const yesAmount = shares * yesLimitProb
+  const noAmount = shares * (1 - noLimitProb)
+
+  const profitIfBothFilled = shares - (yesAmount + noAmount)
+
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
   }
 
   async function submitBet() {
-    if (!user || !betAmount || rangeError) return
-
-    const limitProbScaled =
-      lowLimitProb !== undefined ? lowLimitProb / 100 : undefined
+    if (!user || betDisabled) return
 
     setError(undefined)
     setIsSubmitting(true)
 
-    placeBet(
-      removeUndefinedProps({
-        amount: betAmount,
-        outcome: betChoice,
-        contractId: contract.id,
-        limitProb: limitProbScaled,
-      })
-    )
-      .then((r) => {
-        console.log('placed bet. Result:', r)
-        setIsSubmitting(false)
-        setWasSubmitted(true)
-        setBetAmount(undefined)
-        if (onBuySuccess) onBuySuccess()
-      })
+    const betsPromise = hasTwoBets
+      ? Promise.all([
+          placeBet({
+            betChoice: 'YES',
+            amount: yesAmount,
+            limitProb: yesLimitProb,
+            contractId: contract.id,
+          }),
+          placeBet({
+            betChoice: 'NO',
+            amount: noAmount,
+            limitProb: noLimitProb,
+            contractId: contract.id,
+          }),
+        ])
+      : placeBet({
+          betChoice: hasYesLimitBet ? 'YES' : 'NO',
+          amount: betAmount,
+          contractId: contract.id,
+          limitProb: hasYesLimitBet ? yesLimitProb : noLimitProb,
+        })
+
+    betsPromise
       .catch((e) => {
         if (e instanceof APIError) {
           setError(e.toString())
@@ -466,54 +489,75 @@ function RangeOrderPanel(props: {
         }
         setIsSubmitting(false)
       })
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        setWasSubmitted(true)
+        setBetAmount(undefined)
+        if (onBuySuccess) onBuySuccess()
+      })
 
-    track('bet', {
-      location: 'bet panel',
-      outcomeType: contract.outcomeType,
-      slug: contract.slug,
-      contractId: contract.id,
-      amount: betAmount,
-      outcome: betChoice,
-      isLimitOrder: true,
-      limitProb: limitProbScaled,
-    })
+    if (hasYesLimitBet) {
+      track('bet', {
+        location: 'bet panel',
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount: yesAmount,
+        outcome: 'YES',
+        limitProb: yesLimitProb,
+        isLimitOrder: true,
+        isRangeOrder: hasTwoBets,
+      })
+    }
+    if (hasNoLimitBet) {
+      track('bet', {
+        location: 'bet panel',
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount: noAmount,
+        outcome: 'NO',
+        limitProb: noLimitProb,
+        isLimitOrder: true,
+        isRangeOrder: hasTwoBets,
+      })
+    }
   }
 
-  const betDisabled = isSubmitting || !betAmount || rangeError || error
-
-  const lowProbFrac = (lowLimitProb ?? initialProb * 100) / 100
   const {
-    currentPayout: lowPayout,
-    currentReturn: lowReturn,
-    totalFees: lowFees,
+    currentPayout: yesPayout,
+    currentReturn: yesReturn,
+    totalFees: yesFees,
+    newBet: yesBet,
   } = getBinaryBetStats(
     'YES',
-    betAmount ?? 0,
+    yesAmount,
     contract,
-    lowProbFrac,
+    yesLimitProb,
     unfilledBets as LimitBet[]
   )
-  const lowReturnPercent = formatPercent(lowReturn)
+  const yesReturnPercent = formatPercent(yesReturn)
 
-  const highProbFrac = (highLimitProb ?? initialProb * 100) / 100
   const {
-    currentPayout: highPayout,
-    currentReturn: highReturn,
-    totalFees: highFees,
+    currentPayout: noPayout,
+    currentReturn: noReturn,
+    totalFees: noFees,
+    newBet: noBet,
   } = getBinaryBetStats(
     'NO',
-    betAmount ?? 0,
+    noAmount,
     contract,
-    highProbFrac,
+    noLimitProb,
     unfilledBets as LimitBet[]
   )
-  const highReturnPercent = formatPercent(highReturn)
+  const noReturnPercent = formatPercent(noReturn)
 
   return (
     <>
       <div className="my-3 text-sm text-gray-500">
         Bet only when the {isPseudoNumeric ? 'value' : 'probability'} reaches
-        low or high limit.
+        Low or High limit.
       </div>
 
       <Row className="items-center gap-4">
@@ -541,7 +585,7 @@ function RangeOrderPanel(props: {
 
       {rangeError && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
-          Low limit must be less than high limit
+          Low limit must be less than High limit
         </div>
       )}
 
@@ -558,7 +602,50 @@ function RangeOrderPanel(props: {
       />
 
       <Col className="mt-3 w-full gap-3">
-        {lowLimitProb !== undefined && (
+        {hasYesLimitBet && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <div className="whitespace-nowrap text-gray-500">
+              {isPseudoNumeric ? (
+                'Bought now'
+              ) : (
+                <>
+                  <BinaryOutcomeLabel outcome={'YES'} /> bought now
+                </>
+              )}
+            </div>
+            <div className="mr-2 whitespace-nowrap">
+              {formatMoney(yesBet.amount)}/
+              {formatMoney(yesBet.orderAmount ?? 0)}
+            </div>
+          </Row>
+        )}
+        {hasNoLimitBet && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <div className="whitespace-nowrap text-gray-500">
+              {isPseudoNumeric ? (
+                'Bought now'
+              ) : (
+                <>
+                  <BinaryOutcomeLabel outcome={'NO'} /> bought now
+                </>
+              )}
+            </div>
+            <div className="mr-2 whitespace-nowrap">
+              {formatMoney(noBet.amount)}/{formatMoney(noBet.orderAmount ?? 0)}
+            </div>
+          </Row>
+        )}
+        {hasTwoBets && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <div className="whitespace-nowrap text-gray-500">
+              Profit if both orders filled
+            </div>
+            <div className="mr-2 whitespace-nowrap">
+              {formatMoney(profitIfBothFilled)}
+            </div>
+          </Row>
+        )}
+        {hasYesLimitBet && !hasTwoBets && (
           <Row className="items-center justify-between gap-2 text-sm">
             <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
               <div>
@@ -571,18 +658,18 @@ function RangeOrderPanel(props: {
                 )}
               </div>
               <InfoTooltip
-                text={`Includes ${formatMoneyWithDecimals(lowFees)} in fees`}
+                text={`Includes ${formatMoneyWithDecimals(yesFees)} in fees`}
               />
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
-                {formatMoney(lowPayout)}
+                {formatMoney(yesPayout)}
               </span>
-              (+{lowReturnPercent})
+              (+{yesReturnPercent})
             </div>
           </Row>
         )}
-        {highLimitProb !== undefined && (
+        {hasNoLimitBet && !hasTwoBets && (
           <Row className="items-center justify-between gap-2 text-sm">
             <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
               <div>
@@ -595,22 +682,20 @@ function RangeOrderPanel(props: {
                 )}
               </div>
               <InfoTooltip
-                text={`Includes ${formatMoneyWithDecimals(highFees)} in fees`}
+                text={`Includes ${formatMoneyWithDecimals(noFees)} in fees`}
               />
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
-                {formatMoney(highPayout)}
+                {formatMoney(noPayout)}
               </span>
-              (+{highReturnPercent})
+              (+{noReturnPercent})
             </div>
           </Row>
         )}
       </Col>
 
-      {(lowLimitProb !== undefined || highLimitProb !== undefined) && (
-        <Spacer h={8} />
-      )}
+      {(hasYesLimitBet || hasNoLimitBet) && <Spacer h={8} />}
 
       {user && (
         <button
@@ -625,7 +710,9 @@ function RangeOrderPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit order'}
+          {isSubmitting
+            ? 'Submitting...'
+            : `Submit order${hasTwoBets ? 's' : ''}`}
         </button>
       )}
 

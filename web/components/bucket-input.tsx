@@ -39,7 +39,7 @@ export function BucketInput(props: {
       error={undefined}
       disabled={isSubmitting}
       numberString={numberString}
-      label="Value"
+      label=""
     />
   )
 }
