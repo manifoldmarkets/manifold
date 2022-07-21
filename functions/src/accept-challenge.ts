@@ -8,10 +8,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { removeUndefinedProps } from '../../common/util/object'
 import { Acceptance, Challenge } from '../../common/challenge'
 import { CandidateBet } from '../../common/new-bet'
-import {
-  calculateCpmmPurchase,
-  getCpmmProbability,
-} from '../../common/calculate-cpmm'
+import { getCpmmProbability } from '../../common/calculate-cpmm'
 import { createChallengeAcceptedNotification } from './create-notification'
 
 const bodySchema = z.object({
@@ -63,11 +60,19 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       throw new APIError(400, 'Challenges only accepted for binary markets.')
 
     const contract = anyContract as CPMMBinaryContract
-    log('contract stats:', contract.pool, contract.p)
-    const probs = getCpmmProbability(contract.pool, contract.p)
-    log('probs:', probs)
-
+    const { YES: y, NO: n } = contract.pool
     const yourShares = (1 / (1 - creatorsOutcomeProb)) * amount
+    const creatorShares = (1 / creatorsOutcomeProb) * amount
+
+    const newYesShares = creatorsOutcome === 'YES' ? creatorShares : yourShares
+    const newNoShares = creatorsOutcome === 'NO' ? creatorShares : yourShares
+    const newPool = {
+      YES: y + newYesShares,
+      NO: n + newNoShares,
+    }
+    const probBefore = getCpmmProbability(contract.pool, contract.p)
+    const probAfter = getCpmmProbability(newPool, contract.p)
+
     const yourNewBet: CandidateBet = removeUndefinedProps({
       orderAmount: amount,
       amount: amount,
@@ -75,8 +80,8 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       isCancelled: false,
       contractId: contract.id,
       outcome: yourOutcome,
-      probBefore: probs,
-      probAfter: probs,
+      probBefore,
+      probAfter,
       loanAmount: 0,
       createdTime: Date.now(),
       fees: { creatorFee: 0, platformFee: 0, liquidityFee: 0 },
@@ -92,15 +97,6 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
     trans.update(userDoc, { balance: FieldValue.increment(-yourNewBet.amount) })
     log('Updated user balance.')
 
-    let cpmmState = { pool: contract.pool, p: contract.p }
-    const { newPool, newP } = calculateCpmmPurchase(
-      cpmmState,
-      yourNewBet.amount,
-      yourNewBet.outcome
-    )
-    cpmmState = { pool: newPool, p: newP }
-
-    const creatorShares = (1 / creatorsOutcomeProb) * amount
     const creatorNewBet: CandidateBet = removeUndefinedProps({
       orderAmount: amount,
       amount: amount,
@@ -108,8 +104,8 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       isCancelled: false,
       contractId: contract.id,
       outcome: creatorsOutcome,
-      probBefore: probs,
-      probAfter: probs,
+      probBefore,
+      probAfter,
       loanAmount: 0,
       createdTime: Date.now(),
       fees: { creatorFee: 0, platformFee: 0, liquidityFee: 0 },
@@ -126,19 +122,11 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       balance: FieldValue.increment(-creatorNewBet.amount),
     })
     log('Updated user balance.')
-    const newPurchaseStats = calculateCpmmPurchase(
-      cpmmState,
-      creatorNewBet.amount,
-      creatorNewBet.outcome
-    )
-    cpmmState = { pool: newPurchaseStats.newPool, p: newPurchaseStats.newP }
 
     trans.update(
       contractDoc,
       removeUndefinedProps({
-        pool: cpmmState.pool,
-        // p shouldn't have changed
-        p: contract.p,
+        pool: newPool,
         volume: contract.volume + yourNewBet.amount + creatorNewBet.amount,
       })
     )
@@ -160,6 +148,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
         ],
       })
     )
+    log('Updated challenge properties with new acceptance.')
 
     await createChallengeAcceptedNotification(
       user,
@@ -167,6 +156,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       challenge,
       contract
     )
+    log('Created notification.')
     return yourNewBetDoc
   })
 

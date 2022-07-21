@@ -37,15 +37,18 @@ export type Challenge = {
   // Successful redemptions of the link
   acceptances: Acceptance[]
 
+  // TODO: will have to fill this on resolve contract
   isResolved: boolean
   resolutionOutcome?: string
 }
 
 export type Acceptance = {
+  // User that accepted the challenge
   userId: string
   userUsername: string
   userName: string
   userAvatarUrl: string
+
   // The ID of the successful bet that tracks the money moved
   betId: string
 

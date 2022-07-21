@@ -103,6 +103,7 @@ export default function ChallengePage(props: {
       contract={contract}
       challenge={challenge}
       creator={user}
+      bets={bets}
     />
   )
 }
@@ -282,7 +283,7 @@ function ChallengeContract(props: { contract: Contract; bets: Bet[] }) {
   const isBinary = contract.outcomeType === 'BINARY'
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   return (
-    <Col className="w-full flex-1 bg-white">
+    <Col className="mt-5 w-full flex-1 bg-white px-10">
       <div className="relative flex flex-col pt-2">
         <Row className="justify-between px-3 text-xl text-indigo-700 md:text-2xl">
           <SiteLink href={href}>{question}</SiteLink>
@@ -292,13 +293,9 @@ function ChallengeContract(props: { contract: Contract; bets: Bet[] }) {
           )}
         </Row>
 
-        <Spacer h={3} />
-
-        <div className="mx-1" style={{ paddingBottom: 50 }}>
-          {(isBinary || isPseudoNumeric) && (
-            <ContractProbGraph contract={contract} bets={bets} height={500} />
-          )}
-        </div>
+        {(isBinary || isPseudoNumeric) && (
+          <ContractProbGraph contract={contract} bets={bets} height={400} />
+        )}
       </div>
     </Col>
   )
@@ -309,8 +306,9 @@ function OpenChallengeContent(props: {
   challenge: Challenge
   creator: User
   user: User | null | undefined
+  bets: Bet[]
 }) {
-  const { contract, challenge, creator, user } = props
+  const { contract, challenge, creator, user, bets } = props
   const { question } = contract
   const [creatorPortfolioHistory, setUsersCreatorPortfolioHistory] = useState<
     PortfolioMetrics[]
@@ -331,6 +329,9 @@ function OpenChallengeContent(props: {
     (height ?? window.innerHeight) -
     (containerRef?.offsetTop ?? 0) -
     bottomBarHeight
+
+  const isBinary = contract.outcomeType === 'BINARY'
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const userColumn = (
     challenger: User | null | undefined,
@@ -389,8 +390,17 @@ function OpenChallengeContent(props: {
       <Col
         ref={setContainerRef}
         style={{ height: remainingHeight }}
-        className=" w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8"
+        className=" relative w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8"
       >
+        {(isBinary || isPseudoNumeric) && (
+          <div
+            className={`absolute top-52 flex h-[${
+              remainingHeight / 2
+            }] w-full flex-row opacity-40`}
+          >
+            <ContractProbGraph contract={contract} bets={bets} height={400} />
+          </div>
+        )}
         <Row className="px-3 pb-4 text-xl text-indigo-700 md:text-2xl">
           <SiteLink href={href}>{question}</SiteLink>
         </Row>

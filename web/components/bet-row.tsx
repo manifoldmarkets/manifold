@@ -8,7 +8,6 @@ import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useSaveBinaryShares } from './use-save-binary-shares'
 import { Col } from './layout/col'
-import { CreateChallengeButton } from 'web/components/challenges/create-challenge-button'
 
 // Inline version of a bet panel. Opens BetPanel in a new modal.
 export default function BetRow(props: {
@@ -49,10 +48,6 @@ export default function BetRow(props: {
             : ''}
         </div>
       </Col>
-      <Col className={clsx('items-center', className)}>
-        <CreateChallengeButton user={user} contract={contract} />
-      </Col>
-
       <Modal open={open} setOpen={setOpen}>
         <SimpleBetPanel
           className={betPanelClassName}

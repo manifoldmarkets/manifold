@@ -46,8 +46,6 @@ import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useRouter } from 'next/router'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { richTextToString } from 'common/util/parse'
-import { CreateChallengeButton } from 'web/components/challenges/create-challenge-button'
-import { Row } from 'web/components/layout/row'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -176,9 +174,6 @@ export function ContractPageContent(
           <NumericBetPanel className="hidden xl:flex" contract={contract} />
         ) : (
           <div>
-            <Row className={'my-4 hidden justify-end xl:flex'}>
-              <CreateChallengeButton user={user} contract={contract} />
-            </Row>
             <BetPanel
               className="hidden xl:flex"
               contract={contract as CPMMBinaryContract}
