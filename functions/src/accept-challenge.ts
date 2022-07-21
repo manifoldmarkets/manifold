@@ -49,9 +49,13 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
     if (!creatorSnap.exists) throw new APIError(400, 'User not found.')
     const creator = creatorSnap.data() as User
 
-    const { amount, yourOutcome, creatorsOutcome, creatorsOutcomeProb } =
+    const { creatorAmount, yourOutcome, creatorsOutcome, creatorsOutcomeProb } =
       challenge
-    if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
+    const yourCost =
+      ((1 - creatorsOutcomeProb) / creatorsOutcomeProb) * creatorAmount
+
+    if (user.balance < yourCost)
+      throw new APIError(400, 'Insufficient balance.')
 
     const { closeTime, outcomeType } = anyContract
     if (closeTime && Date.now() > closeTime)
@@ -61,22 +65,19 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
 
     const contract = anyContract as CPMMBinaryContract
     const { YES: y, NO: n } = contract.pool
-    const yourShares = (1 / (1 - creatorsOutcomeProb)) * amount
-    const creatorShares = (1 / creatorsOutcomeProb) * amount
+    const shares = (1 / creatorsOutcomeProb) * creatorAmount
 
-    const newYesShares = creatorsOutcome === 'YES' ? creatorShares : yourShares
-    const newNoShares = creatorsOutcome === 'NO' ? creatorShares : yourShares
     const newPool = {
-      YES: y + newYesShares,
-      NO: n + newNoShares,
+      YES: y + shares,
+      NO: n + shares,
     }
     const probBefore = getCpmmProbability(contract.pool, contract.p)
     const probAfter = getCpmmProbability(newPool, contract.p)
 
     const yourNewBet: CandidateBet = removeUndefinedProps({
-      orderAmount: amount,
-      amount: amount,
-      shares: yourShares,
+      orderAmount: yourCost,
+      amount: yourCost,
+      shares: shares,
       isCancelled: false,
       contractId: contract.id,
       outcome: yourOutcome,
@@ -98,9 +99,9 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
     log('Updated user balance.')
 
     const creatorNewBet: CandidateBet = removeUndefinedProps({
-      orderAmount: amount,
-      amount: amount,
-      shares: creatorShares,
+      orderAmount: creatorAmount,
+      amount: creatorAmount,
+      shares: shares,
       isCancelled: false,
       contractId: contract.id,
       outcome: creatorsOutcome,
@@ -141,6 +142,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
             userId: user.id,
             betId: yourNewBetDoc.id,
             createdTime: Date.now(),
+            amount: yourCost,
             userUsername: user.username,
             userName: user.name,
             userAvatarUrl: user.avatarUrl,
@@ -154,6 +156,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       user,
       creator,
       challenge,
+      yourCost,
       contract
     )
     log('Created notification.')

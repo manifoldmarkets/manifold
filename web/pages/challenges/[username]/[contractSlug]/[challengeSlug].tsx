@@ -133,7 +133,7 @@ function ClosedChallengeContent(props: {
   const { resolution } = contract
   const {
     acceptances,
-    amount,
+    creatorAmount,
     creatorsOutcome,
     creatorsOutcomeProb,
     yourOutcome,
@@ -148,10 +148,13 @@ function ClosedChallengeContent(props: {
       setShowConfetti(true)
   }, [acceptances])
   const creatorWon = resolution === creatorsOutcome
+  const amountWon = creatorWon ? acceptances[0].amount : creatorAmount
+  const yourCost =
+    ((1 - creatorsOutcomeProb) / creatorsOutcomeProb) * creatorAmount
 
   if (!user) return <LoadingIndicator />
 
-  const userWonCol = (user: User) => (
+  const userWonCol = (user: User, amount: number) => (
     <Col className="w-full items-start justify-center gap-1 p-4">
       <Row className={'mb-2 w-full items-center justify-center gap-2'}>
         <span className={'mx-2 text-3xl'}>🥇</span>
@@ -171,7 +174,7 @@ function ClosedChallengeContent(props: {
     </Col>
   )
 
-  const userLostCol = (challenger: User) => (
+  const userLostCol = (challenger: User, amount: number) => (
     <Col className="w-full items-start justify-center gap-1">
       {userRow(challenger)}
       <Row className={'w-full items-center justify-center'}>
@@ -186,23 +189,17 @@ function ClosedChallengeContent(props: {
     challenger: User,
     outcome: string,
     prob: number,
-    lost?: boolean
+    amount: number
   ) => (
     <Col className="w-full items-start justify-center gap-1">
       {userRow(challenger)}
       <Row className={'w-full items-center justify-center'}>
-        {!lost ? (
-          <span className={'text-lg'}>
-            is betting {formatMoney(amount)}
-            {' on '}
-            <BinaryOutcomeLabel outcome={outcome as any} /> at{' '}
-            {Math.round(prob * 100)}%
-          </span>
-        ) : (
-          <span className={'text-lg'}>
-            LOST <span className={'text-red-500'}>{formatMoney(amount)}</span>
-          </span>
-        )}
+        <span className={'text-lg'}>
+          is betting {formatMoney(amount)}
+          {' on '}
+          <BinaryOutcomeLabel outcome={outcome as any} /> at{' '}
+          {Math.round(prob * 100)}%
+        </span>
       </Row>
     </Col>
   )
@@ -242,10 +239,10 @@ function ClosedChallengeContent(props: {
             }
           >
             <Row className={'mt-4 w-full'}>
-              {userWonCol(creatorWon ? creator : user)}
+              {userWonCol(creatorWon ? creator : user, amountWon)}
             </Row>
             <Row className={'mt-4'}>
-              {userLostCol(creatorWon ? user : creator)}
+              {userLostCol(creatorWon ? user : creator, amountWon)}
             </Row>
           </Col>
         ) : (
@@ -254,9 +251,14 @@ function ClosedChallengeContent(props: {
               'h-full w-full content-between justify-between gap-1  py-10 sm:flex-row'
             }
           >
-            {userCol(creator, creatorsOutcome, creatorsOutcomeProb)}
+            {userCol(
+              creator,
+              creatorsOutcome,
+              creatorsOutcomeProb,
+              creatorAmount
+            )}
             <Col className="items-center justify-center py-4 text-xl">VS</Col>
-            {userCol(user, yourOutcome, 1 - creatorsOutcomeProb)}
+            {userCol(user, yourOutcome, 1 - creatorsOutcomeProb, yourCost)}
           </Col>
         )}
         <Spacer h={3} />
@@ -302,7 +304,7 @@ function OpenChallengeContent(props: {
   const { contract, challenge, creator, user, bets } = props
   const { question } = contract
   const {
-    amount,
+    creatorAmount,
     creatorId,
     creatorsOutcome,
     creatorsOutcomeProb,
@@ -331,11 +333,14 @@ function OpenChallengeContent(props: {
 
   const isBinary = contract.outcomeType === 'BINARY'
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+  const yourCost =
+    ((1 - creatorsOutcomeProb) / creatorsOutcomeProb) * creatorAmount
 
   const userColumn = (
     challenger: User | null | undefined,
     portfolioHistory: PortfolioMetrics[],
-    outcome: string
+    outcome: string,
+    amount: number
   ) => {
     const lastPortfolioMetrics = last(portfolioHistory)
     const prob =
@@ -408,12 +413,18 @@ function OpenChallengeContent(props: {
             'h-full max-h-[50vh] w-full content-between justify-between gap-1  py-10 sm:flex-row'
           }
         >
-          {userColumn(creator, creatorPortfolioHistory, creatorsOutcome)}
+          {userColumn(
+            creator,
+            creatorPortfolioHistory,
+            creatorsOutcome,
+            creatorAmount
+          )}
           <Col className="items-center justify-center py-4 text-4xl">VS</Col>
           {userColumn(
             user?.id === creatorId ? undefined : user,
             portfolioHistory,
-            yourOutcome
+            yourOutcome,
+            yourCost
           )}
         </Col>
         <Spacer h={3} />

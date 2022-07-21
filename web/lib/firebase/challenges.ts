@@ -46,7 +46,7 @@ export async function createChallenge(data: {
     slug,
     creatorId: creator.id,
     creatorUsername: creator.username,
-    amount,
+    creatorAmount: amount,
     contractSlug: contract.slug,
     contractId: contract.id,
     creatorsOutcome: outcome.toString(),

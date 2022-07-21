@@ -205,7 +205,7 @@ function LinkSummaryRow(props: {
       </td>
 
       <td className="px-5 py-4 font-medium text-gray-900">
-        {formatMoney(link.amount)}
+        {formatMoney(link.creatorAmount)}
       </td>
       <td
         className="relative px-5 py-4"
@@ -304,7 +304,7 @@ function PublicLinkSummaryRow(props: { link: Challenge; highlight: boolean }) {
   return (
     <tr id={link.slug} key={link.slug} className={className}>
       <td className="px-5 py-4 font-medium text-gray-900">
-        {formatMoney(link.amount)}
+        {formatMoney(link.creatorAmount)}
       </td>
       <td className="relative px-2 py-4">
         <SiteLink href={getChallengeUrl(link)}>

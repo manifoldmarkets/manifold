@@ -11,7 +11,7 @@ export type Challenge = {
   message: string
 
   // How much to put up
-  amount: number
+  creatorAmount: number
 
   // YES or NO for now
   creatorsOutcome: string
@@ -48,6 +48,9 @@ export type Acceptance = {
   userUsername: string
   userName: string
   userAvatarUrl: string
+
+  // The amount acceptor put up
+  amount: number
 
   // The ID of the successful bet that tracks the money moved
   betId: string

@@ -474,6 +474,7 @@ export const createChallengeAcceptedNotification = async (
   challenger: User,
   challengeCreator: User,
   challenge: Challenge,
+  acceptedAmount: number,
   contract: Contract
 ) => {
   const notificationRef = firestore
@@ -491,7 +492,7 @@ export const createChallengeAcceptedNotification = async (
     sourceUserName: challenger.name,
     sourceUserUsername: challenger.username,
     sourceUserAvatarUrl: challenger.avatarUrl,
-    sourceText: challenge.amount.toString(),
+    sourceText: acceptedAmount.toString(),
     sourceContractCreatorUsername: contract.creatorUsername,
     sourceContractTitle: contract.question,
     sourceContractSlug: contract.slug,
