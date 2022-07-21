@@ -63,10 +63,11 @@ function getMoreNavigation(user?: User | null) {
   }
 
   return [
-    { name: 'Send M$', href: '/links' },
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Challenges', href: '/challenges' },
+    { name: 'Referrals', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
+    { name: 'Send M$', href: '/links' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     {
@@ -112,15 +113,17 @@ const signedInMobileNavigation = [
 
 function getMoreMobileNav() {
   return [
+    { name: 'Leaderboards', href: '/leaderboards' },
     ...(IS_PRIVATE_MANIFOLD
       ? []
       : [
           { name: 'Send M$', href: '/links' },
           { name: 'Challenges', href: '/challenges' },
+          { name: 'Referrals', href: '/referrals' },
           { name: 'Charity', href: '/charity' },
+          { name: 'Send M$', href: '/links' },
           { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
         ]),
-    { name: 'Leaderboards', href: '/leaderboards' },
     {
       name: 'Sign out',
       href: '#',
@@ -238,7 +241,10 @@ export default function Sidebar(props: { className?: string }) {
             buttonContent={<MoreButton />}
           />
         )}
-
+        {/* Spacer if there are any groups */}
+        {memberItems.length > 0 && (
+          <hr className="!my-4 mr-2 border-gray-300" />
+        )}
         {privateUser && (
           <GroupsList
             currentPage={router.asPath}
@@ -259,11 +265,7 @@ export default function Sidebar(props: { className?: string }) {
         />
 
         {/* Spacer if there are any groups */}
-        {memberItems.length > 0 && (
-          <div className="py-3">
-            <div className="h-[1px] bg-gray-300" />
-          </div>
-        )}
+        {memberItems.length > 0 && <hr className="!my-4 border-gray-300" />}
         {privateUser && (
           <GroupsList
             currentPage={router.asPath}

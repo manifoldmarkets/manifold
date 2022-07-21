@@ -23,6 +23,7 @@ import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
 import { ActivityItem } from './activity-items'
 import { useSaveSeenContract } from 'web/hooks/use-seen-contracts'
+import { useUser } from 'web/hooks/use-user'
 import { trackClick } from 'web/lib/firebase/tracking'
 import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
@@ -118,6 +119,7 @@ export function FeedQuestion(props: {
   const { volumeLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
+  const user = useUser()
 
   return (
     <div className={'flex gap-2'}>
@@ -149,7 +151,7 @@ export function FeedQuestion(props: {
             href={
               props.contractPath ? props.contractPath : contractPath(contract)
             }
-            onClick={() => trackClick(contract.id)}
+            onClick={() => user && trackClick(user.id, contract.id)}
             className="text-lg text-indigo-700 sm:text-xl"
           >
             {question}

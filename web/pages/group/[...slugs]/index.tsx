@@ -14,12 +14,7 @@ import {
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
-import {
-  firebaseLogin,
-  getUser,
-  User,
-  writeReferralInfo,
-} from 'web/lib/firebase/users'
+import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
@@ -34,7 +29,7 @@ import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
 import { CreateQuestionButton } from 'web/components/create-question-button'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { GroupChat } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
@@ -42,7 +37,6 @@ import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
-import { ShareIconButton } from 'web/components/share-icon-button'
 import { REFERRAL_AMOUNT } from 'common/user'
 import { ContractSearch } from 'web/components/contract-search'
 import clsx from 'clsx'
@@ -52,6 +46,9 @@ import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { CopyLinkButton } from 'web/components/copy-link-button'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -113,7 +110,7 @@ const groupSubpages = [
   undefined,
   GROUP_CHAT_SLUG,
   'questions',
-  'rankings',
+  'leaderboards',
   'about',
 ] as const
 
@@ -154,13 +151,11 @@ export default function GroupPage(props: {
   const messages = useCommentsOnGroup(group?.id)
 
   const user = useUser()
-  useEffect(() => {
-    const { referrer } = router.query as {
-      referrer?: string
-    }
-    if (!user && router.isReady)
-      writeReferralInfo(creator.username, undefined, referrer, group?.id)
-  }, [user, creator, group, router])
+
+  useSaveReferral(user, {
+    defaultReferrer: creator.username,
+    groupId: group?.id,
+  })
 
   const { width } = useWindowSize()
   const chatDisabled = !group || group.chatDisabled
@@ -236,9 +231,9 @@ export default function GroupPage(props: {
       href: groupPath(group.slug, 'questions'),
     },
     {
-      title: 'Rankings',
+      title: 'Leaderboards',
       content: leaderboard,
-      href: groupPath(group.slug, 'rankings'),
+      href: groupPath(group.slug, 'leaderboards'),
     },
     {
       title: 'About',
@@ -252,7 +247,7 @@ export default function GroupPage(props: {
     <Page
       rightSidebar={showChatSidebar ? chatTab : undefined}
       rightSidebarClassName={showChatSidebar ? '!top-0' : ''}
-      className={showChatSidebar ? '!max-w-none !pb-0' : ''}
+      className={showChatSidebar ? '!max-w-7xl !pb-0' : ''}
     >
       <SEO
         title={group.name}
@@ -328,6 +323,11 @@ function GroupOverview(props: {
     })
   }
 
+  const postFix = user ? '?referrer=' + user.username : ''
+  const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
+    group.slug
+  )}${postFix}`
+
   return (
     <>
       <Col className="gap-2 rounded-b bg-white p-2">
@@ -372,21 +372,26 @@ function GroupOverview(props: {
             </span>
           )}
         </Row>
+
         {anyoneCanJoin && user && (
-          <Row className={'flex-wrap items-center gap-1'}>
-            <span className={'text-gray-500'}>Share</span>
-            <ShareIconButton
-              group={group}
-              username={user.username}
-              buttonClassName={'hover:bg-gray-300 mt-1 !text-gray-700'}
-            >
-              <span className={'mx-2'}>
-                Invite a friend and get M${REFERRAL_AMOUNT} if they sign up!
-              </span>
-            </ShareIconButton>
-          </Row>
+          <Col className="my-4 px-2">
+            <div className="text-lg">Invite</div>
+            <div className={'mb-2 text-gray-500'}>
+              Invite a friend to this group and get M${REFERRAL_AMOUNT} if they
+              sign up!
+            </div>
+
+            <CopyLinkButton
+              url={shareUrl}
+              tracking="copy group share link"
+              buttonClassName="btn-md rounded-l-none"
+              toastClassName={'-left-28 mt-1'}
+            />
+          </Col>
         )}
+
         <Col className={'mt-2'}>
+          <div className="mb-2 text-lg">Members</div>
           <GroupMemberSearch members={members} group={group} />
         </Col>
       </Col>
@@ -487,14 +492,14 @@ function GroupLeaderboards(props: {
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => traderScores[user.id] ?? 0}
-              title="🏅 Bettor rankings"
+              title="🏅 Top bettors"
               header="Profit"
               maxToShow={maxToShow}
             />
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => creatorScores[user.id] ?? 0}
-              title="🏅 Creator rankings"
+              title="🏅 Top creators"
               header="Market volume"
               maxToShow={maxToShow}
             />

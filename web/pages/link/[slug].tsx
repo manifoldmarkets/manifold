@@ -7,6 +7,8 @@ import { useManalink } from 'web/lib/firebase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { Row } from 'web/components/layout/row'
+import { Button } from 'web/components/button'
 
 export default function ClaimPage() {
   const user = useUser()
@@ -28,34 +30,42 @@ export default function ClaimPage() {
         description="Send mana to anyone via link!"
         url="/send"
       />
-      <div className="mx-auto max-w-xl">
-        <Title text={`Claim M$${manalink.amount} mana`} />
-        <ManalinkCard
-          user={user}
-          info={info}
-          isClaiming={claiming}
-          onClaim={async () => {
-            setClaiming(true)
-            try {
-              if (user == null) {
-                await firebaseLogin()
+      <div className="mx-auto max-w-xl px-2">
+        <Row className="items-center justify-between">
+          <Title text={`Claim M$${manalink.amount} mana`} />
+          <div className="my-auto">
+            <Button
+              onClick={async () => {
+                setClaiming(true)
+                try {
+                  if (user == null) {
+                    await firebaseLogin()
+                    setClaiming(false)
+                    return
+                  }
+                  if (user?.id == manalink.fromId) {
+                    throw new Error("You can't claim your own manalink.")
+                  }
+                  await claimManalink({ slug: manalink.slug })
+                  user && router.push(`/${user.username}?claimed-mana=yes`)
+                } catch (e) {
+                  console.log(e)
+                  const message =
+                    e && e instanceof Object
+                      ? e.toString()
+                      : 'An error occurred.'
+                  setError(message)
+                }
                 setClaiming(false)
-                return
-              }
-              if (user?.id == manalink.fromId) {
-                throw new Error("You can't claim your own manalink.")
-              }
-              await claimManalink({ slug: manalink.slug })
-              user && router.push(`/${user.username}?claimed-mana=yes`)
-            } catch (e) {
-              console.log(e)
-              const message =
-                e && e instanceof Object ? e.toString() : 'An error occurred.'
-              setError(message)
-            }
-            setClaiming(false)
-          }}
-        />
+              }}
+              disabled={claiming}
+              size="lg"
+            >
+              {user ? 'Claim' : 'Login'}
+            </Button>
+          </div>
+        </Row>
+        <ManalinkCard info={info} />
         {error && (
           <section className="my-5 text-red-500">
             <p>Failed to claim manalink.</p>
