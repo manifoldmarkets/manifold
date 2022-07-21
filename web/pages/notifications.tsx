@@ -816,6 +816,7 @@ function getSourceUrl(notification: Notification) {
   if (sourceType === 'tip' && sourceContractSlug)
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
   if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
+  if (sourceType === 'challenge') return `${sourceSlug}`
   if (sourceContractCreatorUsername && sourceContractSlug)
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
       sourceId ?? '',
@@ -918,6 +919,15 @@ function NotificationTextLabel(props: {
         <span>of your limit order was filled</span>
       </>
     )
+  } else if (sourceType === 'challenge' && sourceText) {
+    return (
+      <>
+        <span> for </span>
+        <span className="text-primary">
+          {formatMoney(parseInt(sourceText))}
+        </span>
+      </>
+    )
   }
   return (
     <div className={className ? className : 'line-clamp-4 whitespace-pre-line'}>
@@ -971,6 +981,9 @@ function getReasonForShowingNotification(
       break
     case 'bet':
       reasonText = 'bet against you'
+      break
+    case 'challenge':
+      reasonText = 'accepted your challenge'
       break
     default:
       reasonText = ''

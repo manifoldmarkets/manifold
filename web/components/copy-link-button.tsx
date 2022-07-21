@@ -2,32 +2,26 @@ import React, { Fragment } from 'react'
 import { LinkIcon } from '@heroicons/react/outline'
 import { Menu, Transition } from '@headlessui/react'
 import clsx from 'clsx'
-
-import { Contract } from 'common/contract'
-import { copyToClipboard } from 'web/lib/util/copy'
-import { contractPath } from 'web/lib/firebase/contracts'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { ToastClipboard } from 'web/components/toast-clipboard'
-import { track } from 'web/lib/service/analytics'
-
-function copyContractUrl(contract: Contract) {
-  copyToClipboard(`https://${ENV_CONFIG.domain}${contractPath(contract)}`)
-}
+import { copyToClipboard } from 'web/lib/util/copy'
 
 export function CopyLinkButton(props: {
-  contract: Contract
+  link: string
+  onCopy?: () => void
   buttonClassName?: string
   toastClassName?: string
+  icon?: React.ComponentType<{ className?: string }>
+  label?: string
 }) {
-  const { contract, buttonClassName, toastClassName } = props
+  const { onCopy, link, buttonClassName, toastClassName, label } = props
 
   return (
     <Menu
       as="div"
       className="relative z-10 flex-shrink-0"
       onMouseUp={() => {
-        copyContractUrl(contract)
-        track('copy share link')
+        copyToClipboard(link)
+        onCopy?.()
       }}
     >
       <Menu.Button
@@ -36,8 +30,11 @@ export function CopyLinkButton(props: {
           buttonClassName
         )}
       >
-        <LinkIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
-        Copy link
+        {!props.icon && (
+          <LinkIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
+        )}
+        {props.icon && <props.icon className={'h-4 w-4'} />}
+        {label ?? 'Copy link'}
       </Menu.Button>
 
       <Transition

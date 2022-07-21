@@ -1,8 +1,11 @@
 import clsx from 'clsx'
-import { Contract, contractUrl } from 'web/lib/firebase/contracts'
+import { Contract, contractPath, contractUrl } from 'web/lib/firebase/contracts'
 import { CopyLinkButton } from './copy-link-button'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { ENV_CONFIG } from 'common/lib/envs/constants'
+import { track } from 'web/lib/service/analytics'
 
 export function ShareMarket(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -18,7 +21,8 @@ export function ShareMarket(props: { contract: Contract; className?: string }) {
           value={contractUrl(contract)}
         />
         <CopyLinkButton
-          contract={contract}
+          link={`https://${ENV_CONFIG.domain}${contractPath(contract)}`}
+          onCopy={() => track('copy share link')}
           buttonClassName="btn-md rounded-l-none"
           toastClassName={'-left-28 mt-1'}
         />
