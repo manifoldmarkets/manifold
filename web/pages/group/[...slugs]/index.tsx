@@ -54,6 +54,7 @@ import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -401,8 +402,9 @@ function GroupOverview(props: {
           <Row className={'flex-wrap items-center gap-1'}>
             <span className={'text-gray-500'}>Share</span>
             <ShareIconButton
-              group={group}
-              username={user.username}
+              copyPayload={`https://${ENV_CONFIG.domain}${groupPath(
+                group.slug
+              )}${user?.username ? '?referrer=' + user?.username : ''}`}
               buttonClassName={'hover:bg-gray-300 mt-1 !text-gray-700'}
             >
               <span className={'mx-2'}>

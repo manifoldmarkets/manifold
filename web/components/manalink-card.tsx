@@ -9,6 +9,7 @@ import { ShareIconButton } from './share-icon-button'
 import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import { contractDetailsButtonClassName } from './contract/contract-info-dialog'
 import { useUserById } from 'web/hooks/use-user'
+import getManalinkUrl from 'web/get-manalink-url'
 export type ManalinkInfo = {
   expiresTime: number | null
   maxUses: number | null
@@ -129,12 +130,12 @@ export function ManalinkCardFromView(props: {
             {formatMoney(amount)}
           </div>
           <ShareIconButton
-            manalink={link}
             toastClassName={'-left-48 min-w-[250%]'}
             buttonClassName={'transition-colors'}
             onCopyButtonClassName={
               'bg-gray-200 text-gray-600 transition-none hover:bg-gray-200 hover:text-gray-600'
             }
+            copyPayload={getManalinkUrl(link.slug)}
           />
           <button
             onClick={() => setDetails(!details)}

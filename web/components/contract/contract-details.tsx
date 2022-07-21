@@ -11,6 +11,7 @@ import { UserLink } from '../user-page'
 import {
   Contract,
   contractMetrics,
+  contractPath,
   contractPool,
   updateContract,
 } from 'web/lib/firebase/contracts'
@@ -33,6 +34,7 @@ import { ShareIconButton } from 'web/components/share-icon-button'
 import { useUser } from 'web/hooks/use-user'
 import { Editor } from '@tiptap/react'
 import { exhibitExts } from 'common/util/parse'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -222,9 +224,12 @@ export function ContractDetails(props: {
         <div className="whitespace-nowrap">{volumeLabel}</div>
       </Row>
       <ShareIconButton
-        contract={contract}
+        copyPayload={`https://${ENV_CONFIG.domain}${contractPath(contract)}${
+          user?.username && contract.creatorUsername !== user?.username
+            ? '?referrer=' + user?.username
+            : ''
+        }`}
         toastClassName={'sm:-left-40 -left-24 min-w-[250%]'}
-        username={user?.username}
       />
 
       {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
