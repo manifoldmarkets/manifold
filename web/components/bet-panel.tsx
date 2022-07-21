@@ -157,7 +157,7 @@ function BuyPanel(props: {
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -173,7 +173,7 @@ function BuyPanel(props: {
   }, [selected, focusAmountInput])
 
   function onBetChoice(choice: 'YES' | 'NO') {
-    setBetChoice(choice)
+    setOutcome(choice)
     setWasSubmitted(false)
     focusAmountInput()
   }
@@ -181,8 +181,8 @@ function BuyPanel(props: {
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
-    if (!betChoice) {
-      setBetChoice('YES')
+    if (!outcome) {
+      setOutcome('YES')
     }
   }
 
@@ -193,8 +193,8 @@ function BuyPanel(props: {
     setIsSubmitting(true)
 
     placeBet({
+      outcome,
       amount: betAmount,
-      outcome: betChoice,
       contractId: contract.id,
     })
       .then((r) => {
@@ -220,7 +220,7 @@ function BuyPanel(props: {
       slug: contract.slug,
       contractId: contract.id,
       amount: betAmount,
-      outcome: betChoice,
+      outcome,
       isLimitOrder: false,
     })
   }
@@ -228,7 +228,7 @@ function BuyPanel(props: {
   const betDisabled = isSubmitting || !betAmount || error
 
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
-    betChoice ?? 'YES',
+    outcome ?? 'YES',
     betAmount ?? 0,
     contract,
     undefined,
@@ -256,7 +256,7 @@ function BuyPanel(props: {
       <YesNoSelector
         className="mb-4"
         btnClassName="flex-1"
-        selected={betChoice}
+        selected={outcome}
         onSelect={(choice) => onBetChoice(choice)}
         isPseudoNumeric={isPseudoNumeric}
       />
@@ -294,7 +294,7 @@ function BuyPanel(props: {
                 'Max payout'
               ) : (
                 <>
-                  Payout if <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
+                  Payout if <BinaryOutcomeLabel outcome={outcome ?? 'YES'} />
                 </>
               )}
             </div>
@@ -319,7 +319,7 @@ function BuyPanel(props: {
             'btn flex-1',
             betDisabled
               ? 'btn-disabled'
-              : betChoice === 'YES'
+              : outcome === 'YES'
               ? 'btn-primary'
               : 'border-none bg-red-400 hover:bg-red-500',
             isSubmitting ? 'loading' : ''
@@ -392,13 +392,13 @@ function LimitOrderPanel(props: {
     const betsPromise = hasTwoBets
       ? Promise.all([
           placeBet({
-            betChoice: 'YES',
+            outcome: 'YES',
             amount: yesAmount,
             limitProb: yesLimitProb,
             contractId: contract.id,
           }),
           placeBet({
-            betChoice: 'NO',
+            outcome: 'NO',
             amount: noAmount,
             limitProb: noLimitProb,
             contractId: contract.id,
