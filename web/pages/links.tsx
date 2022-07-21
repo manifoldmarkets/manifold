@@ -82,6 +82,10 @@ function ManalinksDisplay(props: {
   highlightedSlug: string
 }) {
   const { unclaimedLinks, highlightedSlug } = props
+  const [page, setPage] = useState(0)
+  const start = page * LINKS_PER_PAGE
+  const end = start + LINKS_PER_PAGE
+  const displayedLinks = unclaimedLinks.slice(start, end)
 
   if (unclaimedLinks.length === 0) {
     return (
@@ -91,10 +95,6 @@ function ManalinksDisplay(props: {
       </p>
     )
   } else {
-    const [page, setPage] = useState(0)
-    const start = page * LINKS_PER_PAGE
-    const end = start + LINKS_PER_PAGE
-    const displayedLinks = unclaimedLinks.slice(start, end)
     return (
       <>
         <Col className="grid w-full gap-4 md:grid-cols-2">
