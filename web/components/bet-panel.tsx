@@ -16,8 +16,7 @@ import {
 import { getBinaryCpmmBetInfo } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
 import { Bet, LimitBet } from 'common/bet'
-import { APIError, placeBet } from 'web/lib/firebase/api'
-import { sellShares } from 'web/lib/firebase/api'
+import { APIError, placeBet, sellShares } from 'web/lib/firebase/api'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import { BinaryOutcomeLabel } from './outcome-label'
@@ -41,7 +40,6 @@ import { LimitBets } from './limit-bets'
 import { BucketInput } from './bucket-input'
 import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
-import { CreateChallengeButton } from 'web/components/challenges/create-challenge-button'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -386,7 +384,6 @@ function BuyPanel(props: {
               ? 'Submit order'
               : 'Submit bet'}
           </button>
-          <CreateChallengeButton user={user} contract={contract} />
         </Col>
       )}
 
@@ -425,15 +422,6 @@ function QuickOrLimitBet(props: {
             }}
           >
             Limit
-          </PillButton>
-          <PillButton
-            selected={isLimitOrder}
-            onSelect={() => {
-              setIsLimitOrder(true)
-              track('select limit order')
-            }}
-          >
-            Peer
           </PillButton>
         </Row>
       </Row>
