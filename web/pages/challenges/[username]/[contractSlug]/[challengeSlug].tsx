@@ -131,19 +131,30 @@ function ClosedChallengeContent(props: {
 }) {
   const { contract, challenge, creator, bets } = props
   const { resolution } = contract
-  const user = useUserById(challenge.acceptances[0].userId)
+  const {
+    acceptances,
+    amount,
+    creatorsOutcome,
+    creatorsOutcomeProb,
+    yourOutcome,
+  } = challenge
+
+  const user = useUserById(acceptances[0].userId)
   const [showConfetti, setShowConfetti] = useState(false)
   const { width, height } = useWindowSize()
   useEffect(() => {
-    if (challenge.acceptances.length === 0) return
-    if (challenge.acceptances[0].createdTime > Date.now() - 1000 * 60)
+    if (acceptances.length === 0) return
+    if (acceptances[0].createdTime > Date.now() - 1000 * 60)
       setShowConfetti(true)
-  }, [challenge.acceptances])
-  const creatorWon = resolution === challenge.creatorsOutcome
+  }, [acceptances])
+  const creatorWon = resolution === creatorsOutcome
+  const yourShares = (1 / (1 - creatorsOutcomeProb)) * amount
+  const creatorShares = (1 / creatorsOutcomeProb) * amount
+  const winningShares = creatorWon ? creatorShares : yourShares
 
   if (!user) return <LoadingIndicator />
 
-  const userWonCol = (user: User) => (
+  const userWonCol = (user: User, amount: number) => (
     <Col className="w-full items-start justify-center gap-1 p-4">
       <Row className={'mb-2 w-full items-center justify-center gap-2'}>
         <span className={'mx-2 text-3xl'}>🥇</span>
@@ -157,10 +168,7 @@ function ClosedChallengeContent(props: {
       </Row>
       <Row className={'w-full items-center justify-center'}>
         <span className={'text-lg'}>
-          WON{' '}
-          <span className={'text-primary'}>
-            {formatMoney(challenge.amount)}
-          </span>
+          WON <span className={'text-primary'}>{formatMoney(amount)}</span>
         </span>
       </Row>
     </Col>
@@ -171,10 +179,7 @@ function ClosedChallengeContent(props: {
       {userRow(challenger)}
       <Row className={'w-full items-center justify-center'}>
         <span className={'text-lg'}>
-          LOST{' '}
-          <span className={'text-red-500'}>
-            {formatMoney(challenge.amount)}
-          </span>
+          LOST <span className={'text-red-500'}>{formatMoney(amount)}</span>
         </span>
       </Row>
     </Col>
@@ -191,17 +196,14 @@ function ClosedChallengeContent(props: {
       <Row className={'w-full items-center justify-center'}>
         {!lost ? (
           <span className={'text-lg'}>
-            is betting {formatMoney(challenge.amount)}
+            is betting {formatMoney(amount)}
             {' on '}
             <BinaryOutcomeLabel outcome={outcome as any} /> at{' '}
             {Math.round(prob * 100)}%
           </span>
         ) : (
           <span className={'text-lg'}>
-            LOST{' '}
-            <span className={'text-red-500'}>
-              {formatMoney(challenge.amount)}
-            </span>
+            LOST <span className={'text-red-500'}>{formatMoney(amount)}</span>
           </span>
         )}
       </Row>
@@ -243,7 +245,7 @@ function ClosedChallengeContent(props: {
             }
           >
             <Row className={'mt-4 w-full'}>
-              {userWonCol(creatorWon ? creator : user)}
+              {userWonCol(creatorWon ? creator : user, winningShares)}
             </Row>
             <Row className={'mt-4'}>
               {userLostCol(creatorWon ? user : creator)}
@@ -255,17 +257,9 @@ function ClosedChallengeContent(props: {
               'h-full w-full content-between justify-between gap-1  py-10 sm:flex-row'
             }
           >
-            {userCol(
-              creator,
-              challenge.creatorsOutcome,
-              challenge.creatorsOutcomeProb
-            )}
+            {userCol(creator, creatorsOutcome, creatorsOutcomeProb)}
             <Col className="items-center justify-center py-4 text-xl">VS</Col>
-            {userCol(
-              user,
-              challenge.yourOutcome,
-              1 - challenge.creatorsOutcomeProb
-            )}
+            {userCol(user, yourOutcome, 1 - creatorsOutcomeProb)}
           </Col>
         )}
         <Spacer h={3} />
@@ -310,6 +304,14 @@ function OpenChallengeContent(props: {
 }) {
   const { contract, challenge, creator, user, bets } = props
   const { question } = contract
+  const {
+    amount,
+    creatorId,
+    creatorsOutcome,
+    creatorsOutcomeProb,
+    yourOutcome,
+  } = challenge
+
   const [creatorPortfolioHistory, setUsersCreatorPortfolioHistory] = useState<
     PortfolioMetrics[]
   >([])
@@ -340,9 +342,9 @@ function OpenChallengeContent(props: {
   ) => {
     const lastPortfolioMetrics = last(portfolioHistory)
     const prob =
-      (outcome === challenge.creatorsOutcome
-        ? challenge.creatorsOutcomeProb
-        : 1 - challenge.creatorsOutcomeProb) * 100
+      (outcome === creatorsOutcome
+        ? creatorsOutcomeProb
+        : 1 - creatorsOutcomeProb) * 100
 
     return (
       <Col className="w-full items-start justify-center gap-1">
@@ -356,7 +358,7 @@ function OpenChallengeContent(props: {
         )}
         <Row className={'w-full items-center justify-center'}>
           <span className={'text-lg'}>
-            is betting {formatMoney(challenge.amount)}
+            is betting {formatMoney(amount)}
             {' on '}
             <BinaryOutcomeLabel outcome={outcome as any} /> at{' '}
             {Math.round(prob)}%
@@ -409,16 +411,12 @@ function OpenChallengeContent(props: {
             'h-full max-h-[50vh] w-full content-between justify-between gap-1  py-10 sm:flex-row'
           }
         >
-          {userColumn(
-            creator,
-            creatorPortfolioHistory,
-            challenge.creatorsOutcome
-          )}
+          {userColumn(creator, creatorPortfolioHistory, creatorsOutcome)}
           <Col className="items-center justify-center py-4 text-4xl">VS</Col>
           {userColumn(
-            user?.id === challenge.creatorId ? undefined : user,
+            user?.id === creatorId ? undefined : user,
             portfolioHistory,
-            challenge.yourOutcome
+            yourOutcome
           )}
         </Col>
         <Spacer h={3} />
