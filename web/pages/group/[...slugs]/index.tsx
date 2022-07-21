@@ -53,6 +53,7 @@ import { searchInAny } from 'common/util/parse'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -155,13 +156,11 @@ export default function GroupPage(props: {
   const messages = useCommentsOnGroup(group?.id)
 
   const user = useUser()
-  useEffect(() => {
-    const { referrer } = router.query as {
-      referrer?: string
-    }
-    if (!user && router.isReady)
-      writeReferralInfo(creator.username, undefined, referrer, group?.id)
-  }, [user, creator, group, router])
+
+  useSaveReferral(user, {
+    defaultReferrer: creator.username,
+    groupId: group?.id,
+  })
 
   const { width } = useWindowSize()
   const chatDisabled = !group || group.chatDisabled
