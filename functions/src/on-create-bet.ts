@@ -134,12 +134,11 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       fromUser,
       eventId + '-bonus',
       result.txn.amount + '',
-      contract,
-      undefined,
-      // No need to set the user id, we'll use the contract creator id
-      undefined,
-      contract.slug,
-      contract.question
+      {
+        contract,
+        slug: contract.slug,
+        title: contract.question,
+      }
     )
   }
 }

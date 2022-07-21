@@ -20,11 +20,11 @@ export const onCreateGroup = functions.firestore
         groupCreator,
         eventId,
         group.about,
-        undefined,
-        undefined,
-        memberId,
-        group.slug,
-        group.name
+        {
+          relatedUserId: memberId,
+          slug: group.slug,
+          title: group.name,
+        }
       )
     }
   })

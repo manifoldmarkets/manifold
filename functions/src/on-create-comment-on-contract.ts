@@ -68,7 +68,7 @@ export const onCreateCommentOnContract = functions
       ? 'answer'
       : undefined
 
-    const relatedUser = comment.replyToCommentId
+    const relatedUserId = comment.replyToCommentId
       ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
       : answer?.userId
 
@@ -79,9 +79,7 @@ export const onCreateCommentOnContract = functions
       commentCreator,
       eventId,
       comment.text,
-      contract,
-      relatedSourceType,
-      relatedUser
+      { contract, relatedSourceType, relatedUserId }
     )
 
     const recipientUserIds = uniq([

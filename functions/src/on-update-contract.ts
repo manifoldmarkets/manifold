@@ -36,7 +36,7 @@ export const onUpdateContract = functions.firestore
         contractUpdater,
         eventId,
         resolutionText,
-        contract
+        { contract }
       )
     } else if (
       previousValue.closeTime !== contract.closeTime ||
@@ -62,7 +62,7 @@ export const onUpdateContract = functions.firestore
         contractUpdater,
         eventId,
         sourceText,
-        contract
+        { contract }
       )
     }
   })
