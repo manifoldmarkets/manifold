@@ -162,9 +162,9 @@ export function FeedAnswerCommentGroup(props: {
       />
 
       {showReply && (
-        <div className={'ml-6 pt-4'}>
+        <div className={'ml-6'}>
           <span
-            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            className="absolute -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
           />
           <CommentInput
