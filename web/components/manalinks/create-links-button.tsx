@@ -4,7 +4,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Title } from '../title'
 import { User } from 'common/user'
-import { ManalinkCardPreview, ManalinkInfo } from 'web/components/manalink-card'
+import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
 import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
 import Textarea from 'react-expanding-textarea'
@@ -37,6 +37,7 @@ export function CreateLinksButton(props: {
                 message: newManalink.message,
               })
               setHighlightedSlug(slug || '')
+              setTimeout(() => setHighlightedSlug(''), 3700)
             }}
           />
         </Col>
@@ -191,7 +192,7 @@ function CreateManalinkForm(props: {
       {finishedCreating && (
         <>
           <Title className="!my-0" text="Manalink Created!" />
-          <ManalinkCardPreview className="my-4" info={newManalink} />
+          <ManalinkCard className="my-4" info={newManalink} preview />
           <Row
             className={clsx(
               'rounded border bg-gray-50 py-2 px-3 text-sm text-gray-500 transition-colors duration-700',
