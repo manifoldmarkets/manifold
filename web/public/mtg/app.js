@@ -57,14 +57,6 @@ function putIntoMapAndFetch(data) {
     window.console.log(nameList)
     if (whichGuesser === 'counterspell') {
       document.getElementById('guess-type').innerText = 'Counterspell Guesser'
-    } else if (whichGuesser === 'beast') {
-      document.getElementById('guess-type').innerText =
-        'Finding Fantastic Beasts'
-    } else if (whichGuesser === 'terror') {
-      document.getElementById('guess-type').innerText =
-        "I'm a Terror-able Guesser"
-    } else if (whichGuesser === 'wrath') {
-      document.getElementById('guess-type').innerText = "I'll Clean Sweep"
     } else if (whichGuesser === 'burn') {
       document.getElementById('guess-type').innerText = 'Match With Hot Singles'
     }
