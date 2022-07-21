@@ -6,6 +6,14 @@
 
 $borderWidth: 8px;
 
+// Theme:
+// $themeBlue: #5682E7;
+// $themeGreen: #46C935;
+// $themeRed: #DE3434;
+$themeBlue: #6694ff;
+$themeGreen: #92ff83;
+$themeRed: #ff3d3d;
+
 html,
 body {
     margin: 0;
@@ -72,13 +80,11 @@ body {
     }
 
     .name {
-        display: inline;
-        color: #5682E7;
+        color: $themeBlue;
     }
 
     .yes {
-        display: inline;
-        color: #46C935;
+        color: $themeGreen;
         &::after {
             padding-left: $elementPadding;
             content: "YES";
@@ -86,34 +92,26 @@ body {
     }
 
     .no {
-        display: inline;
-        color: #DE3434;
+        color: $themeRed;
         &::after {
             padding-left: $elementPadding;
             content: "NO";
         }
     }
 
-    .amount {
-        display: inline;
-    }
+    // .amount {
+    // }
 
-    .boughtSold {
-        display: inline;
-    }
+    // .boughtSold {
+    // }
 
     .time {
-        // d
+        min-width: 2em;
+        text-align: end;
         align-self: center;
         justify-self: center;
         font-size: 70%;
-        color: #ccc;
-        // font-style: italic;
-        // font-weight: 200;
-        // font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        // text-align: center;
-        
-        // margin-top: -10px;
-        transform: translate(0, -2px);
+        color: #FFF;
+        transform: translate(0, -3px);
     }
 }

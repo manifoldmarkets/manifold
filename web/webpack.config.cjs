@@ -1,11 +1,13 @@
 const path = require("path");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 
 let config = {
     mode: "development",
     entry: {
         main: "/src/main.ts",
+        main2: "/src/main.ts",
         "service-worker": "/src/service-worker.ts",
     },
     devServer: {
@@ -25,6 +27,21 @@ let config = {
                 target: "http://localhost:3000",
             },
         },
+    },
+    optimization: {
+        minimizer: [
+            new TerserPlugin({
+                extractComments: false,
+                terserOptions: {
+                    compress: {
+                        drop_console: true,
+                    },
+                    format: {
+                        comments: false,
+                    },
+                },
+            }),
+        ],
     },
     module: {
         rules: [

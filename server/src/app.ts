@@ -110,6 +110,30 @@ export default class App {
         console.log(`[${new Date().toLocaleTimeString()}] ${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
     }
 
+    placeBet(amount: number, yes: boolean) {
+        amount = -1;//!!!A
+        const APIKey = "a7b63c2a-75ed-4794-b8fb-ca1c1d47cda9"; //!!!
+
+        const data = {
+            amount: amount,
+            contractId: "litD59HFH1eUx5sAGCNL", //!!!
+            outcome: yes ? "YES" : "NO",
+        };
+
+        fetch(`${APIBase}bet`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Key ${APIKey}`,
+            },
+            body: JSON.stringify(data),
+        })
+        .then(r => r.json())
+        .then(r => {
+            console.log(r);
+        });
+    }
+
     launch() {
         const commands = {
             help: {
@@ -122,28 +146,26 @@ export default class App {
                 response: (username: string, argument: string) => {
                     if (argument.startsWith("yes")) {
                         try {
-                            // const value = Number.parseInt(argument.substring(3));
-                            // if (isNaN(value)) {
-                            //     return null; //!!!
-                            // }
-                            // const bet: Partial<Manifold.Bet> = {
-                            //     userId: username,
-                            //     amount: value,
-                            //     outcome: "YES",
-                            //     createdTime: Date.now()
-                            // }
-                            // this.addBet(bet);
+                            const value = Number.parseInt(argument.substring(3));
+                            if (isNaN(value)) {
+                                return null; //!!!
+                            }
+
+                            this.placeBet(value, true);
+
                             return ""; //`@${username} has bet ${value} on YES!`;
                         } catch (e) {
                             return null; //!!!
                         }
                     } else if (argument.startsWith("no")) {
                         try {
-                            // const value = Number.parseInt(argument.substring(2));
-                            // if (isNaN(value)) {
-                            //     return null; //!!!
-                            // }
-                            // this.addBet(new Transaction(username, value, false, Date.now()));
+                            const value = Number.parseInt(argument.substring(2));
+                            if (isNaN(value)) {
+                                return null; //!!!
+                            }
+
+                            this.placeBet(value, false);
+
                             return ""; //`@${username} has bet ${value} on NO!`;
                         } catch (e) {
                             return null; //!!!

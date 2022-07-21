@@ -62,7 +62,7 @@ class Application {
 
         //!!! This all needs to move to another polling system for the market probability:
         let animationFrame = () => {
-            this.animatedProbability_percent += (this.currentProbability_percent - this.animatedProbability_percent) * 0.2;
+            this.animatedProbability_percent += (this.currentProbability_percent - this.animatedProbability_percent) * 0.1;
             document.getElementById("chance").innerHTML = this.animatedProbability_percent.toFixed(0);
 
             window.requestAnimationFrame(animationFrame);
@@ -124,6 +124,7 @@ class Application {
             }
         });
         socket.on("clear", () => {
+            this.chart.data = [];
             for (const bet of this.betElements) {
                 bet.element.parentElement.removeChild(bet.element);
             }
@@ -231,7 +232,7 @@ class Application {
         if (this.currentMarket) {
             this.currentMarket.probability = bet.probAfter;
             this.currentProbability_percent = this.currentMarket.probability * 100;
-            this.chart.data.push(new Point(bet.createdTime, this.chart.data[this.chart.data.length - 1].y));
+            this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
             this.chart.data.push(new Point(bet.createdTime, bet.probAfter));
         }
 

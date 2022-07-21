@@ -51,25 +51,27 @@ export default class Chart {
 
     render() {
         const ctx = this.ctx;
+
+        const padding_px = 10;
+        const xAxisHeight_px = 15;
+        const yAxisWidth_px = 45;
+        const numXAxisLines = 5;
+        const numYAxisLines = 5;
+        
         const canvasWidth_px = this.canvasElement.width >> 0;
         const canvasHeight_px = this.canvasElement.height >> 0;
-        const padding = 10;
-        const yAxisWidth = 45;
         const numDataPoints = this.data.length;
-        const graphWidth_px = canvasWidth_px - padding * 2 - yAxisWidth;
-        const graphHeight_px = canvasHeight_px - padding * 2;
+        const graphWidth_px = canvasWidth_px - padding_px * 2 - yAxisWidth_px;
+        const graphHeight_px = canvasHeight_px - padding_px * 2 - xAxisHeight_px;
 
         ctx.clearRect(0, 0, canvasWidth_px, canvasHeight_px);
 
         let grd = this.ctx.createLinearGradient(0, 0, 0, canvasHeight_px);
         grd.addColorStop(0, "rgba(73, 201, 159, 0.8)");
-        // grd.addColorStop(0.5, "rgba(73, 201, 159, 0.2)");
         grd.addColorStop(1, "rgba(73, 201, 159, 0.0)");
 
-        let minX = Date.now() - 1000000;//Number.MAX_VALUE;
+        let minX = Number.MAX_VALUE;
         let maxX = -Number.MAX_VALUE;
-        let minY = 0;//Number.MAX_VALUE;
-        let maxY = 1;//-Number.MAX_VALUE;
         for (let dataIndex = 0; dataIndex < numDataPoints; dataIndex++) {
             let dataPoint = this.data[dataIndex];
             // if (dataPoint.x < minX) {
@@ -78,31 +80,47 @@ export default class Chart {
             if (dataPoint.x > maxX) {
                 maxX = dataPoint.x;
             }
-            // if (dataPoint.y < minY) {
-            //     minY = dataPoint.y;
-            // }
-            // if (dataPoint.y > maxY) {
-            //     maxY = dataPoint.y;
-            // }
         }
+        maxX = Date.now();
+        minX = maxX - 4 * 60 * 1000;
 
-        ctx.translate(padding + 0.5, padding + 0.5);
+        // console.log(`Graph limits: [${minX/1000}, ${maxX/1000}]`)
+
+        ctx.translate(padding_px + 0.5, padding_px + 0.5);
         {
             // Draw Y-Axis labels:
             ctx.fillStyle = "#FFF";
-            ctx.font = "15px Arial";
-            const numYAxisLines = 5;
+            ctx.font = "15px Readex Pro";
             for (let i = 0; i < numYAxisLines; i++) {
                 let y = graphHeight_px - (0.5 + (i * graphHeight_px / (numYAxisLines - 1)) >> 0);
-
-                let labelText = `${i * (100 / (numYAxisLines - 1))}%`;
+                let labelText = `${(i * (100 / (numYAxisLines - 1))).toFixed(0)}%`;
                 let m = ctx.measureText(labelText);
-                ctx.fillText(labelText, yAxisWidth - m.width - 10, y + (m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) * 0.5);
+                ctx.fillText(labelText, yAxisWidth_px - m.width - 5, y + (m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) * 0.5);
 
                 // ctx.fillRect(yAxisWidth - 5.5, y - 1.5, 5, 3);
             }
 
-            ctx.translate(yAxisWidth, 0);
+            ctx.translate(yAxisWidth_px, 0);
+
+            ctx.translate(0, graphHeight_px);
+            // ctx.fillRect(0, 0, 200, xAxisHeight);
+            for (let i = 0; i < numXAxisLines; i++) {
+                let x = (i * graphWidth_px / (numXAxisLines - 1)) >> 0;
+                let labelText = (numXAxisLines - i - 1) + "m";
+                if (i == numXAxisLines - 1) {
+                    labelText = "now";
+                    let m = ctx.measureText(labelText);
+                    ctx.fillText(labelText, x - m.width, m.actualBoundingBoxAscent + 10);
+                }
+                else {
+                    let m = ctx.measureText(labelText);
+                    ctx.fillText(labelText, x - m.width * 0.5, m.actualBoundingBoxAscent + 10);
+                }
+
+                ctx.fillRect(x - 1.5, 0.5, 3, 5);
+            }
+            ctx.translate(0, -graphHeight_px);
+
             
             // Render axis lines:
             ctx.lineCap = "square";
@@ -120,13 +138,13 @@ export default class Chart {
             ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
             ctx.lineWidth = 1;
             ctx.beginPath();
-            for (let i = 1; i < 5; i++) {
-                let x = (i * graphWidth_px / 5) >> 0;
+            for (let i = 1; i < numXAxisLines - 1; i++) {
+                let x = (i * graphWidth_px / (numXAxisLines - 1)) >> 0;
                 ctx.moveTo(x, 0.5);
                 ctx.lineTo(x, graphHeight_px - .5);
             }
             for (let i = 0; i < numYAxisLines - 1; i++) {
-                let y = 0.5 + (i * graphHeight_px / 4) >> 0;
+                let y = 0.5 + (i * graphHeight_px / (numYAxisLines - 1)) >> 0;
                 ctx.moveTo(0, y);
                 ctx.lineTo(0 + graphWidth_px, y);
             }
@@ -134,28 +152,36 @@ export default class Chart {
 
             // Render data:
             // ctx.translate(-0.5, -0.5);
-            ctx.save();
-            ctx.rect(-0.5, 0.5, graphWidth_px + padding, graphHeight_px + padding);
-            ctx.clip();
-            {
-                ctx.strokeStyle = "#49C99F";
-                ctx.fillStyle = grd;//"rgba(73, 201, 159, 0.3)";
-                ctx.lineJoin = "round";
-                ctx.lineCap = "round";
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                for (let i = 0; i < numDataPoints; i++) {
-                    let p = this.data[i];
-                    let transformedX = ((p.x - minX) / (maxX - minX)) * graphWidth_px;
-                    let transformedY = canvasHeight_px - (((p.y - minY) / (maxY - minY)) * graphHeight_px);
-                    ctx.lineTo(transformedX, transformedY);
+            if (numDataPoints > 0) {
+                ctx.save();
+                ctx.rect(-0.5, 0.5, graphWidth_px + padding_px, graphHeight_px + padding_px);
+                ctx.clip();
+                {
+                    ctx.strokeStyle = "#49C99F";
+                    ctx.fillStyle = grd;//"rgba(73, 201, 159, 0.3)";
+                    ctx.lineJoin = "round";
+                    ctx.lineCap = "round";
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    for (let i = 0; i <= numDataPoints; i++) {
+                        let p: Point;
+                        if (i == numDataPoints) {
+                            p = new Point(maxX, this.data[i - 1].y);
+                        }
+                        else {
+                            p = this.data[i];
+                        }
+                        let transformedX = ((p.x - minX) / (maxX - minX)) * graphWidth_px;
+                        let transformedY = ((1 - p.y) * graphHeight_px);
+                        ctx.lineTo(transformedX, transformedY);
+                    }
+                    ctx.stroke();
+                    ctx.lineTo(graphWidth_px, graphHeight_px);
+                    ctx.lineTo(0, graphHeight_px);
+                    ctx.fill();
                 }
-                ctx.stroke();
-                ctx.lineTo(graphWidth_px, graphHeight_px);
-                ctx.lineTo(0, graphHeight_px);
-                ctx.fill();
+                ctx.restore();
             }
-            ctx.restore();
         }
         ctx.resetTransform();
     }
