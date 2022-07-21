@@ -40,6 +40,8 @@ function getNavigation() {
       icon: NotificationsIcon,
     },
 
+    { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+
     ...(IS_PRIVATE_MANIFOLD
       ? []
       : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
@@ -53,7 +55,6 @@ function getMoreNavigation(user?: User | null) {
 
   if (!user) {
     return [
-      { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Charity', href: '/charity' },
       { name: 'Blog', href: 'https://news.manifold.markets' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -62,7 +63,6 @@ function getMoreNavigation(user?: User | null) {
   }
 
   return [
-    { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Referrals', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
     { name: 'Send M$', href: '/links' },
@@ -79,7 +79,6 @@ function getMoreNavigation(user?: User | null) {
 const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
-  { name: 'Charity', href: '/charity', icon: HeartIcon },
   {
     name: 'About',
     href: 'https://docs.manifold.markets/$how-to',
@@ -99,6 +98,7 @@ const signedOutMobileNavigation = [
 ]
 
 const signedInMobileNavigation = [
+  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
   ...(IS_PRIVATE_MANIFOLD
     ? []
     : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
@@ -111,7 +111,6 @@ const signedInMobileNavigation = [
 
 function getMoreMobileNav() {
   return [
-    { name: 'Leaderboards', href: '/leaderboards' },
     ...(IS_PRIVATE_MANIFOLD
       ? []
       : [
