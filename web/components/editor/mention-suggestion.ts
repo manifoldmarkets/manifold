@@ -12,8 +12,8 @@ export const mentionSuggestion = (users: User[]): Suggestion => ({
   items: ({ query }) =>
     users.filter((u) => searchInAny(query, u.username, u.name)).slice(0, 5),
   render: () => {
-    let component: any
-    let popup: any
+    let component: ReactRenderer
+    let popup: ReturnType<typeof tippy>
     return {
       onStart: (props) => {
         component = new ReactRenderer(MentionList, {
@@ -42,7 +42,7 @@ export const mentionSuggestion = (users: User[]): Suggestion => ({
         }
 
         popup[0].setProps({
-          getReferenceClientRect: props.clientRect,
+          getReferenceClientRect: props.clientRect as any,
         })
       },
       onKeyDown(props) {
@@ -50,7 +50,7 @@ export const mentionSuggestion = (users: User[]): Suggestion => ({
           popup[0].hide()
           return true
         }
-        return component.ref?.onKeyDown(props)
+        return (component.ref as any)?.onKeyDown(props)
       },
       onExit() {
         popup[0].destroy()
