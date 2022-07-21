@@ -3,26 +3,9 @@ import { ShareIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 
 import { copyToClipboard } from 'web/lib/util/copy'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { ToastClipboard } from 'web/components/toast-clipboard'
 import { track } from 'web/lib/service/analytics'
 import { contractDetailsButtonClassName } from 'web/components/contract/contract-info-dialog'
-import { Group } from 'common/group'
-import { groupPath } from 'web/lib/firebase/groups'
-import { Manalink } from 'common/manalink'
-import getManalinkUrl from 'web/get-manalink-url'
-
-// Note: if a user arrives at a /group endpoint with a ?referral= query, they'll be added to the group automatically
-function copyGroupWithReferral(group: Group, username?: string) {
-  const postFix = username ? '?referrer=' + username : ''
-  copyToClipboard(
-    `https://${ENV_CONFIG.domain}${groupPath(group.slug)}${postFix}`
-  )
-}
-
-function copyManalink(manalink: Manalink) {
-  copyToClipboard(getManalinkUrl(manalink.slug))
-}
 
 export function ShareIconButton(props: {
   buttonClassName?: string
