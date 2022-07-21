@@ -111,6 +111,7 @@ const signedInMobileNavigation = [
 
 function getMoreMobileNav() {
   return [
+    { name: 'Leaderboards', href: '/leaderboards' },
     ...(IS_PRIVATE_MANIFOLD
       ? []
       : [
@@ -119,7 +120,6 @@ function getMoreMobileNav() {
           { name: 'Send M$', href: '/links' },
           { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
         ]),
-    { name: 'Leaderboards', href: '/leaderboards' },
     {
       name: 'Sign out',
       href: '#',
