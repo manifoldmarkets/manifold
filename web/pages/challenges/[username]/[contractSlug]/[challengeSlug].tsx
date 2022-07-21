@@ -148,13 +148,10 @@ function ClosedChallengeContent(props: {
       setShowConfetti(true)
   }, [acceptances])
   const creatorWon = resolution === creatorsOutcome
-  const yourShares = (1 / (1 - creatorsOutcomeProb)) * amount
-  const creatorShares = (1 / creatorsOutcomeProb) * amount
-  const winningShares = creatorWon ? creatorShares : yourShares
 
   if (!user) return <LoadingIndicator />
 
-  const userWonCol = (user: User, amount: number) => (
+  const userWonCol = (user: User) => (
     <Col className="w-full items-start justify-center gap-1 p-4">
       <Row className={'mb-2 w-full items-center justify-center gap-2'}>
         <span className={'mx-2 text-3xl'}>🥇</span>
@@ -245,7 +242,7 @@ function ClosedChallengeContent(props: {
             }
           >
             <Row className={'mt-4 w-full'}>
-              {userWonCol(creatorWon ? creator : user, winningShares)}
+              {userWonCol(creatorWon ? creator : user)}
             </Row>
             <Row className={'mt-4'}>
               {userLostCol(creatorWon ? user : creator)}
