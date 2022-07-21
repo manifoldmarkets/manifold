@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Contract } from 'common/contract'
 import { trackView } from 'web/lib/firebase/tracking'
 import { useIsVisible } from './use-is-visible'
+import { useUser } from './use-user'
 
 export const useSeenContracts = () => {
   const [seenContracts, setSeenContracts] = useState<{
@@ -21,18 +22,19 @@ export const useSaveSeenContract = (
   contract: Contract
 ) => {
   const isVisible = useIsVisible(elem)
+  const user = useUser()
 
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible && user) {
       const newSeenContracts = {
         ...getSeenContracts(),
         [contract.id]: Date.now(),
       }
       localStorage.setItem(key, JSON.stringify(newSeenContracts))
 
-      trackView(contract.id)
+      trackView(user.id, contract.id)
     }
-  }, [isVisible, contract])
+  }, [isVisible, user, contract])
 }
 
 const key = 'feed-seen-contracts'
