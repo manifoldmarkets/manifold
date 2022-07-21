@@ -62,9 +62,9 @@ function getMoreNavigation(user?: User | null) {
   }
 
   return [
-    { name: 'Send M$', href: '/links' },
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Charity', href: '/charity' },
+    { name: 'Send M$', href: '/links' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     {
@@ -113,8 +113,8 @@ function getMoreMobileNav() {
     ...(IS_PRIVATE_MANIFOLD
       ? []
       : [
-          { name: 'Send M$', href: '/links' },
           { name: 'Charity', href: '/charity' },
+          { name: 'Send M$', href: '/links' },
           { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
         ]),
     { name: 'Leaderboards', href: '/leaderboards' },
