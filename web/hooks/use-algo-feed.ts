@@ -25,7 +25,7 @@ export const useAlgoFeed = (
           getDefaultFeed().then((feed) => setAllFeed(feed))
         } else setAllFeed(feed)
 
-        trackLatency('feed', getTime())
+        trackLatency(user.id, 'feed', getTime())
         console.log('"all" feed load time', getTime())
       })
 
