@@ -19,6 +19,7 @@ import { useMutation } from 'react-query'
 import { exhibitExts } from 'common/util/parse'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
+import Iframe from 'common/util/tiptap-iframe'
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
@@ -56,6 +57,7 @@ export function useTextEditor(props: {
           class: clsx('no-underline !text-indigo-700', linkClass),
         },
       }),
+      Iframe,
     ],
     content: defaultValue,
   })
@@ -69,12 +71,20 @@ export function useTextEditor(props: {
           (file) => file.type.startsWith('image')
         )
 
-        if (!imageFiles.length) {
-          return // if no files pasted, use default paste handler
+        if (imageFiles.length) {
+          event.preventDefault()
+          upload.mutate(imageFiles)
         }
 
-        event.preventDefault()
-        upload.mutate(imageFiles)
+        // If the pasted content is iframe code, directly inject it
+        const text = event.clipboardData?.getData('text/plain').trim() ?? ''
+        const isValidIframe = /^<iframe.*<\/iframe>$/.test(text)
+        if (isValidIframe) {
+          editor.chain().insertContent(text).run()
+          return true // Prevent the code from getting pasted as text
+        }
+
+        return // Otherwise, use default paste handler
       },
     },
   })
