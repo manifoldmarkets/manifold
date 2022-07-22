@@ -372,15 +372,6 @@ function LimitOrderPanel(props: {
     (highLimitProb !== undefined &&
       (highLimitProb <= 0 || highLimitProb >= 100))
 
-  const initialLow = initialProb * 0.85
-  const initialHigh = initialProb + (1 - initialProb) * 0.15
-  const lowPlaceholder = Math.floor(
-    isPseudoNumeric ? getMappedValue(contract)(initialLow) : initialLow * 100
-  ).toString()
-  const highPlaceholder = Math.ceil(
-    isPseudoNumeric ? getMappedValue(contract)(initialHigh) : initialHigh * 100
-  ).toString()
-
   const hasYesLimitBet = lowLimitProb !== undefined && !!betAmount
   const hasNoLimitBet = highLimitProb !== undefined && !!betAmount
   const hasTwoBets = hasYesLimitBet && hasNoLimitBet
@@ -499,7 +490,7 @@ function LimitOrderPanel(props: {
     'YES',
     yesAmount,
     contract,
-    Math.min(yesLimitProb ?? initialLow, 0.999),
+    Math.min(yesLimitProb ?? initialProb, 0.999),
     unfilledBets as LimitBet[]
   )
   const yesReturnPercent = formatPercent(yesReturn)
@@ -513,7 +504,7 @@ function LimitOrderPanel(props: {
     'NO',
     noAmount,
     contract,
-    Math.max(noLimitProb ?? initialHigh, 0.01),
+    Math.max(noLimitProb ?? initialProb, 0.01),
     unfilledBets as LimitBet[]
   )
   const noReturnPercent = formatPercent(noReturn)
@@ -530,7 +521,6 @@ function LimitOrderPanel(props: {
             prob={lowLimitProb}
             setProb={setLowLimitProb}
             isSubmitting={isSubmitting}
-            placeholder={lowPlaceholder}
           />
         </Col>
         <Col className="gap-2">
@@ -542,7 +532,6 @@ function LimitOrderPanel(props: {
             prob={highLimitProb}
             setProb={setHighLimitProb}
             isSubmitting={isSubmitting}
-            placeholder={highPlaceholder}
           />
         </Col>
       </Row>
