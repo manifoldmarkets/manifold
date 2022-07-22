@@ -79,7 +79,7 @@ export default function Leaderboards(_props: {
       <>
         <Col className="mx-4 items-center gap-10 lg:flex-row">
           <Leaderboard
-            title="🏅 Top bettors"
+            title="🏅 Top traders"
             users={topTraders}
             columns={[
               {
