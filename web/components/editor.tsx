@@ -19,7 +19,7 @@ import { useMutation } from 'react-query'
 import { exhibitExts } from 'common/util/parse'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
-import Iframe from 'common/util/iframe'
+import Iframe from 'common/util/tiptap-iframe'
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',

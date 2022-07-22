@@ -20,7 +20,7 @@ import { Text } from '@tiptap/extension-text'
 // other tiptap extensions
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
-import Iframe from './iframe'
+import Iframe from './tiptap-iframe'
 
 export function parseTags(text: string) {
   const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
