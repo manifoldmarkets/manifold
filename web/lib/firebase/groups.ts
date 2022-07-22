@@ -162,11 +162,13 @@ export async function removeContractFromGroup(
 ) {
   if (!contract.groupLinks?.map((l) => l.groupId).includes(group.id)) return // not in that group
 
-  const newGroupLinks =
-    contract.groupLinks?.filter((link) => link.slug !== group.slug) ?? []
+  const newGroupLinks = contract.groupLinks?.filter(
+    (link) => link.slug !== group.slug
+  )
   await updateContract(contract.id, {
-    groupSlugs: contract.groupSlugs?.filter((slug) => slug !== group.slug),
-    groupLinks: newGroupLinks,
+    groupSlugs:
+      contract.groupSlugs?.filter((slug) => slug !== group.slug) ?? [],
+    groupLinks: newGroupLinks ?? [],
   })
   const newContractIds = group.contractIds.filter((id) => id !== contract.id)
   return await updateGroup(group, {
