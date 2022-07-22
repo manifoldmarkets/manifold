@@ -14,8 +14,9 @@ export const onDeleteGroup = functions.firestore
     // get all contracts with this group's slug
     const contracts = await firestore
       .collection('contracts')
-      .where('groupLinks.slug', '==', group.slug)
+      .where('groupSlugs', 'array-contains', group.slug)
       .get()
+    console.log("contracts with group's slug:", contracts)
 
     for (const doc of contracts.docs) {
       const contract = doc.data() as Contract
@@ -24,8 +25,12 @@ export const onDeleteGroup = functions.firestore
       )
 
       // remove the group from the contract
-      await firestore.collection('contracts').doc(contract.id).update({
-        groupLinks: newGroupLinks,
-      })
+      await firestore
+        .collection('contracts')
+        .doc(contract.id)
+        .update({
+          groupSlugs: contract.groupSlugs?.filter((s) => s !== group.slug),
+          groupLinks: newGroupLinks ?? [],
+        })
     }
   })

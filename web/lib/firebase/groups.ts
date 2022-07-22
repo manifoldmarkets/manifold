@@ -143,6 +143,7 @@ export async function addContractToGroup(
   ]
 
   await updateContract(contract.id, {
+    groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
     groupLinks: newGroupLinks,
   })
   return await updateGroup(group, {
@@ -164,6 +165,7 @@ export async function removeContractFromGroup(
   const newGroupLinks =
     contract.groupLinks?.filter((link) => link.slug !== group.slug) ?? []
   await updateContract(contract.id, {
+    groupSlugs: contract.groupSlugs?.filter((slug) => slug !== group.slug),
     groupLinks: newGroupLinks,
   })
   const newContractIds = group.contractIds.filter((id) => id !== contract.id)

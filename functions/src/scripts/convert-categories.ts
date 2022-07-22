@@ -84,9 +84,13 @@ const convertCategoriesToGroupsInternal = async (categories: string[]) => {
           name: newGroup.name,
         } as GroupLink,
       ]
-      await adminFirestore.collection('contracts').doc(market.id).update({
-        groupLinks: newGroupLinks,
-      })
+      await adminFirestore
+        .collection('contracts')
+        .doc(market.id)
+        .update({
+          groupSlugs: uniq([...(market.groupSlugs ?? []), newGroup.slug]),
+          groupLinks: newGroupLinks,
+        })
     }
   }
 }

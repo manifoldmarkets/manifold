@@ -4,6 +4,7 @@ import { Contract } from 'common/contract'
 import { initAdmin } from 'functions/src/scripts/script-init'
 import * as admin from 'firebase-admin'
 import { filterDefined } from 'common/util/array'
+import { uniq } from 'lodash'
 
 initAdmin()
 
@@ -19,9 +20,11 @@ const addGroupIdToContracts = async () => {
       group.contractIds.includes(contract.id)
     )
     for (const contract of groupContracts) {
-      const oldGroupLinks = contract.groupLinks ?? []
+      const oldGroupLinks = contract.groupLinks?.filter(
+        (l) => l.slug === group.slug
+      )
       const newGroupLinks = filterDefined([
-        ...oldGroupLinks,
+        ...(oldGroupLinks ?? []),
         group.id
           ? {
               slug: group.slug,
@@ -31,9 +34,13 @@ const addGroupIdToContracts = async () => {
             }
           : undefined,
       ])
-      await adminFirestore.collection('contracts').doc(contract.id).update({
-        groupLinks: newGroupLinks,
-      })
+      await adminFirestore
+        .collection('contracts')
+        .doc(contract.id)
+        .update({
+          groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
+          groupLinks: newGroupLinks,
+        })
     }
   }
 }
