@@ -80,6 +80,7 @@ export function ProbabilityOrNumericInput(props: {
         )
       }
       isSubmitting={isSubmitting}
+      placeholder={placeholder}
     />
   ) : (
     <ProbabilityInput

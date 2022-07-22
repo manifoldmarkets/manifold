@@ -20,12 +20,12 @@ import { APIError, placeBet } from 'web/lib/firebase/api'
 import { sellShares } from 'web/lib/firebase/api'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
-import { BinaryOutcomeLabel } from './outcome-label'
+import { BinaryOutcomeLabel, HigherLabel, LowerLabel } from './outcome-label'
 import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
 import { useSaveBinaryShares } from './use-save-binary-shares'
 import { SignUpPrompt } from './sign-up-prompt'
@@ -360,21 +360,48 @@ function LimitOrderPanel(props: {
     highLimitProb !== undefined &&
     lowLimitProb >= highLimitProb
 
-  const betDisabled = isSubmitting || !betAmount || rangeError || error
+  const outOfRangeError =
+    (lowLimitProb !== undefined &&
+      (lowLimitProb <= 0 || lowLimitProb >= 100)) ||
+    (highLimitProb !== undefined &&
+      (highLimitProb <= 0 || highLimitProb >= 100))
+
+  const initialLow = initialProb * 0.9
+  const initialHigh = initialProb + (1 - initialProb) * 0.1
+  const lowPlaceholder = Math.round(
+    isPseudoNumeric ? getMappedValue(contract)(initialLow) : initialLow * 100
+  ).toString()
+  const highPlaceholder = Math.round(
+    isPseudoNumeric ? getMappedValue(contract)(initialHigh) : initialHigh * 100
+  ).toString()
 
   const hasYesLimitBet = lowLimitProb !== undefined && !!betAmount
   const hasNoLimitBet = highLimitProb !== undefined && !!betAmount
   const hasTwoBets = hasYesLimitBet && hasNoLimitBet
 
-  const yesLimitProb = (lowLimitProb ?? initialProb * 100) / 100
-  const noLimitProb = (highLimitProb ?? initialProb * 100) / 100
+  const betDisabled =
+    isSubmitting ||
+    !betAmount ||
+    rangeError ||
+    outOfRangeError ||
+    error ||
+    (!hasYesLimitBet && !hasNoLimitBet)
 
-  const shares = Math.min(
-    (betAmount ?? 0) / yesLimitProb,
-    (betAmount ?? 0) / (1 - noLimitProb)
-  )
-  const yesAmount = shares * yesLimitProb
-  const noAmount = shares * (1 - noLimitProb)
+  const yesLimitProb =
+    lowLimitProb === undefined ? undefined : lowLimitProb / 100
+  const noLimitProb =
+    highLimitProb === undefined ? undefined : highLimitProb / 100
+
+  const shares =
+    yesLimitProb !== undefined && noLimitProb !== undefined
+      ? Math.min(
+          (betAmount ?? 0) / yesLimitProb,
+          (betAmount ?? 0) / (1 - noLimitProb)
+        )
+      : (betAmount ?? 0) / (yesLimitProb ?? 1 - (noLimitProb ?? 1))
+
+  const yesAmount = shares * (yesLimitProb ?? 1)
+  const noAmount = shares * (1 - (noLimitProb ?? 1))
 
   const profitIfBothFilled = shares - (yesAmount + noAmount)
 
@@ -466,7 +493,7 @@ function LimitOrderPanel(props: {
     'YES',
     yesAmount,
     contract,
-    yesLimitProb,
+    Math.min(yesLimitProb ?? initialLow, 0.999),
     unfilledBets as LimitBet[]
   )
   const yesReturnPercent = formatPercent(yesReturn)
@@ -480,7 +507,7 @@ function LimitOrderPanel(props: {
     'NO',
     noAmount,
     contract,
-    noLimitProb,
+    Math.max(noLimitProb ?? initialHigh, 0.01),
     unfilledBets as LimitBet[]
   )
   const noReturnPercent = formatPercent(noReturn)
@@ -488,8 +515,8 @@ function LimitOrderPanel(props: {
   return (
     <Col className={hidden ? 'hidden' : ''}>
       <div className="my-3 text-sm text-gray-500">
-        Bet only when the {isPseudoNumeric ? 'value' : 'probability'} reaches
-        Low or High limit.
+        Bet when the {isPseudoNumeric ? 'value' : 'probability'} reaches Low
+        and/or High limit.
       </div>
 
       <Row className="items-center gap-4">
@@ -500,7 +527,7 @@ function LimitOrderPanel(props: {
             prob={lowLimitProb}
             setProb={setLowLimitProb}
             isSubmitting={isSubmitting}
-            placeholder={''}
+            placeholder={lowPlaceholder}
           />
         </Col>
         <Col className="gap-2">
@@ -510,7 +537,7 @@ function LimitOrderPanel(props: {
             prob={highLimitProb}
             setProb={setHighLimitProb}
             isSubmitting={isSubmitting}
-            placeholder={''}
+            placeholder={highPlaceholder}
           />
         </Col>
       </Row>
@@ -518,6 +545,11 @@ function LimitOrderPanel(props: {
       {rangeError && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
           Low limit must be less than High limit
+        </div>
+      )}
+      {outOfRangeError && (
+        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+          Limit is out of range
         </div>
       )}
 
@@ -534,36 +566,35 @@ function LimitOrderPanel(props: {
       />
 
       <Col className="mt-3 w-full gap-3">
-        {hasYesLimitBet && (
+        {(hasTwoBets || (hasYesLimitBet && yesBet.amount !== 0)) && (
           <Row className="items-center justify-between gap-2 text-sm">
             <div className="whitespace-nowrap text-gray-500">
               {isPseudoNumeric ? (
-                'Bought now'
+                <HigherLabel />
               ) : (
-                <>
-                  <BinaryOutcomeLabel outcome={'YES'} /> bought now
-                </>
-              )}
+                <BinaryOutcomeLabel outcome={'YES'} />
+              )}{' '}
+              current fill
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {formatMoney(yesBet.amount)}/
+              {formatMoney(yesBet.amount)} of{' '}
               {formatMoney(yesBet.orderAmount ?? 0)}
             </div>
           </Row>
         )}
-        {hasNoLimitBet && (
+        {(hasTwoBets || (hasNoLimitBet && noBet.amount !== 0)) && (
           <Row className="items-center justify-between gap-2 text-sm">
             <div className="whitespace-nowrap text-gray-500">
               {isPseudoNumeric ? (
-                'Bought now'
+                <LowerLabel />
               ) : (
-                <>
-                  <BinaryOutcomeLabel outcome={'NO'} /> bought now
-                </>
-              )}
+                <BinaryOutcomeLabel outcome={'NO'} />
+              )}{' '}
+              current fill
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {formatMoney(noBet.amount)}/{formatMoney(noBet.orderAmount ?? 0)}
+              {formatMoney(noBet.amount)} of{' '}
+              {formatMoney(noBet.orderAmount ?? 0)}
             </div>
           </Row>
         )}
