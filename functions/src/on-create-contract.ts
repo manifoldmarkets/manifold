@@ -21,6 +21,6 @@ export const onCreateContract = functions.firestore
       contractCreator,
       eventId,
       richTextToString(contract.description as JSONContent),
-      contract
+      { contract }
     )
   })
