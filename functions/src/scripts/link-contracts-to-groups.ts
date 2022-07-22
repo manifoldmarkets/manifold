@@ -21,7 +21,7 @@ const addGroupIdToContracts = async () => {
     )
     for (const contract of groupContracts) {
       const oldGroupLinks = contract.groupLinks?.filter(
-        (l) => l.slug === group.slug
+        (l) => l.slug != group.slug
       )
       const newGroupLinks = filterDefined([
         ...(oldGroupLinks ?? []),
