@@ -159,7 +159,7 @@ const addUserToDefaultGroups = async (user: User) => {
         id: welcomeCommentDoc.id,
         groupId: group.id,
         userId: manifoldAccount,
-        text: `Welcome, ${user.name} (@${user.username})!`,
+        text: `Welcome, @${user.username} aka ${user.name}!`,
         createdTime: Date.now(),
         userName: 'Manifold Markets',
         userUsername: MANIFOLD_USERNAME,
