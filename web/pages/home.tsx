@@ -12,6 +12,7 @@ import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -20,6 +21,8 @@ const Home = () => {
 
   const router = useRouter()
   useTracking('view home')
+
+  useSaveReferral()
 
   return (
     <>

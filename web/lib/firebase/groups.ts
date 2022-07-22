@@ -24,7 +24,7 @@ export function groupPath(
   groupSlug: string,
   subpath?:
     | 'edit'
-    | 'questions'
+    | 'markets'
     | 'about'
     | typeof GROUP_CHAT_SLUG
     | 'leaderboards'

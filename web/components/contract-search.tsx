@@ -22,7 +22,7 @@ import { Spacer } from './layout/spacer'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
-import { trackCallback } from 'web/lib/service/analytics'
+import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { Group, NEW_USER_GROUP_SLUGS } from 'common/group'
@@ -111,7 +111,13 @@ export function ContractSearch(props: {
     querySortOptions?.defaultFilter ?? 'open'
   )
   const pillsEnabled = !additionalFilter
+
   const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
+
+  const selectFilter = (pill: string | undefined) => () => {
+    setPillFilter(pill)
+    track('select search category', { category: pill ?? 'all' })
+  }
 
   const { filters, numericFilters } = useMemo(() => {
     let filters = [
@@ -191,7 +197,7 @@ export function ContractSearch(props: {
           className="!select !select-bordered"
           value={filter}
           onChange={(e) => setFilter(e.target.value as filter)}
-          onBlur={trackCallback('select search filter')}
+          onBlur={trackCallback('select search filter', { filter })}
         >
           <option value="open">Open</option>
           <option value="closed">Closed</option>
@@ -204,7 +210,7 @@ export function ContractSearch(props: {
             classNames={{
               select: '!select !select-bordered',
             }}
-            onBlur={trackCallback('select search sort')}
+            onBlur={trackCallback('select search sort', { sort })}
           />
         )}
         <Configure
@@ -222,14 +228,14 @@ export function ContractSearch(props: {
           <PillButton
             key={'all'}
             selected={pillFilter === undefined}
-            onSelect={() => setPillFilter(undefined)}
+            onSelect={selectFilter(undefined)}
           >
             All
           </PillButton>
           <PillButton
             key={'personal'}
             selected={pillFilter === 'personal'}
-            onSelect={() => setPillFilter('personal')}
+            onSelect={selectFilter('personal')}
           >
             For you
           </PillButton>
@@ -237,7 +243,7 @@ export function ContractSearch(props: {
           <PillButton
             key={'your-bets'}
             selected={pillFilter === 'your-bets'}
-            onSelect={() => setPillFilter('your-bets')}
+            onSelect={selectFilter('your-bets')}
           >
             Your bets
           </PillButton>
@@ -247,7 +253,7 @@ export function ContractSearch(props: {
               <PillButton
                 key={slug}
                 selected={pillFilter === slug}
-                onSelect={() => setPillFilter(slug)}
+                onSelect={selectFilter(slug)}
               >
                 {name}
               </PillButton>

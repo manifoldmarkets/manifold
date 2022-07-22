@@ -21,7 +21,7 @@ export const CreateQuestionButton = (props: {
       {user ? (
         <Link href={`/create${query ? query : ''}`} passHref>
           <button className={clsx(gradient, createButtonStyle)}>
-            {overrideText ? overrideText : 'Create a question'}
+            {overrideText ? overrideText : 'Create a market'}
           </button>
         </Link>
       ) : (

@@ -26,6 +26,6 @@ export const onCreateLiquidityProvision = functions.firestore
       liquidityProvider,
       eventId,
       liquidity.amount.toString(),
-      contract
+      { contract }
     )
   })

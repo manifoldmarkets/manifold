@@ -14,12 +14,7 @@ import {
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
-import {
-  firebaseLogin,
-  getUser,
-  User,
-  writeReferralInfo,
-} from 'web/lib/firebase/users'
+import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
@@ -34,7 +29,7 @@ import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
 import { CreateQuestionButton } from 'web/components/create-question-button'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { GroupChat } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
@@ -53,6 +48,7 @@ import { searchInAny } from 'common/util/parse'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -113,7 +109,7 @@ export async function getStaticPaths() {
 const groupSubpages = [
   undefined,
   GROUP_CHAT_SLUG,
-  'questions',
+  'markets',
   'leaderboards',
   'about',
 ] as const
@@ -155,13 +151,11 @@ export default function GroupPage(props: {
   const messages = useCommentsOnGroup(group?.id)
 
   const user = useUser()
-  useEffect(() => {
-    const { referrer } = router.query as {
-      referrer?: string
-    }
-    if (!user && router.isReady)
-      writeReferralInfo(creator.username, undefined, referrer, group?.id)
-  }, [user, creator, group, router])
+
+  useSaveReferral(user, {
+    defaultReferrer: creator.username,
+    groupId: group?.id,
+  })
 
   const { width } = useWindowSize()
   const chatDisabled = !group || group.chatDisabled
@@ -232,9 +226,9 @@ export default function GroupPage(props: {
           },
         ]),
     {
-      title: 'Questions',
+      title: 'Markets',
       content: questionsTab,
-      href: groupPath(group.slug, 'questions'),
+      href: groupPath(group.slug, 'markets'),
     },
     {
       title: 'Leaderboards',
@@ -253,7 +247,7 @@ export default function GroupPage(props: {
     <Page
       rightSidebar={showChatSidebar ? chatTab : undefined}
       rightSidebarClassName={showChatSidebar ? '!top-0' : ''}
-      className={showChatSidebar ? '!max-w-none !pb-0' : ''}
+      className={showChatSidebar ? '!max-w-7xl !pb-0' : ''}
     >
       <SEO
         title={group.name}
