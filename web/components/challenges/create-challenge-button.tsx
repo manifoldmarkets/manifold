@@ -13,6 +13,7 @@ import { Contract } from 'common/contract'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { SiteLink } from 'web/components/site-link'
 import { getOutcomeProbability } from 'common/calculate'
+import { createButtonStyle } from '../create-question-button'
 
 type challengeInfo = {
   amount: number
@@ -28,6 +29,9 @@ export function CreateChallengeButton(props: {
   const { user, contract } = props
   const [open, setOpen] = useState(false)
   const [highlightedSlug, setHighlightedSlug] = useState('')
+
+  const gradient =
+    'from-indigo-500 to-red-500 hover:from-indigo-700 hover:to-red-700'
 
   return (
     <>
@@ -56,14 +60,16 @@ export function CreateChallengeButton(props: {
         </Col>
       </Modal>
 
-      <Button
-        color={'indigo'}
-        size={'lg'}
+      <button
         onClick={() => setOpen(true)}
-        className={clsx('whitespace-nowrap')}
+        className={clsx(
+          'border-w-0 h-11 rounded-md bg-gradient-to-r text-base font-semibold text-white shadow-sm',
+          gradient,
+          'max-w-xs justify-center px-2 mb-4'
+        )}
       >
-        Challenge
-      </Button>
+        ⚔️ Challenge a friend ⚔️
+      </button>
     </>
   )
 }

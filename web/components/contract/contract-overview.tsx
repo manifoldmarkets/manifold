@@ -119,15 +119,10 @@ export const ContractOverview = (props: {
       )}
       {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
       {(contract.description || isCreator) && <Spacer h={6} />}
-      {isCreator && <ShareMarket className="px-2" contract={contract} />}
       {showChallenge && (
-        <Row className={'ml-1 items-center'}>
-          <div>Challenge a friend</div>
-          <Row className={'mt-2 ml-1'}>
-            <CreateChallengeButton user={user} contract={contract} />
-          </Row>
-        </Row>
+        <CreateChallengeButton user={user} contract={contract} />
       )}
+      {isCreator && <ShareMarket className="px-2" contract={contract} />}
       <ContractDescription
         className="px-2"
         contract={contract}
