@@ -2,8 +2,6 @@
 
 This [monorepo][] has basically everything involved in running and operating Manifold.
 
-# Ricki testing
-
 
 ## Getting started
 
