@@ -18,6 +18,7 @@ import { Avatar } from 'web/components/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { UserLink } from 'web/components/user-page'
 import { searchInAny } from 'common/util/parse'
+import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])
@@ -100,6 +101,11 @@ export default function Groups(props: {
 
   return (
     <Page>
+      <SEO
+        title="Groups"
+        description="Manifold Groups are communities centered around a collection of prediction markets. Discuss and compete on questions with your friends."
+        url="/groups"
+      />
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-4 sm:px-2">
           <Row className="items-center justify-between">

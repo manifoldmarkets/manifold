@@ -30,6 +30,7 @@ import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Checkbox } from 'web/components/checkbox'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { Title } from 'web/components/title'
+import { SEO } from 'web/components/SEO'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -63,6 +64,11 @@ export default function Create() {
 
   return (
     <Page>
+      <SEO
+        title="Create a market"
+        description="Create a play-money prediction market on any question."
+        url="/create"
+      />
       <div className="mx-auto w-full max-w-2xl">
         <div className="rounded-lg px-6 py-4 sm:py-0">
           <Title className="!mt-0" text="Create a market" />
