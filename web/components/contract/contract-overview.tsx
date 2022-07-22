@@ -34,8 +34,10 @@ export const ContractOverview = (props: {
 
   const user = useUser()
   const isCreator = user?.id === creatorId
+
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const showChallenge = user && isBinary && !resolution
 
   return (
     <Col className={clsx('mb-6', className)}>
@@ -118,13 +120,13 @@ export const ContractOverview = (props: {
       {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
       {(contract.description || isCreator) && <Spacer h={6} />}
       {isCreator && <ShareMarket className="px-2" contract={contract} />}
-      {user && (
-        <Col className={'ml-1'}>
+      {showChallenge && (
+        <Row className={'ml-1 items-center'}>
           <div>Challenge a friend</div>
           <Row className={'mt-2 ml-1'}>
             <CreateChallengeButton user={user} contract={contract} />
           </Row>
-        </Col>
+        </Row>
       )}
       <ContractDescription
         className="px-2"
