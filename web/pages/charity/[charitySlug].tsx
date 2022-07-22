@@ -19,7 +19,7 @@ import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
 import { Donation } from 'web/components/charity/feed-items'
 import Image from 'next/image'
-import { manaToUSD } from '../../../common/util/format'
+import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 
 export default function CharityPageWrapper() {
