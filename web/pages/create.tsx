@@ -19,7 +19,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { getGroup, setContractGroupSlugs } from 'web/lib/firebase/groups'
+import { getGroup, setContractGroupLinks } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -226,7 +226,7 @@ export function NewContract(props: {
         isFree: false,
       })
       if (result && selectedGroup) {
-        await setContractGroupSlugs(selectedGroup, result.id)
+        await setContractGroupLinks(selectedGroup, result.id, creator.id)
       }
 
       await router.push(contractPath(result as Contract))

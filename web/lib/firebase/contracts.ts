@@ -1,17 +1,17 @@
 import dayjs from 'dayjs'
 import {
-  doc,
-  setDoc,
-  deleteDoc,
-  where,
   collection,
-  query,
-  getDocs,
-  orderBy,
+  deleteDoc,
+  doc,
   getDoc,
-  updateDoc,
+  getDocs,
   limit,
+  orderBy,
+  query,
+  setDoc,
   startAfter,
+  updateDoc,
+  where,
 } from 'firebase/firestore'
 import { sortBy, sum } from 'lodash'
 
@@ -129,6 +129,7 @@ export async function listContractsByGroupSlug(
 ): Promise<Contract[]> {
   const q = query(contracts, where('groupSlugs', 'array-contains', slug))
   const snapshot = await getDocs(q)
+  console.log(snapshot.docs.map((doc) => doc.data()))
   return snapshot.docs.map((doc) => doc.data())
 }
 

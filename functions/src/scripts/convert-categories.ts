@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 import { getValues, isProd } from '../utils'
 import { CATEGORIES_GROUP_SLUG_POSTFIX } from 'common/categories'
-import { Group } from 'common/group'
+import { Group, GroupLink } from 'common/group'
 import { uniq } from 'lodash'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
@@ -16,27 +16,6 @@ import {
 initAdmin()
 
 const adminFirestore = admin.firestore()
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const addGroupIdToContracts = async () => {
-  const groups = await getValues<Group>(adminFirestore.collection('groups'))
-  const contracts = await getValues<Contract>(
-    adminFirestore.collection('contracts')
-  )
-  for (const group of groups) {
-    const groupContracts = contracts.filter((contract) =>
-      group.contractIds.includes(contract.id)
-    )
-    for (const contract of groupContracts) {
-      await adminFirestore
-        .collection('contracts')
-        .doc(contract.id)
-        .update({
-          groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
-        })
-    }
-  }
-}
 
 const convertCategoriesToGroupsInternal = async (categories: string[]) => {
   for (const category of categories) {
@@ -93,18 +72,30 @@ const convertCategoriesToGroupsInternal = async (categories: string[]) => {
       })
 
     for (const market of markets) {
+      if (market.groupLinks?.map((l) => l.groupId).includes(newGroup.id))
+        continue // already in that group
+
+      const newGroupLinks = [
+        ...(market.groupLinks ?? []),
+        {
+          groupId: newGroup.id,
+          createdTime: Date.now(),
+          slug: newGroup.slug,
+          name: newGroup.name,
+        } as GroupLink,
+      ]
       await adminFirestore
         .collection('contracts')
         .doc(market.id)
         .update({
-          groupSlugs: uniq([...(market?.groupSlugs ?? []), newGroup.slug]),
+          groupSlugs: uniq([...(market.groupSlugs ?? []), newGroup.slug]),
+          groupLinks: newGroupLinks,
         })
     }
   }
 }
 
 async function convertCategoriesToGroups() {
-  // await addGroupIdToContracts()
   // const defaultCategories = Object.values(DEFAULT_CATEGORIES)
   const moreCategories = ['world', 'culture']
   await convertCategoriesToGroupsInternal(moreCategories)
