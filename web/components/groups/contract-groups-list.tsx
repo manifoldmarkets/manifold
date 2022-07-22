@@ -12,6 +12,7 @@ import {
 } from 'web/lib/firebase/groups'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
+import { SiteLink } from 'web/components/site-link'
 
 export function ContractGroupsList(props: {
   groups: Group[]
@@ -22,20 +23,25 @@ export function ContractGroupsList(props: {
 
   return (
     <Col className={'gap-2'}>
+      <span className={'text-xl text-indigo-700'}>
+        <SiteLink href={'/groups/'}>Groups</SiteLink>
+      </span>
       {user && (
-        <Row className={'ml-2 items-center justify-between'}>
-          <span>Add to group: </span>
+        <Col className={'ml-2 items-center justify-between sm:flex-row'}>
+          <span>Add to: </span>
           <GroupSelector
             options={{
               showSelector: true,
               showLabel: false,
               ignoreGroupIds: groups.map((g) => g.id),
             }}
-            setSelectedGroup={(group) => addContractToGroup(group, contract)}
+            setSelectedGroup={(group) =>
+              group && addContractToGroup(group, contract)
+            }
             selectedGroup={undefined}
             creator={user}
           />
-        </Row>
+        </Col>
       )}
       {groups.length === 0 && (
         <Col className="ml-2 h-full justify-center text-gray-500">
