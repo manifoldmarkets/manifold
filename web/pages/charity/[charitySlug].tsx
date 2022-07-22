@@ -1,6 +1,9 @@
 import { sortBy, sumBy, uniqBy } from 'lodash'
 import clsx from 'clsx'
 import React, { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
+import Confetti from 'react-confetti'
+
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
@@ -16,11 +19,10 @@ import { useRouter } from 'next/router'
 import Custom404 from '../404'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import Confetti from 'react-confetti'
 import { Donation } from 'web/components/charity/feed-items'
-import Image from 'next/image'
 import { manaToUSD } from '../../../common/util/format'
 import { track } from 'web/lib/service/analytics'
+import { SEO } from 'web/components/SEO'
 
 export default function CharityPageWrapper() {
   const router = useRouter()
@@ -63,6 +65,11 @@ function CharityPage(props: { charity: Charity }) {
         />
       }
     >
+      <SEO
+        title={name}
+        description={description}
+        url="/groups"
+      />
       {showConfetti && (
         <Confetti
           width={width ? width : 500}
