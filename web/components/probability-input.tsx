@@ -32,7 +32,7 @@ export function ProbabilityInput(props: {
       <label className="input-group">
         <input
           className={clsx(
-            'input input-bordered max-w-[200px] text-lg',
+            'input input-bordered max-w-[200px] text-lg placeholder:text-gray-400',
             inputClassName
           )}
           type="number"
