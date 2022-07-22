@@ -44,6 +44,10 @@ export async function listAllGroups() {
   return getValues<Group>(groups)
 }
 
+export async function listGroups(groupSlugs: string[]) {
+  return Promise.all(groupSlugs.map(getGroupBySlug))
+}
+
 export function listenForGroups(setGroups: (groups: Group[]) => void) {
   return listenForValues(groups, setGroups)
 }
@@ -86,12 +90,12 @@ export function listenForMemberGroups(
   })
 }
 
-export async function getGroupsWithContractId(
+export async function listenForGroupsWithContractId(
   contractId: string,
   setGroups: (groups: Group[]) => void
 ) {
   const q = query(groups, where('contractIds', 'array-contains', contractId))
-  setGroups(await getValues<Group>(q))
+  return listenForValues<Group>(q, setGroups)
 }
 
 export async function addUserToGroupViaId(groupId: string, userId: string) {
@@ -130,6 +134,27 @@ export async function addContractToGroup(group: Group, contract: Contract) {
     .then(() => group)
     .catch((err) => {
       console.error('error adding contract to group', err)
+      return err
+    })
+}
+
+export async function removeContractFromGroup(
+  group: Group,
+  contract: Contract
+) {
+  const newGroupSlugs = contract.groupSlugs?.filter(
+    (slug) => slug !== group.slug
+  )
+  await updateContract(contract.id, {
+    groupSlugs: uniq(newGroupSlugs ?? []),
+  })
+  const newContractIds = group.contractIds.filter((id) => id !== contract.id)
+  return await updateGroup(group, {
+    contractIds: uniq(newContractIds),
+  })
+    .then(() => group)
+    .catch((err) => {
+      console.error('error removing contract from group', err)
       return err
     })
 }

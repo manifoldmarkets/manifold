@@ -6,7 +6,7 @@ export function Button(props: {
   onClick?: () => void
   children?: ReactNode
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-  color?: 'green' | 'red' | 'blue' | 'indigo' | 'yellow' | 'gray'
+  color?: 'green' | 'red' | 'blue' | 'indigo' | 'yellow' | 'gray' | 'gray-white'
   type?: 'button' | 'reset' | 'submit'
   disabled?: boolean
 }) {
@@ -40,6 +40,7 @@ export function Button(props: {
         color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
         color === 'indigo' && 'bg-indigo-500 text-white hover:bg-indigo-600',
         color === 'gray' && 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+        color === 'gray-white' && 'bg-white text-gray-500 hover:bg-gray-200',
         className
       )}
       disabled={disabled}
