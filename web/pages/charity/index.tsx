@@ -134,6 +134,9 @@ export default function Charity(props: {
             </SiteLink>
             !
           </span> */}
+          <span className="text-gray-600">
+            Convert your M$ earnings into real charitable donations.
+          </span>
           <DonatedStats
             stats={[
               {
