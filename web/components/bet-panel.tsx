@@ -523,7 +523,7 @@ function LimitOrderPanel(props: {
       <Row className="mt-1 items-center gap-4">
         <Col className="gap-2">
           <div className="relative ml-1 text-sm text-gray-500">
-            Bet <YesLabel /> at
+            Bet {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} at
           </div>
           <ProbabilityOrNumericInput
             contract={contract}
@@ -535,7 +535,7 @@ function LimitOrderPanel(props: {
         </Col>
         <Col className="gap-2">
           <div className="ml-1 text-sm text-gray-500">
-            Bet <NoLabel /> at
+            Bet {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} at
           </div>
           <ProbabilityOrNumericInput
             contract={contract}
@@ -549,7 +549,8 @@ function LimitOrderPanel(props: {
 
       {rangeError && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
-          YES limit must be less than NO limit
+          {isPseudoNumeric ? 'HIGHER' : 'YES'} limit must be less than{' '}
+          {isPseudoNumeric ? 'LOWER' : 'NO'} limit
         </div>
       )}
       {outOfRangeError && (
@@ -558,7 +559,7 @@ function LimitOrderPanel(props: {
         </div>
       )}
 
-      <div className="my-3 text-left text-sm text-gray-500">
+      <div className="mt-1 mb-3 text-left text-sm text-gray-500">
         Max amount<span className="ml-1 text-red-500">*</span>
       </div>
       <BuyAmountInput
