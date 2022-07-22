@@ -119,9 +119,9 @@ export const ContractOverview = (props: {
       {(contract.description || isCreator) && <Spacer h={6} />}
       {isCreator && <ShareMarket className="px-2" contract={contract} />}
       {user && (
-        <Col>
+        <Col className={'ml-1'}>
           <div>Challenge a friend</div>
-          <Row>
+          <Row className={'mt-2 ml-1'}>
             <CreateChallengeButton user={user} contract={contract} />
           </Row>
         </Col>
