@@ -2,6 +2,8 @@
  * COPYRIGHT 2022 Phil Bladen www.philbladen.co.uk
  */
 
+@use "sass:color";
+
 @import "./spinner.scss";
 
 $borderWidth: 8px;
@@ -13,6 +15,9 @@ $borderWidth: 8px;
 $themeBlue: #6694ff;
 $themeGreen: #92ff83;
 $themeRed: #ff3d3d;
+
+$backgroundColor: #212121;
+$borderColor: color.scale($backgroundColor, $lightness: 30%);//#555;
 
 html,
 body {
@@ -26,7 +31,7 @@ body {
 
 body {
     height: calc(100vh - 2 * $borderWidth);
-    border: $borderWidth white solid;
+    border: $borderWidth $borderColor solid;
     border-radius: $borderWidth;
 
     display: flex;
@@ -38,7 +43,7 @@ body {
 
 .content {
     width: 100%;
-    background-color: #212121;
+    background-color: $backgroundColor;
 }
 
 .row {
@@ -88,7 +93,7 @@ body {
     .name {
         // color: $themeBlue;
         // font-style: ;
-        min-width: 6em;
+        // min-width: 6em;
         // flex-basis: 80em;
         font-weight: 800;
     }
@@ -140,6 +145,6 @@ body {
 
 .logoText {
     font-family: "Major Mono Display", monospace;
-    font-size: 0.5em;
+    font-size: 0.4em;
     white-space: nowrap;
 }

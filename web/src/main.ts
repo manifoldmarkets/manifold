@@ -92,7 +92,7 @@ class Application {
         // };
         // setTimeout(addRandomTransaction, 1000);
 
-        this.loadMarket("this-is-a-local-market");
+        // this.loadMarket("this-is-a-local-market");
         // this.loadBettingHistory();
 
         // let lastAddedTimestamp = 0;
@@ -108,6 +108,9 @@ class Application {
                 // lastAddedTimestamp = bet.createdTime;
             }
         });
+        socket.on("selectmarket", (marketSlug: string) => {
+            this.loadMarket(marketSlug);
+        });
         socket.on("clear", () => {
             this.chart.data = [];
             for (const bet of this.betElements) {
@@ -118,9 +121,14 @@ class Application {
     }
 
     updateBetTimes() {
-        this.betElements.forEach((t) => {
-            t.element.querySelector(".time").innerHTML = moment(t.bet.createdTime).fromNow();
-        });
+        try {
+            this.betElements.forEach((t) => {
+                t.element.querySelector(".time").innerHTML = moment(t.bet.createdTime).fromNow();
+            });
+        }
+        catch (e) {
+            // Empty
+        }
     }
 
     loadMarket(slug: string) {
@@ -176,7 +184,7 @@ class Application {
         const betAmountMagnitude = Math.abs(Math.ceil(bet.amount));
 
         let positiveBet = false;
-        if (bet.amount > 0 && bet.outcome == "YES") {
+        if ((bet.amount > 0 && bet.outcome == "YES") || (bet.amount < 0 && bet.outcome == "NO")) {
             positiveBet = true;
         }
 
@@ -193,7 +201,7 @@ class Application {
         nameDiv.innerHTML = name + (isTruncated ? "..." : "");
         //
         t.querySelector(".amount").innerHTML = betAmountMagnitude.toFixed(0);
-        t.querySelector(".boughtSold").innerHTML = positiveBet ? "+" : "-";
+        t.querySelector(".boughtSold").innerHTML = positiveBet ? "YES" : "NO";
         t.querySelector(".color").classList.add(positiveBet? "green" : "red");
 
         const response = document.createElement("p");

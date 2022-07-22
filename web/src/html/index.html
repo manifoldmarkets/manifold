@@ -19,9 +19,9 @@
 
 <body>
     <div class="content col">
-        <div class="row" style="align-items: center; justify-content: space-between; padding: 0.25em; padding-top: 0.1em;">
-            <div id="question" style="padding-right: 0.5em; align-self: flex-start;"></div>
-            <div class="col" style="align-items: center; justify-content: center;">
+        <div class="row" style="align-items: center; justify-content: center; padding: 0.25em; padding-top: 0.1em;">
+            <div id="question" style="padding-right: 0.5em; flex: 1 1; text-align: center;"></div>
+            <div class="col" style="align-items: center; justify-content: center; justify-self: end;">
                 <div id="chance" style="color: #A5FF6E; visibility: hidden;"></div>
                 <div style="color: #A5FF6E; font-size: 0.7em; margin-top: -.3em; visibility: hidden;">chance</div>
                 <div id="spinner" style="position: absolute;"></div>
@@ -33,18 +33,22 @@
         <div class="row" style="justify-content: flex-end; align-items: center; padding: 0.2em;">
             <div id="transactions" class="col" style="flex: 1 1; height: 100%; align-items: flex-start; justify-content: flex-end;">
                 <div id="transaction-template" class="bet">
-                    <div class="" style="display: inline-flex; align-items: center; height: 100%"><p class="time"></p></div>
+                    <!-- <div style="display: inline-flex; align-items: center; height: 100%"><p class="time"></p></div> -->
                     <div class="name"></div> 
-                    <div class="color"><p class="boughtSold"></p>M$<p class="amount">1000</p></div>
+                    <div class="color"><p class="boughtSold"></p> M$<p class="amount">1000</p></div>
                 </div>
             </div>
             <div class="col" style="text-align: center">
-                <div style="background-image: url(logo-white.svg); background-size: contain; background-repeat: no-repeat; background-position: center; aspect-ratio: 1; display: block; height: 2em;"></div>
+                <div style="background-image: url(logo-white.svg); background-size: contain; background-repeat: no-repeat; background-position: center; aspect-ratio: 1; display: block; height: 1.5em;"></div>
                 <div class="logoText">
                     manifold<br>markets
                 </div>
+                <div style="text-align: center; font-size: 70%; font-weight: bold;">!signup</div>
             </div>
         </div>
+        <!-- <div style="width: 100%; text-align: center; font-size: 70%; font-weight: bold;">
+            Join with !signup
+        </div> -->
     </div>
     <script src="main.js"></script>
 </body>
