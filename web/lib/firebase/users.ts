@@ -179,7 +179,7 @@ export async function firebaseLogin() {
 }
 
 export async function firebaseLogout() {
-  auth.signOut()
+  await auth.signOut()
 }
 
 const storage = getStorage(app)

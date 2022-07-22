@@ -41,6 +41,7 @@ export function AuthProvider({ children }: any) {
   useEffect(() => {
     return onIdTokenChanged(auth, async (fbUser) => {
       if (fbUser) {
+        setAuthCookies(await fbUser.getIdToken(), fbUser.refreshToken)
         let user = await getUser(fbUser.uid)
         if (!user) {
           const deviceToken = ensureDeviceToken()
@@ -51,12 +52,11 @@ export function AuthProvider({ children }: any) {
         // Note: Cap on localStorage size is ~5mb
         localStorage.setItem(CACHED_USER_KEY, JSON.stringify(user))
         setCachedReferralInfoForUser(user)
-        setAuthCookies(await fbUser.getIdToken(), fbUser.refreshToken)
       } else {
         // User logged out; reset to null
+        deleteAuthCookies()
         setAuthUser(null)
         localStorage.removeItem(CACHED_USER_KEY)
-        deleteAuthCookies()
       }
     })
   }, [setAuthUser])
