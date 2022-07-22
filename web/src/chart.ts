@@ -38,10 +38,10 @@ export default class Chart {
     }
 
     produceData(): Point[] {
-        let points = <Point[]> [];
+        const points = <Point[]> [];
         let x = 0;
         for (let i = 0; i < 30; i++) {
-            let y = Math.random() * 100;
+            const y = Math.random() * 100;
             points.push(new Point(x, y));
             x += Math.random() * 20 + 5;
             points.push(new Point(x, y));
@@ -56,7 +56,8 @@ export default class Chart {
         const xAxisHeight_px = 15;
         const yAxisWidth_px = 45;
         const numXAxisLines = 5;
-        const numYAxisLines = 5;
+        const numYAxisLines = 3;
+        const renderGridLines = false;
         
         const canvasWidth_px = this.canvasElement.width >> 0;
         const canvasHeight_px = this.canvasElement.height >> 0;
@@ -66,14 +67,14 @@ export default class Chart {
 
         ctx.clearRect(0, 0, canvasWidth_px, canvasHeight_px);
 
-        let grd = this.ctx.createLinearGradient(0, 0, 0, canvasHeight_px);
+        const grd = this.ctx.createLinearGradient(0, 0, 0, canvasHeight_px);
         grd.addColorStop(0, "rgba(73, 201, 159, 0.8)");
         grd.addColorStop(1, "rgba(73, 201, 159, 0.0)");
 
         let minX = Number.MAX_VALUE;
         let maxX = -Number.MAX_VALUE;
         for (let dataIndex = 0; dataIndex < numDataPoints; dataIndex++) {
-            let dataPoint = this.data[dataIndex];
+            const dataPoint = this.data[dataIndex];
             // if (dataPoint.x < minX) {
             //     minX = dataPoint.x;
             // }
@@ -92,9 +93,9 @@ export default class Chart {
             ctx.fillStyle = "#FFF";
             ctx.font = "15px Readex Pro";
             for (let i = 0; i < numYAxisLines; i++) {
-                let y = graphHeight_px - (0.5 + (i * graphHeight_px / (numYAxisLines - 1)) >> 0);
-                let labelText = `${(i * (100 / (numYAxisLines - 1))).toFixed(0)}%`;
-                let m = ctx.measureText(labelText);
+                const y = graphHeight_px - (0.5 + (i * graphHeight_px / (numYAxisLines - 1)) >> 0);
+                const labelText = `${(i * (100 / (numYAxisLines - 1))).toFixed(0)}%`;
+                const m = ctx.measureText(labelText);
                 ctx.fillText(labelText, yAxisWidth_px - m.width - 5, y + (m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) * 0.5);
 
                 // ctx.fillRect(yAxisWidth - 5.5, y - 1.5, 5, 3);
@@ -103,17 +104,16 @@ export default class Chart {
             ctx.translate(yAxisWidth_px, 0);
 
             ctx.translate(0, graphHeight_px);
-            // ctx.fillRect(0, 0, 200, xAxisHeight);
             for (let i = 0; i < numXAxisLines; i++) {
-                let x = (i * graphWidth_px / (numXAxisLines - 1)) >> 0;
+                const x = (i * graphWidth_px / (numXAxisLines - 1)) >> 0;
                 let labelText = (numXAxisLines - i - 1) + "m";
                 if (i == numXAxisLines - 1) {
                     labelText = "now";
-                    let m = ctx.measureText(labelText);
+                    const m = ctx.measureText(labelText);
                     ctx.fillText(labelText, x - m.width, m.actualBoundingBoxAscent + 10);
                 }
                 else {
-                    let m = ctx.measureText(labelText);
+                    const m = ctx.measureText(labelText);
                     ctx.fillText(labelText, x - m.width * 0.5, m.actualBoundingBoxAscent + 10);
                 }
 
@@ -127,28 +127,27 @@ export default class Chart {
             ctx.strokeStyle = "rgba(255, 255, 255, 1)";
             ctx.lineWidth = 3;
             ctx.beginPath();
-            // ctx.moveTo(0, 0);
-            // ctx.lineTo(0, graphHeight_px);
-
             ctx.moveTo(0, graphHeight_px);
             ctx.lineTo(graphWidth_px, graphHeight_px);
             ctx.stroke();
 
             // Render grid lines:
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            for (let i = 1; i < numXAxisLines - 1; i++) {
-                let x = (i * graphWidth_px / (numXAxisLines - 1)) >> 0;
-                ctx.moveTo(x, 0.5);
-                ctx.lineTo(x, graphHeight_px - .5);
+            if (renderGridLines) {
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let i = 1; i < numXAxisLines - 1; i++) {
+                    const x = (i * graphWidth_px / (numXAxisLines - 1)) >> 0;
+                    ctx.moveTo(x, 0.5);
+                    ctx.lineTo(x, graphHeight_px - .5);
+                }
+                for (let i = 0; i < numYAxisLines - 1; i++) {
+                    const y = 0.5 + (i * graphHeight_px / (numYAxisLines - 1)) >> 0;
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(0 + graphWidth_px, y);
+                }
+                ctx.stroke();
             }
-            for (let i = 0; i < numYAxisLines - 1; i++) {
-                let y = 0.5 + (i * graphHeight_px / (numYAxisLines - 1)) >> 0;
-                ctx.moveTo(0, y);
-                ctx.lineTo(0 + graphWidth_px, y);
-            }
-            ctx.stroke();
 
             // Render data:
             // ctx.translate(-0.5, -0.5);
@@ -171,8 +170,8 @@ export default class Chart {
                         else {
                             p = this.data[i];
                         }
-                        let transformedX = ((p.x - minX) / (maxX - minX)) * graphWidth_px;
-                        let transformedY = ((1 - p.y) * graphHeight_px);
+                        const transformedX = ((p.x - minX) / (maxX - minX)) * graphWidth_px;
+                        const transformedY = ((1 - p.y) * graphHeight_px);
                         ctx.lineTo(transformedX, transformedY);
                     }
                     ctx.stroke();

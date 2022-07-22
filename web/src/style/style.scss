@@ -18,20 +18,21 @@ html,
 body {
     margin: 0;
     padding: 0;
-    
-    font-family: 'Readex Pro', sans-serif;
+
+    font-family: "Readex Pro", sans-serif;
+    font-weight: 400;
     font-size: calc(min(70px, 4.5vw));
 }
 
 body {
-    height: calc(100vh - 2*$borderWidth);
+    height: calc(100vh - 2 * $borderWidth);
     border: $borderWidth white solid;
     border-radius: $borderWidth;
 
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    
+
     color: white;
 }
 
@@ -51,25 +52,30 @@ body {
 }
 
 #chance {
+    font-size: 150%;
     &::after {
         content: "%";
     }
 }
 
 .bet {
-    $elementPadding: 0.0em;
+    $elementPadding: 0em;
 
     transition: all 0.5s ease-in-out;
     height: 0;
     overflow: hidden;
 
-    font-family: 'Roboto Condensed', sans-serif;
+    // font-family: 'Roboto Condensed', sans-serif;
     font-size: 0.7em;
 
     // display: flex;
 
     &.show {
         height: 1.2em;
+    }
+
+    & div {
+        display: inline-block;
     }
 
     & p {
@@ -80,7 +86,11 @@ body {
     }
 
     .name {
-        color: $themeBlue;
+        // color: $themeBlue;
+        // font-style: ;
+        min-width: 6em;
+        // flex-basis: 80em;
+        font-weight: 800;
     }
 
     .yes {
@@ -106,12 +116,30 @@ body {
     // }
 
     .time {
-        min-width: 2em;
+        min-width: 3em;
         text-align: end;
         align-self: center;
         justify-self: center;
         font-size: 70%;
-        color: #FFF;
-        transform: translate(0, -3px);
+        color: #fff;
+        transform: translate(0, -2px);
     }
+}
+
+.color {
+    &.red {
+        color: $themeRed;
+    }
+    &.blue {
+        color: $themeBlue;
+    }
+    &.green {
+        color: $themeGreen;
+    }
+}
+
+.logoText {
+    font-family: "Major Mono Display", monospace;
+    font-size: 0.5em;
+    white-space: nowrap;
 }

@@ -8,11 +8,10 @@
  */
 let getTextWidthCanvas: HTMLCanvasElement;
 export function getTextWidth(text: string, font: string) {
-    // if given, use cached canvas for better performance else, create new canvas
-    var canvas = getTextWidthCanvas || (getTextWidthCanvas = document.createElement("canvas"));
-    var context = canvas.getContext("2d");
+    const canvas = getTextWidthCanvas || (getTextWidthCanvas = document.createElement("canvas")); // If given, use cached canvas for better performance else create new canvas
+    const context = canvas.getContext("2d");
     context.font = font;
-    var metrics = context.measureText(text);
+    const metrics = context.measureText(text);
     return metrics.width;
 }
 
@@ -26,4 +25,8 @@ export function getCanvasFont(el = document.body) {
     const fontFamily = getCssStyle(el, "font-family") || "Times New Roman";
 
     return `${fontWeight} ${fontSize} ${fontFamily}`;
+}
+
+export function randomInt(maxInclusive: number): number {
+    return Math.floor(Math.random() * (maxInclusive + 1));
 }

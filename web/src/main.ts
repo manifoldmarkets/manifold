@@ -4,13 +4,13 @@
 
 import "./style/style.scss";
 
-import { uniqueNamesGenerator, Config, adjectives, colors, animals, countries } from "unique-names-generator";
+// import { uniqueNamesGenerator, Config, adjectives, colors, animals, countries } from "unique-names-generator";
 import moment from "moment";
 
 import Chart, { Point } from "./chart";
 
 import Manifold from "common/manifold-defs";
-import { getCanvasFont, getCssStyle, getTextWidth } from "common/utils";
+import { getCanvasFont, getTextWidth } from "common/utils";
 import { FullBet } from "common/transaction";
 
 import io from "socket.io-client";
@@ -28,7 +28,7 @@ class Application {
 
     betElements: BetElement[] = [];
 
-    currentProbability_percent: number = 0;
+    currentProbability_percent = 0;
     animatedProbability_percent: number = this.currentProbability_percent;
 
     currentMarket: Manifold.LiteMarket = null;
@@ -61,7 +61,7 @@ class Application {
         });
 
         //!!! This all needs to move to another polling system for the market probability:
-        let animationFrame = () => {
+        const animationFrame = () => {
             this.animatedProbability_percent += (this.currentProbability_percent - this.animatedProbability_percent) * 0.1;
             document.getElementById("chance").innerHTML = this.animatedProbability_percent.toFixed(0);
 
@@ -72,46 +72,31 @@ class Application {
         // Update bet times:
         setInterval(() => this.updateBetTimes(), 1000);
 
-        const addRandomTransaction = () => {
-            const customConfig: Config = {
-                dictionaries: [adjectives, colors, animals, countries],
-                separator: "",
-                length: 2,
-                style: "capital",
-            };
-            let numWords = randomInt(2) + 1;
-            while (customConfig.dictionaries.length > numWords) {
-                customConfig.dictionaries.splice(randomInt(customConfig.dictionaries.length - 1), 1);
-            }
-            customConfig.length = customConfig.dictionaries.length;
-            let name = uniqueNamesGenerator(customConfig);
-            name = name.replace(/ /g, ""); // Remove all whitespace
-            //!!! this.addBet(new Transaction(name, Math.ceil(Math.random() * 10) * Math.pow(10, Math.floor(3 * Math.random())), Math.random() > 0.5, Date.now()));
+        // const addRandomTransaction = () => {
+        //     const customConfig: Config = {
+        //         dictionaries: [adjectives, colors, animals, countries],
+        //         separator: "",
+        //         length: 2,
+        //         style: "capital",
+        //     };
+        //     let numWords = randomInt(2) + 1;
+        //     while (customConfig.dictionaries.length > numWords) {
+        //         customConfig.dictionaries.splice(randomInt(customConfig.dictionaries.length - 1), 1);
+        //     }
+        //     customConfig.length = customConfig.dictionaries.length;
+        //     let name = uniqueNamesGenerator(customConfig);
+        //     name = name.replace(/ /g, ""); // Remove all whitespace
+        //     //!!! this.addBet(new Transaction(name, Math.ceil(Math.random() * 10) * Math.pow(10, Math.floor(3 * Math.random())), Math.random() > 0.5, Date.now()));
 
-            setTimeout(addRandomTransaction, randomInt(5000));
-        };
-        // setTimeout(addRandomTransaction, 1000); !!!
-
-        let lastAddedTimestamp = 0;
-        // setInterval(() => {
-        //     fetch("/api/transactions")
-        //     .then(r => <Promise<FullBet[]>> r.json())
-        //     .then(bets => {
-        //         bets.reverse();
-        //         for (const bet of bets) {
-        //             if (bet.createdTime <= lastAddedTimestamp) {
-        //                 continue;
-        //             }
-        //             this.addBet(bet);
-        //             lastAddedTimestamp = bet.createdTime;
-        //         }
-        //     });
-        // }, 500);
+        //     setTimeout(addRandomTransaction, randomInt(5000));
+        // };
+        // setTimeout(addRandomTransaction, 1000);
 
         this.loadMarket("this-is-a-local-market");
         // this.loadBettingHistory();
 
-        let socket = io();
+        // let lastAddedTimestamp = 0;
+        const socket = io();
         socket.on("bets", (bets: FullBet[]) => {
             // console.log(bet);
             // bets.reverse();
@@ -120,7 +105,7 @@ class Application {
                 //     continue;
                 // }
                 this.addBet(bet);
-                lastAddedTimestamp = bet.createdTime;
+                // lastAddedTimestamp = bet.createdTime;
             }
         });
         socket.on("clear", () => {
@@ -167,9 +152,9 @@ class Application {
         fetch(`${APIBase}bets?market=${this.currentMarket["slug"]}&limit=1000`)
             .then((r) => <Promise<Manifold.Bet[]>>r.json())
             .then((r) => {
-                let data: Point[] = [];
+                const data: Point[] = [];
                 r.reverse(); // Data is returned in newest-first fashion and must be pushed in oldest-first
-                for (let t of r) {
+                for (const t of r) {
                     data.push(new Point(t.createdTime, t.probBefore));
                     data.push(new Point(t.createdTime, t.probAfter));
                 }
@@ -188,13 +173,18 @@ class Application {
         //     name += "...";
         // }
 
-        let betAmountMagnitude = Math.abs(Math.ceil(bet.amount));
+        const betAmountMagnitude = Math.abs(Math.ceil(bet.amount));
 
-        let t = <HTMLDivElement>this.transactionTemplate.cloneNode(true);
+        let positiveBet = false;
+        if (bet.amount > 0 && bet.outcome == "YES") {
+            positiveBet = true;
+        }
+
+        const t = <HTMLDivElement>this.transactionTemplate.cloneNode(true);
         document.getElementById("transactions").prepend(t);
         //
-        let nameDiv = <HTMLElement>t.querySelector(".name");
-        let divFont = getCanvasFont(nameDiv);
+        const nameDiv = <HTMLElement>t.querySelector(".name");
+        const divFont = getCanvasFont(nameDiv);
         let isTruncated = false;
         while (getTextWidth(name + (isTruncated ? "..." : ""), divFont) > 400) {
             name = name.substring(0, name.length - 1);
@@ -203,15 +193,16 @@ class Application {
         nameDiv.innerHTML = name + (isTruncated ? "..." : "");
         //
         t.querySelector(".amount").innerHTML = betAmountMagnitude.toFixed(0);
-        t.querySelector(".boughtSold").innerHTML = bet.amount > 0 ? "bought" : "sold";
+        t.querySelector(".boughtSold").innerHTML = positiveBet ? "+" : "-";
+        t.querySelector(".color").classList.add(positiveBet? "green" : "red");
 
-        let response = document.createElement("p");
-        response.classList.add(bet.outcome == "YES" ? "yes" : "no");
+        const response = document.createElement("p");
+        // response.classList.add(bet.outcome == "YES" ? "yes" : "no");
         t.appendChild(response);
 
         // t.innerHTML = bet.displayText; //!!! REMOVE
 
-        let betElement = new BetElement();
+        const betElement = new BetElement();
         betElement.element = t;
         betElement.bet = bet;
 
@@ -222,7 +213,7 @@ class Application {
         }, 1);
 
         if (this.betElements.length > 3) {
-            let transactionToRemove = this.betElements.shift().element;
+            const transactionToRemove = this.betElements.shift().element;
             transactionToRemove.classList.remove("show");
             setTimeout(() => {
                 transactionToRemove.parentElement.removeChild(transactionToRemove);
@@ -238,10 +229,6 @@ class Application {
 
         this.updateBetTimes();
     }
-}
-
-function randomInt(maxInclusive: number): number {
-    return Math.floor(Math.random() * (maxInclusive + 1));
 }
 
 if ("serviceWorker" in navigator) {

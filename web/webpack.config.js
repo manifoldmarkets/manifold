@@ -1,13 +1,17 @@
-const path = require("path");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const TerserPlugin = require("terser-webpack-plugin");
-const CopyPlugin = require("copy-webpack-plugin");
+import path from "path";
+import { fileURLToPath } from "url";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import TerserPlugin from "terser-webpack-plugin";
+import CopyPlugin from "copy-webpack-plugin";
 
-let config = {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const config = {
     mode: "development",
     entry: {
         main: "/src/main.ts",
-        main2: "/src/main.ts",
+        dock: "/src/dock.ts",
         "service-worker": "/src/service-worker.ts",
     },
     devServer: {
@@ -77,7 +81,7 @@ let config = {
     },
 };
 
-module.exports = (env, argv) => {
+export default (env, argv) => {
     if (argv.mode !== "production") {
         config.devtool = "inline-source-map";
     }

@@ -19,7 +19,7 @@ module.exports = {
         node: true,
     },
     rules: {
-        "no-unused-vars": 1,
+        "no-unused-vars": 0,
         "prefer-const": 1,
     },
 };

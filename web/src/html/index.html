@@ -14,13 +14,13 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Readex+Pro&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;700&family=Major+Mono+Display&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div class="content col">
         <div class="row" style="align-items: center; justify-content: space-between; padding: 0.25em; padding-top: 0.1em;">
-            <div id="question" style="padding-right: 0.5em;"></div>
+            <div id="question" style="padding-right: 0.5em; align-self: flex-start;"></div>
             <div class="col" style="align-items: center; justify-content: center;">
                 <div id="chance" style="color: #A5FF6E; visibility: hidden;"></div>
                 <div style="color: #A5FF6E; font-size: 0.7em; margin-top: -.3em; visibility: hidden;">chance</div>
@@ -34,14 +34,14 @@
             <div id="transactions" class="col" style="flex: 1 1; height: 100%; align-items: flex-start; justify-content: flex-end;">
                 <div id="transaction-template" class="bet">
                     <div class="" style="display: inline-flex; align-items: center; height: 100%"><p class="time"></p></div>
-                    <p class="name"></p> 
-                    <p class="boughtSold"></p> 
-                    M$<p class="amount">1000</p> of </div>
+                    <div class="name"></div> 
+                    <div class="color"><p class="boughtSold"></p>M$<p class="amount">1000</p></div>
+                </div>
             </div>
             <div class="col" style="text-align: center">
                 <div style="background-image: url(logo-white.svg); background-size: contain; background-repeat: no-repeat; background-position: center; aspect-ratio: 1; display: block; height: 2em;"></div>
-                <div style="font-size: 0.45em; white-space: nowrap; font-weight: 800;">
-                    Manifold Markets
+                <div class="logoText">
+                    manifold markets
                 </div>
             </div>
         </div>

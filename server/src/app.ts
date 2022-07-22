@@ -66,6 +66,8 @@ export default class App {
         //         }
         //         console.log("Loaded users.");
         //     });
+
+        this.getCurrentUserStake();
     }
 
     loadUser(userId: string) {
@@ -110,8 +112,19 @@ export default class App {
         console.log(`[${new Date().toLocaleTimeString()}] ${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
     }
 
+    getCurrentUserStake() {
+        fetch(`${APIBase}bets?market=this-is-a-local-market&username=PhilBladen`)
+        .then(r => <Promise<ManifoldAPI.Bet[]>> r.json())
+        .then(r => {
+            let total = 0;
+            for (const bet of r) {
+                total += bet.shares;
+            }
+            console.log("Total stake: " + total);
+        });
+    }
+
     placeBet(amount: number, yes: boolean) {
-        amount = -1;//!!!A
         const APIKey = "a7b63c2a-75ed-4794-b8fb-ca1c1d47cda9"; //!!!
 
         const data = {
@@ -176,7 +189,31 @@ export default class App {
                 },
             },
             sell: {
-                response: () => `Sold all shares.`,
+                response: (username: string, argument: string) => { // This needs to look at the currently owned shares by the user and calculate yes or no from that
+                    if (argument.startsWith("yes")) {
+                        try {
+                            const value = Number.parseInt(argument.substring(3));
+                            if (isNaN(value)) {
+                                return null; //!!!
+                            }
+
+                            this.placeBet(value, false);
+                        } catch (e) {
+                            //
+                        }
+                    } else if (argument.startsWith("no")) {
+                        try {
+                            const value = Number.parseInt(argument.substring(2));
+                            if (isNaN(value)) {
+                                return null; //!!!
+                            }
+
+                            this.placeBet(value, true);
+                        } catch (e) {
+                            //
+                        }
+                    }
+                },
             },
             balance: {
                 response: () => `Your balance is ${0}.`, //!!!
@@ -198,7 +235,7 @@ export default class App {
 
                     // this.latestBets.splice(0, this.latestBets.length); // Clear array
 
-                    let newBets: ManifoldAPI.Bet[] = [];
+                    const newBets: ManifoldAPI.Bet[] = [];
 
                     let foundPreviouslyLoadedBet = latestLoadedBetId == null;
                     for (const bet of bets) {
@@ -275,9 +312,12 @@ export default class App {
             const command: string = found[1];
             const argument: string = found[2];
 
-            console.log(`Command: ${command}`);
-            const response: (a: string, b: string) => string | null = commands[command as keyof typeof commands].response;
-            console.log(response);
+            // console.log(`Command: ${command}`);
+            const commandObject = commands[command as keyof typeof commands];
+            if (!commandObject) {
+                return;
+            }
+            const response: (a: string, b: string) => string | null = commandObject.response;
 
             let responseMessage;
 

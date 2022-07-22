@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "web:dev": "webpack-dev-server --config webpack.config.cjs",
+    "web:dev": "webpack-dev-server --config webpack.config.js",
     "build": "webpack --mode=production"
   },
   "keywords": [],

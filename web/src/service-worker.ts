@@ -15,7 +15,7 @@ const CACHE_TIMEOUT = 30 * MINUTE;
  */
 const isValid = function (response: any): boolean {
     if (!response) return false;
-    var fetched = response.headers.get("sw-fetched-on");
+    const fetched = response.headers.get("sw-fetched-on");
     if (fetched && parseFloat(fetched) + CACHE_TIMEOUT > new Date().getTime())
         return true;
     return false;

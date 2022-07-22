@@ -1,0 +1,21 @@
+body {
+    background-color: #333;
+    width: 100%;
+
+    margin: 0;
+    padding: 0;
+}
+
+.button {
+    margin: 10px;
+    border-radius: 5px;
+    background-color: #eee;
+    height: 4em;
+    cursor: pointer;
+
+    transition: all 0.1s ease-in-out;
+
+    &:hover {
+        transform: scale(1.01, 1.01);
+    }
+}
