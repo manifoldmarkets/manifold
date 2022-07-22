@@ -27,49 +27,45 @@ export function ManalinkCard(props: {
   const { expiresTime, maxUses, uses, amount, message } = info
   return (
     <Col>
-      <Col>
-        <div
-          className={clsx(
-            className,
-            'min-h-20 group flex flex-col rounded-xl bg-gradient-to-br shadow-lg transition-all',
-            getManalinkGradient(info.amount)
-          )}
-        >
-          <Col className="mx-4 mt-2 -mb-4 text-right text-sm text-gray-100">
-            <div>
-              {maxUses != null
-                ? `${maxUses - uses}/${maxUses} uses left`
-                : `Unlimited use`}
-            </div>
-            <div>
-              {expiresTime != null
-                ? `Expires ${fromNow(expiresTime)}`
-                : 'Never expires'}
-            </div>
-          </Col>
+      <Col
+        className={clsx(
+          className,
+          'min-h-20 group rounded-lg bg-gradient-to-br drop-shadow-sm transition-all',
+          getManalinkGradient(info.amount)
+        )}
+      >
+        <Col className="mx-4 mt-2 -mb-4 text-right text-sm text-gray-100">
+          <div>
+            {maxUses != null
+              ? `${maxUses - uses}/${maxUses} uses left`
+              : `Unlimited use`}
+          </div>
+          <div>
+            {expiresTime != null
+              ? `Expires ${fromNow(expiresTime)}`
+              : 'Never expires'}
+          </div>
+        </Col>
 
-          <img
+        <img
+          className={clsx(
+            'block h-1/3 w-1/3 self-center transition-all group-hover:rotate-12',
+            preview ? 'my-2' : 'w-1/2 md:mb-6 md:h-1/2'
+          )}
+          src="/logo-white.svg"
+        />
+        <Row className="rounded-b-lg bg-white p-4">
+          <div
             className={clsx(
-              'block h-1/3 w-1/3 self-center transition-all group-hover:rotate-12',
-              preview ? 'my-2' : 'w-1/2 md:mb-6 md:h-1/2'
+              'mb-1 text-xl text-indigo-500',
+              getManalinkAmountColor(amount)
             )}
-            src="/logo-white.svg"
-          />
-          <Row className="rounded-b-xl bg-white p-4">
-            <Col>
-              <div
-                className={clsx(
-                  'mb-1 text-xl text-indigo-500',
-                  getManalinkAmountColor(amount)
-                )}
-              >
-                {formatMoney(amount)}
-              </div>
-            </Col>
-          </Row>
-        </div>
+          >
+            {formatMoney(amount)}
+          </div>
+        </Row>
       </Col>
-      <div className="text-md mx-4 mt-2 mb-4 text-gray-500">{message}</div>
+      <div className="text-md mt-2 mb-4 text-gray-500">{message}</div>
     </Col>
   )
 }
@@ -81,7 +77,7 @@ export function ManalinkCardFromView(props: {
 }) {
   const { className, link, highlightedSlug } = props
   const { message, amount, expiresTime, maxUses, claims } = link
-  const [details, setDetails] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
 
   return (
     <Col>
@@ -92,14 +88,14 @@ export function ManalinkCardFromView(props: {
           link.slug === highlightedSlug ? 'shadow-md shadow-indigo-400' : ''
         )}
       >
-        <div
+        <Col
           className={clsx(
-            'relative flex flex-col rounded-t-lg bg-gradient-to-br transition-all',
+            'relative rounded-t-lg bg-gradient-to-br transition-all',
             getManalinkGradient(link.amount)
           )}
-          onClick={() => setDetails(!details)}
+          onClick={() => setShowDetails(!showDetails)}
         >
-          {details && (
+          {showDetails && (
             <ClaimsList
               className="absolute h-full w-full bg-white opacity-90"
               link={link}
@@ -121,40 +117,38 @@ export function ManalinkCardFromView(props: {
             className={clsx('my-auto block w-1/3 select-none self-center py-3')}
             src="/logo-white.svg"
           />
-        </div>
-        <Col className="w-full rounded-b-lg bg-white px-4 py-2 text-lg">
-          <Row className="relative gap-1">
-            <div
-              className={clsx(
-                'my-auto mb-1 w-full',
-                getManalinkAmountColor(amount)
-              )}
-            >
-              {formatMoney(amount)}
-            </div>
-            <ShareIconButton
-              toastClassName={'-left-48 min-w-[250%]'}
-              buttonClassName={'transition-colors'}
-              onCopyButtonClassName={
-                'bg-gray-200 text-gray-600 transition-none hover:bg-gray-200 hover:text-gray-600'
-              }
-              copyPayload={getManalinkUrl(link.slug)}
-            />
-            <button
-              onClick={() => setDetails(!details)}
-              className={clsx(
-                contractDetailsButtonClassName,
-                details
-                  ? 'bg-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-600'
-                  : ''
-              )}
-            >
-              <DotsHorizontalIcon className="h-[24px] w-5" />
-            </button>
-          </Row>
         </Col>
+        <Row className="relative w-full gap-1 rounded-b-lg bg-white px-4 py-2 text-lg">
+          <div
+            className={clsx(
+              'my-auto mb-1 w-full',
+              getManalinkAmountColor(amount)
+            )}
+          >
+            {formatMoney(amount)}
+          </div>
+          <ShareIconButton
+            toastClassName={'-left-48 min-w-[250%]'}
+            buttonClassName={'transition-colors'}
+            onCopyButtonClassName={
+              'bg-gray-200 text-gray-600 transition-none hover:bg-gray-200 hover:text-gray-600'
+            }
+            copyPayload={getManalinkUrl(link.slug)}
+          />
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            className={clsx(
+              contractDetailsButtonClassName,
+              showDetails
+                ? 'bg-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-600'
+                : ''
+            )}
+          >
+            <DotsHorizontalIcon className="h-[24px] w-5" />
+          </button>
+        </Row>
       </Col>
-      <div className="mx-4 mt-2 mb-4 text-xs text-gray-500 md:text-sm">
+      <div className="mt-2 mb-4 text-xs text-gray-500 md:text-sm">
         {message || ''}
       </div>
     </Col>

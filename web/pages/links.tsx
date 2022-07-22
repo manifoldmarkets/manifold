@@ -98,14 +98,13 @@ function ManalinksDisplay(props: {
     return (
       <>
         <Col className="grid w-full gap-4 md:grid-cols-2">
-          {displayedLinks.map((link) => {
-            return (
-              <ManalinkCardFromView
-                link={link}
-                highlightedSlug={highlightedSlug}
-              />
-            )
-          })}
+          {displayedLinks.map((link) => (
+            <ManalinkCardFromView
+              key={link.slug + link.createdTime}
+              link={link}
+              highlightedSlug={highlightedSlug}
+            />
+          ))}
         </Col>
         <Pagination
           page={page}
