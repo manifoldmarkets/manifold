@@ -23,11 +23,8 @@ import { useState } from 'react'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
-import { CATEGORY_LIST } from 'common/categories'
-import { TagsList } from '../tags-list'
 import { UserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
-import { useGroupsWithContract } from 'web/hooks/use-group'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { useUser } from 'web/hooks/use-user'
 import { Editor } from '@tiptap/react'
@@ -37,6 +34,8 @@ import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
+import { SiteLink } from 'web/components/site-link'
+import { groupPath } from 'web/lib/firebase/groups'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -50,15 +49,16 @@ export function MiscDetails(props: {
     volume,
     volume24Hours,
     closeTime,
-    tags,
     isResolved,
     createdTime,
     resolutionTime,
+    groupLinks,
   } = contract
+
   // Show at most one category that this contract is tagged by
-  const categories = CATEGORY_LIST.filter((category) =>
-    tags.map((t) => t.toLowerCase()).includes(category)
-  ).slice(0, 1)
+  // const categories = CATEGORY_LIST.filter((category) =>
+  //   tags.map((t) => t.toLowerCase()).includes(category)
+  // ).slice(0, 1)
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
 
   return (
@@ -80,13 +80,24 @@ export function MiscDetails(props: {
           {fromNow(resolutionTime || 0)}
         </Row>
       ) : volume > 0 || !isNew ? (
-        <Row>{contractPool(contract)} pool</Row>
+        <Row className={'shrink-0'}>{contractPool(contract)} pool</Row>
       ) : (
         <NewContractBadge />
       )}
 
-      {categories.length > 0 && (
-        <TagsList className="text-gray-400" tags={categories} noLabel />
+      {/*{categories.length > 0 && (*/}
+      {/*  <TagsList className="text-gray-400" tags={categories} noLabel />*/}
+      {/*)}*/}
+      {groupLinks && groupLinks.length > 0 && (
+        <SiteLink
+          href={groupPath(groupLinks[0].slug)}
+          className="text-sm text-gray-400"
+        >
+          <Row className={'line-clamp-1 flex-wrap items-center '}>
+            <UserGroupIcon className="mx-1 mb-0.5 inline h-4 w-4 shrink-0" />
+            {groupLinks[0].name}
+          </Row>
+        </SiteLink>
       )}
     </Row>
   )
@@ -134,11 +145,12 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const { closeTime, creatorName, creatorUsername, creatorId } = contract
+  const { closeTime, creatorName, creatorUsername, creatorId, groupLinks } =
+    contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
-  const groups = useGroupsWithContract(contract)
-  const groupToDisplay = groups[0] ?? null
+  const groupToDisplay =
+    groupLinks?.sort((a, b) => a.createdTime - b.createdTime)[0] ?? null
   const user = useUser()
   const [open, setOpen] = useState(false)
 
@@ -172,11 +184,7 @@ export function ContractDetails(props: {
           <Row>
             <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
             <span className={'line-clamp-1'}>
-              {contract.groupSlugs && !groupToDisplay
-                ? ''
-                : groupToDisplay
-                ? groupToDisplay.name
-                : 'No group'}
+              {groupToDisplay ? groupToDisplay.name : 'No group'}
             </span>
           </Row>
         </Button>
@@ -187,7 +195,11 @@ export function ContractDetails(props: {
             'max-h-[70vh] min-h-[20rem] overflow-auto rounded bg-white p-6'
           }
         >
-          <ContractGroupsList groups={groups} contract={contract} user={user} />
+          <ContractGroupsList
+            groupLinks={groupLinks ?? []}
+            contract={contract}
+            user={user}
+          />
         </Col>
       </Modal>
 

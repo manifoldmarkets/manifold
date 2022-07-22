@@ -7,7 +7,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { sortBy, uniq } from 'lodash'
-import { Group, GROUP_CHAT_SLUG } from 'common/group'
+import { Group, GROUP_CHAT_SLUG, GroupLink } from 'common/group'
 import { updateContract } from './contracts'
 import {
   coll,
@@ -124,9 +124,27 @@ export async function leaveGroup(group: Group, userId: string): Promise<void> {
   return await updateGroup(group, { memberIds: uniq(newMemberIds) })
 }
 
-export async function addContractToGroup(group: Group, contract: Contract) {
+export async function addContractToGroup(
+  group: Group,
+  contract: Contract,
+  userId: string
+) {
+  if (contract.groupLinks?.map((l) => l.groupId).includes(group.id)) return // already in that group
+
+  const newGroupLinks = [
+    ...(contract.groupLinks ?? []),
+    {
+      groupId: group.id,
+      createdTime: Date.now(),
+      slug: group.slug,
+      userId,
+      name: group.name,
+    } as GroupLink,
+  ]
+
   await updateContract(contract.id, {
-    groupSlugs: [...(contract.groupSlugs ?? []), group.slug],
+    groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
+    groupLinks: newGroupLinks,
   })
   return await updateGroup(group, {
     contractIds: uniq([...group.contractIds, contract.id]),
@@ -142,11 +160,15 @@ export async function removeContractFromGroup(
   group: Group,
   contract: Contract
 ) {
-  const newGroupSlugs = contract.groupSlugs?.filter(
-    (slug) => slug !== group.slug
+  if (!contract.groupLinks?.map((l) => l.groupId).includes(group.id)) return // not in that group
+
+  const newGroupLinks = contract.groupLinks?.filter(
+    (link) => link.slug !== group.slug
   )
   await updateContract(contract.id, {
-    groupSlugs: uniq(newGroupSlugs ?? []),
+    groupSlugs:
+      contract.groupSlugs?.filter((slug) => slug !== group.slug) ?? [],
+    groupLinks: newGroupLinks ?? [],
   })
   const newContractIds = group.contractIds.filter((id) => id !== contract.id)
   return await updateGroup(group, {
@@ -159,8 +181,22 @@ export async function removeContractFromGroup(
     })
 }
 
-export async function setContractGroupSlugs(group: Group, contractId: string) {
-  await updateContract(contractId, { groupSlugs: [group.slug] })
+export async function setContractGroupLinks(
+  group: Group,
+  contractId: string,
+  userId: string
+) {
+  await updateContract(contractId, {
+    groupLinks: [
+      {
+        groupId: group.id,
+        name: group.name,
+        slug: group.slug,
+        userId,
+        createdTime: Date.now(),
+      } as GroupLink,
+    ],
+  })
   return await updateGroup(group, {
     contractIds: uniq([...group.contractIds, contractId]),
   })
