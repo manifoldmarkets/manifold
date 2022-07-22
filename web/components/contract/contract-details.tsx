@@ -26,8 +26,6 @@ import NewContractBadge from '../new-contract-badge'
 import { CATEGORY_LIST } from 'common/categories'
 import { TagsList } from '../tags-list'
 import { UserFollowButton } from '../follow-button'
-import { groupPath } from 'web/lib/firebase/groups'
-import { SiteLink } from 'web/components/site-link'
 import { DAY_MS } from 'common/util/time'
 import { useGroupsWithContract } from 'web/hooks/use-group'
 import { ShareIconButton } from 'web/components/share-icon-button'
@@ -35,6 +33,10 @@ import { useUser } from 'web/hooks/use-user'
 import { Editor } from '@tiptap/react'
 import { exhibitExts } from 'common/util/parse'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { Button } from 'web/components/button'
+import { Modal } from 'web/components/layout/modal'
+import { Col } from 'web/components/layout/col'
+import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -135,31 +137,11 @@ export function ContractDetails(props: {
   const { closeTime, creatorName, creatorUsername, creatorId } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
-  const groups = (useGroupsWithContract(contract.id) ?? []).sort((g1, g2) => {
-    return g2.createdTime - g1.createdTime
-  })
+  const groups = useGroupsWithContract(contract)
+  const groupToDisplay = groups[0] ?? null
   const user = useUser()
+  const [open, setOpen] = useState(false)
 
-  const groupsUserIsMemberOf = groups
-    ? groups.filter((g) => g.memberIds.includes(contract.creatorId))
-    : []
-  const groupsUserIsCreatorOf = groups
-    ? groups.filter((g) => g.creatorId === contract.creatorId)
-    : []
-
-  // Priorities for which group the contract belongs to:
-  // In order of created most recently
-  // Group that the contract owner created
-  // Group the contract owner is a member of
-  // Any group the contract is in
-  const groupToDisplay =
-    groupsUserIsCreatorOf.length > 0
-      ? groupsUserIsCreatorOf[0]
-      : groupsUserIsMemberOf.length > 0
-      ? groupsUserIsMemberOf[0]
-      : groups
-      ? groups[0]
-      : undefined
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
       <Row className="items-center gap-2">
@@ -180,16 +162,34 @@ export function ContractDetails(props: {
         )}
         {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
-      {groupToDisplay ? (
-        <Row className={'line-clamp-1 mt-1 max-w-[200px]'}>
-          <SiteLink href={`${groupPath(groupToDisplay.slug)}`}>
-            <UserGroupIcon className="mx-1 mb-1 inline h-5 w-5" />
-            <span>{groupToDisplay.name}</span>
-          </SiteLink>
-        </Row>
-      ) : (
-        <div />
-      )}
+      <Row>
+        <Button
+          size={'xs'}
+          className={'max-w-[200px]'}
+          color={'gray-white'}
+          onClick={() => setOpen(!open)}
+        >
+          <Row>
+            <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
+            <span className={'line-clamp-1'}>
+              {contract.groupSlugs && !groupToDisplay
+                ? ''
+                : groupToDisplay
+                ? groupToDisplay.name
+                : 'No group'}
+            </span>
+          </Row>
+        </Button>
+      </Row>
+      <Modal open={open} setOpen={setOpen} size={'md'}>
+        <Col
+          className={
+            'max-h-[70vh] min-h-[20rem] overflow-auto rounded bg-white p-6'
+          }
+        >
+          <ContractGroupsList groups={groups} contract={contract} user={user} />
+        </Col>
+      </Modal>
 
       {(!!closeTime || !!resolvedDate) && (
         <Row className="items-center gap-1">
@@ -326,12 +326,13 @@ function EditableCloseDate(props: {
             Done
           </button>
         ) : (
-          <button
-            className="btn btn-xs btn-ghost"
+          <Button
+            size={'xs'}
+            color={'gray-white'}
             onClick={() => setIsEditingCloseTime(true)}
           >
-            <PencilIcon className="mr-2 inline h-4 w-4" /> Edit
-          </button>
+            <PencilIcon className="mr-0.5 inline h-4 w-4" /> Edit
+          </Button>
         ))}
     </>
   )

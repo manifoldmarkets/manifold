@@ -19,7 +19,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { setContractGroupSlugs, getGroup } from 'web/lib/firebase/groups'
+import { getGroup, setContractGroupSlugs } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -347,7 +347,7 @@ export function NewContract(props: {
           selectedGroup={selectedGroup}
           setSelectedGroup={setSelectedGroup}
           creator={creator}
-          showSelector={showGroupSelector}
+          options={{ showSelector: showGroupSelector, showLabel: true }}
         />
       </div>
 
