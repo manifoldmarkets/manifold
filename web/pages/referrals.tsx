@@ -21,7 +21,12 @@ export default function ReferralsPage() {
 
   return (
     <Page>
-      <SEO title="Referrals" description="" url="/add-funds" />
+      <SEO
+        title="Referrals"
+        description={`Manifold's referral program. Invite new users to Manifold and get M${REFERRAL_AMOUNT} if they
+            sign up!`}
+        url="/referrals"
+      />
 
       <Col className="items-center">
         <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
