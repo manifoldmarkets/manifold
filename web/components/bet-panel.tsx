@@ -13,32 +13,27 @@ import {
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
-import { getBinaryCpmmBetInfo } from 'common/new-bet'
+import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
 import { Bet, LimitBet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api'
 import { sellShares } from 'web/lib/firebase/api'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
-import { BinaryOutcomeLabel } from './outcome-label'
+import { BinaryOutcomeLabel, HigherLabel, LowerLabel } from './outcome-label'
 import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
-import {
-  getFormattedMappedValue,
-  getPseudoProbability,
-} from 'common/pseudo-numeric'
+import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
 import { useSaveBinaryShares } from './use-save-binary-shares'
 import { SignUpPrompt } from './sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
-import { ProbabilityInput } from './probability-input'
+import { ProbabilityOrNumericInput } from './probability-input'
 import { track } from 'web/lib/service/analytics'
-import { removeUndefinedProps } from 'common/util/object'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
-import { BucketInput } from './bucket-input'
 import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
 
@@ -73,12 +68,17 @@ export function BetPanel(props: {
           setIsLimitOrder={setIsLimitOrder}
         />
         <BuyPanel
+          hidden={isLimitOrder}
           contract={contract}
           user={user}
-          isLimitOrder={isLimitOrder}
           unfilledBets={unfilledBets}
         />
-
+        <LimitOrderPanel
+          hidden={!isLimitOrder}
+          contract={contract}
+          user={user}
+          unfilledBets={unfilledBets}
+        />
         <SignUpPrompt />
       </Col>
       {unfilledBets.length > 0 && (
@@ -120,14 +120,20 @@ export function SimpleBetPanel(props: {
           setIsLimitOrder={setIsLimitOrder}
         />
         <BuyPanel
+          hidden={isLimitOrder}
           contract={contract}
           user={user}
           unfilledBets={unfilledBets}
           selected={selected}
           onBuySuccess={onBetSuccess}
-          isLimitOrder={isLimitOrder}
         />
-
+        <LimitOrderPanel
+          hidden={!isLimitOrder}
+          contract={contract}
+          user={user}
+          unfilledBets={unfilledBets}
+          onBuySuccess={onBetSuccess}
+        />
         <SignUpPrompt />
       </Col>
 
@@ -142,21 +148,17 @@ function BuyPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
   unfilledBets: Bet[]
-  isLimitOrder?: boolean
+  hidden: boolean
   selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
 }) {
-  const { contract, user, unfilledBets, isLimitOrder, selected, onBuySuccess } =
-    props
+  const { contract, user, unfilledBets, hidden, selected, onBuySuccess } = props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(selected)
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(selected)
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
-  const [limitProb, setLimitProb] = useState<number | undefined>(
-    Math.round(100 * initialProb)
-  )
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -171,7 +173,7 @@ function BuyPanel(props: {
   }, [selected, focusAmountInput])
 
   function onBetChoice(choice: 'YES' | 'NO') {
-    setBetChoice(choice)
+    setOutcome(choice)
     setWasSubmitted(false)
     focusAmountInput()
   }
@@ -179,29 +181,22 @@ function BuyPanel(props: {
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
-    if (!betChoice) {
-      setBetChoice('YES')
+    if (!outcome) {
+      setOutcome('YES')
     }
   }
 
   async function submitBet() {
     if (!user || !betAmount) return
-    if (isLimitOrder && limitProb === undefined) return
-
-    const limitProbScaled =
-      isLimitOrder && limitProb !== undefined ? limitProb / 100 : undefined
 
     setError(undefined)
     setIsSubmitting(true)
 
-    placeBet(
-      removeUndefinedProps({
-        amount: betAmount,
-        outcome: betChoice,
-        contractId: contract.id,
-        limitProb: limitProbScaled,
-      })
-    )
+    placeBet({
+      outcome,
+      amount: betAmount,
+      contractId: contract.id,
+    })
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
@@ -225,21 +220,18 @@ function BuyPanel(props: {
       slug: contract.slug,
       contractId: contract.id,
       amount: betAmount,
-      outcome: betChoice,
-      isLimitOrder,
-      limitProb: limitProbScaled,
+      outcome,
+      isLimitOrder: false,
     })
   }
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const limitProbFrac = (limitProb ?? 0) / 100
-
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
-    betChoice ?? 'YES',
+    outcome ?? 'YES',
     betAmount ?? 0,
     contract,
-    isLimitOrder ? limitProbFrac : undefined,
+    undefined,
     unfilledBets as LimitBet[]
   )
 
@@ -247,11 +239,7 @@ function BuyPanel(props: {
   const probStayedSame =
     formatPercent(resultProb) === formatPercent(initialProb)
 
-  const remainingMatched = isLimitOrder
-    ? ((newBet.orderAmount ?? 0) - newBet.amount) /
-      (betChoice === 'YES' ? limitProbFrac : 1 - limitProbFrac)
-    : 0
-  const currentPayout = newBet.shares + remainingMatched
+  const currentPayout = newBet.shares
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
@@ -261,14 +249,14 @@ function BuyPanel(props: {
   const format = getFormattedMappedValue(contract)
 
   return (
-    <>
+    <Col className={hidden ? 'hidden' : ''}>
       <div className="my-3 text-left text-sm text-gray-500">
         {isPseudoNumeric ? 'Direction' : 'Outcome'}
       </div>
       <YesNoSelector
         className="mb-4"
         btnClassName="flex-1"
-        selected={betChoice}
+        selected={outcome}
         onSelect={(choice) => onBetChoice(choice)}
         isPseudoNumeric={isPseudoNumeric}
       />
@@ -283,61 +271,21 @@ function BuyPanel(props: {
         disabled={isSubmitting}
         inputRef={inputRef}
       />
-      {isLimitOrder && (
-        <>
-          <Row className="my-3 items-center gap-2 text-left text-sm text-gray-500">
-            Limit {isPseudoNumeric ? 'value' : 'probability'}
-            <InfoTooltip
-              text={`Bet ${betChoice === 'NO' ? 'down' : 'up'} to this ${
-                isPseudoNumeric ? 'value' : 'probability'
-              } and wait to match other bets.`}
-            />
-          </Row>
-          {isPseudoNumeric ? (
-            <BucketInput
-              contract={contract}
-              onBucketChange={(value) =>
-                setLimitProb(
-                  value === undefined
-                    ? undefined
-                    : 100 *
-                        getPseudoProbability(
-                          value,
-                          contract.min,
-                          contract.max,
-                          contract.isLogScale
-                        )
-                )
-              }
-              isSubmitting={isSubmitting}
-            />
-          ) : (
-            <ProbabilityInput
-              inputClassName="w-full max-w-none"
-              prob={limitProb}
-              onChange={setLimitProb}
-              disabled={isSubmitting}
-            />
-          )}
-        </>
-      )}
       <Col className="mt-3 w-full gap-3">
-        {!isLimitOrder && (
-          <Row className="items-center justify-between text-sm">
-            <div className="text-gray-500">
-              {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+        <Row className="items-center justify-between text-sm">
+          <div className="text-gray-500">
+            {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+          </div>
+          {probStayedSame ? (
+            <div>{format(initialProb)}</div>
+          ) : (
+            <div>
+              {format(initialProb)}
+              <span className="mx-2">→</span>
+              {format(resultProb)}
             </div>
-            {probStayedSame ? (
-              <div>{format(initialProb)}</div>
-            ) : (
-              <div>
-                {format(initialProb)}
-                <span className="mx-2">→</span>
-                {format(resultProb)}
-              </div>
-            )}
-          </Row>
-        )}
+          )}
+        </Row>
 
         <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
@@ -346,7 +294,7 @@ function BuyPanel(props: {
                 'Max payout'
               ) : (
                 <>
-                  Payout if <BinaryOutcomeLabel outcome={betChoice ?? 'YES'} />
+                  Payout if <BinaryOutcomeLabel outcome={outcome ?? 'YES'} />
                 </>
               )}
             </div>
@@ -371,6 +319,353 @@ function BuyPanel(props: {
             'btn flex-1',
             betDisabled
               ? 'btn-disabled'
+              : outcome === 'YES'
+              ? 'btn-primary'
+              : 'border-none bg-red-400 hover:bg-red-500',
+            isSubmitting ? 'loading' : ''
+          )}
+          onClick={betDisabled ? undefined : submitBet}
+        >
+          {isSubmitting ? 'Submitting...' : 'Submit bet'}
+        </button>
+      )}
+
+      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
+    </Col>
+  )
+}
+
+function LimitOrderPanel(props: {
+  contract: CPMMBinaryContract | PseudoNumericContract
+  user: User | null | undefined
+  unfilledBets: Bet[]
+  hidden: boolean
+  onBuySuccess?: () => void
+}) {
+  const { contract, user, unfilledBets, hidden, onBuySuccess } = props
+
+  const initialProb = getProbability(contract)
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+
+  const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const [lowLimitProb, setLowLimitProb] = useState<number | undefined>()
+  const [highLimitProb, setHighLimitProb] = useState<number | undefined>()
+  const betChoice = 'YES'
+  const [error, setError] = useState<string | undefined>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wasSubmitted, setWasSubmitted] = useState(false)
+
+  const rangeError =
+    lowLimitProb !== undefined &&
+    highLimitProb !== undefined &&
+    lowLimitProb >= highLimitProb
+
+  const outOfRangeError =
+    (lowLimitProb !== undefined &&
+      (lowLimitProb <= 0 || lowLimitProb >= 100)) ||
+    (highLimitProb !== undefined &&
+      (highLimitProb <= 0 || highLimitProb >= 100))
+
+  const initialLow = initialProb * 0.9
+  const initialHigh = initialProb + (1 - initialProb) * 0.1
+  const lowPlaceholder = Math.round(
+    isPseudoNumeric ? getMappedValue(contract)(initialLow) : initialLow * 100
+  ).toString()
+  const highPlaceholder = Math.round(
+    isPseudoNumeric ? getMappedValue(contract)(initialHigh) : initialHigh * 100
+  ).toString()
+
+  const hasYesLimitBet = lowLimitProb !== undefined && !!betAmount
+  const hasNoLimitBet = highLimitProb !== undefined && !!betAmount
+  const hasTwoBets = hasYesLimitBet && hasNoLimitBet
+
+  const betDisabled =
+    isSubmitting ||
+    !betAmount ||
+    rangeError ||
+    outOfRangeError ||
+    error ||
+    (!hasYesLimitBet && !hasNoLimitBet)
+
+  const yesLimitProb =
+    lowLimitProb === undefined ? undefined : lowLimitProb / 100
+  const noLimitProb =
+    highLimitProb === undefined ? undefined : highLimitProb / 100
+
+  const shares =
+    yesLimitProb !== undefined && noLimitProb !== undefined
+      ? Math.min(
+          (betAmount ?? 0) / yesLimitProb,
+          (betAmount ?? 0) / (1 - noLimitProb)
+        )
+      : (betAmount ?? 0) / (yesLimitProb ?? 1 - (noLimitProb ?? 1))
+
+  const yesAmount = shares * (yesLimitProb ?? 1)
+  const noAmount = shares * (1 - (noLimitProb ?? 1))
+
+  const profitIfBothFilled = shares - (yesAmount + noAmount)
+
+  function onBetChange(newAmount: number | undefined) {
+    setWasSubmitted(false)
+    setBetAmount(newAmount)
+  }
+
+  async function submitBet() {
+    if (!user || betDisabled) return
+
+    setError(undefined)
+    setIsSubmitting(true)
+
+    const betsPromise = hasTwoBets
+      ? Promise.all([
+          placeBet({
+            outcome: 'YES',
+            amount: yesAmount,
+            limitProb: yesLimitProb,
+            contractId: contract.id,
+          }),
+          placeBet({
+            outcome: 'NO',
+            amount: noAmount,
+            limitProb: noLimitProb,
+            contractId: contract.id,
+          }),
+        ])
+      : placeBet({
+          outcome: hasYesLimitBet ? 'YES' : 'NO',
+          amount: betAmount,
+          contractId: contract.id,
+          limitProb: hasYesLimitBet ? yesLimitProb : noLimitProb,
+        })
+
+    betsPromise
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.toString())
+        } else {
+          console.error(e)
+          setError('Error placing bet')
+        }
+        setIsSubmitting(false)
+      })
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        setWasSubmitted(true)
+        setBetAmount(undefined)
+        if (onBuySuccess) onBuySuccess()
+      })
+
+    if (hasYesLimitBet) {
+      track('bet', {
+        location: 'bet panel',
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount: yesAmount,
+        outcome: 'YES',
+        limitProb: yesLimitProb,
+        isLimitOrder: true,
+        isRangeOrder: hasTwoBets,
+      })
+    }
+    if (hasNoLimitBet) {
+      track('bet', {
+        location: 'bet panel',
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount: noAmount,
+        outcome: 'NO',
+        limitProb: noLimitProb,
+        isLimitOrder: true,
+        isRangeOrder: hasTwoBets,
+      })
+    }
+  }
+
+  const {
+    currentPayout: yesPayout,
+    currentReturn: yesReturn,
+    totalFees: yesFees,
+    newBet: yesBet,
+  } = getBinaryBetStats(
+    'YES',
+    yesAmount,
+    contract,
+    Math.min(yesLimitProb ?? initialLow, 0.999),
+    unfilledBets as LimitBet[]
+  )
+  const yesReturnPercent = formatPercent(yesReturn)
+
+  const {
+    currentPayout: noPayout,
+    currentReturn: noReturn,
+    totalFees: noFees,
+    newBet: noBet,
+  } = getBinaryBetStats(
+    'NO',
+    noAmount,
+    contract,
+    Math.max(noLimitProb ?? initialHigh, 0.01),
+    unfilledBets as LimitBet[]
+  )
+  const noReturnPercent = formatPercent(noReturn)
+
+  return (
+    <Col className={hidden ? 'hidden' : ''}>
+      <div className="my-3 text-sm text-gray-500">
+        Bet when the {isPseudoNumeric ? 'value' : 'probability'} reaches Low
+        and/or High limit.
+      </div>
+
+      <Row className="items-center gap-4">
+        <Col className="gap-2">
+          <div className="ml-1 text-sm text-gray-500">Low</div>
+          <ProbabilityOrNumericInput
+            contract={contract}
+            prob={lowLimitProb}
+            setProb={setLowLimitProb}
+            isSubmitting={isSubmitting}
+            placeholder={lowPlaceholder}
+          />
+        </Col>
+        <Col className="gap-2">
+          <div className="ml-1 text-sm text-gray-500">High</div>
+          <ProbabilityOrNumericInput
+            contract={contract}
+            prob={highLimitProb}
+            setProb={setHighLimitProb}
+            isSubmitting={isSubmitting}
+            placeholder={highPlaceholder}
+          />
+        </Col>
+      </Row>
+
+      {rangeError && (
+        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+          Low limit must be less than High limit
+        </div>
+      )}
+      {outOfRangeError && (
+        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+          Limit is out of range
+        </div>
+      )}
+
+      <div className="my-3 text-left text-sm text-gray-500">
+        Max amount<span className="ml-1 text-red-500">*</span>
+      </div>
+      <BuyAmountInput
+        inputClassName="w-full max-w-none"
+        amount={betAmount}
+        onChange={onBetChange}
+        error={error}
+        setError={setError}
+        disabled={isSubmitting}
+      />
+
+      <Col className="mt-3 w-full gap-3">
+        {(hasTwoBets || (hasYesLimitBet && yesBet.amount !== 0)) && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <div className="whitespace-nowrap text-gray-500">
+              {isPseudoNumeric ? (
+                <HigherLabel />
+              ) : (
+                <BinaryOutcomeLabel outcome={'YES'} />
+              )}{' '}
+              current fill
+            </div>
+            <div className="mr-2 whitespace-nowrap">
+              {formatMoney(yesBet.amount)} of{' '}
+              {formatMoney(yesBet.orderAmount ?? 0)}
+            </div>
+          </Row>
+        )}
+        {(hasTwoBets || (hasNoLimitBet && noBet.amount !== 0)) && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <div className="whitespace-nowrap text-gray-500">
+              {isPseudoNumeric ? (
+                <LowerLabel />
+              ) : (
+                <BinaryOutcomeLabel outcome={'NO'} />
+              )}{' '}
+              current fill
+            </div>
+            <div className="mr-2 whitespace-nowrap">
+              {formatMoney(noBet.amount)} of{' '}
+              {formatMoney(noBet.orderAmount ?? 0)}
+            </div>
+          </Row>
+        )}
+        {hasTwoBets && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <div className="whitespace-nowrap text-gray-500">
+              Profit if both orders filled
+            </div>
+            <div className="mr-2 whitespace-nowrap">
+              {formatMoney(profitIfBothFilled)}
+            </div>
+          </Row>
+        )}
+        {hasYesLimitBet && !hasTwoBets && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+              <div>
+                {isPseudoNumeric ? (
+                  'Max payout'
+                ) : (
+                  <>
+                    Max <BinaryOutcomeLabel outcome={'YES'} /> payout
+                  </>
+                )}
+              </div>
+              <InfoTooltip
+                text={`Includes ${formatMoneyWithDecimals(yesFees)} in fees`}
+              />
+            </Row>
+            <div>
+              <span className="mr-2 whitespace-nowrap">
+                {formatMoney(yesPayout)}
+              </span>
+              (+{yesReturnPercent})
+            </div>
+          </Row>
+        )}
+        {hasNoLimitBet && !hasTwoBets && (
+          <Row className="items-center justify-between gap-2 text-sm">
+            <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+              <div>
+                {isPseudoNumeric ? (
+                  'Max payout'
+                ) : (
+                  <>
+                    Max <BinaryOutcomeLabel outcome={'NO'} /> payout
+                  </>
+                )}
+              </div>
+              <InfoTooltip
+                text={`Includes ${formatMoneyWithDecimals(noFees)} in fees`}
+              />
+            </Row>
+            <div>
+              <span className="mr-2 whitespace-nowrap">
+                {formatMoney(noPayout)}
+              </span>
+              (+{noReturnPercent})
+            </div>
+          </Row>
+        )}
+      </Col>
+
+      {(hasYesLimitBet || hasNoLimitBet) && <Spacer h={8} />}
+
+      {user && (
+        <button
+          className={clsx(
+            'btn flex-1',
+            betDisabled
+              ? 'btn-disabled'
               : betChoice === 'YES'
               ? 'btn-primary'
               : 'border-none bg-red-400 hover:bg-red-500',
@@ -380,16 +675,12 @@ function BuyPanel(props: {
         >
           {isSubmitting
             ? 'Submitting...'
-            : isLimitOrder
-            ? 'Submit order'
-            : 'Submit bet'}
+            : `Submit order${hasTwoBets ? 's' : ''}`}
         </button>
       )}
 
-      {wasSubmitted && (
-        <div className="mt-4">{isLimitOrder ? 'Order' : 'Bet'} submitted!</div>
-      )}
-    </>
+      {wasSubmitted && <div className="mt-4">Order submitted!</div>}
+    </Col>
   )
 }
 

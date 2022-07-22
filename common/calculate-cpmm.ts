@@ -123,6 +123,7 @@ export function calculateCpmmAmountToProb(
   prob: number,
   outcome: 'YES' | 'NO'
 ) {
+  if (prob <= 0 || prob >= 1 || isNaN(prob)) return Infinity
   if (outcome === 'NO') prob = 1 - prob
 
   // First, find an upper bound that leads to a more extreme probability than prob.
