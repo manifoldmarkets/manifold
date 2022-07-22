@@ -1,21 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
-import { keyBy, sortBy, groupBy, sumBy, mapValues } from 'lodash'
+import { groupBy, keyBy, mapValues, sortBy, sumBy } from 'lodash'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet-panel'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
 import { listUsers, User } from 'web/lib/firebase/users'
 import {
   Contract,
+  getBinaryProbPercent,
   getContractFromSlug,
   tradingAllowed,
-  getBinaryProbPercent,
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/page'
@@ -27,7 +27,6 @@ import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Leaderboard } from 'web/components/leaderboard'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
-import { useUserById } from 'web/hooks/use-user'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { contractTextDetails } from 'web/components/contract/contract-details'
 import { useWindowSize } from 'web/hooks/use-window-size'
@@ -168,12 +167,10 @@ export function ContractPageContent(
         (isNumeric ? (
           <NumericBetPanel className="hidden xl:flex" contract={contract} />
         ) : (
-          <div>
-            <BetPanel
-              className="hidden xl:flex"
-              contract={contract as CPMMBinaryContract}
-            />
-          </div>
+          <BetPanel
+            className="hidden xl:flex"
+            contract={contract as CPMMBinaryContract}
+          />
         ))}
       {allowResolve &&
         (isNumeric || isPseudoNumeric ? (

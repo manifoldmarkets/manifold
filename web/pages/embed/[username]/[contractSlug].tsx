@@ -21,8 +21,11 @@ import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { listAllBets } from 'web/lib/firebase/bets'
-import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
-import { tradingAllowed } from 'web/lib/firebase/contracts'
+import {
+  contractPath,
+  getContractFromSlug,
+  tradingAllowed,
+} from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -76,12 +79,8 @@ export default function ContractEmbedPage(props: {
   return <ContractEmbed contract={contract} bets={bets} />
 }
 
-export function ContractEmbed(props: {
-  contract: Contract
-  bets: Bet[]
-  height?: number
-}) {
-  const { contract, bets, height } = props
+export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
   const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
@@ -93,11 +92,10 @@ export function ContractEmbed(props: {
   const { setElem, height: topSectionHeight } = useMeasureSize()
   const paddingBottom = 8
 
-  const graphHeight = !height
-    ? windowHeight && topSectionHeight
+  const graphHeight =
+    windowHeight && topSectionHeight
       ? windowHeight - topSectionHeight - paddingBottom
       : 0
-    : height
 
   return (
     <Col className="w-full flex-1 bg-white">

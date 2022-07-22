@@ -365,26 +365,24 @@ function BuyPanel(props: {
       <Spacer h={8} />
 
       {user && (
-        <Col>
-          <button
-            className={clsx(
-              'btn mb-2 flex-1',
-              betDisabled
-                ? 'btn-disabled'
-                : betChoice === 'YES'
-                ? 'btn-primary'
-                : 'border-none bg-red-400 hover:bg-red-500',
-              isSubmitting ? 'loading' : ''
-            )}
-            onClick={betDisabled ? undefined : submitBet}
-          >
-            {isSubmitting
-              ? 'Submitting...'
-              : isLimitOrder
-              ? 'Submit order'
-              : 'Submit bet'}
-          </button>
-        </Col>
+        <button
+          className={clsx(
+            'btn mb-2 flex-1',
+            betDisabled
+              ? 'btn-disabled'
+              : betChoice === 'YES'
+              ? 'btn-primary'
+              : 'border-none bg-red-400 hover:bg-red-500',
+            isSubmitting ? 'loading' : ''
+          )}
+          onClick={betDisabled ? undefined : submitBet}
+        >
+          {isSubmitting
+            ? 'Submitting...'
+            : isLimitOrder
+            ? 'Submit order'
+            : 'Submit bet'}
+        </button>
       )}
 
       {wasSubmitted && (
@@ -401,32 +399,29 @@ function QuickOrLimitBet(props: {
   const { isLimitOrder, setIsLimitOrder } = props
 
   return (
-    <Col className="align-center mb-4 justify-between">
-      <Row>
-        <div className="text-4xl">Bet</div>
-        <Row className="mt-1 w-full items-center justify-end gap-0.5">
-          <PillButton
-            selected={!isLimitOrder}
-            onSelect={() => {
-              setIsLimitOrder(false)
-              track('select quick order')
-            }}
-          >
-            Quick
-          </PillButton>
-          <PillButton
-            selected={isLimitOrder}
-            onSelect={() => {
-              setIsLimitOrder(true)
-              track('select limit order')
-            }}
-          >
-            Limit
-          </PillButton>
-        </Row>
+    <Row className="align-center mb-4 justify-between">
+      <div className="text-4xl">Bet</div>
+      <Row className="mt-1 w-full items-center justify-end gap-0.5">
+        <PillButton
+          selected={!isLimitOrder}
+          onSelect={() => {
+            setIsLimitOrder(false)
+            track('select quick order')
+          }}
+        >
+          Quick
+        </PillButton>
+        <PillButton
+          selected={isLimitOrder}
+          onSelect={() => {
+            setIsLimitOrder(true)
+            track('select limit order')
+          }}
+        >
+          Limit
+        </PillButton>
       </Row>
-      <Row className={'mt-2 justify-end'}></Row>
-    </Col>
+    </Row>
   )
 }
 

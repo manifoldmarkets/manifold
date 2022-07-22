@@ -7,9 +7,8 @@ import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { fromNow } from 'web/lib/util/time'
-import { useUserById } from 'web/hooks/use-user'
 
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
@@ -18,13 +17,14 @@ import {
   useAcceptedChallenges,
   useUserChallenges,
 } from 'web/lib/firebase/challenges'
-import { Challenge, Acceptance } from 'common/challenge'
+import { Acceptance, Challenge } from 'common/challenge'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { ToastClipboard } from 'web/components/toast-clipboard'
 import { Tabs } from 'web/components/layout/tabs'
 import { SiteLink } from 'web/components/site-link'
 import { UserLink } from 'web/components/user-page'
 import { Avatar } from 'web/components/avatar'
+
 dayjs.extend(customParseFormat)
 
 export function getManalinkUrl(slug: string) {
@@ -72,54 +72,6 @@ export default function LinkPage() {
     </Page>
   )
 }
-//
-// export function ClaimsList(props: { txns: ManalinkTxn[] }) {
-//   const { txns } = props
-//   return (
-//     <>
-//       <h1 className="mb-4 text-xl font-semibold text-gray-900">
-//         Claimed links
-//       </h1>
-//       {txns.map((txn) => (
-//         <ClaimDescription txn={txn} key={txn.id} />
-//       ))}
-//     </>
-//   )
-// }
-
-// export function ClaimDescription(props: { txn: ManalinkTxn }) {
-//   const { txn } = props
-//   const from = useUserById(txn.fromId)
-//   const to = useUserById(txn.toId)
-//
-//   if (!from || !to) {
-//     return <>Loading...</>
-//   }
-//
-//   return (
-//     <div className="mb-2 flow-root pr-2 md:pr-0">
-//       <div className="relative flex items-center space-x-3">
-//         <Avatar username={to.name} avatarUrl={to.avatarUrl} size="sm" />
-//         <div className="min-w-0 flex-1">
-//           <p className="mt-0.5 text-sm text-gray-500">
-//             <UserLink
-//               className="text-gray-500"
-//               username={to.username}
-//               name={to.name}
-//             />{' '}
-//             claimed {formatMoney(txn.amount)} from{' '}
-//             <UserLink
-//               className="text-gray-500"
-//               username={from.username}
-//               name={from.name}
-//             />
-//             <RelativeTimestamp time={txn.createdTime} />
-//           </p>
-//         </div>
-//       </div>
-//     </div>
-//   )
-// }
 
 function ClaimTableRow(props: { claim: Acceptance }) {
   const { claim } = props

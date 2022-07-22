@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import clsx from 'clsx'
 
 import { SimpleBetPanel } from './bet-panel'
@@ -48,6 +48,7 @@ export default function BetRow(props: {
             : ''}
         </div>
       </Col>
+
       <Modal open={open} setOpen={setOpen}>
         <SimpleBetPanel
           className={betPanelClassName}

@@ -8,8 +8,8 @@ import { Linkify } from '../linkify'
 import clsx from 'clsx'
 
 import {
-  FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
+  FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
@@ -21,6 +21,8 @@ import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { ShareMarket } from '../share-market'
 import { NumericGraph } from './numeric-graph'
+import { CreateChallengeButton } from 'web/components/challenges/create-challenge-button'
+import React from 'react'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -116,6 +118,14 @@ export const ContractOverview = (props: {
       {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
       {(contract.description || isCreator) && <Spacer h={6} />}
       {isCreator && <ShareMarket className="px-2" contract={contract} />}
+      {user && (
+        <Col>
+          <div>Challenge a friend</div>
+          <Row>
+            <CreateChallengeButton user={user} contract={contract} />
+          </Row>
+        </Col>
+      )}
       <ContractDescription
         className="px-2"
         contract={contract}
