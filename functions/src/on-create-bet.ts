@@ -64,10 +64,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
 
   if (!previousUniqueBettorIds) {
     const contractBets = (
-      await firestore
-        .collection(`contracts/${contractId}/bets`)
-        .where('userId', '!=', contract.creatorId)
-        .get()
+      await firestore.collection(`contracts/${contractId}/bets`).get()
     ).docs.map((doc) => doc.data() as Bet)
 
     if (contractBets.length === 0) {
@@ -82,9 +79,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     )
   }
 
-  const isNewUniqueBettor =
-    !previousUniqueBettorIds.includes(bettorId) &&
-    bettorId !== contract.creatorId
+  const isNewUniqueBettor = !previousUniqueBettorIds.includes(bettorId)
 
   const newUniqueBettorIds = uniq([...previousUniqueBettorIds, bettorId])
   // Update contract unique bettors
@@ -96,7 +91,9 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       uniqueBettorCount: newUniqueBettorIds.length,
     })
   }
-  if (!isNewUniqueBettor) return
+
+  // No need to give a bonus for the creator's bet
+  if (!isNewUniqueBettor || bettorId == contract.creatorId) return
 
   // Create combined txn for all new unique bettors
   const bonusTxnDetails = {
