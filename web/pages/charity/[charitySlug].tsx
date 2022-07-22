@@ -20,8 +20,7 @@ import Custom404 from '../404'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Donation } from 'web/components/charity/feed-items'
-import Image from 'next/image'
-import { manaToUSD } from 'common/util/format'>>>>>>> main
+import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 
@@ -66,11 +65,7 @@ function CharityPage(props: { charity: Charity }) {
         />
       }
     >
-      <SEO
-        title={name}
-        description={description}
-        url="/groups"
-      />
+      <SEO title={name} description={description} url="/groups" />
       {showConfetti && (
         <Confetti
           width={width ? width : 500}
