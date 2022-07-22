@@ -2,15 +2,26 @@ import type { MentionOptions } from '@tiptap/extension-mention'
 import { ReactRenderer } from '@tiptap/react'
 import { User } from 'common/lib/user'
 import { searchInAny } from 'common/util/parse'
+import { orderBy } from 'lodash'
 import tippy from 'tippy.js'
 import { MentionList } from './mention-list'
 
 type Suggestion = MentionOptions['suggestion']
 
+const beginsWith = (text: string, query: string) =>
+  text.toLocaleLowerCase().startsWith(query.toLocaleLowerCase())
+
 // copied from https://tiptap.dev/api/nodes/mention#usage
 export const mentionSuggestion = (users: User[]): Suggestion => ({
   items: ({ query }) =>
-    users.filter((u) => searchInAny(query, u.username, u.name)).slice(0, 5),
+    orderBy(
+      users.filter((u) => searchInAny(query, u.username, u.name)),
+      [
+        (u) => [u.name, u.username].some((s) => beginsWith(s, query)),
+        'followerCountCached',
+      ],
+      ['desc', 'desc']
+    ).slice(0, 5),
   render: () => {
     let component: ReactRenderer
     let popup: ReturnType<typeof tippy>
