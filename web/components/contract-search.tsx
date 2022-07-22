@@ -238,7 +238,7 @@ export function ContractSearch(props: {
             selected={pillFilter === 'personal'}
             onSelect={selectFilter('personal')}
           >
-            {user ? 'For you' : 'Featured' }
+            {user ? 'For you' : 'Featured'}
           </PillButton>
 
           {user && (
