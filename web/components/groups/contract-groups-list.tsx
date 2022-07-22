@@ -1,4 +1,4 @@
-import { Group } from 'common/lib/group'
+import { Group } from 'common/group'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
