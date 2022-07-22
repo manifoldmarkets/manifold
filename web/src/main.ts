@@ -9,7 +9,7 @@ import moment from "moment";
 
 import Chart, { Point } from "./chart";
 
-import Manifold from "common/manifold-defs";
+import * as Manifold from "common/manifold-defs";
 import { getCanvasFont, getTextWidth } from "common/utils";
 import { FullBet } from "common/transaction";
 

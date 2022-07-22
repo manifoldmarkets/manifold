@@ -55,8 +55,9 @@ export default class Chart {
         const padding_px = 10;
         const xAxisHeight_px = 15;
         const yAxisWidth_px = 45;
-        const numXAxisLines = 5;
+        const numXAxisLines = 6;
         const numYAxisLines = 3;
+        const chartXTime_min = 10;
         const renderGridLines = false;
         
         const canvasWidth_px = this.canvasElement.width >> 0;
@@ -71,25 +72,25 @@ export default class Chart {
         grd.addColorStop(0, "rgba(73, 201, 159, 0.8)");
         grd.addColorStop(1, "rgba(73, 201, 159, 0.0)");
 
-        let minX = Number.MAX_VALUE;
-        let maxX = -Number.MAX_VALUE;
-        for (let dataIndex = 0; dataIndex < numDataPoints; dataIndex++) {
-            const dataPoint = this.data[dataIndex];
-            // if (dataPoint.x < minX) {
-            //     minX = dataPoint.x;
-            // }
-            if (dataPoint.x > maxX) {
-                maxX = dataPoint.x;
-            }
-        }
-        maxX = Date.now();
-        minX = maxX - 4 * 60 * 1000;
+        // let minX = Number.MAX_VALUE;
+        // let maxX = -Number.MAX_VALUE;
+        // for (let dataIndex = 0; dataIndex < numDataPoints; dataIndex++) {
+        //     const dataPoint = this.data[dataIndex];
+        //     // if (dataPoint.x < minX) {
+        //     //     minX = dataPoint.x;
+        //     // }
+        //     if (dataPoint.x > maxX) {
+        //         maxX = dataPoint.x;
+        //     }
+        // }
+        const maxX = Date.now();
+        const minX = maxX - chartXTime_min * 60 * 1000;
 
         // console.log(`Graph limits: [${minX/1000}, ${maxX/1000}]`)
 
         ctx.translate(padding_px + 0.5, padding_px + 0.5);
         {
-            // Draw Y-Axis labels:
+            // Draw Y-axis labels:
             ctx.fillStyle = "#FFF";
             ctx.font = "15px Readex Pro";
             for (let i = 0; i < numYAxisLines; i++) {
@@ -103,10 +104,11 @@ export default class Chart {
 
             ctx.translate(yAxisWidth_px, 0);
 
+            // Draw X-axis labels:
             ctx.translate(0, graphHeight_px);
             for (let i = 0; i < numXAxisLines; i++) {
                 const x = (i * graphWidth_px / (numXAxisLines - 1)) >> 0;
-                let labelText = (numXAxisLines - i - 1) + "m";
+                let labelText = (numXAxisLines - 1 - i) * chartXTime_min / (numXAxisLines - 1) + "m";
                 if (i == numXAxisLines - 1) {
                     labelText = "now";
                     const m = ctx.measureText(labelText);

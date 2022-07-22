@@ -6,10 +6,11 @@ import moment from "moment";
 import { Server } from "socket.io";
 import http from "http";
 
-import ManifoldAPI from "common/manifold-defs";
+import * as ManifoldAPI from "common/manifold-defs";
 import { FullBet } from "common/transaction";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
+const APIKey = "a7b63c2a-75ed-4794-b8fb-ca1c1d47cda9"; //!!!
 
 const regexpCommand = new RegExp(/!([a-zA-Z0-9]+)\s?(\S*)?/);
 
@@ -66,8 +67,6 @@ export default class App {
         //         }
         //         console.log("Loaded users.");
         //     });
-
-        this.getCurrentUserStake();
     }
 
     loadUser(userId: string) {
@@ -112,21 +111,72 @@ export default class App {
         console.log(`[${new Date().toLocaleTimeString()}] ${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
     }
 
-    getCurrentUserStake() {
-        fetch(`${APIBase}bets?market=this-is-a-local-market&username=PhilBladen`)
+    async getCurrentUserStake_shares(): Promise<{shares: number, outcome: "YES" | "NO"}> {
+        return fetch(`${APIBase}bets?market=this-is-a-local-market&username=PhilBladen`)
         .then(r => <Promise<ManifoldAPI.Bet[]>> r.json())
-        .then(r => {
+        .then(bets => {
             let total = 0;
-            for (const bet of r) {
-                total += bet.shares;
+            for (const bet of bets) {
+                // let amount = bet.amount;
+                // if (bet["fees"]) {
+                //     const fee = bet.fees.creatorFee + bet.fees.liquidityFee + bet.fees.platformFee;
+                //     // console.log("Paid fee: " + fee);
+                //     // if (amount > 0) {
+                //         amount -= fee;
+                //     // }
+                //     // else {
+                //         // amount += fee;
+                //     // }
+                // }
+                // total += amount;
+                if (bet.outcome == "YES") {
+                    total += bet.shares;
+                }
+                else {
+                    total -= bet.shares;
+                }
+                // console.log(bet.shares);
             }
-            console.log("Total stake: " + total);
+            return {shares: Math.abs(total), outcome: total > 0 ? "YES" : "NO"};
         });
     }
 
-    placeBet(amount: number, yes: boolean) {
-        const APIKey = "a7b63c2a-75ed-4794-b8fb-ca1c1d47cda9"; //!!!
+    //!!! Currently uses the 
+    async sellAllShares() {
+        const stake = await this.getCurrentUserStake_shares();
+        if (Math.abs(stake.shares) < 1) {
+            return;
+        }
 
+        try {
+            const requestData = {
+                contractId: "litD59HFH1eUx5sAGCNL",
+                outcome: stake.outcome,
+                shares: stake.shares,
+            }
+
+            console.log(requestData);
+    
+            const response = await fetch(`https://sellshares-w3txbmd3ba-uc.a.run.app`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Key ${APIKey}`
+                },
+                body: JSON.stringify(requestData),
+            });
+            if (response.status !== 200) {
+                const error = <{message: string}> await response.json();
+                throw new Error(error.message);
+            }
+            console.log("Shares sold successfully.");
+        }
+        catch (e) {
+            console.error(e);
+        }
+    }
+
+    placeBet(amount: number, yes: boolean) {
         const data = {
             amount: amount,
             contractId: "litD59HFH1eUx5sAGCNL", //!!!
@@ -189,30 +239,9 @@ export default class App {
                 },
             },
             sell: {
-                response: (username: string, argument: string) => { // This needs to look at the currently owned shares by the user and calculate yes or no from that
-                    if (argument.startsWith("yes")) {
-                        try {
-                            const value = Number.parseInt(argument.substring(3));
-                            if (isNaN(value)) {
-                                return null; //!!!
-                            }
-
-                            this.placeBet(value, false);
-                        } catch (e) {
-                            //
-                        }
-                    } else if (argument.startsWith("no")) {
-                        try {
-                            const value = Number.parseInt(argument.substring(2));
-                            if (isNaN(value)) {
-                                return null; //!!!
-                            }
-
-                            this.placeBet(value, true);
-                        } catch (e) {
-                            //
-                        }
-                    }
+                response: () => { //!!! This needs to look at the currently owned shares by the user and calculate yes or no from that
+                    this.sellAllShares();
+                    return null;
                 },
             },
             balance: {

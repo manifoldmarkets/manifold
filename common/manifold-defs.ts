@@ -1,5 +1,5 @@
 /* Pulled from https://docs.manifold.markets/api on 19/07/2022 */
-namespace Manifold {
+// namespace Manifold {
     // Information about a market, but without bets or comments
     export type LiteMarket = {
         // Unique identifer for this market
@@ -74,6 +74,11 @@ namespace Manifold {
         //!!! Added by Phil:
         userId: string;
         isRedemption: boolean;
+        fees?: {
+            creatorFee: number,
+            platformFee: number,
+            liquidityFee: number,
+        }
     };
 
     export type LiteUser = {
@@ -97,6 +102,6 @@ namespace Manifold {
         totalPnLCached: number;
         creatorVolumeCached: number;
     };
-}
+// }
 
-export default Manifold;
+// export default Manifold;
