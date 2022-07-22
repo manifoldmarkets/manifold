@@ -109,11 +109,11 @@ export const useGroupsWithContract = (contract: Contract) => {
   const [groups, setGroups] = useState<Group[]>([])
 
   useEffect(() => {
-    if (contract.groupSlugs)
-      listGroups(uniq(contract.groupSlugs)).then((groups) =>
+    if (contract.groupLinks)
+      listGroups(uniq(contract.groupLinks.map((g) => g.slug))).then((groups) =>
         setGroups(filterDefined(groups))
       )
-  }, [contract.groupSlugs])
+  }, [contract.groupLinks])
 
   return groups
 }

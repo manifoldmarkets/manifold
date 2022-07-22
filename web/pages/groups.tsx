@@ -1,4 +1,4 @@
-import { sortBy, debounce } from 'lodash'
+import { debounce, sortBy } from 'lodash'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { Group } from 'common/group'
@@ -238,7 +238,7 @@ function GroupMembersList(props: { group: Group }) {
   )
 }
 
-export function GroupLink(props: { group: Group; className?: string }) {
+export function GroupLinkItem(props: { group: Group; className?: string }) {
   const { group, className } = props
 
   return (

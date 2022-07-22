@@ -1,4 +1,4 @@
-import { take, sortBy, debounce } from 'lodash'
+import { debounce, sortBy, take } from 'lodash'
 import PlusSmIcon from '@heroicons/react/solid/PlusSmIcon'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
@@ -6,11 +6,11 @@ import { Page } from 'web/components/page'
 import { listAllBets } from 'web/lib/firebase/bets'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
-  groupPath,
-  getGroupBySlug,
-  updateGroup,
-  joinGroup,
   addContractToGroup,
+  getGroupBySlug,
+  groupPath,
+  joinGroup,
+  updateGroup,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
@@ -543,7 +543,7 @@ function AddContractButton(props: { group: Group; user: User }) {
   const [open, setOpen] = useState(false)
 
   async function addContractToCurrentGroup(contract: Contract) {
-    await addContractToGroup(group, contract)
+    await addContractToGroup(group, contract, user.id)
     setOpen(false)
   }
 
