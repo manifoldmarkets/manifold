@@ -432,7 +432,7 @@ function LimitOrderPanel(props: {
           }),
         ])
       : placeBet({
-          betChoice: hasYesLimitBet ? 'YES' : 'NO',
+          outcome: hasYesLimitBet ? 'YES' : 'NO',
           amount: betAmount,
           contractId: contract.id,
           limitProb: hasYesLimitBet ? yesLimitProb : noLimitProb,
