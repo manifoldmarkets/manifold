@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import React from 'react'
@@ -16,6 +17,7 @@ export const CreateQuestionButton = (props: {
     'from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700'
 
   const { user, overrideText, className, query } = props
+  const router = useRouter()
   return (
     <div className={clsx('flex justify-center', className)}>
       {user ? (
@@ -26,7 +28,12 @@ export const CreateQuestionButton = (props: {
         </Link>
       ) : (
         <button
-          onClick={firebaseLogin}
+          onClick={async () => {
+            // login, and then reload the page, to hit any SSR redirect (e.g.
+            // redirecting from / to /home for logged in users)
+            await firebaseLogin()
+            router.replace(router.asPath)
+          }}
           className={clsx(gradient, createButtonStyle)}
         >
           Sign in

@@ -11,7 +11,7 @@ import {
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import Router, { useRouter } from 'next/router'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
@@ -30,6 +30,13 @@ import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
 import { PrivateUser } from 'common/user'
 import { useWindowSize } from 'web/hooks/use-window-size'
+
+const logout = async () => {
+  // log out, and then reload the page, in case SSR wants to boot them out
+  // of whatever logged-in-only area of the site they might be in
+  await withTracking(firebaseLogout, 'sign out')()
+  await Router.replace(Router.asPath)
+}
 
 function getNavigation() {
   return [
@@ -71,7 +78,7 @@ function getMoreNavigation(user?: User | null) {
     {
       name: 'Sign out',
       href: '#',
-      onClick: withTracking(firebaseLogout, 'sign out'),
+      onClick: logout,
     },
   ]
 }
@@ -122,7 +129,7 @@ function getMoreMobileNav() {
     {
       name: 'Sign out',
       href: '#',
-      onClick: withTracking(firebaseLogout, 'sign out'),
+      onClick: logout,
     },
   ]
 }
