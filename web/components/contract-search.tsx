@@ -238,16 +238,18 @@ export function ContractSearch(props: {
             selected={pillFilter === 'personal'}
             onSelect={selectFilter('personal')}
           >
-            For you
+            {user ? 'For you' : 'Featured' }
           </PillButton>
 
-          <PillButton
-            key={'your-bets'}
-            selected={pillFilter === 'your-bets'}
-            onSelect={selectFilter('your-bets')}
-          >
-            Your bets
-          </PillButton>
+          {user && (
+            <PillButton
+              key={'your-bets'}
+              selected={pillFilter === 'your-bets'}
+              onSelect={selectFilter('your-bets')}
+            >
+              Your bets
+            </PillButton>
+          )}
 
           {pillGroups.map(({ name, slug }) => {
             return (
