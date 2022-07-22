@@ -20,7 +20,13 @@ import { APIError, placeBet } from 'web/lib/firebase/api'
 import { sellShares } from 'web/lib/firebase/api'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
-import { BinaryOutcomeLabel, HigherLabel, LowerLabel } from './outcome-label'
+import {
+  BinaryOutcomeLabel,
+  HigherLabel,
+  LowerLabel,
+  NoLabel,
+  YesLabel,
+} from './outcome-label'
 import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -366,12 +372,12 @@ function LimitOrderPanel(props: {
     (highLimitProb !== undefined &&
       (highLimitProb <= 0 || highLimitProb >= 100))
 
-  const initialLow = initialProb * 0.9
-  const initialHigh = initialProb + (1 - initialProb) * 0.1
-  const lowPlaceholder = Math.round(
+  const initialLow = initialProb * 0.85
+  const initialHigh = initialProb + (1 - initialProb) * 0.15
+  const lowPlaceholder = Math.floor(
     isPseudoNumeric ? getMappedValue(contract)(initialLow) : initialLow * 100
   ).toString()
-  const highPlaceholder = Math.round(
+  const highPlaceholder = Math.ceil(
     isPseudoNumeric ? getMappedValue(contract)(initialHigh) : initialHigh * 100
   ).toString()
 
@@ -514,14 +520,11 @@ function LimitOrderPanel(props: {
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
-      <div className="my-3 text-sm text-gray-500">
-        Bet when the {isPseudoNumeric ? 'value' : 'probability'} reaches Low
-        and/or High limit.
-      </div>
-
-      <Row className="items-center gap-4">
+      <Row className="mt-1 items-center gap-4">
         <Col className="gap-2">
-          <div className="ml-1 text-sm text-gray-500">Low</div>
+          <div className="relative ml-1 text-sm text-gray-500">
+            Bet <YesLabel /> at
+          </div>
           <ProbabilityOrNumericInput
             contract={contract}
             prob={lowLimitProb}
@@ -531,7 +534,9 @@ function LimitOrderPanel(props: {
           />
         </Col>
         <Col className="gap-2">
-          <div className="ml-1 text-sm text-gray-500">High</div>
+          <div className="ml-1 text-sm text-gray-500">
+            Bet <NoLabel /> at
+          </div>
           <ProbabilityOrNumericInput
             contract={contract}
             prob={highLimitProb}
@@ -544,7 +549,7 @@ function LimitOrderPanel(props: {
 
       {rangeError && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
-          Low limit must be less than High limit
+          YES limit must be less than NO limit
         </div>
       )}
       {outOfRangeError && (
@@ -574,7 +579,7 @@ function LimitOrderPanel(props: {
               ) : (
                 <BinaryOutcomeLabel outcome={'YES'} />
               )}{' '}
-              current fill
+              filled now
             </div>
             <div className="mr-2 whitespace-nowrap">
               {formatMoney(yesBet.amount)} of{' '}
@@ -590,7 +595,7 @@ function LimitOrderPanel(props: {
               ) : (
                 <BinaryOutcomeLabel outcome={'NO'} />
               )}{' '}
-              current fill
+              filled now
             </div>
             <div className="mr-2 whitespace-nowrap">
               {formatMoney(noBet.amount)} of{' '}
