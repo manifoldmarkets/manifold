@@ -37,7 +37,6 @@ export function CreateLinksButton(props: {
                 message: newManalink.message,
               })
               setHighlightedSlug(slug || '')
-              setTimeout(() => setHighlightedSlug(''), 3700)
             }}
           />
         </Col>
@@ -165,6 +164,7 @@ function CreateManalinkForm(props: {
               <label className="label">Message</label>
               <Textarea
                 placeholder={defaultMessage}
+                maxLength={200}
                 className="input input-bordered resize-none"
                 autoFocus
                 value={newManalink.message}
