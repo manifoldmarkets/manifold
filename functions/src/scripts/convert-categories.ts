@@ -17,6 +17,7 @@ initAdmin()
 
 const adminFirestore = admin.firestore()
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const addGroupIdToContracts = async () => {
   const groups = await getValues<Group>(adminFirestore.collection('groups'))
   const contracts = await getValues<Contract>(

@@ -23,6 +23,7 @@ import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
 import { SiteLink } from 'web/components/site-link'
 import { User } from 'common/user'
+import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
   const txns = await getAllCharityTxns()
@@ -114,6 +115,11 @@ export default function Charity(props: {
 
   return (
     <Page>
+      <SEO
+        title="Manifold for Charity"
+        description="Donate your prediction market earnings to charity on Manifold."
+        url="/charity"
+      />
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
           <Title className="!mt-0" text="Manifold for Charity" />
@@ -128,6 +134,9 @@ export default function Charity(props: {
             </SiteLink>
             !
           </span> */}
+          <span className="text-gray-600">
+            Convert your M$ earnings into real charitable donations.
+          </span>
           <DonatedStats
             stats={[
               {

@@ -5,6 +5,7 @@ import { Col } from 'web/components/layout/col'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { SEO } from 'web/components/SEO'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   // These hardcoded markets will be shown in the frontpage for signed-out users:
@@ -30,6 +31,11 @@ export default function Home(props: { hotContracts: Contract[] }) {
 
   return (
     <Page>
+      <SEO
+        title="Manifold Markets"
+        description="Create a play-money prediction market on any topic you care about
+            and bet with your friends on what will happen!"
+      />
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
         <ManifoldLogo />
       </div>

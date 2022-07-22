@@ -492,7 +492,7 @@ function GroupLeaderboards(props: {
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => traderScores[user.id] ?? 0}
-              title="🏅 Top bettors"
+              title="🏅 Top traders"
               header="Profit"
               maxToShow={maxToShow}
             />
@@ -508,7 +508,7 @@ function GroupLeaderboards(props: {
           <>
             <Leaderboard
               className="max-w-xl"
-              title="🏅 Top bettors"
+              title="🏅 Top traders"
               users={topTraders}
               columns={[
                 {
