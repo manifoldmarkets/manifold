@@ -14,18 +14,11 @@ const addGroupIdToContracts = async () => {
   const groups = await getValues<Group>(adminFirestore.collection('groups'))
 
   for (const group of groups) {
-    const contracts = await getValues<Contract>(
+    const groupContracts = await getValues<Contract>(
       adminFirestore
         .collection('contracts')
         .where('groupSlugs', 'array-contains', group.slug)
     )
-    const groupContracts = contracts.filter((contract) =>
-      group.contractIds.includes(contract.id)
-    )
-    if (groupContracts.length !== contracts.length)
-      console.log(
-        `Found ${groupContracts.length} contracts for group ${group.slug}`
-      )
 
     for (const contract of groupContracts) {
       const oldGroupLinks = contract.groupLinks?.filter(
