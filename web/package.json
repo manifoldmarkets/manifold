@@ -31,6 +31,7 @@
     "@tiptap/react": "2.0.0-beta.114",
     "@tiptap/starter-kit": "2.0.0-beta.190",
     "algoliasearch": "4.13.0",
+    "browser-image-compression": "2.0.0",
     "clsx": "1.1.1",
     "cors": "2.8.5",
     "daisyui": "1.16.4",
