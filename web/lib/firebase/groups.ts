@@ -187,6 +187,7 @@ export async function setContractGroupLinks(
   userId: string
 ) {
   await updateContract(contractId, {
+    groupSlugs: [group.slug],
     groupLinks: [
       {
         groupId: group.id,
