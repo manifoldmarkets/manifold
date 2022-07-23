@@ -20,6 +20,7 @@ import { exhibitExts } from 'common/util/parse'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
+import { CodeIcon, PhotographIcon } from '@heroicons/react/solid'
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
@@ -36,7 +37,7 @@ export function useTextEditor(props: {
 
   const editorClass = clsx(
     proseClass,
-    'box-content min-h-[6em] textarea textarea-bordered text-base'
+    'min-h-[6em] resize-none outline-none border-none pt-3 px-4 focus:ring-0'
   )
 
   const editor = useEditor({
@@ -105,7 +106,7 @@ export function TextEditor(props: {
   return (
     <>
       {/* hide placeholder when focused */}
-      <div className="w-full [&:focus-within_p.is-empty]:before:content-none">
+      <div className="relative w-full [&:focus-within_p.is-empty]:before:content-none">
         {editor && (
           <FloatingMenu
             editor={editor}
@@ -121,7 +122,40 @@ export function TextEditor(props: {
             images!
           </FloatingMenu>
         )}
-        <EditorContent editor={editor} />
+        <div className="overflow-hidden rounded-lg border border-gray-300 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+          <EditorContent editor={editor} />
+          {/* Spacer element to match the height of the toolbar */}
+          <div className="py-2" aria-hidden="true">
+            {/* Matches height of button in toolbar (1px border + 36px content height) */}
+            <div className="py-px">
+              <div className="h-9" />
+            </div>
+          </div>
+        </div>
+
+        {/* Toolbar, with buttons for image and embeds */}
+        <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
+          <div className="flex items-center space-x-5">
+            <div className="flex items-center">
+              <FileUploadButton
+                onFiles={upload.mutate}
+                className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
+              >
+                <PhotographIcon className="h-5 w-5" aria-hidden="true" />
+                <span className="sr-only">Upload an image</span>
+              </FileUploadButton>
+            </div>
+            <div className="flex items-center">
+              <button
+                type="button"
+                className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
+              >
+                <CodeIcon className="h-5 w-5" aria-hidden="true" />
+                <span className="sr-only">Embed an iframe</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       {upload.isLoading && <span className="text-xs">Uploading image...</span>}
       {upload.isError && (
