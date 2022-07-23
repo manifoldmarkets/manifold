@@ -142,6 +142,13 @@ export const computeFills = (
   limitProb: number | undefined,
   unfilledBets: LimitBet[]
 ) => {
+  if (isNaN(betAmount)) {
+    throw new Error('Invalid bet amount: ${betAmount}')
+  }
+  if (isNaN(limitProb ?? 0)) {
+    throw new Error('Invalid limitProb: ${limitProb}')
+  }
+
   const sortedBets = sortBy(
     unfilledBets.filter((bet) => bet.outcome !== outcome),
     (bet) => (outcome === 'YES' ? bet.limitProb : -bet.limitProb),

@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
-import { partition, sum, sumBy } from 'lodash'
+import { clamp, partition, sum, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
@@ -385,20 +385,22 @@ function LimitOrderPanel(props: {
     (!hasYesLimitBet && !hasNoLimitBet)
 
   const yesLimitProb =
-    lowLimitProb === undefined ? undefined : lowLimitProb / 100
+    lowLimitProb === undefined ? undefined : clamp(lowLimitProb, 0.001, 0.999)
   const noLimitProb =
-    highLimitProb === undefined ? undefined : highLimitProb / 100
+    highLimitProb === undefined ? undefined : clamp(highLimitProb, 0.001, 0.999)
 
+  const amount = betAmount ?? 0
   const shares =
     yesLimitProb !== undefined && noLimitProb !== undefined
-      ? Math.min(
-          (betAmount ?? 0) / yesLimitProb,
-          (betAmount ?? 0) / (1 - noLimitProb)
-        )
-      : (betAmount ?? 0) / (yesLimitProb ?? 1 - (noLimitProb ?? 1))
+      ? Math.min(amount / yesLimitProb, amount / (1 - noLimitProb))
+      : yesLimitProb !== undefined
+      ? amount / yesLimitProb
+      : noLimitProb !== undefined
+      ? amount / (1 - noLimitProb)
+      : 0
 
   const yesAmount = shares * (yesLimitProb ?? 1)
-  const noAmount = shares * (1 - (noLimitProb ?? 1))
+  const noAmount = shares * (1 - (noLimitProb ?? 0))
 
   const profitIfBothFilled = shares - (yesAmount + noAmount)
 
@@ -490,7 +492,7 @@ function LimitOrderPanel(props: {
     'YES',
     yesAmount,
     contract,
-    Math.min(yesLimitProb ?? initialProb, 0.999),
+    yesLimitProb ?? initialProb,
     unfilledBets as LimitBet[]
   )
   const yesReturnPercent = formatPercent(yesReturn)
@@ -504,7 +506,7 @@ function LimitOrderPanel(props: {
     'NO',
     noAmount,
     contract,
-    Math.max(noLimitProb ?? initialProb, 0.01),
+    noLimitProb ?? initialProb,
     unfilledBets as LimitBet[]
   )
   const noReturnPercent = formatPercent(noReturn)
@@ -536,15 +538,15 @@ function LimitOrderPanel(props: {
         </Col>
       </Row>
 
-      {rangeError && (
-        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
-          {isPseudoNumeric ? 'HIGHER' : 'YES'} limit must be less than{' '}
-          {isPseudoNumeric ? 'LOWER' : 'NO'} limit
-        </div>
-      )}
       {outOfRangeError && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
           Limit is out of range
+        </div>
+      )}
+      {rangeError && !outOfRangeError && (
+        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+          {isPseudoNumeric ? 'HIGHER' : 'YES'} limit must be less than{' '}
+          {isPseudoNumeric ? 'LOWER' : 'NO'} limit
         </div>
       )}
 

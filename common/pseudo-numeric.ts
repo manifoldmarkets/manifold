@@ -37,6 +37,9 @@ export const getPseudoProbability = (
   max: number,
   isLogScale = false
 ) => {
+  if (value < min) return 0
+  if (value > max) return 1
+
   if (isLogScale) {
     return Math.log10(value - min + 1) / Math.log10(max - min + 1)
   }
