@@ -385,9 +385,13 @@ function LimitOrderPanel(props: {
     (!hasYesLimitBet && !hasNoLimitBet)
 
   const yesLimitProb =
-    lowLimitProb === undefined ? undefined : clamp(lowLimitProb, 0.001, 0.999)
+    lowLimitProb === undefined
+      ? undefined
+      : clamp(lowLimitProb / 100, 0.001, 0.999)
   const noLimitProb =
-    highLimitProb === undefined ? undefined : clamp(highLimitProb, 0.001, 0.999)
+    highLimitProb === undefined
+      ? undefined
+      : clamp(highLimitProb / 100, 0.001, 0.999)
 
   const amount = betAmount ?? 0
   const shares =
