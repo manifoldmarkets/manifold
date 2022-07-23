@@ -3,7 +3,6 @@ import imageCompression from 'browser-image-compression'
 import { nanoid } from 'nanoid'
 import { storage } from './init'
 
-// TODO: compress large images
 export const uploadImage = async (
   username: string,
   file: File,
