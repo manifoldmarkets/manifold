@@ -12,7 +12,6 @@ import {
   Contract,
   contractMetrics,
   contractPath,
-  contractPool,
   updateContract,
 } from 'web/lib/firebase/contracts'
 import dayjs from 'dayjs'
