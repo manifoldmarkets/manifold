@@ -62,4 +62,6 @@ const visuallyHiddenStyle = {
   position: 'absolute',
   width: 1,
   whiteSpace: 'nowrap',
+  userSelect: 'none',
+  visibility: 'hidden',
 } as const
