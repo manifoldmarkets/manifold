@@ -130,15 +130,15 @@ export function ContractSearch(props: {
         : '',
       additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
       additionalFilter?.groupSlug
-        ? `groupSlugs:${additionalFilter.groupSlug}`
+        ? `groupLinks.slug:${additionalFilter.groupSlug}`
         : '',
       pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
-        ? `groupSlugs:${pillFilter}`
+        ? `groupLinks.slug:${pillFilter}`
         : '',
       pillFilter === 'personal'
         ? // Show contracts in groups that the user is a member of
           memberGroupSlugs
-            .map((slug) => `groupSlugs:${slug}`)
+            .map((slug) => `groupLinks.slug:${slug}`)
             // Show contracts created by users the user follows
             .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
             // Show contracts bet on by users the user follows
