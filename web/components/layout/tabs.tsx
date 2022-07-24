@@ -38,7 +38,6 @@ export function UncontrolledTabs(props: TabProps & { activeIndex: number }) {
           {tabs.map((tab, i) => (
             <Link href="#" key={tab.title} shallow={false}>
               <a
-                id={`tab-${i}`}
                 key={tab.title}
                 onClick={(e) => {
                   e.preventDefault()
