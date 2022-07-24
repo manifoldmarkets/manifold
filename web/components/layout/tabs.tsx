@@ -9,8 +9,6 @@ type Tab = {
   title: string
   tabIcon?: ReactNode
   content: ReactNode
-  // If set, change the url to this href when the tab is selected
-  href?: string
   // If set, show a badge with this content
   badge?: string
 }
@@ -33,25 +31,21 @@ export function UncontrolledTabs(props: TabProps & { activeIndex: number }) {
     currentPageForAnalytics,
   } = props
   const activeTab = tabs[activeIndex] as Tab | undefined // can be undefined in weird case
-
   return (
     <>
       <div className={clsx('mb-4 border-b border-gray-200', className)}>
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           {tabs.map((tab, i) => (
-            <Link href={tab.href ?? '#'} key={tab.title} shallow={!!tab.href}>
+            <Link href="#" key={tab.title} shallow={false}>
               <a
                 id={`tab-${i}`}
                 key={tab.title}
                 onClick={(e) => {
+                  e.preventDefault()
                   track('Clicked Tab', {
                     title: tab.title,
-                    href: tab.href,
                     currentPage: currentPageForAnalytics,
                   })
-                  if (!tab.href) {
-                    e.preventDefault()
-                  }
                   onClick?.(tab.title, i)
                 }}
                 className={clsx(
