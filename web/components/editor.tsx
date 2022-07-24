@@ -22,6 +22,7 @@ import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 import { useUsers } from 'web/hooks/use-users'
 import { mentionSuggestion } from './editor/mention-suggestion'
+import { DisplayMention } from './editor/mention'
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
@@ -62,16 +63,7 @@ export function useTextEditor(props: {
             class: clsx('no-underline !text-indigo-700', linkClass),
           },
         }),
-        Mention.configure({
-          HTMLAttributes: {
-            class: clsx('not-prose text-indigo-700', linkClass),
-          },
-          renderLabel: ({ options, node }) =>
-            [
-              'a',
-              { href: node.attrs.label },
-              `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`,
-            ] as any,
+        DisplayMention.configure({
           suggestion: mentionSuggestion(users),
         }),
       ],
@@ -163,7 +155,11 @@ function RichContent(props: { content: JSONContent }) {
   const { content } = props
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },
-    extensions: exhibitExts,
+    extensions: [
+      // replace tiptap's Mention with ours, to add style and link
+      ...exhibitExts.filter((ex) => ex.name !== Mention.name),
+      DisplayMention,
+    ],
     content,
     editable: false,
   })
