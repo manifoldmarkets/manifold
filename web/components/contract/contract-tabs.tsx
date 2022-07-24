@@ -9,6 +9,7 @@ import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { LiquidityProvision } from 'common/liquidity-provision'
+import { useComments } from 'web/hooks/use-comments'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -18,10 +19,14 @@ export function ContractTabs(props: {
   comments: Comment[]
   tips: CommentTipMap
 }) {
-  const { contract, user, bets, comments, tips, liquidityProvisions } = props
+  const { contract, user, bets, tips, liquidityProvisions } = props
   const { outcomeType } = contract
 
   const userBets = user && bets.filter((bet) => bet.userId === user.id)
+
+  // Load comments here, so the badge count will be correct
+  const updatedComments = useComments(contract.id)
+  const comments = updatedComments ?? props.comments
 
   const betActivity = (
     <ContractActivity
@@ -89,8 +94,12 @@ export function ContractTabs(props: {
     <Tabs
       currentPageForAnalytics={'contract'}
       tabs={[
-        { title: 'Comments', content: commentActivity },
-        { title: 'Bets', content: betActivity },
+        {
+          title: 'Comments',
+          content: commentActivity,
+          badge: `${comments.length}`,
+        },
+        { title: 'Bets', content: betActivity, badge: `${bets.length}` },
         ...(!user || !userBets?.length
           ? []
           : [{ title: 'Your bets', content: yourTrades }]),
