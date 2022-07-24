@@ -120,7 +120,7 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
 
   let group = null
   if (groupId) {
-    const groupDocRef = await firestore.collection('groups').doc(groupId)
+    const groupDocRef = firestore.collection('groups').doc(groupId)
     const groupDoc = await groupDocRef.get()
     if (!groupDoc.exists) {
       throw new APIError(400, 'No group exists with the given group ID.')

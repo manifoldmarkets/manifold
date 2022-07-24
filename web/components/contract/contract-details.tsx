@@ -12,7 +12,6 @@ import {
   Contract,
   contractMetrics,
   contractPath,
-  contractPool,
   updateContract,
 } from 'web/lib/firebase/contracts'
 import dayjs from 'dayjs'
@@ -55,10 +54,6 @@ export function MiscDetails(props: {
     groupLinks,
   } = contract
 
-  // Show at most one category that this contract is tagged by
-  // const categories = CATEGORY_LIST.filter((category) =>
-  //   tags.map((t) => t.toLowerCase()).includes(category)
-  // ).slice(0, 1)
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
 
   return (
@@ -80,14 +75,11 @@ export function MiscDetails(props: {
           {fromNow(resolutionTime || 0)}
         </Row>
       ) : volume > 0 || !isNew ? (
-        <Row className={'shrink-0'}>{contractPool(contract)} pool</Row>
+        <Row className={'shrink-0'}>{formatMoney(contract.volume)} bet</Row>
       ) : (
         <NewContractBadge />
       )}
 
-      {/*{categories.length > 0 && (*/}
-      {/*  <TagsList className="text-gray-400" tags={categories} noLabel />*/}
-      {/*)}*/}
       {groupLinks && groupLinks.length > 0 && (
         <SiteLink
           href={groupPath(groupLinks[0].slug)}
