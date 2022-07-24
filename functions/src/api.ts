@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin'
-import { logger } from 'firebase-functions/v2'
-import { HttpsOptions, onRequest, Request } from 'firebase-functions/v2/https'
+import { Request, RequestHandler, Response } from 'express'
+import { error } from 'firebase-functions/logger'
+import { HttpsOptions } from 'firebase-functions/v2/https'
 import { log } from './utils'
 import { z } from 'zod'
 import { APIError } from '../../common/api'
@@ -45,7 +46,7 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
         return { kind: 'jwt', data: await auth.verifyIdToken(payload) }
       } catch (err) {
         // This is somewhat suspicious, so get it into the firebase console
-        logger.error('Error verifying Firebase JWT: ', err)
+        error('Error verifying Firebase JWT: ', err)
         throw new APIError(403, 'Error validating token.')
       }
     case 'Key':
@@ -83,6 +84,11 @@ export const zTimestamp = () => {
   }, z.date())
 }
 
+export type EndpointDefinition = {
+  opts: EndpointOptions & { method: string }
+  handler: RequestHandler
+}
+
 export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
   const result = schema.safeParse(val)
   if (!result.success) {
@@ -99,12 +105,12 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
   }
 }
 
-interface EndpointOptions extends HttpsOptions {
-  methods?: string[]
+export interface EndpointOptions extends HttpsOptions {
+  method?: string
 }
 
 const DEFAULT_OPTS = {
-  methods: ['POST'],
+  method: 'POST',
   minInstances: 1,
   concurrency: 100,
   memory: '2GiB',
@@ -113,28 +119,29 @@ const DEFAULT_OPTS = {
 }
 
 export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
-  const opts = Object.assign(endpointOpts, DEFAULT_OPTS)
-  return onRequest(opts, async (req, res) => {
-    log('Request processing started.')
-    try {
-      if (!opts.methods.includes(req.method)) {
-        const allowed = opts.methods.join(', ')
-        throw new APIError(405, `This endpoint supports only ${allowed}.`)
-      }
-      const authedUser = await lookupUser(await parseCredentials(req))
-      log('User credentials processed.')
-      res.status(200).json(await fn(req, authedUser))
-    } catch (e) {
-      if (e instanceof APIError) {
-        const output: { [k: string]: unknown } = { message: e.message }
-        if (e.details != null) {
-          output.details = e.details
+  const opts = Object.assign({}, DEFAULT_OPTS, endpointOpts)
+  return {
+    opts,
+    handler: async (req: Request, res: Response) => {
+      log(`${req.method} ${req.url} ${JSON.stringify(req.body)}`)
+      try {
+        if (opts.method !== req.method) {
+          throw new APIError(405, `This endpoint supports only ${opts.method}.`)
         }
-        res.status(e.code).json(output)
-      } else {
-        logger.error(e)
-        res.status(500).json({ message: 'An unknown error occurred.' })
+        const authedUser = await lookupUser(await parseCredentials(req))
+        res.status(200).json(await fn(req, authedUser))
+      } catch (e) {
+        if (e instanceof APIError) {
+          const output: { [k: string]: unknown } = { message: e.message }
+          if (e.details != null) {
+            output.details = e.details
+          }
+          res.status(e.code).json(output)
+        } else {
+          error(e)
+          res.status(500).json({ message: 'An unknown error occurred.' })
+        }
       }
-    }
-  })
+    },
+  } as EndpointDefinition
 }
