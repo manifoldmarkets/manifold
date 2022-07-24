@@ -280,9 +280,9 @@ export function UserPage(props: { user: User; currentUser?: User }) {
                 title: 'Markets',
                 content: <CreatorContractsList creator={user} />,
                 tabIcon: (
-                  <div className="px-0.5 font-bold">
+                  <span className="px-0.5 font-bold">
                     {usersContracts.length}
-                  </div>
+                  </span>
                 ),
               },
               {
@@ -295,7 +295,9 @@ export function UserPage(props: { user: User; currentUser?: User }) {
                   />
                 ),
                 tabIcon: (
-                  <div className="px-0.5 font-bold">{usersComments.length}</div>
+                  <span className="px-0.5 font-bold">
+                    {usersComments.length}
+                  </span>
                 ),
               },
               {
@@ -313,7 +315,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
                     />
                   </div>
                 ),
-                tabIcon: <div className="px-0.5 font-bold">{betCount}</div>,
+                tabIcon: <span className="px-0.5 font-bold">{betCount}</span>,
               },
             ]}
           />
