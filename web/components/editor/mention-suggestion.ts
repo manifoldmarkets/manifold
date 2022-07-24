@@ -1,6 +1,6 @@
 import type { MentionOptions } from '@tiptap/extension-mention'
 import { ReactRenderer } from '@tiptap/react'
-import { User } from 'common/lib/user'
+import { User } from 'common/user'
 import { searchInAny } from 'common/util/parse'
 import { orderBy } from 'lodash'
 import tippy from 'tippy.js'
