@@ -66,10 +66,18 @@ export const getServiceAccountCredentials = (env?: string) => {
 }
 
 export const initAdmin = (env?: string) => {
-  const serviceAccount = getServiceAccountCredentials(env)
-  console.log(`Initializing connection to ${serviceAccount.project_id}...`)
-  return admin.initializeApp({
-    projectId: serviceAccount.project_id,
-    credential: admin.credential.cert(serviceAccount),
-  })
+  try {
+    const serviceAccount = getServiceAccountCredentials(env)
+    console.log(
+      `Initializing connection to ${serviceAccount.project_id} Firebase...`
+    )
+    return admin.initializeApp({
+      projectId: serviceAccount.project_id,
+      credential: admin.credential.cert(serviceAccount),
+    })
+  } catch (err) {
+    console.error(err)
+    console.log(`Initializing connection to default Firebase...`)
+    return admin.initializeApp()
+  }
 }
