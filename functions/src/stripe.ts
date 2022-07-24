@@ -100,9 +100,10 @@ export const stripewebhook: EndpointDefinition = {
     let event
 
     try {
-      console.log(typeof req.body, req.body)
+      // Cloud Functions jam the raw body into a special `rawBody` property
+      const rawBody = (req as any).rawBody ?? req.body
       event = stripe.webhooks.constructEvent(
-        req.body,
+        rawBody,
         req.headers['stripe-signature'] as string,
         process.env.STRIPE_WEBHOOKSECRET as string
       )

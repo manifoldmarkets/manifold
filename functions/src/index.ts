@@ -46,7 +46,7 @@ import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
-  onRequest(opts, handler as any)
+  return onRequest(opts, handler as any)
 }
 const healthFunction = toCloudFunction(health)
 const transactFunction = toCloudFunction(transact)

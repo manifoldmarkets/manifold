@@ -1,6 +1,6 @@
 import * as cors from 'cors'
 import * as express from 'express'
-import { Express } from 'express'
+import { Express, Request, Response, NextFunction } from 'express'
 import { EndpointDefinition } from './api'
 
 const PORT = 8088
@@ -26,34 +26,43 @@ import { resolvemarket } from './resolve-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
 
+type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
 
-const addEndpointRoute = (name: string, endpoint: EndpointDefinition) => {
+const addEndpointRoute = (
+  path: string,
+  endpoint: EndpointDefinition,
+  ...middlewares: Middleware[]
+) => {
   const method = endpoint.opts.method.toLowerCase() as keyof Express
   const corsMiddleware = cors({ origin: endpoint.opts.cors })
-  const middleware = [express.json(), corsMiddleware]
-  app.options(name, corsMiddleware) // preflight requests
-  app[method](name, ...middleware, endpoint.handler)
+  const allMiddleware = [...middlewares, corsMiddleware]
+  app.options(path, corsMiddleware) // preflight requests
+  app[method](path, ...allMiddleware, endpoint.handler)
+}
+
+const addJsonEndpointRoute = (name: string, endpoint: EndpointDefinition) => {
+  addEndpointRoute(name, endpoint, express.json())
 }
 
 addEndpointRoute('/health', health)
-addEndpointRoute('/transact', transact)
-addEndpointRoute('/changeuserinfo', changeuserinfo)
-addEndpointRoute('/createuser', createuser)
-addEndpointRoute('/createanswer', createanswer)
-addEndpointRoute('/placebet', placebet)
-addEndpointRoute('/cancelbet', cancelbet)
-addEndpointRoute('/sellbet', sellbet)
-addEndpointRoute('/sellshares', sellshares)
-addEndpointRoute('/claimmanalink', claimmanalink)
-addEndpointRoute('/createmarket', createmarket)
-addEndpointRoute('/addliquidity', addliquidity)
-addEndpointRoute('/withdrawliquidity', withdrawliquidity)
-addEndpointRoute('/creategroup', creategroup)
-addEndpointRoute('/resolvemarket', resolvemarket)
-addEndpointRoute('/unsubscribe', unsubscribe)
-addEndpointRoute('/stripewebhook', stripewebhook)
-addEndpointRoute('/createcheckoutsession', createcheckoutsession)
+addJsonEndpointRoute('/transact', transact)
+addJsonEndpointRoute('/changeuserinfo', changeuserinfo)
+addJsonEndpointRoute('/createuser', createuser)
+addJsonEndpointRoute('/createanswer', createanswer)
+addJsonEndpointRoute('/placebet', placebet)
+addJsonEndpointRoute('/cancelbet', cancelbet)
+addJsonEndpointRoute('/sellbet', sellbet)
+addJsonEndpointRoute('/sellshares', sellshares)
+addJsonEndpointRoute('/claimmanalink', claimmanalink)
+addJsonEndpointRoute('/createmarket', createmarket)
+addJsonEndpointRoute('/addliquidity', addliquidity)
+addJsonEndpointRoute('/withdrawliquidity', withdrawliquidity)
+addJsonEndpointRoute('/creategroup', creategroup)
+addJsonEndpointRoute('/resolvemarket', resolvemarket)
+addJsonEndpointRoute('/unsubscribe', unsubscribe)
+addJsonEndpointRoute('/createcheckoutsession', createcheckoutsession)
+addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)
