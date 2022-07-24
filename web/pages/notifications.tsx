@@ -726,18 +726,14 @@ function NotificationItem(props: {
   )
 }
 
-export const setNotificationsAsSeen = (notifications: Notification[]) => {
-  notifications.forEach((notification) => {
-    if (!notification.isSeen)
-      updateDoc(
-        doc(db, `users/${notification.userId}/notifications/`, notification.id),
-        {
-          isSeen: true,
-          viewTime: new Date(),
-        }
-      )
-  })
-  return notifications
+export const setNotificationsAsSeen = async (notifications: Notification[]) => {
+  const unseenNotifications = notifications.filter((n) => !n.isSeen)
+  return await Promise.all(
+    unseenNotifications.map((n) => {
+      const notificationDoc = doc(db, `users/${n.userId}/notifications/`, n.id)
+      return updateDoc(notificationDoc, { isSeen: true, viewTime: new Date() })
+    })
+  )
 }
 
 function QuestionOrGroupLink(props: {
