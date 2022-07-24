@@ -10,6 +10,8 @@ type Tab = {
   content: ReactNode
   // If set, change the url to this href when the tab is selected
   href?: string
+  // If set, show a badge with this content
+  badge?: string
 }
 
 export function Tabs(props: {
@@ -63,6 +65,9 @@ export function Tabs(props: {
               >
                 <Row className={'items-center justify-center gap-1'}>
                   {tab.tabIcon && <span> {tab.tabIcon}</span>}
+                  {tab.badge ? (
+                    <div className="px-0.5 font-bold">{tab.badge}</div>
+                  ) : null}
                   {tab.title}
                 </Row>
               </a>
