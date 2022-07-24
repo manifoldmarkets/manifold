@@ -26,9 +26,7 @@ export function FeedBet(props: {
   const { userId, createdTime } = bet
 
   const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const bettor = isBeforeJune2022 ? undefined : useUserById(userId)
-
+  const bettor = useUserById(userId)
   const user = useUser()
   const isSelf = user?.id === userId
 
@@ -42,7 +40,7 @@ export function FeedBet(props: {
             avatarUrl={user.avatarUrl}
             username={user.username}
           />
-        ) : bettor ? (
+        ) : bettor && !isBeforeJune2022 ? (
           <Avatar
             className={clsx(smallAvatar && 'ml-1')}
             size={smallAvatar ? 'sm' : undefined}
@@ -59,7 +57,7 @@ export function FeedBet(props: {
             bet={bet}
             contract={contract}
             isSelf={isSelf}
-            bettor={bettor}
+            bettor={!isBeforeJune2022 ? bettor : undefined}
             hideOutcome={hideOutcome}
           />
         </div>
