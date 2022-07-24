@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
+import { useRouter, NextRouter } from 'next/router'
 import { ReactNode, useState } from 'react'
 import { Row } from './row'
 import { track } from '@amplitude/analytics-browser'
@@ -14,23 +15,23 @@ type Tab = {
   badge?: string
 }
 
-export function Tabs(props: {
+type TabProps = {
   tabs: Tab[]
-  defaultIndex?: number
   labelClassName?: string
   onClick?: (tabTitle: string, index: number) => void
   className?: string
   currentPageForAnalytics?: string
-}) {
+}
+
+export function UncontrolledTabs(props: TabProps & { activeIndex: number }) {
   const {
     tabs,
-    defaultIndex,
+    activeIndex,
     labelClassName,
     onClick,
     className,
     currentPageForAnalytics,
   } = props
-  const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
   const activeTab = tabs[activeIndex] as Tab | undefined // can be undefined in weird case
 
   return (
@@ -51,7 +52,6 @@ export function Tabs(props: {
                   if (!tab.href) {
                     e.preventDefault()
                   }
-                  setActiveIndex(i)
                   onClick?.(tab.title, i)
                 }}
                 className={clsx(
@@ -80,3 +80,54 @@ export function Tabs(props: {
     </>
   )
 }
+
+export function ControlledTabs(props: TabProps & { defaultIndex?: number }) {
+  const { defaultIndex, onClick, ...rest } = props
+  const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
+  return (
+    <UncontrolledTabs
+      {...rest}
+      activeIndex={activeIndex}
+      onClick={(title, i) => {
+        setActiveIndex(i)
+        onClick?.(title, i)
+      }}
+    />
+  )
+}
+
+const isTabSelected = (router: NextRouter, queryParam: string, tab: Tab) => {
+  const selected = router.query[queryParam]
+  if (typeof selected === 'string') {
+    return tab.title.toLowerCase() === selected
+  } else {
+    return false
+  }
+}
+
+export function QueryControlledTabs(
+  props: TabProps & { defaultIndex?: number }
+) {
+  const { tabs, defaultIndex, onClick, ...rest } = props
+  const router = useRouter()
+  const selectedIdx = tabs.findIndex((t) => isTabSelected(router, 'tab', t))
+  const activeIndex = selectedIdx !== -1 ? selectedIdx : defaultIndex ?? 0
+  return (
+    <UncontrolledTabs
+      {...rest}
+      tabs={tabs}
+      activeIndex={activeIndex}
+      onClick={(title, i) => {
+        router.replace(
+          { query: { ...router.query, tab: title.toLowerCase() } },
+          undefined,
+          { shallow: true }
+        )
+        onClick?.(title, i)
+      }}
+    />
+  )
+}
+
+// legacy code that didn't know about any other kind of tabs imports this
+export const Tabs = ControlledTabs

@@ -22,7 +22,7 @@ import { Linkify } from './linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
 import { genHash } from 'common/util/random'
-import { Tabs } from './layout/tabs'
+import { QueryControlledTabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Comment, getUsersComments } from 'web/lib/firebase/comments'
@@ -64,12 +64,8 @@ export function UserLink(props: {
 export const TAB_IDS = ['markets', 'comments', 'bets', 'groups']
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 
-export function UserPage(props: {
-  user: User
-  currentUser?: User
-  defaultTabTitle?: string | undefined
-}) {
-  const { user, currentUser, defaultTabTitle } = props
+export function UserPage(props: { user: User; currentUser?: User }) {
+  const { user, currentUser } = props
   const router = useRouter()
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
@@ -276,21 +272,9 @@ export function UserPage(props: {
         <Spacer h={10} />
 
         {usersContracts !== 'loading' && contractsById && usersComments ? (
-          <Tabs
+          <QueryControlledTabs
             currentPageForAnalytics={'profile'}
             labelClassName={'pb-2 pt-1 '}
-            defaultIndex={
-              defaultTabTitle ? TAB_IDS.indexOf(defaultTabTitle) : 0
-            }
-            onClick={(tabName) => {
-              const tabId = tabName.toLowerCase()
-              const subpath = tabId === 'markets' ? '' : '?tab=' + tabId
-              // BUG: if you start on `/Bob/bets`, then click on Markets, use-query-and-sort-params
-              // rewrites the url incorrectly to `/Bob/bets` instead of `/Bob`
-              router.push(`/${user.username}${subpath}`, undefined, {
-                shallow: true,
-              })
-            }}
             tabs={[
               {
                 title: 'Markets',
