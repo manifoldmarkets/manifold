@@ -10,13 +10,13 @@ export const onCreateAnswer = functions.firestore
       contractId: string
     }
     const { eventId } = context
-    const contract = await getContract(contractId)
-    if (!contract)
-      throw new Error('Could not find contract corresponding with answer')
-
     const answer = change.data() as Answer
     // Ignore ante answer.
     if (answer.number === 0) return
+
+    const contract = await getContract(contractId)
+    if (!contract)
+      throw new Error('Could not find contract corresponding with answer')
 
     const answerCreator = await getUser(answer.userId)
     if (!answerCreator) throw new Error('Could not find answer creator')

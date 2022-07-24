@@ -103,8 +103,8 @@ async function handleUserUpdatedReferral(user: User, eventId: string) {
       description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
     }
 
-    const txnDoc = await firestore.collection(`txns/`).doc(txn.id)
-    await transaction.set(txnDoc, txn)
+    const txnDoc = firestore.collection(`txns/`).doc(txn.id)
+    transaction.set(txnDoc, txn)
     console.log('created referral with txn id:', txn.id)
     // We're currently not subtracting M$ from the house, not sure if we want to for accounting purposes.
     transaction.update(referredByUserDoc, {
