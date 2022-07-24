@@ -4,12 +4,10 @@ ENV=${1:-dev}
 case $ENV in
     dev)
       FIREBASE_PROJECT=dev
-      NEXT_ENV=DEV
-      EMULATOR=false ;;
+      NEXT_ENV=DEV ;;
     prod)
       FIREBASE_PROJECT=prod
-      NEXT_ENV=PROD
-      EMULATOR=false ;;
+      NEXT_ENV=PROD ;;
     localdb)
       FIREBASE_PROJECT=dev
       NEXT_ENV=DEV
