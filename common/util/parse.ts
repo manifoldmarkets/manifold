@@ -21,6 +21,7 @@ import { Text } from '@tiptap/extension-text'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
 import { Mention } from '@tiptap/extension-mention'
+import Iframe from './tiptap-iframe'
 
 export function parseTags(text: string) {
   const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
@@ -82,6 +83,7 @@ export const exhibitExts = [
   Image,
   Link,
   Mention,
+  Iframe,
 ]
 
 export function richTextToString(text?: JSONContent) {

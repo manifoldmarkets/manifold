@@ -1,3 +1,4 @@
 # Ignore Next artifacts
 .next/
 out/
+public/**/*.json

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { useFirestoreDocumentData } from '@react-query-firebase/firestore'
 import { QueryClient } from 'react-query'
 
@@ -6,32 +6,14 @@ import { doc, DocumentData } from 'firebase/firestore'
 import { PrivateUser } from 'common/user'
 import {
   getUser,
-  listenForLogin,
   listenForPrivateUser,
-  listenForUser,
   User,
   users,
 } from 'web/lib/firebase/users'
-import { useStateCheckEquality } from './use-state-check-equality'
-import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
+import { AuthContext } from 'web/components/auth-context'
 
 export const useUser = () => {
-  const [user, setUser] = useStateCheckEquality<User | null | undefined>(
-    undefined
-  )
-
-  useEffect(() => listenForLogin(setUser), [setUser])
-
-  useEffect(() => {
-    if (user) {
-      identifyUser(user.id)
-      setUserProperty('username', user.username)
-
-      return listenForUser(user.id, setUser)
-    }
-  }, [user, setUser])
-
-  return user
+  return useContext(AuthContext)
 }
 
 export const usePrivateUser = (userId?: string) => {

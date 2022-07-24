@@ -76,11 +76,13 @@ export function LimitOrderTable(props: {
   return (
     <table className="table-compact table w-full rounded text-gray-500">
       <thead>
-        {!isYou && <th></th>}
-        <th>Outcome</th>
-        <th>Amount</th>
-        <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
-        {isYou && <th></th>}
+        <tr>
+          {!isYou && <th></th>}
+          <th>Outcome</th>
+          <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
+          <th>Amount</th>
+          {isYou && <th></th>}
+        </tr>
       </thead>
       <tbody>
         {limitBets.map((bet) => (
@@ -129,12 +131,12 @@ function LimitBet(props: {
           )}
         </div>
       </td>
-      <td>{formatMoney(orderAmount - amount)}</td>
       <td>
         {isPseudoNumeric
           ? getFormattedMappedValue(contract)(limitProb)
           : formatPercent(limitProb)}
       </td>
+      <td>{formatMoney(orderAmount - amount)}</td>
       {isYou && (
         <td>
           {isCancelling ? (

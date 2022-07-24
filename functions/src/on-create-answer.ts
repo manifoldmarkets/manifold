@@ -28,6 +28,6 @@ export const onCreateAnswer = functions.firestore
       answerCreator,
       eventId,
       answer.text,
-      contract
+      { contract }
     )
   })

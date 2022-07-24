@@ -15,16 +15,16 @@ export const PortfolioValueSection = memo(
     const lastPortfolioMetrics = last(portfolioHistory)
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('allTime')
 
-    // PATCH: If portfolio history started on June 1st, then we label it as "Since June"
-    // instead of "All time"
-    const allTimeLabel =
-      portfolioHistory[0].timestamp < Date.parse('2022-06-20T00:00:00.000Z')
-        ? 'Since June'
-        : 'All time'
-
     if (portfolioHistory.length === 0 || !lastPortfolioMetrics) {
       return <></>
     }
+
+    // PATCH: If portfolio history started on June 1st, then we label it as "Since June"
+    // instead of "All time"
+    const allTimeLabel =
+      lastPortfolioMetrics.timestamp < Date.parse('2022-06-20T00:00:00.000Z')
+        ? 'Since June'
+        : 'All time'
 
     return (
       <div>

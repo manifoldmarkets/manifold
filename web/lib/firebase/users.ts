@@ -15,15 +15,10 @@ import {
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
-import {
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from 'firebase/auth'
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { zip } from 'lodash'
 import { app, db } from './init'
 import { PortfolioMetrics, PrivateUser, User } from 'common/user'
-import { createUser } from './api'
 import {
   coll,
   getValue,
@@ -37,7 +32,6 @@ import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
 import { addUserToGroupViaId } from 'web/lib/firebase/groups'
 import { removeUndefinedProps } from 'common/util/object'
-import { randomString } from 'common/util/random'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
@@ -96,7 +90,6 @@ export function listenForPrivateUser(
   return listenForValue<PrivateUser>(userRef, setPrivateUser)
 }
 
-const CACHED_USER_KEY = 'CACHED_USER_KEY'
 const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
 const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
 const CACHED_REFERRAL_GROUP_ID_KEY = 'CACHED_REFERRAL_GROUP_KEY'
@@ -129,7 +122,7 @@ export function writeReferralInfo(
     local?.setItem(CACHED_REFERRAL_CONTRACT_ID_KEY, contractId)
 }
 
-async function setCachedReferralInfoForUser(user: User | null) {
+export async function setCachedReferralInfoForUser(user: User | null) {
   if (!user || user.referredByUserId) return
   // if the user wasn't created in the last minute, don't bother
   const now = dayjs().utc()
@@ -180,52 +173,13 @@ async function setCachedReferralInfoForUser(user: User | null) {
   local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
 }
 
-// used to avoid weird race condition
-let createUserPromise: Promise<User> | undefined = undefined
-
-export function listenForLogin(onUser: (user: User | null) => void) {
-  const local = safeLocalStorage()
-  const cachedUser = local?.getItem(CACHED_USER_KEY)
-  onUser(cachedUser && JSON.parse(cachedUser))
-
-  return onAuthStateChanged(auth, async (fbUser) => {
-    if (fbUser) {
-      let user: User | null = await getUser(fbUser.uid)
-
-      if (!user) {
-        if (createUserPromise == null) {
-          const local = safeLocalStorage()
-          let deviceToken = local?.getItem('device-token')
-          if (!deviceToken) {
-            deviceToken = randomString()
-            local?.setItem('device-token', deviceToken)
-          }
-          createUserPromise = createUser({ deviceToken }).then((r) => r as User)
-        }
-        user = await createUserPromise
-      }
-
-      onUser(user)
-
-      // Persist to local storage, to reduce login blink next time.
-      // Note: Cap on localStorage size is ~5mb
-      local?.setItem(CACHED_USER_KEY, JSON.stringify(user))
-      setCachedReferralInfoForUser(user)
-    } else {
-      // User logged out; reset to null
-      onUser(null)
-      local?.removeItem(CACHED_USER_KEY)
-    }
-  })
-}
-
 export async function firebaseLogin() {
   const provider = new GoogleAuthProvider()
   return signInWithPopup(auth, provider)
 }
 
 export async function firebaseLogout() {
-  auth.signOut()
+  await auth.signOut()
 }
 
 const storage = getStorage(app)
@@ -256,16 +210,6 @@ export async function listAllUsers() {
   return docs.map((doc) => doc.data())
 }
 
-export function listenForAllUsers(setUsers: (users: User[]) => void) {
-  listenForValues(users, setUsers)
-}
-
-export function listenForPrivateUsers(
-  setUsers: (users: PrivateUser[]) => void
-) {
-  listenForValues(privateUsers, setUsers)
-}
-
 export function getTopTraders(period: Period) {
   const topTraders = query(
     users,
@@ -273,7 +217,7 @@ export function getTopTraders(period: Period) {
     limit(20)
   )
 
-  return getValues(topTraders)
+  return getValues<User>(topTraders)
 }
 
 export function getTopCreators(period: Period) {
@@ -282,7 +226,7 @@ export function getTopCreators(period: Period) {
     orderBy('creatorVolumeCached.' + period, 'desc'),
     limit(20)
   )
-  return getValues(topCreators)
+  return getValues<User>(topCreators)
 }
 
 export async function getTopFollowed() {

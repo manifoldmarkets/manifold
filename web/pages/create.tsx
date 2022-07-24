@@ -19,7 +19,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { setContractGroupSlugs, getGroup } from 'web/lib/firebase/groups'
+import { getGroup, setContractGroupLinks } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -28,6 +28,11 @@ import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Checkbox } from 'web/components/checkbox'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { Title } from 'web/components/title'
+import { SEO } from 'web/components/SEO'
+
+export const getServerSideProps = redirectIfLoggedOut('/')
 
 type NewQuestionParams = {
   groupId?: string
@@ -55,16 +60,19 @@ export default function Create() {
   }, [params.q])
 
   const creator = useUser()
-  useEffect(() => {
-    if (creator === null) router.push('/')
-  }, [creator, router])
-
   if (!router.isReady || !creator) return <div />
 
   return (
     <Page>
+      <SEO
+        title="Create a market"
+        description="Create a play-money prediction market on any question."
+        url="/create"
+      />
       <div className="mx-auto w-full max-w-2xl">
         <div className="rounded-lg px-6 py-4 sm:py-0">
+          <Title className="!mt-0" text="Create a market" />
+
           <form>
             <div className="form-control w-full">
               <label className="label">
@@ -93,7 +101,7 @@ export default function Create() {
 
 // Allow user to create a new contract
 export function NewContract(props: {
-  creator: User
+  creator?: User | null
   question: string
   params?: NewQuestionParams
 }) {
@@ -207,7 +215,7 @@ export function NewContract(props: {
           min,
           max,
           initialValue,
-          isLogScale: (min ?? 0) < 0 ? false : isLogScale,
+          isLogScale,
           groupId: selectedGroup?.id,
         })
       )
@@ -218,7 +226,7 @@ export function NewContract(props: {
         isFree: false,
       })
       if (result && selectedGroup) {
-        await setContractGroupSlugs(selectedGroup, result.id)
+        await setContractGroupLinks(selectedGroup, result.id, creator.id)
       }
 
       await router.push(contractPath(result as Contract))
@@ -294,15 +302,13 @@ export function NewContract(props: {
               />
             </Row>
 
-            {!(min !== undefined && min < 0) && (
-              <Checkbox
-                className="my-2 text-sm"
-                label="Log scale"
-                checked={isLogScale}
-                toggle={() => setIsLogScale(!isLogScale)}
-                disabled={isSubmitting}
-              />
-            )}
+            <Checkbox
+              className="my-2 text-sm"
+              label="Log scale"
+              checked={isLogScale}
+              toggle={() => setIsLogScale(!isLogScale)}
+              disabled={isSubmitting}
+            />
 
             {min !== undefined && max !== undefined && min >= max && (
               <div className="mt-2 mb-2 text-sm text-red-500">
@@ -347,7 +353,7 @@ export function NewContract(props: {
           selectedGroup={selectedGroup}
           setSelectedGroup={setSelectedGroup}
           creator={creator}
-          showSelector={showGroupSelector}
+          options={{ showSelector: showGroupSelector, showLabel: true }}
         />
       </div>
 

@@ -70,7 +70,7 @@ export function FeedCommentThread(props: {
     if (showReply && inputRef) inputRef.focus()
   }, [inputRef, showReply])
   return (
-    <div className={'w-full flex-col pr-1'}>
+    <Col className={'w-full gap-3 pr-1'}>
       <span
         className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
         aria-hidden="true"
@@ -86,7 +86,7 @@ export function FeedCommentThread(props: {
         scrollAndOpenReplyInput={scrollAndOpenReplyInput}
       />
       {showReply && (
-        <div className={'-pb-2 ml-6 flex flex-col pt-5'}>
+        <Col className={'-pb-2 ml-6'}>
           <span
             className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
@@ -106,9 +106,9 @@ export function FeedCommentThread(props: {
               setReplyToUsername('')
             }}
           />
-        </div>
+        </Col>
       )}
-    </div>
+    </Col>
   )
 }
 
@@ -142,7 +142,7 @@ export function CommentRepliesList(props: {
           id={comment.id}
           className={clsx(
             'relative',
-            !treatFirstIndexEqually && commentIdx === 0 ? '' : 'mt-3 ml-6'
+            !treatFirstIndexEqually && commentIdx === 0 ? '' : 'ml-6'
           )}
         >
           {/*draw a gray line from the comment to the left:*/}

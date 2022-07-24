@@ -30,9 +30,7 @@ export const onFollowUser = functions.firestore
       followingUser,
       eventId,
       '',
-      undefined,
-      undefined,
-      follow.userId
+      { relatedUserId: follow.userId }
     )
   })
 

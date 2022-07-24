@@ -1,6 +1,7 @@
 import { Answer } from './answer'
 import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
+import { GroupLink } from 'common/group'
 
 export type AnyMechanism = DPM | CPMM
 export type AnyOutcomeType = Binary | PseudoNumeric | FreeResponse | Numeric
@@ -46,8 +47,10 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   collectedFees: Fees
 
   groupSlugs?: string[]
+  groupLinks?: GroupLink[]
   uniqueBettorIds?: string[]
   uniqueBettorCount?: number
+  popularityScore?: number
 } & T
 
 export type BinaryContract = Contract & Binary

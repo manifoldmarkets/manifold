@@ -50,7 +50,7 @@ import { LimitOrderTable } from './limit-bets'
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
-const CONTRACTS_PER_PAGE = 20
+const CONTRACTS_PER_PAGE = 50
 
 export function BetsList(props: {
   user: User
@@ -78,10 +78,10 @@ export function BetsList(props: {
 
   const getTime = useTimeSinceFirstRender()
   useEffect(() => {
-    if (bets && contractsById) {
-      trackLatency('portfolio', getTime())
+    if (bets && contractsById && signedInUser) {
+      trackLatency(signedInUser.id, 'portfolio', getTime())
     }
-  }, [bets, contractsById, getTime])
+  }, [signedInUser, bets, contractsById, getTime])
 
   if (!bets || !contractsById) {
     return <LoadingIndicator />
