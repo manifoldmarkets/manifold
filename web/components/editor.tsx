@@ -11,6 +11,7 @@ import {
 import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
+import { Mention } from '@tiptap/extension-mention'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 import { Linkify } from './linkify'
@@ -19,6 +20,9 @@ import { useMutation } from 'react-query'
 import { exhibitExts } from 'common/util/parse'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
+import { useUsers } from 'web/hooks/use-users'
+import { mentionSuggestion } from './editor/mention-suggestion'
+import { DisplayMention } from './editor/mention'
 import Iframe from 'common/util/tiptap-iframe'
 import { CodeIcon, PhotographIcon } from '@heroicons/react/solid'
 import { Modal } from './layout/modal'
@@ -40,33 +44,41 @@ export function useTextEditor(props: {
 }) {
   const { placeholder, max, defaultValue = '', disabled } = props
 
+  const users = useUsers()
+
   const editorClass = clsx(
     proseClass,
     'min-h-[6em] resize-none outline-none border-none pt-3 px-4 focus:ring-0'
   )
 
-  const editor = useEditor({
-    editorProps: { attributes: { class: editorClass } },
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-      }),
-      Placeholder.configure({
-        placeholder,
-        emptyEditorClass:
-          'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0',
-      }),
-      CharacterCount.configure({ limit: max }),
-      Image,
-      Link.configure({
-        HTMLAttributes: {
-          class: clsx('no-underline !text-indigo-700', linkClass),
-        },
-      }),
-      Iframe,
-    ],
-    content: defaultValue,
-  })
+  const editor = useEditor(
+    {
+      editorProps: { attributes: { class: editorClass } },
+      extensions: [
+        StarterKit.configure({
+          heading: { levels: [1, 2, 3] },
+        }),
+        Placeholder.configure({
+          placeholder,
+          emptyEditorClass:
+            'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0',
+        }),
+        CharacterCount.configure({ limit: max }),
+        Image,
+        Link.configure({
+          HTMLAttributes: {
+            class: clsx('no-underline !text-indigo-700', linkClass),
+          },
+        }),
+        DisplayMention.configure({
+          suggestion: mentionSuggestion(users),
+        }),
+        Iframe,
+      ],
+      content: defaultValue,
+    },
+    [!users.length] // passed as useEffect dependency. (re-render editor when users load, to update mention menu)
+  )
 
   const upload = useUploadMutation(editor)
 
@@ -261,7 +273,11 @@ function RichContent(props: { content: JSONContent | string }) {
   const { content } = props
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },
-    extensions: exhibitExts,
+    extensions: [
+      // replace tiptap's Mention with ours, to add style and link
+      ...exhibitExts.filter((ex) => ex.name !== Mention.name),
+      DisplayMention,
+    ],
     content,
     editable: false,
   })
