@@ -42,6 +42,7 @@ import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
 import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
+import { InfoBox } from './info-box'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -72,6 +73,7 @@ export function BetPanel(props: {
         <QuickOrLimitBet
           isLimitOrder={isLimitOrder}
           setIsLimitOrder={setIsLimitOrder}
+          hideToggle={!user}
         />
         <BuyPanel
           hidden={isLimitOrder}
@@ -85,7 +87,10 @@ export function BetPanel(props: {
           user={user}
           unfilledBets={unfilledBets}
         />
+
         <SignUpPrompt />
+
+        {!user && <PlayMoneyDisclaimer />}
       </Col>
       {unfilledBets.length > 0 && (
         <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
@@ -93,6 +98,14 @@ export function BetPanel(props: {
     </Col>
   )
 }
+
+const PlayMoneyDisclaimer = () => (
+  <InfoBox
+    title="M$ are play-money"
+    className="mt-4 max-w-md"
+    text="Manifold Dollars are the play currency used by our platform to keep track of your bets. It's completely free for you and your friends to get started!"
+  />
+)
 
 export function SimpleBetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -124,6 +137,7 @@ export function SimpleBetPanel(props: {
         <QuickOrLimitBet
           isLimitOrder={isLimitOrder}
           setIsLimitOrder={setIsLimitOrder}
+          hideToggle={!user}
         />
         <BuyPanel
           hidden={isLimitOrder}
@@ -140,7 +154,10 @@ export function SimpleBetPanel(props: {
           unfilledBets={unfilledBets}
           onBuySuccess={onBetSuccess}
         />
+
         <SignUpPrompt />
+
+        {!user && <PlayMoneyDisclaimer />}
       </Col>
 
       {unfilledBets.length > 0 && (
@@ -688,32 +705,35 @@ function LimitOrderPanel(props: {
 function QuickOrLimitBet(props: {
   isLimitOrder: boolean
   setIsLimitOrder: (isLimitOrder: boolean) => void
+  hideToggle?: boolean
 }) {
-  const { isLimitOrder, setIsLimitOrder } = props
+  const { isLimitOrder, setIsLimitOrder, hideToggle } = props
 
   return (
     <Row className="align-center mb-4 justify-between">
       <div className="text-4xl">Bet</div>
-      <Row className="mt-1 items-center gap-2">
-        <PillButton
-          selected={!isLimitOrder}
-          onSelect={() => {
-            setIsLimitOrder(false)
-            track('select quick order')
-          }}
-        >
-          Quick
-        </PillButton>
-        <PillButton
-          selected={isLimitOrder}
-          onSelect={() => {
-            setIsLimitOrder(true)
-            track('select limit order')
-          }}
-        >
-          Limit
-        </PillButton>
-      </Row>
+      {!hideToggle && (
+        <Row className="mt-1 items-center gap-2">
+          <PillButton
+            selected={!isLimitOrder}
+            onSelect={() => {
+              setIsLimitOrder(false)
+              track('select quick order')
+            }}
+          >
+            Quick
+          </PillButton>
+          <PillButton
+            selected={isLimitOrder}
+            onSelect={() => {
+              setIsLimitOrder(true)
+              track('select limit order')
+            }}
+          >
+            Limit
+          </PillButton>
+        </Row>
+      )}
     </Row>
   )
 }
