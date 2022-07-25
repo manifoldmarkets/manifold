@@ -262,9 +262,17 @@ function BuyPanel(props: {
 
   return (
     <>
+      {isLimitOrder && (
+        <>
+        <p> Place a limit order to add to the order book rather than trade directly. Your orders will be filled over time if others trade with them at the prices you set. </p>
+        <br/>
+        </>
+      )}
+
       <div className="my-3 text-left text-sm text-gray-500">
         {isPseudoNumeric ? 'Direction' : 'Outcome'}
       </div>
+
       <YesNoSelector
         className="mb-4"
         btnClassName="flex-1"
@@ -285,6 +293,7 @@ function BuyPanel(props: {
       />
       {isLimitOrder && (
         <>
+          <p> test </p>
           <Row className="my-3 items-center gap-2 text-left text-sm text-gray-500">
             Limit {isPseudoNumeric ? 'value' : 'probability'}
             <InfoTooltip
