@@ -957,7 +957,7 @@ function getReasonForShowingNotification(
       reasonText = 'followed you'
       break
     case 'liquidity':
-      reasonText = 'added liquidity to your question'
+      reasonText = 'added a subsidy to your question'
       break
     case 'group':
       reasonText = 'added you to the group'
