@@ -23,7 +23,7 @@ export const ATLAS3_CONFIG: EnvConfig = {
   ],
   whitelistEmail: '',
   moneyMoniker: '📎',
-  fixedAnte: 250,
+  fixedAnte: 25,
   startingBalance: 500,
   referralBonus: 0,
   visibility: 'PRIVATE',
