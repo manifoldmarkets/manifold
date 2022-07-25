@@ -657,7 +657,13 @@ function BetRow(props: {
           !isClosed &&
           !isSold &&
           !isAnte &&
-          !isNumeric && <SellButton contract={contract} bet={bet} />}
+          !isNumeric && (
+            <SellButton
+              contract={contract}
+              bet={bet}
+              unfilledBets={unfilledBets}
+            />
+          )}
       </td>
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
@@ -697,8 +703,12 @@ function BetRow(props: {
   )
 }
 
-function SellButton(props: { contract: Contract; bet: Bet }) {
-  const { contract, bet } = props
+function SellButton(props: {
+  contract: Contract
+  bet: Bet
+  unfilledBets: LimitBet[]
+}) {
+  const { contract, bet, unfilledBets } = props
   const { outcome, shares, loanAmount } = bet
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -707,8 +717,6 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
     contract,
     outcome === 'NO' ? 'YES' : outcome
   )
-
-  const unfilledBets = useUnfilledBets(contract.id) ?? []
 
   const outcomeProb = getProbabilityAfterSale(
     contract,
