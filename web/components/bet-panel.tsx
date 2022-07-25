@@ -92,7 +92,8 @@ export function BetPanel(props: {
 
         {!user && <PlayMoneyDisclaimer />}
       </Col>
-      {unfilledBets.length > 0 && (
+
+      {user && unfilledBets.length > 0 && (
         <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
       )}
     </Col>
@@ -101,9 +102,9 @@ export function BetPanel(props: {
 
 const PlayMoneyDisclaimer = () => (
   <InfoBox
-    title="It's play-money"
+    title="Play-money betting"
     className="mt-4 max-w-md"
-    text="Manifold Dollars (M$) are the play currency used by our platform to keep track of your bets. It's completely free for you and your friends to get started!"
+    text="Mana (M$) is the play-money used by our platform to keep track of your bets. It's completely free for you and your friends to get started!"
   />
 )
 
