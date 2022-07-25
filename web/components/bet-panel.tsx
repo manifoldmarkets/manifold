@@ -101,9 +101,9 @@ export function BetPanel(props: {
 
 const PlayMoneyDisclaimer = () => (
   <InfoBox
-    title="M$ are play-money"
+    title="It's play-money"
     className="mt-4 max-w-md"
-    text="Manifold Dollars are the play currency used by our platform to keep track of your bets. It's completely free for you and your friends to get started!"
+    text="Manifold Dollars (M$) are the play currency used by our platform to keep track of your bets. It's completely free for you and your friends to get started!"
   />
 )
 
