@@ -3,6 +3,7 @@ import { groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet } from 'web/lib/firebase/bets'
 import { User } from 'web/lib/firebase/users'
@@ -277,13 +278,7 @@ function ContractBets(props: {
     bets
   )
   return (
-    <div
-      tabIndex={0}
-      className={clsx(
-        'collapse collapse-arrow relative bg-white p-4 pr-6',
-        collapsed ? 'collapse-close' : 'collapse-open pb-2'
-      )}
-    >
+    <div tabIndex={0} className="relative bg-white p-4 pr-6">
       <Row
         className="cursor-pointer flex-wrap gap-2"
         onClick={() => setCollapsed((collapsed) => !collapsed)}
@@ -300,10 +295,11 @@ function ContractBets(props: {
             </Link>
 
             {/* Show carrot for collapsing. Hack the positioning. */}
-            <div
-              className="collapse-title absolute h-0 min-h-0 w-0 p-0"
-              style={{ top: -10, right: 0 }}
-            />
+            {collapsed ? (
+              <ChevronDownIcon className="absolute top-5 right-4 h-6 w-6" />
+            ) : (
+              <ChevronUpIcon className="absolute top-5 right-4 h-6 w-6" />
+            )}
           </Row>
 
           <Row className="flex-1 items-center gap-2 text-sm text-gray-500">
@@ -335,7 +331,7 @@ function ContractBets(props: {
           </Row>
         </Col>
 
-        <Col className="mr-5 justify-end sm:mr-8">
+        <Col className="mr-5 sm:mr-8">
           <div className="whitespace-nowrap text-right text-lg">
             {formatMoney(metric === 'profit' ? profit : payout)}
           </div>
@@ -343,35 +339,34 @@ function ContractBets(props: {
         </Col>
       </Row>
 
-      <div
-        className="collapse-content bg-white !px-0"
-        style={{ backgroundColor: 'white' }}
-      >
-        <BetsSummary
-          className="mt-8 mr-5 flex-1 sm:mr-8"
-          contract={contract}
-          bets={bets}
-          isYourBets={isYourBets}
-        />
+      {!collapsed && (
+        <div className="bg-white">
+          <BetsSummary
+            className="mt-8 mr-5 flex-1 sm:mr-8"
+            contract={contract}
+            bets={bets}
+            isYourBets={isYourBets}
+          />
 
-        {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
-          <div className="max-w-md">
-            <div className="mt-4 bg-gray-50 px-4 py-2">Limit orders</div>
-            <LimitOrderTable
-              contract={contract}
-              limitBets={limitBets}
-              isYou={true}
-            />
-          </div>
-        )}
+          {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
+            <div className="max-w-md">
+              <div className="mt-4 bg-gray-50 px-4 py-2">Limit orders</div>
+              <LimitOrderTable
+                contract={contract}
+                limitBets={limitBets}
+                isYou={true}
+              />
+            </div>
+          )}
 
-        <div className="mt-4 bg-gray-50 px-4 py-2">Bets</div>
-        <ContractBetsTable
-          contract={contract}
-          bets={bets}
-          isYourBets={isYourBets}
-        />
-      </div>
+          <div className="mt-4 bg-gray-50 px-4 py-2">Bets</div>
+          <ContractBetsTable
+            contract={contract}
+            bets={bets}
+            isYourBets={isYourBets}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -468,7 +463,6 @@ export function BetsSummary(props: {
           <div className="whitespace-nowrap">{formatMoney(payout)}</div>
         </Col>
       )}
-      )
       <Col>
         <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
         <div className="whitespace-nowrap">
