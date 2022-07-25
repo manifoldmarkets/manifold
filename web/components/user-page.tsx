@@ -22,7 +22,7 @@ import { Linkify } from './linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
 import { genHash } from 'common/util/random'
-import { QueryControlledTabs } from './layout/tabs'
+import { QueryUncontrolledTabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Comment, getUsersComments } from 'web/lib/firebase/comments'
@@ -272,7 +272,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         <Spacer h={10} />
 
         {usersContracts !== 'loading' && contractsById && usersComments ? (
-          <QueryControlledTabs
+          <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
             labelClassName={'pb-2 pt-1 '}
             tabs={[

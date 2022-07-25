@@ -19,7 +19,7 @@ type TabProps = {
   currentPageForAnalytics?: string
 }
 
-export function UncontrolledTabs(props: TabProps & { activeIndex: number }) {
+export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   const {
     tabs,
     activeIndex,
@@ -69,11 +69,11 @@ export function UncontrolledTabs(props: TabProps & { activeIndex: number }) {
   )
 }
 
-export function ControlledTabs(props: TabProps & { defaultIndex?: number }) {
+export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
   const { defaultIndex, onClick, ...rest } = props
   const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
   return (
-    <UncontrolledTabs
+    <ControlledTabs
       {...rest}
       activeIndex={activeIndex}
       onClick={(title, i) => {
@@ -93,7 +93,7 @@ const isTabSelected = (router: NextRouter, queryParam: string, tab: Tab) => {
   }
 }
 
-export function QueryControlledTabs(
+export function QueryUncontrolledTabs(
   props: TabProps & { defaultIndex?: number }
 ) {
   const { tabs, defaultIndex, onClick, ...rest } = props
@@ -101,7 +101,7 @@ export function QueryControlledTabs(
   const selectedIdx = tabs.findIndex((t) => isTabSelected(router, 'tab', t))
   const activeIndex = selectedIdx !== -1 ? selectedIdx : defaultIndex ?? 0
   return (
-    <UncontrolledTabs
+    <ControlledTabs
       {...rest}
       tabs={tabs}
       activeIndex={activeIndex}
@@ -118,4 +118,4 @@ export function QueryControlledTabs(
 }
 
 // legacy code that didn't know about any other kind of tabs imports this
-export const Tabs = ControlledTabs
+export const Tabs = UncontrolledTabs
