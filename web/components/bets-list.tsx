@@ -335,49 +335,37 @@ function ContractBets(props: {
           </Row>
         </Col>
 
-        <Row className="mr-5 justify-end sm:mr-8">
-          <Col>
-            <div className="whitespace-nowrap text-right text-lg">
-              {formatMoney(metric === 'profit' ? profit : payout)}
-            </div>
-            <div className="text-right">
-              <ProfitBadge profitPercent={profitPercent} />
-            </div>
-          </Col>
-        </Row>
+        <Col className="mr-5 justify-end sm:mr-8">
+          <div className="whitespace-nowrap text-right text-lg">
+            {formatMoney(metric === 'profit' ? profit : payout)}
+          </div>
+          <ProfitBadge className="text-right" profitPercent={profitPercent} />
+        </Col>
       </Row>
 
       <div
-        className="collapse-content !px-0"
+        className="collapse-content bg-white !px-0"
         style={{ backgroundColor: 'white' }}
       >
-        <Spacer h={8} />
-
         <BetsSummary
-          className="mr-5 flex-1 sm:mr-8"
+          className="mt-8 mr-5 flex-1 sm:mr-8"
           contract={contract}
           bets={bets}
           isYourBets={isYourBets}
         />
 
-        <Spacer h={4} />
-
         {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
-          <>
-            <div className="max-w-md">
-              <div className="bg-gray-50 px-4 py-2">Limit orders</div>
-              <LimitOrderTable
-                contract={contract}
-                limitBets={limitBets}
-                isYou={true}
-              />
-            </div>
-          </>
+          <div className="max-w-md">
+            <div className="mt-4 bg-gray-50 px-4 py-2">Limit orders</div>
+            <LimitOrderTable
+              contract={contract}
+              limitBets={limitBets}
+              isYou={true}
+            />
+          </div>
         )}
 
-        <Spacer h={4} />
-
-        <div className="bg-gray-50 px-4 py-2">Bets</div>
+        <div className="mt-4 bg-gray-50 px-4 py-2">Bets</div>
         <ContractBetsTable
           contract={contract}
           bets={bets}
@@ -427,107 +415,93 @@ export function BetsSummary(props: {
 
   return (
     <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>
-      <Row className="flex-wrap gap-4 sm:gap-6">
-        {!isCpmm && (
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Invested
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(invested)}</div>
-          </Col>
-        )}
-        {resolution ? (
-          <Col>
-            <div className="text-sm text-gray-500">Payout</div>
-            <div className="whitespace-nowrap">
-              {formatMoney(payout)}{' '}
-              <ProfitBadge profitPercent={profitPercent} />
-            </div>
-          </Col>
-        ) : (
-          <>
-            {isBinary ? (
-              <>
-                <Col>
-                  <div className="whitespace-nowrap text-sm text-gray-500">
-                    Payout if <YesLabel />
-                  </div>
-                  <div className="whitespace-nowrap">
-                    {formatMoney(yesWinnings)}
-                  </div>
-                </Col>
-                <Col>
-                  <div className="whitespace-nowrap text-sm text-gray-500">
-                    Payout if <NoLabel />
-                  </div>
-                  <div className="whitespace-nowrap">
-                    {formatMoney(noWinnings)}
-                  </div>
-                </Col>
-              </>
-            ) : isPseudoNumeric ? (
-              <>
-                <Col>
-                  <div className="whitespace-nowrap text-sm text-gray-500">
-                    Payout if {'>='} {formatLargeNumber(contract.max)}
-                  </div>
-                  <div className="whitespace-nowrap">
-                    {formatMoney(yesWinnings)}
-                  </div>
-                </Col>
-                <Col>
-                  <div className="whitespace-nowrap text-sm text-gray-500">
-                    Payout if {'<='} {formatLargeNumber(contract.min)}
-                  </div>
-                  <div className="whitespace-nowrap">
-                    {formatMoney(noWinnings)}
-                  </div>
-                </Col>
-              </>
-            ) : (
-              <Col>
-                <div className="whitespace-nowrap text-sm text-gray-500">
-                  Current value
-                </div>
-                <div className="whitespace-nowrap">{formatMoney(payout)}</div>
-              </Col>
-            )}
-          </>
-        )}
+      {!isCpmm && (
         <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
+          <div className="whitespace-nowrap text-sm text-gray-500">
+            Invested
+          </div>
+          <div className="whitespace-nowrap">{formatMoney(invested)}</div>
+        </Col>
+      )}
+      {resolution ? (
+        <Col>
+          <div className="text-sm text-gray-500">Payout</div>
           <div className="whitespace-nowrap">
-            {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
-            {isYourBets &&
-              isCpmm &&
-              (isBinary || isPseudoNumeric) &&
-              !isClosed &&
-              !resolution &&
-              hasShares &&
-              sharesOutcome &&
-              user && (
-                <>
-                  <button
-                    className="btn btn-sm ml-2"
-                    onClick={() => setShowSellModal(true)}
-                  >
-                    Sell
-                  </button>
-                  {showSellModal && (
-                    <SellSharesModal
-                      contract={contract}
-                      user={user}
-                      userBets={bets}
-                      shares={totalShares[sharesOutcome]}
-                      sharesOutcome={sharesOutcome}
-                      setOpen={setShowSellModal}
-                    />
-                  )}
-                </>
-              )}
+            {formatMoney(payout)} <ProfitBadge profitPercent={profitPercent} />
           </div>
         </Col>
-      </Row>
+      ) : isBinary ? (
+        <>
+          <Col>
+            <div className="whitespace-nowrap text-sm text-gray-500">
+              Payout if <YesLabel />
+            </div>
+            <div className="whitespace-nowrap">{formatMoney(yesWinnings)}</div>
+          </Col>
+          <Col>
+            <div className="whitespace-nowrap text-sm text-gray-500">
+              Payout if <NoLabel />
+            </div>
+            <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
+          </Col>
+        </>
+      ) : isPseudoNumeric ? (
+        <>
+          <Col>
+            <div className="whitespace-nowrap text-sm text-gray-500">
+              Payout if {'>='} {formatLargeNumber(contract.max)}
+            </div>
+            <div className="whitespace-nowrap">{formatMoney(yesWinnings)}</div>
+          </Col>
+          <Col>
+            <div className="whitespace-nowrap text-sm text-gray-500">
+              Payout if {'<='} {formatLargeNumber(contract.min)}
+            </div>
+            <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
+          </Col>
+        </>
+      ) : (
+        <Col>
+          <div className="whitespace-nowrap text-sm text-gray-500">
+            Current value
+          </div>
+          <div className="whitespace-nowrap">{formatMoney(payout)}</div>
+        </Col>
+      )}
+      )
+      <Col>
+        <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
+        <div className="whitespace-nowrap">
+          {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
+          {isYourBets &&
+            isCpmm &&
+            (isBinary || isPseudoNumeric) &&
+            !isClosed &&
+            !resolution &&
+            hasShares &&
+            sharesOutcome &&
+            user && (
+              <>
+                <button
+                  className="btn btn-sm ml-2"
+                  onClick={() => setShowSellModal(true)}
+                >
+                  Sell
+                </button>
+                {showSellModal && (
+                  <SellSharesModal
+                    contract={contract}
+                    user={user}
+                    userBets={bets}
+                    shares={totalShares[sharesOutcome]}
+                    sharesOutcome={sharesOutcome}
+                    setOpen={setShowSellModal}
+                  />
+                )}
+              </>
+            )}
+        </div>
+      </Col>
     </Row>
   )
 }
@@ -787,8 +761,8 @@ function SellButton(props: { contract: Contract; bet: Bet }) {
   )
 }
 
-function ProfitBadge(props: { profitPercent: number }) {
-  const { profitPercent } = props
+function ProfitBadge(props: { profitPercent: number; className?: string }) {
+  const { profitPercent, className } = props
   if (!profitPercent) return null
   const colors =
     profitPercent > 0
@@ -799,7 +773,8 @@ function ProfitBadge(props: { profitPercent: number }) {
     <span
       className={clsx(
         'ml-1 inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium',
-        colors
+        colors,
+        className
       )}
     >
       {(profitPercent > 0 ? '+' : '') + profitPercent.toFixed(1) + '%'}
