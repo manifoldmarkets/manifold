@@ -20,7 +20,7 @@ export function InfoBox(props: {
         </div>
         <div className="ml-3">
           <h3 className="text-sm font-medium text-black">{title}</h3>
-          <div className="mt-2 text-sm text-black">
+          <div className="mt-2 text-sm text-gray-600">
             <Linkify text={text} />
           </div>
         </div>
