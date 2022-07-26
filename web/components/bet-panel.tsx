@@ -43,6 +43,7 @@ import { LimitBets } from './limit-bets'
 import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
 import { PlayMoneyDisclaimer } from './play-money-disclaimer'
+import { AlertBox } from './alert-box'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -264,6 +265,8 @@ function BuyPanel(props: {
 
   const format = getFormattedMappedValue(contract)
 
+  const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
+
   return (
     <Col className={hidden ? 'hidden' : ''}>
       <div className="my-3 text-left text-sm text-gray-500">
@@ -287,6 +290,22 @@ function BuyPanel(props: {
         disabled={isSubmitting}
         inputRef={inputRef}
       />
+
+      {(betAmount ?? 0) > 10 &&
+      bankrollFraction >= 0.5 &&
+      bankrollFraction <= 1 ? (
+        <AlertBox
+          title="Whoa, there!"
+          text={`You might not want to spend ${formatPercent(
+            bankrollFraction
+          )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
+            user?.balance ?? 0
+          )}`}
+        />
+      ) : (
+        ''
+      )}
+
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
           <div className="text-gray-500">
