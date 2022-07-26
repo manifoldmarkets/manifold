@@ -169,7 +169,7 @@ export const charities: Charity[] = [
   {
     name: "Founder's Pledge Climate Change Fund",
     website: 'https://founderspledge.com/funds/climate-change-fund',
-    photo: 'https://i.imgur.com/ZAhzHu4.png',
+    photo: 'https://i.imgur.com/9turaJW.png',
     preview:
       'The Climate Change Fund aims to sustainably reach net-zero emissions globally, while still allowing growth to free millions from energy poverty.',
     description: `The Climate Change Fund aims to sustainably reach net-zero emissions globally.
@@ -183,7 +183,7 @@ export const charities: Charity[] = [
   {
     name: "Founder's Pledge Patient Philanthropy Fund",
     website: 'https://founderspledge.com/funds/patient-philanthropy-fund',
-    photo: 'https://i.imgur.com/ZAhzHu4.png',
+    photo: 'https://i.imgur.com/LLR6CI6.png',
     preview:
       'The Patient Philanthropy Project aims to safeguard and benefit the long-term future of humanity',
     description: `The Patient Philanthropy Project focuses on how we can collectively grow our resources to support the long-term flourishing of humanity. It addresses a crucial gap: as a society, we spend much too little on safeguarding and benefiting future generations. In fact, we spend more money on ice cream each year than we do on preventing our own extinction. However, people in the future - who do not have a voice in their future survival or environment - matter. Lots of them may yet come into existence and we have the ability to positively affect their lives now, if only by making sure we avoid major catastrophes that could destroy our common future.
@@ -550,6 +550,20 @@ Our Vision — A world where democracies thrive because voters’ voices are hea
 With an emphasis on approval voting, we bring better elections to people across the country through both advocacy and research.
 
 The movement for a better way to vote is rapidly gaining momentum as voters grow tired of election results that don’t represent the will of the people. In 2018, we worked with locals in Fargo, ND to help them become the first city in the U.S. to adopt approval voting. And in 2020, we helped grassroots activists empower the 300k people of St. Louis, MO with stronger democracy through approval voting.`,
+  },
+  {
+    name: 'Founders Pledge Global Health and Development Fund',
+    website: 'https://founderspledge.com/funds/global-health-and-development',
+    photo: 'https://i.imgur.com/EXbxH7T.png',
+    preview:
+      'Tackling the vast global inequalities in health, wealth and opportunity',
+    description: `Nearly half the world lives on less than $2.50 a day, yet giving by the world’s richest often overlooks the world’s poorest and most vulnerable. Despite the average American household being richer than 90% of the rest of the world, only 6% of US charitable giving goes to charities which work internationally.
+
+This Fund is focused on helping those who need it most, wherever that help can make the biggest difference. By building a mixed portfolio of direct and indirect interventions, such as policy work, we aim to:
+
+Improve the lives of the world's most vulnerable people.
+Reduce the number of easily preventable deaths worldwide.
+Work towards sustainable, systemic change.`,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
