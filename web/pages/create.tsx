@@ -180,6 +180,11 @@ export function NewContract(props: {
         min < initialValue &&
         initialValue < max))
 
+  const [errorText, setErrorText] = useState<string>('')
+  useEffect(() => {
+    setErrorText('')
+  }, [isValid])
+
   const descriptionPlaceholder =
     outcomeType === 'BINARY'
       ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
@@ -232,6 +237,9 @@ export function NewContract(props: {
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
+      setErrorText(
+        (e as any).details || (e as any).message || 'Error creating contract'
+      )
       setIsSubmitting(false)
     }
   }
@@ -413,7 +421,7 @@ export function NewContract(props: {
       </div>
 
       <Spacer h={6} />
-
+      <span className={'text-error'}>{errorText}</span>
       <Row className="items-end justify-between">
         <div className="form-control mb-1 items-start">
           <label className="label mb-1 gap-2">
