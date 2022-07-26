@@ -13,7 +13,6 @@ import { Spacer } from 'web/components/layout/spacer'
 import { listUsers, User } from 'web/lib/firebase/users'
 import {
   Contract,
-  getBinaryProbPercent,
   getContractFromSlug,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
@@ -28,7 +27,6 @@ import { Leaderboard } from 'web/components/leaderboard'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { contractTextDetails } from 'web/components/contract/contract-details'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
 import { NumericBetPanel } from '../../components/numeric-bet-panel'
@@ -43,8 +41,8 @@ import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import { richTextToString } from 'common/util/parse'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -382,36 +380,4 @@ function ContractTopTrades(props: {
       )}
     </div>
   )
-}
-
-const getOpenGraphProps = (contract: Contract) => {
-  const {
-    resolution,
-    question,
-    creatorName,
-    creatorUsername,
-    outcomeType,
-    creatorAvatarUrl,
-    description: desc,
-  } = contract
-  const probPercent =
-    outcomeType === 'BINARY' ? getBinaryProbPercent(contract) : undefined
-
-  const stringDesc = typeof desc === 'string' ? desc : richTextToString(desc)
-
-  const description = resolution
-    ? `Resolved ${resolution}. ${stringDesc}`
-    : probPercent
-    ? `${probPercent} chance. ${stringDesc}`
-    : stringDesc
-
-  return {
-    question,
-    probability: probPercent,
-    metadata: contractTextDetails(contract),
-    creatorName,
-    creatorUsername,
-    creatorAvatarUrl,
-    description,
-  }
 }

@@ -6,6 +6,8 @@ export type Challenge = {
   // The user that created the challenge.
   creatorId: string
   creatorUsername: string
+  creatorName: string
+  creatorAvatarUrl?: string
 
   // Displayed to people claiming the challenge
   message: string

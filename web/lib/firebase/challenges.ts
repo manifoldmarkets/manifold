@@ -1,11 +1,11 @@
 import {
   collectionGroup,
+  doc,
   orderBy,
   query,
   setDoc,
   where,
 } from 'firebase/firestore'
-import { doc } from 'firebase/firestore'
 import { Challenge } from 'common/challenge'
 import { customAlphabet } from 'nanoid'
 import { coll, listenForValue, listenForValues } from './utils'
@@ -46,6 +46,8 @@ export async function createChallenge(data: {
     slug,
     creatorId: creator.id,
     creatorUsername: creator.username,
+    creatorName: creator.name,
+    creatorAvatarUrl: creator.avatarUrl,
     creatorAmount: amount,
     contractSlug: contract.slug,
     contractId: contract.id,

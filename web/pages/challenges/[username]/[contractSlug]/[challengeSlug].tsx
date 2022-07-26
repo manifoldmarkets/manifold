@@ -12,7 +12,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { Row } from 'web/components/layout/row'
 
 import { Challenge } from 'common/challenge'
-import { useChallenge } from 'web/lib/firebase/challenges'
+import { getChallengeUrl, useChallenge } from 'web/lib/firebase/challenges'
 import { getPortfolioHistory, getUserByUsername } from 'web/lib/firebase/users'
 import { PortfolioMetrics, User } from 'common/user'
 import { Page } from 'web/components/page'
@@ -20,7 +20,7 @@ import { useUser, useUserById } from 'web/hooks/use-user'
 import { AcceptChallengeButton } from 'web/components/challenges/accept-challenge-button'
 import { Avatar } from 'web/components/avatar'
 import { UserLink } from 'web/components/user-page'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { BinaryOutcomeLabel } from 'web/components/outcome-label'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
@@ -33,6 +33,9 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
 import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
+import { SEO } from 'web/components/SEO'
+import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
+
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string; challengeSlug: string }
@@ -88,23 +91,39 @@ export default function ChallengePage(props: {
     )
   }
 
-  if (challenge.acceptances.length >= challenge.maxUses)
-    return (
-      <ClosedChallengeContent
-        contract={contract}
-        challenge={challenge}
-        creator={user}
-        bets={bets}
-      />
-    )
+  const ogCardProps = getOpenGraphProps(contract)
+
   return (
-    <OpenChallengeContent
-      user={currentUser}
-      contract={contract}
-      challenge={challenge}
-      creator={user}
-      bets={bets}
-    />
+    <Page>
+      {ogCardProps && (
+        <SEO
+          title={
+            challenge.creatorName.split(' ')[0] +
+            ' challenges you to a duel on: ' +
+            contract.question
+          }
+          description={ogCardProps.description}
+          url={getChallengeUrl(challenge)}
+          ogCardProps={ogCardProps}
+        />
+      )}
+      {challenge.acceptances.length >= challenge.maxUses ? (
+        <ClosedChallengeContent
+          contract={contract}
+          challenge={challenge}
+          creator={user}
+          bets={bets}
+        />
+      ) : (
+        <OpenChallengeContent
+          user={currentUser}
+          contract={contract}
+          challenge={challenge}
+          creator={user}
+          bets={bets}
+        />
+      )}
+    </Page>
   )
 }
 
@@ -204,7 +223,7 @@ function ClosedChallengeContent(props: {
     </Col>
   )
   return (
-    <Page>
+    <>
       {showConfetti && (
         <Confetti
           width={width ?? 500}
@@ -264,7 +283,7 @@ function ClosedChallengeContent(props: {
         <Spacer h={3} />
         <ChallengeContract contract={contract} bets={bets} />
       </Col>
-    </Page>
+    </>
   )
 }
 
@@ -390,7 +409,7 @@ function OpenChallengeContent(props: {
     )
   }
   return (
-    <Page>
+    <>
       <Col
         ref={setContainerRef}
         style={{ height: remainingHeight }}
@@ -437,6 +456,6 @@ function OpenChallengeContent(props: {
           />
         </Row>
       </Col>
-    </Page>
+    </>
   )
 }
