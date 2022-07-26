@@ -8,20 +8,22 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { removeUndefinedProps } from '../../common/util/object'
 import { Acceptance, Challenge } from '../../common/challenge'
 import { CandidateBet } from '../../common/new-bet'
-import { getCpmmProbability } from '../../common/calculate-cpmm'
 import { createChallengeAcceptedNotification } from './create-notification'
+import { noFees } from 'common/fees'
+import { formatMoney, formatPercent } from 'common/util/format'
 
 const bodySchema = z.object({
   contractId: z.string(),
   challengeSlug: z.string(),
+  outcomeType: z.literal('BINARY'),
+  closeTime: z.number().gte(Date.now()),
 })
 const firestore = admin.firestore()
 
 export const acceptchallenge = newEndpoint({}, async (req, auth) => {
-  log('Inside endpoint handler.')
   const { challengeSlug, contractId } = validate(bodySchema, req.body)
+
   const result = await firestore.runTransaction(async (trans) => {
-    log('Inside main transaction.')
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const challengeDoc = firestore.doc(
@@ -35,7 +37,6 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
     if (!challengeSnap.exists) throw new APIError(400, 'Challenge not found.')
-    log('Loaded user and contract snapshots.')
 
     const anyContract = contractSnap.data() as Contract
     const user = userSnap.data() as User
@@ -51,28 +52,28 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
 
     const { creatorAmount, yourOutcome, creatorsOutcome, creatorsOutcomeProb } =
       challenge
+
     const yourCost =
       ((1 - creatorsOutcomeProb) / creatorsOutcomeProb) * creatorAmount
 
     if (user.balance < yourCost)
       throw new APIError(400, 'Insufficient balance.')
 
-    const { closeTime, outcomeType } = anyContract
-    if (closeTime && Date.now() > closeTime)
-      throw new APIError(400, 'Trading is closed.')
-    if (outcomeType !== 'BINARY')
-      throw new APIError(400, 'Challenges only accepted for binary markets.')
-
     const contract = anyContract as CPMMBinaryContract
-    const { YES: y, NO: n } = contract.pool
     const shares = (1 / creatorsOutcomeProb) * creatorAmount
+    const createdTime = Date.now()
 
-    const newPool = {
-      YES: y + shares,
-      NO: n + shares,
-    }
-    const probBefore = getCpmmProbability(contract.pool, contract.p)
-    const probAfter = getCpmmProbability(newPool, contract.p)
+    log(
+      'Creating challenge bet for',
+      user.username,
+      shares,
+      yourOutcome,
+      'shares',
+      'at',
+      formatPercent(creatorsOutcomeProb),
+      'for',
+      formatMoney(yourCost)
+    )
 
     const yourNewBet: CandidateBet = removeUndefinedProps({
       orderAmount: yourCost,
@@ -81,22 +82,21 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       isCancelled: false,
       contractId: contract.id,
       outcome: yourOutcome,
-      probBefore,
-      probAfter,
+      probBefore: creatorsOutcomeProb,
+      probAfter: creatorsOutcomeProb,
       loanAmount: 0,
-      createdTime: Date.now(),
-      fees: { creatorFee: 0, platformFee: 0, liquidityFee: 0 },
+      createdTime,
+      fees: noFees,
     })
+
     const yourNewBetDoc = contractDoc.collection('bets').doc()
     trans.create(yourNewBetDoc, {
       id: yourNewBetDoc.id,
       userId: user.id,
       ...yourNewBet,
     })
-    log('Created new bet document.')
 
     trans.update(userDoc, { balance: FieldValue.increment(-yourNewBet.amount) })
-    log('Updated user balance.')
 
     const creatorNewBet: CandidateBet = removeUndefinedProps({
       orderAmount: creatorAmount,
@@ -105,11 +105,11 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       isCancelled: false,
       contractId: contract.id,
       outcome: creatorsOutcome,
-      probBefore,
-      probAfter,
+      probBefore: creatorsOutcomeProb,
+      probAfter: creatorsOutcomeProb,
       loanAmount: 0,
-      createdTime: Date.now(),
-      fees: { creatorFee: 0, platformFee: 0, liquidityFee: 0 },
+      createdTime,
+      fees: noFees,
     })
     const creatorBetDoc = contractDoc.collection('bets').doc()
     trans.create(creatorBetDoc, {
@@ -117,21 +117,13 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       userId: creator.id,
       ...creatorNewBet,
     })
-    log('Created new bet document.')
 
     trans.update(creatorDoc, {
       balance: FieldValue.increment(-creatorNewBet.amount),
     })
-    log('Updated user balance.')
 
-    trans.update(
-      contractDoc,
-      removeUndefinedProps({
-        pool: newPool,
-        volume: contract.volume + yourNewBet.amount + creatorNewBet.amount,
-      })
-    )
-    log('Updated contract properties.')
+    const volume = contract.volume + yourNewBet.amount + creatorNewBet.amount
+    trans.update(contractDoc, { volume })
 
     trans.update(
       challengeDoc,
@@ -141,7 +133,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
           {
             userId: user.id,
             betId: yourNewBetDoc.id,
-            createdTime: Date.now(),
+            createdTime,
             amount: yourCost,
             userUsername: user.username,
             userName: user.name,
@@ -150,7 +142,6 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
         ],
       })
     )
-    log('Updated challenge properties with new acceptance.')
 
     await createChallengeAcceptedNotification(
       user,
@@ -159,7 +150,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       yourCost,
       contract
     )
-    log('Created notification.')
+    log('Done, sent notification.')
     return yourNewBetDoc
   })
 
