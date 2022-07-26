@@ -771,7 +771,9 @@ export function SellPanel(props: {
   const betDisabled = isSubmitting || !amount || error
 
   // Sell all shares if remaining shares would be < 1
-  const sellQuantity = amount === Math.floor(shares) ? shares : amount
+  const isSellingAllShares = amount === Math.floor(shares)
+
+  const sellQuantity = isSellingAllShares ? shares : amount
 
   async function submitSell() {
     if (!user || !amount) return
@@ -780,7 +782,7 @@ export function SellPanel(props: {
     setIsSubmitting(true)
 
     await sellShares({
-      shares: sellQuantity,
+      shares: isSellingAllShares ? undefined : amount,
       outcome: sharesOutcome,
       contractId: contract.id,
     })

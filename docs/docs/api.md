@@ -579,6 +579,26 @@ $ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
                  ]}'
 ```
 
+### `POST /v0/market/[marketId]/sell`
+
+Sells some quantity of shares in a market on behalf of the authorized user.
+
+Parameters:
+
+- `outcome`: Required. One of `YES`, `NO`, or a `number` indicating the numeric
+  bucket ID, depending on the market type.
+- `shares`: Optional. The amount of shares to sell of the outcome given
+  above. If not provided, all the shares you own will be sold.
+
+Example request:
+
+```
+$ curl https://manifold.markets/api/v0/market/{marketId}/sell -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "YES", "shares": 10}'
+```
+
 ### `GET /v0/bets`
 
 Gets a list of bets, ordered by creation date descending.
