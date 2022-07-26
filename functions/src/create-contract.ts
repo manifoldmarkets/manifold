@@ -2,8 +2,8 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import {
-  CPMMBinaryContract,
   Contract,
+  CPMMBinaryContract,
   FreeResponseContract,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
@@ -97,7 +97,12 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     initialProb = getPseudoProbability(initialValue, min, max, isLogScale) * 100
 
     if (initialProb < 1 || initialProb > 99)
-      throw new APIError(400, 'Invalid initial value.')
+      if (outcomeType === 'PSEUDO_NUMERIC')
+        throw new APIError(
+          400,
+          `Initial value is too ${initialProb < 1 ? 'low' : 'high'}`
+        )
+      else throw new APIError(400, 'Invalid initial probability.')
   }
   if (outcomeType === 'BINARY') {
     ;({ initialProb } = validate(binarySchema, req.body))
