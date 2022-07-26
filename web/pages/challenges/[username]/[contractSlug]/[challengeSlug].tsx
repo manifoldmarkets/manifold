@@ -92,16 +92,18 @@ export default function ChallengePage(props: {
   }
 
   const ogCardProps = getOpenGraphProps(contract)
+  ogCardProps.question =
+    'Will you accept ' +
+    challenge.creatorName.split(' ')[0] +
+    "'s challenge on: " +
+    contract.question
+  ogCardProps.probability = Math.round(challenge.creatorsOutcomeProb * 100) + ''
 
   return (
     <Page>
       {ogCardProps && (
         <SEO
-          title={
-            challenge.creatorName.split(' ')[0] +
-            ' challenges you to a duel on: ' +
-            contract.question
-          }
+          title={ogCardProps.question}
           description={ogCardProps.description}
           url={getChallengeUrl(challenge)}
           ogCardProps={ogCardProps}
