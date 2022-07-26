@@ -42,8 +42,9 @@ export function MiscDetails(props: {
   contract: Contract
   showHotVolume?: boolean
   showTime?: ShowTime
+  hideGroupLink?: boolean
 }) {
-  const { contract, showHotVolume, showTime } = props
+  const { contract, showHotVolume, showTime, hideGroupLink } = props
   const {
     volume,
     volume24Hours,
@@ -80,7 +81,7 @@ export function MiscDetails(props: {
         <NewContractBadge />
       )}
 
-      {groupLinks && groupLinks.length > 0 && (
+      {!hideGroupLink && groupLinks && groupLinks.length > 0 && (
         <SiteLink
           href={groupPath(groupLinks[0].slug)}
           className="text-sm text-gray-400"

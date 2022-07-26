@@ -129,7 +129,6 @@ export async function listContractsByGroupSlug(
 ): Promise<Contract[]> {
   const q = query(contracts, where('groupSlugs', 'array-contains', slug))
   const snapshot = await getDocs(q)
-  console.log(snapshot.docs.map((doc) => doc.data()))
   return snapshot.docs.map((doc) => doc.data())
 }
 

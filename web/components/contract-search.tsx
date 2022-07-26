@@ -15,7 +15,10 @@ import {
   useInitialQueryAndSort,
   useUpdateQueryAndSort,
 } from '../hooks/use-sort-and-query-params'
-import { ContractsGrid } from './contract/contracts-list'
+import {
+  ContractHighlightOptions,
+  ContractsGrid,
+} from './contract/contracts-list'
 import { Row } from './layout/row'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
@@ -64,11 +67,15 @@ export function ContractSearch(props: {
     excludeContractIds?: string[]
     groupSlug?: string
   }
+  highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
   showPlaceHolder?: boolean
   hideOrderSelector?: boolean
   overrideGridClassName?: string
-  hideQuickBet?: boolean
+  cardHideOptions?: {
+    hideGroupLink?: boolean
+    hideQuickBet?: boolean
+  }
 }) {
   const {
     querySortOptions,
@@ -77,7 +84,8 @@ export function ContractSearch(props: {
     overrideGridClassName,
     hideOrderSelector,
     showPlaceHolder,
-    hideQuickBet,
+    cardHideOptions,
+    highlightOptions,
   } = props
 
   const user = useUser()
@@ -276,8 +284,9 @@ export function ContractSearch(props: {
           querySortOptions={querySortOptions}
           onContractClick={onContractClick}
           overrideGridClassName={overrideGridClassName}
-          hideQuickBet={hideQuickBet}
           excludeContractIds={additionalFilter?.excludeContractIds}
+          highlightOptions={highlightOptions}
+          cardHideOptions={cardHideOptions}
         />
       )}
     </InstantSearch>
@@ -293,13 +302,19 @@ export function ContractSearchInner(props: {
   overrideGridClassName?: string
   hideQuickBet?: boolean
   excludeContractIds?: string[]
+  highlightOptions?: ContractHighlightOptions
+  cardHideOptions?: {
+    hideQuickBet?: boolean
+    hideGroupLink?: boolean
+  }
 }) {
   const {
     querySortOptions,
     onContractClick,
     overrideGridClassName,
-    hideQuickBet,
+    cardHideOptions,
     excludeContractIds,
+    highlightOptions,
   } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
@@ -360,7 +375,8 @@ export function ContractSearchInner(props: {
       showTime={showTime}
       onContractClick={onContractClick}
       overrideGridClassName={overrideGridClassName}
-      hideQuickBet={hideQuickBet}
+      highlightOptions={highlightOptions}
+      cardHideOptions={cardHideOptions}
     />
   )
 }

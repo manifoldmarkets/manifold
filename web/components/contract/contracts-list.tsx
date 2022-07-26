@@ -1,5 +1,5 @@
-import { Contract } from '../../lib/firebase/contracts'
-import { User } from '../../lib/firebase/users'
+import { Contract } from 'web/lib/firebase/contracts'
+import { User } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { SiteLink } from '../site-link'
 import { ContractCard } from './contract-card'
@@ -9,6 +9,11 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
+export type ContractHighlightOptions = {
+  contractIds?: string[]
+  highlightClassName?: string
+}
+
 export function ContractsGrid(props: {
   contracts: Contract[]
   loadMore: () => void
@@ -16,7 +21,11 @@ export function ContractsGrid(props: {
   showTime?: ShowTime
   onContractClick?: (contract: Contract) => void
   overrideGridClassName?: string
-  hideQuickBet?: boolean
+  cardHideOptions?: {
+    hideQuickBet?: boolean
+    hideGroupLink?: boolean
+  }
+  highlightOptions?: ContractHighlightOptions
 }) {
   const {
     contracts,
@@ -25,9 +34,12 @@ export function ContractsGrid(props: {
     loadMore,
     onContractClick,
     overrideGridClassName,
-    hideQuickBet,
+    cardHideOptions,
+    highlightOptions,
   } = props
+  const { hideQuickBet, hideGroupLink } = cardHideOptions || {}
 
+  const { contractIds, highlightClassName } = highlightOptions || {}
   const [elem, setElem] = useState<HTMLElement | null>(null)
   const isBottomVisible = useIsVisible(elem)
 
@@ -66,6 +78,12 @@ export function ContractsGrid(props: {
               onContractClick ? () => onContractClick(contract) : undefined
             }
             hideQuickBet={hideQuickBet}
+            hideGroupLink={hideGroupLink}
+            className={
+              contractIds?.includes(contract.id)
+                ? highlightClassName
+                : undefined
+            }
           />
         ))}
       </ul>

@@ -5,8 +5,8 @@ import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
-  Contract,
   BinaryContract,
+  Contract,
   FreeResponseContract,
   NumericContract,
   PseudoNumericContract,
@@ -24,7 +24,7 @@ import {
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-import { QuickBet, ProbBar, getColor } from './quick-bet'
+import { getColor, ProbBar, QuickBet } from './quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'
@@ -38,8 +38,16 @@ export function ContractCard(props: {
   className?: string
   onClick?: () => void
   hideQuickBet?: boolean
+  hideGroupLink?: boolean
 }) {
-  const { showHotVolume, showTime, className, onClick, hideQuickBet } = props
+  const {
+    showHotVolume,
+    showTime,
+    className,
+    onClick,
+    hideQuickBet,
+    hideGroupLink,
+  } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
   const { resolution } = contract
@@ -121,6 +129,7 @@ export function ContractCard(props: {
               contract={contract}
               showHotVolume={showHotVolume}
               showTime={showTime}
+              hideGroupLink={hideGroupLink}
             />
           </Col>
           {showQuickBet ? (
