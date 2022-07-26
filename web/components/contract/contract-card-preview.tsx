@@ -1,6 +1,6 @@
-import { Contract } from 'common/lib/contract'
+import { Contract } from 'common/contract'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
-import { richTextToString } from 'common/lib/util/parse'
+import { richTextToString } from 'common/util/parse'
 import { contractTextDetails } from 'web/components/contract/contract-details'
 
 export const getOpenGraphProps = (contract: Contract) => {
