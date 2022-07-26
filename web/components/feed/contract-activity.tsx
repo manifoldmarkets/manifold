@@ -46,6 +46,7 @@ export function ContractActivity(props: {
       items={items}
       className={className}
       betRowClassName={betRowClassName}
+      user={user}
     />
   )
 }

@@ -42,7 +42,7 @@ import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
 import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
-import { InfoBox } from './info-box'
+import { PlayMoneyDisclaimer } from './play-money-disclaimer'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -99,14 +99,6 @@ export function BetPanel(props: {
     </Col>
   )
 }
-
-const PlayMoneyDisclaimer = () => (
-  <InfoBox
-    title="Play-money betting"
-    className="mt-4 max-w-md"
-    text="Mana (M$) is the play-money used by our platform to keep track of your bets. It's completely free for you and your friends to get started!"
-  />
-)
 
 export function SimpleBetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
