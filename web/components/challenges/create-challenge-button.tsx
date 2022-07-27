@@ -1,19 +1,22 @@
 import clsx from 'clsx'
+import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
+import { DuplicateIcon } from '@heroicons/react/outline'
+
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Title } from '../title'
 import { User } from 'common/user'
 import { Modal } from 'web/components/layout/modal'
-import dayjs from 'dayjs'
 import { Button } from '../button'
-import { DuplicateIcon } from '@heroicons/react/outline'
 import { createChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
-import { Contract } from 'common/contract'
+import { BinaryContract } from 'common/contract'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { SiteLink } from 'web/components/site-link'
 import { getOutcomeProbability } from 'common/calculate'
-import { createButtonStyle } from '../create-question-button'
+import { formatMoney } from 'common/util/format'
+import { Spacer } from '../layout/spacer'
+import { NoLabel, YesLabel } from '../outcome-label'
 
 type challengeInfo = {
   amount: number
@@ -24,14 +27,11 @@ type challengeInfo = {
 }
 export function CreateChallengeButton(props: {
   user: User | null | undefined
-  contract: Contract
+  contract: BinaryContract
 }) {
   const { user, contract } = props
   const [open, setOpen] = useState(false)
   const [highlightedSlug, setHighlightedSlug] = useState('')
-
-  const gradient =
-    'from-indigo-500 to-red-500 hover:from-indigo-700 hover:to-red-700'
 
   return (
     <>
@@ -62,12 +62,7 @@ export function CreateChallengeButton(props: {
 
       <button
         onClick={() => setOpen(true)}
-        className={clsx(
-          // 'border-w-0 h-11 rounded-md bg-gradient-to-r text-base font-semibold text-white shadow-sm',
-          // gradient,
-          'btn btn-outline',
-          'mb-4 max-w-xs'
-        )}
+        className="btn btn-outline mb-4 max-w-xs"
       >
         Challenge ️
       </button>
@@ -77,7 +72,7 @@ export function CreateChallengeButton(props: {
 
 function CreateChallengeForm(props: {
   user: User
-  contract: Contract
+  contract: BinaryContract
   onCreate: (m: challengeInfo) => Promise<void>
   highlightedSlug: string
 }) {
@@ -86,21 +81,25 @@ function CreateChallengeForm(props: {
   const [finishedCreating, setFinishedCreating] = useState(false)
   const [error, setError] = useState<string>('')
   const defaultExpire = 'week'
-  const isBinary = contract.outcomeType === 'BINARY'
-  const isNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const defaultMessage = `${user.name} is challenging you to a bet! Do you think ${contract.question}`
+
+  const prob = Math.round(getOutcomeProbability(contract, 'YES') * 100) / 100 // round to whole percentage
 
   const [challengeInfo, setChallengeInfo] = useState<challengeInfo>({
     expiresTime: dayjs().add(2, defaultExpire).valueOf(),
     outcome: 'YES',
     amount: 100,
-    prob: Math.round(getOutcomeProbability(contract, 'YES') * 100),
+    prob: prob * 100,
     message: defaultMessage,
   })
   useEffect(() => {
     setError('')
   }, [challengeInfo])
+
+  const p = challengeInfo.outcome === 'YES' ? prob : 1 - prob
+
+  const friendCost = ((1 - p) / p) * challengeInfo.amount
 
   return (
     <>
@@ -117,9 +116,13 @@ function CreateChallengeForm(props: {
             setFinishedCreating(true)
           }}
         >
-          <Title className="!mt-2" text="Create a challenge bet" />
+          <Title className="!mt-2" text="Challenge a friend to bet " />
           {/*<Row className="label ">How much?</Row>*/}
           <div className="mt-2 flex flex-col flex-wrap gap-x-5 gap-y-2">
+            <div>Question:</div>
+            <div className="mb-4 italic">{contract.question}</div>
+
+            <div>You are betting:</div>
             <Row className={'form-control w-full justify-start gap-4'}>
               <Col>
                 <div className="relative">
@@ -141,45 +144,29 @@ function CreateChallengeForm(props: {
               </Col>
               <Col className={'mt-3 ml-1 text-gray-600'}>on</Col>
               <Col>
-                {/*<label className="label">Outcome</label>*/}
-                {isBinary && (
-                  <select
-                    className="form-select h-12 rounded-lg border-gray-300"
-                    value={challengeInfo.outcome}
-                    onChange={(e) =>
-                      setChallengeInfo((m: challengeInfo) => {
-                        return {
-                          ...m,
-                          outcome: e.target.value as 'YES' | 'NO',
-                        }
-                      })
-                    }
-                  >
-                    <option value="YES">Yes</option>
-                    <option value="NO">No</option>
-                  </select>
-                )}
-                {isNumeric && (
-                  <div className="relative">
-                    <input
-                      className="input input-bordered w-full"
-                      type="number"
-                      min={contract.min}
-                      max={contract.max}
-                      value={challengeInfo.outcome}
-                      onChange={(e) =>
-                        setChallengeInfo((m: challengeInfo) => {
-                          return {
-                            ...m,
-                            outcome: parseFloat(e.target.value) as number,
-                          }
-                        })
+                <select
+                  className="form-select h-12 rounded-lg border-gray-300"
+                  value={challengeInfo.outcome}
+                  onChange={(e) =>
+                    setChallengeInfo((m: challengeInfo) => {
+                      return {
+                        ...m,
+                        outcome: e.target.value as 'YES' | 'NO',
                       }
-                    />
-                  </div>
-                )}
+                    })
+                  }
+                >
+                  <option value="YES">YES</option>
+                  <option value="NO">NO</option>
+                </select>
               </Col>
             </Row>
+            <Spacer h={2} />
+            <div>They will bet:</div>
+            <div>
+              <span className="bold">{formatMoney(friendCost)}</span> on{' '}
+              {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
+            </div>
             {/*<div className="form-control flex flex-row gap-8">*/}
             {/*  /!*<Col className={'mt-9 justify-center'}>at</Col>*!/*/}
             {/*  <Col>*/}
