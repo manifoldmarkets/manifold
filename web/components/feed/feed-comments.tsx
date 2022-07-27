@@ -29,7 +29,6 @@ import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
 import { track } from 'web/lib/service/analytics'
 import { useEvent } from 'web/hooks/use-event'
-import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
@@ -189,7 +188,6 @@ export function FeedComment(props: {
   const {
     contract,
     comment,
-    tips,
     betsBySameUser,
     probAtCreatedTime,
     truncate,
@@ -282,7 +280,6 @@ export function FeedComment(props: {
           shouldTruncate={truncate}
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
-          <Tipper comment={comment} tips={tips ?? {}} />
           {onReplyClick && (
             <button
               className="font-bold hover:underline"

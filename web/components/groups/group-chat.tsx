@@ -242,7 +242,6 @@ const GroupMessage = memo(function GroupMessage_(props: {
             {formatMoney(sum(Object.values(tips)))}
           </span>
         )}
-        {!isCreatorsComment && <Tipper comment={comment} tips={tips} />}
       </Row>
     </Col>
   )
