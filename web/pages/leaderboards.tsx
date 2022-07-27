@@ -71,7 +71,7 @@ export default function Leaderboards(_props: {
   }, [])
 
   const LeaderboardWithPeriod = (period: Period) => {
-    const { topTraders, topCreators } = props[period]
+    const { topTraders } = props[period]
 
     return (
       <>
@@ -83,18 +83,6 @@ export default function Leaderboards(_props: {
               {
                 header: 'Total profit',
                 renderCell: (user) => formatMoney(user.profitCached[period]),
-              },
-            ]}
-          />
-
-          <Leaderboard
-            title="🏅 Top creators"
-            users={topCreators}
-            columns={[
-              {
-                header: 'Total bet',
-                renderCell: (user) =>
-                  formatMoney(user.creatorVolumeCached[period]),
               },
             ]}
           />
