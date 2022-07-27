@@ -1,7 +1,6 @@
-import express, { Express } from "express";
+import express, { Express, response } from "express";
 import { AddressInfo } from "net";
 import fetch from "node-fetch";
-import { Client } from "tmi.js";
 import moment from "moment";
 import { Server } from "socket.io";
 import http from "http";
@@ -9,10 +8,11 @@ import fs from "fs";
 
 import * as ManifoldAPI from "common/manifold-defs";
 import { FullBet } from "common/transaction";
+import * as Packet from "common/packet-ids";
+import TwitchBot from "./twitch-bot";
+import { getParamsFromURL } from "common/utils-node";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
-
-const regexpCommand = new RegExp(/!([a-zA-Z0-9]+)\s?(\S*)?/);
 
 const USER_FILE_GUID = "{5d7b6761-0719-4819-a9b9-4dd600f45369}"; // 22/07/2022
 
@@ -26,7 +26,11 @@ export default class App {
     readonly latestBets: FullBet[] = [];
     readonly io: Server;
 
+    bot: TwitchBot;
+
     readonly userList = {};
+
+    selectedMarketSlug = "";
 
     pendingBets: ManifoldAPI.Bet[] = [];
     pendingFetches = {};
@@ -39,10 +43,10 @@ export default class App {
         const server = http.createServer(this.app);
         this.io = new Server(server);
         this.io.on("connection", (socket) => {
-            console.log("A client connected by websocket: " + socket.id);
-            socket.emit("clear");
-            socket.emit("selectmarket", "this-is-a-local-market");
-            socket.emit("bets", this.latestBets);
+            // console.log("A client connected by websocket: " + socket.id);
+            socket.emit(Packet.CLEAR);
+            socket.emit(Packet.SELECT_MARKET, this.selectedMarketSlug);
+            socket.emit(Packet.ADD_BETS, this.latestBets);
         });
         server.listen(3000, () => {
             const address = <AddressInfo> server.address();
@@ -76,10 +80,16 @@ export default class App {
                 this.userList = data.userData;
             }
             else {
-                console.log("User data file version mismatch. Data not loaded.");
+                console.error("User data file version mismatch. Data not loaded.");
             }
         }
-        console.log(this.userList);
+        // console.log(this.userList);
+    }
+
+    private selectMarket(slug: string) {
+        this.selectedMarketSlug = slug;
+
+        this.io.emit(Packet.SELECT_MARKET, this.selectedMarketSlug);
     }
 
     private saveUsersToFile() {
@@ -89,7 +99,7 @@ export default class App {
         }
         fs.writeFile("data/users.json", JSON.stringify(data, null, 2), {flag: "w+"}, err => {
             if (err) {
-                console.error(err);
+                console.trace(err);
             }
         }); 
     }
@@ -128,7 +138,7 @@ export default class App {
                 });
             })
             .catch((e) => {
-                console.error(e);
+                console.trace(e);
             });
     }
 
@@ -137,7 +147,7 @@ export default class App {
             this.latestBets.shift();
         }
         this.latestBets.push(bet);
-        this.io.emit("bets", [bet]);
+        this.io.emit(Packet.ADD_BETS, [bet]);
 
         console.log(`[${new Date().toLocaleTimeString()}] ${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
     }
@@ -161,9 +171,9 @@ export default class App {
 
     //!!! Currently uses the Firebase API - should be updated to the Manifold REST API when possible
     async sellAllShares(username: string) {
+        username = username.toLocaleLowerCase();
         if (!this.userList[username]) {
-            console.error(`No user record for username ${username}`);
-            return;
+            throw Error(`No user record for username ${username}`);
         }
         const APIKey = this.userList[username].APIKey;
 
@@ -194,14 +204,17 @@ export default class App {
             console.log("Shares sold successfully.");
         }
         catch (e) {
-            console.error(e);
+            console.trace(e);
         }
     }
 
     async placeBet(username: string, amount: number, yes: boolean) {
+        username = username.toLocaleLowerCase();
+        console.log(`Looking for user ${username}, found ${this.userList[username]}`);
         if (!this.userList[username]) {
-            console.error(`No user record for username ${username}`);
-            return;
+            throw Error(`No user record for username ${username}`);
+            // console.error(`No user record for username ${username}`);
+            // return;
         }
         const APIKey = this.userList[username].APIKey;
 
@@ -226,100 +239,12 @@ export default class App {
             }
         }
         catch (e) {
-            console.error(e);
+            console.trace(e);
         }
     }
 
     launch() {
-        const commands = {
-            help: {
-                response: () => "- !bet yes# - bets on yes (where # is the number of mana bet)\n" +
-                 "- !bet no# - bets on no (where # is the number of mana bet)\n" + 
-                 "- !allin\n" + "- !sell - sells all shares\n" + 
-                 "- !balance - Manifold Bot replies your balance to you in main chat\n" + 
-                 "- !help - Manifold Bot sends a DM showing list of commands\n" + 
-                 "- !signup - Manifold Bot sends a DM explaining how to link accounts and free Mana on sign up.",
-            },
-            upvote: {
-                response: (username: string, argument: string) => `Successfully upvoted ${argument}`,
-            },
-            bet: {
-                response: (username: string, argument: string) => {
-                    if (argument.startsWith("yes")) {
-                        try {
-                            const value = Number.parseInt(argument.substring(3));
-                            if (isNaN(value)) {
-                                return null;
-                            }
-
-                            this.placeBet(username, value, true);
-
-                            return null;
-                        } catch (e) {
-                            return null; //!!!
-                        }
-                    } else if (argument.startsWith("no")) {
-                        try {
-                            const value = Number.parseInt(argument.substring(2));
-                            if (isNaN(value)) {
-                                return null; //!!!
-                            }
-
-                            this.placeBet(username, value, false);
-
-                            return ""; //`@${username} has bet ${value} on NO!`;
-                        } catch (e) {
-                            return null; //!!!
-                        }
-                    } else {
-                        return null; //!!!
-                    }
-                },
-            },
-            sell: {
-                response: (username: string) => { //!!! This needs to look at the currently owned shares by the user and calculate yes or no from that
-                    this.sellAllShares(username);
-                    return null;
-                },
-            },
-            balance: {
-                response: (username: string, argument: string, client: Client, channel: string) => {
-                    fetch(`${APIBase}user/${this.userList[username].manifoldUsername}`) //!!! Catch missing username
-                    .then(r => <Promise<ManifoldAPI.LiteUser>> r.json())
-                    .then(r => {
-                        console.log(r);
-                        client.say(channel, `@${username} currently has ${Math.floor(r.balance).toFixed(0)} mana.`);
-                    })
-                    return null;
-                }
-            },
-            link: {
-                response: (username: string, argument: string, client: Client, channel: string) => {
-                    fetch(`${APIBase}bet`, {
-                        method: "POST",
-                        headers: {
-                            "Authorization": `Key ${argument}`,
-                        }
-                    })
-                    .then(r => {
-                        console.log("Status: " + r.status);
-                        if (r.status != 403) {
-                            const user = new User();
-                            user.manifoldUsername = "PhilBladen";//!!! TEMPORARY
-                            user.APIKey = argument;
-                            this.userList[username] = user;
-                            this.saveUsersToFile();
-                            client.say(channel, "Successfully linked Twitch account.");
-                        }
-                        return r.json();
-                    })
-                    .then(r => {
-                        console.log(r);
-                    });
-                    return null;
-                }
-            }
-        };
+        this.bot = new TwitchBot(this);
 
         let latestLoadedBetId: string = null;
         const pollLatestMarketBets = (numBetsToLoad = 10) => {
@@ -369,7 +294,7 @@ export default class App {
                     }
                     latestLoadedBetId = bets[0].id;
                 })
-                .catch((e) => console.error(e));
+                .catch((e) => console.trace(e));
         };
         setInterval(pollLatestMarketBets, 1000);
 
@@ -377,67 +302,76 @@ export default class App {
         //     response.json(this.latestBets);
         // });
 
+        this.app.get("/registerchannel", (request, response) => {
+            const params = getParamsFromURL(request.url);
+            const channelName = params["c"];
+            if (!channelName) {
+                response.status(400).json({msg: "Bad request: missing channel name parameter c."});
+                return;
+            }
+            try {
+                this.bot.joinChannel(channelName);
+                response.json({msg: `Bot successfully added to channel ${channelName}.`});
+            }
+            catch (e) {
+                response.status(400).json({msg: `Failed to add bot: ${e.message}`});
+            }
+        });
+
+        this.app.get("/unregisterchannel", (request, response) => {
+            const params = getParamsFromURL(request.url);
+            const channelName = params["c"];
+            if (!channelName) {
+                response.status(400).json({msg: "Bad request: missing channel name parameter c."});
+                return;
+            }
+            try {
+                this.bot.leaveChannel(channelName);
+                response.json({msg: `Bot successfully removed from channel ${channelName}.`});
+            }
+            catch (e) {
+                response.status(400).json({msg: `Failed to remove bot: ${e.message}`});
+            }
+        });
+
+        this.app.get("/link", (request) => {
+            const ps = getParamsFromURL(request.url);
+            let tusername = ps["t"];
+            const musername = ps["m"];
+            const apikey = ps["a"];
+            console.log("Got link request: " + `${tusername}, ${musername}, ${apikey}`);
+
+
+            fetch(`${APIBase}bet`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Key ${apikey}`,
+                }
+            })
+            .then(r => {
+                console.log("Status: " + r.status);
+                if (r.status != 403) {
+                    const user = new User();
+                    user.manifoldUsername = musername;
+                    user.APIKey = apikey;
+                    tusername = tusername.toLocaleLowerCase(); //!!!
+                    this.userList[tusername] = user;
+                    this.saveUsersToFile();
+                    // client.say(channel, "Successfully linked Twitch account.");
+                }
+                return r.json();
+            })
+            .then(r => {
+                console.log(r);
+            });
+
+
+        });
+
         const server = this.app.listen(9172, () => {
             const host = (<AddressInfo>server.address()).address;
             const port = (<AddressInfo>server.address()).port;
             console.log("Example app listening at http://%s:%s", host, port);
-        });
-
-        const client = new Client({
-            options: { debug: true },
-            connection: {
-                secure: true,
-                reconnect: true,
-            },
-            identity: {
-                username: "manifoldbot",
-                password: process.env.TWITCH_OAUTH_TOKEN,
-            },
-            channels: ["philbladen"],
-        });
-
-        client.connect();
-
-        client.on("message", (channel, tags, message, self) => {
-            if (self) return; // Ignore echoed messages.
-
-            const found = message.match(regexpCommand);
-
-            if (!found) return;
-            if (found.length < 2) return;
-
-            const command: string = found[1];
-            const argument: string = found[2];
-
-            const commandObject = commands[command as keyof typeof commands];
-            if (!commandObject) {
-                return;
-            }
-            const response: (a: string, b: string, c: Client, d: string) => string | null = commandObject.response;
-
-            let responseMessage;
-
-            if (tags.username) {
-                responseMessage = response(tags.username, argument, client, channel);
-            }
-
-            if (responseMessage) {
-                const lines = responseMessage.split("\n");
-                console.log(`Responding to command !${command}`);
-                for (const line of lines) {
-                    client.say(channel, line);
-                }
-            }
-        });
-
-        client.on("connected", () => {
-            const options = client.getOptions();
-            if (!options.channels) {
-                return;
-            }
-            const channel = options.channels[0];
-            client.say(channel, "/clear");
-            client.say(channel, "/color BlueViolet");
         });
     }
 }

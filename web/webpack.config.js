@@ -12,6 +12,7 @@ const config = {
     entry: {
         main: "/src/main.ts",
         dock: "/src/dock.ts",
+        signup: "/src/signup.ts",
         "service-worker": "/src/service-worker.ts",
     },
     devServer: {

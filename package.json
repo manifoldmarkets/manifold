@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "common",
-    "server"
+    "server",
+    "web"
   ],
   "scripts": {
   },
