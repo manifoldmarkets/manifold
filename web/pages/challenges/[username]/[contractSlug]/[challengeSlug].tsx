@@ -35,6 +35,7 @@ import {
 import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
 import { SEO } from 'web/components/SEO'
 import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
+import Custom404 from 'web/pages/404'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -78,20 +79,29 @@ export default function ChallengePage(props: {
 
     slug: '',
   }
-  const contract = useContractWithPreload(props.contract)
+  const contract = useContractWithPreload(props.contract) ?? props.contract
   const challenge = useChallenge(props.challengeSlug, contract?.id)
   const { user, bets } = props
   const currentUser = useUser()
 
-  if (!contract || !challenge) {
+  if (!contract) return <Custom404 />
+  const ogCardProps = getOpenGraphProps(contract)
+  if (!challenge) {
     return (
-      <Col className={'min-h-screen items-center justify-center'}>
-        <LoadingIndicator />
-      </Col>
+      <Page>
+        <SEO
+          title={ogCardProps.question}
+          description={ogCardProps.description}
+          // url={getChallengeUrl(challenge)}
+          ogCardProps={ogCardProps}
+        />
+        <Col className={'min-h-screen items-center justify-center'}>
+          <LoadingIndicator />
+        </Col>
+      </Page>
     )
   }
 
-  const ogCardProps = getOpenGraphProps(contract)
   ogCardProps.question =
     challenge.creatorName.split(' ')[0] +
     "'s CHALLENGING you: " +
@@ -101,14 +111,12 @@ export default function ChallengePage(props: {
 
   return (
     <Page>
-      {ogCardProps && (
-        <SEO
-          title={ogCardProps.question}
-          description={ogCardProps.description}
-          url={getChallengeUrl(challenge)}
-          ogCardProps={ogCardProps}
-        />
-      )}
+      <SEO
+        title={ogCardProps.question}
+        description={ogCardProps.description}
+        url={getChallengeUrl(challenge).replace('https://', '')}
+        ogCardProps={ogCardProps}
+      />
       {challenge.acceptances.length >= challenge.maxUses ? (
         <ClosedChallengeContent
           contract={contract}
