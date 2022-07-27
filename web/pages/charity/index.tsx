@@ -1,23 +1,14 @@
-import {
-  mapValues,
-  groupBy,
-  sumBy,
-  sum,
-  sortBy,
-  debounce,
-  uniqBy,
-} from 'lodash'
+import { mapValues, groupBy, sumBy, sum, debounce, uniqBy } from 'lodash'
 import { useState, useMemo } from 'react'
-import { charities, Charity as CharityType } from 'common/charity'
+import { Charity as CharityType } from 'common/charity'
 import { CharityCard } from 'web/components/charity/charity-card'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import { getAllCharityTxns } from 'web/lib/firebase/txns'
 import { manaToUSD } from 'common/util/format'
 import { quadraticMatches } from 'common/quadratic-funding'
-import { Txn } from 'common/txn'
+import { DonationTxn, Txn } from 'common/txn'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
@@ -26,15 +17,11 @@ import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
-  const txns = await getAllCharityTxns()
+  const txns: DonationTxn[] = []
   const totals = mapValues(groupBy(txns, 'toId'), (txns) =>
     sumBy(txns, (txn) => txn.amount)
   )
   const totalRaised = sum(Object.values(totals))
-  const sortedCharities = sortBy(charities, [
-    (charity) => (charity.tags?.includes('Featured') ? 0 : 1),
-    (charity) => -totals[charity.id],
-  ])
   const matches = quadraticMatches(txns, totalRaised)
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
   const mostRecentDonor = await getUser(txns[txns.length - 1].fromId)
@@ -42,7 +29,7 @@ export async function getStaticProps() {
   return {
     props: {
       totalRaised,
-      charities: sortedCharities,
+      charities: [],
       matches,
       txns,
       numDonors,
